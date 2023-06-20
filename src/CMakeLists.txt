@@ -95,7 +95,7 @@ TARGET_COMPILE_OPTIONS(
 )
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker PRIVATE
-  ${PROJECT_BINARY_DIR}/protocols
+  ${PROJECT_BINARY_DIR}/third_party/protocols
   ${CAIRO_INCLUDE_DIRS}
   ${LIBDRM_INCLUDE_DIRS}
   ${PIXMAN_INCLUDE_DIRS}
@@ -120,7 +120,7 @@ ADD_EXECUTABLE(wlmaker_test wlmaker_test.c ${SOURCES} ${HEADERS})
 ADD_DEPENDENCIES(wlmaker_test protocol_headers decorations toolkit)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_test PRIVATE
-  ${PROJECT_BINARY_DIR}/protocols
+  ${PROJECT_BINARY_DIR}/third_party/protocols
   ${CAIRO_INCLUDE_DIRS}
   ${LIBDRM_INCLUDE_DIRS}
   ${PIXMAN_INCLUDE_DIRS}

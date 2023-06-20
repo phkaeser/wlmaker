@@ -1,0 +1,4 @@
+[submodule "submodules/libbase"]
+        path = submodules/libbase
+        url = ../libbase
+        update = merge

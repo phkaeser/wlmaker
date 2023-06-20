@@ -49,10 +49,10 @@ struct _wlmaker_xdg_toplevel_t {
     struct wl_listener        destroy_listener;
     /** Listener for the `new_popup` signal of the `wlr_xdg_surface`. */
     struct wl_listener        new_popup_listener;
-    /** Listener for the `map` signal of the `wlr_xdg_surface`. */
-    struct wl_listener        map_listener;
-    /** Listener for the `unmap` signal of the `wlr_xdg_surface`. */
-    struct wl_listener        unmap_listener;
+    /** Listener for the `map` signal of the `wlr_surface`. */
+    struct wl_listener        surface_map_listener;
+    /** Listener for the `unmap` signal of the `wlr_surface`. */
+    struct wl_listener        surface_unmap_listener;
 
     /** Listener for the `commit` signal of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
@@ -178,12 +178,12 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
         &xdg_toplevel_ptr->new_popup_listener,
         handle_new_popup);
     wlm_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->events.map,
-        &xdg_toplevel_ptr->map_listener,
+        &wlr_xdg_surface_ptr->surface->events.map,
+        &xdg_toplevel_ptr->surface_map_listener,
         handle_map);
     wlm_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->events.unmap,
-        &xdg_toplevel_ptr->unmap_listener,
+        &wlr_xdg_surface_ptr->surface->events.unmap,
+        &xdg_toplevel_ptr->surface_unmap_listener,
         handle_unmap);
 
     wlm_util_connect_listener_signal(
@@ -260,8 +260,8 @@ void wlmaker_xdg_toplevel_destroy(wlmaker_xdg_toplevel_t *xdg_toplevel_ptr)
 
     wlmaker_xdg_toplevel_t *tl_ptr = xdg_toplevel_ptr;  // For shorter lines.
     wl_list_remove(&tl_ptr->destroy_listener.link);
-    wl_list_remove(&tl_ptr->map_listener.link);
-    wl_list_remove(&tl_ptr->unmap_listener.link);
+    wl_list_remove(&tl_ptr->surface_map_listener.link);
+    wl_list_remove(&tl_ptr->surface_unmap_listener.link);
 
     wl_list_remove(&tl_ptr->surface_commit_listener.link);
 
@@ -454,7 +454,7 @@ void handle_map(struct wl_listener *listener_ptr,
                 __UNUSED__ void *data_ptr)
 {
     wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, map_listener);
+        listener_ptr, xdg_toplevel_ptr, surface_map_listener);
     wlmaker_view_map(
         &xdg_toplevel_ptr->view,
         wlmaker_server_get_current_workspace(xdg_toplevel_ptr->view.server_ptr),
@@ -480,7 +480,7 @@ void handle_unmap(struct wl_listener *listener_ptr,
                   __UNUSED__ void *data_ptr)
 {
     wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, unmap_listener);
+        listener_ptr, xdg_toplevel_ptr, surface_unmap_listener);
 
     wlmaker_view_unmap(&xdg_toplevel_ptr->view);
 }

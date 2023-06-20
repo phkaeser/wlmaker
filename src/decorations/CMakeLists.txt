@@ -36,7 +36,7 @@ TARGET_INCLUDE_DIRECTORIES(
   decorations PRIVATE
   ${CAIRO_INCLUDE_DIRS}
   # TODO(kaeser@gubbe.ch): These should not be required.
-  ${PROJECT_BINARY_DIR}/protocols
+  ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PIXMAN_INCLUDE_DIRS}
 )
 

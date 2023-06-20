@@ -45,12 +45,13 @@ struct _wlmaker_layer_surface_t {
 
     /** Listener for the `destroy` signal raised by `wlr_layer_surface_v1`. */
     struct wl_listener        destroy_listener;
-    /** Listener for the `map` signal raised by `wlr_layer_surface_v1`. */
-    struct wl_listener        map_listener;
-    /** Listener for the `unmap` signal raised by `wlr_layer_surface_v1`. */
-    struct wl_listener        unmap_listener;
     /** Listener for `new_popup` signal raised by `wlr_layer_surface_v1`. */
     struct wl_listener        new_popup_listener;
+
+        /** Listener for the `map` signal raised by `wlr_surface`. */
+    struct wl_listener        surface_map_listener;
+    /** Listener for the `unmap` signal raised by `wlr_surface`. */
+    struct wl_listener        surface_unmap_listener;
 
     /** Listener for the `commit` signal raised by `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
@@ -113,17 +114,18 @@ wlmaker_layer_surface_t *wlmaker_layer_surface_create(
         &layer_surface_ptr->destroy_listener,
         handle_destroy);
     wlm_util_connect_listener_signal(
-        &wlr_layer_surface_v1_ptr->events.map,
-        &layer_surface_ptr->map_listener,
-        handle_map);
-    wlm_util_connect_listener_signal(
-        &wlr_layer_surface_v1_ptr->events.unmap,
-        &layer_surface_ptr->unmap_listener,
-        handle_unmap);
-    wlm_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->events.new_popup,
         &layer_surface_ptr->new_popup_listener,
         handle_new_popup);
+
+        wlm_util_connect_listener_signal(
+        &wlr_layer_surface_v1_ptr->surface->events.map,
+        &layer_surface_ptr->surface_map_listener,
+        handle_map);
+    wlm_util_connect_listener_signal(
+        &wlr_layer_surface_v1_ptr->surface->events.unmap,
+        &layer_surface_ptr->surface_unmap_listener,
+        handle_unmap);
 
     wlm_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->surface->events.commit,
@@ -158,9 +160,10 @@ void wlmaker_layer_surface_destroy(wlmaker_layer_surface_t *layer_surface_ptr)
 
     // There is no 'destroy' method for `wlr_scene_layer_surface_v1`.
 
+    wl_list_remove(&layer_surface_ptr->surface_unmap_listener.link);
+    wl_list_remove(&layer_surface_ptr->surface_map_listener.link);
+
     wl_list_remove(&layer_surface_ptr->new_popup_listener.link);
-    wl_list_remove(&layer_surface_ptr->unmap_listener.link);
-    wl_list_remove(&layer_surface_ptr->map_listener.link);
     wl_list_remove(&layer_surface_ptr->destroy_listener.link);
     free(layer_surface_ptr);
 }
@@ -269,7 +272,7 @@ void handle_map(
     __UNUSED__ void *data_ptr)
 {
     wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, map_listener);
+        listener_ptr, layer_surface_ptr, surface_map_listener);
     wlmaker_workspace_layer_t layer;
 
     switch (layer_surface_ptr->wlr_layer_surface_v1_ptr->current.layer) {
@@ -314,7 +317,7 @@ void handle_unmap(
     __UNUSED__ void *data_ptr)
 {
     wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, unmap_listener);
+        listener_ptr, layer_surface_ptr, surface_unmap_listener);
 
     wlmaker_workspace_layer_surface_remove(
         layer_surface_ptr->view.workspace_ptr,
