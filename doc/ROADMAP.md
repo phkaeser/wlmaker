@@ -9,59 +9,59 @@ Support for visual effects to improve usability, but not for pure show.
 
 ### Features 
 
-* Support `xdg_shell`.
+* [done] Support `xdg_shell`.
   
-* Support `layer_shell`.
+* [done] Support `layer_shell`.
 
-* Support window decoration protocol.
-  * Style of title bar, iconify and close buttons similar to Window Maker.
-  * Window menu, with basic window actions (not required to adapt to state).
+* [done] Support window decoration protocol.
+  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
+  * [done] Window menu, with basic window actions (not required to adapt to state).
 
-* Multiple workspaces
-  * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+* [done] Multiple workspaces
+  * [done] Navigate via keys (ctrl-window-alt-arrows, hardcoded).
   
-* Dock, visible across workspaces.
-  * Style similar to Window Maker.
-  * With application launchers (hardcoded).
+* [done] Dock, visible across workspaces.
+  * [done] Style similar to Window Maker.
+  * [done] With application launchers (hardcoded).
   
-* Clip
-  * Display the current workspace.
-  * Buttons to switch between workspaces.
+* [done] Clip
+  * [done] Display the current workspace.
+  * [done] Buttons to switch between workspaces.
   
-* Application launchers
-  * Display an icon.
-  * Display application status (*starting*, *running*).
-  * Configurable (in code).
+* [done] Application launchers
+  * [done] Display an icon.
+  * [done] Display application status (*starting*, *running*).
+  * [done] Configurable (in code).
 
-* Window actions
-  * Move (drag via title bar, or window-alt-click)
-  * Resize windows, including a resize bar.
-  * Fullscreen windows.
-  * Maximize windows.
-  * Minimize (*iconify*) windows.
-  * Roll up (*shade*) windows.
-  * Raise window when activated.
+* [done] Window actions
+  * [done] Move (drag via title bar, or window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * [done] Minimize (*iconify*) windows.
+  * [done] Roll up (*shade*) windows.
+  * [done] Raise window when activated.
   
-* Visuualization of iconified applications.
+* [done] Visualization of iconified applications.
   
-* Task list (window-alt-esc), cycling through windows.
+* [done] Task list (window-alt-esc), cycling through windows.
 
-* Auto-start of configured applications.
-  * Configurable in code.
+* [done] Auto-start of configured applications.
+  * [done] Configurable in code.
 
-* Verify minimal application set to run:
-  * Terminal: `foot`
-  * Google Chrome
-  * Mozilla Firefox
+* [done] Verify minimal application set to run:
+  * [done] Terminal: `foot`
+  * [done] Google Chrome
+  * [done] Mozilla Firefox
   
-* Works as a X11 window, Wayland client or standalone compositor.
+* [done] Works as a X11 window, Wayland client or standalone compositor.
 
 ### Internals and code organization
 
-* git submodule for direct and critical dependencies.
-* CMake as build system.
-* `test` and `doc` targets.
-* Published as open source.
+* [done] git submodule for direct and critical dependencies.
+* [done] CMake as build system.
+* [done] `test` and `doc` targets.
+* [done] Published as open source.
 
 ## Pending
 
