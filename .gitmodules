@@ -5,33 +5,33 @@
 [submodule "dependencies/drm"]
         path = dependencies/drm
         url = https://gitlab.freedesktop.org/mesa/drm.git
-        branch = main
+        update = rebase
 [submodule "dependencies/pixman"]
         path = dependencies/pixman
         url = https://gitlab.freedesktop.org/pixman/pixman.git
-        branch = master
+        update = rebase
 [submodule "dependencies/wayland"]
         path = dependencies/wayland
         url = https://gitlab.freedesktop.org/wayland/wayland.git
-        branch = main
+        update = rebase
 [submodule "dependencies/wayland-protocols"]
         path = dependencies/wayland-protocols
         url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-        branch = main
+        update = rebase
 [submodule "dependencies/seatd"]
         path = dependencies/seatd
         url = https://git.sr.ht/~kennylevinsen/seatd
-        branch = master
+        update = rebase
 [submodule "dependencies/hwdata"]
         path = dependencies/hwdata
         url = https://github.com/vcrhonek/hwdata.git
-        branch = master
         ignore = dirty
+        update = rebase
 [submodule "dependencies/libdisplay-info"]
         path = dependencies/libdisplay-info
         url = https://gitlab.freedesktop.org/emersion/libdisplay-info.git
-        branch = main
+        update = rebase
 [submodule "dependencies/wlroots"]
         path = dependencies/wlroots
         url = https://gitlab.freedesktop.org/wlroots/wlroots.git
-        branch = master
+        update = rebase
