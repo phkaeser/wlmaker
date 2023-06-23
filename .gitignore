@@ -2,3 +2,8 @@
 **/CMakeFiles/*
 **/CMakeCache.txt
 **/build/*
+TAGS
+cscope.files
+cscope.in.out
+cscope.out
+cscope.po.out
