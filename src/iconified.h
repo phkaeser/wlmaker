@@ -66,6 +66,10 @@
 /** Forward declaration of the iconified. */
 typedef struct _wlmaker_iconified_t wlmaker_iconified_t;
 
+/** TODO(kaeser@gubbe.ch): Cleanup, this is prototype. */
+typedef struct _wlmaker_dockapp_iconified_t wlmaker_dockapp_iconified_t;
+
+#include "server.h"
 #include "view.h"
 
 #include <libbase/libbase.h>  // TODO: consider removing.
@@ -159,6 +163,31 @@ wlmaker_iconified_t *wlmaker_iconified_from_dlnode(
 struct wlr_scene_node *wlmaker_wlr_scene_node_from_iconified(
     wlmaker_iconified_t *iconified_ptr);
 
+/**
+ * Conversion: Gets the scene node from the scene buffer.
+ *
+ * TODO(kaeser@gubbe.ch): Remove, once the dockapp prototype is cleaned up.
+ *
+ * @param iconified_ptr
+ *
+ * @return Pointer.
+ */
+struct wlr_scene_node *wlmaker_wlr_scene_node_from_iconified_scene_buffer(
+    wlmaker_iconified_t *iconified_ptr);
+
+// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
+/** Creates the iconified dockapp. */
+wlmaker_dockapp_iconified_t *wlmaker_dockapp_iconified_create(
+    wlmaker_server_t *server_ptr);
+/** Destroys the iconified dockapp. */
+void wlmaker_dockapp_iconified_destroy(wlmaker_dockapp_iconified_t *dai_ptr);
+/** Gets the iconified from the dockapp. */
+wlmaker_iconified_t *wlmaker_iconified_from_dockapp(
+    wlmaker_dockapp_iconified_t *dai_ptr);
+/** Attaches the surface to the dockapp. */
+void wlmaker_dockapp_iconified_attach(
+    wlmaker_dockapp_iconified_t *dai_ptr,
+    struct wlr_surface *wlr_surface_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

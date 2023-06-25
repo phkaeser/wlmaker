@@ -133,6 +133,12 @@ void wlmaker_tile_container_add(
         tile_container_ptr->wlr_scene_tree_ptr);
     wlr_scene_node_set_enabled(wlr_scene_node_ptr, true);
 
+#if 1
+    // TODO(kaeser@gubbe.ch): Prototype, eliminate this.
+    wlr_scene_node_ptr = wlmaker_wlr_scene_node_from_iconified_scene_buffer(
+        iconified_ptr);
+#endif
+
     bool inserted = bs_avltree_insert(
         tile_container_ptr->view.interactive_tree_ptr,
         wlr_scene_node_ptr,
@@ -161,6 +167,12 @@ void wlmaker_tile_container_remove(
     // TODO(kaeser@gubbe.ch): Rather ugly. Maybe have a "reparent" function
     // in iconified that updates the node.data field?
     wlr_scene_node_ptr->data = NULL;
+
+#if 1
+    // TODO(kaeser@gubbe.ch): Prototype, eliminate this.
+    wlr_scene_node_ptr = wlmaker_wlr_scene_node_from_iconified_scene_buffer(
+        iconified_ptr);
+#endif
 
     bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
         tile_container_ptr->view.interactive_tree_ptr,

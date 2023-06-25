@@ -20,8 +20,11 @@
 
 #include "xdg_toplevel.h"
 
+#include "iconified.h"
 #include "util.h"
 #include "xdg_popup.h"
+
+#include <fnmatch.h>
 
 /* == Declarations ========================================================= */
 
@@ -75,6 +78,13 @@ struct _wlmaker_xdg_toplevel_t {
     struct wl_listener        toplevel_set_title_listener;
     /** Listener for the `set_app_id` signal of the `wlr_xdg_toplevel`. */
     struct wl_listener        toplevel_set_app_id_listener;
+
+    // TODO(kaeser@gubbe.ch): Remove, once DockApp prototype is no longer
+    // needed.
+    /** Tile container where the DockApp is contained. */
+    wlmaker_tile_container_t  *tile_container_ptr;
+    /** DockApp tile, camouflaged as iconified. */
+    wlmaker_dockapp_iconified_t *dai_ptr;
 };
 
 static wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_from_view(
@@ -256,6 +266,14 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_xdg_toplevel_destroy(wlmaker_xdg_toplevel_t *xdg_toplevel_ptr)
 {
+    if (NULL != xdg_toplevel_ptr->dai_ptr) {
+        wlmaker_tile_container_remove(
+            xdg_toplevel_ptr->tile_container_ptr,
+            wlmaker_iconified_from_dockapp(xdg_toplevel_ptr->dai_ptr));
+        wlmaker_dockapp_iconified_destroy(xdg_toplevel_ptr->dai_ptr);
+        xdg_toplevel_ptr->dai_ptr = NULL;
+    }
+
     wlmaker_view_fini(&xdg_toplevel_ptr->view);
 
     wlmaker_xdg_toplevel_t *tl_ptr = xdg_toplevel_ptr;  // For shorter lines.
@@ -482,6 +500,14 @@ void handle_unmap(struct wl_listener *listener_ptr,
     wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
         listener_ptr, xdg_toplevel_ptr, surface_unmap_listener);
 
+    if (NULL != xdg_toplevel_ptr->dai_ptr) {
+        wlmaker_tile_container_remove(
+            xdg_toplevel_ptr->tile_container_ptr,
+            wlmaker_iconified_from_dockapp(xdg_toplevel_ptr->dai_ptr));
+        wlmaker_dockapp_iconified_destroy(xdg_toplevel_ptr->dai_ptr);
+        xdg_toplevel_ptr->dai_ptr = NULL;
+    }
+
     wlmaker_view_unmap(&xdg_toplevel_ptr->view);
 }
 
@@ -682,6 +708,37 @@ void handle_toplevel_set_app_id(struct wl_listener *listener_ptr,
     wlmaker_view_set_app_id(
         &xdg_toplevel_ptr->view,
         xdg_toplevel_ptr->wlr_xdg_surface_ptr->toplevel->app_id);
+
+    // TODO(kaeser@gubbe.ch): Add a protocol for handling dock apps
+    // properly, rather than abusing the XDG toplevel and app id.
+    if (NULL == xdg_toplevel_ptr->view.app_id_ptr ||
+        0 != fnmatch("wlmdock.*", xdg_toplevel_ptr->view.app_id_ptr, 0)) {
+        return;
+    }
+
+    if (NULL != xdg_toplevel_ptr->dai_ptr) {
+        bs_log(BS_WARNING, "XDG toplevel %p already mapped. App ID: %s",
+               xdg_toplevel_ptr, xdg_toplevel_ptr->view.app_id_ptr);
+        return;
+    }
+
+    xdg_toplevel_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
+        xdg_toplevel_ptr->view.server_ptr);
+    BS_ASSERT(NULL != xdg_toplevel_ptr->dai_ptr);
+
+    wlmaker_dockapp_iconified_attach(
+        xdg_toplevel_ptr->dai_ptr,
+        xdg_toplevel_ptr->wlr_xdg_surface_ptr->surface);
+
+    // There is no strict guarantee that this is the workspace where the view
+    // is mapped on; but for the prototype use-case, that's a lesser concern.
+    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
+        xdg_toplevel_ptr->view.server_ptr);
+    xdg_toplevel_ptr->tile_container_ptr =
+        wlmaker_workspace_get_tile_container(workspace_ptr);
+    wlmaker_tile_container_add(
+        xdg_toplevel_ptr->tile_container_ptr,
+        wlmaker_iconified_from_dockapp(xdg_toplevel_ptr->dai_ptr));
 }
 
 /* == End of xdg_toplevel.c ================================================== */
