@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wlmaker_input_activity_unstable_v1">
+  <copyright>
+    Copyright 2023 Google LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+  </copyright>
+
+  <interface name="zwlmaker_toplevel_icon_manager_v1" version="1">
+    <description summary="Toplevel Icon Manager">
+      This interface permits clients to register an icon surface for a
+      toplevel. Compositors can use this to present the toplevel in
+      iconified state.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroy the Toplevel Icon Manager.">
+        Destroys the Toplevel Icon Manager.
+      </description>
+    </request>
+
+    <request name="get_toplevel_icon">
+      <description summary="Creates a new Toplevel icon object.">
+        Creates a new icon object associated with the given XDG toplevel.
+      </description>
+      <arg name="id" type="new_id" interface="zwlmaker_toplevel_icon_v1"/>
+      <arg name="toplevel" type="object" interface="xdg_toplevel"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+  </interface>
+
+  <interface name="zwlmaker_toplevel_icon_v1" version="1">
+    <description summary="Toplevel Icon">
+      This interface permits clients to configure a surface representing
+      the toplevel in iconified state.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroy the Toplevel Icon.">
+        Destroys the Toplevel Icon.
+      </description>
+    </request>
+
+  </interface>
+
+</protocol>
