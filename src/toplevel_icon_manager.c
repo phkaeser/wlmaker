@@ -38,8 +38,26 @@ static void bind_toplevel_icon_manager(
     void *data_ptr,
     uint32_t version,
     uint32_t id);
-static void toplevel_icon_manager_resource_destroy(
+
+static void handle_resource_destroy(
+    struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
+
+static void handle_get_toplevel_icon(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    uint32_t id,
+    struct wl_resource *wl_toplevel_resource_ptr,
+    struct wl_resource *wl_surface_resource_ptr);
+
+/* == Data ================================================================= */
+
+/** Interface of the toplevel icon manager: Pointers to methods. */
+static const struct zwlmaker_toplevel_icon_manager_v1_interface
+toplevel_icon_manager_v1_interface = {
+    .destroy = handle_resource_destroy,
+    .get_toplevel_icon = handle_get_toplevel_icon
+};
 
 /* == Exported methods ===================================================== */
 
@@ -88,9 +106,9 @@ void wlmaker_toplevel_icon_manager_destroy(
  * @param version
  * @param id
  */
-static void bind_toplevel_icon_manager(
+void bind_toplevel_icon_manager(
     struct wl_client *wl_client_ptr,
-    __UNUSED__ void *data_ptr,
+    void *data_ptr,
     uint32_t version,
     uint32_t id)
 {
@@ -98,24 +116,50 @@ static void bind_toplevel_icon_manager(
         wl_client_ptr,
         &zwlmaker_toplevel_icon_manager_v1_interface,
         version, id);
-    bs_log(BS_INFO, "Created resource %p", wl_resource_ptr);
+    if (NULL == wl_resource_ptr) {
+        wl_client_post_no_memory(wl_client_ptr);
+        return;
+    }
+   wlmaker_toplevel_icon_manager_t *toplevel_icon_manager_ptr = data_ptr;
 
     wl_resource_set_implementation(
         wl_resource_ptr,
-        NULL,  // implementation.
-        NULL,  // data
-        toplevel_icon_manager_resource_destroy);
+        &toplevel_icon_manager_v1_interface,  // implementation.
+        toplevel_icon_manager_ptr,  // data
+        NULL);  // dtor. We don't have an explicit one.
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Cleans up what's associated with the icon manager resource.
+ * Handler for the 'destroy' method: Destroys the resource.
  *
+ * @param wl_client_ptr
  * @param wl_resource_ptr
  */
-void toplevel_icon_manager_resource_destroy(
+void handle_resource_destroy(
+    __UNUSED__ struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr)
 {
-    bs_log(BS_INFO, "Destroying resource %p", wl_resource_ptr);
+    wl_resource_destroy(wl_resource_ptr);
 }
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the 'get_toplevel_icon' method.
+ *
+ * @param wl_client_ptr
+ * @param wl_resource_ptr
+ * @param id
+ * @param wl_toplevel_resource_ptr
+ * @param wl_surface_resource_ptr
+ */
+void handle_get_toplevel_icon(
+    __UNUSED__ struct wl_client *wl_client_ptr,
+    __UNUSED__ struct wl_resource *wl_resource_ptr,
+    __UNUSED__ uint32_t id,
+    __UNUSED__ struct wl_resource *wl_toplevel_resource_ptr,
+    __UNUSED__ struct wl_resource *wl_surface_resource_ptr)
+{
+}
+
 /* == End of toplevel_icon_manager.c ======================================= */
