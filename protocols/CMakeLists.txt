@@ -23,6 +23,14 @@ WaylandProtocol_ADD(
   PROTOCOL_FILE wlmaker-toplevel-icon-unstable-v1.xml
   SIDE server)
 
+PKG_GET_VARIABLE(WAYLAND_PKGDATADIR wayland-protocols pkgdatadir)
+# Needing XDG Shell, since the toplevel icon protocol refers to it.
+WaylandProtocol_ADD(
+  SOURCES
+  BASE_NAME xdg-shell
+  PROTOCOL_FILE "${WAYLAND_PKGDATADIR}/stable/xdg-shell/xdg-shell.xml"
+  SIDE server)
+
 ADD_LIBRARY(wlmaker_protocols STATIC)
 TARGET_SOURCES(
   wlmaker_protocols PRIVATE
