@@ -26,9 +26,12 @@
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward definition: Toplevel Icon Manager handle. */
+/** Forward declaration: Toplevel Icon Manager handle. */
 typedef struct _wlmaker_toplevel_icon_manager_t
 wlmaker_toplevel_icon_manager_t;
+
+/** Forward declaration: Toplevel icon handle. */
+typedef struct _wlmaker_toplevel_icon_t wlmaker_toplevel_icon_t;
 
 /**
  * Creates a toplevel icon manager.
