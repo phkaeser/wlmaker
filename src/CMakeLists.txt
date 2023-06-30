@@ -23,6 +23,7 @@ SET(SOURCES
   decorations.c
   dock_app.c
   dock.c
+  icon_manager.c
   iconified.c
   interactive.c
   keyboard.c
@@ -56,6 +57,7 @@ SET(HEADERS
   decorations.h
   dock_app.h
   dock.h
+  icon_manager.h
   iconified.h
   interactive.h
   keyboard.h
@@ -96,6 +98,7 @@ TARGET_COMPILE_OPTIONS(
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker PRIVATE
   ${PROJECT_BINARY_DIR}/third_party/protocols
+  ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
   ${LIBDRM_INCLUDE_DIRS}
   ${PIXMAN_INCLUDE_DIRS}
@@ -108,12 +111,13 @@ TARGET_LINK_LIBRARIES(
   wlmaker PRIVATE
   base
   decorations
+  wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::LIBDRM
   PkgConfig::PIXMAN
   PkgConfig::WAYLAND
-  PkgConfig::XKBCOMMON
   PkgConfig::WLROOTS
+  PkgConfig::XKBCOMMON
 )
 
 ADD_EXECUTABLE(wlmaker_test wlmaker_test.c ${SOURCES} ${HEADERS})
@@ -121,6 +125,7 @@ ADD_DEPENDENCIES(wlmaker_test protocol_headers decorations toolkit)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_test PRIVATE
   ${PROJECT_BINARY_DIR}/third_party/protocols
+  ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
   ${LIBDRM_INCLUDE_DIRS}
   ${PIXMAN_INCLUDE_DIRS}
@@ -133,12 +138,13 @@ TARGET_LINK_LIBRARIES(
   wlmaker_test PRIVATE
   base
   decorations
+  wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::LIBDRM
   PkgConfig::PIXMAN
   PkgConfig::WAYLAND
-  PkgConfig::XKBCOMMON
   PkgConfig::WLROOTS
+  PkgConfig::XKBCOMMON
 )
 TARGET_COMPILE_DEFINITIONS(
   wlmaker_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/testdata")

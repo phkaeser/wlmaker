@@ -632,6 +632,13 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
     return &workspace_ptr->dlnode;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
+    wlmaker_workspace_t *workspace_ptr)
+{
+    return workspace_ptr->tile_container_ptr;
+}
+
 /* == Static (local) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

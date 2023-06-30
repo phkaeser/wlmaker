@@ -143,6 +143,11 @@ void wlmaker_view_fini(wlmaker_view_t *view_ptr)
         view_ptr->title_ptr = NULL;
     }
 
+    if (NULL != view_ptr->app_id_ptr) {
+        free(view_ptr->app_id_ptr);
+        view_ptr->app_id_ptr = NULL;
+    }
+
     if (NULL != view_ptr->interactive_tree_ptr) {
         // Will also destroy all interactives in the three.
         bs_avltree_destroy(view_ptr->interactive_tree_ptr);

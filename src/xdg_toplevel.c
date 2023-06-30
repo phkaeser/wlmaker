@@ -20,6 +20,7 @@
 
 #include "xdg_toplevel.h"
 
+#include "iconified.h"
 #include "util.h"
 #include "xdg_popup.h"
 
@@ -684,4 +685,4 @@ void handle_toplevel_set_app_id(struct wl_listener *listener_ptr,
         xdg_toplevel_ptr->wlr_xdg_surface_ptr->toplevel->app_id);
 }
 
-/* == End of xdg_toplevel.c ================================================== */
+/* == End of xdg_toplevel.c ================================================ */

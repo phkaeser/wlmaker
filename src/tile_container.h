@@ -22,15 +22,15 @@
 #ifndef __TILE_CONTAINER_H__
 #define __TILE_CONTAINER_H__
 
+/** Forward declaration of the tile container state. */
+typedef struct _wlmaker_tile_container_t wlmaker_tile_container_t;
+
 #include "iconified.h"
 #include "server.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration of the tile container state. */
-typedef struct _wlmaker_tile_container_t wlmaker_tile_container_t;
 
 /**
  * Creates a tile container.

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wlmaker_icon_unstable_v1">
+  <copyright>
+    Copyright 2023 Google LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+  </copyright>
+
+  <interface name="zwlmaker_icon_manager_v1" version="1">
+    <description summary="Icon Manager">
+      This interface permits clients to register an icon surface for a
+      toplevel. Compositors can use this to present the toplevel in
+      iconified state.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroy the Toplevel Icon Manager.">
+        Destroys the Toplevel Icon Manager.
+      </description>
+    </request>
+
+    <request name="get_toplevel_icon">
+      <description summary="Creates a new Toplevel Icon object.">
+        Creates a new icon object associated with the given XDG toplevel.
+      </description>
+      <arg name="id" type="new_id" interface="zwlmaker_toplevel_icon_v1"/>
+      <arg name="toplevel" type="object" interface="xdg_toplevel"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+  </interface>
+
+  <interface name="zwlmaker_toplevel_icon_v1" version="1">
+    <description summary="Toplevel Icon">
+      This interface permits clients to configure a surface representing
+      the toplevel in iconified state.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroys the Toplevel Icon.">
+        Destroys the Toplevel Icon.
+      </description>
+    </request>
+
+    <request name="ack_configure">
+      <description summary="Acknowledges configuration sequence.">
+        Acknowledges configuration sequence.
+      </description>
+      <arg name="serial" type="uint" summary="the serial of the user event"/>
+    </request>
+
+    <event name="configure">
+      <description summary="Sets the icon surface size.">
+        Suggests size for the icon surface.
+
+        After creating the toplevel icon, the client is required to commit a
+        surface with a NULL buffer. This will trigger the `configure` event,
+        informing the client of the recommended icon size.
+
+        The client may chose a different icon size. The compositor may chose
+        to scale icons of non-recommended size as desired.
+
+        Once received, the client must send an `ack_configure` with the serial.
+
+        Once done, the client may proceed committring surfaces with attached
+        buffers.
+      </description>
+      <arg name="width" type="int" summary="New width of the surface"/>
+      <arg name="height" type="int" summary="New height of the surface"/>
+      <arg name="serial" type="uint" summary="the serial of the user event"/>
+    </event>
+
+    <!-- TODO(kaeser@gubbe.ch): Define error codes and handling -->
+
+  </interface>
+
+</protocol>
