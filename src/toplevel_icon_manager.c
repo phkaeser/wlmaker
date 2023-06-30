@@ -32,6 +32,9 @@
 
 /** State of the toplevel icon manager. */
 struct _wlmaker_toplevel_icon_manager_t {
+    /** Back-link to the server. */
+    wlmaker_server_t          *server_ptr;
+
     /** The global holding the icon manager's interface. */
     struct wl_global          *wl_global_ptr;
 };
@@ -51,6 +54,12 @@ struct _wlmaker_toplevel_icon_t {
 
     /** The resource associated with this icon. */
     struct wl_resource        *wl_resource_ptr;
+
+
+    /** Tile container where the DockApp is contained. */
+    wlmaker_tile_container_t  *tile_container_ptr;
+    /** DockApp tile, camouflaged as iconified. */
+    wlmaker_dockapp_iconified_t *dai_ptr;
 };
 
 static wlmaker_toplevel_icon_manager_t *toplevel_icon_manager_from_resource(
@@ -106,11 +115,13 @@ toplevel_icon_v1_implementation = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_toplevel_icon_manager_t *wlmaker_toplevel_icon_manager_create(
-    struct wl_display *wl_display_ptr)
+    struct wl_display *wl_display_ptr,
+    wlmaker_server_t *server_ptr)
 {
     wlmaker_toplevel_icon_manager_t *toplevel_icon_manager_ptr =
         logged_calloc(1, sizeof(wlmaker_toplevel_icon_manager_t));
     if (NULL == toplevel_icon_manager_ptr) return NULL;
+    toplevel_icon_manager_ptr->server_ptr = server_ptr;
 
     toplevel_icon_manager_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
@@ -310,8 +321,31 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
-    bs_log(BS_INFO, "created toplevel icon %p for toplevel %p, surface %p",
+    toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
+        toplevel_icon_manager_ptr->server_ptr);
+    if (NULL == toplevel_icon_ptr->dai_ptr) {
+        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+        return NULL;
+    }
+    wlmaker_dockapp_iconified_attach(
+        toplevel_icon_ptr->dai_ptr,
+        wlr_surface_ptr);
+
+    // TODO(kaeser@gubbe.ch): If the toplevel is already mapped, we may want
+    // to pick the same workspace for showing the icon. Similar, the icon
+    // may need to move along as the toplevel switches workspaces.
+    // This needs an update, once the interfaces get more stable.
+    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
+        toplevel_icon_manager_ptr->server_ptr);
+    toplevel_icon_ptr->tile_container_ptr =
+        wlmaker_workspace_get_tile_container(workspace_ptr);
+    wlmaker_tile_container_add(
+        toplevel_icon_ptr->tile_container_ptr,
+        wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
+
+    bs_log(BS_DEBUG, "created toplevel icon %p for toplevel %p, surface %p",
            toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr);
+
     return toplevel_icon_ptr;
 }
 
@@ -324,10 +358,19 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr)
 {
+    bs_log(BS_DEBUG, "Destroying toplevel icon %p", toplevel_icon_ptr);
+
     // Note: Not destroying toplevel_icon_ptr->resource, since that causes
     // cycles...
 
-    bs_log(BS_INFO, "Destroying toplevel icon %p", toplevel_icon_ptr);
+    if (NULL != toplevel_icon_ptr->dai_ptr) {
+        wlmaker_tile_container_remove(
+            toplevel_icon_ptr->tile_container_ptr,
+            wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
+        wlmaker_dockapp_iconified_destroy(toplevel_icon_ptr->dai_ptr);
+        toplevel_icon_ptr->dai_ptr = NULL;
+    }
+
     free(toplevel_icon_ptr);
 }
 

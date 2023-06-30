@@ -296,7 +296,8 @@ wlmaker_server_t *wlmaker_server_create(void)
     }
 
     server_ptr->toplevel_icon_manager_ptr =
-        wlmaker_toplevel_icon_manager_create(server_ptr->wl_display_ptr);
+        wlmaker_toplevel_icon_manager_create(
+            server_ptr->wl_display_ptr, server_ptr);
     if (NULL == server_ptr->toplevel_icon_manager_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;

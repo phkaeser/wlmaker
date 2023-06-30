@@ -22,10 +22,6 @@
 
 #include <wayland-server.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
 /** Forward declaration: Toplevel Icon Manager handle. */
 typedef struct _wlmaker_toplevel_icon_manager_t
 wlmaker_toplevel_icon_manager_t;
@@ -33,16 +29,24 @@ wlmaker_toplevel_icon_manager_t;
 /** Forward declaration: Toplevel icon handle. */
 typedef struct _wlmaker_toplevel_icon_t wlmaker_toplevel_icon_t;
 
+#include "server.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
+
 /**
  * Creates a toplevel icon manager.
  *
  * @param wl_display_ptr
+ * @param server_ptr
  *
  * @return The handle of the toplevel icon manager or NULL on error. Must be
  *     destroyed by calling @ref wlmaker_toplevel_icon_manager_destroy.
  */
 wlmaker_toplevel_icon_manager_t *wlmaker_toplevel_icon_manager_create(
-    struct wl_display *wl_display_ptr);
+    struct wl_display *wl_display_ptr,
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the Toplevel Icon Manager.
