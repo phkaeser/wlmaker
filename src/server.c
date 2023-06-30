@@ -295,10 +295,9 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
-    server_ptr->toplevel_icon_manager_ptr =
-        wlmaker_toplevel_icon_manager_create(
-            server_ptr->wl_display_ptr, server_ptr);
-    if (NULL == server_ptr->toplevel_icon_manager_ptr) {
+    server_ptr->icon_manager_ptr = wlmaker_icon_manager_create(
+        server_ptr->wl_display_ptr, server_ptr);
+    if (NULL == server_ptr->icon_manager_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -329,10 +328,9 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->monitor_ptr =NULL;
     }
 
-    if (NULL != server_ptr->toplevel_icon_manager_ptr) {
-        wlmaker_toplevel_icon_manager_destroy(
-            server_ptr->toplevel_icon_manager_ptr);
-        server_ptr->toplevel_icon_manager_ptr = NULL;
+    if (NULL != server_ptr->icon_manager_ptr) {
+        wlmaker_icon_manager_destroy(server_ptr->icon_manager_ptr);
+        server_ptr->icon_manager_ptr = NULL;
     }
 
     if (NULL != server_ptr->layer_shell_ptr) {

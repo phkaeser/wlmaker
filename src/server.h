@@ -44,7 +44,7 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "layer_shell.h"
 #include "view.h"
 #include "subprocess_monitor.h"
-#include "toplevel_icon_manager.h"
+#include "icon_manager.h"
 #include "xdg_decoration.h"
 #include "xdg_shell.h"
 #include "workspace.h"
@@ -109,8 +109,8 @@ struct _wlmaker_server_t {
     wlmaker_xdg_decoration_manager_t *xdg_decoration_manager_ptr;
     /** Layer shell handler. */
     wlmaker_layer_shell_t     *layer_shell_ptr;
-    /** Toplevel icon manager. */
-    wlmaker_toplevel_icon_manager_t *toplevel_icon_manager_ptr;
+    /** Icon manager. */
+    wlmaker_icon_manager_t    *icon_manager_ptr;
 
     /** The list of outputs. */
     bs_dllist_t               outputs;

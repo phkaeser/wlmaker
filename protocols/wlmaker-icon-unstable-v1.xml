@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="wlmaker_input_activity_unstable_v1">
+<protocol name="wlmaker_icon_unstable_v1">
   <copyright>
     Copyright 2023 Google LLC
 
@@ -16,8 +16,8 @@
     limitations under the License.
   </copyright>
 
-  <interface name="zwlmaker_toplevel_icon_manager_v1" version="1">
-    <description summary="Toplevel Icon Manager">
+  <interface name="zwlmaker_icon_manager_v1" version="1">
+    <description summary="Icon Manager">
       This interface permits clients to register an icon surface for a
       toplevel. Compositors can use this to present the toplevel in
       iconified state.
@@ -30,7 +30,7 @@
     </request>
 
     <request name="get_toplevel_icon">
-      <description summary="Creates a new Toplevel icon object.">
+      <description summary="Creates a new Toplevel Icon object.">
         Creates a new icon object associated with the given XDG toplevel.
       </description>
       <arg name="id" type="new_id" interface="zwlmaker_toplevel_icon_v1"/>
@@ -47,7 +47,7 @@
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroy the Toplevel Icon.">
+      <description summary="Destroys the Toplevel Icon.">
         Destroys the Toplevel Icon.
       </description>
     </request>

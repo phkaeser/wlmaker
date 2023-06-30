@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file toplevel_icon_manager.h
+ * @file icon_manager.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -17,14 +17,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOPLEVEL_ICON_MANAGER_H__
-#define __TOPLEVEL_ICON_MANAGER_H__
+#ifndef __ICON_MANAGER_H__
+#define __ICON_MANAGER_H__
 
 #include <wayland-server.h>
 
-/** Forward declaration: Toplevel Icon Manager handle. */
-typedef struct _wlmaker_toplevel_icon_manager_t
-wlmaker_toplevel_icon_manager_t;
+/** Forward declaration: Icon Manager handle. */
+typedef struct _wlmaker_icon_manager_t wlmaker_icon_manager_t;
 
 /** Forward declaration: Toplevel icon handle. */
 typedef struct _wlmaker_toplevel_icon_t wlmaker_toplevel_icon_t;
@@ -36,30 +35,29 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a toplevel icon manager.
+ * Creates an icon manager.
  *
  * @param wl_display_ptr
  * @param server_ptr
  *
- * @return The handle of the toplevel icon manager or NULL on error. Must be
- *     destroyed by calling @ref wlmaker_toplevel_icon_manager_destroy.
+ * @return The handle of the icon manager or NULL on error. Must be destroyed
+ *     by calling @ref wlmaker_icon_manager_destroy.
  */
-wlmaker_toplevel_icon_manager_t *wlmaker_toplevel_icon_manager_create(
+wlmaker_icon_manager_t *wlmaker_icon_manager_create(
     struct wl_display *wl_display_ptr,
     wlmaker_server_t *server_ptr);
 
 /**
- * Destroys the Toplevel Icon Manager.
+ * Destroys the Icon Manager.
  *
- * @param toplevel_icon_manager_ptr
+ * @param icon_manager_ptr
  */
-void wlmaker_toplevel_icon_manager_destroy(
-    wlmaker_toplevel_icon_manager_t *toplevel_icon_manager_ptr);
-
+void wlmaker_icon_manager_destroy(
+    wlmaker_icon_manager_t *icon_manager_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __TOPLEVEL_ICON_MANAGER_H__ */
-/* == End of toplevel_icon_manager.h ======================================= */
+#endif /* __ICON_MANAGER_H__ */
+/* == End of icon_manager.h ================================================ */

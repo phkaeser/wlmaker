@@ -23,6 +23,7 @@ SET(SOURCES
   decorations.c
   dock_app.c
   dock.c
+  icon_manager.c
   iconified.c
   interactive.c
   keyboard.c
@@ -38,7 +39,6 @@ SET(SOURCES
   tile.c
   tile_container.c
   titlebar.c
-  toplevel_icon_manager.c
   util.c
   view.c
   workspace.c
@@ -57,6 +57,7 @@ SET(HEADERS
   decorations.h
   dock_app.h
   dock.h
+  icon_manager.h
   iconified.h
   interactive.h
   keyboard.h
@@ -72,7 +73,6 @@ SET(HEADERS
   tile_container.h
   tile.h
   titlebar.h
-  toplevel_icon_manager.h
   util.h
   view.h
   workspace.h
