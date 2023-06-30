@@ -295,6 +295,13 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
+    server_ptr->toplevel_icon_manager_ptr =
+        wlmaker_toplevel_icon_manager_create(server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->toplevel_icon_manager_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     server_ptr->monitor_ptr = wlmaker_subprocess_monitor_create(server_ptr);
     if (NULL == server_ptr->monitor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_subprocess_monitor_create()");
@@ -319,6 +326,12 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->monitor_ptr) {
         wlmaker_subprocess_monitor_destroy(server_ptr->monitor_ptr);
         server_ptr->monitor_ptr =NULL;
+    }
+
+    if (NULL != server_ptr->toplevel_icon_manager_ptr) {
+        wlmaker_toplevel_icon_manager_destroy(
+            server_ptr->toplevel_icon_manager_ptr);
+        server_ptr->toplevel_icon_manager_ptr = NULL;
     }
 
     if (NULL != server_ptr->layer_shell_ptr) {
