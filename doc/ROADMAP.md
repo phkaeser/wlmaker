@@ -66,7 +66,7 @@ Support for visual effects to improve usability, but not for pure show.
 ## Plan for 0.2
 
 * Experimental support for Dock Apps
-  * Experimental wayland protocol for Apps to declare iconified surfaces
+  * [done] Experimental wayland protocol for Apps to declare icon surfaces.
   * Surfaces will be shown in either tile container, clip or dock area,
     depending from where the app was started.
   * Two demo DockApps included (digital clock; julia set).
