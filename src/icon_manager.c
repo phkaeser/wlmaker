@@ -26,6 +26,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
+#include "util.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
 
 /* == Declarations ========================================================= */
@@ -34,6 +35,8 @@
 struct _wlmaker_icon_manager_t {
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
+    /** Back-link to the wayland Display. */
+    struct wl_display         *wl_display_ptr;
 
     /** The global holding the icon manager's interface. */
     struct wl_global          *wl_global_ptr;
@@ -55,11 +58,18 @@ struct _wlmaker_toplevel_icon_t {
     /** The resource associated with this icon. */
     struct wl_resource        *wl_resource_ptr;
 
+    /** Whether the configuration sequence was acknowledged. */
+    bool                      acknowledged;
+    /** Serial that needs to be acknowledged. */
+    uint32_t                  pending_serial;
 
     /** Tile container where the DockApp is contained. */
     wlmaker_tile_container_t  *tile_container_ptr;
     /** DockApp tile, camouflaged as iconified. */
     wlmaker_dockapp_iconified_t *dai_ptr;
+
+    /** Listener for the `commit` event of `wlr_surface_ptr`. */
+    struct wl_listener        surface_commit_listener;
 };
 
 static wlmaker_icon_manager_t *icon_manager_from_resource(
@@ -91,10 +101,19 @@ static wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     int version,
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     struct wlr_surface *wlr_surface_ptr);
+
 static void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr);
 static void toplevel_icon_resource_destroy(
     struct wl_resource *wl_resource_ptr);
+
+static void handle_icon_ack_configure(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    uint32_t serial);
+static void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
@@ -109,6 +128,7 @@ icon_manager_v1_implementation = {
 static const struct zwlmaker_toplevel_icon_v1_interface
 toplevel_icon_v1_implementation = {
     .destroy = handle_resource_destroy,
+    .ack_configure = handle_icon_ack_configure,
 };
 
 /* == Exported methods ===================================================== */
@@ -122,6 +142,7 @@ wlmaker_icon_manager_t *wlmaker_icon_manager_create(
         logged_calloc(1, sizeof(wlmaker_icon_manager_t));
     if (NULL == icon_manager_ptr) return NULL;
     icon_manager_ptr->server_ptr = server_ptr;
+    icon_manager_ptr->wl_display_ptr = wl_display_ptr;
 
     icon_manager_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
@@ -321,6 +342,13 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
+    wlm_util_connect_listener_signal(
+        &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
+        &toplevel_icon_ptr->surface_commit_listener,
+        handle_surface_commit);
+
+    // TODO(kaeser@gubbe.ch): Should catch 'map' and 'unmap', and create or
+    // destroy the icon accordingly.
     toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
         icon_manager_ptr->server_ptr);
     if (NULL == toplevel_icon_ptr->dai_ptr) {
@@ -385,6 +413,73 @@ void toplevel_icon_resource_destroy(struct wl_resource *wl_resource_ptr)
     wlmaker_toplevel_icon_t *toplevel_icon_ptr =
         wlmaker_toplevel_icon_from_resource(wl_resource_ptr);
     wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the `ack_configure` request by the icon.
+ *
+ * @param wl_client_ptr
+ * @param wl_resource_ptr
+ * @param serial
+ */
+void handle_icon_ack_configure(
+    __UNUSED__ struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    uint32_t serial)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr =
+        wlmaker_toplevel_icon_from_resource(wl_resource_ptr);
+
+    if (serial == toplevel_icon_ptr->pending_serial) {
+        toplevel_icon_ptr->acknowledged = true;
+        toplevel_icon_ptr->pending_serial = 0;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `commit` signal of the icon's surface.
+ *
+ * The protocol expects a first `commit` with a NULL-buffer attached to the
+ * surface. This will trigger a `configure` event, informing the client of the
+ * suggested icon size.
+ *
+ * Only when the configuration was suggested and acknowledged a first time,
+ * will we accept `commit` with attached buffers.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to the `struct wlr_surface` of the icon.
+ */
+void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_toplevel_icon_t, surface_commit_listener);
+    struct wlr_surface *wlr_surface_ptr = data_ptr;
+    BS_ASSERT(toplevel_icon_ptr->wlr_surface_ptr == wlr_surface_ptr);
+
+    if (NULL == wlr_surface_ptr->buffer) {
+        // An initial commit is expected with a NULL buffer, so we can
+        // respond with a `configure` event.
+        toplevel_icon_ptr->pending_serial = wl_display_next_serial(
+            toplevel_icon_ptr->icon_manager_ptr->wl_display_ptr);
+        zwlmaker_toplevel_icon_v1_send_configure(
+            toplevel_icon_ptr->wl_resource_ptr,
+            64, 64,
+            toplevel_icon_ptr->pending_serial);
+        return;
+    }
+    BS_ASSERT(NULL != wlr_surface_ptr->buffer);
+
+    if (!toplevel_icon_ptr->acknowledged) {
+        wl_resource_post_error(
+            toplevel_icon_ptr->wl_resource_ptr,
+            1,
+            "Commit non-NULL buffer without configure sequence.");
+        return;
+    }
 }
 
 /* == End of icon_manager.c ================================================ */

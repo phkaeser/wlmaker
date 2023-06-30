@@ -52,6 +52,36 @@
       </description>
     </request>
 
+    <request name="ack_configure">
+      <description summary="Acknowledges configuration sequence.">
+        Acknowledges configuration sequence.
+      </description>
+      <arg name="serial" type="uint" summary="the serial of the user event"/>
+    </request>
+
+    <event name="configure">
+      <description summary="Sets the icon surface size.">
+        Suggests size for the icon surface.
+
+        After creating the toplevel icon, the client is required to commit a
+        surface with a NULL buffer. This will trigger the `configure` event,
+        informing the client of the recommended icon size.
+
+        The client may chose a different icon size. The compositor may chose
+        to scale icons of non-recommended size as desired.
+
+        Once received, the client must send an `ack_configure` with the serial.
+
+        Once done, the client may proceed committring surfaces with attached
+        buffers.
+      </description>
+      <arg name="width" type="int" summary="New width of the surface"/>
+      <arg name="height" type="int" summary="New height of the surface"/>
+      <arg name="serial" type="uint" summary="the serial of the user event"/>
+    </event>
+
+    <!-- TODO(kaeser@gubbe.ch): Define error codes and handling -->
+
   </interface>
 
 </protocol>
