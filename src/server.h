@@ -25,6 +25,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
+#include <wlr/xwayland.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
@@ -111,6 +112,9 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
+
+    /** XWayland server and XWM. */
+    struct wlr_xwayland       *wlr_xwayland_ptr;
 
     /** The list of outputs. */
     bs_dllist_t               outputs;
