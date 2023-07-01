@@ -42,6 +42,7 @@ PKG_CHECK_MODULES(
   wayland-client>=1.22.90
   wayland-protocols>=1.31
   wayland-server>=1.22.90)
+PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
 PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 

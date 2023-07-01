@@ -28,18 +28,35 @@
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: Client state. */
 typedef struct _wlclient_t wlclient_t;
 
+/**
+ * Creates a wayland client for simple buffer interactions.
+ *
+ * @return The client state, or NULL on error. The state needs to be free'd
+ *     via @ref wlclient_destroy.
+ */
 wlclient_t *wlclient_create(void);
+
+/**
+ * Destroys the wayland client, as created by @ref wlclient_create.
+ *
+ * @param wlclient_ptr
+ */
 void wlclient_destroy(wlclient_t *wlclient_ptr);
 
+/** TODO: Add timer. */
 void wlclient_add_timer(
     wlclient_t *wlclient_ptr,
     uint64_t msec,
     void (*callback)(wlclient_t *wlclient_ptr, void *ud_ptr),
     void *ud_ptr);
 
+/** Returns whether the icon protocol is supported on the client. */
 bool wlclient_icon_supported(wlclient_t *wlclient_ptr);
+
+/** Returns a `bs_gfxbuf_t` for the icon. */
 bs_gfxbuf_t *wlclient_icon_gfxbuf(wlclient_t *wlclient_ptr);
 
 #ifdef __cplusplus
@@ -47,4 +64,4 @@ bs_gfxbuf_t *wlclient_icon_gfxbuf(wlclient_t *wlclient_ptr);
 #endif  // __cplusplus
 
 #endif /* __WLCLIENT_H__ */
-/* == End of wlclient.h ================================================== */
+/* == End of wlclient.h ==================================================== */
