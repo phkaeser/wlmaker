@@ -274,8 +274,11 @@ void handle_get_toplevel_icon(
     wlmaker_icon_manager_t *icon_manager_ptr =
         icon_manager_from_resource(
             wl_icon_manager_resource_ptr);
-    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
-        wlr_xdg_toplevel_from_resource(wl_toplevel_resource_ptr);
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = NULL;
+    if (NULL != wl_toplevel_resource_ptr) {
+        wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_from_resource(
+            wl_toplevel_resource_ptr);
+    }
     struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(wl_surface_resource_ptr);
 
