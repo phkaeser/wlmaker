@@ -46,6 +46,13 @@ wlclient_t *wlclient_create(void);
  */
 void wlclient_destroy(wlclient_t *wlclient_ptr);
 
+/**
+ * Runs the client's mainloop.
+ *
+ * @param wlclient_ptr
+ */
+void wlclient_run(wlclient_t *wlclient_ptr);
+
 /** TODO: Add timer. */
 void wlclient_add_timer(
     wlclient_t *wlclient_ptr,

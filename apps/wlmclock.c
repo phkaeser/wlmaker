@@ -31,6 +31,8 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_t *wlclient_ptr = wlclient_create();
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
+    wlclient_run(wlclient_ptr);
+
     wlclient_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
