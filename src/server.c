@@ -302,13 +302,8 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
-    server_ptr->wlr_xwayland_ptr = wlr_xwayland_create(
-        server_ptr->wl_display_ptr,
-        server_ptr->wlr_compositor_ptr, false);
-    if (NULL == server_ptr->wlr_xwayland_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_xwayland_create(%p, %p, false).",
-               server_ptr->wl_display_ptr,
-               server_ptr->wlr_compositor_ptr);
+    server_ptr->xwl_ptr = wlmaker_xwl_create(server_ptr);
+    if (NULL == server_ptr->xwl_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -339,9 +334,9 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->monitor_ptr =NULL;
     }
 
-    if (NULL != server_ptr->wlr_xwayland_ptr) {
-        wlr_xwayland_destroy(server_ptr->wlr_xwayland_ptr);
-        server_ptr->wlr_xwayland_ptr = NULL;
+    if (NULL != server_ptr->xwl_ptr) {
+        wlmaker_xwl_destroy(server_ptr->xwl_ptr);
+        server_ptr->xwl_ptr = NULL;
     }
 
     if (NULL != server_ptr->icon_manager_ptr) {
