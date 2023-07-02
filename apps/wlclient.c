@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <fcntl.h>           /* For O_* constants */
 #include <poll.h>
+#include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>        /* For mode constants */
 
@@ -87,6 +88,10 @@ typedef struct {
     /** Offset of the bound interface, relative to `wlclient_t`. */
     size_t                    bound_ptr_offset;
 } object_t;
+
+static void wl_to_bs_log(
+    const char *fmt,
+    va_list args);
 
 static void handle_global_announce(
     void *data_ptr,
@@ -158,12 +163,16 @@ wlclient_t *wlclient_create(void)
     wlclient_t *wlclient_ptr = logged_calloc(1, sizeof(wlclient_t));
     if (NULL == wlclient_ptr) return NULL;
 
+    wl_log_set_handler_client(wl_to_bs_log);
+
     wlclient_ptr->wl_display_ptr = wl_display_connect(NULL);
     if (NULL == wlclient_ptr->wl_display_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_connect(NULL).");
         wlclient_destroy(wlclient_ptr);
         return NULL;
     }
+
+    // FIXME: set a wl_log_func_t.
 
     wlclient_ptr->wl_registry_ptr = wl_display_get_registry(
         wlclient_ptr->wl_display_ptr);
@@ -347,6 +356,20 @@ bs_gfxbuf_t *wlclient_icon_gfxbuf(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Redirects a wayland log call into s_log.
+ *
+ * @param fmt_ptr
+ * @param args
+ */
+void wl_to_bs_log(
+    const char *fmt_ptr,
+    va_list args)
+{
+    bs_log_vwrite(BS_ERROR, __FILE__, __LINE__, fmt_ptr, args);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
