@@ -13,29 +13,8 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-INCLUDE(WaylandProtocol)
 
-ADD_LIBRARY(wlclient STATIC)
-SET(SOURCES wlclient.c wlclient.h)
-WaylandProtocol_ADD(
-  SOURCES
-  BASE_NAME xdg-shell
-  PROTOCOL_FILE "${WAYLAND_PROTOCOL_DIR}/stable/xdg-shell/xdg-shell.xml"
-  SIDE client)
-WaylandProtocol_ADD(
-  SOURCES
-  BASE_NAME wlmaker-icon-unstable-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
-  SIDE client)
-TARGET_SOURCES(wlclient PRIVATE ${SOURCES})
-TARGET_INCLUDE_DIRECTORIES(
-  wlclient PRIVATE
-  ${WAYLAND_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR})
-TARGET_LINK_LIBRARIES(
-  wlclient
-  base
-  PkgConfig::WAYLAND)
-
+ADD_SUBDIRECTORY(libwlclient)
 ADD_EXECUTABLE(wlmclock wlmclock.c)
-TARGET_LINK_LIBRARIES(wlmclock wlclient)
+TARGET_INCLUDE_DIRECTORIES(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+TARGET_LINK_LIBRARIES(wlmclock libwlclient)
