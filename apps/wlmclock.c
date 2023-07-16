@@ -28,16 +28,19 @@
 /**
  * Draws contents into the icon buffer.
  *
- * @param wlclient_ptr
+ * @param icon_ptr
  * @param gfxbuf_ptr
  * @param ud_ptr
  */
 bool icon_callback(
-    __UNUSED__ wlclient_t *wlclient_ptr,
+    wlclient_icon_t *icon_ptr,
     bs_gfxbuf_t *gfxbuf_ptr,
     __UNUSED__ void *ud_ptr)
 {
     static uint32_t pos = 0;
+
+    // Re-register the callback.
+    wlclient_icon_callback_when_ready(icon_ptr, icon_callback, ud_ptr);
 
     bs_log(BS_INFO, "Icon callback.");
 

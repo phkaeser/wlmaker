@@ -32,12 +32,12 @@ typedef struct _wlclient_icon_t wlclient_icon_t;
 /**
  * Type of the callback for @ref wlclient_icon_callback_when_ready.
  *
- * @param wlclient_ptr
+ * @param icon_ptr
  * @param gfxbuf_ptr
  * @param ud_ptr
  */
 typedef bool (*wlclient_icon_gfxbuf_callback_t)(
-    wlclient_t *wlclient_ptr,
+    wlclient_icon_t *icon_ptr,
     bs_gfxbuf_t *gfxbuf_ptr,
     void *ud_ptr);
 
@@ -73,6 +73,10 @@ bool wlclient_icon_supported(wlclient_t *wlclient_ptr);
  * If the background buffer is already ready, the callback will get executed
  * right away. Otherwise, the callback will be registered for the icon, and
  * executed as the background buffer becomes available.
+ *
+ * The callback will be invoked once only. If repeated calls are desired,
+ * the callee should call @ref wlclient_icon_callback_when_ready again from
+ * within the `callback` method.
  *
  * Only one callback may be active at any time. Any further invocation will
  * replace the already-registered callback. To unregister a callback, call

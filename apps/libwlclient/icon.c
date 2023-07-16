@@ -54,6 +54,8 @@ typedef struct _wlclient_icon_t {
     int                       pending_frames;
     /** Whether the buffer was reported as ready. */
     bool                      buffer_ready;
+    /** Whether there is currently a callback in progress. */
+    bool                      callback_in_progress;
 } wlclient_icon_t;
 
 static void handle_toplevel_icon_configure(
@@ -249,16 +251,22 @@ void state(wlclient_icon_t *icon_ptr)
     if (NULL == icon_ptr->buffer_ready_callback) return;
     // ... or, actually not ready.
     if (0 < icon_ptr->pending_frames || !icon_ptr->buffer_ready) return;
+    // ... or, a callback is currently in progress.
+    if (icon_ptr->callback_in_progress) return;
 
-    bool rv = icon_ptr->buffer_ready_callback(
-        icon_ptr->wlclient_ptr,
-        bs_gfxbuf_from_wlclient_buffer(icon_ptr->buffer_ptr),
-        icon_ptr->buffer_ready_callback_ud_ptr);
+    wlclient_icon_gfxbuf_callback_t callback = icon_ptr->buffer_ready_callback;
+    void *ud_ptr = icon_ptr->buffer_ready_callback_ud_ptr;
+    icon_ptr->buffer_ready_callback = NULL;
+    icon_ptr->buffer_ready_callback_ud_ptr = NULL;
+    icon_ptr->callback_in_progress = true;
+    bool rv = callback(
+        icon_ptr, bs_gfxbuf_from_wlclient_buffer(icon_ptr->buffer_ptr), ud_ptr);
+    icon_ptr->callback_in_progress = false;
     if (!rv) return;
 
-    struct wl_callback *callback = wl_surface_frame(
+    struct wl_callback *wl_callback = wl_surface_frame(
         icon_ptr->wl_surface_ptr);
-    wl_callback_add_listener(callback, &frame_listener, icon_ptr);
+    wl_callback_add_listener(wl_callback, &frame_listener, icon_ptr);
 
     wl_surface_damage_buffer(
         icon_ptr->wl_surface_ptr,
