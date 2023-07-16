@@ -25,6 +25,13 @@
 #include <libwlclient/libwlclient.h>
 
 /* ------------------------------------------------------------------------- */
+/** Returns the next full second for when to draw the clock. */
+uint64_t next_draw_time(void)
+{
+    return (bs_usec() / 1000000 + 1) * 1000000;
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Draws contents into the icon buffer.
  *
@@ -33,14 +40,11 @@
  * @param ud_ptr
  */
 bool icon_callback(
-    wlclient_icon_t *icon_ptr,
+    __UNUSED__ wlclient_icon_t *icon_ptr,
     bs_gfxbuf_t *gfxbuf_ptr,
     __UNUSED__ void *ud_ptr)
 {
     static uint32_t pos = 0;
-
-    // Re-register the callback.
-    wlclient_icon_callback_when_ready(icon_ptr, icon_callback, ud_ptr);
 
     bs_log(BS_INFO, "Icon callback.");
 
@@ -55,6 +59,17 @@ bool icon_callback(
     }
     pos++;
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called once per second. */
+void timer_callback(wlclient_t *client_ptr, void *ud_ptr)
+{
+    wlclient_icon_t *icon_ptr = ud_ptr;
+
+    wlclient_icon_callback_when_ready(icon_ptr, icon_callback, NULL);
+    wlclient_register_timer(
+        client_ptr, next_draw_time(), timer_callback, icon_ptr);
 }
 
 /* == Main program ========================================================= */
@@ -73,7 +88,8 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         } else {
             wlclient_icon_callback_when_ready(icon_ptr, icon_callback, NULL);
 
-            // Alternative: timer, on the client itself.
+            wlclient_register_timer(
+                wlclient_ptr, next_draw_time(), timer_callback, icon_ptr);
 
             wlclient_run(wlclient_ptr);
             wlclient_icon_destroy(icon_ptr);

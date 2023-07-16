@@ -33,6 +33,16 @@ typedef struct _wlclient_t wlclient_t;
 extern "C" {
 #endif  // __cplusplus
 
+/**
+ * A client's callback, as used in @ref wlclient_register_timer.
+ *
+ * @param wlclient_ptr
+ * @param ud_ptr
+ */
+typedef void (*wlclient_callback_t)(
+    wlclient_t *wlclient_ptr,
+    void *ud_ptr);
+
 /** Accessor to 'public' client attributes. */
 typedef struct {
     /** Wayland display connection. */
@@ -83,6 +93,26 @@ const wlclient_attributes_t *wlclient_attributes(
  * @param wlclient_ptr
  */
 void wlclient_run(wlclient_t *wlclient_ptr);
+
+/**
+ * Registers a timer with the client.
+ *
+ * Once the system clock reaches (or has passed) `target_usec`, `callback` will
+ * be called with the provided arguments. This is a one-time registration. For
+ * repeated calls, clients need to re-register.
+ *
+ * @param wlclient_ptr
+ * @param target_usec
+ * @param callback
+ * @param callback_ud_ptr
+ *
+ * @return true on success.
+ */
+bool wlclient_register_timer(
+    wlclient_t *wlclient_ptr,
+    uint64_t target_usec,
+    wlclient_callback_t callback,
+    void *callback_ud_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

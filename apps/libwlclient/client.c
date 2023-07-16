@@ -37,7 +37,22 @@ struct _wlclient_t {
 
     /** Registry singleton for the above connection. */
     struct wl_registry        *wl_registry_ptr;
+
+    /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
+    bs_dllist_t               timers;
 };
+
+/** State of a registered timer. */
+typedef struct {
+    /** Node within the list of timers, see `wlclient_t.timers`. */
+    bs_dllist_node_t          dlnode;
+    /** Target time, in usec since epoch. */
+    uint64_t                  target_usec;
+    /** Callback once the timer is triggered. */
+    wlclient_callback_t       callback;
+    /** Argument to the callback. */
+    void                      *callback_ud_ptr;
+} wlclient_timer_t;
 
 /** Descriptor for a wayland object to bind to. */
 typedef struct {
@@ -63,6 +78,14 @@ static void handle_global_remove(
     void *data_ptr,
     struct wl_registry *registry,
     uint32_t name);
+
+static wlclient_timer_t *wlc_timer_create(
+    wlclient_t *client_ptr,
+    uint64_t target_usec,
+    wlclient_callback_t callback,
+    void *callback_ud_ptr);
+static void wlc_timer_destroy(
+    wlclient_timer_t *timer_ptr);
 
 /* == Data ================================================================= */
 
@@ -153,6 +176,11 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
 /* ------------------------------------------------------------------------- */
 void wlclient_destroy(wlclient_t *wlclient_ptr)
 {
+    bs_dllist_node_t *dlnode_ptr;
+    while (NULL != (dlnode_ptr = bs_dllist_pop_front(&wlclient_ptr->timers))) {
+        wlc_timer_destroy((wlclient_timer_t*)dlnode_ptr);
+    }
+
     if (NULL != wlclient_ptr->wl_registry_ptr) {
         wl_registry_destroy(wlclient_ptr->wl_registry_ptr);
         wlclient_ptr->wl_registry_ptr = NULL;
@@ -245,8 +273,32 @@ void wlclient_run(wlclient_t *wlclient_ptr)
             break;  // Error!
         }
 
+        // Flush the timer queue.
+        uint64_t current_usec = bs_usec();
+        bs_dllist_node_t *dlnode_ptr;
+        while (NULL != (dlnode_ptr = wlclient_ptr->timers.head_ptr) &&
+               ((wlclient_timer_t*)dlnode_ptr)->target_usec <= current_usec) {
+            bs_dllist_pop_front(&wlclient_ptr->timers);
+
+            wlclient_timer_t *timer_ptr = (wlclient_timer_t*)dlnode_ptr;
+            timer_ptr->callback(wlclient_ptr, timer_ptr->callback_ud_ptr);
+            wlc_timer_destroy(timer_ptr);
+        }
+
     } while (true);
 
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlclient_register_timer(
+    wlclient_t *wlclient_ptr,
+    uint64_t target_usec,
+    wlclient_callback_t callback,
+    void *callback_ud_ptr)
+{
+    wlclient_timer_t *timer_ptr = wlc_timer_create(
+        wlclient_ptr, target_usec, callback, callback_ud_ptr);
+    return (timer_ptr != NULL);
 }
 
 /* == Local (static) methods =============================================== */
@@ -335,6 +387,57 @@ void handle_global_remove(
     // TODO(kaeser@gubbe.ch): Add implementation.
     bs_log(BS_INFO, "handle_global_remove(%p, %p, %"PRIu32").",
            data_ptr, wl_registry_ptr, name);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a timer and registers it with the client.
+ *
+ * @param client_ptr
+ * @param target_usec
+ * @param callback
+ * @param callback_ud_ptr
+ *
+ * @return A pointer to the created timer, or NULL on error. The pointer must
+ *     be destroyed by @ref wlc_timer_destroy.
+ */
+wlclient_timer_t *wlc_timer_create(
+    wlclient_t *client_ptr,
+    uint64_t target_usec,
+    wlclient_callback_t callback,
+    void *callback_ud_ptr)
+{
+    wlclient_timer_t *timer_ptr = logged_calloc(1, sizeof(wlclient_timer_t));
+    if (NULL == timer_ptr) return NULL;
+
+    timer_ptr->target_usec = target_usec;
+    timer_ptr->callback = callback;
+    timer_ptr->callback_ud_ptr = callback_ud_ptr;
+
+    // TODO(kaeser@gubbe.ch): This should be a HEAP.
+    bs_dllist_node_t *dlnode_ptr = client_ptr->timers.head_ptr;
+    for (; dlnode_ptr != NULL; dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlclient_timer_t *ref_timer_ptr = (wlclient_timer_t *)dlnode_ptr;
+        if (timer_ptr->target_usec > ref_timer_ptr->target_usec) continue;
+        bs_dllist_insert_node_before(
+            &client_ptr->timers, dlnode_ptr, &timer_ptr->dlnode);
+    }
+    if (NULL == dlnode_ptr) {
+        bs_dllist_push_back(&client_ptr->timers, &timer_ptr->dlnode);
+    }
+
+    return timer_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Destroys the timer. Note: The timer will NOT be unregistered first.
+ *
+ * @param timer_ptr
+ */
+void wlc_timer_destroy(wlclient_timer_t *timer_ptr)
+{
+    free(timer_ptr);
 }
 
 /* == End of client.c ====================================================== */
