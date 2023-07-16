@@ -44,20 +44,26 @@ bool icon_callback(
     bs_gfxbuf_t *gfxbuf_ptr,
     __UNUSED__ void *ud_ptr)
 {
-    static uint32_t pos = 0;
+    bs_gfxbuf_clear(gfxbuf_ptr, 0);
 
-    bs_log(BS_INFO, "Icon callback.");
-
-    for (unsigned y = 0; y < gfxbuf_ptr->height; ++y) {
-        for (unsigned x = 0; x < gfxbuf_ptr->width; ++x) {
-            if ((x + pos) & 0x10) {
-                bs_gfxbuf_set_pixel(gfxbuf_ptr, x, y, 0xffc08080);
-            } else {
-                bs_gfxbuf_set_pixel(gfxbuf_ptr, x, y, 0xff2040c0);
-            }
-        }
+    cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
+    if (NULL == cairo_ptr) {
+        bs_log(BS_ERROR, "Failed cairo_create_from_bs_gfxbuf(%p)", gfxbuf_ptr);
+        return false;
     }
-    pos++;
+
+    cairo_select_font_face(
+        cairo_ptr, "Helvetica",
+        CAIRO_FONT_SLANT_NORMAL,
+        CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cairo_ptr, 15.0);
+    cairo_set_source_argb8888(cairo_ptr, 0xffc0c0c0);
+
+    cairo_move_to(cairo_ptr, 8, 32);
+    cairo_show_text(cairo_ptr, "time");
+
+    cairo_destroy(cairo_ptr);
+
     return true;
 }
 
