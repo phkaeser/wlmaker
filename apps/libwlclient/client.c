@@ -22,7 +22,9 @@
 
 #include <errno.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdarg.h>
+#include <sys/signalfd.h>
 
 #include <wayland-client.h>
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
@@ -40,6 +42,12 @@ struct _wlclient_t {
 
     /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
     bs_dllist_t               timers;
+
+    /** File descriptor to monitor SIGINT. */
+    int                       signal_fd;
+
+    /** Whether to keep the client running. */
+    volatile bool             keep_running;
 };
 
 /** State of a registered timer. */
@@ -125,6 +133,32 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
         }
     }
 
+    sigset_t signal_set;
+    if (sigemptyset(&signal_set)) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed sigemptyset(%p)", &signal_set);
+        wlclient_destroy(wlclient_ptr);
+        return NULL;
+    }
+    if (sigaddset(&signal_set, SIGINT)) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed sigemptyset(%p, %d)",
+               &signal_set, SIGINT);
+        wlclient_destroy(wlclient_ptr);
+        return NULL;
+    }
+    if (sigprocmask(SIG_BLOCK, &signal_set, NULL) == -1) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed sigprocmask(SIG_BLOCK, %p, NULL)",
+               &signal_set);
+        wlclient_destroy(wlclient_ptr);
+        return NULL;
+    }
+    wlclient_ptr->signal_fd = signalfd(-1, &signal_set, SFD_NONBLOCK);
+    if (0 >= wlclient_ptr->signal_fd) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed signalfd(-1, %p, SFD_NONBLOCK)",
+               &signal_set);
+        wlclient_destroy(wlclient_ptr);
+        return NULL;
+    }
+
     wlclient_ptr->attributes.wl_display_ptr = wl_display_connect(NULL);
     if (NULL == wlclient_ptr->attributes.wl_display_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_connect(NULL).");
@@ -191,6 +225,11 @@ void wlclient_destroy(wlclient_t *wlclient_ptr)
         wlclient_ptr->attributes.wl_display_ptr = NULL;
     }
 
+    if (0 < wlclient_ptr->signal_fd) {
+        close(wlclient_ptr->signal_fd);
+        wlclient_ptr->signal_fd = 0;
+    }
+
     if (NULL != wlclient_ptr->attributes.app_id_ptr) {
         // Cheated when saying it's const...
         free((char*)wlclient_ptr->attributes.app_id_ptr);
@@ -211,6 +250,7 @@ const wlclient_attributes_t *wlclient_attributes(
 // TODO(kaeser@gubbe.ch): Clean up.
 void wlclient_run(wlclient_t *wlclient_ptr)
 {
+    wlclient_ptr->keep_running = true;
     do {
 
         while (0 != wl_display_prepare_read(wlclient_ptr->attributes.wl_display_ptr)) {
@@ -231,18 +271,23 @@ void wlclient_run(wlclient_t *wlclient_ptr)
             }
         }
 
-        struct pollfd pollfds;
-        pollfds.fd = wl_display_get_fd(wlclient_ptr->attributes.wl_display_ptr);
-        pollfds.events = POLLIN;
-        pollfds.revents = 0;
-        int rv = poll(&pollfds, 1, 100);
+        struct pollfd pollfds[2];
+        pollfds[0].fd = wl_display_get_fd(wlclient_ptr->attributes.wl_display_ptr);
+        pollfds[0].events = POLLIN;
+        pollfds[0].revents = 0;
+
+        pollfds[1].fd = wlclient_ptr->signal_fd;
+        pollfds[1].events = POLLIN;
+        pollfds[1].revents = 0;
+
+        int rv = poll(&pollfds[0], 2, 100);
         if (0 > rv && EINTR != errno) {
             bs_log(BS_ERROR | BS_ERRNO, "Failed poll(%p, 1, 100)", &pollfds);
             wl_display_cancel_read(wlclient_ptr->attributes.wl_display_ptr);
             break;  // Error!
         }
 
-        if (pollfds.revents & POLLIN) {
+        if (pollfds[0].revents & POLLIN) {
             if (0 > wl_display_read_events(wlclient_ptr->attributes.wl_display_ptr)) {
                 bs_log(BS_ERROR | BS_ERRNO, "Failed wl_display_read_events(%p)",
                        wlclient_ptr->attributes.wl_display_ptr);
@@ -250,6 +295,22 @@ void wlclient_run(wlclient_t *wlclient_ptr)
             }
         } else {
             wl_display_cancel_read(wlclient_ptr->attributes.wl_display_ptr);
+        }
+
+        if (pollfds[1].revents & POLLIN) {
+            struct signalfd_siginfo siginfo;
+            ssize_t rd = read(wlclient_ptr->signal_fd, &siginfo, sizeof(siginfo));
+            if (0 > rd) {
+                bs_log(BS_ERROR, "Failed read(%d, %p, %zu)",
+                       wlclient_ptr->signal_fd, &siginfo, sizeof(siginfo));
+                break;
+            } else if ((size_t)rd != sizeof(siginfo)) {
+                bs_log(BS_ERROR, "Bytes read from signal_fd %zu != %zd",
+                       sizeof(siginfo), rd);
+                break;
+            }
+            bs_log(BS_ERROR, "Signal caught: %d", siginfo.ssi_signo);
+            wlclient_ptr->keep_running = false;
         }
 
         if (0 > wl_display_dispatch_pending(wlclient_ptr->attributes.wl_display_ptr)) {
@@ -285,8 +346,7 @@ void wlclient_run(wlclient_t *wlclient_ptr)
             wlc_timer_destroy(timer_ptr);
         }
 
-    } while (true);
-
+    } while (wlclient_ptr->keep_running);
 }
 
 /* ------------------------------------------------------------------------- */
