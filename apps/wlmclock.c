@@ -21,8 +21,18 @@
  */
 
 #include <libbase/libbase.h>
-
 #include <libwlclient/libwlclient.h>
+#include <primitives/primitives.h>
+#include <primitives/segment_display.h>
+
+#include <sys/time.h>
+
+/** Foreground color of a LED in the VFD-style display. */
+static const uint32_t color_led = 0xff55ffff;
+/** Color of a turned-off element in the VFD-style display. */
+static const uint32_t color_off = 0xff114444;
+/** Background color in the VFD-style display. */
+static const uint32_t color_background = 0xff111111;
 
 /* ------------------------------------------------------------------------- */
 /** Returns the next full second for when to draw the clock. */
@@ -52,15 +62,42 @@ bool icon_callback(
         return false;
     }
 
-    cairo_select_font_face(
-        cairo_ptr, "Helvetica",
-        CAIRO_FONT_SLANT_NORMAL,
-        CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cairo_ptr, 15.0);
-    cairo_set_source_argb8888(cairo_ptr, 0xffc0c0c0);
+    float r, g, b, alpha;
+    bs_gfxbuf_argb8888_to_floats(color_background, &r, &g, &b, &alpha);
+    cairo_pattern_t *pattern_ptr = cairo_pattern_create_rgba(r, g, b, alpha);
+    BS_ASSERT(NULL != pattern_ptr);
+    cairo_set_source(cairo_ptr, pattern_ptr);
+    cairo_pattern_destroy(pattern_ptr);
+    cairo_rectangle(cairo_ptr, 5, 46, 54, 14);
+    cairo_fill(cairo_ptr);
 
-    cairo_move_to(cairo_ptr, 8, 32);
-    cairo_show_text(cairo_ptr, "time");
+    wlm_primitives_draw_bezel_at(cairo_ptr, 4, 45, 56, 15, 1.0, false);
+
+    struct timeval tv;
+    if (0 != gettimeofday(&tv, NULL)) {
+        memset(&tv, 0, sizeof(tv));
+    }
+    struct tm *tm_ptr = localtime(&tv.tv_sec);
+    char time_buf[7];
+    snprintf(time_buf, sizeof(time_buf), "%02d%02d%02d",
+             tm_ptr->tm_hour, tm_ptr->tm_min, tm_ptr->tm_sec);
+
+    for (int i = 0; i < 6; ++i) {
+        wlm_cairo_7segment_display_digit(
+            cairo_ptr,
+            &wlm_cairo_7segment_param_8x12,
+            6 + i * 8 + (i / 2) * 2, 58,
+            color_led,
+            color_off,
+            time_buf[i] - '0');
+    }
+
+    cairo_set_source_argb8888(cairo_ptr, color_led);
+    cairo_rectangle(cairo_ptr, 22, 50, 1, 1.25);
+    cairo_rectangle(cairo_ptr, 22, 54, 1, 1.25);
+    cairo_rectangle(cairo_ptr, 40, 50, 1, 1.25);
+    cairo_rectangle(cairo_ptr, 40, 54, 1, 1.25);
+    cairo_fill(cairo_ptr);
 
     cairo_destroy(cairo_ptr);
 
