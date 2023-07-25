@@ -25,6 +25,7 @@
 #include <primitives/primitives.h>
 #include <primitives/segment_display.h>
 
+#include <math.h>
 #include <sys/time.h>
 
 /** Foreground color of a LED in the VFD-style display. */
@@ -98,6 +99,66 @@ bool icon_callback(
     cairo_rectangle(cairo_ptr, 40, 50, 1, 1.25);
     cairo_rectangle(cairo_ptr, 40, 54, 1, 1.25);
     cairo_fill(cairo_ptr);
+
+    wlm_primitives_draw_bezel_at(cairo_ptr, 4, 4, 56, 41, 1.0, false);
+
+    cairo_set_source_argb8888(cairo_ptr, color_background);
+    cairo_rectangle(cairo_ptr, 5, 5, 54, 39);
+    cairo_fill(cairo_ptr);
+
+    // Draws a clock face, with small ticks every hour.
+    double center_x = 31.5;
+    double center_y = 24.5;
+    double radius = 19;
+    cairo_set_source_argb8888(cairo_ptr, color_led);
+    for (int i = 0; i < 12; ++i) {
+
+        // ... and larer ticks every 3 hours.
+        double ratio = 0.9;
+        if (i % 3 == 0) {
+            ratio = 0.85;
+            cairo_set_line_width(cairo_ptr, 2.0);
+        } else {
+            cairo_set_line_width(cairo_ptr, 1.0);
+        }
+
+        cairo_move_to(cairo_ptr,
+                      center_x + ratio * radius * sin(i * 2*M_PI / 12.0),
+                      center_y - ratio * radius * cos(i * 2*M_PI / 12.0));
+        cairo_line_to(cairo_ptr,
+                      center_x + radius * sin(i * 2*M_PI / 12.0),
+                      center_y - radius * cos(i * 2*M_PI / 12.0));
+        cairo_stroke(cairo_ptr);
+    }
+
+    // Seconds pointer.
+    double angle = tm_ptr->tm_sec * 2*M_PI / 60.0;
+    cairo_set_line_width(cairo_ptr, 0.5);
+    cairo_move_to(cairo_ptr, center_x, center_y);
+    cairo_line_to(cairo_ptr,
+                  center_x + 0.7 * radius * sin(angle),
+                  center_y - 0.7 * radius * cos(angle));
+    cairo_stroke(cairo_ptr);
+
+    // Minutes pointer.
+    angle = tm_ptr->tm_min * 2*M_PI / 60.0 + (
+        tm_ptr->tm_sec / 60.0 * 2*M_PI / 60.0);
+    cairo_set_line_width(cairo_ptr, 1.0);
+    cairo_move_to(cairo_ptr, center_x, center_y);
+    cairo_line_to(cairo_ptr,
+                  center_x + 0.7 * radius * sin(angle),
+                  center_y - 0.7 * radius * cos(angle));
+    cairo_stroke(cairo_ptr);
+
+    // Hours pointer.
+    angle = tm_ptr->tm_hour * 2*M_PI / 12.0 + (
+        tm_ptr->tm_min / 60.0 * 2*M_PI / 12.0);
+    cairo_set_line_width(cairo_ptr, 2.0);
+    cairo_move_to(cairo_ptr, center_x, center_y);
+    cairo_line_to(cairo_ptr,
+                  center_x + 0.5 * radius * sin(angle),
+                  center_y - 0.5 * radius * cos(angle));
+    cairo_stroke(cairo_ptr);
 
     cairo_destroy(cairo_ptr);
 
