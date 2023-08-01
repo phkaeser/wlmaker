@@ -413,6 +413,9 @@ void wlmaker_view_handle_axis(
  * If the view is already mapped, this will trigger creation of the decoration
  * elements. Otherwise, elements will be created when the view gets mapped.
  *
+ * TODO(kaeser@gubbe.ch): Make this more fine-grained -- show title, buttons,
+ * and/or resize bar (equivalent to border, in our case).
+ *
  * @param view_ptr
  * @param enabled
  */

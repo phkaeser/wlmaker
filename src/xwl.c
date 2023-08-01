@@ -93,6 +93,9 @@ typedef struct {
     /** Listener for the `dissociate` signal of `wlr_xwayland_surface`. */
     struct wl_listener        dissociate_listener;
 
+    /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_decorations_listener;
+
     /** Listener for the `map` signal of `wlr_xwayland_surface_ptr->surface` */
     struct wl_listener        surface_map_listener;
     /** Listener for `unmap` signal of `wlr_xwayland_surface_ptr->surface` */
@@ -113,8 +116,15 @@ static void handle_destroy(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_request_configure(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_associate(struct wl_listener *listener_ptr, void *data_ptr);
-static void handle_dissociate(struct wl_listener *listener_ptr, void *data_ptr);
+static void handle_associate(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_dissociate(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_set_decorations(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static uint32_t wlmaker_xwl_surface_set_activated(
     wlmaker_view_t *view_ptr,
@@ -411,6 +421,10 @@ wlmaker_xwl_surface_t *xwl_surface_create(
         &wlr_xwayland_surface_ptr->events.dissociate,
         &xwl_surface_ptr->dissociate_listener,
         handle_dissociate);
+    wlm_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_decorations,
+        &xwl_surface_ptr->set_decorations_listener,
+        handle_set_decorations);
 
     bs_log(BS_INFO, "Created XWayland surface %p, wlr xwayland surface %p",
            xwl_surface_ptr, wlr_xwayland_surface_ptr);
@@ -427,6 +441,7 @@ void xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr)
 {
     bs_log(BS_INFO, "Destroying XWayland surface %p", xwl_surface_ptr);
 
+    wl_list_remove(&xwl_surface_ptr->set_decorations_listener.link);
     wl_list_remove(&xwl_surface_ptr->dissociate_listener.link);
     wl_list_remove(&xwl_surface_ptr->associate_listener.link);
     wl_list_remove(&xwl_surface_ptr->request_configure_listener.link);
@@ -528,6 +543,12 @@ void handle_associate(
         xwl_surface_ptr->wlr_scene_tree_ptr,
         wlmaker_xwl_surface_send_close_callback);
     xwl_surface_ptr->view_initialized = true;
+
+    // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
+    wlmaker_view_set_server_side_decoration(
+        &xwl_surface_ptr->view,
+        (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
+         WLR_XWAYLAND_SURFACE_DECORATIONS_ALL));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -554,6 +575,28 @@ void handle_dissociate(
     // Note: xwl_surface_ptr->wlr_scene_tree_ptr not destroyed here, it is
     // cleaned up via the scene tree it was attached to.
     xwl_surface_ptr->wlr_scene_tree_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_decorations` event of `struct wlr_xwayland_surface`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_set_decorations(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, set_decorations_listener);
+    if (xwl_surface_ptr->view_initialized) {
+        // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
+        wlmaker_view_set_server_side_decoration(
+            &xwl_surface_ptr->view,
+            (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
+             WLR_XWAYLAND_SURFACE_DECORATIONS_ALL));
+    }
 }
 
 /* ------------------------------------------------------------------------- */
