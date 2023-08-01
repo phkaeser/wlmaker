@@ -603,19 +603,21 @@ void handle_set_decorations(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Method for view activation. TODO(kaeser@gubbe.ch): Implement.
+ * Method for view activation.
  *
  * @param view_ptr
  * @param activated
  *
- * @return A serial.
+ * @return Zero, default placeholder for the serial.
  */
 uint32_t wlmaker_xwl_surface_set_activated(
     wlmaker_view_t *view_ptr,
     bool activated)
 {
-    bs_log(BS_WARNING, "Not implemented: set_activated - view %p, %d",
-           view_ptr, activated);
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        view_ptr, wlmaker_xwl_surface_t, view);
+    wlr_xwayland_surface_activate(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr, activated);
     return 0;
 }
 
