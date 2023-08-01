@@ -621,7 +621,7 @@ uint32_t wlmaker_xwl_surface_set_activated(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Method for getting the view's size. TODO(kaeser@gubbe.ch): Implement.
+ * Method for getting the view's size.
  *
  * @param view_ptr
  * @param width_ptr
@@ -632,14 +632,16 @@ void wlmaker_xwl_surface_get_size(
     uint32_t *width_ptr,
     uint32_t *height_ptr)
 {
-    bs_log(BS_WARNING, "Not implemented: get_size - view %p", view_ptr);
-    *width_ptr = 128;
-    *height_ptr = 64;
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        view_ptr, wlmaker_xwl_surface_t, view);
+
+    *width_ptr = xwl_surface_ptr->wlr_xwayland_surface_ptr->width;
+    *height_ptr = xwl_surface_ptr->wlr_xwayland_surface_ptr->height;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Method for setting the view's size. TODO(kaeser@gubbe.ch): Implement.
+ * Method for setting the view's size.
  *
  * @param view_ptr
  * @param width
@@ -649,8 +651,13 @@ void wlmaker_xwl_surface_set_size(
     wlmaker_view_t *view_ptr,
     int width, int height)
 {
-    bs_log(BS_WARNING, "Not implemented: set_size - view %p, %d x %d",
-           view_ptr, width, height);
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        view_ptr, wlmaker_xwl_surface_t, view);
+
+    wlr_xwayland_surface_configure(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+        0, 0,
+        width, height);
 }
 
 /* ------------------------------------------------------------------------- */
