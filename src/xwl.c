@@ -694,13 +694,15 @@ void wlmaker_xwl_surface_set_fullscreen(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Method for the view being closed. TODO(kaeser@gubbe.ch): Implement.
+ * Method for the view being closed.
  *
  * @param view_ptr
  */
 void wlmaker_xwl_surface_send_close_callback(wlmaker_view_t *view_ptr)
 {
-    bs_log(BS_WARNING, "Not implemented: send close - view %p", view_ptr);
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        view_ptr, wlmaker_xwl_surface_t, view);
+    wlr_xwayland_surface_close(xwl_surface_ptr->wlr_xwayland_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
