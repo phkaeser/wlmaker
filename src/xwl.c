@@ -523,6 +523,8 @@ void handle_associate(
         bs_log(BS_FATAL, "Failed wlmaker_scene_xwayland_surface_create(%p, %p)",
                &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree,
                xwl_surface_ptr->wlr_xwayland_surface_ptr);
+        // TODO(kaeser@gubbe.ch): Should pass error back to client, and not
+        // abort the server.
         BS_ABORT();
     }
 
