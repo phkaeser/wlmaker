@@ -467,12 +467,17 @@ void handle_request_configure(
         listener_ptr, wlmaker_xwl_surface_t, request_configure_listener);
     struct wlr_xwayland_surface_configure_event *cfg_event_ptr = data_ptr;
 
-    bs_log(BS_WARNING, "Not implemented for %p: configure - "
+    bs_log(BS_INFO, "Reqeust configure for %p: "
            "%"PRId16" x %"PRIx16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
            xwl_surface_ptr,
            cfg_event_ptr->x, cfg_event_ptr->y,
            cfg_event_ptr->width, cfg_event_ptr->height,
            cfg_event_ptr->mask);
+
+    wlr_xwayland_surface_configure(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+        cfg_event_ptr->x, cfg_event_ptr->y,
+        cfg_event_ptr->width, cfg_event_ptr->height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -547,8 +552,8 @@ void handle_dissociate(
     wl_list_remove(&xwl_surface_ptr->surface_map_listener.link);
 
     // Note: xwl_surface_ptr->wlr_scene_tree_ptr not destroyed here, it is
-    // clenaed up via the scene tree it was attached to.
-
+    // cleaned up via the scene tree it was attached to.
+    xwl_surface_ptr->wlr_scene_tree_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
