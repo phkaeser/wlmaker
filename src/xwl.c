@@ -489,10 +489,29 @@ void handle_request_configure(
            cfg_event_ptr->width, cfg_event_ptr->height,
            cfg_event_ptr->mask);
 
-    wlr_xwayland_surface_configure(
-        xwl_surface_ptr->wlr_xwayland_surface_ptr,
-        cfg_event_ptr->x, cfg_event_ptr->y,
-        cfg_event_ptr->width, cfg_event_ptr->height);
+    // Uh, that's ugly. We'd prefer to set the inner size of the view, but the
+    // set_size call does include decorations. So we call get_size, substract
+    // decorations, and then go from there...
+    uint32_t width, height;
+    if (xwl_surface_ptr->view_initialized) {
+        wlmaker_view_get_size(&xwl_surface_ptr->view, &width, &height);
+        width -= xwl_surface_ptr->wlr_xwayland_surface_ptr->width;
+        height -= xwl_surface_ptr->wlr_xwayland_surface_ptr->height;
+    } else {
+        width = 0;
+        height = 0;
+    }
+    width += cfg_event_ptr->width;
+    height += cfg_event_ptr->height;
+
+    if (xwl_surface_ptr->view_initialized) {
+        wlmaker_view_set_size(&xwl_surface_ptr->view, width, height);
+    } else {
+        wlr_xwayland_surface_configure(
+            xwl_surface_ptr->wlr_xwayland_surface_ptr,
+            cfg_event_ptr->x, cfg_event_ptr->y,
+            cfg_event_ptr->width, cfg_event_ptr->height);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
