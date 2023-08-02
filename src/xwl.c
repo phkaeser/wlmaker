@@ -2,6 +2,10 @@
 /**
  * @file xwl.c
  * Copyright (c) 2023 by Philipp Kaeser <kaeser@gubbe.ch>
+ *
+ * TODO:
+ * - Factor out toplevel vs non-toplevel windows.
+ * - Position of non-toplevel windows.
  */
 
 #include "xwl.h"
@@ -404,6 +408,8 @@ wlmaker_xwl_surface_t *xwl_surface_create(
     if (NULL == xwl_surface_ptr) return NULL;
     xwl_surface_ptr->xwl_ptr = xwl_ptr;
     xwl_surface_ptr->wlr_xwayland_surface_ptr = wlr_xwayland_surface_ptr;
+    // To find ourselves later on...
+    wlr_xwayland_surface_ptr->data = xwl_surface_ptr;
 
     wlm_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
@@ -535,12 +541,30 @@ void handle_associate(
     BS_ASSERT(NULL == xwl_surface_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(!xwl_surface_ptr->view_initialized);
 
+    // TODO(kaeser@gubbe.ch): Here, we should fork out into creating a toplevel
+    // vs a non-toplevel (popup? children?) window.
+    struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
+        &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree;
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        wlmaker_xwl_surface_t *parent_xwl_surface_ptr =
+            xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
+        parent_wlr_scene_tree_ptr = parent_xwl_surface_ptr->wlr_scene_tree_ptr;
+
+        if (NULL == parent_wlr_scene_tree_ptr) {
+            bs_log(BS_WARNING, "Unexpected: %p with parent %p does not have a tree",
+                   xwl_surface_ptr, parent_xwl_surface_ptr);
+            parent_wlr_scene_tree_ptr =
+                &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree;
+        }
+    }
+
+
     xwl_surface_ptr->wlr_scene_tree_ptr = wlmaker_scene_xwayland_surface_create(
-        &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree,
+        parent_wlr_scene_tree_ptr,
         xwl_surface_ptr->wlr_xwayland_surface_ptr);
     if (NULL == xwl_surface_ptr->wlr_scene_tree_ptr) {
         bs_log(BS_FATAL, "Failed wlmaker_scene_xwayland_surface_create(%p, %p)",
-               &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree,
+               parent_wlr_scene_tree_ptr,
                xwl_surface_ptr->wlr_xwayland_surface_ptr);
         // TODO(kaeser@gubbe.ch): Should pass error back to client, and not
         // abort the server.
@@ -555,6 +579,11 @@ void handle_associate(
         &xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->events.unmap,
         &xwl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
+
+    // TODO(kaeser@gubbe.ch): Deal as toplevel or non-toplevel.
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        return;
+    }
 
     wlmaker_view_init(
         &xwl_surface_ptr->view,
@@ -587,8 +616,11 @@ void handle_dissociate(
         listener_ptr, wlmaker_xwl_surface_t, dissociate_listener);
     bs_log(BS_INFO, "Dissociate %p", xwl_surface_ptr);
 
-    wlmaker_view_fini(&xwl_surface_ptr->view);
-    xwl_surface_ptr->view_initialized = false;
+    if (NULL == xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        // TODO(kaeser@gubbe.ch): Deal as toplevel or non-toplevel.
+        wlmaker_view_fini(&xwl_surface_ptr->view);
+        xwl_surface_ptr->view_initialized = false;
+    }
 
     wl_list_remove(&xwl_surface_ptr->surface_unmap_listener.link);
     wl_list_remove(&xwl_surface_ptr->surface_map_listener.link);
@@ -739,6 +771,12 @@ void handle_surface_map(
         listener_ptr, wlmaker_xwl_surface_t, surface_map_listener);
     bs_log(BS_INFO, "Map %p", xwl_surface_ptr);
 
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        // TODO(kaeser@gubbe.ch): This is ... ugly. Refactor. Should be handled
+        // by nature of being a toplevel (~= view) or non-toplevel window.
+        return;
+    }
+
     wlmaker_view_map(
         &xwl_surface_ptr->view,
         wlmaker_server_get_current_workspace(xwl_surface_ptr->view.server_ptr),
@@ -763,6 +801,12 @@ void handle_surface_unmap(
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, surface_unmap_listener);
     bs_log(BS_INFO, "Unmap %p", xwl_surface_ptr);
+
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        // TODO(kaeser@gubbe.ch): This is ... ugly. Refactor. Should be handled
+        // by nature of being a toplevel (~= view) or non-toplevel window.
+        return;
+    }
 
     wlmaker_view_unmap(&xwl_surface_ptr->view);
 }
