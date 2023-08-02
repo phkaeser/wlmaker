@@ -473,7 +473,7 @@ void wlmaker_view_get_size(wlmaker_view_t *view_ptr,
                            uint32_t *height_ptr);
 
 /**
- * Sets the position of the view, including server-side decoration (if any).
+ * Sets the size of the view, including server-side decoration (if any).
  *
  * @param view_ptr
  * @param width
