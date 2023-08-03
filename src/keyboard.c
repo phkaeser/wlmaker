@@ -112,8 +112,8 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
  */
 void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 {
-    wlmaker_keyboard_t *keyboard_ptr = wl_container_of(
-        listener_ptr, keyboard_ptr, key_listener);
+    wlmaker_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_keyboard_t, key_listener);
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr = data_ptr;
 
     // TODO(kaeser@gubbe.ch): Omit consumed modifiers, see xkbcommon.h.
@@ -194,8 +194,8 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 void handle_modifiers(struct wl_listener *listener_ptr,
                       __UNUSED__ void *data_ptr)
 {
-    wlmaker_keyboard_t *keyboard_ptr = wl_container_of(
-        listener_ptr, keyboard_ptr, modifiers_listener);
+    wlmaker_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_keyboard_t, modifiers_listener);
 
     uint32_t modifiers = wlr_keyboard_get_modifiers(
         keyboard_ptr->wlr_keyboard_ptr);

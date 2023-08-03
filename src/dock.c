@@ -208,8 +208,8 @@ void handle_workspace_changed(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_dock_t *dock_ptr = wl_container_of(
-        listener_ptr, dock_ptr, workspace_changed_listener);
+    wlmaker_dock_t *dock_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_dock_t, workspace_changed_listener);
 
     // TODO(kaeser@gubbe.ch): Should add a "remap" command.
     wlmaker_view_unmap(&dock_ptr->view);

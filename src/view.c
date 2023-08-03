@@ -747,8 +747,8 @@ const wlmaker_client_t *wlmaker_view_get_client(wlmaker_view_t *view_ptr)
 void handle_button_release(struct wl_listener *listener_ptr,
                            void *data_ptr)
 {
-    wlmaker_view_t *view_ptr = wl_container_of(
-        listener_ptr, view_ptr, button_release_listener);
+    wlmaker_view_t *view_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_view_t, button_release_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
     // Note: |wlmaker_view_handle_button| already handled button events and

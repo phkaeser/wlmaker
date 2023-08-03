@@ -103,8 +103,8 @@ void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wl_container_of(
-        listener_ptr, xdg_popup_ptr, destroy_listener);
+    wlmaker_xdg_popup_t *xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
     wlmaker_xdg_popup_destroy(xdg_popup_ptr);
 }
 
@@ -121,8 +121,8 @@ void handle_new_popup(
 {
     // This popup is eg. invoked when opening a nested sub-menu on Google
     // Chrome.
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wl_container_of(
-        listener_ptr, xdg_popup_ptr, new_popup_listener);
+    wlmaker_xdg_popup_t *xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
     wlmaker_xdg_popup_t *new_xdg_popup_ptr = wlmaker_xdg_popup_create(

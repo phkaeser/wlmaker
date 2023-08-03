@@ -583,8 +583,8 @@ bool register_input_device(wlmaker_server_t *server_ptr,
 void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
 {
     struct wlr_output *wlr_output_ptr = data_ptr;
-    wlmaker_server_t *server_ptr = wl_container_of(
-        listener_ptr, server_ptr, backend_new_output_listener);
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, backend_new_output_listener);
 
     wlmaker_output_t *output_ptr = wlmaker_output_create(
         wlr_output_ptr,
@@ -611,8 +611,8 @@ void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
 void handle_new_input_device(struct wl_listener *listener_ptr, void *data_ptr)
 {
     struct wlr_input_device *wlr_input_device_ptr = data_ptr;
-    wlmaker_server_t *server_ptr = wl_container_of(
-        listener_ptr, server_ptr, backend_new_input_device_listener);
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, backend_new_input_device_listener);
 
     wlmaker_keyboard_t *keyboard_ptr;
     switch (wlr_input_device_ptr->type) {
@@ -665,8 +665,8 @@ void handle_new_input_device(struct wl_listener *listener_ptr, void *data_ptr)
 void handle_destroy_input_device(struct wl_listener *listener_ptr,
                                  __UNUSED__ void *data_ptr)
 {
-    wlmaker_input_device_t *input_device_ptr = wl_container_of(
-        listener_ptr, input_device_ptr, destroy_listener);
+    wlmaker_input_device_t *input_device_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_input_device_t, destroy_listener);
 
     wlmaker_keyboard_t *keyboard_ptr;
     switch (input_device_ptr->wlr_input_device_ptr->type) {
@@ -699,8 +699,8 @@ void handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_server_t *server_ptr = wl_container_of(
-        listener_ptr, server_ptr, output_layout_change_listener);
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, output_layout_change_listener);
     struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
     if (wlr_output_layout_ptr != server_ptr->wlr_output_layout_ptr) {
         // OK, this is unexpected...

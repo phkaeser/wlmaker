@@ -129,11 +129,9 @@ void wlmaker_xdg_decoration_manager_destroy(
  * @param data_ptr            Points to `wlr_xdg_toplevel_decoration_v1`.
  */
 void handle_new_toplevel_decoration(
-    struct wl_listener *listener_ptr,
+    __UNUSED__ struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = wl_container_of(
-        listener_ptr, decoration_manager_ptr, new_toplevel_decoration_listener);
     struct wlr_xdg_toplevel_decoration_v1
         *wlr_xdg_toplevel_decoration_v1_ptr = data_ptr;
 
@@ -156,8 +154,8 @@ static void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = wl_container_of(
-        listener_ptr, decoration_manager_ptr, destroy_listener);
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_manager_t, destroy_listener);
 
     free(decoration_manager_ptr);
 }
@@ -215,8 +213,8 @@ void handle_decoration_request_mode(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
-        listener_ptr, decoration_ptr, request_mode_listener);
+    wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_t, request_mode_listener);
     struct wlr_scene_tree *wlr_scene_tree_ptr = (struct wlr_scene_tree*)
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
     wlmaker_view_t *view_ptr = (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
@@ -279,8 +277,8 @@ void handle_decoration_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
-        listener_ptr, decoration_ptr, destroy_listener);
+    wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_t, destroy_listener);
     wlmaker_xdg_decoration_destroy(decoration_ptr);
 }
 

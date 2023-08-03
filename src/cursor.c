@@ -250,8 +250,8 @@ void wlmaker_cursor_get_position(
 void handle_motion(struct wl_listener *listener_ptr,
                    void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, motion_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, motion_listener);
     struct wlr_pointer_motion_event *wlr_pointer_motion_event_ptr = data_ptr;
 
     wlr_cursor_move(
@@ -275,8 +275,8 @@ void handle_motion(struct wl_listener *listener_ptr,
 void handle_motion_absolute(struct wl_listener *listener_ptr,
                             void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, motion_absolute_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, motion_absolute_listener);
     struct wlr_pointer_motion_absolute_event
         *wlr_pointer_motion_absolute_event_ptr = data_ptr;
 
@@ -301,8 +301,8 @@ void handle_motion_absolute(struct wl_listener *listener_ptr,
 void handle_button(struct wl_listener *listener_ptr,
                    void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, button_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, button_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
@@ -379,8 +379,8 @@ void handle_button(struct wl_listener *listener_ptr,
 void handle_axis(struct wl_listener *listener_ptr,
                  void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, axis_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, axis_listener);
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr = data_ptr;
 
     /* Notify the client with pointer focus of the axis event. */
@@ -421,8 +421,8 @@ void handle_axis(struct wl_listener *listener_ptr,
 void handle_frame(struct wl_listener *listener_ptr,
                   __UNUSED__ void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, frame_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, frame_listener);
 
     /* Notify the client with pointer focus of the frame event. */
     wlr_seat_pointer_notify_frame(cursor_ptr->server_ptr->wlr_seat_ptr);
@@ -442,8 +442,8 @@ void handle_seat_request_set_cursor(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_cursor_t *cursor_ptr = wl_container_of(
-        listener_ptr, cursor_ptr, seat_request_set_cursor_listener);
+    wlmaker_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_cursor_t, seat_request_set_cursor_listener);
     struct wlr_seat_pointer_request_set_cursor_event
         *wlr_seat_pointer_request_set_cursor_event_ptr = data_ptr;
 

@@ -415,8 +415,8 @@ void wlmaker_xdg_toplevel_send_close_callback(wlmaker_view_t *view_ptr)
 void handle_destroy(struct wl_listener *listener_ptr,
                     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, destroy_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t, destroy_listener);
     wlmaker_xdg_toplevel_destroy(xdg_toplevel_ptr);
 }
 
@@ -432,8 +432,8 @@ void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, new_popup_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
     wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
@@ -454,8 +454,8 @@ void handle_new_popup(
 void handle_map(struct wl_listener *listener_ptr,
                 __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, surface_map_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t, surface_map_listener);
     wlmaker_view_map(
         &xdg_toplevel_ptr->view,
         wlmaker_server_get_current_workspace(xdg_toplevel_ptr->view.server_ptr),
@@ -480,8 +480,8 @@ void handle_map(struct wl_listener *listener_ptr,
 void handle_unmap(struct wl_listener *listener_ptr,
                   __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, surface_unmap_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t, surface_unmap_listener);
 
     wlmaker_view_unmap(&xdg_toplevel_ptr->view);
 }
@@ -497,8 +497,8 @@ void handle_surface_commit(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, surface_commit_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t, surface_commit_listener);
     uint32_t serial = xdg_toplevel_ptr->pending_resize_serial;
 
     // TODO(kaeser@gubbe.ch): Should adjust the size by the geometry.
@@ -519,8 +519,9 @@ void handle_toplevel_maximize(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_maximize_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
+        toplevel_request_maximize_listener);
     wlmaker_view_set_maximized(
         &xdg_toplevel_ptr->view,
         xdg_toplevel_ptr->wlr_xdg_surface_ptr->toplevel->requested.maximized);
@@ -537,8 +538,9 @@ void handle_toplevel_fullscreen(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_fullscreen_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
+        toplevel_request_fullscreen_listener);
 
     wlmaker_view_set_fullscreen(
         &xdg_toplevel_ptr->view,
@@ -569,8 +571,9 @@ void handle_toplevel_minimize(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_minimize_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
+        toplevel_request_minimize_listener);
     wlmaker_view_set_iconified(&xdg_toplevel_ptr->view, true);
 }
 
@@ -585,8 +588,9 @@ void handle_toplevel_move(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_move_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
+        toplevel_request_move_listener);
 
     wlmaker_cursor_begin_move(
         xdg_toplevel_ptr->view.server_ptr->cursor_ptr,
@@ -604,8 +608,9 @@ void handle_toplevel_resize(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_resize_listener);
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
+        toplevel_request_resize_listener);
     struct wlr_xdg_toplevel_resize_event *wlr_xdg_toplevel_resize_event_ptr =
         data_ptr;
 
@@ -626,8 +631,8 @@ void handle_toplevel_show_window_menu(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr,
+    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_toplevel_t,
         toplevel_request_show_window_menu_listener);
 
     wlmaker_view_window_menu_show(&xdg_toplevel_ptr->view);
