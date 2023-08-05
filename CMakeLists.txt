@@ -43,6 +43,7 @@ PKG_CHECK_MODULES(
   wayland-protocols>=1.31
   wayland-server>=1.22.90)
 PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17)
+PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 
 # Configuration. Remove CMakeCache.txt to rerun...
