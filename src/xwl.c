@@ -17,10 +17,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * TODO:
- * - Factor out toplevel vs non-toplevel windows.
- * - Position of non-toplevel windows.
+ * @internal
+ * The current XWayland implementation is not very cleanly designed, and is
+ * more of an advanced prototype than a finished implementation.
+ * TODO(kaeser@gubbe.ch): Re-design, once object model is updated.
+ *
+ * Known issues:
+ *
+ * * Scene graph API nodes for toplevel windows are created early. This leads
+ *   to issues with ownership (cleanup?), stacking order, and when properties
+ *   (position) are set. It'd be better to only create them when mapping a
+ *   window (and destroying when unmapping).
+ *
+ * * Windows with parents are created as plain surfaces and don't clearly show
+ *   their stacking order. Decorations may not get applied in all cases.
+ *
+ * * View decorations are drawn on top, and may obscur (sub)window elements.
+ *
+ * * Stacking order is not tackled, eg. popups may appear below.
  */
+
 
 #include "xwl.h"
 
@@ -48,16 +64,10 @@ struct _wlmaker_xwl_t {
 
 /** A scene-graph API subtree for a wlroots XWayland surface. */
 typedef struct {
-    /** Scene tree holding the XWayland surface. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-
     /** The wlroots XWayland surface that we're wrapping here. */
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr;
     /** Holds the wlroots surface. Element of `wlr_scene_tree_ptr`. */
     struct wlr_scene_surface  *wlr_scene_surface_ptr;
-
-    /** Listener: `destroy` event of `wlr_scene_tree_ptr`. */
-    struct wl_listener        tree_destroy_listener;
 
     /** Listener: `map` event of `wlr_xwayland_surface_ptr->surface`. */
     struct wl_listener        surface_map_listener;
@@ -67,14 +77,11 @@ typedef struct {
     struct wl_listener        surface_destroy_listener;
 } wlmaker_scene_xwayland_surface_t;
 
-static struct wlr_scene_tree *wlmaker_scene_xwayland_surface_create(
+static struct wlr_scene_surface *wlmaker_scene_xwayland_surface_create(
     struct wlr_scene_tree *parent_wlr_scene_tree_ptr,
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr);
 static void xwls_destroy(
     wlmaker_scene_xwayland_surface_t *scene_xwayland_surface_ptr);
-static void xwls_handle_tree_destroy(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void xwls_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -98,8 +105,14 @@ typedef struct {
     /** Back-link to the interface. */
     wlmaker_xwl_t             *xwl_ptr;
 
-    /** The surface's tree, once associated. */
+    /** The surface's tree. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
+    /**
+     * Scene graph API node of the actual surface. */
+    struct wlr_scene_surface  *wlr_scene_surface_ptr;
+
+    /** Listener: `destroy` event of `wlr_scene_tree_ptr`. */
+    struct wl_listener        tree_destroy_listener;
 
     /** Listener for the `destroy` signal of `wlr_xwayland_surface`. */
     struct wl_listener        destroy_listener;
@@ -111,8 +124,12 @@ typedef struct {
     /** Listener for the `dissociate` signal of `wlr_xwayland_surface`. */
     struct wl_listener        dissociate_listener;
 
+    /** Listener for the `set_parent` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_parent_listener;
     /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_decorations_listener;
+    /** Listener for the `set_geometry` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_geometry_listener;
 
     /** Listener for the `map` signal of `wlr_xwayland_surface_ptr->surface` */
     struct wl_listener        surface_map_listener;
@@ -130,7 +147,12 @@ static wlmaker_xwl_surface_t *xwl_surface_create(
 static void xwl_surface_destroy(
     wlmaker_xwl_surface_t *xwl_surface_ptr);
 
-static void handle_destroy(struct wl_listener *listener_ptr, void *data_ptr);
+static void handle_tree_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_request_configure(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -140,7 +162,13 @@ static void handle_associate(
 static void handle_dissociate(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_set_parent(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_set_decorations(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_set_geometry(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -168,6 +196,9 @@ static void handle_surface_map(
 static void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr);
+
+static struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
+    wlmaker_xwl_surface_t *xwl_surface_ptr);
 
 /* == Data ================================================================= */
 
@@ -226,15 +257,15 @@ void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr)
 /**
  * Creates a scene-graph API node for the XWayland wlroots surface.
  *
- * @param parent_wlr_scene_tree_ptr Scene graph tree this should become
+ * @param wlr_scene_tree_ptr  Scene graph where the surface node should get
  *     attached to.
  * @param wlr_xwayland_surface_ptr The wlroots XWayland surface to create the
  *     node for.
  *
- * @return A scene graph API node.
+ * @return A scene surface.
  */
-struct wlr_scene_tree *wlmaker_scene_xwayland_surface_create(
-    struct wlr_scene_tree *parent_wlr_scene_tree_ptr,
+struct wlr_scene_surface *wlmaker_scene_xwayland_surface_create(
+    struct wlr_scene_tree *wlr_scene_tree_ptr,
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr)
 {
     wlmaker_scene_xwayland_surface_t *scene_xwayland_surface_ptr =
@@ -243,17 +274,6 @@ struct wlr_scene_tree *wlmaker_scene_xwayland_surface_create(
     scene_xwayland_surface_ptr->wlr_xwayland_surface_ptr =
         wlr_xwayland_surface_ptr;
 
-    scene_xwayland_surface_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
-        parent_wlr_scene_tree_ptr);
-    if (NULL == scene_xwayland_surface_ptr->wlr_scene_tree_ptr) {
-        xwls_destroy(scene_xwayland_surface_ptr);
-        return NULL;
-    }
-
-    wlm_util_connect_listener_signal(
-        &scene_xwayland_surface_ptr->wlr_scene_tree_ptr->node.events.destroy,
-        &scene_xwayland_surface_ptr->tree_destroy_listener,
-        xwls_handle_tree_destroy);
     wlm_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->surface->events.map,
         &scene_xwayland_surface_ptr->surface_map_listener,
@@ -271,14 +291,20 @@ struct wlr_scene_tree *wlmaker_scene_xwayland_surface_create(
     // wlr_scene_subsurface_tree_create(...).
     scene_xwayland_surface_ptr->wlr_scene_surface_ptr =
         wlr_scene_surface_create(
-            scene_xwayland_surface_ptr->wlr_scene_tree_ptr,
+            wlr_scene_tree_ptr,
             wlr_xwayland_surface_ptr->surface);
     if (NULL == scene_xwayland_surface_ptr->wlr_scene_surface_ptr) {
         xwls_destroy(scene_xwayland_surface_ptr);
         return NULL;
     }
+    // Set the initial position. @ref handle_set_geometry will take care of
+    // further changes.
+    wlr_scene_node_set_position(
+        &scene_xwayland_surface_ptr->wlr_scene_surface_ptr->buffer->node,
+        wlr_xwayland_surface_ptr->x,
+        wlr_xwayland_surface_ptr->y);
 
-    return scene_xwayland_surface_ptr->wlr_scene_tree_ptr;
+    return scene_xwayland_surface_ptr->wlr_scene_surface_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -289,42 +315,14 @@ struct wlr_scene_tree *wlmaker_scene_xwayland_surface_create(
  */
 void xwls_destroy(wlmaker_scene_xwayland_surface_t *scene_xwayland_surface_ptr)
 {
-    if (NULL != scene_xwayland_surface_ptr->wlr_scene_surface_ptr) {
-        wlr_scene_node_destroy(
-            &scene_xwayland_surface_ptr->wlr_scene_surface_ptr->buffer->node);
-        scene_xwayland_surface_ptr->wlr_scene_surface_ptr = NULL;
-    }
+    // wlr_scene_surface_ptr is now tied with wlr_xwayland_surface_ptr, and
+    // will get collected via the surface's destroy operation.
 
     wl_list_remove(&scene_xwayland_surface_ptr->surface_destroy_listener.link);
     wl_list_remove(&scene_xwayland_surface_ptr->surface_unmap_listener.link);
     wl_list_remove(&scene_xwayland_surface_ptr->surface_map_listener.link);
-    wl_list_remove(&scene_xwayland_surface_ptr->tree_destroy_listener.link);
 
-    if (NULL != scene_xwayland_surface_ptr->wlr_scene_tree_ptr) {
-        wlr_scene_node_destroy(
-            &scene_xwayland_surface_ptr->wlr_scene_tree_ptr->node);
-        scene_xwayland_surface_ptr->wlr_scene_tree_ptr = NULL;
-    }
     free(scene_xwayland_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `destroy` signal of the tree. Will clean up.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void xwls_handle_tree_destroy(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_scene_xwayland_surface_t *scene_xwayland_surface_ptr =
-        BS_CONTAINER_OF(listener_ptr, wlmaker_scene_xwayland_surface_t,
-                        tree_destroy_listener);
-    // Prevent double-deletes.
-    scene_xwayland_surface_ptr->wlr_scene_tree_ptr = NULL;
-    xwls_destroy(scene_xwayland_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -342,7 +340,7 @@ void xwls_handle_surface_map(
         BS_CONTAINER_OF(listener_ptr, wlmaker_scene_xwayland_surface_t,
                         surface_map_listener);
     wlr_scene_node_set_enabled(
-        &scene_xwayland_surface_ptr->wlr_scene_tree_ptr->node, true);
+        &scene_xwayland_surface_ptr->wlr_scene_surface_ptr->buffer->node, true);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -360,12 +358,13 @@ void xwls_handle_surface_unmap(
         BS_CONTAINER_OF(listener_ptr, wlmaker_scene_xwayland_surface_t,
                         surface_unmap_listener);
     wlr_scene_node_set_enabled(
-        &scene_xwayland_surface_ptr->wlr_scene_tree_ptr->node, false);
+        &scene_xwayland_surface_ptr->wlr_scene_surface_ptr->buffer->node, false);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for the `destroy` signal of the surface. Will destroy the node.
+ * Handler for the `destroy` signal of the surface. Will destroy all resources
+ * except the node.
  *
  * @param listener_ptr
  * @param data_ptr
@@ -377,8 +376,7 @@ void xwls_handle_surface_destroy(
     wlmaker_scene_xwayland_surface_t *scene_xwayland_surface_ptr =
         BS_CONTAINER_OF(listener_ptr, wlmaker_scene_xwayland_surface_t,
                         surface_destroy_listener);
-    wlr_scene_node_destroy(
-        &scene_xwayland_surface_ptr->wlr_scene_tree_ptr->node);
+    xwls_destroy(scene_xwayland_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -391,9 +389,9 @@ void xwls_handle_surface_destroy(
 void handle_new_surface(struct wl_listener *listener_ptr,
                         void *data_ptr)
 {
-    __UNUSED__ struct wlr_xwayland_surface *wlr_xwayland_surface_ptr = data_ptr;
-    __UNUSED__ wlmaker_xwl_t *xwl_ptr = BS_CONTAINER_OF(
+    wlmaker_xwl_t *xwl_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_t, new_surface_listener);
+    struct wlr_xwayland_surface *wlr_xwayland_surface_ptr = data_ptr;
 
     wlmaker_xwl_surface_t *xwl_surface_ptr = xwl_surface_create(
         xwl_ptr, wlr_xwayland_surface_ptr);
@@ -425,6 +423,22 @@ wlmaker_xwl_surface_t *xwl_surface_create(
     // To find ourselves later on...
     wlr_xwayland_surface_ptr->data = xwl_surface_ptr;
 
+    struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
+        get_parent_wlr_scene_tree_ptr(xwl_surface_ptr);
+    xwl_surface_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
+        parent_wlr_scene_tree_ptr);
+    if (NULL == xwl_surface_ptr->wlr_scene_tree_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_scene_tree_create(%p)",
+               parent_wlr_scene_tree_ptr);
+        xwl_surface_destroy(xwl_surface_ptr);
+        return NULL;
+    }
+
+    wlm_util_connect_listener_signal(
+        &xwl_surface_ptr->wlr_scene_tree_ptr->node.events.destroy,
+        &xwl_surface_ptr->tree_destroy_listener,
+        handle_tree_destroy);
+
     wlm_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
         &xwl_surface_ptr->destroy_listener,
@@ -442,12 +456,21 @@ wlmaker_xwl_surface_t *xwl_surface_create(
         &xwl_surface_ptr->dissociate_listener,
         handle_dissociate);
     wlm_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_parent,
+        &xwl_surface_ptr->set_parent_listener,
+        handle_set_parent);
+    wlm_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_decorations,
         &xwl_surface_ptr->set_decorations_listener,
         handle_set_decorations);
+    wlm_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_geometry,
+        &xwl_surface_ptr->set_geometry_listener,
+        handle_set_geometry);
 
     bs_log(BS_INFO, "Created XWayland surface %p, wlr xwayland surface %p",
            xwl_surface_ptr, wlr_xwayland_surface_ptr);
+
     return xwl_surface_ptr;
 }
 
@@ -461,13 +484,40 @@ void xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr)
 {
     bs_log(BS_INFO, "Destroying XWayland surface %p", xwl_surface_ptr);
 
+    wl_list_remove(&xwl_surface_ptr->set_geometry_listener.link);
     wl_list_remove(&xwl_surface_ptr->set_decorations_listener.link);
+    wl_list_remove(&xwl_surface_ptr->set_parent_listener.link);
     wl_list_remove(&xwl_surface_ptr->dissociate_listener.link);
     wl_list_remove(&xwl_surface_ptr->associate_listener.link);
     wl_list_remove(&xwl_surface_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_surface_ptr->destroy_listener.link);
+    wl_list_remove(&xwl_surface_ptr->tree_destroy_listener.link);
+
+    if (NULL != xwl_surface_ptr->wlr_scene_tree_ptr) {
+        wlr_scene_node_destroy(&xwl_surface_ptr->wlr_scene_tree_ptr->node);
+        xwl_surface_ptr->wlr_scene_tree_ptr = NULL;
+    }
 
     free(xwl_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `destroy` signal of the tree. Will clean up.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_tree_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, tree_destroy_listener);
+
+    // Prevent double-deletes.
+    xwl_surface_ptr->wlr_scene_tree_ptr = NULL;
+    xwl_surface_destroy(xwl_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -552,33 +602,15 @@ void handle_associate(
         listener_ptr, wlmaker_xwl_surface_t, associate_listener);
     bs_log(BS_INFO, "Associate %p", xwl_surface_ptr);
 
-    BS_ASSERT(NULL == xwl_surface_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(!xwl_surface_ptr->view_initialized);
 
-    // TODO(kaeser@gubbe.ch): Here, we should fork out into creating a toplevel
-    // vs a non-toplevel (popup? children?) window.
-    struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
-        &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree;
-    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
-        wlmaker_xwl_surface_t *parent_xwl_surface_ptr =
-            xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
-        parent_wlr_scene_tree_ptr = parent_xwl_surface_ptr->wlr_scene_tree_ptr;
-
-        if (NULL == parent_wlr_scene_tree_ptr) {
-            bs_log(BS_WARNING, "Unexpected: %p with parent %p does not have a tree",
-                   xwl_surface_ptr, parent_xwl_surface_ptr);
-            parent_wlr_scene_tree_ptr =
-                &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree;
-        }
-    }
-
-
-    xwl_surface_ptr->wlr_scene_tree_ptr = wlmaker_scene_xwayland_surface_create(
-        parent_wlr_scene_tree_ptr,
-        xwl_surface_ptr->wlr_xwayland_surface_ptr);
-    if (NULL == xwl_surface_ptr->wlr_scene_tree_ptr) {
+    xwl_surface_ptr->wlr_scene_surface_ptr =
+        wlmaker_scene_xwayland_surface_create(
+            xwl_surface_ptr->wlr_scene_tree_ptr,
+            xwl_surface_ptr->wlr_xwayland_surface_ptr);
+    if (NULL == xwl_surface_ptr->wlr_scene_surface_ptr) {
         bs_log(BS_FATAL, "Failed wlmaker_scene_xwayland_surface_create(%p, %p)",
-               parent_wlr_scene_tree_ptr,
+               xwl_surface_ptr->wlr_scene_tree_ptr,
                xwl_surface_ptr->wlr_xwayland_surface_ptr);
         // TODO(kaeser@gubbe.ch): Should pass error back to client, and not
         // abort the server.
@@ -632,16 +664,54 @@ void handle_dissociate(
 
     if (NULL == xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
         // TODO(kaeser@gubbe.ch): Deal as toplevel or non-toplevel.
+
+        // Take our node out of the view's tree, otherwise it'll be destroyed.
+        // However, we want to keep it.
+        wlr_scene_node_reparent(
+            &xwl_surface_ptr->wlr_scene_tree_ptr->node,
+            &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree);
+
         wlmaker_view_fini(&xwl_surface_ptr->view);
         xwl_surface_ptr->view_initialized = false;
     }
 
+    xwl_surface_ptr->wlr_scene_surface_ptr = NULL;
     wl_list_remove(&xwl_surface_ptr->surface_unmap_listener.link);
     wl_list_remove(&xwl_surface_ptr->surface_map_listener.link);
+}
 
-    // Note: xwl_surface_ptr->wlr_scene_tree_ptr not destroyed here, it is
-    // cleaned up via the scene tree it was attached to.
-    xwl_surface_ptr->wlr_scene_tree_ptr = NULL;
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_parent` event of `struct wlr_xwayland_surface`.
+ *
+ * Will identify the `wlr_scene_tree` of the parent's surface, and (if it turns
+ * out to be different from the current parent), re-attach this surface's own
+ * `wlr_scene_tree` there.
+ * If the new surface's parent is NULL, the tree is attached to the void
+ * surface.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_set_parent(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, set_parent_listener);
+
+    struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
+        get_parent_wlr_scene_tree_ptr(xwl_surface_ptr);
+    if (parent_wlr_scene_tree_ptr ==
+        xwl_surface_ptr->wlr_scene_tree_ptr->node.parent) {
+        // Uh, nothing to do here.
+        return;
+    }
+
+    wlr_scene_node_reparent(
+        &xwl_surface_ptr->wlr_scene_tree_ptr->node,
+        parent_wlr_scene_tree_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -663,6 +733,28 @@ void handle_set_decorations(
             &xwl_surface_ptr->view,
             (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
              WLR_XWAYLAND_SURFACE_DECORATIONS_ALL));
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_geometry` event of `struct wlr_xwayland_surface`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_set_geometry(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, set_geometry_listener);
+
+    if (NULL != xwl_surface_ptr->wlr_scene_surface_ptr) {
+        wlr_scene_node_set_position(
+            &xwl_surface_ptr->wlr_scene_surface_ptr->buffer->node,
+            xwl_surface_ptr->wlr_xwayland_surface_ptr->x,
+            xwl_surface_ptr->wlr_xwayland_surface_ptr->y);
     }
 }
 
@@ -791,6 +883,9 @@ void handle_surface_map(
         return;
     }
 
+    wlr_scene_node_set_enabled(
+        &xwl_surface_ptr->wlr_scene_tree_ptr->node, true);
+
     wlmaker_view_map(
         &xwl_surface_ptr->view,
         wlmaker_server_get_current_workspace(xwl_surface_ptr->view.server_ptr),
@@ -822,7 +917,38 @@ void handle_surface_unmap(
         return;
     }
 
+    wlr_scene_node_set_enabled(
+        &xwl_surface_ptr->wlr_scene_tree_ptr->node, false);
+
     wlmaker_view_unmap(&xwl_surface_ptr->view);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Helper: Returns the XWayland window parent's `struct wlr_scene_tree`, or
+ * a pointer to the void_wlr_scene_tree if not available.
+ *
+ * @param xwl_surface_ptr
+ *
+ * @return Pointer to the `struct wlr_scene_tree`.
+ */
+struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
+    wlmaker_xwl_surface_t *xwl_surface_ptr)
+{
+    struct wlr_scene_tree *parent_wlr_scene_tree_ptr = NULL;
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        BS_ASSERT(NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data);
+        wlmaker_xwl_surface_t *parent_xwl_surface_ptr =
+            xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
+        parent_wlr_scene_tree_ptr = parent_xwl_surface_ptr->wlr_scene_tree_ptr;
+    } else {
+        parent_wlr_scene_tree_ptr =
+            &xwl_surface_ptr->xwl_ptr->server_ptr->void_wlr_scene_ptr->tree;
+    }
+    BS_ASSERT(NULL != parent_wlr_scene_tree_ptr);
+    BS_ASSERT(xwl_surface_ptr->wlr_scene_tree_ptr != parent_wlr_scene_tree_ptr);
+
+    return parent_wlr_scene_tree_ptr;
 }
 
 /* == End of xwl.c ========================================================= */
