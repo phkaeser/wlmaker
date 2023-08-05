@@ -36,6 +36,13 @@
  *   Open `emacs`, click a menu, and hover over a menu item for the tooltip to
  *   appear. When moving across menus, the tooltip sometimes appears below the
  *   menu window.
+ *
+ * * Popups or dialogs may not be activated or focussed correctly. Reproduce:
+ *   Open `emacs`, open the `File` menu, and `Visit New File...`. The dialogue
+ *   does not accept mouse events. Moving the dialogue window moves the entire
+ *   emacs window.
+ *
+ * * `modal` windows are not identified and treated as such.
  */
 
 
@@ -876,7 +883,11 @@ void handle_surface_map(
 {
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, surface_map_listener);
-    bs_log(BS_INFO, "Map %p", xwl_surface_ptr);
+    bs_log(BS_INFO, "Map %p - decorations %x, modal %d, parent %p",
+           xwl_surface_ptr,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->modal,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->parent);
 
     if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
         // TODO(kaeser@gubbe.ch): This is ... ugly. Refactor. Should be handled
