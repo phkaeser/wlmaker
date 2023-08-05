@@ -48,9 +48,12 @@
  *   window's position based on the earlier application's status. We currently
  *   don't translate this to the toplevel window's position, but apply it to
  *   the surface within the tree => leading to a title bar that's oddly offset.
+ *   Reproduce: Open a gimp menu, and view the tooltip being off.
  *
- * * Eg. `gimp` menu tooltips are created as windows without parent, and with
- *   decorations value ALL.
+ * * The window types are not well understood. Eg. `gimp` menu tooltips are
+ *   created as windows without parent. We can identify them as TOOLTIP windows
+ *   that won't have a border; but we don't have a well-understood set of
+ *   properties for the window types.
  */
 
 
@@ -241,6 +244,9 @@ static void handle_surface_unmap(
 
 static struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
     wlmaker_xwl_surface_t *xwl_surface_ptr);
+static bool is_window_type(
+    wlmaker_xwl_surface_t *xwl_surface_ptr,
+    const xwl_atom_identifier_t *atom_identifiers);
 
 /* == Data ================================================================= */
 
@@ -757,10 +763,14 @@ void handle_associate(
     xwl_surface_ptr->view_initialized = true;
 
     // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
-    wlmaker_view_set_server_side_decoration(
-        &xwl_surface_ptr->view,
-        (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
-         WLR_XWAYLAND_SURFACE_DECORATIONS_ALL));
+    static const xwl_atom_identifier_t borderless_window_types[] = {
+        NET_WM_WINDOW_TYPE_TOOLTIP, XWL_MAX_ATOM_ID};
+    if (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
+        WLR_XWAYLAND_SURFACE_DECORATIONS_ALL &&
+        !is_window_type(xwl_surface_ptr, borderless_window_types)) {
+        wlmaker_view_set_server_side_decoration(
+            &xwl_surface_ptr->view, true);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1000,6 +1010,14 @@ void handle_surface_map(
            xwl_surface_ptr->wlr_xwayland_surface_ptr->modal,
            xwl_surface_ptr->wlr_xwayland_surface_ptr->parent);
 
+    for (size_t i = 0;
+         i < xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type_len;
+         ++i) {
+        bs_log(BS_DEBUG, "For %p: window type 0x%"PRIx32,
+               xwl_surface_ptr,
+               xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type[i]);
+    }
+
     if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
         // TODO(kaeser@gubbe.ch): This is ... ugly. Refactor. Should be handled
         // by nature of being a toplevel (~= view) or non-toplevel window.
@@ -1072,6 +1090,31 @@ struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
     BS_ASSERT(xwl_surface_ptr->wlr_scene_tree_ptr != parent_wlr_scene_tree_ptr);
 
     return parent_wlr_scene_tree_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns whether the XWayland surface has any of the window types.
+ *
+ * @param xwl_surface_ptr
+ * @param atom_identifiers    Set of window type we're looking for.
+ *
+ * @return Whether `atom_identifiers` is in any of the window types.
+ */
+bool is_window_type(wlmaker_xwl_surface_t *xwl_surface_ptr,
+                    const xwl_atom_identifier_t *atom_identifiers)
+{
+    for (; *atom_identifiers < XWL_MAX_ATOM_ID; ++atom_identifiers) {
+        for (size_t i = 0;
+             i < xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type_len;
+             ++i) {
+            if (xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type[i] ==
+                xwl_surface_ptr->xwl_ptr->xcb_atoms[*atom_identifiers]) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /* == End of xwl.c ========================================================= */
