@@ -18,8 +18,8 @@
  * limitations under the License.
  *
  * @internal
- * The current XWayland implementation is not very cleanly designed, and is
- * more of an advanced prototype than a finished implementation.
+ * The current XWayland implementation is not very cleanly designed and should
+ * be considered *experimental*.
  * TODO(kaeser@gubbe.ch): Re-design, once object model is updated.
  *
  * Known issues:
@@ -43,6 +43,14 @@
  *   emacs window.
  *
  * * `modal` windows are not identified and treated as such.
+ *
+ * * Positioning of windows: Applications such as `gimp` are setting the main
+ *   window's position based on the earlier application's status. We currently
+ *   don't translate this to the toplevel window's position, but apply it to
+ *   the surface within the tree => leading to a title bar that's oddly offset.
+ *
+ * * Eg. `gimp` menu tooltips are created as windows without parent, and with
+ *   decorations value ALL.
  */
 
 
@@ -55,6 +63,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "util.h"
+
 
 /* == Declarations ========================================================= */
 
@@ -735,6 +744,9 @@ void handle_set_decorations(
 {
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, set_decorations_listener);
+    bs_log(BS_INFO, "Set decorations for %p to %d",
+           xwl_surface_ptr,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations);
     if (xwl_surface_ptr->view_initialized) {
         // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
         wlmaker_view_set_server_side_decoration(
