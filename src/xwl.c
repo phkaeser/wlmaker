@@ -67,6 +67,23 @@
 
 /* == Declarations ========================================================= */
 
+/** XCB Atom identifieres. */
+typedef enum {
+    NET_WM_WINDOW_TYPE_NORMAL,
+    NET_WM_WINDOW_TYPE_DIALOG,
+    NET_WM_WINDOW_TYPE_UTILITY,
+    NET_WM_WINDOW_TYPE_TOOLBAR,
+    NET_WM_WINDOW_TYPE_SPLASH,
+    NET_WM_WINDOW_TYPE_MENU,
+    NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
+    NET_WM_WINDOW_TYPE_POPUP_MENU,
+    NET_WM_WINDOW_TYPE_TOOLTIP,
+    NET_WM_WINDOW_TYPE_NOTIFICATION,
+
+    // Sentinel element.
+    XWL_MAX_ATOM_ID
+} xwl_atom_identifier_t;
+
 /** XWayland interface state. */
 struct _wlmaker_xwl_t {
     /** Back-link to server. */
@@ -75,8 +92,13 @@ struct _wlmaker_xwl_t {
     /** XWayland server and XWM. */
     struct wlr_xwayland       *wlr_xwayland_ptr;
 
+    /** Listener for the `ready` signal raised by `wlr_xwayland`. */
+    struct wl_listener        ready_listener;
     /** Listener for the `new_surface` signal raised by `wlr_xwayland`. */
     struct wl_listener        new_surface_listener;
+
+    /** XCB atoms we consider relevant. */
+    xcb_atom_t                xcb_atoms[XWL_MAX_ATOM_ID];
 };
 
 /** A scene-graph API subtree for a wlroots XWayland surface. */
@@ -154,6 +176,9 @@ typedef struct {
     struct wl_listener        surface_unmap_listener;
 } wlmaker_xwl_surface_t;
 
+static void handle_ready(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_new_surface(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -219,6 +244,20 @@ static struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
 
 /* == Data ================================================================= */
 
+/** Lookup map for some of XCB atom identifiers. */
+static const char *xwl_atom_name_map[XWL_MAX_ATOM_ID] = {
+    [NET_WM_WINDOW_TYPE_NORMAL] = "_NET_WM_WINDOW_TYPE_NORMAL",
+    [NET_WM_WINDOW_TYPE_DIALOG] = "_NET_WM_WINDOW_TYPE_DIALOG",
+    [NET_WM_WINDOW_TYPE_UTILITY] = "_NET_WM_WINDOW_TYPE_UTILITY",
+    [NET_WM_WINDOW_TYPE_TOOLBAR] = "_NET_WM_WINDOW_TYPE_TOOLBAR",
+    [NET_WM_WINDOW_TYPE_SPLASH] = "_NET_WM_WINDOW_TYPE_SPLASH",
+    [NET_WM_WINDOW_TYPE_MENU] = "_NET_WM_WINDOW_TYPE_MENU",
+    [NET_WM_WINDOW_TYPE_DROPDOWN_MENU] = "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU",
+    [NET_WM_WINDOW_TYPE_POPUP_MENU] = "_NET_WM_WINDOW_TYPE_POPUP_MENU",
+    [NET_WM_WINDOW_TYPE_TOOLTIP] = "_NET_WM_WINDOW_TYPE_TOOLTIP",
+    [NET_WM_WINDOW_TYPE_NOTIFICATION] = "_NET_WM_WINDOW_TYPE_NOTIFICATION",
+};
+
 /** View implementor methods. */
 const wlmaker_view_impl_t     xwl_surface_view_impl = {
     .set_activated = wlmaker_xwl_surface_set_activated,
@@ -249,6 +288,10 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
+    wlm_util_connect_listener_signal(
+        &xwl_ptr->wlr_xwayland_ptr->events.ready,
+        &xwl_ptr->ready_listener,
+        handle_ready);
     wlm_util_connect_listener_signal(
         &xwl_ptr->wlr_xwayland_ptr->events.new_surface,
         &xwl_ptr->new_surface_listener,
@@ -394,6 +437,62 @@ void xwls_handle_surface_destroy(
         BS_CONTAINER_OF(listener_ptr, wlmaker_scene_xwayland_surface_t,
                         surface_destroy_listener);
     xwls_destroy(scene_xwayland_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `ready` signal raised by `wlr_xwayland`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_ready(struct wl_listener *listener_ptr,
+                  __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_t *xwl_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_t, ready_listener);
+
+    xcb_connection_t *xcb_connection_ptr = xcb_connect(
+        xwl_ptr->wlr_xwayland_ptr->display_name, NULL);
+    int error = xcb_connection_has_error(xcb_connection_ptr);
+    if (0 != error) {
+        bs_log(BS_ERROR, "Failed xcb_connect(%s, NULL): %d",
+               xwl_ptr->wlr_xwayland_ptr->display_name, error);
+        return;
+    }
+
+    xcb_intern_atom_cookie_t atom_cookies[XWL_MAX_ATOM_ID];
+    for (size_t i = 0; i < XWL_MAX_ATOM_ID; ++i) {
+        const char *name_ptr = xwl_atom_name_map[i];
+        atom_cookies[i] = xcb_intern_atom(
+            xcb_connection_ptr, 0, strlen(name_ptr), name_ptr);
+    }
+
+    for (size_t i = 0; i < XWL_MAX_ATOM_ID; ++i) {
+        xcb_generic_error_t *error_ptr = NULL;
+        xcb_intern_atom_reply_t *atom_reply_ptr = xcb_intern_atom_reply(
+            xcb_connection_ptr, atom_cookies[i], &error_ptr);
+        if (NULL != atom_reply_ptr) {
+            if (NULL == error_ptr) {
+                xwl_ptr->xcb_atoms[i] = atom_reply_ptr->atom;
+                bs_log(BS_DEBUG, "XCB lookup on %s: atom %s = 0x%"PRIx32,
+                       xwl_ptr->wlr_xwayland_ptr->display_name,
+                       xwl_atom_name_map[i],
+                       atom_reply_ptr->atom);
+            }
+            free(atom_reply_ptr);
+        }
+
+        if (NULL != error_ptr) {
+            bs_log(BS_ERROR, "Failed xcb_intern_atom_reply(%p, %s, %p): %d",
+                   xcb_connection_ptr, xwl_atom_name_map[i],
+                   &error_ptr, error_ptr->error_code);
+            free(error_ptr);
+            break;
+        }
+    }
+
+    xcb_disconnect(xcb_connection_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
