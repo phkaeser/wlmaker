@@ -70,6 +70,8 @@ wlmaker_window_decorations_t *wlmaker_window_decorations_create(
         wlmaker_window_decorations_destroy(decorations_ptr);
         return NULL;
     }
+    wlr_scene_node_lower_to_bottom(
+        &decorations_ptr->wlr_scene_tree_ptr->node);
 
     // Margins around the window itself (not including title or resize bar).
     decorations_ptr->margin_ptr = wlmaker_decorations_margin_create(

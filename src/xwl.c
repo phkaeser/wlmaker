@@ -32,9 +32,10 @@
  * * Windows with parents are created as plain surfaces and don't clearly show
  *   their stacking order. Decorations may not get applied in all cases.
  *
- * * View decorations are drawn on top, and may obscur (sub)window elements.
- *
- * * Stacking order is not tackled, eg. popups may appear below.
+ * * Stacking order is not tackled, eg. popups may appear below. Reproduce:
+ *   Open `emacs`, click a menu, and hover over a menu item for the tooltip to
+ *   appear. When moving across menus, the tooltip sometimes appears below the
+ *   menu window.
  */
 
 
@@ -553,7 +554,7 @@ void handle_request_configure(
     struct wlr_xwayland_surface_configure_event *cfg_event_ptr = data_ptr;
 
     bs_log(BS_INFO, "Reqeust configure for %p: "
-           "%"PRId16" x %"PRIx16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
+           "%"PRId16" x %"PRId16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
            xwl_surface_ptr,
            cfg_event_ptr->x, cfg_event_ptr->y,
            cfg_event_ptr->width, cfg_event_ptr->height,
