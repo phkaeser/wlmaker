@@ -67,12 +67,17 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
-  * Surfaces will be shown in either tile container, clip or dock area,
+  * [done] Surfaces will be shown in either tile container, clip or dock area,
     depending from where the app was started.
-  * Two demo DockApps included (digital clock; julia set).
+  * [done] Demo DockApps included (digital clock)
+  * Second Demo DockApp (julia set).
 
 * Initial XWayland support
-  * Cover enough functionality to support xterm, emacs in X11.
+  * [done] Cover enough functionality to support xterm
+  * Enough functionality to support emacs in X11.
+    * [done] Support for child surfaces.
+    * Handling of modal windows: Should have decorations, stay on top.
+    * Ensure stacking order is respected and used.
 
 * Configurable keyboard map (in code or commandline arg)
 
@@ -86,10 +91,13 @@ Features for further versions, not ordered by priority nor timeline.
   * Attached to dock (visible across workspaces) or clip (per workspace).
   * Configurable to show permanently also in clip.
   * Drag-and-drop between clip and dock.
+  * Ideally: With a Wayland protocol that permits running the dock and clip as
+    separate binary, independent of the compositor.
 
 * Visualization / icons for running apps.
   * Show in 'iconified' area.
   * Drag-and-drop into clip or dock area.
+  * Consider running this as task selector, as separate binary.
 
 * Support for dynamic output configurations.
   * Multiple monitors.
