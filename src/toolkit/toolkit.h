@@ -17,6 +17,100 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @page toolkit_page Toolkit Page
+ *
+ * Work in progress ...
+ *
+ * * Where do we compose, vs. inherit?
+ *
+ * @startuml
+
+   class Element {
+     int x, y
+     struct wlr_scene_node *node_ptr
+     Container *container_ptr
+
+     Element *create(void)
+     void destroy(Element*)
+     set_parent(Container*)
+     map()
+     unmap()
+
+     {abstract}#create_node()
+   }
+   note right of Element::"map()"
+     Only permitted if element is a member of a (mapped?) container.
+   end note
+
+   class Container {
+     Element parent
+     Element children[]
+
+     Container *create(void)
+     void destroy(Container*)
+     add_element(Element*)
+     remove_element(Element*)
+
+     map()
+     unmap()
+   }
+   Element <|-- Container
+
+   class Workspace {
+     Container parent
+
+     Container *create(void)
+     void destroy(Container*)
+   }
+   Container <|-- Workspace
+
+   class HBox {
+     Container parent
+   }
+   Container <|-- HBox
+
+   class VBox {
+     Container parent
+   }
+   Container <|-- VBox
+
+   class Surface {
+     Element parent
+   }
+   Element <|-- Surface
+
+   class Buffer {
+     Element parent
+   }
+   Element <|-- Buffer
+
+
+   class Workspace {
+     Container parent
+
+     Workspace *create(void)
+     void destroy(Workspace*)
+   }
+
+
+
+   class Window {
+     VBox parent
+     Surface surface
+     TitleBar title_bar
+   }
+   VBox <|-- Window
+
+   class TitleBar {
+     HBox parent
+   }
+   HBox <|-- TitleBar
+
+
+ * @enduml
+ */
 #ifndef __TOOLKIT_H__
 #define __TOOLKIT_H__
 
