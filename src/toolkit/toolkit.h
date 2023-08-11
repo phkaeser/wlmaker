@@ -24,7 +24,6 @@
  * Work in progress ...
  *
  * * Where do we compose, vs. inherit?
- * * How do we map tiles in a dock, or at the clip?
  *
  * @startuml
 
@@ -161,6 +160,35 @@
  * @enduml
  *
  *
+ * @startuml
+
+   class Dock {
+     Container container[]
+     DockEntry entries[]
+   }
+
+   class DockEntry {
+     Element
+   }
+
+   class Launcher {
+   }
+   DockEntry <|-- Launcher
+
+   class Icon {}
+   DockEntry <|-- Icon
+
+   class IconSurface {}
+   DockEntry <|-- IconSurface
+
+   class Clip {}
+   Dock <|-- Clip
+
+   class IconArea {}
+   Dock <|-- IconArea
+
+
+ * @enduml
  */
 
 #if 0
@@ -214,7 +242,7 @@ upon surface::map
 
   => will call map(node?) on window::element
     - is implemented in Container:
-    - create a scene tree (from parent's node) oc reparent (from parent)
+    - create a scene tree (from parents node) oc reparent (from parent)
     - calls map for every item in container
 
 
