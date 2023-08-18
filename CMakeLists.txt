@@ -49,6 +49,7 @@ PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
+OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 
 # Toplevel compile options, for GCC.
 IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
