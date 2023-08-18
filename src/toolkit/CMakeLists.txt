@@ -17,10 +17,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 SET(PUBLIC_HEADER_FILES
   gfxbuf.h
   primitives.h
-  style.h)
+  style.h
+  toolkit.h)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
+  element.c
+  container.c
   gfxbuf.c
   primitives.c)
 TARGET_INCLUDE_DIRECTORIES(
