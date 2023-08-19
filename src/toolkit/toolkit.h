@@ -32,6 +32,8 @@
 extern "C" {
 #endif  // __cplusplus
 
+struct wlr_scene_tree;
+
 /** Forward declaration: Element. */
 typedef struct _wlmtk_element_t wlmtk_element_t;
 /** Forward declaration: Container. */
@@ -49,8 +51,6 @@ struct _wlmtk_element_t {
     /** Y position of the element, relative to the container. */
     int y;
 
-    /** wlroots scene graph API node. Only set when mapped. */
-    struct wlr_scene_node_t   *wlr_scene_node_ptr;
     /** The container this element belongs to, if any. */
     wlmtk_container_t         *parent_container_ptr;
     /** The node of elements. */
@@ -58,12 +58,19 @@ struct _wlmtk_element_t {
 
     /** Implementation of abstract virtual methods. */
     const wlmtk_element_impl_t *impl_ptr;
+
+    /** Points to the wlroots scene graph API node. Is set when mapped. */
+    struct wlr_scene_node     *wlr_scene_node_ptr;
 };
 
 /** Pointers to the implementation of Element's virtual methods. */
 struct _wlmtk_element_impl_t {
     /** Destroys the implementation of the element. */
     void (*destroy)(wlmtk_element_t *element_ptr);
+    /** Creates element's scene graph API node, child to wlr_scene_tree_ptr. */
+    struct wlr_scene_node *(*create_scene_node)(
+        wlmtk_element_t *element_ptr,
+        struct wlr_scene_tree *wlr_scene_tree_ptr);
 };
 
 /**
@@ -107,6 +114,24 @@ void wlmtk_element_set_parent_container(
     wlmtk_element_t *element_ptr,
     wlmtk_container_t *parent_container_ptr);
 
+/**
+ * Maps the element.
+ *
+ * Requires a parent container to be set. Will call `create_scene_node` to
+ * build the scene graph API node attached to the parent container's tree.
+ *
+ * @param element_ptr
+ */
+void wlmtk_element_map(wlmtk_element_t *element_ptr);
+
+/**
+ * Unmaps the element.
+ *
+ * @param element_ptr
+ */
+void wlmtk_element_unmap(wlmtk_element_t *element_ptr);
+
+
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {
@@ -128,6 +153,9 @@ struct _wlmtk_container_t {
 
     /** Implementation of the container's virtual methods. */
     const wlmtk_container_impl_t *impl_ptr;
+
+    /** Scene tree. */
+    struct wlr_scene_tree     *wlr_scene_tree_ptr;
 };
 
 /** Virtual method table of the container. */
@@ -178,13 +206,26 @@ void wlmtk_container_remove_element(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr);
 
+/**
+ * Returns the wlroots scene graph tree for this node.
+ *
+ * Requires this container's element to be mapped. Should be called only from
+ * members of `elements`.
+ *
+ * @param container_ptr
+ *
+ * @return The scene tree.
+ */
+struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
+    wlmtk_container_t *container_ptr);
+
 /** Virtual method: Calls the dtor of the container's implementation. */
 static inline void wlmtk_container_destroy(
     wlmtk_container_t *container_ptr) {
     container_ptr->impl_ptr->destroy(container_ptr);
 }
 
-/** Unit tests for the element. */
+/** Unit tests for the container. */
 extern const bs_test_case_t wlmtk_container_test_cases[];
 
 /* ========================================================================= */
@@ -195,10 +236,13 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 /**
  * Creates a workspace.
  *
+ * @param wlr_scene_tree_ptr
+ *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
  */
-wlmtk_workspace_t *wlmtk_workspace_create(void);
+wlmtk_workspace_t *wlmtk_workspace_create(
+    struct wlr_scene_tree *wlr_scene_tree_ptr);
 
 /**
  * Destroys the workspace. Will destroy any still-mapped element.
@@ -206,6 +250,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(void);
  * @param workspace_ptr
  */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
+
+/** Unit tests for the workspace. */
+extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

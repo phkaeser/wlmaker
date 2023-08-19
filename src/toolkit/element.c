@@ -20,6 +20,10 @@
 
 #include "toolkit.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_scene.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 /* == Exported methods ===================================================== */
@@ -69,6 +73,26 @@ void wlmtk_element_set_parent_container(
     wlmtk_container_t *parent_container_ptr)
 {
     element_ptr->parent_container_ptr = parent_container_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_map(wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(NULL != element_ptr->parent_container_ptr);
+    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
+
+    element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
+        element_ptr,
+        wlmtk_container_wlr_scene_tree(element_ptr->parent_container_ptr));
+    BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_unmap(wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
+    wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
+    element_ptr->wlr_scene_node_ptr = NULL;
 }
 
 /* == Local (static) methods =============================================== */

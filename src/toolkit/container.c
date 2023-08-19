@@ -20,13 +20,21 @@
 
 #include "toolkit.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_scene.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 static void element_destroy(wlmtk_element_t *element_ptr);
+static struct wlr_scene_node *element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_impl_t super_element_impl = {
-    .destroy = element_destroy
+    .destroy = element_destroy,
+    .create_scene_node = element_create_scene_node
 };
 
 /* == Exported methods ===================================================== */
@@ -87,6 +95,13 @@ void wlmtk_container_remove_element(
         wlmtk_dlnode_from_element(element_ptr));
 }
 
+/* ------------------------------------------------------------------------- */
+struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
+    wlmtk_container_t *container_ptr)
+{
+    return container_ptr->wlr_scene_tree_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -100,6 +115,30 @@ void element_destroy(wlmtk_element_t *element_ptr)
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
     container_ptr->impl_ptr->destroy(container_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the superclass wlmtk_element_t::create_scene_node method.
+ *
+ * @param element_ptr
+ * @param wlr_scene_tree_ptr
+ *
+ * @return Pointer to the scene graph API node.
+ */
+struct wlr_scene_node *element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+
+    BS_ASSERT(NULL == container_ptr->wlr_scene_tree_ptr);
+    container_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
+        wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != container_ptr->wlr_scene_tree_ptr);
+
+    return &container_ptr->wlr_scene_tree_ptr->node;
 }
 
 /* == Unit tests =========================================================== */
