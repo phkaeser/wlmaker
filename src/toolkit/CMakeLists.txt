@@ -25,7 +25,8 @@ TARGET_SOURCES(toolkit PRIVATE
   element.c
   container.c
   gfxbuf.c
-  primitives.c)
+  primitives.c
+  workspace.c)
 TARGET_INCLUDE_DIRECTORIES(
   toolkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..

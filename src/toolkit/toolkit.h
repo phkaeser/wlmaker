@@ -187,6 +187,26 @@ static inline void wlmtk_container_destroy(
 /** Unit tests for the element. */
 extern const bs_test_case_t wlmtk_container_test_cases[];
 
+/* ========================================================================= */
+
+/** State of the workspace. */
+typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
+
+/**
+ * Creates a workspace.
+ *
+ * @return Pointer to the workspace state, or NULL on error. Must be free'd
+ *     via @ref wlmtk_workspace_destroy.
+ */
+wlmtk_workspace_t *wlmtk_workspace_create(void);
+
+/**
+ * Destroys the workspace. Will destroy any still-mapped element.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
