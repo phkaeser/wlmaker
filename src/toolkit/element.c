@@ -44,6 +44,8 @@ void wlmtk_element_fini(
     // Verify we're no longer mapped, nor part of a container.
     BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
     BS_ASSERT(NULL == element_ptr->container_ptr);
+
+    element_ptr->impl_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -72,8 +74,31 @@ void wlmtk_element_set_parent_container(
 
 /* == Unit tests =========================================================== */
 
+
+
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 0, NULL, NULL }
 };
+
+static bool test_destroy_cb_called;
+
+void test_destroy_cb(wlmtk_element_t *element_ptr)
+{
+    wlmtk_element_fini(element_ptr);
+}
+
+void test_init_fini(bs_test_t *test_ptr)
+{
+    wlmtk_element_t element;
+    wlmtk_element_impl_t impl = { .destroy = test_destroy_cb };
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, &impl));
+
+    test_destroy_cb_called = false;
+    wlmtk_element_destroy(&element);
+    BS_TEST_VERIFY_TRUE(test_ptr, test_destroy_cb_called);
+
+    BS_TEST_VERIFY_EQ(test_ptr, element.impl_ptr);
+}
 
 /* == End of toolkit.c ===================================================== */
