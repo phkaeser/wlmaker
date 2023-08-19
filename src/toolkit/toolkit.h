@@ -113,6 +113,11 @@ static inline void wlmtk_element_destroy(
     element_ptr->impl_ptr->destroy(element_ptr);
 }
 
+/** Unit tests for the element. */
+extern const bs_test_case_t wlmtk_element_test_cases[];
+
+/* ========================================================================= */
+
 /** State of the container. */
 struct _wlmtk_container_t {
     /** Super class of the container. */

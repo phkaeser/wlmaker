@@ -22,6 +22,7 @@
 
 /** Toolkit unit tests. */
 const bs_test_set_t toolkit_tests[] = {
+    { 1, "element", wlmtk_element_test_cases },
     { 1, "primitives", wlmaker_primitives_test_cases },
     { 0, NULL, NULL }
 };

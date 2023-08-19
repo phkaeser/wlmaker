@@ -70,4 +70,10 @@ void wlmtk_element_set_parent_container(
 
 /* == Local (static) methods =============================================== */
 
+/* == Unit tests =========================================================== */
+
+const bs_test_case_t wlmtk_element_test_cases[] = {
+    { 0, NULL, NULL }
+};
+
 /* == End of toolkit.c ===================================================== */
