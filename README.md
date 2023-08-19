@@ -17,7 +17,7 @@ for existing and planned features.
 ### To configure
 
 ```bash
-cmake -B build/ -DCMAKE_INSTALL_PREFIX="${HOME}/.local"
+cmake -Dconfig_DOXYGEN_CRITICAL=ON -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
 ```
 
 ### To build
