@@ -52,7 +52,7 @@ struct _wlmtk_element_t {
     /** wlroots scene graph API node. Only set when mapped. */
     struct wlr_scene_node_t   *wlr_scene_node_ptr;
     /** The container this element belongs to, if any. */
-    wlmtk_container_t         *container_ptr;
+    wlmtk_container_t         *parent_container_ptr;
     /** The node of elements. */
     bs_dllist_node_t          dlnode;
 
@@ -151,6 +151,8 @@ bool wlmtk_container_init(
 /**
  * Un-initializes the container.
  *
+ * Any element still in `elements` will be destroyed.
+ *
  * @param container_ptr
  */
 void wlmtk_container_fini(
@@ -182,6 +184,8 @@ static inline void wlmtk_container_destroy(
     container_ptr->impl_ptr->destroy(container_ptr);
 }
 
+/** Unit tests for the element. */
+extern const bs_test_case_t wlmtk_container_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

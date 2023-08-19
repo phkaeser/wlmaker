@@ -57,9 +57,12 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
         wlmtk_container_remove_element(container_ptr, element_ptr);
         BS_ASSERT(container_ptr->elements.head_ptr != dlnode_ptr);
+
+        wlmtk_element_destroy(element_ptr);
     }
 
     wlmtk_element_fini(&container_ptr->super_element);
+    container_ptr->impl_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -97,6 +100,86 @@ void element_destroy(wlmtk_element_t *element_ptr)
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
     container_ptr->impl_ptr->destroy(container_ptr);
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_init_fini(bs_test_t *test_ptr);
+static void test_add_remove(bs_test_t *test_ptr);
+
+/* == End of container.c =================================================== */
+
+const bs_test_case_t wlmtk_container_test_cases[] = {
+    { 1, "init_fini", test_init_fini },
+    { 1, "add_remove", test_add_remove },
+    { 0, NULL, NULL }
+};
+
+/** dtor for the container under test. */
+static void test_destroy_cb(wlmtk_container_t *container_ptr)
+{
+    wlmtk_container_fini(container_ptr);
+}
+
+/** dtor for the element under test. */
+static void test_element_destroy_cb(wlmtk_element_t *element_ptr)
+{
+    wlmtk_element_fini(element_ptr);
+}
+
+/** Method table for the container we're using for test. */
+static const wlmtk_container_impl_t test_container_impl = {
+    .destroy = test_destroy_cb
+};
+
+/* ------------------------------------------------------------------------- */
+/** Exercises init() and fini() methods, verifies dtor forwarding. */
+void test_init_fini(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
+                            &container, &test_container_impl));
+    // Also expect the super element to be initialized.
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl_ptr);
+
+    wlmtk_container_destroy(&container);
+
+    // Also expect the super element to be un-initialized.
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.impl_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises adding and removing elements, verifies destruction on fini. */
+void test_add_remove(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
+                            &container, &test_container_impl));
+
+    wlmtk_element_t element1, element2, element3;
+    wlmtk_element_impl_t impl = { .destroy = test_element_destroy_cb };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element1, &impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element2, &impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element3, &impl));
+
+    wlmtk_container_add_element(&container, &element1);
+    BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, &container);
+    wlmtk_container_add_element(&container, &element2);
+    BS_TEST_VERIFY_EQ(test_ptr, element2.parent_container_ptr, &container);
+    wlmtk_container_add_element(&container, &element3);
+    BS_TEST_VERIFY_EQ(test_ptr, element3.parent_container_ptr, &container);
+
+    wlmtk_container_remove_element(&container, &element2);
+    BS_TEST_VERIFY_EQ(test_ptr, element2.parent_container_ptr, NULL);
+
+    wlmtk_container_destroy(&container);
+    BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, element3.parent_container_ptr, NULL);
+
+    BS_TEST_VERIFY_EQ(test_ptr, element1.impl_ptr, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, element3.impl_ptr, NULL);
 }
 
 /* == End of container.c =================================================== */

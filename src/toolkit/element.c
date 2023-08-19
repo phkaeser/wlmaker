@@ -31,6 +31,7 @@ bool wlmtk_element_init(
 {
     BS_ASSERT(NULL != element_ptr);
     BS_ASSERT(NULL != element_impl_ptr);
+    BS_ASSERT(NULL != element_impl_ptr->destroy);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
@@ -43,7 +44,7 @@ void wlmtk_element_fini(
 {
     // Verify we're no longer mapped, nor part of a container.
     BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
-    BS_ASSERT(NULL == element_ptr->container_ptr);
+    BS_ASSERT(NULL == element_ptr->parent_container_ptr);
 
     element_ptr->impl_ptr = NULL;
 }
@@ -67,26 +68,31 @@ void wlmtk_element_set_parent_container(
     wlmtk_element_t *element_ptr,
     wlmtk_container_t *parent_container_ptr)
 {
-    element_ptr->container_ptr = parent_container_ptr;
+    element_ptr->parent_container_ptr = parent_container_ptr;
 }
 
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
 
-
+static void test_init_fini(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
+    { 1, "init_fini", test_init_fini },
     { 0, NULL, NULL }
 };
 
+/** Reports whether the fake dtor was called. */
 static bool test_destroy_cb_called;
-
-void test_destroy_cb(wlmtk_element_t *element_ptr)
+/** dtor for the element under test. */
+static void test_destroy_cb(wlmtk_element_t *element_ptr)
 {
+    test_destroy_cb_called = true;
     wlmtk_element_fini(element_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Exercises init() and fini() methods, verifies dtor forwarding. */
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_element_t element;
@@ -98,7 +104,7 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_element_destroy(&element);
     BS_TEST_VERIFY_TRUE(test_ptr, test_destroy_cb_called);
 
-    BS_TEST_VERIFY_EQ(test_ptr, element.impl_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.impl_ptr);
 }
 
 /* == End of toolkit.c ===================================================== */
