@@ -99,7 +99,6 @@ void workspace_container_destroy(wlmtk_container_t *container_ptr)
     wlmtk_workspace_destroy(workspace_ptr);
 }
 
-
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);

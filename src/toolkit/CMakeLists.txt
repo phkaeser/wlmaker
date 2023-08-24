@@ -26,6 +26,7 @@ TARGET_SOURCES(toolkit PRIVATE
   container.c
   gfxbuf.c
   primitives.c
+  window.c
   workspace.c)
 TARGET_INCLUDE_DIRECTORIES(
   toolkit PUBLIC

@@ -254,6 +254,26 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
+/* ========================================================================= */
+
+/** State of the window. */
+typedef struct _wlmtk_window_t wlmtk_window_t;
+
+/**
+ * Creates a window.
+ *
+ * @return Pointer to the window state, or NULL on error. Must be free'd
+ *     by calling @ref wlmtk_window_destroy.
+ */
+wlmtk_window_t *wlmtk_window_create(void);
+
+/**
+ * Destroys the window.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
