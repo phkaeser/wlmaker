@@ -146,8 +146,6 @@ struct wlr_scene_node *element_create_scene_node(
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_add_remove(bs_test_t *test_ptr);
 
-/* == End of container.c =================================================== */
-
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },

@@ -274,6 +274,9 @@ wlmtk_window_t *wlmtk_window_create(void);
  */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
 
+/** Unit tests for window. */
+extern const bs_test_case_t wlmtk_window_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

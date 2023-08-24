@@ -70,4 +70,22 @@ void window_container_destroy(wlmtk_container_t *container_ptr)
     wlmtk_window_destroy(window_ptr);
 }
 
+/* == Unit tests =========================================================== */
+
+static void test_create_destroy(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_window_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests setup and teardown. */
+void test_create_destroy(bs_test_t *test_ptr)
+{
+    wlmtk_window_t *window_ptr = wlmtk_window_create();
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
+    wlmtk_window_destroy(window_ptr);
+}
+
 /* == End of window.c ====================================================== */
