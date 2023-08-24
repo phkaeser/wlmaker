@@ -88,6 +88,24 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
     free(workspace_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
+                                wlmtk_window_t *window_ptr)
+{
+    wlmtk_container_add_element(
+        &workspace_ptr->super_container,
+        wlmtk_window_element(window_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
+                                  wlmtk_window_t *window_ptr)
+{
+    wlmtk_container_remove_element(
+        &workspace_ptr->super_container,
+        wlmtk_window_element(window_ptr));
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

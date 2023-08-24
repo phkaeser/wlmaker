@@ -59,6 +59,12 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
     free(window_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
+{
+    return &window_ptr->super_container.super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

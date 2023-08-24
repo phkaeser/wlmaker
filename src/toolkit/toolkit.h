@@ -38,6 +38,8 @@ struct wlr_scene_tree;
 typedef struct _wlmtk_element_t wlmtk_element_t;
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
+/** Forward declaration: Window. */
+typedef struct _wlmtk_window_t wlmtk_window_t;
 
 /** Forward declaration: Element virtual method implementations. */
 typedef struct _wlmtk_element_impl_t wlmtk_element_impl_t;
@@ -251,13 +253,29 @@ wlmtk_workspace_t *wlmtk_workspace_create(
  */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
+/**
+ * Maps the window: Adds it to the workspace container and maps it.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ */
+void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
+                                wlmtk_window_t *window_ptr);
+
+/**
+ * Maps the window: Unmaps the window and removes it from the workspace
+ * container.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ */
+void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
+                                  wlmtk_window_t *window_ptr);
+
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
 /* ========================================================================= */
-
-/** State of the window. */
-typedef struct _wlmtk_window_t wlmtk_window_t;
 
 /**
  * Creates a window.
@@ -273,6 +291,19 @@ wlmtk_window_t *wlmtk_window_create(void);
  * @param window_ptr
  */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
+
+/**
+ * Returns the super Element of the window.
+ *
+ * TODO(kaeser@gubbe.ch): Re-evaluate whether to work with accessors, or
+ *     whether to keep the members public.
+ *
+ * @param window_ptr
+ *
+ * @return Potiner to the @ref wlmtk_element_t base instantiation to
+ *     window_ptr.
+ */
+wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];
