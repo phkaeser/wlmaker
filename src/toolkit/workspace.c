@@ -95,12 +95,14 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
     wlmtk_container_add_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
+    wlmtk_element_map(wlmtk_window_element(window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr)
 {
+    wlmtk_element_unmap(wlmtk_window_element(window_ptr));
     wlmtk_container_remove_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
@@ -120,9 +122,11 @@ void workspace_container_destroy(wlmtk_container_t *container_ptr)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_map_unmap(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "map_unmap", test_map_unmap },
     { 0, NULL, NULL }
 };
 
@@ -139,6 +143,33 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_workspace_destroy(workspace_ptr);
 
     // Note: There is no destroy method for wlr_scene_ptr.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that mapping and unmapping windows works. */
+void test_map_unmap(bs_test_t *test_ptr)
+{
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        &wlr_scene_ptr->tree);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
+
+    wlmtk_window_t *window_ptr = wlmtk_window_create();
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
+
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
+
+    wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
 }
 
 /* == End of workspace.c =================================================== */
