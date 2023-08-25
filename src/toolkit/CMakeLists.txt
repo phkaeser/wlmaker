@@ -24,6 +24,7 @@ ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
   element.c
   container.c
+  content.c
   gfxbuf.c
   primitives.c
   window.c

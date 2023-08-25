@@ -40,11 +40,15 @@ typedef struct _wlmtk_element_t wlmtk_element_t;
 typedef struct _wlmtk_container_t wlmtk_container_t;
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
+/** Forward declaration: Window content. */
+typedef struct _wlmtk_content_t wlmtk_content_t;
 
 /** Forward declaration: Element virtual method implementations. */
 typedef struct _wlmtk_element_impl_t wlmtk_element_impl_t;
 /** Forward declaration: Container virtual method implementations. */
 typedef struct _wlmtk_container_impl_t wlmtk_container_impl_t;
+/** Forward declaration: Content virtual method implementations. */
+typedef struct _wlmtk_content_impl_t wlmtk_content_impl_t;
 
 /** State of an element. */
 struct _wlmtk_element_t {
@@ -316,6 +320,49 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];
+
+/* ========================================================================= */
+
+/** State of the element. */
+struct _wlmtk_content_t {
+    /** Super class of the content: An element. */
+    wlmtk_element_t           super_element;
+
+    /** Implementation of abstract virtual methods. */
+    const wlmtk_content_impl_t *impl_ptr;
+};
+
+/** Method table of the content. */
+struct _wlmtk_content_impl_t {
+    /** Destroys thje implementation of the content. */
+    void (*destroy)(wlmtk_content_t *content_ptr);
+    /** Creates content's scene graph API node, child to wlr_scene_tree_ptr. */
+    struct wlr_scene_node *(*create_scene_node)(
+        wlmtk_content_t *content_ptr,
+        struct wlr_scene_tree *wlr_scene_tree_ptr);
+};
+
+/**
+ * Initializes the content.
+ *
+ * @param content_ptr
+ * @param content_impl_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_content_init(
+    wlmtk_content_t *content_ptr,
+    const wlmtk_content_impl_t *content_impl_ptr);
+
+/**
+ * Cleans up the content.
+ *
+ * @param content_ptr
+ */
+void wlmtk_content_fini(wlmtk_content_t *content_ptr);
+
+/** Unit tests for content. */
+extern const bs_test_case_t wlmtk_content_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
