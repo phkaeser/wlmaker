@@ -106,10 +106,11 @@ wlmtk_element_t *wlmtk_element_from_dlnode(
  * Sets the parent container for the element.
  *
  * Should only be called by wlmtk_container_add_element, respectively
- * wlmtk_container_remove_element.
+ * wlmtk_container_remove_element. Will unmap the element, if the parent
+ * container changes.
  *
  * @param element_ptr
- * @param parent_container_ptr Pointer to the parent contqainer, or NULL if
+ * @param parent_container_ptr Pointer to the parent container, or NULL if
  *     the parent should be cleared.
  */
 void wlmtk_element_set_parent_container(
@@ -133,6 +134,11 @@ void wlmtk_element_map(wlmtk_element_t *element_ptr);
  */
 void wlmtk_element_unmap(wlmtk_element_t *element_ptr);
 
+/** Returns whether this element is currently mapped. */
+static inline bool wlmtk_element_mapped(wlmtk_element_t *element_ptr)
+{
+    return NULL != element_ptr->wlr_scene_node_ptr;
+}
 
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(
@@ -200,6 +206,9 @@ void wlmtk_container_add_element(
 
 /**
  * Removes `element_ptr` from the container.
+ *
+ * Expects that `container_ptr` is `element_ptr`'s parent container. Will unmap
+ * the element, in case it is currently mapped.
  *
  * @param container_ptr
  * @param element_ptr
@@ -296,7 +305,7 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
  * Returns the super Element of the window.
  *
  * TODO(kaeser@gubbe.ch): Re-evaluate whether to work with accessors, or
- *     whether to keep the members public.
+ *     whether to keep the ancestry members public.
  *
  * @param window_ptr
  *
