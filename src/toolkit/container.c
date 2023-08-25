@@ -46,6 +46,7 @@ bool wlmtk_container_init(
 {
     BS_ASSERT(NULL != container_ptr);
     BS_ASSERT(NULL != container_impl_ptr);
+    BS_ASSERT(NULL != container_impl_ptr->destroy);
     memset(container_ptr, 0, sizeof(wlmtk_container_t));
 
     if (!wlmtk_element_init(&container_ptr->super_element,
@@ -171,7 +172,7 @@ static void test_element_destroy_cb(wlmtk_element_t *element_ptr)
 {
     wlmtk_element_fini(element_ptr);
 }
-/** Creates a scene node attached to the three. */
+/** Creates a scene node attached to the tree. */
 static struct wlr_scene_node *test_element_create_scene_node(
     __UNUSED__ wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
