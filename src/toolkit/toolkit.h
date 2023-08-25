@@ -291,12 +291,14 @@ extern const bs_test_case_t wlmtk_workspace_test_cases[];
 /* ========================================================================= */
 
 /**
- * Creates a window.
+ * Creates a window for the given content.
+ *
+ * @param content_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
  */
-wlmtk_window_t *wlmtk_window_create(void);
+wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr);
 
 /**
  * Destroys the window.
@@ -313,7 +315,7 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
  *
  * @param window_ptr
  *
- * @return Potiner to the @ref wlmtk_element_t base instantiation to
+ * @return Pointer to the @ref wlmtk_element_t base instantiation to
  *     window_ptr.
  */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
@@ -330,6 +332,12 @@ struct _wlmtk_content_t {
 
     /** Implementation of abstract virtual methods. */
     const wlmtk_content_impl_t *impl_ptr;
+
+    /**
+     * The window this content belongs to. Will be set when creating
+     * the window.
+     */
+    wlmtk_window_t            *window_ptr;
 };
 
 /** Method table of the content. */
@@ -360,6 +368,26 @@ bool wlmtk_content_init(
  * @param content_ptr
  */
 void wlmtk_content_fini(wlmtk_content_t *content_ptr);
+
+/**
+ * Sets the window for the content.
+ *
+ * @param content_ptr
+ * @param window_ptr
+ */
+void wlmtk_content_set_window(
+    wlmtk_content_t *content_ptr,
+    wlmtk_window_t *window_ptr);
+
+/**
+ * Returns the super Element of the content.
+ *
+ * @param content_ptr
+ *
+ * @return Pointer to the @ref wlmtk_element_t base instantiation to
+ *     content_ptr.
+ */
+wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
 /** Unit tests for content. */
 extern const bs_test_case_t wlmtk_content_test_cases[];

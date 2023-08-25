@@ -26,6 +26,9 @@
 struct _wlmtk_window_t {
     /** Superclass: Container. */
     wlmtk_container_t         super_container;
+
+    /** Content of this window. */
+    wlmtk_content_t           *content_ptr;
 };
 
 static void window_container_destroy(wlmtk_container_t *container_ptr);
@@ -38,7 +41,7 @@ const wlmtk_container_impl_t  window_container_impl = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window_t *wlmtk_window_create(void)
+wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
@@ -49,12 +52,23 @@ wlmtk_window_t *wlmtk_window_create(void)
         return NULL;
     }
 
+    wlmtk_container_add_element(
+        &window_ptr->super_container,
+        wlmtk_content_element(content_ptr));
+    window_ptr->content_ptr = content_ptr;
+    wlmtk_content_set_window(content_ptr, window_ptr);
     return window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
+    wlmtk_container_remove_element(
+        &window_ptr->super_container,
+        wlmtk_content_element(window_ptr->content_ptr));
+    wlmtk_content_set_window(window_ptr->content_ptr, NULL);
+    window_ptr->content_ptr = NULL;
+
     wlmtk_container_fini(&window_ptr->super_container);
     free(window_ptr);
 }
@@ -89,8 +103,12 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_window_t *window_ptr = wlmtk_window_create();
+    wlmtk_content_t content;
+    memset(&content, 0, sizeof(content));
+
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
     wlmtk_window_destroy(window_ptr);
 }
 

@@ -155,7 +155,9 @@ void test_map_unmap(bs_test_t *test_ptr)
         &wlr_scene_ptr->tree);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
-    wlmtk_window_t *window_ptr = wlmtk_window_create();
+    wlmtk_content_t content;
+    memset(&content, 0, sizeof(content));
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);

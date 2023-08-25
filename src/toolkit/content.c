@@ -67,6 +67,20 @@ void wlmtk_content_fini(wlmtk_content_t *content_ptr)
     content_ptr->impl_ptr = NULL;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_set_window(
+    wlmtk_content_t *content_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    content_ptr->window_ptr = window_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr)
+{
+    return &content_ptr->super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
