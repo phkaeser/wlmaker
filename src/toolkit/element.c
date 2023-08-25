@@ -133,7 +133,7 @@ static struct wlr_scene_node *test_create_scene_node(
         wlr_scene_tree_ptr, NULL);
     return &wlr_scene_buffer_ptr->node;
 }
-
+/** Method table for the element we're using as test dummy. */
 static const wlmtk_element_impl_t test_impl = {
     .destroy = test_destroy_cb,
     .create_scene_node = test_create_scene_node

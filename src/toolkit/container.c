@@ -246,6 +246,7 @@ void test_add_remove(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests that mapped elements are unmapped when removed. */
 void test_remove_mapped(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
