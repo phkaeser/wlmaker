@@ -19,50 +19,56 @@ limitations under the License.
 
 ### Class Hierarchy
 
+<!-- See https://plantuml.com/class-diagram for documentation. -->
 * Where do we use composition, vs. inheritance?
 
 ```plantuml
 class Element {
   int x, y
   struct wlr_scene_node *node_ptr
-  Container *container_ptr
+  Container *parent_container_ptr
 
-  init(handlers)
-  void destroy(Element*)
-  set_parent(Container*)
-  map()
-  unmap()
+  bool init(handlers)
+  void fini()
+  -void set_parent_container(Container*)
+  void map()
+  void unmap()
+  bool mapped()
 
-  {abstract}#void enter(Element*)
-  {abstract}#void leave(Element*)
-  {abstract}#void click(Element*)
-  {abstract}#create_or_reparent_node(Element*, parent_node*)
+  {abstract}#void destroy()
+  {abstract}#struct wlr_scene_node *create_scene_node(parent_node*)
+  {abstract}#void enter()
+  {abstract}#void leave()
+  {abstract}#void click()
 }
 note right of Element::"map()"
   Only permitted if element is a member of a (mapped?) container.
 end note
 
 class Container {
-  Element parent
-  Element children[]
+  Element super_element
+  Element elements[]
 
-  Container *create(void)
-  void destroy(Container*)
+  bool init(handlers)
+  void fini()
   add_element(Element*)
   remove_element(Element*)
+  struct wlr_scene_tree *wlr_scene_tree()
+  
+  {abstract}#void destroy()
 
-  -void enter(Element*)
-  -void leave(Element*)
-  -void click(Element*)
+  void enter(Element*)
+  void leave(Element*)
+  void click(Element*)
 }
 Element <|-- Container
 
 class Workspace {
-  Container parent
+  Container super_container
   Container layers[]
 
-  Container *create(void)
-  void destroy(Container*)
+  Container *create()
+  void destroy()
 
   map_window(Window*)
   unmap_window(Window*)
@@ -86,6 +92,10 @@ abstract class Content {
   Element parent
 
   init(handlers)
+  fini()
+  struct wlr_scene_node *create_scene_node()
+  Element *element()
+  -set_window(Window*)
 
   {abstract}#void set_active(bool)
   {abstract}#void set_maximized(bool)
@@ -131,9 +141,13 @@ class Button {
 Buffer <|-- Button
 
 class Window {
-  VBox parent
-  Content content
+  VBox super_container
+  Content *content
   TitleBar title_bar
+  
+  Window *create(Content*)
+  destroy() 
+  Element *element()
 }
 VBox *-- Window
 

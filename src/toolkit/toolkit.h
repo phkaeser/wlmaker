@@ -109,9 +109,9 @@ wlmtk_element_t *wlmtk_element_from_dlnode(
 /**
  * Sets the parent container for the element.
  *
- * Should only be called by wlmtk_container_add_element, respectively
- * wlmtk_container_remove_element. Will unmap the element, if the parent
- * container changes.
+ * Private: Should only be called by wlmtk_container_add_element, respectively
+ * wlmtk_container_remove_element ("friends"). Will unmap the element, if the
+ * parent container changes.
  *
  * @param element_ptr
  * @param parent_container_ptr Pointer to the parent container, or NULL if
@@ -342,7 +342,7 @@ struct _wlmtk_content_t {
 
 /** Method table of the content. */
 struct _wlmtk_content_impl_t {
-    /** Destroys thje implementation of the content. */
+    /** Destroys the implementation of the content. */
     void (*destroy)(wlmtk_content_t *content_ptr);
     /** Creates content's scene graph API node, child to wlr_scene_tree_ptr. */
     struct wlr_scene_node *(*create_scene_node)(
@@ -371,6 +371,8 @@ void wlmtk_content_fini(wlmtk_content_t *content_ptr);
 
 /**
  * Sets the window for the content.
+ *
+ * Private: Should only be called by Window ctor (a friend).
  *
  * @param content_ptr
  * @param window_ptr
