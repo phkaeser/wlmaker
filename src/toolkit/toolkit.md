@@ -31,9 +31,8 @@ class Element {
   bool init(handlers)
   void fini()
   -void set_parent_container(Container*)
-  void map()
-  void unmap()
-  bool mapped()
+  void set_visible(bool)
+  bool is_visible()
 
   {abstract}#void destroy()
   {abstract}#struct wlr_scene_node *create_scene_node(parent_node*)
@@ -41,8 +40,17 @@ class Element {
   {abstract}#void leave()
   {abstract}#void click()
 }
-note right of Element::"map()"
-  Only permitted if element is a member of a (mapped?) container.
+note right of Element::"set_parent_container()"
+  If the parent is already part of the scene graph, this will also
+  invoke create_scene_node.
+note right of Element::"set_visible()"
+  Marks the element as visible.
+
+  If this element is already part of the scene graph, will adjust the
+  visibility of the node. Otherwise, if the parent is already part of the
+  scene graph (parent_container_ptr->wlr_scene_tree() is not NULL), this will
+  also invoke create_scene_node to create the scene node.
+  And then set visibility accordingly.
 end note
 
 class Container {
@@ -54,7 +62,7 @@ class Container {
   add_element(Element*)
   remove_element(Element*)
   struct wlr_scene_tree *wlr_scene_tree()
-  
+
   {abstract}#void destroy()
 
   void enter(Element*)
@@ -62,6 +70,10 @@ class Container {
   void click(Element*)
 }
 Element <|-- Container
+note right of Element::"add_element(Element*)"
+  If the super_element is already part of the scene graph, this will also
+  invoke the added element's create_scene_node.
+end note
 
 class Workspace {
   Container super_container
@@ -144,9 +156,9 @@ class Window {
   VBox super_container
   Content *content
   TitleBar title_bar
-  
+
   Window *create(Content*)
-  destroy() 
+  destroy()
   Element *element()
 }
 VBox *-- Window
@@ -201,7 +213,7 @@ Buffer <|-- MenuItem
 
 
   set title handler:
-  
+
   * window::set_title
 
   request maximize handler:
