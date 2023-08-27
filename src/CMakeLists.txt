@@ -39,7 +39,6 @@ SET(SOURCES
   tile.c
   tile_container.c
   titlebar.c
-  util.c
   view.c
   workspace.c
   xdg_decoration.c
@@ -73,7 +72,6 @@ SET(HEADERS
   tile_container.h
   tile.h
   titlebar.h
-  util.h
   view.h
   workspace.h
   xdg_decoration.h

@@ -20,7 +20,7 @@
 
 #include "xdg_shell.h"
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "view.h"
 #include "xdg_toplevel.h"
 
@@ -52,11 +52,11 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_surface,
         &xdg_shell_ptr->new_surface_listener,
         handle_new_surface);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.destroy,
         &xdg_shell_ptr->destroy_listener,
         handle_destroy);

@@ -25,6 +25,7 @@
 #include "gfxbuf.h"
 #include "primitives.h"
 #include "style.h"
+#include "util.h"
 
 #include <libbase/libbase.h>
 #include <wayland-server.h>

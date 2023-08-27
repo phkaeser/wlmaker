@@ -21,7 +21,7 @@
 #include "xdg_toplevel.h"
 
 #include "iconified.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "xdg_popup.h"
 
 #include "toolkit/toolkit.h"
@@ -214,61 +214,61 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
     if (NULL == xdg_toplevel_ptr) return NULL;
     xdg_toplevel_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.destroy,
         &xdg_toplevel_ptr->destroy_listener,
         handle_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.new_popup,
         &xdg_toplevel_ptr->new_popup_listener,
         handle_new_popup);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.map,
         &xdg_toplevel_ptr->surface_map_listener,
         handle_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.unmap,
         &xdg_toplevel_ptr->surface_unmap_listener,
         handle_unmap);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.commit,
         &xdg_toplevel_ptr->surface_commit_listener,
         handle_surface_commit);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_maximize,
         &xdg_toplevel_ptr->toplevel_request_maximize_listener,
         handle_toplevel_maximize);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_fullscreen,
         &xdg_toplevel_ptr->toplevel_request_fullscreen_listener,
         handle_toplevel_fullscreen);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_minimize,
         &xdg_toplevel_ptr->toplevel_request_minimize_listener,
         handle_toplevel_minimize);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_move,
         &xdg_toplevel_ptr->toplevel_request_move_listener,
         handle_toplevel_move);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_resize,
         &xdg_toplevel_ptr->toplevel_request_resize_listener,
         handle_toplevel_resize);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_show_window_menu,
         &xdg_toplevel_ptr->toplevel_request_show_window_menu_listener,
         handle_toplevel_show_window_menu);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_parent,
         &xdg_toplevel_ptr->toplevel_set_parent_listener,
         handle_toplevel_set_parent);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_title,
         &xdg_toplevel_ptr->toplevel_set_title_listener,
         handle_toplevel_set_title);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_app_id,
         &xdg_toplevel_ptr->toplevel_set_app_id_listener,
         handle_toplevel_set_app_id);
@@ -353,11 +353,11 @@ wlmtk_xdg_toplevel_content_t *wlmtk_xdg_toplevel_content_create(
     xdg_tl_content_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
     xdg_tl_content_ptr->server_ptr = server_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.map,
         &xdg_tl_content_ptr->surface_map_listener,
         handle_surface_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.unmap,
         &xdg_tl_content_ptr->surface_unmap_listener,
         handle_surface_unmap);

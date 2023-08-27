@@ -26,7 +26,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
 
 /* == Declarations ========================================================= */
@@ -345,7 +345,7 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);

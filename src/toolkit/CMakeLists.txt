@@ -18,7 +18,8 @@ SET(PUBLIC_HEADER_FILES
   gfxbuf.h
   primitives.h
   style.h
-  toolkit.h)
+  toolkit.h
+  util.h)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
@@ -27,7 +28,7 @@ TARGET_SOURCES(toolkit PRIVATE
   content.c
   gfxbuf.c
   primitives.c
-  ../util.c
+  util.c
   window.c
   workspace.c)
 TARGET_INCLUDE_DIRECTORIES(

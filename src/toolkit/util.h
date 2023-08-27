@@ -38,7 +38,7 @@ extern "C" {
  * @param listener_ptr
  * @param notifier_func
  */
-void wlm_util_connect_listener_signal(
+void wlmtk_util_connect_listener_signal(
     struct wl_signal *signal_ptr,
     struct wl_listener *listener_ptr,
     void (*notifier_func)(struct wl_listener *, void *));

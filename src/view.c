@@ -26,7 +26,7 @@
 #include "menu.h"
 #include "resizebar.h"
 #include "titlebar.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <wlr/util/edges.h>
 
@@ -110,7 +110,7 @@ void wlmaker_view_init(
         wlmaker_interactive_node_destroy);
     BS_ASSERT(view_ptr->interactive_tree_ptr);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &view_ptr->server_ptr->cursor_ptr->button_release_event,
         &view_ptr->button_release_listener,
         handle_button_release);

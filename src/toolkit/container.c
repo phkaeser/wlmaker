@@ -20,7 +20,7 @@
 
 #include "toolkit.h"
 
-#include "../util.h"
+#include "util.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
@@ -163,7 +163,7 @@ struct wlr_scene_node *element_create_scene_node(
         wlmtk_element_map(element_ptr);
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &container_ptr->wlr_scene_tree_ptr->node.events.destroy,
         &container_ptr->wlr_scene_tree_node_destroy_listener,
         handle_wlr_scene_tree_node_destroy);

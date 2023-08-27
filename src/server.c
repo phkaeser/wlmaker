@@ -22,7 +22,7 @@
 
 #include "config.h"
 #include "output.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -141,11 +141,11 @@ wlmaker_server_t *wlmaker_server_create(void)
     }
 
     // Listen for new (or newly recognized) output and input devices.
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_backend_ptr->events.new_output,
         &server_ptr->backend_new_output_listener,
         handle_new_output);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_backend_ptr->events.new_input,
         &server_ptr->backend_new_input_device_listener,
         handle_new_input_device);
@@ -181,7 +181,7 @@ wlmaker_server_t *wlmaker_server_create(void)
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_output_layout_ptr->events.change,
         &server_ptr->output_layout_change_listener,
         handle_output_layout_change);
@@ -554,7 +554,7 @@ bool register_input_device(wlmaker_server_t *server_ptr,
     input_device_ptr->wlr_input_device_ptr = wlr_input_device_ptr;
     input_device_ptr->handle_ptr = handle_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_input_device_ptr->events.destroy,
         &input_device_ptr->destroy_listener,
         handle_destroy_input_device);

@@ -21,7 +21,7 @@
 #include "cursor.h"
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -107,28 +107,28 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
     // https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
 
     // TODO: Need a mode for 'normal', 'move', 'resize'.
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.motion,
         &cursor_ptr->motion_listener,
         handle_motion);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.motion_absolute,
         &cursor_ptr->motion_absolute_listener,
         handle_motion_absolute);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.button,
         &cursor_ptr->button_listener,
         handle_button);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.axis,
         &cursor_ptr->axis_listener,
         handle_axis);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.frame,
         &cursor_ptr->frame_listener,
         handle_frame);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->server_ptr->wlr_seat_ptr->events.request_set_cursor,
         &cursor_ptr->seat_request_set_cursor_listener,
         handle_seat_request_set_cursor);

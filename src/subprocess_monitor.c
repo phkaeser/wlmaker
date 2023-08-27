@@ -20,7 +20,7 @@
 
 #include "subprocess_monitor.h"
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <signal.h>
 #include <unistd.h>
@@ -133,19 +133,19 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
         handle_sigchld,
         monitor_ptr);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_created_event,
         &monitor_ptr->view_created_listener,
         handle_view_created);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_mapped_event,
         &monitor_ptr->view_mapped_listener,
         handle_view_mapped);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_unmapped_event,
         &monitor_ptr->view_unmapped_listener,
         handle_view_unmapped);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_destroyed_event,
         &monitor_ptr->view_destroyed_listener,
         handle_view_destroyed);

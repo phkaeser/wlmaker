@@ -23,7 +23,7 @@
 #include <libbase/libbase.h>
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_decoration_v1.h>
@@ -92,12 +92,12 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr->
         events.new_toplevel_decoration,
         &decoration_manager_ptr->new_toplevel_decoration_listener,
         handle_new_toplevel_decoration);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr->
         events.destroy,
         &decoration_manager_ptr->destroy_listener,
@@ -179,11 +179,11 @@ wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
     decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr =
         wlr_xdg_toplevel_decoration_v1_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->events.destroy,
         &decoration_ptr->destroy_listener,
         handle_decoration_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->events.request_mode,
         &decoration_ptr->request_mode_listener,
         handle_decoration_request_mode);
