@@ -283,9 +283,12 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
         return NULL;
     }
 
+#if defined(ENABLE_TOOLKIT_PROTOTYPE)
+    // Transitional -- enable for prototyping: Toolkit-based workspace.
     xdg_toplevel_ptr->xdg_tl_content_ptr =
         wlmtk_xdg_toplevel_content_create(
             wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
+#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
 
     wlmaker_view_init(
         &xdg_toplevel_ptr->view,

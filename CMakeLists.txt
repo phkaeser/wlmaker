@@ -50,6 +50,7 @@ PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
 OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
+OPTION(config_TOOLKIT_PROTOTYPE "Whether to include the toolkit prototype." OFF)
 
 # Toplevel compile options, for GCC.
 IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
