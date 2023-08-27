@@ -27,6 +27,7 @@
 #include "style.h"
 
 #include <libbase/libbase.h>
+#include <wayland-server.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,9 @@ struct _wlmtk_element_t {
 
     /** Points to the wlroots scene graph API node. Is set when mapped. */
     struct wlr_scene_node     *wlr_scene_node_ptr;
+
+    /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
+    struct wl_listener        wlr_scene_node_destroy_listener;
 };
 
 /** Pointers to the implementation of Element's virtual methods. */
@@ -169,6 +173,9 @@ struct _wlmtk_container_t {
 
     /** Scene tree. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
+
+    /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
+    struct wl_listener        wlr_scene_tree_node_destroy_listener;
 };
 
 /** Virtual method table of the container. */

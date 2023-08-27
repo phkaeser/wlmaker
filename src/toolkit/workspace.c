@@ -160,6 +160,27 @@ void test_create_destroy(bs_test_t *test_ptr)
     // Note: There is no destroy method for wlr_scene_ptr.
 }
 
+/** dtor for the content under test. */
+static void test_content_destroy(
+    wlmtk_content_t *content_ptr)
+{
+    wlmtk_content_fini(content_ptr);
+}
+/** scene node creation for the node under test. */
+static struct wlr_scene_node *test_content_create_scene_node(
+    __UNUSED__ wlmtk_content_t *content_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr)
+{
+    struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
+        wlr_scene_tree_ptr, NULL);
+    return &wlr_scene_buffer_ptr->node;
+}
+/** Method table for the node under test. */
+static const wlmtk_content_impl_t test_content_impl = {
+    .destroy = test_content_destroy,
+    .create_scene_node = test_content_create_scene_node
+};
+
 /* ------------------------------------------------------------------------- */
 /** Verifies that mapping and unmapping windows works. */
 void test_map_unmap(bs_test_t *test_ptr)
@@ -171,7 +192,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     wlmtk_content_t content;
-    memset(&content, 0, sizeof(content));
+    wlmtk_content_init(&content, &test_content_impl);
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
@@ -179,11 +200,17 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_mapped(&content.super_element));
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_mapped(&content.super_element));
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);

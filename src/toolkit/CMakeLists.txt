@@ -27,6 +27,7 @@ TARGET_SOURCES(toolkit PRIVATE
   content.c
   gfxbuf.c
   primitives.c
+  ../util.c
   window.c
   workspace.c)
 TARGET_INCLUDE_DIRECTORIES(
@@ -55,6 +56,7 @@ TARGET_LINK_LIBRARIES(
   base
   PkgConfig::CAIRO
   PkgConfig::LIBDRM
+  PkgConfig::WAYLAND
   PkgConfig::WLROOTS
 )
 

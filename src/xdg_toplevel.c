@@ -844,7 +844,6 @@ void handle_surface_map(
         &xdg_tl_content_ptr->super_content);
 
     wlmtk_workspace_map_window(wlmtk_workspace_ptr, wlmtk_window_ptr);
-    wlmtk_element_map(&xdg_tl_content_ptr->super_content.super_element);
 }
 
 /* ------------------------------------------------------------------------- */

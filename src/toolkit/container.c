@@ -20,6 +20,8 @@
 
 #include "toolkit.h"
 
+#include "../util.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
@@ -30,6 +32,9 @@ static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_impl_t super_element_impl = {
@@ -128,6 +133,9 @@ void element_destroy(wlmtk_element_t *element_ptr)
 /**
  * Implementation of the superclass wlmtk_element_t::create_scene_node method.
  *
+ * Creates the wlroots scene graph tree for the container, and will map all
+ * already-contained elements.
+ *
  * @param element_ptr
  * @param wlr_scene_tree_ptr
  *
@@ -145,7 +153,52 @@ struct wlr_scene_node *element_create_scene_node(
         wlr_scene_tree_ptr);
     BS_ASSERT(NULL != container_ptr->wlr_scene_tree_ptr);
 
+    for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
+         dlnode_ptr != NULL;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+        // We are only just now creating the tree node for this very container,
+        // so none of the children can be mapped already. Do that now.
+        BS_ASSERT(!wlmtk_element_mapped(element_ptr));
+        wlmtk_element_map(element_ptr);
+    }
+
+    wlm_util_connect_listener_signal(
+        &container_ptr->wlr_scene_tree_ptr->node.events.destroy,
+        &container_ptr->wlr_scene_tree_node_destroy_listener,
+        handle_wlr_scene_tree_node_destroy);
     return &container_ptr->wlr_scene_tree_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the 'destroy' callback of wlr_scene_tree_ptr->node.
+ *
+ * Will explicitly unmap each of the contained elements.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_container_t, wlr_scene_tree_node_destroy_listener);
+
+    for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
+         dlnode_ptr != NULL;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+        if (wlmtk_element_mapped(element_ptr)) {
+            wlmtk_element_unmap(element_ptr);
+        }
+    }
+
+    // Since this is a callback from the tree node dtor, the tree is going to
+    // be destroyed. We are using this to reset the container's reference.
+    wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
+    container_ptr->wlr_scene_tree_ptr = NULL;
 }
 
 /* == Unit tests =========================================================== */

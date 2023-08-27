@@ -20,11 +20,17 @@
 
 #include "toolkit.h"
 
+#include "../util.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
+
+static void handle_wlr_scene_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -92,6 +98,11 @@ void wlmtk_element_map(wlmtk_element_t *element_ptr)
 
     element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
         element_ptr, parent_wlr_scene_tree_ptr);
+    wlm_util_connect_listener_signal(
+        &element_ptr->wlr_scene_node_ptr->events.destroy,
+        &element_ptr->wlr_scene_node_destroy_listener,
+        handle_wlr_scene_node_destroy);
+
     // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
     wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, true);
     BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
@@ -103,11 +114,30 @@ void wlmtk_element_unmap(wlmtk_element_t *element_ptr)
     BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
     // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
     wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, false);
+    wl_list_remove(&element_ptr->wlr_scene_node_destroy_listener.link);
     wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
     element_ptr->wlr_scene_node_ptr = NULL;
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the 'destroy' callback of the wlr_scene_node.
+ *
+ * A call here indicates that teardown was not executed properly!
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_wlr_scene_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_element_t *element_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_element_t, wlr_scene_node_destroy_listener);
+    bs_log(BS_FATAL, "Unexpected call into node's dtor on %p!", element_ptr);
+}
 
 /* == Unit tests =========================================================== */
 
