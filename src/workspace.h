@@ -333,6 +333,11 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
 wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
     wlmaker_workspace_t *workspace_ptr);
 
+typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
+
+/** Transitional: Returns the @ref wlmtk_workspace_t. */
+wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr);
+
 /** Unit tests. */
 extern const bs_test_case_t wlmaker_workspace_test_cases[];
 

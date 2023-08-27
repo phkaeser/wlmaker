@@ -21,6 +21,7 @@
 #include "workspace.h"
 
 #include "tile_container.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -69,6 +70,9 @@ struct _wlmaker_workspace_t {
 
     /** Scene graph subtree holding all layers of this workspace. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
+
+    /** Transitional: Link up to toolkit workspace. */
+    wlmtk_workspace_t          *wlmtk_workspace_ptr;
 
     /** Data regarding each layer. */
     wlmaker_workspace_layer_data_t layers[WLMAKER_WORKSPACE_LAYER_NUM];
@@ -122,6 +126,13 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     workspace_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
         &server_ptr->wlr_scene_ptr->tree);
     if (NULL == workspace_ptr->wlr_scene_tree_ptr) {
+        wlmaker_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+
+    workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
+        workspace_ptr->wlr_scene_tree_ptr);
+    if (NULL == workspace_ptr->wlmtk_workspace_ptr) {
         wlmaker_workspace_destroy(workspace_ptr);
         return NULL;
     }
@@ -201,6 +212,11 @@ void wlmaker_workspace_destroy(wlmaker_workspace_t *workspace_ptr)
         wlr_scene_node_destroy(
             &workspace_ptr->fullscreen_wlr_scene_tree_ptr->node);
         workspace_ptr->fullscreen_wlr_scene_tree_ptr = NULL;
+    }
+
+    if (NULL != workspace_ptr->wlmtk_workspace_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr->wlmtk_workspace_ptr);
+        workspace_ptr->wlmtk_workspace_ptr = NULL;
     }
 
     if (NULL != workspace_ptr->wlr_scene_tree_ptr) {
@@ -637,6 +653,12 @@ wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
     wlmaker_workspace_t *workspace_ptr)
 {
     return workspace_ptr->tile_container_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr)
+{
+    return workspace_ptr->wlmtk_workspace_ptr;
 }
 
 /* == Static (local) methods =============================================== */
