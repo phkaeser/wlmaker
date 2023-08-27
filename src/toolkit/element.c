@@ -92,6 +92,8 @@ void wlmtk_element_map(wlmtk_element_t *element_ptr)
 
     element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
         element_ptr, parent_wlr_scene_tree_ptr);
+    // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
+    wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, true);
     BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
 }
 
@@ -99,6 +101,8 @@ void wlmtk_element_map(wlmtk_element_t *element_ptr)
 void wlmtk_element_unmap(wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
+    // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
+    wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, false);
     wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
     element_ptr->wlr_scene_node_ptr = NULL;
 }

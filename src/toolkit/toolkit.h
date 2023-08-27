@@ -126,6 +126,7 @@ void wlmtk_element_set_parent_container(
  *
  * Requires a parent container to be set. Will call `create_scene_node` to
  * build the scene graph API node attached to the parent container's tree.
+ * Implies that the parent container also is required to be mapped.
  *
  * @param element_ptr
  */
@@ -284,6 +285,17 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
+
+/**
+ * Type conversion: Returns the @ref wlmtk_workspace_t from the container_ptr
+ * pointing to wlmtk_workspace_t::super_container.
+ *
+ * Asserts that the container is indeed from a wlmtk_workspace_t.
+ *
+ * @reutrn Pointer to the workspace.
+ */
+wlmtk_workspace_t *wlmtk_workspace_from_container(
+    wlmtk_container_t *container_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

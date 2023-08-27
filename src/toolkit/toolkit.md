@@ -167,6 +167,13 @@ class MenuItem {
 Buffer <|-- MenuItem
 ```
 
+### Pending work
+
+* Separate the "map" method into "attach_to_node" and "set_visible". Elements
+  should be marked as visible even if their parent is not "mapped" yet; thus
+  leading to lazy instantiation of the node, once their parent gets "mapped"
+  (ie. attached to the scene graph).
+
 ### User Journeys
 
 #### Creating a new XDG toplevel

@@ -102,10 +102,20 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr)
 {
+    BS_ASSERT(workspace_ptr == wlmtk_workspace_from_container(
+                  wlmtk_window_element(window_ptr)->parent_container_ptr));
     wlmtk_element_unmap(wlmtk_window_element(window_ptr));
     wlmtk_container_remove_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_workspace_t *wlmtk_workspace_from_container(
+    wlmtk_container_t *container_ptr)
+{
+    BS_ASSERT(container_ptr->impl_ptr == &workspace_container_impl);
+    return BS_CONTAINER_OF(container_ptr, wlmtk_workspace_t, super_container);
 }
 
 /* == Local (static) methods =============================================== */
@@ -139,6 +149,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         &wlr_scene_ptr->tree);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        workspace_ptr,
+        wlmtk_workspace_from_container(&workspace_ptr->super_container));
 
     wlmtk_workspace_destroy(workspace_ptr);
 
