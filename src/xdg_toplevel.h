@@ -55,18 +55,19 @@ typedef struct _wlmtk_xdg_toplevel_content_t wlmtk_xdg_toplevel_content_t;
 /**
  * Creates a `wlmtk_content` for the given XDG surface.
  *
- * @param xdg_surface_ptr
+ * @param wlr_xdg_surface_ptr
+ * @param server_ptr
  *
  * @return Pointer to the content.
  */
 wlmtk_xdg_toplevel_content_t *wlmtk_xdg_toplevel_content_create(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr,
-    wlmaker_server_t *server_ptrx);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the toplevel content.
  *
- * @param xdgtl_content_ptr
+ * @param xdg_tl_content_ptr
  */
 void wlmtk_xdg_toplevel_content_destroy(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr);

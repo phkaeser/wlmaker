@@ -799,9 +799,12 @@ void xdg_tl_content_destroy(wlmtk_content_t *content_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Destructor. Wraps to @ref wlmtk_xdg_toplevel_content_destroy.
+ * Creates the wlroots scene graph API node, attached to `wlr_scene_tree_ptr`.
  *
  * @param content_ptr
+ * @param wlr_scene_tree_ptr
+ *
+ * @return Scene graph API node that represents the content.
  */
 struct wlr_scene_node *xdg_tl_content_create_scene_node(
     wlmtk_content_t *content_ptr,

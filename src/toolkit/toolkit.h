@@ -292,7 +292,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
  *
  * Asserts that the container is indeed from a wlmtk_workspace_t.
  *
- * @reutrn Pointer to the workspace.
+ * @return Pointer to the workspace.
  */
 wlmtk_workspace_t *wlmtk_workspace_from_container(
     wlmtk_container_t *container_ptr);

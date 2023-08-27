@@ -50,6 +50,7 @@ enum _wlmaker_workspace_layer_t {
 #include "layer_surface.h"
 #include "server.h"
 #include "tile_container.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -332,8 +333,6 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
 /** Prototype: Gets the tile container for the workspace. TODO: eliminate. */
 wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
     wlmaker_workspace_t *workspace_ptr);
-
-typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 /** Transitional: Returns the @ref wlmtk_workspace_t. */
 wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr);
