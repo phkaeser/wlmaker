@@ -31,6 +31,7 @@ class Element {
   bool init(handlers)
   void fini()
   -void set_parent_container(Container*)
+  -void attach_to_scene_graph()
   void set_visible(bool)
   bool is_visible()
 
@@ -40,17 +41,13 @@ class Element {
   {abstract}#void leave()
   {abstract}#void click()
 }
-note right of Element::"set_parent_container()"
-  If the parent is already part of the scene graph, this will also
-  invoke create_scene_node.
-note right of Element::"set_visible()"
-  Marks the element as visible.
-
-  If this element is already part of the scene graph, will adjust the
-  visibility of the node. Otherwise, if the parent is already part of the
-  scene graph (parent_container_ptr->wlr_scene_tree() is not NULL), this will
-  also invoke create_scene_node to create the scene node.
-  And then set visibility accordingly.
+note right of Element::"set_parent_container(Container*)"
+  Will invoke set_parent_container.
+end note
+note right of Element::"attach_to_scene_graph()"
+  Will create or reparent this element's node to the parent's scene tree, or
+  detach and destroy this element's node, if the parent does not have a scene
+  tree.
 end note
 
 class Container {
@@ -61,7 +58,7 @@ class Container {
   void fini()
   add_element(Element*)
   remove_element(Element*)
-  struct wlr_scene_tree *wlr_scene_tree()
+  -struct wlr_scene_tree *wlr_scene_tree()
 
   {abstract}#void destroy()
 
@@ -71,8 +68,9 @@ class Container {
 }
 Element <|-- Container
 note right of Element::"add_element(Element*)"
-  If the super_element is already part of the scene graph, this will also
-  invoke the added element's create_scene_node.
+  Both add_element() and remove_element() will call
+  Element::set_parent_container() and thus alignt he element's scene node
+  with the container's tree.
 end note
 
 class Workspace {

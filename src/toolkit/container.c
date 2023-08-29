@@ -71,7 +71,6 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
         wlmtk_container_remove_element(container_ptr, element_ptr);
         BS_ASSERT(container_ptr->elements.head_ptr != dlnode_ptr);
-
         wlmtk_element_destroy(element_ptr);
     }
 
@@ -84,6 +83,8 @@ void wlmtk_container_add_element(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr)
 {
+    BS_ASSERT(NULL == element_ptr->parent_container_ptr);
+
     bs_dllist_push_back(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
@@ -96,10 +97,6 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
-
-    if (wlmtk_element_mapped(element_ptr)) {
-        wlmtk_element_unmap(element_ptr);
-    }
 
     wlmtk_element_set_parent_container(element_ptr, NULL);
     bs_dllist_remove(
@@ -133,8 +130,8 @@ void element_destroy(wlmtk_element_t *element_ptr)
 /**
  * Implementation of the superclass wlmtk_element_t::create_scene_node method.
  *
- * Creates the wlroots scene graph tree for the container, and will map all
- * already-contained elements.
+ * Creates the wlroots scene graph tree for the container, and will attach all
+ * already-contained elements to the scene graph, as well.
  *
  * @param element_ptr
  * @param wlr_scene_tree_ptr
@@ -157,10 +154,8 @@ struct wlr_scene_node *element_create_scene_node(
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
-        // We are only just now creating the tree node for this very container,
-        // so none of the children can be mapped already. Do that now.
-        BS_ASSERT(!wlmtk_element_mapped(element_ptr));
-        wlmtk_element_map(element_ptr);
+        BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
+        wlmtk_element_attach_to_scene_graph(element_ptr);
     }
 
     wlmtk_util_connect_listener_signal(
@@ -174,7 +169,7 @@ struct wlr_scene_node *element_create_scene_node(
 /**
  * Handles the 'destroy' callback of wlr_scene_tree_ptr->node.
  *
- * Will explicitly unmap each of the contained elements.
+ * Will also detach (but not destroy) each of the still-contained elements.
  *
  * @param listener_ptr
  * @param data_ptr
@@ -186,31 +181,29 @@ void handle_wlr_scene_tree_node_destroy(
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_container_t, wlr_scene_tree_node_destroy_listener);
 
+    container_ptr->wlr_scene_tree_ptr = NULL;
     for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
-        if (wlmtk_element_mapped(element_ptr)) {
-            wlmtk_element_unmap(element_ptr);
-        }
+        wlmtk_element_attach_to_scene_graph(element_ptr);
     }
 
     // Since this is a callback from the tree node dtor, the tree is going to
     // be destroyed. We are using this to reset the container's reference.
     wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
-    container_ptr->wlr_scene_tree_ptr = NULL;
 }
 
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_add_remove(bs_test_t *test_ptr);
-static void test_remove_mapped(bs_test_t *test_ptr);
+static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },
-    { 1, "remove_mapped", test_remove_mapped },
+    { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
     { 0, NULL, NULL }
 };
 
@@ -300,8 +293,8 @@ void test_add_remove(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests that mapped elements are unmapped when removed. */
-void test_remove_mapped(bs_test_t *test_ptr)
+/** Tests that elements are attached, resp. detached from scene graph. */
+void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
@@ -314,21 +307,19 @@ void test_remove_mapped(bs_test_t *test_ptr)
     wlmtk_element_set_parent_container(
         &container.super_element, &fake_parent);
 
-    // Self must be mapped before mapping any contained element.
-    wlmtk_element_map(&container.super_element);
-    BS_TEST_VERIFY_TRUE(
-        test_ptr, wlmtk_element_mapped(&container.super_element));
+    // Want to have the node.
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, NULL, container.super_element.wlr_scene_node_ptr);
 
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(test_ptr,
                         wlmtk_element_init(&element, &test_element_impl));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
     wlmtk_container_add_element(&container, &element);
-    wlmtk_element_map(&element);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_mapped(&element));
-
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
     wlmtk_container_remove_element(&container, &element);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_mapped(&element));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
     wlmtk_element_set_parent_container(&container.super_element, NULL);
     wlmtk_container_fini(&container);

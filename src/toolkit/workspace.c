@@ -69,8 +69,8 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     wlmtk_element_set_parent_container(
         &workspace_ptr->super_container.super_element,
         &workspace_ptr->fake_parent);
-
-    wlmtk_element_map(&workspace_ptr->super_container.super_element);
+    wlmtk_element_set_visible(
+        &workspace_ptr->super_container.super_element, true);
 
     return workspace_ptr;
 }
@@ -78,8 +78,6 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
-    wlmtk_element_unmap(&workspace_ptr->super_container.super_element);
-
     wlmtk_element_set_parent_container(
         &workspace_ptr->super_container.super_element,
         NULL);
@@ -92,10 +90,10 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr)
 {
+    wlmtk_element_set_visible(wlmtk_window_element(window_ptr), true);
     wlmtk_container_add_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
-    wlmtk_element_map(wlmtk_window_element(window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -104,7 +102,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 {
     BS_ASSERT(workspace_ptr == wlmtk_workspace_from_container(
                   wlmtk_window_element(window_ptr)->parent_container_ptr));
-    wlmtk_element_unmap(wlmtk_window_element(window_ptr));
+    wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
     wlmtk_container_remove_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
@@ -196,21 +194,28 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
-    BS_TEST_VERIFY_TRUE(
+    BS_TEST_VERIFY_NEQ(
         test_ptr,
-        wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
-    BS_TEST_VERIFY_TRUE(
+        NULL,
+        wlmtk_window_element(window_ptr)->wlr_scene_node_ptr);
+    BS_TEST_VERIFY_NEQ(
         test_ptr,
-        wlmtk_element_mapped(&content.super_element));
+        NULL,
+        content.super_element.wlr_scene_node_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
-    BS_TEST_VERIFY_FALSE(
+    BS_TEST_VERIFY_EQ(
         test_ptr,
-        wlmtk_element_mapped(wlmtk_window_element(window_ptr)));
-    BS_TEST_VERIFY_FALSE(
+        NULL,
+        wlmtk_window_element(window_ptr)->wlr_scene_node_ptr);
+    BS_TEST_VERIFY_EQ(
         test_ptr,
-        wlmtk_element_mapped(&content.super_element));
+        NULL,
+        content.super_element.wlr_scene_node_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);

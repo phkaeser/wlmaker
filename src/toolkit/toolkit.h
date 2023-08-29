@@ -67,8 +67,11 @@ struct _wlmtk_element_t {
     /** Implementation of abstract virtual methods. */
     const wlmtk_element_impl_t *impl_ptr;
 
-    /** Points to the wlroots scene graph API node. Is set when mapped. */
+    /** Points to the wlroots scene graph API node, if attached. */
     struct wlr_scene_node     *wlr_scene_node_ptr;
+
+    /** Whether the element is visible (drawn, when part of a scene graph). */
+    bool                      visible;
 
     /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
     struct wl_listener        wlr_scene_node_destroy_listener;
@@ -114,9 +117,11 @@ wlmtk_element_t *wlmtk_element_from_dlnode(
 /**
  * Sets the parent container for the element.
  *
+ * Will call @ref wlmtk_element_attach_to_scene_graph to align the scene graph
+ * with the new (or deleted) parent.
+ *
  * Private: Should only be called by wlmtk_container_add_element, respectively
- * wlmtk_container_remove_element ("friends"). Will unmap the element, if the
- * parent container changes.
+ * wlmtk_container_remove_element ("friends").
  *
  * @param element_ptr
  * @param parent_container_ptr Pointer to the parent container, or NULL if
@@ -127,28 +132,31 @@ void wlmtk_element_set_parent_container(
     wlmtk_container_t *parent_container_ptr);
 
 /**
- * Maps the element.
+ * Attaches or detaches the element to the parent's wlroots scene tree.
  *
- * Requires a parent container to be set. Will call `create_scene_node` to
- * build the scene graph API node attached to the parent container's tree.
- * Implies that the parent container also is required to be mapped.
+ * If the element has a parent, and that parent is itself attached to the
+ * wlroots scene tree, this will either re-parent an already existing node,
+ * or invoke wlmtk_element_impl_t::create_scene_node to create and attach a
+ * new node to the paren'ts tree.
+ * Otherwise, it will clear any existing node.
+ *
+ * The function is idempotent.
+ *
+ * Private: Should only called by wlmtk_container_t methods, when there are
+ * changes to wlmtk_container_t::wlr_scene_tree.
  *
  * @param element_ptr
  */
-void wlmtk_element_map(wlmtk_element_t *element_ptr);
+void wlmtk_element_attach_to_scene_graph(
+    wlmtk_element_t *element_ptr);
 
 /**
- * Unmaps the element.
+ * Sets the element's visibility.
  *
  * @param element_ptr
+ * @param visible
  */
-void wlmtk_element_unmap(wlmtk_element_t *element_ptr);
-
-/** Returns whether this element is currently mapped. */
-static inline bool wlmtk_element_mapped(wlmtk_element_t *element_ptr)
-{
-    return NULL != element_ptr->wlr_scene_node_ptr;
-}
+void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible);
 
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(
@@ -210,6 +218,8 @@ void wlmtk_container_fini(
 /**
  * Adds `element_ptr` to the container.
  *
+ * Requires that `element_ptr` is not added to a container yet.
+ *
  * @param container_ptr
  * @param element_ptr
  */
@@ -220,8 +230,7 @@ void wlmtk_container_add_element(
 /**
  * Removes `element_ptr` from the container.
  *
- * Expects that `container_ptr` is `element_ptr`'s parent container. Will unmap
- * the element, in case it is currently mapped.
+ * Expects that `container_ptr` is `element_ptr`'s parent container.
  *
  * @param container_ptr
  * @param element_ptr
@@ -233,12 +242,11 @@ void wlmtk_container_remove_element(
 /**
  * Returns the wlroots scene graph tree for this node.
  *
- * Requires this container's element to be mapped. Should be called only from
- * members of `elements`.
+ * Private: Should be called only by wlmtk_element_t.
  *
  * @param container_ptr
  *
- * @return The scene tree.
+ * @return The scene tree, or NULL if not attached to a scene graph.
  */
 struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr);
@@ -269,14 +277,14 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 
 /**
- * Destroys the workspace. Will destroy any still-mapped element.
+ * Destroys the workspace. Will destroy any stil-contained element.
  *
  * @param workspace_ptr
  */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Maps the window: Adds it to the workspace container and maps it.
+ * Maps the window: Adds it to the workspace container and makes it visible.
  *
  * @param workspace_ptr
  * @param window_ptr
@@ -285,8 +293,7 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr);
 
 /**
- * Maps the window: Unmaps the window and removes it from the workspace
- * container.
+ * Unmaps the window: Sets it as invisible and removes it from the container.
  *
  * @param workspace_ptr
  * @param window_ptr

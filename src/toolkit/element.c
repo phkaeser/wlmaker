@@ -53,8 +53,8 @@ bool wlmtk_element_init(
 void wlmtk_element_fini(
     wlmtk_element_t *element_ptr)
 {
-    // Verify we're no longer mapped, nor part of a container.
-    BS_ASSERT(!wlmtk_element_mapped(element_ptr));
+    // Verify we're no longer part of the scene graph, nor part of a container.
+    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
 
     element_ptr->impl_ptr = NULL;
@@ -80,43 +80,61 @@ void wlmtk_element_set_parent_container(
     wlmtk_container_t *parent_container_ptr)
 {
     if (element_ptr->parent_container_ptr == parent_container_ptr) return;
-
-    if (wlmtk_element_mapped(element_ptr)) {
-        wlmtk_element_unmap(element_ptr);
-    }
     element_ptr->parent_container_ptr = parent_container_ptr;
+    wlmtk_element_attach_to_scene_graph(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_element_map(wlmtk_element_t *element_ptr)
+void wlmtk_element_attach_to_scene_graph(
+    wlmtk_element_t *element_ptr)
 {
-    BS_ASSERT(NULL != element_ptr->parent_container_ptr);
-    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
-    struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
-        wlmtk_container_wlr_scene_tree(element_ptr->parent_container_ptr);
-    BS_ASSERT(NULL != parent_wlr_scene_tree_ptr);
+    struct wlr_scene_tree *parent_wlr_scene_tree_ptr = NULL;
+    if (NULL != element_ptr->parent_container_ptr) {
+        parent_wlr_scene_tree_ptr = wlmtk_container_wlr_scene_tree(
+            element_ptr->parent_container_ptr);
+    }
 
-    element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
-        element_ptr, parent_wlr_scene_tree_ptr);
-    wlmtk_util_connect_listener_signal(
-        &element_ptr->wlr_scene_node_ptr->events.destroy,
-        &element_ptr->wlr_scene_node_destroy_listener,
-        handle_wlr_scene_node_destroy);
+    if (NULL == parent_wlr_scene_tree_ptr) {
+        if (NULL != element_ptr->wlr_scene_node_ptr) {
+            wl_list_remove(&element_ptr->wlr_scene_node_destroy_listener.link);
+            wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
+            element_ptr->wlr_scene_node_ptr = NULL;
+        }
+        return;
+    }
 
-    // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
-    wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, true);
+    if (NULL == element_ptr->wlr_scene_node_ptr) {
+        element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
+            element_ptr, parent_wlr_scene_tree_ptr);
+        wlmtk_util_connect_listener_signal(
+            &element_ptr->wlr_scene_node_ptr->events.destroy,
+            &element_ptr->wlr_scene_node_destroy_listener,
+            handle_wlr_scene_node_destroy);
+        wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr,
+                                   element_ptr->visible);
+        return;
+    }
+
     BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
+    if (element_ptr->wlr_scene_node_ptr->parent == parent_wlr_scene_tree_ptr) {
+        // Parent does not change, nothing to do.
+        return;
+    }
+
+    wlr_scene_node_reparent(element_ptr->wlr_scene_node_ptr,
+                            parent_wlr_scene_tree_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_element_unmap(wlmtk_element_t *element_ptr)
+void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
 {
-    BS_ASSERT(NULL != element_ptr->wlr_scene_node_ptr);
-    // TODO(kaeser@gubbe.ch): Separate map method into set_visible/attach.
-    wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, false);
-    wl_list_remove(&element_ptr->wlr_scene_node_destroy_listener.link);
-    wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
-    element_ptr->wlr_scene_node_ptr = NULL;
+    // Nothing to do?
+    if (element_ptr->visible == visible) return;
+
+    element_ptr->visible = visible;
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
+    }
 }
 
 /* == Local (static) methods =============================================== */
@@ -142,11 +160,11 @@ void handle_wlr_scene_node_destroy(
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
-static void test_map_unmap(bs_test_t *test_ptr);
+static void test_set_parent_container(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
-    { 1, "map_unmap", test_map_unmap },
+    { 1, "set_parent_container", test_set_parent_container },
     { 0, NULL, NULL }
 };
 
@@ -188,33 +206,48 @@ void test_init_fini(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests map and unmap, and that unmapping is done on reparenting or fini. */
-void test_map_unmap(bs_test_t *test_ptr)
+/** Tests set_parent_container, and that scene graph follows. */
+void test_set_parent_container(bs_test_t *test_ptr)
 {
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, &test_impl));
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    wlmtk_container_t fake_parent = {
-        .wlr_scene_tree_ptr = &wlr_scene_ptr->tree
+    wlmtk_container_t fake_parent = {};
+    struct wlr_scene *other_wlr_scene_ptr = wlr_scene_create();
+    wlmtk_container_t other_fake_parent = {
+        .wlr_scene_tree_ptr = &other_wlr_scene_ptr->tree
     };
+
+    // Setting a parent without a scene graph tree will not set a node.
     wlmtk_element_set_parent_container(&element, &fake_parent);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
-    // Map & unmap.
-    wlmtk_element_map(&element);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_mapped(&element));
-    wlmtk_element_unmap(&element);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_mapped(&element));
-
-    // Remain mapped, if the parent container remains unchanged.
-    wlmtk_element_map(&element);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_mapped(&element));
-    wlmtk_element_set_parent_container(&element, &fake_parent);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_mapped(&element));
-
-    // Changing the parent (eg. to 'None') must unmap the element.
     wlmtk_element_set_parent_container(&element, NULL);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_mapped(&element));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
+
+    // Setting a parent with a tree must create & attach the node there.
+    wlmtk_element_set_visible(&element, true);
+    fake_parent.wlr_scene_tree_ptr = &wlr_scene_ptr->tree;
+    wlmtk_element_set_parent_container(&element, &fake_parent);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &wlr_scene_ptr->tree,
+        element.wlr_scene_node_ptr->parent);
+    BS_TEST_VERIFY_TRUE(test_ptr, element.wlr_scene_node_ptr->enabled);
+
+    // Resetting the parent must also re-attach the node.
+    wlmtk_element_set_parent_container(&element, &other_fake_parent);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &other_wlr_scene_ptr->tree,
+        element.wlr_scene_node_ptr->parent);
+    BS_TEST_VERIFY_TRUE(test_ptr, element.wlr_scene_node_ptr->enabled);
+
+    // Clearing the parent most remove the node.
+    wlmtk_element_set_parent_container(&element, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
+
     wlmtk_element_fini(&element);
 }
 
