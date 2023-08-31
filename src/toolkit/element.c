@@ -112,6 +112,9 @@ void wlmtk_element_attach_to_scene_graph(
             handle_wlr_scene_node_destroy);
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr,
                                    element_ptr->visible);
+        wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr,
+                                    element_ptr->x,
+                                    element_ptr->y);
         return;
     }
 
@@ -134,6 +137,32 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
     element_ptr->visible = visible;
     if (NULL != element_ptr->wlr_scene_node_ptr) {
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_get_position(
+    wlmtk_element_t *element_ptr,
+    int *x_ptr,
+    int *y_ptr)
+{
+    if (NULL != x_ptr) *x_ptr = element_ptr->x;
+    if (NULL != y_ptr) *y_ptr = element_ptr->y;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_set_position(
+    wlmtk_element_t *element_ptr,
+    int x,
+    int y)
+{
+    element_ptr->x = x;
+    element_ptr->y = y;
+
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr,
+                                    element_ptr->x,
+                                    element_ptr->y);
     }
 }
 
@@ -161,10 +190,12 @@ void handle_wlr_scene_node_destroy(
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_set_parent_container(bs_test_t *test_ptr);
+static void test_set_get_position(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_parent_container", test_set_parent_container },
+    { 1, "set_get_position", test_set_get_position },
     { 0, NULL, NULL }
 };
 
@@ -248,6 +279,43 @@ void test_set_parent_container(bs_test_t *test_ptr)
     wlmtk_element_set_parent_container(&element, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
+    wlmtk_element_fini(&element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests get_position and set_position, and that scene graph follows. */
+void test_set_get_position(bs_test_t *test_ptr)
+{
+    wlmtk_element_t element;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, &test_impl));
+
+    // Exercise, must not crash.
+    wlmtk_element_get_position(&element, NULL, NULL);
+
+    int x, y;
+    wlmtk_element_get_position(&element, &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, y);
+
+    wlmtk_element_set_position(&element, 10, 20);
+    wlmtk_element_get_position(&element, &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, y);
+
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    wlmtk_container_t fake_parent = {
+        .wlr_scene_tree_ptr = &wlr_scene_ptr->tree
+    };
+    wlmtk_element_set_parent_container(&element, &fake_parent);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 10, element.wlr_scene_node_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, element.wlr_scene_node_ptr->y);
+
+    wlmtk_element_set_position(&element, 30, 40);
+    BS_TEST_VERIFY_EQ(test_ptr, 30, element.wlr_scene_node_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 40, element.wlr_scene_node_ptr->y);
+
+    wlmtk_element_set_parent_container(&element, NULL);
     wlmtk_element_fini(&element);
 }
 

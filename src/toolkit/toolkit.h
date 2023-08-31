@@ -158,6 +158,30 @@ void wlmtk_element_attach_to_scene_graph(
  */
 void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible);
 
+/**
+ * Returns the position of the element.
+ *
+ * @param element_ptr
+ * @param x_ptr               Optional, may be NULL.
+ * @param y_ptr               Optional, may be NULL.
+ */
+void wlmtk_element_get_position(
+    wlmtk_element_t *element_ptr,
+    int *x_ptr,
+    int *y_ptr);
+
+/**
+ * Sets the position of the element.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ */
+void wlmtk_element_set_position(
+    wlmtk_element_t *element_ptr,
+    int x,
+    int y);
+
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {
