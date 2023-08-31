@@ -275,8 +275,9 @@ wlmaker_view_t *wlmaker_view_at(
            NULL == wlr_scene_tree_ptr->node.data) {
         wlr_scene_tree_ptr = wlr_scene_tree_ptr->node.parent;
     }
-    return (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
+    if (NULL == wlr_scene_tree_ptr) return NULL;
 
+    return (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
 }
 
 /* ------------------------------------------------------------------------- */
