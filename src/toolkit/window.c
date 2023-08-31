@@ -57,6 +57,7 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
         wlmtk_content_element(content_ptr));
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
+    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
     return window_ptr;
 }
 
@@ -66,6 +67,8 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
     wlmtk_container_remove_element(
         &window_ptr->super_container,
         wlmtk_content_element(window_ptr->content_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_content_element(window_ptr->content_ptr), false);
     wlmtk_content_set_window(window_ptr->content_ptr, NULL);
     window_ptr->content_ptr = NULL;
 
