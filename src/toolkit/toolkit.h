@@ -191,6 +191,9 @@ static inline void wlmtk_element_destroy(
 /** Unit tests for the element. */
 extern const bs_test_case_t wlmtk_element_test_cases[];
 
+/** Implementation table of a "fake" element for tests. */
+extern const wlmtk_element_impl_t wlmtk_element_fake__impl;
+
 /* ========================================================================= */
 
 /** State of the container. */
