@@ -142,10 +142,11 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
 /** Exercises workspace create & destroy methods. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        &wlr_scene_ptr->tree);
+        fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     BS_TEST_VERIFY_EQ(
@@ -154,8 +155,7 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_workspace_from_container(&workspace_ptr->super_container));
 
     wlmtk_workspace_destroy(workspace_ptr);
-
-    // Note: There is no destroy method for wlr_scene_ptr.
+    wlmtk_container_destroy(fake_parent_ptr);
 }
 
 /** dtor for the content under test. */
@@ -183,10 +183,11 @@ static const wlmtk_content_impl_t test_content_impl = {
 /** Verifies that mapping and unmapping windows works. */
 void test_map_unmap(bs_test_t *test_ptr)
 {
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        &wlr_scene_ptr->tree);
+        fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     wlmtk_content_t content;
@@ -219,6 +220,7 @@ void test_map_unmap(bs_test_t *test_ptr)
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
 }
 
 /* == End of workspace.c =================================================== */
