@@ -247,13 +247,13 @@ void test_add_remove(bs_test_t *test_ptr)
     wlmtk_element_t element1, element2, element3;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element1, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element1, &wlmtk_element_fake_impl));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element2, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element2, &wlmtk_element_fake_impl));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element3, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element3, &wlmtk_element_fake_impl));
 
     wlmtk_container_add_element(&container, &element1);
     BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, &container);
@@ -297,7 +297,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
     wlmtk_container_add_element(&container, &element);

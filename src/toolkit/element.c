@@ -204,7 +204,7 @@ static struct wlr_scene_node *fake_create_scene_node(
     __UNUSED__ wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 
-const wlmtk_element_impl_t wlmtk_element_fake__impl = {
+const wlmtk_element_impl_t wlmtk_element_fake_impl = {
     .destroy = fake_destroy_cb,
     .create_scene_node = fake_create_scene_node
 };
@@ -233,7 +233,7 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.impl_ptr);
 
     wlmtk_element_destroy(&element);
@@ -247,7 +247,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     wlmtk_container_t fake_parent = {};
@@ -295,7 +295,7 @@ void test_set_get_position(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake__impl));
+        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
 
     // Exercise, must not crash.
     wlmtk_element_get_position(&element, NULL, NULL);
