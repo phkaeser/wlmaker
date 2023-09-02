@@ -290,6 +290,9 @@ extern const bs_test_case_t wlmtk_container_test_cases[];
 /** Implementation table of a "fake" container for tests. */
 extern const wlmtk_container_impl_t wlmtk_container_fake_impl;
 
+/** Constructor for a fake container with a scene tree. */
+wlmtk_container_t *wlmtk_container_create_fake_parent(void);
+
 /* ========================================================================= */
 
 /** State of the workspace. */

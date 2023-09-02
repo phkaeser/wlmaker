@@ -194,18 +194,7 @@ void handle_wlr_scene_tree_node_destroy(
     wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
 }
 
-/* == Unit tests =========================================================== */
-
-static void test_init_fini(bs_test_t *test_ptr);
-static void test_add_remove(bs_test_t *test_ptr);
-static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
-
-const bs_test_case_t wlmtk_container_test_cases[] = {
-    { 1, "init_fini", test_init_fini },
-    { 1, "add_remove", test_add_remove },
-    { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
-    { 0, NULL, NULL }
-};
+/* == Helper for unit test: A fake container =============================== */
 
 static void fake_destroy(wlmtk_container_t *container_ptr);
 
@@ -220,6 +209,80 @@ void fake_destroy(wlmtk_container_t *container_ptr)
 {
     wlmtk_container_fini(container_ptr);
 }
+
+/* == Helper for unit tests: A fake container with a tree, as parent ======= */
+
+/** State of the "fake" parent container. Refers to a scene graph. */
+typedef struct {
+    /** The actual container */
+    wlmtk_container_t         container;
+    /** A scene graph. Not attached to any output, */
+    struct wlr_scene          *wlr_scene_ptr;
+} fake_parent_container_t;
+
+static void fake_parent_destroy(wlmtk_container_t *container_ptr);
+
+/* ------------------------------------------------------------------------- */
+wlmtk_container_t *wlmtk_container_create_fake_parent(void)
+{
+    static const wlmtk_container_impl_t fake_parent_impl = {
+        .destroy = fake_parent_destroy
+    };
+
+    fake_parent_container_t *fake_parent_container_ptr = logged_calloc(
+        1, sizeof(fake_parent_container_t));
+    if (NULL == fake_parent_container_ptr) return NULL;
+
+    if (!wlmtk_container_init(
+        &fake_parent_container_ptr->container,
+        &fake_parent_impl)) {
+        fake_parent_destroy(&fake_parent_container_ptr->container);
+        return NULL;
+    }
+
+    fake_parent_container_ptr->wlr_scene_ptr = wlr_scene_create();
+    if (NULL == fake_parent_container_ptr->wlr_scene_ptr) {
+        fake_parent_destroy(&fake_parent_container_ptr->container);
+        return NULL;
+    }
+    fake_parent_container_ptr->container.wlr_scene_tree_ptr =
+        &fake_parent_container_ptr->wlr_scene_ptr->tree;
+
+    return &fake_parent_container_ptr->container;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destructor for the "fake" parent, to be used for tests. */
+void fake_parent_destroy(wlmtk_container_t *container_ptr)
+{
+    fake_parent_container_t *fake_parent_container_ptr = BS_CONTAINER_OF(
+        container_ptr, fake_parent_container_t, container);
+
+    if (NULL != fake_parent_container_ptr->wlr_scene_ptr) {
+        // Note: There is no "wlr_scene_destroy()" method; as of 2023-09-02,
+        // this is just a flat allocated struct.
+        free(fake_parent_container_ptr->wlr_scene_ptr);
+        fake_parent_container_ptr->wlr_scene_ptr = NULL;
+    }
+
+    wlmtk_container_fini(&fake_parent_container_ptr->container);
+
+    free(fake_parent_container_ptr);
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_init_fini(bs_test_t *test_ptr);
+static void test_add_remove(bs_test_t *test_ptr);
+static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_container_test_cases[] = {
+    { 1, "init_fini", test_init_fini },
+    { 1, "add_remove", test_add_remove },
+    { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
+    { 0, NULL, NULL }
+};
+
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */
 void test_init_fini(bs_test_t *test_ptr)
@@ -285,12 +348,11 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
                             &container, &wlmtk_container_fake_impl));
 
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    wlmtk_container_t fake_parent = {
-        .wlr_scene_tree_ptr = &wlr_scene_ptr->tree
-    };
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_parent_ptr);
+
     wlmtk_element_set_parent_container(
-        &container.super_element, &fake_parent);
+        &container.super_element, fake_parent_ptr);
 
     // Want to have the node.
     BS_TEST_VERIFY_NEQ(
@@ -310,6 +372,8 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 
     wlmtk_element_set_parent_container(&container.super_element, NULL);
     wlmtk_container_fini(&container);
+
+    wlmtk_container_destroy(fake_parent_ptr);
 }
 
 /* == End of container.c =================================================== */
