@@ -199,7 +199,7 @@ void element_enter(
         x_to += x_from;
         y_to += y_from;
 
-        if (x_from <= x && x < y_to && y_from <= y && y < y_to) {
+        if (x_from <= x && x < x_to && y_from <= y && y < y_to) {
             wlmtk_element_enter(element_ptr, x - x_from, y - y_from);
             return;
         }
@@ -316,11 +316,13 @@ void fake_parent_destroy(wlmtk_container_t *container_ptr)
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_add_remove(bs_test_t *test_ptr);
 static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
+static void test_enter(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
+    { 1, "enter", test_enter },
     { 0, NULL, NULL }
 };
 
@@ -353,13 +355,13 @@ void test_add_remove(bs_test_t *test_ptr)
     wlmtk_element_t element1, element2, element3;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element1, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element1, &wlmtk_fake_element_impl));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element2, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element2, &wlmtk_fake_element_impl));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element3, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element3, &wlmtk_fake_element_impl));
 
     wlmtk_container_add_element(&container, &element1);
     BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, &container);
@@ -402,7 +404,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
     wlmtk_container_add_element(&container, &element);
@@ -415,6 +417,55 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     wlmtk_container_fini(&container);
 
     wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests the 'enter' method for container. */
+void test_enter(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
+
+    wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_position(&elem1_ptr->element, -20, -40);
+    elem1_ptr->element.width = 10;
+    elem1_ptr->element.height = 5;
+    wlmtk_container_add_element(&container, &elem1_ptr->element);
+    wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_position(&elem2_ptr->element, 100, 200);
+    elem2_ptr->element.width = 10;
+    elem2_ptr->element.height = 5;
+    wlmtk_container_add_element(&container, &elem2_ptr->element);
+
+    wlmtk_element_enter(&container.super_element, 0, 0);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
+
+    elem1_ptr->enter_x = 42;
+    elem1_ptr->enter_y = 42;
+    wlmtk_element_enter(&container.super_element, -20, -40);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->enter_called);
+    elem1_ptr->enter_called = false;
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->enter_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->enter_y);
+
+    wlmtk_element_enter(&container.super_element, 107, 203);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->enter_called);
+    elem2_ptr->enter_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->enter_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->enter_y);
+
+    wlmtk_element_enter(&container.super_element, 110, 205);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
+
+    wlmtk_container_remove_element(&container, &elem1_ptr->element);
+    wlmtk_element_destroy(&elem1_ptr->element);
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    wlmtk_element_destroy(&elem2_ptr->element);
+    wlmtk_container_fini(&container);
 }
 
 /* == End of container.c =================================================== */

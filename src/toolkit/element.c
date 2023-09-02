@@ -197,18 +197,7 @@ void handle_wlr_scene_node_destroy(
     bs_log(BS_FATAL, "Unexpected call into node's dtor on %p!", element_ptr);
 }
 
-/* == Unit tests =========================================================== */
-
-static void test_init_fini(bs_test_t *test_ptr);
-static void test_set_parent_container(bs_test_t *test_ptr);
-static void test_set_get_position(bs_test_t *test_ptr);
-
-const bs_test_case_t wlmtk_element_test_cases[] = {
-    { 1, "init_fini", test_init_fini },
-    { 1, "set_parent_container", test_set_parent_container },
-    { 1, "set_get_position", test_set_get_position },
-    { 0, NULL, NULL }
-};
+/* == Fake element, useful for unit tests. ================================= */
 
 static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
@@ -218,17 +207,36 @@ static void fake_enter(
     wlmtk_element_t *element_ptr,
     int x, int y);
 
-const wlmtk_element_impl_t wlmtk_element_fake_impl = {
+const wlmtk_element_impl_t wlmtk_fake_element_impl = {
     .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node,
     .enter = fake_enter
 };
 
 /* ------------------------------------------------------------------------- */
+wlmtk_fake_element_t *wlmtk_fake_element_create(void)
+{
+    wlmtk_fake_element_t *fake_element_ptr = logged_calloc(
+        1, sizeof(wlmtk_fake_element_t));
+    if (NULL == fake_element_ptr) return NULL;
+
+    if (!wlmtk_element_init(&fake_element_ptr->element,
+                            &wlmtk_fake_element_impl)) {
+        fake_destroy(&fake_element_ptr->element);
+        return NULL;
+    }
+
+    return fake_element_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 /** dtor for the "fake" element used for tests. */
 void fake_destroy(wlmtk_element_t *element_ptr)
 {
-    wlmtk_element_fini(element_ptr);
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    wlmtk_element_fini(&fake_element_ptr->element);
+    free(fake_element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -245,10 +253,29 @@ struct wlr_scene_node *fake_create_scene_node(
 /* ------------------------------------------------------------------------- */
 /** Handles 'tnter' events for the fake element. */
 void fake_enter(
-    __UNUSED__ wlmtk_element_t *element_ptr,
-    __UNUSED__ int x,
-    __UNUSED__ int y)
-{}
+    wlmtk_element_t *element_ptr,
+    int x,
+    int y)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->enter_called = true;
+    fake_element_ptr->enter_x = x;
+    fake_element_ptr->enter_y = y;
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_init_fini(bs_test_t *test_ptr);
+static void test_set_parent_container(bs_test_t *test_ptr);
+static void test_set_get_position(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_element_test_cases[] = {
+    { 1, "init_fini", test_init_fini },
+    { 1, "set_parent_container", test_set_parent_container },
+    { 1, "set_get_position", test_set_get_position },
+    { 0, NULL, NULL }
+};
 
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */
@@ -257,7 +284,7 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.impl_ptr);
 
     wlmtk_element_destroy(&element);
@@ -271,7 +298,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
 
     // Setting a parent without a scene graph tree will not set a node.
     wlmtk_container_t parent_no_tree;
@@ -322,7 +349,7 @@ void test_set_get_position(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
 
     // Exercise, must not crash.
     wlmtk_element_get_position(&element, NULL, NULL);
@@ -360,7 +387,7 @@ void test_get_size(bs_test_t *test_ptr)
     wlmtk_element_t element;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
     element.width = 42;
     element.height = 21;
 

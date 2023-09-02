@@ -219,8 +219,23 @@ static inline void wlmtk_element_destroy(
 /** Unit tests for the element. */
 extern const bs_test_case_t wlmtk_element_test_cases[];
 
+/** Fake element, useful for unit test. */
+typedef struct {
+    /** State of the element. */
+    wlmtk_element_t           element;
+    /** Indicates that Element::enter() was called. */
+    bool                      enter_called;
+    /** The x argument of the last Element::enter() call. */
+    int                       enter_x;
+    /** The y arguemnt of the last element::enter() call. */
+    int                       enter_y;
+} wlmtk_fake_element_t;
+
+/** Ctor for the fake element. */
+wlmtk_fake_element_t *wlmtk_fake_element_create(void);
+
 /** Implementation table of a "fake" element for tests. */
-extern const wlmtk_element_impl_t wlmtk_element_fake_impl;
+extern const wlmtk_element_impl_t wlmtk_fake_element_impl;
 
 /* ========================================================================= */
 
