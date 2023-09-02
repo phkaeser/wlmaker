@@ -32,6 +32,10 @@ static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void element_enter(
+    wlmtk_element_t *element_ptr,
+    int x, int y);
+
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr);
@@ -39,7 +43,8 @@ static void handle_wlr_scene_tree_node_destroy(
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_impl_t super_element_impl = {
     .destroy = element_destroy,
-    .create_scene_node = element_create_scene_node
+    .create_scene_node = element_create_scene_node,
+    .enter = element_enter
 };
 
 /* == Exported methods ===================================================== */
@@ -163,6 +168,23 @@ struct wlr_scene_node *element_create_scene_node(
         &container_ptr->wlr_scene_tree_node_destroy_listener,
         handle_wlr_scene_tree_node_destroy);
     return &container_ptr->wlr_scene_tree_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's enter method: Handle pointer moves.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ */
+void element_enter(
+    wlmtk_element_t *element_ptr,
+    __UNUSED__ int x,
+    __UNUSED__ int y)
+{
+    __UNUSED__ wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
 }
 
 /* ------------------------------------------------------------------------- */

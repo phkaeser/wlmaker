@@ -89,6 +89,10 @@ struct _wlmtk_element_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_element_t *element_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
+
+    /** Notifies that the pointer is within the element's area, at x,y. */
+    void (*enter)(wlmtk_element_t *element_ptr,
+                  int x, int y);
 };
 
 /**

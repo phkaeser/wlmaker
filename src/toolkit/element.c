@@ -43,6 +43,7 @@ bool wlmtk_element_init(
     BS_ASSERT(NULL != element_impl_ptr);
     BS_ASSERT(NULL != element_impl_ptr->destroy);
     BS_ASSERT(NULL != element_impl_ptr->create_scene_node);
+    BS_ASSERT(NULL != element_impl_ptr->enter);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
@@ -211,24 +212,28 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
 
 static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
-    __UNUSED__ wlmtk_element_t *element_ptr,
+    wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void fake_enter(
+    wlmtk_element_t *element_ptr,
+    int x, int y);
 
 const wlmtk_element_impl_t wlmtk_element_fake_impl = {
     .destroy = fake_destroy,
-    .create_scene_node = fake_create_scene_node
+    .create_scene_node = fake_create_scene_node,
+    .enter = fake_enter
 };
 
 /* ------------------------------------------------------------------------- */
 /** dtor for the "fake" element used for tests. */
-static void fake_destroy(wlmtk_element_t *element_ptr)
+void fake_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_element_fini(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** A "fake" 'create_scene_node': Creates a non-attached buffer node. */
-static struct wlr_scene_node *fake_create_scene_node(
+struct wlr_scene_node *fake_create_scene_node(
     __UNUSED__ wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
@@ -236,6 +241,15 @@ static struct wlr_scene_node *fake_create_scene_node(
         wlr_scene_tree_ptr, NULL);
     return &wlr_scene_buffer_ptr->node;
 }
+
+/* ------------------------------------------------------------------------- */
+/** Handles 'tnter' events for the fake element. */
+void fake_enter(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ int x,
+    __UNUSED__ int y)
+{}
+
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */
 void test_init_fini(bs_test_t *test_ptr)
