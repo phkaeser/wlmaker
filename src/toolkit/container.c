@@ -207,24 +207,26 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+static void fake_destroy(wlmtk_container_t *container_ptr);
+
+/** Method table for the container we're using for test. */
+const wlmtk_container_impl_t wlmtk_container_fake_impl = {
+    .destroy = fake_destroy
+};
+
+/* ------------------------------------------------------------------------- */
 /** dtor for the container under test. */
-static void test_destroy_cb(wlmtk_container_t *container_ptr)
+void fake_destroy(wlmtk_container_t *container_ptr)
 {
     wlmtk_container_fini(container_ptr);
 }
-
-/** Method table for the container we're using for test. */
-static const wlmtk_container_impl_t test_container_impl = {
-    .destroy = test_destroy_cb
-};
-
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &test_container_impl));
+                            &container, &wlmtk_container_fake_impl));
     // Also expect the super element to be initialized.
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl_ptr);
@@ -242,7 +244,7 @@ void test_add_remove(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &test_container_impl));
+                            &container, &wlmtk_container_fake_impl));
 
     wlmtk_element_t element1, element2, element3;
     BS_TEST_VERIFY_TRUE(
@@ -281,7 +283,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &test_container_impl));
+                            &container, &wlmtk_container_fake_impl));
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     wlmtk_container_t fake_parent = {

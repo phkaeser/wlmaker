@@ -287,6 +287,9 @@ static inline void wlmtk_container_destroy(
 /** Unit tests for the container. */
 extern const bs_test_case_t wlmtk_container_test_cases[];
 
+/** Implementation table of a "fake" container for tests. */
+extern const wlmtk_container_impl_t wlmtk_container_fake_impl;
+
 /* ========================================================================= */
 
 /** State of the workspace. */
