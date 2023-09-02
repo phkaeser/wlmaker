@@ -202,6 +202,14 @@ void wlmtk_element_get_size(
     int *width_ptr,
     int *height_ptr);
 
+/** Virtual method: Calls 'enter' for the element's implementation. */
+static inline void wlmtk_element_enter(
+    wlmtk_element_t *element_ptr,
+    int x,
+    int y) {
+    element_ptr->impl_ptr->enter(element_ptr, x, y);
+}
+
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {

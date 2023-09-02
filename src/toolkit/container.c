@@ -180,11 +180,30 @@ struct wlr_scene_node *element_create_scene_node(
  */
 void element_enter(
     wlmtk_element_t *element_ptr,
-    __UNUSED__ int x,
-    __UNUSED__ int y)
+    int x,
+    int y)
 {
-    __UNUSED__ wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
+
+
+    for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
+         dlnode_ptr != NULL;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+
+        // Compute the box occupied by "element_ptr", relative to container.
+        int x_from, y_from, x_to, y_to;
+        wlmtk_element_get_position(element_ptr, &x_from, &y_from);
+        wlmtk_element_get_size(element_ptr, &x_to, &y_to);
+        x_to += x_from;
+        y_to += y_from;
+
+        if (x_from <= x && x < y_to && y_from <= y && y < y_to) {
+            wlmtk_element_enter(element_ptr, x - x_from, y - y_from);
+            return;
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------- */
