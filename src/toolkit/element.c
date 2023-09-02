@@ -199,19 +199,19 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-static void fake_destroy_cb(wlmtk_element_t *element_ptr);
+static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
     __UNUSED__ wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 
 const wlmtk_element_impl_t wlmtk_element_fake_impl = {
-    .destroy = fake_destroy_cb,
+    .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node
 };
 
 /* ------------------------------------------------------------------------- */
 /** dtor for the "fake" element used for tests. */
-static void fake_destroy_cb(wlmtk_element_t *element_ptr)
+static void fake_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_element_fini(element_ptr);
 }
