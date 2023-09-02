@@ -58,6 +58,10 @@ struct _wlmtk_element_t {
     int x;
     /** Y position of the element, relative to the container. */
     int y;
+    /** Width of the element, in pixels. */
+    int width;
+    /** Height of the element, in pixels. */
+    int height;
 
     /** The container this element belongs to, if any. */
     wlmtk_container_t         *parent_container_ptr;
@@ -181,6 +185,18 @@ void wlmtk_element_set_position(
     wlmtk_element_t *element_ptr,
     int x,
     int y);
+
+/**
+ * Returns the size of the element, in pixels.
+ *
+ * @param element_ptr
+ * @param width_ptr           Optional, may be NULL.
+ * @param height_ptr          Optional, may be NULL.
+ */
+void wlmtk_element_get_size(
+    wlmtk_element_t *element_ptr,
+    int *width_ptr,
+    int *height_ptr);
 
 /** Virtual method: Calls the dtor of the element's implementation. */
 static inline void wlmtk_element_destroy(

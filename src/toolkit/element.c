@@ -166,6 +166,16 @@ void wlmtk_element_set_position(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_get_size(
+    wlmtk_element_t *element_ptr,
+    int *width_ptr,
+    int *height_ptr)
+{
+    if (NULL != width_ptr) *width_ptr = element_ptr->width;
+    if (NULL != height_ptr) *height_ptr = element_ptr->height;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -327,6 +337,26 @@ void test_set_get_position(bs_test_t *test_ptr)
     wlmtk_element_set_parent_container(&element, NULL);
     wlmtk_element_fini(&element);
     wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests get_size. */
+void test_get_size(bs_test_t *test_ptr)
+{
+    wlmtk_element_t element;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_init(&element, &wlmtk_element_fake_impl));
+    element.width = 42;
+    element.height = 21;
+
+    // Must not crash.
+    wlmtk_element_get_size(&element, NULL, NULL);
+
+    int width, height;
+    wlmtk_element_get_size(&element, &width, &height);
+    BS_TEST_VERIFY_EQ(test_ptr, 42, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 21, height);
 }
 
 /* == End of toolkit.c ===================================================== */
