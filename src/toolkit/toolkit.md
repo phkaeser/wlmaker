@@ -36,6 +36,7 @@ class Element {
   bool is_visible()
   void set_position(int, int)
   void get_position(int*, int*)
+  void get_size(int*, int*)
 
   {abstract}#void destroy()
   {abstract}#struct wlr_scene_node *create_scene_node(parent_node*)
