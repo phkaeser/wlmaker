@@ -301,6 +301,9 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 /**
  * Creates a workspace.
  *
+ * TODO(kaeser@gubbe.ch): Consider replacing the interface with a container,
+ * and permit a "toplevel" container that will be at the server level.
+ *
  * @param wlr_scene_tree_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
