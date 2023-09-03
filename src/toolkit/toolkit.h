@@ -91,8 +91,8 @@ struct _wlmtk_element_impl_t {
         struct wlr_scene_tree *wlr_scene_tree_ptr);
 
     /** Notifies that the pointer is within the element's area, at x,y. */
-    void (*enter)(wlmtk_element_t *element_ptr,
-                  int x, int y);
+    void (*motion)(wlmtk_element_t *element_ptr,
+                   int x, int y);
 };
 
 /**
@@ -202,12 +202,14 @@ void wlmtk_element_get_size(
     int *width_ptr,
     int *height_ptr);
 
-/** Virtual method: Calls 'enter' for the element's implementation. */
-static inline void wlmtk_element_enter(
+/** Virtual method: Calls 'motion' for the element's implementation. */
+static inline void wlmtk_element_motion(
     wlmtk_element_t *element_ptr,
     int x,
     int y) {
-    element_ptr->impl_ptr->enter(element_ptr, x, y);
+    if (NULL != element_ptr->impl_ptr->motion) {
+        element_ptr->impl_ptr->motion(element_ptr, x, y);
+    }
 }
 
 /** Virtual method: Calls the dtor of the element's implementation. */
@@ -223,12 +225,12 @@ extern const bs_test_case_t wlmtk_element_test_cases[];
 typedef struct {
     /** State of the element. */
     wlmtk_element_t           element;
-    /** Indicates that Element::enter() was called. */
-    bool                      enter_called;
-    /** The x argument of the last Element::enter() call. */
-    int                       enter_x;
-    /** The y arguemnt of the last element::enter() call. */
-    int                       enter_y;
+    /** Indicates that Element::motion() was called. */
+    bool                      motion_called;
+    /** The x argument of the last Element::motion() call. */
+    int                       motion_x;
+    /** The y arguemnt of the last element::motion() call. */
+    int                       motion_y;
 } wlmtk_fake_element_t;
 
 /** Ctor for the fake element. */

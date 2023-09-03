@@ -43,7 +43,6 @@ bool wlmtk_element_init(
     BS_ASSERT(NULL != element_impl_ptr);
     BS_ASSERT(NULL != element_impl_ptr->destroy);
     BS_ASSERT(NULL != element_impl_ptr->create_scene_node);
-    BS_ASSERT(NULL != element_impl_ptr->enter);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
@@ -203,14 +202,14 @@ static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void fake_enter(
+static void fake_motion(
     wlmtk_element_t *element_ptr,
     int x, int y);
 
 const wlmtk_element_impl_t wlmtk_fake_element_impl = {
     .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node,
-    .enter = fake_enter
+    .motion = fake_motion
 };
 
 /* ------------------------------------------------------------------------- */
@@ -252,16 +251,16 @@ struct wlr_scene_node *fake_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /** Handles 'tnter' events for the fake element. */
-void fake_enter(
+void fake_motion(
     wlmtk_element_t *element_ptr,
     int x,
     int y)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
-    fake_element_ptr->enter_called = true;
-    fake_element_ptr->enter_x = x;
-    fake_element_ptr->enter_y = y;
+    fake_element_ptr->motion_called = true;
+    fake_element_ptr->motion_x = x;
+    fake_element_ptr->motion_y = y;
 }
 
 /* == Unit tests =========================================================== */

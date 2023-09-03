@@ -32,7 +32,7 @@ static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void element_enter(
+static void element_motion(
     wlmtk_element_t *element_ptr,
     int x, int y);
 
@@ -44,7 +44,7 @@ static void handle_wlr_scene_tree_node_destroy(
 static const wlmtk_element_impl_t super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
-    .enter = element_enter
+    .motion = element_motion
 };
 
 /* == Exported methods ===================================================== */
@@ -172,13 +172,13 @@ struct wlr_scene_node *element_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of the element's enter method: Handle pointer moves.
+ * Implementation of the element's motion method: Handle pointer moves.
  *
  * @param element_ptr
  * @param x
  * @param y
  */
-void element_enter(
+void element_motion(
     wlmtk_element_t *element_ptr,
     int x,
     int y)
@@ -200,7 +200,7 @@ void element_enter(
         y_to += y_from;
 
         if (x_from <= x && x < x_to && y_from <= y && y < y_to) {
-            wlmtk_element_enter(element_ptr, x - x_from, y - y_from);
+            wlmtk_element_motion(element_ptr, x - x_from, y - y_from);
             return;
         }
     }
@@ -316,13 +316,13 @@ void fake_parent_destroy(wlmtk_container_t *container_ptr)
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_add_remove(bs_test_t *test_ptr);
 static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
-static void test_enter(bs_test_t *test_ptr);
+static void test_motion(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
-    { 1, "enter", test_enter },
+    { 1, "motion", test_motion },
     { 0, NULL, NULL }
 };
 
@@ -420,8 +420,8 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests the 'enter' method for container. */
-void test_enter(bs_test_t *test_ptr)
+/** Tests the 'motion' method for container. */
+void test_motion(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
@@ -437,29 +437,29 @@ void test_enter(bs_test_t *test_ptr)
     elem2_ptr->element.height = 5;
     wlmtk_container_add_element(&container, &elem2_ptr->element);
 
-    wlmtk_element_enter(&container.super_element, 0, 0);
-    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
-    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
+    wlmtk_element_motion(&container.super_element, 0, 0);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
 
-    elem1_ptr->enter_x = 42;
-    elem1_ptr->enter_y = 42;
-    wlmtk_element_enter(&container.super_element, -20, -40);
-    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->enter_called);
-    elem1_ptr->enter_called = false;
-    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->enter_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->enter_y);
+    elem1_ptr->motion_x = 42;
+    elem1_ptr->motion_y = 42;
+    wlmtk_element_motion(&container.super_element, -20, -40);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->motion_called);
+    elem1_ptr->motion_called = false;
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->motion_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->motion_y);
 
-    wlmtk_element_enter(&container.super_element, 107, 203);
-    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
-    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->enter_called);
-    elem2_ptr->enter_called = false;
-    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->enter_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->enter_y);
+    wlmtk_element_motion(&container.super_element, 107, 203);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->motion_called);
+    elem2_ptr->motion_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->motion_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->motion_y);
 
-    wlmtk_element_enter(&container.super_element, 110, 205);
-    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->enter_called);
-    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->enter_called);
+    wlmtk_element_motion(&container.super_element, 110, 205);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
 
     wlmtk_container_remove_element(&container, &elem1_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
