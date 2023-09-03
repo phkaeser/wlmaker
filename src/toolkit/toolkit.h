@@ -92,7 +92,7 @@ struct _wlmtk_element_impl_t {
 
     /** Notifies that the pointer is within the element's area, at x,y. */
     void (*motion)(wlmtk_element_t *element_ptr,
-                   int x, int y);
+                   double x, double y);
 };
 
 /**
@@ -205,8 +205,8 @@ void wlmtk_element_get_size(
 /** Virtual method: Calls 'motion' for the element's implementation. */
 static inline void wlmtk_element_motion(
     wlmtk_element_t *element_ptr,
-    int x,
-    int y) {
+    double x,
+    double y) {
     if (NULL != element_ptr->impl_ptr->motion) {
         element_ptr->impl_ptr->motion(element_ptr, x, y);
     }
@@ -234,9 +234,9 @@ typedef struct {
     /** Indicates that Element::motion() was called. */
     bool                      motion_called;
     /** The x argument of the last Element::motion() call. */
-    int                       motion_x;
+    double                    motion_x;
     /** The y arguemnt of the last element::motion() call. */
-    int                       motion_y;
+    double                    motion_y;
 } wlmtk_fake_element_t;
 
 /** Ctor for the fake element. */

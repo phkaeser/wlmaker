@@ -34,7 +34,7 @@ static struct wlr_scene_node *element_create_scene_node(
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void element_motion(
     wlmtk_element_t *element_ptr,
-    int x, int y);
+    double x, double y);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -180,8 +180,8 @@ struct wlr_scene_node *element_create_scene_node(
  */
 void element_motion(
     wlmtk_element_t *element_ptr,
-    int x,
-    int y)
+    double x,
+    double y)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);

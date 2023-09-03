@@ -204,7 +204,7 @@ static struct wlr_scene_node *fake_create_scene_node(
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void fake_motion(
     wlmtk_element_t *element_ptr,
-    int x, int y);
+    double x, double y);
 
 const wlmtk_element_impl_t wlmtk_fake_element_impl = {
     .destroy = fake_destroy,
@@ -253,8 +253,8 @@ struct wlr_scene_node *fake_create_scene_node(
 /** Handles 'tnter' events for the fake element. */
 void fake_motion(
     wlmtk_element_t *element_ptr,
-    int x,
-    int y)
+    double x,
+    double y)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);

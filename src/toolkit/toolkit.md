@@ -115,7 +115,7 @@ abstract class Content {
   {abstract}#void set_active(bool)
   {abstract}#void set_maximized(bool)
   {abstract}#void set_fullscreen(bool)
-  {abstract}#void motion(double x, double y)
+  {abstract}#void motion(double, double)
   {abstract}#void enter()
   {abstract}#void leave()
   {abstract}#void click()
@@ -130,7 +130,7 @@ end note
 class LayerElement {
   Element parent
 
-  {abstract}#void motion(double x, double y)
+  {abstract}#void motion(double, double)
   {abstract}#void enter()
   {abstract}#void leave()
   {abstract}#void click()
