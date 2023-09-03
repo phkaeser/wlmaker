@@ -278,6 +278,9 @@ struct _wlmtk_container_t {
 
     /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
     struct wl_listener        wlr_scene_tree_node_destroy_listener;
+
+    /** Stores the element with current pointer focus. May be NULL. */
+    wlmtk_element_t           *pointer_focus_element_ptr;
 };
 
 /** Virtual method table of the container. */

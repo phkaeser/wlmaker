@@ -35,6 +35,8 @@ static struct wlr_scene_node *element_create_scene_node(
 static void element_motion(
     wlmtk_element_t *element_ptr,
     double x, double y);
+static void element_leave(
+    wlmtk_element_t *element_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -44,7 +46,8 @@ static void handle_wlr_scene_tree_node_destroy(
 static const wlmtk_element_impl_t super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
-    .motion = element_motion
+    .motion = element_motion,
+    .leave = element_leave
 };
 
 /* == Exported methods ===================================================== */
@@ -186,7 +189,6 @@ void element_motion(
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
 
-
     for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
@@ -201,9 +203,39 @@ void element_motion(
 
         if (x_from <= x && x < x_to && y_from <= y && y < y_to) {
             wlmtk_element_motion(element_ptr, x - x_from, y - y_from);
+
+            if (NULL != container_ptr->pointer_focus_element_ptr) {
+                wlmtk_element_leave(container_ptr->pointer_focus_element_ptr);
+            }
+            container_ptr->pointer_focus_element_ptr = element_ptr;
             return;
         }
     }
+
+    // Getting here implies we didn't have an element catching the motion,
+    // so it must have happened outside our araea. We also should free
+    // pointer focus element now.
+    if (NULL != container_ptr->pointer_focus_element_ptr) {
+        wlmtk_element_leave(container_ptr->pointer_focus_element_ptr);
+        container_ptr->pointer_focus_element_ptr = NULL;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's leave method> Forwards it to the element
+ * currently having pointer focus, and clears that.
+ *
+ * @param element_ptr
+ */
+void element_leave(wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+    if (NULL == container_ptr->pointer_focus_element_ptr) return;
+
+    wlmtk_element_leave(container_ptr->pointer_focus_element_ptr);
+    container_ptr->pointer_focus_element_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -446,6 +478,8 @@ void test_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->motion_y);
 
     wlmtk_element_motion(&container.super_element, 107, 203);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->leave_called);
+    elem1_ptr->leave_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->motion_called);
     elem2_ptr->motion_called = false;
@@ -455,6 +489,8 @@ void test_motion(bs_test_t *test_ptr)
     wlmtk_element_motion(&container.super_element, 110, 205);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->leave_called);
+    elem2_ptr->leave_called = false;
 
     wlmtk_container_remove_element(&container, &elem1_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
