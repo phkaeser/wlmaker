@@ -352,34 +352,29 @@ void test_add_remove(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
                             &container, &wlmtk_container_fake_impl));
 
-    wlmtk_element_t element1, element2, element3;
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_init(&element1, &wlmtk_fake_element_impl));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_init(&element2, &wlmtk_fake_element_impl));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_init(&element3, &wlmtk_fake_element_impl));
+    wlmtk_fake_element_t *elem1_ptr, *elem2_ptr, *elem3_ptr;
+    elem1_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != elem1_ptr);
+    elem2_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != elem2_ptr);
+    elem3_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != elem3_ptr);
 
-    wlmtk_container_add_element(&container, &element1);
-    BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, &container);
-    wlmtk_container_add_element(&container, &element2);
-    BS_TEST_VERIFY_EQ(test_ptr, element2.parent_container_ptr, &container);
-    wlmtk_container_add_element(&container, &element3);
-    BS_TEST_VERIFY_EQ(test_ptr, element3.parent_container_ptr, &container);
+    wlmtk_container_add_element(&container, &elem1_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, elem1_ptr->element.parent_container_ptr, &container);
+    wlmtk_container_add_element(&container, &elem2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, elem2_ptr->element.parent_container_ptr, &container);
+    wlmtk_container_add_element(&container, &elem3_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, elem3_ptr->element.parent_container_ptr, &container);
 
-    wlmtk_container_remove_element(&container, &element2);
-    BS_TEST_VERIFY_EQ(test_ptr, element2.parent_container_ptr, NULL);
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, elem2_ptr->element.parent_container_ptr);
+    wlmtk_element_destroy(&elem2_ptr->element);
 
-    wlmtk_container_destroy(&container);
-    BS_TEST_VERIFY_EQ(test_ptr, element1.parent_container_ptr, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, element3.parent_container_ptr, NULL);
-
-    BS_TEST_VERIFY_EQ(test_ptr, element1.impl_ptr, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, element3.impl_ptr, NULL);
-
+    // Will destroy contained elements.
     wlmtk_container_fini(&container);
 }
 

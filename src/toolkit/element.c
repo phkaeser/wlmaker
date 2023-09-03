@@ -286,7 +286,7 @@ void test_init_fini(bs_test_t *test_ptr)
         wlmtk_element_init(&element, &wlmtk_fake_element_impl));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.impl_ptr);
 
-    wlmtk_element_destroy(&element);
+    wlmtk_element_fini(&element);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.impl_ptr);
 }
 

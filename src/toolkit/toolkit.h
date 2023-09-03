@@ -212,7 +212,13 @@ static inline void wlmtk_element_motion(
     }
 }
 
-/** Virtual method: Calls the dtor of the element's implementation. */
+/**
+ * Virtual method: Calls the dtor of the element's implementation.
+ *
+ * The implementation is required to call @ref wlmtk_element_fini().
+ *
+ * @param element_ptr
+ */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {
     element_ptr->impl_ptr->destroy(element_ptr);
