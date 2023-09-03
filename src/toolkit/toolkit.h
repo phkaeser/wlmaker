@@ -90,9 +90,11 @@ struct _wlmtk_element_impl_t {
         wlmtk_element_t *element_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
 
-    /** Notifies that the pointer is within the element's area, at x,y. */
+    /** Indicates pointer motion into or within the element area to (x,y). */
     void (*motion)(wlmtk_element_t *element_ptr,
                    double x, double y);
+    /** Indicates the pointer has left the element's area. */
+    void (*leave)(wlmtk_element_t *element_ptr);
 };
 
 /**
@@ -212,6 +214,15 @@ static inline void wlmtk_element_motion(
     }
 }
 
+/** Virtual method: Calls 'leave' for the element's implementation. */
+static inline void wlmtk_element_leave(
+    wlmtk_element_t *element_ptr)
+{
+    if (NULL != element_ptr->impl_ptr->leave) {
+        element_ptr->impl_ptr->leave(element_ptr);
+    }
+}
+
 /**
  * Virtual method: Calls the dtor of the element's implementation.
  *
@@ -231,12 +242,16 @@ extern const bs_test_case_t wlmtk_element_test_cases[];
 typedef struct {
     /** State of the element. */
     wlmtk_element_t           element;
+
     /** Indicates that Element::motion() was called. */
     bool                      motion_called;
     /** The x argument of the last Element::motion() call. */
     double                    motion_x;
     /** The y arguemnt of the last element::motion() call. */
     double                    motion_y;
+
+    /** Indicates that Element::leave() was called. */
+    bool                      leave_called;
 } wlmtk_fake_element_t;
 
 /** Ctor for the fake element. */

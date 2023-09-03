@@ -40,9 +40,8 @@ class Element {
 
   {abstract}#void destroy()
   {abstract}#struct wlr_scene_node *create_scene_node(parent_node*)
-  {abstract}#void motion(double x, double y)
-  {abstract}#void enter()
-  {abstract}#void leave()
+  #void motion(double, double)
+  #void leave()
   {abstract}#void click()
 }
 note right of Element::"set_parent_container(Container*)"
@@ -66,8 +65,7 @@ class Container {
 
   {abstract}#void destroy()
 
-  void motion(double x, double y)
-  void enter()
+  void motion(double, double)
   void leave()
   void click()
 }
@@ -116,7 +114,6 @@ abstract class Content {
   {abstract}#void set_maximized(bool)
   {abstract}#void set_fullscreen(bool)
   {abstract}#void motion(double, double)
-  {abstract}#void enter()
   {abstract}#void leave()
   {abstract}#void click()
 }
@@ -131,7 +128,6 @@ class LayerElement {
   Element parent
 
   {abstract}#void motion(double, double)
-  {abstract}#void enter()
   {abstract}#void leave()
   {abstract}#void click()
 

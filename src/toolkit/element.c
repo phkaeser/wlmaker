@@ -205,11 +205,14 @@ static struct wlr_scene_node *fake_create_scene_node(
 static void fake_motion(
     wlmtk_element_t *element_ptr,
     double x, double y);
+static void fake_leave(
+    wlmtk_element_t *element_ptr);
 
 const wlmtk_element_impl_t wlmtk_fake_element_impl = {
     .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node,
-    .motion = fake_motion
+    .motion = fake_motion,
+    .leave = fake_leave
 };
 
 /* ------------------------------------------------------------------------- */
@@ -250,7 +253,7 @@ struct wlr_scene_node *fake_create_scene_node(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles 'tnter' events for the fake element. */
+/** Handles 'motion' events for the fake element. */
 void fake_motion(
     wlmtk_element_t *element_ptr,
     double x,
@@ -263,16 +266,30 @@ void fake_motion(
     fake_element_ptr->motion_y = y;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles 'leave' events for the fake element. */
+void fake_leave(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->leave_called = true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_set_parent_container(bs_test_t *test_ptr);
 static void test_set_get_position(bs_test_t *test_ptr);
+static void test_get_size(bs_test_t *test_ptr);
+static void test_motion_leave(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_parent_container", test_set_parent_container },
     { 1, "set_get_position", test_set_get_position },
+    { 1, "get_size", test_get_size },
+    { 1, "motion_leave", test_motion_leave },
     { 0, NULL, NULL }
 };
 
@@ -397,6 +414,24 @@ void test_get_size(bs_test_t *test_ptr)
     wlmtk_element_get_size(&element, &width, &height);
     BS_TEST_VERIFY_EQ(test_ptr, 42, width);
     BS_TEST_VERIFY_EQ(test_ptr, 21, height);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises "motion" and "leave" methods. */
+void test_motion_leave(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != fake_element_ptr);
+
+    wlmtk_element_motion(&fake_element_ptr->element, 1.0, 2.0);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->motion_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->motion_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->motion_y);
+
+    wlmtk_element_leave(&fake_element_ptr->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->leave_called);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
 }
 
 /* == End of toolkit.c ===================================================== */
