@@ -19,7 +19,13 @@ SET(PUBLIC_HEADER_FILES
   primitives.h
   style.h
   toolkit.h
-  util.h)
+  util.h
+
+  container.h
+  content.h
+  element.h
+  window.h
+  workspace.h)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE

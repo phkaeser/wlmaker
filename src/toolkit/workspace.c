@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "toolkit.h"
+#include "workspace.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>

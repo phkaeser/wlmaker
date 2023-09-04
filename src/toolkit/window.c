@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-#include "toolkit.h"
+#include "window.h"
+
+#include "container.h"
 
 /* == Declarations ========================================================= */
 
