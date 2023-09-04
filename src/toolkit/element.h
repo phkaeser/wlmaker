@@ -75,8 +75,8 @@ struct _wlmtk_element_impl_t {
         struct wlr_scene_tree *wlr_scene_tree_ptr);
 
     /** Indicates pointer motion into or within the element area to (x,y). */
-    void (*motion)(wlmtk_element_t *element_ptr,
-                   double x, double y);
+    wlmtk_element_t *(*motion)(wlmtk_element_t *element_ptr,
+                               double x, double y);
     /** Indicates the pointer has left the element's area. */
     void (*leave)(wlmtk_element_t *element_ptr);
 };
@@ -189,13 +189,12 @@ void wlmtk_element_get_size(
     int *height_ptr);
 
 /** Virtual method: Calls 'motion' for the element's implementation. */
-static inline void wlmtk_element_motion(
+static inline wlmtk_element_t *wlmtk_element_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y) {
-    if (NULL != element_ptr->impl_ptr->motion) {
-        element_ptr->impl_ptr->motion(element_ptr, x, y);
-    }
+    if (NULL == element_ptr->impl_ptr->motion) return NULL;
+    return element_ptr->impl_ptr->motion(element_ptr, x, y);
 }
 
 /** Virtual method: Calls 'leave' for the element's implementation. */
@@ -233,6 +232,8 @@ typedef struct {
     double                    motion_x;
     /** The y arguemnt of the last element::motion() call. */
     double                    motion_y;
+    /** Return value to pass when motion is called. */
+    wlmtk_element_t           *motion_return_value;
 
     /** Indicates that Element::leave() was called. */
     bool                      leave_called;

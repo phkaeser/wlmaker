@@ -203,7 +203,7 @@ static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void fake_motion(
+static wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
     double x, double y);
 static void fake_leave(
@@ -255,7 +255,7 @@ struct wlr_scene_node *fake_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /** Handles 'motion' events for the fake element. */
-void fake_motion(
+wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y)
@@ -265,6 +265,7 @@ void fake_motion(
     fake_element_ptr->motion_called = true;
     fake_element_ptr->motion_x = x;
     fake_element_ptr->motion_y = y;
+    return fake_element_ptr->motion_return_value;
 }
 
 /* ------------------------------------------------------------------------- */
