@@ -513,4 +513,10 @@ void test_motion(bs_test_t *test_ptr)
     wlmtk_container_fini(&container);
 }
 
+/*
+ * TODO(kaeser@gubbe.ch): Extend motion test to verify a search is continued
+ * if an element in the area returns NULL. Also verify it continues if the
+ * element is not visible.
+ */
+
 /* == End of container.c =================================================== */
