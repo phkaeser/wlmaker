@@ -173,10 +173,19 @@ static struct wlr_scene_node *test_content_create_scene_node(
         wlr_scene_tree_ptr, NULL);
     return &wlr_scene_buffer_ptr->node;
 }
+/** Gets size of the content, fake mode. */
+static void test_content_get_size(
+    __UNUSED__ wlmtk_content_t *content_ptr,
+    int *width_ptr, int *height_ptr)
+{
+    if (NULL != width_ptr) *width_ptr = 42;
+    if (NULL != height_ptr) *height_ptr = 21;
+}
 /** Method table for the node under test. */
 static const wlmtk_content_impl_t test_content_impl = {
     .destroy = test_content_destroy,
-    .create_scene_node = test_content_create_scene_node
+    .create_scene_node = test_content_create_scene_node,
+    .get_size = test_content_get_size
 };
 
 /* ------------------------------------------------------------------------- */

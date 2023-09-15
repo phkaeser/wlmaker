@@ -31,11 +31,18 @@ static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
 
 /** Method table for the container's virtual methods. */
 const wlmtk_element_impl_t  super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
+    .get_dimensions = element_get_dimensions,
 };
 
 /* == Exported methods ===================================================== */
@@ -49,6 +56,8 @@ bool wlmtk_content_init(
     BS_ASSERT(NULL != content_impl_ptr);
     BS_ASSERT(NULL != content_impl_ptr->destroy);
     BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
+    BS_ASSERT(NULL != content_impl_ptr->get_size);
+
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
 
     if (!wlmtk_element_init(&content_ptr->super_element,
@@ -117,6 +126,31 @@ struct wlr_scene_node *element_create_scene_node(
         content_ptr, wlr_scene_tree_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's get_dimensions method: Return dimensions.
+ *
+ * @param element_ptr
+ * @param left_ptr            Leftmost position. May be NULL.
+ * @param top_ptr             Topmost position. May be NULL.
+ * @param right_ptr           Rightmost position. Ma be NULL.
+ * @param bottom_ptr          Bottommost position. May be NULL.
+ */
+void element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
+{
+    if (NULL != left_ptr) *left_ptr = 0;
+    if (NULL != top_ptr) *top_ptr = 0;
+
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_element);
+    content_ptr->impl_ptr->get_size(content_ptr, right_ptr, bottom_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -140,10 +174,20 @@ static struct wlr_scene_node *test_create_scene_node_cb(
         wlr_scene_tree_ptr, NULL);
     return &wlr_scene_buffer_ptr->node;
 }
+/** returns a fake size. */
+static void test_get_size_cb(
+    __UNUSED__ wlmtk_content_t *content_ptr,
+    int *width_ptr, int *height_ptr)
+{
+    if (NULL != width_ptr) *width_ptr = 42;
+    if (NULL != height_ptr) *height_ptr = 21;
+}
+
 /** Method table for the content we're using for test. */
 static const wlmtk_content_impl_t test_content_impl = {
     .destroy = test_destroy_cb,
-    .create_scene_node = test_create_scene_node_cb
+    .create_scene_node = test_create_scene_node_cb,
+    .get_size = test_get_size_cb,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -157,11 +201,19 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, content.super_element.impl_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, content.impl_ptr);
 
+    int l, t, r, b;
+    wlmtk_element_get_dimensions(&content.super_element, &l, &t, &r, &b);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, t);
+    BS_TEST_VERIFY_EQ(test_ptr, 42, r);
+    BS_TEST_VERIFY_EQ(test_ptr, 21, b);
+
     content.impl_ptr->destroy(&content);
 
     // Also expect the super element to be un-initialized.
     BS_TEST_VERIFY_EQ(test_ptr, NULL, content.super_element.impl_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, content.impl_ptr);
+
 }
 
 /* == End of content.c ================================================== */

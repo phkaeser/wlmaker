@@ -195,11 +195,16 @@ static void xdg_tl_content_destroy(wlmtk_content_t *content_ptr);
 static struct wlr_scene_node *xdg_tl_content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void xdg_tl_content_get_size(
+    wlmtk_content_t *content_ptr,
+    int *width_ptr,
+    int *height_ptr);
 
 /** Method table for the `wlmtk_content_t` virtual methods. */
 const wlmtk_content_impl_t    content_impl = {
     .destroy = xdg_tl_content_destroy,
-    .create_scene_node = xdg_tl_content_create_scene_node
+    .create_scene_node = xdg_tl_content_create_scene_node,
+    .get_size = xdg_tl_content_get_size,
 };
 
 /* == Exported methods ===================================================== */
@@ -821,6 +826,29 @@ struct wlr_scene_node *xdg_tl_content_create_scene_node(
             wlr_scene_tree_ptr,
             xdg_tl_content_ptr->wlr_xdg_surface_ptr);
     return &surface_wlr_scene_tree_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Gets the dimensions of the element in pixels, relative to the position.
+ *
+ * @param content_ptr
+ * @param width_ptr            Width of content. May be NULL.
+ * @param height_ptr           Height of content. May be NULL.
+ */
+void xdg_tl_content_get_size(
+    wlmtk_content_t *content_ptr,
+    int *width_ptr,
+    int *height_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+
+    struct wlr_box geo_box;
+    wlr_xdg_surface_get_geometry(
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->base, &geo_box);
+    if (NULL != width_ptr) *width_ptr = geo_box.width;
+    if (NULL != height_ptr) *height_ptr = geo_box.height;
 }
 
 /* ------------------------------------------------------------------------- */

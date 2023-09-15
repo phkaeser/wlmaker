@@ -55,6 +55,9 @@ struct _wlmtk_content_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_content_t *content_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
+    /** Gets width and height of the content. */
+    void (*get_size)(wlmtk_content_t *content_ptr,
+                     int *width_ptr, int *height_ptr);
 };
 
 /**

@@ -44,6 +44,7 @@ bool wlmtk_element_init(
     BS_ASSERT(NULL != element_impl_ptr);
     BS_ASSERT(NULL != element_impl_ptr->destroy);
     BS_ASSERT(NULL != element_impl_ptr->create_scene_node);
+    BS_ASSERT(NULL != element_impl_ptr->get_dimensions);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
@@ -168,13 +169,15 @@ void wlmtk_element_set_position(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_element_get_size(
+void wlmtk_element_get_dimensions(
     wlmtk_element_t *element_ptr,
-    int *width_ptr,
-    int *height_ptr)
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
 {
-    if (NULL != width_ptr) *width_ptr = element_ptr->width;
-    if (NULL != height_ptr) *height_ptr = element_ptr->height;
+    element_ptr->impl_ptr->get_dimensions(
+        element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -203,6 +206,12 @@ static void fake_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void fake_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
 static wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
     double x, double y);
@@ -212,6 +221,7 @@ static void fake_leave(
 const wlmtk_element_impl_t wlmtk_fake_element_impl = {
     .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node,
+    .get_dimensions = fake_get_dimensions,
     .motion = fake_motion,
     .leave = fake_leave
 };
@@ -254,6 +264,23 @@ struct wlr_scene_node *fake_create_scene_node(
 }
 
 /* ------------------------------------------------------------------------- */
+/** A "fake" 'get_dimensions'. */
+void fake_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    if (NULL != left_ptr) *left_ptr = 0;
+    if (NULL != top_ptr) *top_ptr = 0;
+    if (NULL != right_ptr) *right_ptr = fake_element_ptr->width;
+    if (NULL != bottom_ptr) *bottom_ptr = fake_element_ptr->height;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles 'motion' events for the fake element. */
 wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
@@ -283,14 +310,14 @@ void fake_leave(
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_set_parent_container(bs_test_t *test_ptr);
 static void test_set_get_position(bs_test_t *test_ptr);
-static void test_get_size(bs_test_t *test_ptr);
+static void test_get_dimensions(bs_test_t *test_ptr);
 static void test_motion_leave(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_parent_container", test_set_parent_container },
     { 1, "set_get_position", test_set_get_position },
-    { 1, "get_size", test_get_size },
+    { 1, "get_dimensions", test_get_dimensions },
     { 1, "motion_leave", test_motion_leave },
     { 0, NULL, NULL }
 };
@@ -399,23 +426,24 @@ void test_set_get_position(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests get_size. */
-void test_get_size(bs_test_t *test_ptr)
+/** Tests get_dimensions. */
+void test_get_dimensions(bs_test_t *test_ptr)
 {
-    wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
-    element.width = 42;
-    element.height = 21;
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    fake_element_ptr->width = 42;
+    fake_element_ptr->height = 21;
 
     // Must not crash.
-    wlmtk_element_get_size(&element, NULL, NULL);
+    wlmtk_element_get_dimensions(
+        &fake_element_ptr->element, NULL, NULL, NULL, NULL);
 
-    int width, height;
-    wlmtk_element_get_size(&element, &width, &height);
-    BS_TEST_VERIFY_EQ(test_ptr, 42, width);
-    BS_TEST_VERIFY_EQ(test_ptr, 21, height);
+    int top, left, right, bottom;
+    wlmtk_element_get_dimensions(
+        &fake_element_ptr->element, &top, &left, &right, &bottom);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, top);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, left);
+    BS_TEST_VERIFY_EQ(test_ptr, 42, right);
+    BS_TEST_VERIFY_EQ(test_ptr, 21, bottom);
 }
 
 /* ------------------------------------------------------------------------- */
