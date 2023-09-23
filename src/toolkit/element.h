@@ -42,10 +42,6 @@ struct _wlmtk_element_t {
     int x;
     /** Y position of the element, relative to the container. */
     int y;
-    /** Width of the element, in pixels. */
-    int width;
-    /** Height of the element, in pixels. */
-    int height;
 
     /** The container this element belongs to, if any. */
     wlmtk_container_t         *parent_container_ptr;
@@ -73,6 +69,14 @@ struct _wlmtk_element_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_element_t *element_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
+
+    /** Gets dimensions of the element, relative to the position. */
+    void (*get_dimensions)(
+        wlmtk_element_t *element_ptr,
+        int *left_ptr,
+        int *top_ptr,
+        int *right_ptr,
+        int *bottom_ptr);
 
     /** Indicates pointer motion into or within the element area to (x,y). */
     wlmtk_element_t *(*motion)(wlmtk_element_t *element_ptr,
@@ -177,16 +181,20 @@ void wlmtk_element_set_position(
     int y);
 
 /**
- * Returns the size of the element, in pixels.
+ * Gets the dimensions of the element in pixels, relative to the position.
  *
  * @param element_ptr
- * @param width_ptr           Optional, may be NULL.
- * @param height_ptr          Optional, may be NULL.
+ * @param left_ptr            Leftmost position. May be NULL.
+ * @param top_ptr             Topmost position. May be NULL.
+ * @param right_ptr           Rightmost position. Ma be NULL.
+ * @param bottom_ptr          Bottommost position. May be NULL.
  */
-void wlmtk_element_get_size(
+void wlmtk_element_get_dimensions(
     wlmtk_element_t *element_ptr,
-    int *width_ptr,
-    int *height_ptr);
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
 
 /** Virtual method: Calls 'motion' for the element's implementation. */
 static inline wlmtk_element_t *wlmtk_element_motion(
@@ -225,6 +233,10 @@ extern const bs_test_case_t wlmtk_element_test_cases[];
 typedef struct {
     /** State of the element. */
     wlmtk_element_t           element;
+    /** Width of the element, in pixels. */
+    int width;
+    /** Height of the element, in pixels. */
+    int height;
 
     /** Indicates that Element::motion() was called. */
     bool                      motion_called;
