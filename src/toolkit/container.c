@@ -40,7 +40,8 @@ static void element_get_dimensions(
     int *bottom_ptr);
 static wlmtk_element_t *element_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y);
+    double x, double y,
+    uint32_t time_msec);
 static void element_leave(
     wlmtk_element_t *element_ptr);
 static void element_get_bounding_box(
@@ -230,6 +231,7 @@ void element_get_dimensions(
  * @param element_ptr
  * @param x
  * @param y
+ * @param time_msec
  *
  * @return Pointer to the (non-container) element handling the motion, or NULL
  *     if the motion wasn't handled.
@@ -237,7 +239,8 @@ void element_get_dimensions(
 wlmtk_element_t *element_motion(
     wlmtk_element_t *element_ptr,
     double x,
-    double y)
+    double y,
+    uint32_t time_msec)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
@@ -253,7 +256,7 @@ wlmtk_element_t *element_motion(
             int x_pos, y_pos;
             wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
             wlmtk_element_t *motion_element_ptr = wlmtk_element_motion(
-                element_ptr, x - x_pos, y - y_pos);
+                element_ptr, x - x_pos, y - y_pos, time_msec);
             if (NULL == motion_element_ptr) continue;
 
             if (NULL != container_ptr->pointer_focus_element_ptr) {
@@ -549,7 +552,7 @@ void test_motion(bs_test_t *test_ptr)
     elem2_ptr->motion_return_value = &elem2_ptr->element;
     wlmtk_container_add_element(&container, &elem2_ptr->element);
 
-    wlmtk_element_motion(&container.super_element, 0, 0);
+    wlmtk_element_motion(&container.super_element, 0, 0, 1234);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
 
@@ -557,7 +560,7 @@ void test_motion(bs_test_t *test_ptr)
     elem1_ptr->motion_y = 42;
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, -20, -40));
+        wlmtk_element_motion(&container.super_element, -20, -40, 1234));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->motion_called);
     elem1_ptr->motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
@@ -566,7 +569,7 @@ void test_motion(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, 107, 203));
+        wlmtk_element_motion(&container.super_element, 107, 203, 1234));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->leave_called);
     elem1_ptr->leave_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
@@ -577,7 +580,7 @@ void test_motion(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, 110, 205));
+        wlmtk_element_motion(&container.super_element, 110, 205, 1234));
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->leave_called);
@@ -630,7 +633,7 @@ void test_motion_nested(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 205, b);
 
 
-    wlmtk_element_motion(&container.super_element, 0, 0);
+    wlmtk_element_motion(&container.super_element, 0, 0, 1234);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
 
@@ -638,7 +641,7 @@ void test_motion_nested(bs_test_t *test_ptr)
     elem1_ptr->motion_y = 42;
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, -20, -40));
+        wlmtk_element_motion(&container.super_element, -20, -40, 1234));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->motion_called);
     elem1_ptr->motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
@@ -647,7 +650,7 @@ void test_motion_nested(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&parent_container.super_element, -20, -40));
+        wlmtk_element_motion(&parent_container.super_element, -20, -40, 1234));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->motion_called);
     elem1_ptr->motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
@@ -657,7 +660,7 @@ void test_motion_nested(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, 107, 203));
+        wlmtk_element_motion(&container.super_element, 107, 203, 1234));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->leave_called);
     elem1_ptr->leave_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
@@ -668,7 +671,7 @@ void test_motion_nested(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL,
-        wlmtk_element_motion(&container.super_element, 110, 205));
+        wlmtk_element_motion(&container.super_element, 110, 205, 1234));
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->leave_called);

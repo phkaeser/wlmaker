@@ -214,7 +214,8 @@ static void fake_get_dimensions(
     int *bottom_ptr);
 static wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y);
+    double x, double y,
+    uint32_t time_msec);
 static void fake_leave(
     wlmtk_element_t *element_ptr);
 
@@ -285,7 +286,8 @@ void fake_get_dimensions(
 wlmtk_element_t *fake_motion(
     wlmtk_element_t *element_ptr,
     double x,
-    double y)
+    double y,
+    __UNUSED__ uint32_t time_msec)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
@@ -453,7 +455,7 @@ void test_motion_leave(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_ASSERT(NULL != fake_element_ptr);
 
-    wlmtk_element_motion(&fake_element_ptr->element, 1.0, 2.0);
+    wlmtk_element_motion(&fake_element_ptr->element, 1.0, 2.0, 1234);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->motion_called);
     BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->motion_x);
     BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->motion_y);

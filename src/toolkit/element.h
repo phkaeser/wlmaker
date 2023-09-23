@@ -80,7 +80,8 @@ struct _wlmtk_element_impl_t {
 
     /** Indicates pointer motion into or within the element area to (x,y). */
     wlmtk_element_t *(*motion)(wlmtk_element_t *element_ptr,
-                               double x, double y);
+                               double x, double y,
+                               uint32_t time_msec);
     /** Indicates the pointer has left the element's area. */
     void (*leave)(wlmtk_element_t *element_ptr);
 };
@@ -200,9 +201,10 @@ void wlmtk_element_get_dimensions(
 static inline wlmtk_element_t *wlmtk_element_motion(
     wlmtk_element_t *element_ptr,
     double x,
-    double y) {
+    double y,
+    uint32_t time_msec) {
     if (NULL == element_ptr->impl_ptr->motion) return NULL;
-    return element_ptr->impl_ptr->motion(element_ptr, x, y);
+    return element_ptr->impl_ptr->motion(element_ptr, x, y, time_msec);
 }
 
 /** Virtual method: Calls 'leave' for the element's implementation. */

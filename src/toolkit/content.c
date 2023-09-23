@@ -23,6 +23,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -50,7 +51,8 @@ const wlmtk_element_impl_t  super_element_impl = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    const wlmtk_content_impl_t *content_impl_ptr)
+    const wlmtk_content_impl_t *content_impl_ptr,
+    struct wlr_seat *wlr_seat_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
     BS_ASSERT(NULL != content_impl_ptr);
@@ -64,6 +66,8 @@ bool wlmtk_content_init(
                             &super_element_impl)) {
         return false;
     }
+
+    content_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     content_ptr->impl_ptr = content_impl_ptr;
     return true;
@@ -151,6 +155,41 @@ void element_get_dimensions(
     wlmtk_content_get_size(content_ptr, right_ptr, bottom_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's motion method: Sets the surface as active
+ * and -- if (x, y) is within the area -- returns this element's pointer.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return element_ptr
+ */
+wlmtk_element_t *element_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    __UNUSED__ uint32_t time_msec)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_element);
+
+    // Guard clause: only forward if the motion is inside the content.
+    int width, height;
+    wlmtk_content_get_size(content_ptr, &width, &height);
+    if (x < 0 || width <= x || y < 0 || height <= y) return NULL;
+
+    if (NULL != content_ptr->wlr_surface_ptr) {
+        wlr_seat_pointer_notify_enter(
+            content_ptr->wlr_seat_ptr,
+            content_ptr->wlr_surface_ptr,
+            x, y);
+    }
+    return element_ptr;
+}
+
 /* == Fake content, useful for unit tests. ================================= */
 
 static void fake_content_destroy(
@@ -178,7 +217,8 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
     if (NULL == fake_content_ptr) return NULL;
 
     if (!wlmtk_content_init(&fake_content_ptr->content,
-                            &wlmtk_fake_content_impl)) {
+                            &wlmtk_fake_content_impl,
+                            NULL)) {
         free(fake_content_ptr);
         return NULL;
     }
