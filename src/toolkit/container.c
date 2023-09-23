@@ -43,6 +43,9 @@ static wlmtk_element_t *element_motion(
     double x, double y);
 static void element_leave(
     wlmtk_element_t *element_ptr);
+static void element_get_bounding_box(
+    wlmtk_element_t *element_ptr,
+    int *x_from_ptr, int *y_from_ptr, int *x_to_ptr, int *y_to_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -206,19 +209,12 @@ void element_get_dimensions(
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
 
-        int x, y;
-        wlmtk_element_get_position(element_ptr, &x, &y);
-
-        int l, t, r, b;
-        wlmtk_element_get_dimensions(element_ptr, &l, &t, &r, &b);
-        l += x;
-        t += y;
-        r += x;
-        b += y;
-        left = BS_MIN(left, l);
-        top = BS_MIN(top, t);
-        right = BS_MAX(right, r);
-        bottom = BS_MAX(bottom, b);
+        int x_from, y_from, x_to, y_to;
+        element_get_bounding_box(element_ptr, &x_from, &y_from, &x_to, &y_to);
+        left = BS_MIN(left, x_from);
+        top = BS_MIN(top, y_from);
+        right = BS_MAX(right, x_to);
+        bottom = BS_MAX(bottom, y_to);
     }
 
     if (NULL != left_ptr) *left_ptr = left;
@@ -251,18 +247,11 @@ wlmtk_element_t *element_motion(
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
 
-        // Compute the box occupied by "element_ptr", relative to container.
-        int x_pos, y_pos;
-        wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
         int x_from, y_from, x_to, y_to;
-        wlmtk_element_get_dimensions(
-            element_ptr, &x_from, &y_from, &x_to, &y_to);
-        x_from += x_pos;
-        y_from += y_pos;
-        x_to += x_pos;
-        y_to += y_pos;
-
+        element_get_bounding_box(element_ptr, &x_from, &y_from, &x_to, &y_to);
         if (x_from <= x && x < x_to && y_from <= y && y < y_to) {
+            int x_pos, y_pos;
+            wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
             wlmtk_element_t *motion_element_ptr = wlmtk_element_motion(
                 element_ptr, x - x_pos, y - y_pos);
             if (NULL == motion_element_ptr) continue;
@@ -287,7 +276,7 @@ wlmtk_element_t *element_motion(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of the element's leave method> Forwards it to the element
+ * Implementation of the element's leave method: Forwards it to the element
  * currently having pointer focus, and clears that.
  *
  * @param element_ptr
@@ -329,6 +318,34 @@ void handle_wlr_scene_tree_node_destroy(
     // Since this is a callback from the tree node dtor, the tree is going to
     // be destroyed. We are using this to reset the container's reference.
     wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Computes the bounding box position for the element, relative to parent.
+ *
+ * The element (or the element's sub-elements) will all be contained in the
+ * area spanned by [*x_from_ptr, *x_to_ptr), [*y_from_ptr, *y_to_ptr).
+ *
+ * @param element_ptr
+ * @param x_from_ptr           Minimum horizontal position (inclusive).
+ * @param y_from_ptr           Minimum vertical position (inclusive).
+ * @param x_to_ptr             Maximum horizontal position (exclusive).
+ * @param y_to_ptr             Maximum vertical position (exclusive).
+ */
+void element_get_bounding_box(
+    wlmtk_element_t *element_ptr,
+    int *x_from_ptr, int *y_from_ptr, int *x_to_ptr, int *y_to_ptr)
+{
+    int x_pos, y_pos;
+    wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
+
+    wlmtk_element_get_dimensions(
+        element_ptr, x_from_ptr, y_from_ptr, x_to_ptr, y_to_ptr);
+    if (NULL != x_from_ptr) *x_from_ptr += x_pos;
+    if (NULL != x_to_ptr) *x_to_ptr += x_pos;
+    if (NULL != y_from_ptr) *y_from_ptr += y_pos;
+    if (NULL != y_to_ptr) *y_to_ptr += y_pos;
 }
 
 /* == Helper for unit test: A fake container =============================== */
