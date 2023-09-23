@@ -148,7 +148,7 @@ void element_get_dimensions(
 
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
-    content_ptr->impl_ptr->get_size(content_ptr, right_ptr, bottom_ptr);
+    wlmtk_content_get_size(content_ptr, right_ptr, bottom_ptr);
 }
 
 /* == Fake content, useful for unit tests. ================================= */

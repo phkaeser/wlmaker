@@ -101,6 +101,13 @@ void wlmtk_content_set_window(
  */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
+/** Wraps to @ref wlmt_content_t::get_size. */
+static inline void wlmtk_content_get_size(
+    wlmtk_content_t *content_ptr,
+    int *width_ptr, int *height_ptr) {
+    content_ptr->impl_ptr->get_size(content_ptr, width_ptr, height_ptr);
+}
+
 /** Unit tests for content. */
 extern const bs_test_case_t wlmtk_content_test_cases[];
 
