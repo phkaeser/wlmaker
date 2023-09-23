@@ -158,36 +158,6 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_container_destroy(fake_parent_ptr);
 }
 
-/** dtor for the content under test. */
-static void test_content_destroy(
-    wlmtk_content_t *content_ptr)
-{
-    wlmtk_content_fini(content_ptr);
-}
-/** scene node creation for the node under test. */
-static struct wlr_scene_node *test_content_create_scene_node(
-    __UNUSED__ wlmtk_content_t *content_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        wlr_scene_tree_ptr, NULL);
-    return &wlr_scene_buffer_ptr->node;
-}
-/** Gets size of the content, fake mode. */
-static void test_content_get_size(
-    __UNUSED__ wlmtk_content_t *content_ptr,
-    int *width_ptr, int *height_ptr)
-{
-    if (NULL != width_ptr) *width_ptr = 42;
-    if (NULL != height_ptr) *height_ptr = 21;
-}
-/** Method table for the node under test. */
-static const wlmtk_content_impl_t test_content_impl = {
-    .destroy = test_content_destroy,
-    .create_scene_node = test_content_create_scene_node,
-    .get_size = test_content_get_size
-};
-
 /* ------------------------------------------------------------------------- */
 /** Verifies that mapping and unmapping windows works. */
 void test_map_unmap(bs_test_t *test_ptr)
@@ -199,9 +169,9 @@ void test_map_unmap(bs_test_t *test_ptr)
         fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &test_content_impl);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &fake_content_ptr->content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
@@ -213,7 +183,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr,
         NULL,
-        content.super_element.wlr_scene_node_ptr);
+        fake_content_ptr->content.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
@@ -224,7 +194,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
-        content.super_element.wlr_scene_node_ptr);
+        fake_content_ptr->content.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_window_destroy(window_ptr);
