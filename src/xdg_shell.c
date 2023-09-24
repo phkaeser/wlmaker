@@ -26,6 +26,7 @@
 #include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>
+#include <limits.h>
 
 /* == Declarations ========================================================= */
 
@@ -118,10 +119,21 @@ void handle_new_surface(struct wl_listener *listener_ptr,
     case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 
 #if defined(ENABLE_TOOLKIT_PROTOTYPE)
-        // Transitional -- enable for prototyping: Toolkit-based workspace.
-        wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
-            wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
-        window_ptr = window_ptr;
+        pid_t pid;
+        wl_client_get_credentials(
+            wlr_xdg_surface_ptr->resource->client, &pid, NULL, NULL);
+
+        char path_procps[PATH_MAX], path_exe[PATH_MAX];
+        snprintf(path_procps, sizeof(path_procps), "/proc/%"PRIdMAX"/exe",
+                 (intmax_t)pid);
+        readlink(path_procps, path_exe, sizeof(path_exe));
+        if (0 == strcmp(path_exe, "/usr/bin/foot")) {
+            wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
+                wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
+            bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
+                   window_ptr, wlr_xdg_surface_ptr);
+            break;
+        }
 #endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
 
         xdg_toplevel_ptr = wlmaker_xdg_toplevel_create(

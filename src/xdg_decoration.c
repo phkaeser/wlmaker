@@ -219,6 +219,10 @@ void handle_decoration_request_mode(
         listener_ptr, decoration_ptr, request_mode_listener);
     struct wlr_scene_tree *wlr_scene_tree_ptr = (struct wlr_scene_tree*)
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
+    if (NULL == wlr_scene_tree_ptr) {
+        bs_log(BS_ERROR, "No tree associated with surface. Toolkit window?");
+        return;
+    }
     wlmaker_view_t *view_ptr = (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
 
     enum wlr_xdg_toplevel_decoration_v1_mode mode =
