@@ -72,7 +72,11 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
     wlmtk_element_set_visible(
         wlmtk_content_element(window_ptr->content_ptr), false);
     wlmtk_content_set_window(window_ptr->content_ptr, NULL);
-    window_ptr->content_ptr = NULL;
+
+    if (NULL != window_ptr->content_ptr) {
+        wlmtk_content_destroy(window_ptr->content_ptr);
+        window_ptr->content_ptr = NULL;
+    }
 
     wlmtk_container_fini(&window_ptr->super_container);
     free(window_ptr);
@@ -116,12 +120,13 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_content_t content;
-    memset(&content, 0, sizeof(content));
-
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &fake_content_ptr->content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
+                      fake_content_ptr->content.window_ptr);
+
     wlmtk_window_destroy(window_ptr);
 }
 

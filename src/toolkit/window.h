@@ -33,7 +33,7 @@ extern "C" {
 /**
  * Creates a window for the given content.
  *
- * @param content_ptr
+ * @param content_ptr         Will take ownership of content_ptr.
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
