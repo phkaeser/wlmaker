@@ -86,6 +86,8 @@ class Workspace {
   map_window(Window*)
   unmap_window(Window*)
 
+  activate_window(Window*)
+
   map_layer_element(LayerElement *, layer)
   unmap_layer_element(LayerElement *, layer)
 }
@@ -161,6 +163,8 @@ class Window {
   Window *create(Content*)
   destroy()
   Element *element()
+
+  set_active(bool)
 }
 VBox *-- Window
 

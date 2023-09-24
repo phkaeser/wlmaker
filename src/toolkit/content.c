@@ -59,6 +59,7 @@ bool wlmtk_content_init(
     BS_ASSERT(NULL != content_impl_ptr->destroy);
     BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
     BS_ASSERT(NULL != content_impl_ptr->get_size);
+    BS_ASSERT(NULL != content_impl_ptr->set_active);
 
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
 
@@ -201,12 +202,16 @@ static void fake_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,
     int *height_ptr);
+static void fake_content_set_active(
+    wlmtk_content_t *content_ptr,
+    bool active);
 
 /** Method table of the fake content. */
 static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
     .destroy = fake_content_destroy,
     .create_scene_node = fake_content_create_scene_node,
-    .get_size = fake_content_get_size
+    .get_size = fake_content_get_size,
+    .set_active = fake_content_set_active,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -266,6 +271,17 @@ void fake_content_get_size(
     if (NULL != height_ptr) *height_ptr = fake_content_ptr->height;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Sets the content's activation status. */
+void fake_content_set_active(
+    wlmtk_content_t *content_ptr,
+    bool active)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->active = active;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -301,6 +317,9 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, t);
     BS_TEST_VERIFY_EQ(test_ptr, 42, r);
     BS_TEST_VERIFY_EQ(test_ptr, 21, b);
+
+    wlmtk_content_set_active(&fake_content_ptr->content, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->active);
 
     wlmtk_element_destroy(&fake_content_ptr->content.super_element);
 }

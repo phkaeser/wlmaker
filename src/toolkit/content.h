@@ -68,6 +68,8 @@ struct _wlmtk_content_impl_t {
     /** Gets width and height of the content. */
     void (*get_size)(wlmtk_content_t *content_ptr,
                      int *width_ptr, int *height_ptr);
+    /** Sets the content as active (or not). */
+    void (*set_active)(wlmtk_content_t *content_ptr, bool active);
 };
 
 /**
@@ -112,17 +114,23 @@ void wlmtk_content_set_window(
  */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
+/** Wraps to @ref wlmtk_content_impl_t::destroy. */
+static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
+    content_ptr->impl_ptr->destroy(content_ptr);
+}
 /** Wraps to @ref wlmtk_content_impl_t::get_size. */
 static inline void wlmtk_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr, int *height_ptr) {
     content_ptr->impl_ptr->get_size(content_ptr, width_ptr, height_ptr);
 }
-
-/** Wraps to @ref wlmtk_content_impl_t::destroy. */
-static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
-    content_ptr->impl_ptr->destroy(content_ptr);
+/** Wraps to @ref wlmtk_content_impl_t::set_active. */
+static inline void wlmtk_content_set_active(
+    wlmtk_content_t *content_ptr,
+    bool active) {
+    content_ptr->impl_ptr->set_active(content_ptr, active);
 }
+
 
 /** Unit tests for content. */
 extern const bs_test_case_t wlmtk_content_test_cases[];
@@ -135,6 +143,8 @@ typedef struct {
     int                       width;
     /** Height to return on a wlmtk_content_impl_t::get_size call. */
     int                       height;
+    /** Argument of last @ref wlmtk_content_set_active call. */
+    bool                      active;
 } wlmtk_fake_content_t;
 
 /** Ctor for a fake content. */

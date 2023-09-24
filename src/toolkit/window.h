@@ -60,6 +60,19 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
  */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
+/**
+ * Sets the window as activated, depending on the argument's value.
+ *
+ * An activated window will have keyboard focus and would have distinct
+ * decorations to indicate state.
+ *
+ * @param window_ptr
+ * @param active
+ */
+void wlmtk_window_set_active(
+    wlmtk_window_t *window_ptr,
+    bool active);
+
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];
 

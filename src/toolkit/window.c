@@ -84,6 +84,14 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
     return &window_ptr->super_container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_active(
+    wlmtk_window_t *window_ptr,
+    bool active)
+{
+    wlmtk_content_set_active(window_ptr->content_ptr, active);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
