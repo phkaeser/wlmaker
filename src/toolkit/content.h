@@ -112,11 +112,16 @@ void wlmtk_content_set_window(
  */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
-/** Wraps to @ref wlmt_content_t::get_size. */
+/** Wraps to @ref wlmtk_content_impl_t::get_size. */
 static inline void wlmtk_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr, int *height_ptr) {
     content_ptr->impl_ptr->get_size(content_ptr, width_ptr, height_ptr);
+}
+
+/** Wraps to @ref wlmtk_content_impl_t::destroy. */
+static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
+    content_ptr->impl_ptr->destroy(content_ptr);
 }
 
 /** Unit tests for content. */

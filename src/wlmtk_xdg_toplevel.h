@@ -20,14 +20,12 @@
 #ifndef __WLMTK_XDG_TOPLEVEL_H__
 #define __WLMTK_XDG_TOPLEVEL_H__
 
-#include "window.h"
+#include "server.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration. */
-struct wlr_xdg_surface;
 
 /**
  * Creates a toolkit window with the XDG surface as content.
@@ -37,7 +35,8 @@ struct wlr_xdg_surface;
  * @return The window, or NULL on error.
  */
 wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
-    struct wlr_xdg_surface *wlr_xdg_surface_ptr);
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    wlmaker_server_t *server_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

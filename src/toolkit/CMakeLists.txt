@@ -25,8 +25,7 @@ SET(PUBLIC_HEADER_FILES
   content.h
   element.h
   window.h
-  workspace.h
-  xdg_toplevel.h)
+  workspace.h)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
@@ -37,8 +36,7 @@ TARGET_SOURCES(toolkit PRIVATE
   primitives.c
   util.c
   window.c
-  workspace.c
-  xdg_toplevel.c)
+  workspace.c)
 TARGET_INCLUDE_DIRECTORIES(
   toolkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..
