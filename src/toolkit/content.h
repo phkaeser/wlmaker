@@ -68,8 +68,8 @@ struct _wlmtk_content_impl_t {
     /** Gets width and height of the content. */
     void (*get_size)(wlmtk_content_t *content_ptr,
                      int *width_ptr, int *height_ptr);
-    /** Sets the content as active (or not). */
-    void (*set_active)(wlmtk_content_t *content_ptr, bool active);
+    /** Sets whether the content is activated (has keyboard focus). */
+    void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
 
 /**
@@ -124,11 +124,11 @@ static inline void wlmtk_content_get_size(
     int *width_ptr, int *height_ptr) {
     content_ptr->impl_ptr->get_size(content_ptr, width_ptr, height_ptr);
 }
-/** Wraps to @ref wlmtk_content_impl_t::set_active. */
-static inline void wlmtk_content_set_active(
+/** Wraps to @ref wlmtk_content_impl_t::set_activated. */
+static inline void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
-    bool active) {
-    content_ptr->impl_ptr->set_active(content_ptr, active);
+    bool activated) {
+    content_ptr->impl_ptr->set_activated(content_ptr, activated);
 }
 
 
@@ -143,8 +143,8 @@ typedef struct {
     int                       width;
     /** Height to return on a wlmtk_content_impl_t::get_size call. */
     int                       height;
-    /** Argument of last @ref wlmtk_content_set_active call. */
-    bool                      active;
+    /** Argument of last @ref wlmtk_content_set_activated call. */
+    bool                      activated;
 } wlmtk_fake_content_t;
 
 /** Ctor for a fake content. */

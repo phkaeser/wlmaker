@@ -112,7 +112,7 @@ abstract class Content {
   Element *element()
   -set_window(Window*)
 
-  {abstract}#void set_active(bool)
+  {abstract}#void set_activated(bool)
   {abstract}#void set_maximized(bool)
   {abstract}#void set_fullscreen(bool)
   {abstract}#void motion(double, double)
@@ -164,7 +164,7 @@ class Window {
   destroy()
   Element *element()
 
-  set_active(bool)
+  set_activated(bool)
 }
 VBox *-- Window
 

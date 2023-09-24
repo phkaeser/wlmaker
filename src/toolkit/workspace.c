@@ -96,7 +96,7 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
         wlmtk_window_element(window_ptr));
 
     // TODO(kaeser@gubbe.ch): Refine and test this.
-    wlmtk_window_set_active(window_ptr, true);
+    wlmtk_window_set_activated(window_ptr, true);
 }
 
 /* ------------------------------------------------------------------------- */

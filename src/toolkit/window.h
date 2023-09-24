@@ -67,11 +67,11 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
  * decorations to indicate state.
  *
  * @param window_ptr
- * @param active
+ * @param activated
  */
-void wlmtk_window_set_active(
+void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
-    bool active);
+    bool activated);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];

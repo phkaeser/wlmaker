@@ -89,11 +89,11 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_set_active(
+void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
-    bool active)
+    bool activated)
 {
-    wlmtk_content_set_active(window_ptr->content_ptr, active);
+    wlmtk_content_set_activated(window_ptr->content_ptr, activated);
 }
 
 /* == Local (static) methods =============================================== */
@@ -110,11 +110,11 @@ void window_container_destroy(wlmtk_container_t *container_ptr)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
-static void test_set_active(bs_test_t *test_ptr);
+static void test_set_activated(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
-    { 1, "set_active", test_set_active },
+    { 1, "set_activated", test_set_activated },
     { 0, NULL, NULL }
 };
 
@@ -134,17 +134,17 @@ void test_create_destroy(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Tests activation. */
-void test_set_active(bs_test_t *test_ptr)
+void test_set_activated(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
         &fake_content_ptr->content);
 
-    wlmtk_window_set_active(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->active);
+    wlmtk_window_set_activated(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->activated);
 
-    wlmtk_window_set_active(window_ptr, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_content_ptr->active);
+    wlmtk_window_set_activated(window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_content_ptr->activated);
 
     wlmtk_window_destroy(window_ptr);
 }
