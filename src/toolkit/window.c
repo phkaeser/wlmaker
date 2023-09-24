@@ -127,6 +127,9 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
                       fake_content_ptr->content.window_ptr);
 
+    wlmtk_window_set_active(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->active);
+
     wlmtk_window_destroy(window_ptr);
 }
 
