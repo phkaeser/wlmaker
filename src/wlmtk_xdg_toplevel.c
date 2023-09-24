@@ -61,6 +61,9 @@ static void content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,
     int *height_ptr);
+static void content_set_active(
+    wlmtk_content_t *content_ptr,
+    bool active);
 
 /* == Data ================================================================= */
 
@@ -69,6 +72,7 @@ const wlmtk_content_impl_t    content_impl = {
     .destroy = content_destroy,
     .create_scene_node = content_create_scene_node,
     .get_size = content_get_size,
+    .set_active = content_set_active,
 };
 
 
@@ -193,6 +197,37 @@ void content_get_size(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->base, &geo_box);
     if (NULL != width_ptr) *width_ptr = geo_box.width;
     if (NULL != height_ptr) *height_ptr = geo_box.height;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Sets the keyboard activation status for the surface.
+ *
+ * @param content_ptr
+ * @param active
+ */
+void content_set_active(
+    wlmtk_content_t *content_ptr,
+    bool active)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+
+    wlr_xdg_toplevel_set_activated(
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, active);
+
+    if (active) {
+        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+            xdg_tl_content_ptr->server_ptr->wlr_seat_ptr);
+        if (NULL != wlr_keyboard_ptr) {
+            wlr_seat_keyboard_notify_enter(
+                xdg_tl_content_ptr->server_ptr->wlr_seat_ptr,
+                xdg_tl_content_ptr->wlr_xdg_surface_ptr->surface,
+                wlr_keyboard_ptr->keycodes,
+                wlr_keyboard_ptr->num_keycodes,
+                &wlr_keyboard_ptr->modifiers);
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------- */
