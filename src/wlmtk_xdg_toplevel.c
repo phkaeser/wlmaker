@@ -32,6 +32,8 @@ typedef struct {
 
     /** The corresponding wlroots XDG surface. */
     struct wlr_xdg_surface    *wlr_xdg_surface_ptr;
+    /** Whether this surface is currently activated. */
+    bool                      activated;
 
     /** Listener for the `map` signal of the `wlr_surface`. */
     struct wl_listener        surface_map_listener;
@@ -212,22 +214,34 @@ void content_set_activated(
 {
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+    // Early return, if nothing to be done.
+    if (xdg_tl_content_ptr->activated == activated) return;
 
+    struct wlr_seat *wlr_seat_ptr =
+        xdg_tl_content_ptr->server_ptr->wlr_seat_ptr;
     wlr_xdg_toplevel_set_activated(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, activated);
 
     if (activated) {
         struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-            xdg_tl_content_ptr->server_ptr->wlr_seat_ptr);
+            wlr_seat_ptr);
         if (NULL != wlr_keyboard_ptr) {
             wlr_seat_keyboard_notify_enter(
-                xdg_tl_content_ptr->server_ptr->wlr_seat_ptr,
+                wlr_seat_ptr,
                 xdg_tl_content_ptr->wlr_xdg_surface_ptr->surface,
                 wlr_keyboard_ptr->keycodes,
                 wlr_keyboard_ptr->num_keycodes,
                 &wlr_keyboard_ptr->modifiers);
         }
+    } else {
+        BS_ASSERT(xdg_tl_content_ptr->activated);
+        if (wlr_seat_ptr->keyboard_state.focused_surface ==
+            xdg_tl_content_ptr->wlr_xdg_surface_ptr->surface) {
+            wlr_seat_pointer_clear_focus(wlr_seat_ptr);
+        }
     }
+
+    xdg_tl_content_ptr->activated = activated;
 }
 
 /* ------------------------------------------------------------------------- */
