@@ -101,6 +101,7 @@ void wlmtk_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated)
 {
+    // TODO(kaeser@gubbe.ch): Implement.
     bs_log(BS_INFO, "Set server side decoration for window %p: %d",
            window_ptr, decorated);
 }

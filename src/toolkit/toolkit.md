@@ -165,6 +165,7 @@ class Window {
   Element *element()
 
   set_activated(bool)
+  set_server_side_decorated(bool)
 }
 VBox *-- Window
 
