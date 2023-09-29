@@ -128,6 +128,8 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &xdg_tl_content_ptr->surface_unmap_listener,
         handle_surface_unmap);
 
+    xdg_tl_content_ptr->wlr_xdg_surface_ptr->data =
+        &xdg_tl_content_ptr->super_content;
     return xdg_tl_content_ptr;
 }
 

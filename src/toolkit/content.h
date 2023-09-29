@@ -34,6 +34,9 @@ extern "C" {
 
 /** State of the element. */
 struct _wlmtk_content_t {
+    /** Temporary: Identifier, to disambiguate from XDG nodes. */
+    void                      *identifier_ptr;
+
     /** Super class of the content: An element. */
     wlmtk_element_t           super_element;
 
@@ -131,6 +134,12 @@ static inline void wlmtk_content_set_activated(
     content_ptr->impl_ptr->set_activated(content_ptr, activated);
 }
 
+/**
+ * Identifying pointer: Value unique to wlmtk_content.
+ *
+ * TODO(kaeser@gubbe.ch): Remove, once migrated to toolkit.
+ */
+extern void *wlmtk_content_identifier_ptr;
 
 /** Unit tests for content. */
 extern const bs_test_case_t wlmtk_content_test_cases[];

@@ -96,6 +96,15 @@ void wlmtk_window_set_activated(
     wlmtk_content_set_activated(window_ptr->content_ptr, activated);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
+    bool decorated)
+{
+    bs_log(BS_INFO, "Set server side decoration for window %p: %d",
+           window_ptr, decorated);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

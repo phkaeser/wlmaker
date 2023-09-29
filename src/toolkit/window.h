@@ -73,6 +73,16 @@ void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated);
 
+/**
+ * Sets whether to have server-side decorations for this window.
+ *
+ * @param window_ptr
+ * @param decorated
+ */
+void wlmtk_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
+    bool decorated);
+
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];
 

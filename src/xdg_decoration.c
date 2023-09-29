@@ -219,8 +219,22 @@ void handle_decoration_request_mode(
         listener_ptr, decoration_ptr, request_mode_listener);
     struct wlr_scene_tree *wlr_scene_tree_ptr = (struct wlr_scene_tree*)
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
-    if (NULL == wlr_scene_tree_ptr) {
-        bs_log(BS_ERROR, "No tree associated with surface. Toolkit window?");
+
+    wlmtk_content_t *content_ptr = (wlmtk_content_t*)
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
+    if (NULL != content_ptr &&
+        content_ptr->identifier_ptr == wlmtk_content_identifier_ptr) {
+        bs_log(BS_WARNING,
+               "Toolkit window: Enforcing client-side decoration.");
+
+        enum wlr_xdg_toplevel_decoration_v1_mode mode =
+            WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+        wlr_xdg_toplevel_decoration_v1_set_mode(
+            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr,
+            mode);
+        wlmtk_window_set_server_side_decorated(
+            content_ptr->window_ptr,
+            mode == WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
         return;
     }
     wlmaker_view_t *view_ptr = (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;

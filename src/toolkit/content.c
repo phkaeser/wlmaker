@@ -39,12 +39,16 @@ static void element_get_dimensions(
     int *right_ptr,
     int *bottom_ptr);
 
+/* == Data ================================================================= */
+
 /** Method table for the container's virtual methods. */
 const wlmtk_element_impl_t  super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
 };
+
+void *wlmtk_content_identifier_ptr = wlmtk_content_init;
 
 /* == Exported methods ===================================================== */
 
@@ -71,6 +75,7 @@ bool wlmtk_content_init(
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     content_ptr->impl_ptr = content_impl_ptr;
+    content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
     return true;
 }
 
