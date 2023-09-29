@@ -87,6 +87,7 @@ class Workspace {
   unmap_window(Window*)
 
   activate_window(Window*)
+  begin_window_move(Window*)
 
   map_layer_element(LayerElement *, layer)
   unmap_layer_element(LayerElement *, layer)
@@ -261,6 +262,49 @@ There is a click ("pointer button event") -> goes to workspace.
   * element::click(...)
   * Button::click gets called. Has a "button_from_element" & goes from there.
 
+
+Button is pressed => pass down to pointer-focussed element.
+  Would eg. show the "pressed" state of a button, but not activate.
+
+  button_down
+
+Button is released => pass down to pointer-focussed element.
+  (actually: pass down to the element where the button-press was passed to)
+  Would eg. acivate the button, and restore the state of a pressed button.
+
+  button_up
+  click
+
+Button remains pressed and pointer moves.
+  Means: We might be dragging something around.
+  Start a "drag" => pass down a "drag" event to pointer focussed element.
+  Keep track of drag start, and pass on relative drag motion down to element.
+  Keeps passing drag elements to same element until drag ends.
+  Would keep the element pointer focussed (?)
+
+  A 'button' would ignore drags. drag_begin, drag_end, drag_motion ?
+  A 'titlebar' would use this to begin a move, and update position.
+  A 'iconified' would use this to de-couple from eg. dock
+
+  drags have a pointer button associated (left, middle, right),
+  and a relative position since. They also have the starting position,
+  relative to the element.
+
+  button_down
+  [lingering time, some light move]
+  drag_begin
+  drag_motion
+  drag_motion
+  button_up
+  drag_end
+
+Button is pressed again, without much move since last press.
+  Means: We have a double-click.
+  Pass down a double-click to the pointer-focussed element.
+
+  button_down
+  button_up
+  double_click
 
 
 ## Dock and Clip class elements
