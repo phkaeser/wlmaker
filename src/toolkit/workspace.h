@@ -30,6 +30,9 @@ extern "C" {
 /** State of the workspace. */
 typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
+/** Forward declaration. */
+struct wlr_pointer_button_event;
+
 /**
  * Creates a workspace.
  *
@@ -79,6 +82,26 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
  */
 wlmtk_workspace_t *wlmtk_workspace_from_container(
     wlmtk_container_t *container_ptr);
+
+/**
+ * Handles a button event: Translates to button down/up/click/dblclick events.
+ *
+ * Each button activity (button pressed or released) will directly trigger a
+ * corresponding BUTTON_DOWN or BUTTON_UP event. Depending on timing and
+ * motion, a "released" event may also triccer a CLICK, DOUBLE_CLICK or
+ * DRAG event.
+ * These events will be forwarded to the event currently having pointer focus.
+ *
+ * @param workspace_ptr
+ * @paran event_ptr
+ * @param x
+ * @param y
+ */
+void wlmtk_workspace_handle_button(
+    wlmtk_workspace_t *workspace_ptr,
+    const struct wlr_pointer_button_event *event_ptr,
+    double x,
+    double y);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

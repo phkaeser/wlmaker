@@ -21,6 +21,7 @@
 #include "workspace.h"
 
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
@@ -117,6 +118,20 @@ wlmtk_workspace_t *wlmtk_workspace_from_container(
 {
     BS_ASSERT(container_ptr->impl_ptr == &workspace_container_impl);
     return BS_CONTAINER_OF(container_ptr, wlmtk_workspace_t, super_container);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_handle_button(
+    wlmtk_workspace_t *workspace_ptr,
+    const struct wlr_pointer_button_event *event_ptr,
+    double x,
+    double y)
+{
+    bs_log(BS_INFO, "Workspace %p: button event %p ad %.0f, %.0f",
+           workspace_ptr, event_ptr, x, y);
+    if (WLR_BUTTON_PRESSED == event_ptr->state) {
+        // Pass BUTTON_DOWN.
+    }
 }
 
 /* == Local (static) methods =============================================== */
