@@ -38,6 +38,11 @@ static void element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
+static wlmtk_element_t *element_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    __UNUSED__ uint32_t time_msec);
 
 /* == Data ================================================================= */
 
@@ -46,6 +51,7 @@ const wlmtk_element_impl_t  super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
+    .motion = element_motion,
 };
 
 void *wlmtk_content_identifier_ptr = wlmtk_content_init;
