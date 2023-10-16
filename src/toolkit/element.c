@@ -48,8 +48,10 @@ bool wlmtk_element_init(
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
+
     element_ptr->last_pointer_x = NAN;
     element_ptr->last_pointer_y = NAN;
+    element_ptr->last_pointer_time_msec = 0;
     return true;
 }
 
@@ -211,14 +213,27 @@ wlmtk_element_t *wlmtk_element_pointer_motion(
     double y,
     uint32_t time_msec)
 {
-    // FIXME: Add tests.
     element_ptr->last_pointer_x = x;
     element_ptr->last_pointer_y = y;
     element_ptr->last_pointer_time_msec = time_msec;
 
+    // Guard clause: No implementation for `pointer_motion`.
     if (NULL == element_ptr->impl_ptr->pointer_motion) return NULL;
-    return element_ptr->impl_ptr->pointer_motion(
+
+    return  element_ptr->impl_ptr->pointer_motion(
         element_ptr, x, y, time_msec);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_pointer_leave(
+    wlmtk_element_t *element_ptr)
+{
+    if (NULL != element_ptr->impl_ptr->pointer_leave) {
+        element_ptr->impl_ptr->pointer_leave(element_ptr);
+    }
+    element_ptr->last_pointer_x = NAN;
+    element_ptr->last_pointer_y = NAN;
+    element_ptr->last_pointer_time_msec = 0;
 }
 
 /* == Local (static) methods =============================================== */
@@ -354,16 +369,13 @@ void fake_get_pointer_area(
 /** Handles 'motion' events for the fake element. */
 wlmtk_element_t *fake_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
+    __UNUSED__ double x,
+    __UNUSED__ double y,
     __UNUSED__ uint32_t time_msec)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
     fake_element_ptr->pointer_motion_called = true;
-    fake_element_ptr->pointer_motion_x = x;
-    fake_element_ptr->pointer_motion_y = y;
-    // FIXME: Replace with 'this' if x, y in space.
     return fake_element_ptr->pointer_motion_return_value;
 }
 
@@ -567,13 +579,33 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_ASSERT(NULL != fake_element_ptr);
 
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        isnan(fake_element_ptr->element.last_pointer_x));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        isnan(fake_element_ptr->element.last_pointer_y));
+
     wlmtk_element_pointer_motion(&fake_element_ptr->element, 1.0, 2.0, 1234);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->pointer_motion_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->pointer_motion_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->element.last_pointer_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->element.last_pointer_y);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        1234,
+        fake_element_ptr->element.last_pointer_time_msec);
 
     wlmtk_element_pointer_leave(&fake_element_ptr->element);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        isnan(fake_element_ptr->element.last_pointer_x));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        isnan(fake_element_ptr->element.last_pointer_y));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        0,
+        fake_element_ptr->element.last_pointer_time_msec);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }

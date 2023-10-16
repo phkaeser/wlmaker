@@ -62,11 +62,23 @@ struct _wlmtk_element_t {
     /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
     struct wl_listener        wlr_scene_node_destroy_listener;
 
-    /** Pointer horizontal position of last motion(). */
+    /**
+     * Horizontal pointer position from last @ref wlmtk_element_pointer_motion
+     * call. NAN if there was no motion call yet, or if @ref
+     * wlmtk_element_pointer_leave was called since.
+     *
+     * Does not imply that the element has pointer focus.
+     */
     double                    last_pointer_x;
-    /** Pointer vertical position of last motion(). */
+    /**
+     * Vertical pointer position from last @ref wlmtk_element_pointer_motion
+     * call. NAN if there was no motion call yet, or if @ref
+     * wlmtk_element_pointer_leave was called since.
+     *
+     * Does not imply that the element has pointer focus.
+     */
     double                    last_pointer_y;
-    /** Time of last motion() call. */
+    /** Time of last @ref wlmtk_element_pointer_motion call, 0 otherwise. */
     uint32_t                  last_pointer_time_msec;
 };
 
@@ -250,13 +262,27 @@ void wlmtk_element_get_pointer_area(
     int *bottom_ptr);
 
 /**
-   Virtual method: Calls 'pointer_motion' for the element's implementation.
-*/
+ * Virtual method: Calls 'pointer_motion' for the element's implementation.
+ *
+ * Also updates wlmtk_element_t::last_pointer_x,
+ * wlmtk_element_t::last_pointer_y and wlmtk_element_t::last_pointer_time_msec.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ */
 wlmtk_element_t *wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
     uint32_t time_msec);
+
+/**
+ * Virtual method: Calls 'pointer_leave' for the element's implementation.
+ */
+void wlmtk_element_pointer_leave(
+    wlmtk_element_t *element_ptr);
 
 /** Virtual method: calls 'button' for the element's implementation. */
 static inline bool wlmtk_element_pointer_button(
@@ -266,17 +292,6 @@ static inline bool wlmtk_element_pointer_button(
     if (NULL == element_ptr->impl_ptr->pointer_button) return false;
     return element_ptr->impl_ptr->pointer_button(
         element_ptr, button_event_ptr);
-}
-
-/** Virtual method: Calls 'pointer_leave' for the element's implementation. */
-static inline void wlmtk_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
-{
-    if (NULL != element_ptr->impl_ptr->pointer_leave) {
-        element_ptr->impl_ptr->pointer_leave(element_ptr);
-    }
-    element_ptr->last_pointer_x = NAN;
-    element_ptr->last_pointer_y = NAN;
 }
 
 /**
@@ -305,10 +320,6 @@ typedef struct {
 
     /** Indicates that Element::pointer_motion() was called. */
     bool                      pointer_motion_called;
-    /** The x argument of the last Element::pointer_motion() call. */
-    double                    pointer_motion_x;
-    /** The y arguemnt of the last element::pointer_motion() call. */
-    double                    pointer_motion_y;
     /** Return value to pass when pointer_motion is called. */
     wlmtk_element_t           *pointer_motion_return_value;
 

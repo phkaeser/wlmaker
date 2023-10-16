@@ -669,16 +669,14 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
 
     // elem1 is at (-20, -40).
-    elem1_ptr->pointer_motion_x = 42;
-    elem1_ptr->pointer_motion_y = 42;
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
         wlmtk_element_pointer_motion(&container.super_element, -20, -40, 7));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->pointer_motion_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->pointer_motion_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_y);
 
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
@@ -687,8 +685,8 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->pointer_motion_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->pointer_motion_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_y);
 
     // elem2 is covering the area at (107, 302).
     BS_TEST_VERIFY_NEQ(
@@ -700,8 +698,8 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->pointer_motion_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->pointer_motion_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->element.last_pointer_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->element.last_pointer_y);
 
     // The pointer area of elem2 is covering the area at (112, 208).
     BS_TEST_VERIFY_NEQ(
@@ -712,8 +710,8 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_EQ(test_ptr, 12, elem2_ptr->pointer_motion_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 8, elem2_ptr->pointer_motion_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 12, elem2_ptr->element.last_pointer_x);
+    BS_TEST_VERIFY_EQ(test_ptr, 8, elem2_ptr->element.last_pointer_y);
 
     // The pointer area of elem2 does not include (113, 209).
     BS_TEST_VERIFY_EQ(
