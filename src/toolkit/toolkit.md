@@ -40,9 +40,9 @@ class Element {
 
   {abstract}#void destroy()
   {abstract}#struct wlr_scene_node *create_scene_node(parent_node*)
-  #void motion(double, double)
-  #void leave()
-  {abstract}#void click()
+  #void pointer_motion(double, double)
+  #void pointer_button(wlmtk_button_event_t)
+  #void pointer_leave()
 }
 note right of Element::"set_parent_container(Container*)"
   Will invoke set_parent_container.

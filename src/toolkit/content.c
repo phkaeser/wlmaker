@@ -22,6 +22,7 @@
 #include "content.h"
 
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
@@ -38,11 +39,21 @@ static void element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static wlmtk_element_t *element_motion(
+static void element_get_pointer_area(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
+static void element_pointer_leave(wlmtk_element_t *element_ptr);
+static wlmtk_element_t *element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
     __UNUSED__ uint32_t time_msec);
+static bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
 
 /* == Data ================================================================= */
 
@@ -51,7 +62,10 @@ const wlmtk_element_impl_t  super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
-    .motion = element_motion,
+    .get_pointer_area = element_get_pointer_area,
+    .pointer_leave = element_pointer_leave,
+    .pointer_motion = element_pointer_motion,
+    .pointer_button = element_pointer_button,
 };
 
 void *wlmtk_content_identifier_ptr = wlmtk_content_init;
@@ -169,37 +183,152 @@ void element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of the element's motion method: Sets the surface as active
- * and -- if (x, y) is within the area -- returns this element's pointer.
+ * Overwrites the element's get_pointer_area method: Returns the extents of
+ * the surface and all subsurfaces.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
- *
- * @return element_ptr
+ * @param left_ptr            Leftmost position. May be NULL.
+ * @param top_ptr             Topmost position. May be NULL.
+ * @param right_ptr           Rightmost position. Ma be NULL.
+ * @param bottom_ptr          Bottommost position. May be NULL.
  */
-wlmtk_element_t *element_motion(
+void element_get_pointer_area(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    __UNUSED__ uint32_t time_msec)
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
 {
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
 
-    // Guard clause: only forward if the motion is inside the content.
-    int width, height;
-    wlmtk_content_get_size(content_ptr, &width, &height);
-    if (x < 0 || width <= x || y < 0 || height <= y) return NULL;
-
-    if (NULL != content_ptr->wlr_surface_ptr) {
-        wlr_seat_pointer_notify_enter(
-            content_ptr->wlr_seat_ptr,
-            content_ptr->wlr_surface_ptr,
-            x, y);
+    struct wlr_box box;
+    if (NULL == content_ptr->wlr_surface_ptr) {
+        // DEBT: Should only get initialized with a valid surface.
+        box.x = 0;
+        box.y = 0;
+        box.width = 0;
+        box.height = 0;
+    } else {
+        wlr_surface_get_extends(content_ptr->wlr_surface_ptr, &box);
     }
+
+    if (NULL != left_ptr) *left_ptr = box.x;
+    if (NULL != top_ptr) *top_ptr = box.y;
+    if (NULL != right_ptr) *right_ptr = box.width - box.x;
+    if (NULL != bottom_ptr) *bottom_ptr = box.height - box.y;
+}
+
+/* ------------------------------------------------------------------------- */
+void element_pointer_leave(wlmtk_element_t *element_ptr)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_element);
+
+    // If the current surface's parent is our surface: clear it.
+    struct wlr_surface *focused_wlr_surface_ptr =
+        content_ptr->wlr_seat_ptr->pointer_state.focused_surface;
+    if (NULL != focused_wlr_surface_ptr &&
+        wlr_surface_get_root_surface(focused_wlr_surface_ptr) ==
+        content_ptr->wlr_surface_ptr) {
+        wlr_seat_pointer_clear_focus(content_ptr->wlr_seat_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Pass pointer motion events to client's surface.
+ *
+ * Identifies the surface (or sub-surface) at the given coordinates, and pass
+ * on the motion event to that surface. If needed, will update the seat's
+ * pointer focus.
+ *
+ * @param element_ptr
+ * @param x                   Pointer horizontal position, relative to this
+ *                            element's node.
+ * @param y                   Pointer vertical position, relative to this
+ *                            element's node.
+ * @param time_msec
+ *
+ * @return Pointer to this element, if the motion is within the area.
+ */
+wlmtk_element_t *element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_element);
+
+    // Get the node below the cursor. Return if there's no buffer node.
+    double node_x, node_y;
+    struct wlr_scene_node *wlr_scene_node_ptr = wlr_scene_node_at(
+        content_ptr->super_element.wlr_scene_node_ptr, x, y, &node_x, &node_y);
+    if (NULL == wlr_scene_node_ptr ||
+        WLR_SCENE_NODE_BUFFER != wlr_scene_node_ptr->type) {
+        return NULL;
+    }
+
+    struct wlr_scene_buffer *wlr_scene_buffer_ptr =
+        wlr_scene_buffer_from_node(wlr_scene_node_ptr);
+    struct wlr_scene_surface *wlr_scene_surface_ptr =
+        wlr_scene_surface_try_from_buffer(wlr_scene_buffer_ptr);
+    if (NULL == wlr_scene_surface_ptr) {
+        return NULL;
+    }
+
+    BS_ASSERT(content_ptr->wlr_surface_ptr ==
+              wlr_surface_get_root_surface(wlr_scene_surface_ptr->surface));
+    wlr_seat_pointer_notify_enter(
+        content_ptr->wlr_seat_ptr,
+        wlr_scene_surface_ptr->surface,
+        node_x, node_y);
+    wlr_seat_pointer_notify_motion(
+        content_ptr->wlr_seat_ptr,
+        time_msec,
+        node_x, node_y);
     return element_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Passes pointer button event further to the focused surface, if any.
+ *
+ * The actual passing is handled by `wlr_seat`. Here we just verify that the
+ * currently-focused surface (or sub-surface) is part of this content.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return Whether the button event was consumed.
+ */
+bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_element);
+
+    // Complain if the surface isn't part of our responsibility.
+    struct wlr_surface *focused_wlr_surface_ptr =
+        content_ptr->wlr_seat_ptr->pointer_state.focused_surface;
+    if (NULL == focused_wlr_surface_ptr) return false;
+    BS_ASSERT(content_ptr->wlr_surface_ptr ==
+              wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+
+    // We're only forwarding PRESSED & RELEASED events.
+    if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
+        WLMTK_BUTTON_UP == button_event_ptr->type) {
+        wlr_seat_pointer_notify_button(
+            content_ptr->wlr_seat_ptr,
+            button_event_ptr->time_msec,
+            button_event_ptr->button,
+            (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
+            WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+        return true;
+    }
+    return false;
 }
 
 /* == Fake content, useful for unit tests. ================================= */

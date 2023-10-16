@@ -84,6 +84,15 @@ wlmtk_workspace_t *wlmtk_workspace_from_container(
     wlmtk_container_t *container_ptr);
 
 /**
+ * Handles a motion event.
+ */
+bool wlmtk_workspace_motion(
+    wlmtk_workspace_t *workspace_ptr,
+    double x,
+    double y,
+    uint32_t time_msec);
+
+/**
  * Handles a button event: Translates to button down/up/click/dblclick events.
  *
  * Each button activity (button pressed or released) will directly trigger a
@@ -92,16 +101,14 @@ wlmtk_workspace_t *wlmtk_workspace_from_container(
  * DRAG event.
  * These events will be forwarded to the event currently having pointer focus.
  *
+ * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events.
+ *
  * @param workspace_ptr
  * @paran event_ptr
- * @param x
- * @param y
  */
-void wlmtk_workspace_handle_button(
+void wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
-    const struct wlr_pointer_button_event *event_ptr,
-    double x,
-    double y);
+    const struct wlr_pointer_button_event *event_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

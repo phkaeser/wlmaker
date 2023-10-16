@@ -39,6 +39,9 @@ typedef struct {
     struct wl_listener        surface_map_listener;
     /** Listener for the `unmap` signal of the `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
+
+    /** Listener for the `move` signal of the `wlr_xdg_toplevel`. */
+    struct wl_listener        toplevel_request_move_listener;
 } wlmtk_xdg_toplevel_content_t;
 
 static wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
@@ -52,6 +55,9 @@ static void handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_toplevel_request_move(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -128,8 +134,18 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &xdg_tl_content_ptr->surface_unmap_listener,
         handle_surface_unmap);
 
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->toplevel->events.request_move,
+        &xdg_tl_content_ptr->toplevel_request_move_listener,
+        handle_toplevel_request_move);
+
     xdg_tl_content_ptr->wlr_xdg_surface_ptr->data =
         &xdg_tl_content_ptr->super_content;
+
+    // FIXME
+    xdg_tl_content_ptr->super_content.wlr_surface_ptr =
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->surface;
+
     return xdg_tl_content_ptr;
 }
 
@@ -137,6 +153,8 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
 void xdg_toplevel_content_destroy(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr)
 {
+    wl_list_remove(&xdg_tl_content_ptr->toplevel_request_move_listener.link);
+
     wl_list_remove(&xdg_tl_content_ptr->surface_map_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_unmap_listener.link);
 
@@ -196,9 +214,11 @@ void content_get_size(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
 
+    // FIXME -> this should be get_pointer_area !
     struct wlr_box geo_box;
     wlr_xdg_surface_get_geometry(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->base, &geo_box);
+    // FIXME -- WARNING: THIS HAS A x AND y WITH RELATIVE POSITION!!
     if (NULL != width_ptr) *width_ptr = geo_box.width;
     if (NULL != height_ptr) *height_ptr = geo_box.height;
 }
@@ -237,6 +257,7 @@ void content_set_activated(
         }
     } else {
         BS_ASSERT(xdg_tl_content_ptr->activated);
+        // FIXME: This clears pointer focus. But, this is keyboard focus?
         if (wlr_seat_ptr->keyboard_state.focused_surface ==
             xdg_tl_content_ptr->wlr_xdg_surface_ptr->surface) {
             wlr_seat_pointer_clear_focus(wlr_seat_ptr);
@@ -290,6 +311,26 @@ void handle_surface_unmap(
         wlmtk_workspace_from_container(
             wlmtk_window_element(window_ptr)->parent_container_ptr),
         window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `reuqest_move` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_toplevel_request_move(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmtk_xdg_toplevel_content_t,
+        toplevel_request_move_listener);
+
+    bs_log(BS_INFO, "XDG toplevel content %p: Request move",
+           xdg_tl_content_ptr);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

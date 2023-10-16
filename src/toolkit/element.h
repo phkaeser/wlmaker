@@ -32,6 +32,8 @@ typedef struct _wlmtk_element_impl_t wlmtk_element_impl_t;
 typedef struct _wlmtk_container_t wlmtk_container_t;
 struct wlr_scene_tree;
 
+#include "button.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -59,12 +61,20 @@ struct _wlmtk_element_t {
 
     /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
     struct wl_listener        wlr_scene_node_destroy_listener;
+
+    /** Pointer horizontal position of last motion(). */
+    double                    last_pointer_x;
+    /** Pointer vertical position of last motion(). */
+    double                    last_pointer_y;
+    /** Time of last motion() call. */
+    uint32_t                  last_pointer_time_msec;
 };
 
 /** Pointers to the implementation of Element's virtual methods. */
 struct _wlmtk_element_impl_t {
     /** Destroys the implementation of the element. */
     void (*destroy)(wlmtk_element_t *element_ptr);
+
     /** Creates element's scene graph API node, child to wlr_scene_tree_ptr. */
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_element_t *element_ptr,
@@ -78,12 +88,34 @@ struct _wlmtk_element_impl_t {
         int *right_ptr,
         int *bottom_ptr);
 
-    /** Indicates pointer motion into or within the element area to (x,y). */
-    wlmtk_element_t *(*motion)(wlmtk_element_t *element_ptr,
-                               double x, double y,
-                               uint32_t time_msec);
+    /** Gets element area to accept pointer activity, relative to position. */
+    void (*get_pointer_area)(
+        wlmtk_element_t *element_ptr,
+        int *left_ptr,
+        int *top_ptr,
+        int *right_ptr,
+        int *bottom_ptr);
+
+    /**
+     * Indicates pointer motion into or within the element area to (x,y).
+     *
+     * @param element_ptr
+     * @param x
+     * @param y
+     * @param time_msec
+     *
+     * @return A pointer to the element handling the motion.
+     *         FIXME: Or just a bool?
+     */
+    wlmtk_element_t *(*pointer_motion)(wlmtk_element_t *element_ptr,
+                                       double x, double y,
+                                       uint32_t time_msec);
+    /** Indicates pointer button event. */
+    bool (*pointer_button)(wlmtk_element_t *element_ptr,
+                           const wlmtk_button_event_t *button_event_ptr);
+
     /** Indicates the pointer has left the element's area. */
-    void (*leave)(wlmtk_element_t *element_ptr);
+    void (*pointer_leave)(wlmtk_element_t *element_ptr);
 };
 
 /**
@@ -197,23 +229,54 @@ void wlmtk_element_get_dimensions(
     int *right_ptr,
     int *bottom_ptr);
 
-/** Virtual method: Calls 'motion' for the element's implementation. */
-static inline wlmtk_element_t *wlmtk_element_motion(
+/**
+ * Gets the area that the element on which the element accepts pointer events.
+ *
+ * The area extents are relative to the element's position. By default, this
+ * overlaps with the element dimensions. Some elements (eg. a surface with
+ * further-extending sub-surfaces) may differ.
+ *
+ * @param element_ptr
+ * @param left_ptr            Leftmost position of pointer area. May be NULL.
+ * @param top_ptr             Topmost position of pointer area. May be NULL.
+ * @param right_ptr           Rightmost position of pointer area. May be NULL.
+ * @param bottom_ptr          Bottommost position of pointer area. May be NULL.
+ */
+void wlmtk_element_get_pointer_area(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
+
+/**
+   Virtual method: Calls 'pointer_motion' for the element's implementation.
+*/
+wlmtk_element_t *wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
-    uint32_t time_msec) {
-    if (NULL == element_ptr->impl_ptr->motion) return NULL;
-    return element_ptr->impl_ptr->motion(element_ptr, x, y, time_msec);
+    uint32_t time_msec);
+
+/** Virtual method: calls 'button' for the element's implementation. */
+static inline bool wlmtk_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    if (NULL == element_ptr->impl_ptr->pointer_button) return false;
+    return element_ptr->impl_ptr->pointer_button(
+        element_ptr, button_event_ptr);
 }
 
-/** Virtual method: Calls 'leave' for the element's implementation. */
-static inline void wlmtk_element_leave(
+/** Virtual method: Calls 'pointer_leave' for the element's implementation. */
+static inline void wlmtk_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
-    if (NULL != element_ptr->impl_ptr->leave) {
-        element_ptr->impl_ptr->leave(element_ptr);
+    if (NULL != element_ptr->impl_ptr->pointer_leave) {
+        element_ptr->impl_ptr->pointer_leave(element_ptr);
     }
+    element_ptr->pointer_x = NAN;
+    element_ptr->pointer_y = NAN;
 }
 
 /**
@@ -240,17 +303,21 @@ typedef struct {
     /** Height of the element, in pixels. */
     int height;
 
-    /** Indicates that Element::motion() was called. */
-    bool                      motion_called;
-    /** The x argument of the last Element::motion() call. */
-    double                    motion_x;
-    /** The y arguemnt of the last element::motion() call. */
-    double                    motion_y;
-    /** Return value to pass when motion is called. */
-    wlmtk_element_t           *motion_return_value;
+    /** Indicates that Element::pointer_motion() was called. */
+    bool                      pointer_motion_called;
+    /** The x argument of the last Element::pointer_motion() call. */
+    double                    pointer_motion_x;
+    /** The y arguemnt of the last element::pointer_motion() call. */
+    double                    pointer_motion_y;
+    /** Return value to pass when pointer_motion is called. */
+    wlmtk_element_t           *pointer_motion_return_value;
 
-    /** Indicates that Element::leave() was called. */
-    bool                      leave_called;
+    /** Indicates that Element::pointer_leave() was called. */
+    bool                      pointer_leave_called;
+
+    /** Indicates that Element::pointer_button() was called. */
+    bool                      pointer_button_called;
+    wlmtk_button_event_t      pointer_button_event;
 } wlmtk_fake_element_t;
 
 /** Ctor for the fake element. */

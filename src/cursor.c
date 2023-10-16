@@ -305,6 +305,13 @@ void handle_button(struct wl_listener *listener_ptr,
         listener_ptr, cursor_ptr, button_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
+    wlmtk_workspace_button(
+        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                    cursor_ptr->server_ptr)),
+        wlr_pointer_button_event_ptr);
+
+    if (true) return;  // FIXME
+
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
         cursor_ptr->server_ptr->wlr_seat_ptr);
     if (NULL != wlr_keyboard_ptr) {
@@ -473,6 +480,22 @@ void handle_seat_request_set_cursor(
  */
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
+    bool rv = wlmtk_workspace_motion(
+        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                    cursor_ptr->server_ptr)),
+        cursor_ptr->wlr_cursor_ptr->x,
+        cursor_ptr->wlr_cursor_ptr->y,
+        time_msec);
+
+    if (!rv) {  // FIXME
+        wlr_xcursor_manager_set_cursor_image(
+            cursor_ptr->wlr_xcursor_manager_ptr,
+            "left_ptr",
+            cursor_ptr->wlr_cursor_ptr);
+    }
+
+    if (true) return;
+
     if (cursor_ptr->mode == WLMAKER_CURSOR_MOVE) {
         wlmaker_view_set_position(
             cursor_ptr->grabbed_view_ptr,

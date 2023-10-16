@@ -121,17 +121,49 @@ wlmtk_workspace_t *wlmtk_workspace_from_container(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_handle_button(
+bool wlmtk_workspace_motion(
     wlmtk_workspace_t *workspace_ptr,
-    const struct wlr_pointer_button_event *event_ptr,
     double x,
-    double y)
+    double y,
+    uint32_t time_msec)
 {
-    bs_log(BS_INFO, "Workspace %p: button event %p ad %.0f, %.0f",
-           workspace_ptr, event_ptr, x, y);
+    wlmtk_element_t *element_ptr = wlmtk_element_pointer_motion(
+        &workspace_ptr->super_container.super_element, x, y, time_msec);
+    return element_ptr != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+// FIXME : Add tests for button.
+void wlmtk_workspace_button(
+    wlmtk_workspace_t *workspace_ptr,
+    const struct wlr_pointer_button_event *event_ptr)
+{
+    wlmtk_button_event_t event;
+    wlmtk_element_t *focused_element_ptr;
+
+    // Guard clause: nothing to pass on if no element has the focus.
+    focused_element_ptr =
+        workspace_ptr->super_container.pointer_focus_element_ptr;
+    if (NULL == focused_element_ptr) return;
+
+    event.button = event_ptr->button;
     if (WLR_BUTTON_PRESSED == event_ptr->state) {
-        // Pass BUTTON_DOWN.
+        event.type = WLMTK_BUTTON_DOWN;
+        wlmtk_element_pointer_button(focused_element_ptr, &event);
+
+    } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
+        event.type = WLMTK_BUTTON_UP;
+        wlmtk_element_pointer_button(focused_element_ptr, &event);
+        event.type = WLMTK_BUTTON_CLICK;
+        wlmtk_element_pointer_button(focused_element_ptr, &event);
+
+    } else {
+        bs_log(BS_WARNING,
+               "Workspace %p: Unhandled state 0x%x for button 0x%x",
+               workspace_ptr, event_ptr->state, event_ptr->button);
     }
+
+    event = event;
 }
 
 /* == Local (static) methods =============================================== */

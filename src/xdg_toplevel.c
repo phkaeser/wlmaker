@@ -686,6 +686,4 @@ void handle_toplevel_set_app_id(struct wl_listener *listener_ptr,
         xdg_toplevel_ptr->wlr_xdg_surface_ptr->toplevel->app_id);
 }
 
-/* ######################################################################### */
-
 /* == End of xdg_toplevel.c ================================================ */

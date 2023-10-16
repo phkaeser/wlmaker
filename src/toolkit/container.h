@@ -108,6 +108,14 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr);
 
 /**
+ * Updates pointer focus for the container. Re-uses last motion coordinates.
+ *
+ * @param container_ptr
+ */
+wlmtk_element_t *wlmtk_container_update_pointer_focus(
+    wlmtk_container_t *container_ptr);
+
+/**
  * Returns the wlroots scene graph tree for this node.
  *
  * Private: Should be called only by wlmtk_element_t.
