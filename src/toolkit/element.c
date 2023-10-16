@@ -48,8 +48,8 @@ bool wlmtk_element_init(
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
 
     element_ptr->impl_ptr = element_impl_ptr;
-    element_ptr->pointer_x = NAN;
-    element_ptr->pointer_y = NAN;
+    element_ptr->last_pointer_x = NAN;
+    element_ptr->last_pointer_y = NAN;
     return true;
 }
 
@@ -205,7 +205,7 @@ void wlmtk_element_get_pointer_area(
 }
 
 /* ------------------------------------------------------------------------- */
-static inline wlmtk_element_t *wlmtk_element_pointer_motion(
+wlmtk_element_t *wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,

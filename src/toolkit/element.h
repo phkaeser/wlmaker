@@ -275,8 +275,8 @@ static inline void wlmtk_element_pointer_leave(
     if (NULL != element_ptr->impl_ptr->pointer_leave) {
         element_ptr->impl_ptr->pointer_leave(element_ptr);
     }
-    element_ptr->pointer_x = NAN;
-    element_ptr->pointer_y = NAN;
+    element_ptr->last_pointer_x = NAN;
+    element_ptr->last_pointer_y = NAN;
 }
 
 /**

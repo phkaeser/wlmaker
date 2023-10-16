@@ -143,9 +143,9 @@ wlmtk_element_t *wlmtk_container_update_pointer_focus(
 {
     return update_pointer_focus_at(
         container_ptr,
-        container_ptr->super_element.pointer_x,
-        container_ptr->super_element.pointer_y,
-        container_ptr->super_element.pointer_time_msec);
+        container_ptr->super_element.last_pointer_x,
+        container_ptr->super_element.last_pointer_y,
+        container_ptr->super_element.last_pointer_time_msec);
 }
 
 /* ------------------------------------------------------------------------- */
