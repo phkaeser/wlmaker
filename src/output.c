@@ -83,12 +83,14 @@ wlmaker_output_t *wlmaker_output_create(
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
         struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(output_ptr->wlr_output_ptr);
         wlr_output_set_mode(output_ptr->wlr_output_ptr, mode_ptr);
-        wlr_output_enable(output_ptr->wlr_output_ptr, true);
-        if (!wlr_output_commit(output_ptr->wlr_output_ptr)) {
-            bs_log(BS_ERROR, "Failed wlr_output_commit()");
-            wlmaker_output_destroy(output_ptr);
-            return NULL;
-        }
+    }
+
+    // Enable the output and commit.
+    wlr_output_enable(output_ptr->wlr_output_ptr, true);
+    if (!wlr_output_commit(output_ptr->wlr_output_ptr)) {
+        bs_log(BS_ERROR, "Failed wlr_output_commit()");
+        wlmaker_output_destroy(output_ptr);
+        return NULL;
     }
 
     return output_ptr;
