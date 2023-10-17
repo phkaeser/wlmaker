@@ -890,8 +890,30 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
         container1.pointer_focus_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
 
-    wlmtk_container_remove_element(&container1, &elem1_ptr->element);
+    // Case 3: Bring container2 in front. Now elem2 has focus.
+    elem1_ptr->pointer_leave_called = false;
+    wlmtk_container_remove_element(&container1, &container2.super_element);
+    wlmtk_container_add_element(&container1, &container2.super_element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &container2.super_element,
+        container1.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem2_ptr->element,
+        container2.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_leave_called);
+
+    // Case 4: Remove elem2, drop focus back to elem1.
+    elem2_ptr->pointer_leave_called = false;
     wlmtk_container_remove_element(&container2, &elem2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem1_ptr->element,
+        container1.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
+
+    wlmtk_container_remove_element(&container1, &elem1_ptr->element);
     wlmtk_element_destroy(&elem2_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
 
