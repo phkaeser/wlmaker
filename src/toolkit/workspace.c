@@ -67,9 +67,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     }
 
     workspace_ptr->fake_parent.wlr_scene_tree_ptr = wlr_scene_tree_ptr;
-    wlmtk_element_set_parent_container(
-        &workspace_ptr->super_container.super_element,
-        &workspace_ptr->fake_parent);
+    wlmtk_container_add_element(
+        &workspace_ptr->fake_parent,
+        &workspace_ptr->super_container.super_element);
     wlmtk_element_set_visible(
         &workspace_ptr->super_container.super_element, true);
 
@@ -79,9 +79,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
-    wlmtk_element_set_parent_container(
-        &workspace_ptr->super_container.super_element,
-        NULL);
+    wlmtk_container_remove_element(
+        &workspace_ptr->fake_parent,
+        &workspace_ptr->super_container.super_element);
 
     wlmtk_container_fini(&workspace_ptr->super_container);
     free(workspace_ptr);
