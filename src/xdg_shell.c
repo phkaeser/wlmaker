@@ -126,7 +126,13 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         char path_procps[PATH_MAX], path_exe[PATH_MAX];
         snprintf(path_procps, sizeof(path_procps), "/proc/%"PRIdMAX"/exe",
                  (intmax_t)pid);
-        readlink(path_procps, path_exe, sizeof(path_exe));
+        ssize_t rv = readlink(path_procps, path_exe, sizeof(path_exe));
+        if (0 > rv || (size_t)rv >= sizeof(path_exe)) {
+            bs_log(BS_WARNING | BS_ERRNO, "Failed readlink(%s, %p, %zu)",
+                   path_procps, path_exe, sizeof(path_exe));
+            break;
+        }
+        path_exe[rv] = '\0';
         if (0 == strcmp(path_exe, "/usr/bin/foot")) {
             wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
                 wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
