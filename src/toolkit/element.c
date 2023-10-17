@@ -140,15 +140,13 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
     // Nothing to do?
     if (element_ptr->visible == visible) return;
 
-    // FIXME: If visibility changed, update parent container's pointer focus!
     element_ptr->visible = visible;
     if (NULL != element_ptr->wlr_scene_node_ptr) {
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
     }
 
-    if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_container_update_pointer_focus(element_ptr->parent_container_ptr);
-    }
+    // Changing visibility may lose or re-gain focus. Re-compute thta.
+    wlmtk_container_pointer_refocus_tree(element_ptr->parent_container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

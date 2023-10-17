@@ -108,11 +108,14 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr);
 
 /**
- * Updates pointer focus for the container. Re-uses last motion coordinates.
+ * Re-computes pointer focus for the entire container tree.
+ *
+ * Will retract to the top of parent containers, and then (re)compute the
+ * pointer focus from there.
  *
  * @param container_ptr
  */
-wlmtk_element_t *wlmtk_container_update_pointer_focus(
+void wlmtk_container_pointer_refocus_tree(
     wlmtk_container_t *container_ptr);
 
 /**

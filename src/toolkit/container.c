@@ -120,7 +120,7 @@ void wlmtk_container_add_element(
 
     // Need to re-compute pointer focus, since we might have added an element
     // below the current cursor position.
-    wlmtk_container_update_pointer_focus(container_ptr);
+    wlmtk_container_pointer_refocus_tree(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -134,18 +134,13 @@ void wlmtk_container_remove_element(
     bs_dllist_remove(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
-    wlmtk_container_update_pointer_focus(container_ptr);
-}
 
-/* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_container_update_pointer_focus(
-    wlmtk_container_t *container_ptr)
-{
-    return update_pointer_focus_at(
-        container_ptr,
-        container_ptr->super_element.last_pointer_x,
-        container_ptr->super_element.last_pointer_y,
-        container_ptr->super_element.last_pointer_time_msec);
+    // We can be more lenient in asking for re-focus: If the removed element
+    // is NOT having pointer focus, we won't have to bother.
+    if (element_ptr == container_ptr->pointer_focus_element_ptr) {
+        wlmtk_container_pointer_refocus_tree(container_ptr);
+    }
+    BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -153,6 +148,23 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr)
 {
     return container_ptr->wlr_scene_tree_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_container_pointer_refocus_tree(wlmtk_container_t *container_ptr)
+{
+    // Guard clause: Don't throw over if there's no container.
+    if (NULL == container_ptr) return;
+
+    while (NULL != container_ptr->super_element.parent_container_ptr) {
+        container_ptr = container_ptr->super_element.parent_container_ptr;
+    }
+
+    update_pointer_focus_at(
+        container_ptr,
+        container_ptr->super_element.last_pointer_x,
+        container_ptr->super_element.last_pointer_y,
+        container_ptr->super_element.last_pointer_time_msec);
 }
 
 /* == Local (static) methods =============================================== */
