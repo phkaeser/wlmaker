@@ -113,7 +113,7 @@ void wlmtk_container_add_element(
 {
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
 
-    bs_dllist_push_back(
+    bs_dllist_push_front(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
@@ -784,22 +784,22 @@ void test_pointer_focus(bs_test_t *test_ptr)
         &elem1_ptr->element,
         container.pointer_focus_element_ptr);
 
-    // Case 4: Add another visible element. Focus remains, though.
+    // Case 4: Add another visible element. Focus changes, since in front.
     wlmtk_container_add_element(&container, &elem2_ptr->element);
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        &elem1_ptr->element,
-        container.pointer_focus_element_ptr);
-
-    // Case 5: Elem1 (added first = in front) becomes invisible. Focus changes.
-    wlmtk_element_set_visible(&elem1_ptr->element, false);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &elem2_ptr->element,
         container.pointer_focus_element_ptr);
 
-    // Case 6: Elem2 becomes invisible. Focus changes to NULL.
+    // Case 5: Elem2 (added last = in front) becomes invisible. Focus changes.
     wlmtk_element_set_visible(&elem2_ptr->element, false);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem1_ptr->element,
+        container.pointer_focus_element_ptr);
+
+    // Case 6: Elem1 becomes invisible. Focus changes to NULL.
+    wlmtk_element_set_visible(&elem1_ptr->element, false);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
