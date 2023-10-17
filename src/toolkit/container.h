@@ -86,7 +86,8 @@ void wlmtk_container_fini(
 /**
  * Adds `element_ptr` to the container.
  *
- * Requires that `element_ptr` is not added to a container yet.
+ * Requires that `element_ptr` is not added to a container yet. The element
+ * will be added at the front of the container. *
  *
  * @param container_ptr
  * @param element_ptr
