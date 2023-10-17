@@ -48,11 +48,11 @@ static wlmtk_element_t *element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
-static void element_pointer_leave(
-    wlmtk_element_t *element_ptr);
 static bool element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void element_pointer_leave(
+    wlmtk_element_t *element_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -70,8 +70,8 @@ static const wlmtk_element_impl_t super_element_impl = {
     .get_dimensions = element_get_dimensions,
     .get_pointer_area = element_get_pointer_area,
     .pointer_motion = element_pointer_motion,
+    .pointer_button = element_pointer_button,
     .pointer_leave = element_pointer_leave,
-    .pointer_button = element_pointer_button
 };
 
 /* == Exported methods ===================================================== */
@@ -335,6 +335,29 @@ wlmtk_element_t *element_pointer_motion(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Implementation of the element's pointer_button() method. Forwards it to the
+ * element currently having pointer focus.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return true if the button was handled.
+ */
+bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+    if (NULL == container_ptr->pointer_focus_element_ptr) return false;
+
+    return wlmtk_element_pointer_button(
+        container_ptr->pointer_focus_element_ptr,
+        button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Implementation of the element's leave method: Forwards it to the element
  * currently having pointer focus, and clears that.
  *
@@ -348,20 +371,6 @@ void element_pointer_leave(wlmtk_element_t *element_ptr)
 
     wlmtk_element_pointer_leave(container_ptr->pointer_focus_element_ptr);
     container_ptr->pointer_focus_element_ptr = NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-bool element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr)
-{
-    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_container_t, super_element);
-    if (NULL == container_ptr->pointer_focus_element_ptr) return false;
-
-    return wlmtk_element_pointer_button(
-        container_ptr->pointer_focus_element_ptr,
-        button_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -533,6 +542,7 @@ static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
 static void test_pointer_motion(bs_test_t *test_ptr);
 static void test_pointer_focus(bs_test_t *test_ptr);
 static void test_pointer_focus_layered(bs_test_t *test_ptr);
+static void test_pointer_button(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -541,6 +551,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "pointer_motion", test_pointer_motion },
     { 1, "pointer_focus", test_pointer_focus },
     { 1, "pointer_focus_layered", test_pointer_focus_layered },
+    { 1, "pointer_button", test_pointer_button },
     { 0, NULL, NULL }
 };
 
@@ -938,6 +949,37 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
     wlmtk_container_remove_element(&container1, &container2.super_element);
     wlmtk_container_fini(&container2);
     wlmtk_container_fini(&container1);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that pointer button is forwarded to element with pointer focus. */
+void test_pointer_button(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
+
+    wlmtk_fake_element_t *elem_ptr = wlmtk_fake_element_create();
+    elem_ptr->pointer_motion_return_value = &elem_ptr->element;
+    wlmtk_element_set_visible(&elem_ptr->element, true);
+    wlmtk_container_add_element(&container, &elem_ptr->element);
+
+    wlmtk_button_event_t button = {};
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        NULL,
+        wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, elem_ptr->pointer_button_called);
+
+    wlmtk_container_remove_element(&container, &elem_ptr->element);
+    wlmtk_container_fini(&container);
 }
 
 /* == End of container.c =================================================== */
