@@ -116,10 +116,11 @@ struct _wlmtk_element_impl_t {
      * @param y
      * @param time_msec
      *
-     * @return A pointer to the element handling the motion.
-     *         FIXME: Or just a bool?
+     * @return Whether the motion is considered within the element's pointer
+     *     area. If it returns true, the caller should consider this element
+     *     as having pointer focus.
      */
-    wlmtk_element_t *(*pointer_motion)(wlmtk_element_t *element_ptr,
+    bool (*pointer_motion)(wlmtk_element_t *element_ptr,
                                        double x, double y,
                                        uint32_t time_msec);
     /** Indicates pointer button event. */
@@ -271,8 +272,12 @@ void wlmtk_element_get_pointer_area(
  * @param x
  * @param y
  * @param time_msec
+ *
+ * @return Whether the coordinates are within this element's area that accepts
+ *     pointer events. May be a subset of @ref wlmtk_element_get_pointer_area.
+ *
  */
-wlmtk_element_t *wlmtk_element_pointer_motion(
+bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
@@ -321,7 +326,7 @@ typedef struct {
     /** Indicates that Element::pointer_motion() was called. */
     bool                      pointer_motion_called;
     /** Return value to pass when pointer_motion is called. */
-    wlmtk_element_t           *pointer_motion_return_value;
+    bool                      pointer_motion_return_value;
 
     /** Indicates that Element::pointer_leave() was called. */
     bool                      pointer_leave_called;

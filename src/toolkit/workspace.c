@@ -127,9 +127,8 @@ bool wlmtk_workspace_motion(
     double y,
     uint32_t time_msec)
 {
-    wlmtk_element_t *element_ptr = wlmtk_element_pointer_motion(
+    return  wlmtk_element_pointer_motion(
         &workspace_ptr->super_container.super_element, x, y, time_msec);
-    return element_ptr != NULL;
 }
 
 /* ------------------------------------------------------------------------- */

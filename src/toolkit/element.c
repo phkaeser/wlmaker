@@ -205,7 +205,7 @@ void wlmtk_element_get_pointer_area(
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_element_pointer_motion(
+bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
@@ -216,9 +216,9 @@ wlmtk_element_t *wlmtk_element_pointer_motion(
     element_ptr->last_pointer_time_msec = time_msec;
 
     // Guard clause: No implementation for `pointer_motion`.
-    if (NULL == element_ptr->impl_ptr->pointer_motion) return NULL;
+    if (NULL == element_ptr->impl_ptr->pointer_motion) return false;
 
-    return  element_ptr->impl_ptr->pointer_motion(
+    return element_ptr->impl_ptr->pointer_motion(
         element_ptr, x, y, time_msec);
 }
 
@@ -272,7 +272,7 @@ static void fake_get_pointer_area(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static wlmtk_element_t *fake_pointer_motion(
+static bool fake_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
@@ -365,7 +365,7 @@ void fake_get_pointer_area(
 
 /* ------------------------------------------------------------------------- */
 /** Handles 'motion' events for the fake element. */
-wlmtk_element_t *fake_pointer_motion(
+bool fake_pointer_motion(
     wlmtk_element_t *element_ptr,
     __UNUSED__ double x,
     __UNUSED__ double y,

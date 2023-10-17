@@ -46,7 +46,7 @@ static void element_get_pointer_area(
     int *right_ptr,
     int *bottom_ptr);
 static void element_pointer_leave(wlmtk_element_t *element_ptr);
-static wlmtk_element_t *element_pointer_motion(
+static bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
@@ -250,9 +250,9 @@ void element_pointer_leave(wlmtk_element_t *element_ptr)
  *                            element's node.
  * @param time_msec
  *
- * @return Pointer to this element, if the motion is within the area.
+ * @return Whether if the motion is within the area.
  */
-wlmtk_element_t *element_pointer_motion(
+bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
@@ -267,7 +267,7 @@ wlmtk_element_t *element_pointer_motion(
         content_ptr->super_element.wlr_scene_node_ptr, x, y, &node_x, &node_y);
     if (NULL == wlr_scene_node_ptr ||
         WLR_SCENE_NODE_BUFFER != wlr_scene_node_ptr->type) {
-        return NULL;
+        return false;
     }
 
     struct wlr_scene_buffer *wlr_scene_buffer_ptr =
@@ -275,7 +275,7 @@ wlmtk_element_t *element_pointer_motion(
     struct wlr_scene_surface *wlr_scene_surface_ptr =
         wlr_scene_surface_try_from_buffer(wlr_scene_buffer_ptr);
     if (NULL == wlr_scene_surface_ptr) {
-        return NULL;
+        return false;
     }
 
     BS_ASSERT(content_ptr->wlr_surface_ptr ==
@@ -288,7 +288,7 @@ wlmtk_element_t *element_pointer_motion(
         content_ptr->wlr_seat_ptr,
         time_msec,
         node_x, node_y);
-    return element_ptr;
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
