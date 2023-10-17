@@ -50,6 +50,9 @@ static wlmtk_element_t *element_pointer_motion(
     uint32_t time_msec);
 static void element_pointer_leave(
     wlmtk_element_t *element_ptr);
+static bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -67,7 +70,8 @@ static const wlmtk_element_impl_t super_element_impl = {
     .get_dimensions = element_get_dimensions,
     .get_pointer_area = element_get_pointer_area,
     .pointer_motion = element_pointer_motion,
-    .pointer_leave = element_pointer_leave
+    .pointer_leave = element_pointer_leave,
+    .pointer_button = element_pointer_button
 };
 
 /* == Exported methods ===================================================== */
@@ -344,6 +348,20 @@ void element_pointer_leave(wlmtk_element_t *element_ptr)
 
     wlmtk_element_pointer_leave(container_ptr->pointer_focus_element_ptr);
     container_ptr->pointer_focus_element_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+    if (NULL == container_ptr->pointer_focus_element_ptr) return false;
+
+    return wlmtk_element_pointer_button(
+        container_ptr->pointer_focus_element_ptr,
+        button_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
