@@ -514,6 +514,7 @@ static void test_add_remove(bs_test_t *test_ptr);
 static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
 static void test_pointer_motion(bs_test_t *test_ptr);
 static void test_pointer_focus(bs_test_t *test_ptr);
+static void test_pointer_focus_layered(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -521,6 +522,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
     { 1, "pointer_motion", test_pointer_motion },
     { 1, "pointer_focus", test_pointer_focus },
+    { 1, "pointer_focus_layered", test_pointer_focus_layered },
     { 0, NULL, NULL }
 };
 
@@ -841,9 +843,50 @@ void test_pointer_focus(bs_test_t *test_ptr)
     wlmtk_container_fini(&container);
 }
 
-/*
- * TODO(kaeser@gubbe.ch): Extend tests to verify parent container is upated
- * when focus falls through.
- */
+/* ------------------------------------------------------------------------- */
+/** Tests that pointer focus is updated across layers of containers. */
+void test_pointer_focus_layered(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container1;
+    BS_ASSERT(wlmtk_container_init(&container1, &wlmtk_container_fake_impl));
+    wlmtk_container_t container2;
+    BS_ASSERT(wlmtk_container_init(&container2, &wlmtk_container_fake_impl));
+    wlmtk_element_set_visible(&container2.super_element, true);
+
+    wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
+    elem1_ptr->pointer_motion_return_value = &elem1_ptr->element;
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
+    elem2_ptr->pointer_motion_return_value = &elem2_ptr->element;
+    wlmtk_element_set_visible(&elem2_ptr->element, true);
+
+    // Prepare: Motion was called, will not have any focus.
+    wlmtk_element_pointer_motion(&container1.super_element, 0, 0, 7);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container1.pointer_focus_element_ptr);
+
+    // Case 1: Add element 2 to second container, then add this container.
+    // this must re-trigger focus and pass it to elem2.
+    wlmtk_container_add_element(&container2, &elem2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        container1.pointer_focus_element_ptr);
+    wlmtk_container_add_element(&container1, &container2.super_element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &container2.super_element,
+        container1.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem2_ptr->element, container2.pointer_focus_element_ptr);
+
+    wlmtk_container_remove_element(&container2, &elem2_ptr->element);
+    wlmtk_element_destroy(&elem2_ptr->element);
+    wlmtk_element_destroy(&elem1_ptr->element);
+
+    wlmtk_container_remove_element(&container1, &container2.super_element);
+    wlmtk_container_fini(&container2);
+    wlmtk_container_fini(&container1);
+}
 
 /* == End of container.c =================================================== */
