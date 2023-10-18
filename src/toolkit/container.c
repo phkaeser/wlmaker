@@ -685,7 +685,6 @@ void test_pointer_motion(bs_test_t *test_ptr)
     wlmtk_element_set_position(&elem1_ptr->element, -20, -40);
     elem1_ptr->width = 10;
     elem1_ptr->height = 5;
-    elem1_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem1_ptr->element, true);
     wlmtk_container_add_element(&container, &elem1_ptr->element);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
@@ -693,7 +692,6 @@ void test_pointer_motion(bs_test_t *test_ptr)
     elem2_ptr->width = 10;
     elem2_ptr->height = 5;
     wlmtk_element_set_visible(&elem2_ptr->element, true);
-    elem2_ptr->pointer_motion_return_value = true;
     wlmtk_container_add_element(&container, &elem2_ptr->element);
 
     // Verify 'dimensions' and 'pointer_area', derived from children.
@@ -815,10 +813,8 @@ void test_pointer_focus(bs_test_t *test_ptr)
     BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
-    elem1_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem1_ptr->element, true);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
-    elem2_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem2_ptr->element, true);
 
     // Case 1: An empty container, will not have a pointer-focussed element.
@@ -911,10 +907,8 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
     wlmtk_element_set_visible(&container2.super_element, true);
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
-    elem1_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem1_ptr->element, true);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
-    elem2_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem2_ptr->element, true);
 
     // Prepare: Motion was called, will not have any focus.
@@ -987,7 +981,6 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
 
     wlmtk_fake_element_t *elem_ptr = wlmtk_fake_element_create();
-    elem_ptr->pointer_motion_return_value = true;
     wlmtk_element_set_visible(&elem_ptr->element, true);
     wlmtk_container_add_element(&container, &elem_ptr->element);
 

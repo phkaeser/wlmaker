@@ -250,7 +250,6 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_container_add_element(
         &workspace_ptr->super_container, &fake_element_ptr->element);
 
-    fake_element_ptr->pointer_motion_return_value = true;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_motion(workspace_ptr, 0, 0, 1234));

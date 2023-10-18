@@ -325,8 +325,6 @@ typedef struct {
 
     /** Indicates that Element::pointer_motion() was called. */
     bool                      pointer_motion_called;
-    /** Return value to pass when pointer_motion is called. */
-    bool                      pointer_motion_return_value;
 
     /** Indicates that Element::pointer_leave() was called. */
     bool                      pointer_leave_called;

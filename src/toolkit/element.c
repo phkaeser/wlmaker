@@ -367,14 +367,15 @@ void fake_get_pointer_area(
 /** Handles 'motion' events for the fake element. */
 bool fake_pointer_motion(
     wlmtk_element_t *element_ptr,
-    __UNUSED__ double x,
-    __UNUSED__ double y,
+    double x,
+    double y,
     __UNUSED__ uint32_t time_msec)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
     fake_element_ptr->pointer_motion_called = true;
-    return fake_element_ptr->pointer_motion_return_value;
+    return (-1 <= x && x < fake_element_ptr->width + 3 &&
+            -2 < y && y < fake_element_ptr->height + 4);
 }
 
 /* ------------------------------------------------------------------------- */
