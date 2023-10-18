@@ -103,12 +103,15 @@ bool wlmtk_container_init_attached(
 {
     if (!wlmtk_container_init(container_ptr, container_impl_ptr)) return false;
 
-    if (NULL == element_create_scene_node(
-            &container_ptr->super_element, root_wlr_scene_tree_ptr)) {
+    container_ptr->super_element.wlr_scene_node_ptr =
+        element_create_scene_node(
+            &container_ptr->super_element, root_wlr_scene_tree_ptr);
+    if (NULL == container_ptr->super_element.wlr_scene_node_ptr) {
         wlmtk_container_fini(container_ptr);
         return false;
     }
 
+    BS_ASSERT(NULL != container_ptr->super_element.wlr_scene_node_ptr);
     return true;
 }
 
@@ -123,6 +126,15 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
         wlmtk_element_destroy(element_ptr);
     }
 
+    // For containers created with wlmtk_container_init_attached(): We also
+    // need to remove references to the WLR scene tree.
+    if (NULL != container_ptr->wlr_scene_tree_ptr) {
+        BS_ASSERT(NULL == container_ptr->super_element.parent_container_ptr);
+        wlr_scene_node_destroy(&container_ptr->wlr_scene_tree_ptr->node);
+        container_ptr->wlr_scene_tree_ptr = NULL;
+        container_ptr->super_element.wlr_scene_node_ptr = NULL;
+    }
+
     wlmtk_element_fini(&container_ptr->super_element);
     container_ptr->impl_ptr = NULL;
 }
@@ -133,6 +145,7 @@ void wlmtk_container_add_element(
     wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
+    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
 
     bs_dllist_push_front(
         &container_ptr->elements,
@@ -514,20 +527,19 @@ wlmtk_container_t *wlmtk_container_create_fake_parent(void)
         1, sizeof(fake_parent_container_t));
     if (NULL == fake_parent_container_ptr) return NULL;
 
-    if (!wlmtk_container_init(
-        &fake_parent_container_ptr->container,
-        &fake_parent_impl)) {
-        fake_parent_destroy(&fake_parent_container_ptr->container);
-        return NULL;
-    }
-
     fake_parent_container_ptr->wlr_scene_ptr = wlr_scene_create();
     if (NULL == fake_parent_container_ptr->wlr_scene_ptr) {
         fake_parent_destroy(&fake_parent_container_ptr->container);
         return NULL;
     }
-    fake_parent_container_ptr->container.wlr_scene_tree_ptr =
-        &fake_parent_container_ptr->wlr_scene_ptr->tree;
+
+    if (!wlmtk_container_init_attached(
+            &fake_parent_container_ptr->container,
+            &fake_parent_impl,
+            &fake_parent_container_ptr->wlr_scene_ptr->tree)) {
+        fake_parent_destroy(&fake_parent_container_ptr->container);
+        return NULL;
+    }
 
     return &fake_parent_container_ptr->container;
 }
@@ -539,14 +551,14 @@ void fake_parent_destroy(wlmtk_container_t *container_ptr)
     fake_parent_container_t *fake_parent_container_ptr = BS_CONTAINER_OF(
         container_ptr, fake_parent_container_t, container);
 
+    wlmtk_container_fini(&fake_parent_container_ptr->container);
+
     if (NULL != fake_parent_container_ptr->wlr_scene_ptr) {
         // Note: There is no "wlr_scene_destroy()" method; as of 2023-09-02,
         // this is just a flat allocated struct.
         free(fake_parent_container_ptr->wlr_scene_ptr);
         fake_parent_container_ptr->wlr_scene_ptr = NULL;
     }
-
-    wlmtk_container_fini(&fake_parent_container_ptr->container);
 
     free(fake_parent_container_ptr);
 }
