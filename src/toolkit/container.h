@@ -74,6 +74,20 @@ bool wlmtk_container_init(
     const wlmtk_container_impl_t *container_impl_ptr);
 
 /**
+ * Initializes the container, and attach to WLR sene graph.
+ *
+ * @param container_ptr
+ * @param container_impl_ptr
+ * @param root_wlr_scene_tree_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_container_init_attached(
+    wlmtk_container_t *container_ptr,
+    const wlmtk_container_impl_t *container_impl_ptr,
+    struct wlr_scene_tree *root_wlr_scene_tree_ptr);
+
+/**
  * Un-initializes the container.
  *
  * Any element still in `elements` will be destroyed.

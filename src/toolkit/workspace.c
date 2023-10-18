@@ -31,16 +31,6 @@
 struct _wlmtk_workspace_t {
     /** Superclass: Container. */
     wlmtk_container_t         super_container;
-
-    /**
-     * The workspace's element map() method will expect a parent from where to
-     * retrieve the wlroots scene graph tree from. As a toplevel construct,
-     * there is not really a parent, so we use this fake class instead.
-     *
-     * TODO(kaeser@gubbe.ch): This should live in wlmaker_server_t; ultimately
-     * that is the "container" that holds all workspaces.
-     */
-    wlmtk_container_t         fake_parent;
 };
 
 static void workspace_container_destroy(wlmtk_container_t *container_ptr);
@@ -60,18 +50,12 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         logged_calloc(1, sizeof(wlmtk_workspace_t));
     if (NULL == workspace_ptr) return NULL;
 
-    if (!wlmtk_container_init(&workspace_ptr->super_container,
-                              &workspace_container_impl)) {
+    if (!wlmtk_container_init_attached(&workspace_ptr->super_container,
+                                       &workspace_container_impl,
+                                       wlr_scene_tree_ptr)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }
-
-    workspace_ptr->fake_parent.wlr_scene_tree_ptr = wlr_scene_tree_ptr;
-    wlmtk_container_add_element(
-        &workspace_ptr->fake_parent,
-        &workspace_ptr->super_container.super_element);
-    wlmtk_element_set_visible(
-        &workspace_ptr->super_container.super_element, true);
 
     return workspace_ptr;
 }
@@ -79,10 +63,6 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
-    wlmtk_container_remove_element(
-        &workspace_ptr->fake_parent,
-        &workspace_ptr->super_container.super_element);
-
     wlmtk_container_fini(&workspace_ptr->super_container);
     free(workspace_ptr);
 }
@@ -127,7 +107,7 @@ bool wlmtk_workspace_motion(
     double y,
     uint32_t time_msec)
 {
-    return  wlmtk_element_pointer_motion(
+    return wlmtk_element_pointer_motion(
         &workspace_ptr->super_container.super_element, x, y, time_msec);
 }
 
@@ -180,10 +160,12 @@ void workspace_container_destroy(wlmtk_container_t *container_ptr)
 
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_map_unmap(bs_test_t *test_ptr);
+static void test_button(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "map_unmap", test_map_unmap },
+    { 1, "button", test_button },
     { 0, NULL, NULL }
 };
 
@@ -247,6 +229,37 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void test_button(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        fake_parent_ptr->wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != workspace_ptr);
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&fake_element_ptr->element, true);
+    BS_ASSERT(NULL != fake_element_ptr);
+
+    wlmtk_container_add_element(
+        &workspace_ptr->super_container, &fake_element_ptr->element);
+
+    fake_element_ptr->pointer_motion_return_value = true;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_motion(workspace_ptr, 0, 0, 1234));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        fake_element_ptr->pointer_motion_called);
+
+    wlmtk_container_remove_element(
+        &workspace_ptr->super_container, &fake_element_ptr->element);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy(fake_parent_ptr);
 }

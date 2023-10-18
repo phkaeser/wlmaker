@@ -96,6 +96,23 @@ bool wlmtk_container_init(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_container_init_attached(
+    wlmtk_container_t *container_ptr,
+    const wlmtk_container_impl_t *container_impl_ptr,
+    struct wlr_scene_tree *root_wlr_scene_tree_ptr)
+{
+    if (!wlmtk_container_init(container_ptr, container_impl_ptr)) return false;
+
+    if (NULL == element_create_scene_node(
+            &container_ptr->super_element, root_wlr_scene_tree_ptr)) {
+        wlmtk_container_fini(container_ptr);
+        return false;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_container_fini(wlmtk_container_t *container_ptr)
 {
     bs_dllist_node_t *dlnode_ptr;
