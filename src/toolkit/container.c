@@ -1006,6 +1006,7 @@ void test_pointer_button(bs_test_t *test_ptr)
         test_ptr, elem_ptr->pointer_button_called);
 
     wlmtk_container_remove_element(&container, &elem_ptr->element);
+    wlmtk_element_destroy(&elem_ptr->element);
     wlmtk_container_fini(&container);
 }
 

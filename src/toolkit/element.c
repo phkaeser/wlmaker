@@ -547,6 +547,8 @@ void test_get_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, left);
     BS_TEST_VERIFY_EQ(test_ptr, 42, right);
     BS_TEST_VERIFY_EQ(test_ptr, 21, bottom);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -568,6 +570,8 @@ void test_get_pointer_area(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, -2, left);
     BS_TEST_VERIFY_EQ(test_ptr, 45, right);
     BS_TEST_VERIFY_EQ(test_ptr, 25, bottom);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -620,6 +624,8 @@ void test_pointer_button(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_button(&fake_element_ptr->element, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_button_called);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
 }
 
 /* == End of toolkit.c ===================================================== */
