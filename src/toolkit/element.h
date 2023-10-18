@@ -333,6 +333,7 @@ typedef struct {
 
     /** Indicates that Element::pointer_button() was called. */
     bool                      pointer_button_called;
+    /** Last button event reveiced. */
     wlmtk_button_event_t      pointer_button_event;
 } wlmtk_fake_element_t;
 

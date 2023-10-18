@@ -235,6 +235,7 @@ void test_map_unmap(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests wlmtk_workspace_button. */
 void test_button(bs_test_t *test_ptr)
 {
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();

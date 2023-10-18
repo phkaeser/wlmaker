@@ -220,6 +220,12 @@ void element_get_pointer_area(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Implements the element's leave method: If there's a WLR (sub)surface
+ * currently holding focus, that will be cleared.
+ *
+ * @param element_ptr
+ */
 void element_pointer_leave(wlmtk_element_t *element_ptr)
 {
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(

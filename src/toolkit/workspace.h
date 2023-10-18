@@ -104,7 +104,7 @@ bool wlmtk_workspace_motion(
  * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events.
  *
  * @param workspace_ptr
- * @paran event_ptr
+ * @param event_ptr
  */
 void wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
