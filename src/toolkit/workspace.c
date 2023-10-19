@@ -269,21 +269,21 @@ void test_button(bs_test_t *test_ptr)
         .type = WLMTK_BUTTON_DOWN,
         .time_msec = 4321,
     };
-    BS_TEST_VERIFY_EQ(
+    BS_TEST_VERIFY_MEMEQ(
         test_ptr,
-        0,
-        memcmp(&expected_event, &fake_element_ptr->pointer_button_event,
-               sizeof(wlmtk_button_event_t)));
+        &expected_event,
+        &fake_element_ptr->pointer_button_event,
+        sizeof(wlmtk_button_event_t));
 
     // The button up event should trigger a click.
     wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
     wlmtk_workspace_button(workspace_ptr, &wlr_pointer_button_event);
     expected_event.type = WLMTK_BUTTON_CLICK;
-    BS_TEST_VERIFY_EQ(
+    BS_TEST_VERIFY_MEMEQ(
         test_ptr,
-        0,
-        memcmp(&expected_event, &fake_element_ptr->pointer_button_event,
-               sizeof(wlmtk_button_event_t)));
+        &expected_event,
+        &fake_element_ptr->pointer_button_event,
+        sizeof(wlmtk_button_event_t));
 
     wlmtk_container_remove_element(
         &workspace_ptr->super_container, &fake_element_ptr->element);
