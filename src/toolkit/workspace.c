@@ -142,8 +142,6 @@ void wlmtk_workspace_button(
                "Workspace %p: Unhandled state 0x%x for button 0x%x",
                workspace_ptr, event_ptr->state, event_ptr->button);
     }
-
-    event = event;
 }
 
 /* == Local (static) methods =============================================== */
