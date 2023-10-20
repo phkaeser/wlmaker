@@ -328,9 +328,7 @@ void handle_toplevel_request_move(
         listener_ptr,
         wlmtk_xdg_toplevel_content_t,
         toplevel_request_move_listener);
-
-    bs_log(BS_INFO, "XDG toplevel content %p: Request move",
-           xdg_tl_content_ptr);
+    wlmtk_window_request_move(xdg_tl_content_ptr->super_content.window_ptr);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

@@ -27,10 +27,40 @@
 
 /* == Declarations ========================================================= */
 
+/** States of the pointer FSM. */
+typedef enum {
+    POINTER_STATE_PASSTHROUGH,
+    POINTER_STATE_MOVE,
+    POINTER_STATE_RESIZE
+} pointer_state_t;
+
+/** Events for the pointer FSM. */
+typedef enum {
+    POINTER_STATE_EVENT_BEGIN_MOVE,
+    POINTER_STATE_EVENT_BEGIN_RESIZE,
+    POINTER_STATE_EVENT_BTN_RELEASED,
+    POINTER_STATE_EVENT_RESET,
+    POINTER_STATE_EVENT_MOTION,
+} pointer_state_event_t;
+
 /** State of the workspace. */
 struct _wlmtk_workspace_t {
     /** Superclass: Container. */
     wlmtk_container_t         super_container;
+
+    /** Current FSM state. */
+    pointer_state_t current_state;
+
+    /** The grabbed window. */
+    wlmtk_window_t            *grabbed_window_ptr;
+    /** Motion X */
+    int                       motion_x;
+    /** Motion Y */
+    int                       motion_y;
+    /** Element's X position when initiating a move or resize. */
+    int                       initial_x;
+    /** Element's Y position when initiating a move or resize. */
+    int                       initial_y;
 };
 
 static void workspace_container_destroy(wlmtk_container_t *container_ptr);
@@ -38,6 +68,49 @@ static void workspace_container_destroy(wlmtk_container_t *container_ptr);
 /** Method table for the container's virtual methods. */
 const wlmtk_container_impl_t  workspace_container_impl = {
     .destroy = workspace_container_destroy
+};
+
+/** State machine definition. */
+typedef struct {
+    /** Starting state. */
+    pointer_state_t           state;
+    /** Event. */
+    pointer_state_event_t     event;
+    /** Updated state. */
+    pointer_state_t           new_state;
+    /** Handler invoked by the (state, event) match. */
+    void (*handler)(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
+} state_transition_t;
+
+static void begin_move(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
+static void move_motion(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
+static void move_end(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
+static void handle_state(wlmtk_workspace_t *workspace_ptr,
+                         pointer_state_event_t event,
+                         void *ud_ptr);
+
+/* == Data ================================================================= */
+
+/** Finite state machine definition for pointer events. */
+static const state_transition_t pointer_states[] = {
+    {
+        POINTER_STATE_PASSTHROUGH,
+        POINTER_STATE_EVENT_BEGIN_MOVE,
+        POINTER_STATE_MOVE,
+        begin_move },
+    {
+        POINTER_STATE_MOVE,
+        POINTER_STATE_EVENT_MOTION,
+        POINTER_STATE_MOVE,
+        move_motion
+    },
+    {
+        POINTER_STATE_MOVE,
+        POINTER_STATE_EVENT_BTN_RELEASED,
+        POINTER_STATE_PASSTHROUGH,
+        move_end,
+    },
+    { 0, 0, 0, NULL }  // sentinel.
 };
 
 /* == Exported methods ===================================================== */
@@ -107,8 +180,10 @@ bool wlmtk_workspace_motion(
     double y,
     uint32_t time_msec)
 {
-    return wlmtk_element_pointer_motion(
+    bool rv = wlmtk_element_pointer_motion(
         &workspace_ptr->super_container.super_element, x, y, time_msec);
+    handle_state(workspace_ptr, POINTER_STATE_EVENT_MOTION, NULL);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -119,6 +194,12 @@ void wlmtk_workspace_button(
 {
     wlmtk_button_event_t event;
     wlmtk_element_t *focused_element_ptr;
+
+    if (WLR_BUTTON_RELEASED == event_ptr->state) {
+        handle_state(workspace_ptr,
+                     POINTER_STATE_EVENT_BTN_RELEASED,
+                     NULL);
+    }
 
     // Guard clause: nothing to pass on if no element has the focus.
     focused_element_ptr =
@@ -144,6 +225,14 @@ void wlmtk_workspace_button(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_begin_window_move(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    handle_state(workspace_ptr, POINTER_STATE_EVENT_BEGIN_MOVE, window_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -153,6 +242,65 @@ void workspace_container_destroy(wlmtk_container_t *container_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_workspace_t, super_container);
     wlmtk_workspace_destroy(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** State machine handler. */
+void handle_state(wlmtk_workspace_t *workspace_ptr,
+                  pointer_state_event_t event,
+                  void *ud_ptr)
+{
+    for (const state_transition_t *transition_ptr = &pointer_states[0];
+         NULL != transition_ptr->handler;
+         transition_ptr++) {
+        if (transition_ptr->state == workspace_ptr->current_state &&
+            transition_ptr->event == event) {
+            transition_ptr->handler(workspace_ptr, ud_ptr);
+            workspace_ptr->current_state = transition_ptr->new_state;
+            return;
+        }
+    }
+}
+
+
+/* ------------------------------------------------------------------------- */
+/** Initiates a move. */
+void begin_move(wlmtk_workspace_t *workspace_ptr, void *ud_ptr)
+{
+    workspace_ptr->grabbed_window_ptr = ud_ptr;
+    workspace_ptr->motion_x =
+        workspace_ptr->super_container.super_element.last_pointer_x;
+    workspace_ptr->motion_y =
+        workspace_ptr->super_container.super_element.last_pointer_y;
+
+    wlmtk_element_get_position(
+        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
+        &workspace_ptr->initial_x,
+        &workspace_ptr->initial_y);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles motion during a move. */
+void move_motion(wlmtk_workspace_t *workspace_ptr,
+                 __UNUSED__ void *ud_ptr)
+{
+    double rel_x = workspace_ptr->super_container.super_element.last_pointer_x -
+        workspace_ptr->motion_x;
+    double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
+        workspace_ptr->motion_y;
+
+    wlmtk_element_set_position(
+        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
+        workspace_ptr->initial_x + rel_x,
+        workspace_ptr->initial_y + rel_y);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Ends the move. */
+void move_end(__UNUSED__ wlmtk_workspace_t *workspace_ptr,
+              __UNUSED__ void *ud_ptr)
+{
+    // Nothing to do.
 }
 
 /* == Unit tests =========================================================== */

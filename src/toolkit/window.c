@@ -21,6 +21,7 @@
 #include "window.h"
 
 #include "container.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 
@@ -104,6 +105,16 @@ void wlmtk_window_set_server_side_decorated(
     // TODO(kaeser@gubbe.ch): Implement.
     bs_log(BS_INFO, "Set server side decoration for window %p: %d",
            window_ptr, decorated);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(NULL !=
+              window_ptr->super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
+        window_ptr->super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
 }
 
 /* == Local (static) methods =============================================== */
