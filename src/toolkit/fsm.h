@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <libbase/libbase.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,6 +90,9 @@ bool wlmtk_fsm_event(
     wlmtk_fsm_t *fsm_ptr,
     int event,
     void *ud_ptr);
+
+/** Unit tests for the finite-state machine. */
+extern const bs_test_case_t wlmtk_fsm_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

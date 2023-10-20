@@ -33,6 +33,7 @@
 #include "container.h"
 #include "content.h"
 #include "element.h"
+#include "fsm.h"
 #include "window.h"
 #include "workspace.h"
 

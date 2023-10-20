@@ -371,13 +371,14 @@ static void test_map_unmap(bs_test_t *test_ptr);
 static void test_button(bs_test_t *test_ptr);
 static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
+
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "map_unmap", test_map_unmap },
     { 1, "button", test_button },
     { 1, "move", test_move },
     { 1, "unmap_during_move", test_unmap_during_move },
-{ 0, NULL, NULL }
+    { 0, NULL, NULL }
 };
 
 /* ------------------------------------------------------------------------- */
