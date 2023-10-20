@@ -267,10 +267,19 @@ bool element_pointer_motion(
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
 
+    // Get the layout local coordinates of the node, so we can adjust the
+    // node-local (x, y) for the `wlr_scene_node_at` call.
+    int lx, ly;
+    if (!wlr_scene_node_coords(
+            content_ptr->super_element.wlr_scene_node_ptr, &lx, &ly)) {
+        return false;
+    }
     // Get the node below the cursor. Return if there's no buffer node.
     double node_x, node_y;
     struct wlr_scene_node *wlr_scene_node_ptr = wlr_scene_node_at(
-        content_ptr->super_element.wlr_scene_node_ptr, x, y, &node_x, &node_y);
+        content_ptr->super_element.wlr_scene_node_ptr,
+        x + lx, y + ly, &node_x, &node_y);
+
     if (NULL == wlr_scene_node_ptr ||
         WLR_SCENE_NODE_BUFFER != wlr_scene_node_ptr->type) {
         return false;
