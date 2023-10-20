@@ -64,11 +64,12 @@ const bs_test_case_t wlmtk_fsm_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** Test handler for the FSM unit test: Sets the bool to true. */
 static bool test_fsm_handler(__UNUSED__ wlmtk_fsm_t *fsm_ptr, void *ud_ptr) {
     *((bool*)ud_ptr) = true;
     return true;
 }
-
+/** Test transition table for the FSM unit test. */
 static const wlmtk_fsm_transition_t test_transitions[] = {
     { 1, 100, 2, test_fsm_handler },
     { 2, 101, 3, NULL },
