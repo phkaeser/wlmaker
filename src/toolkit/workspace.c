@@ -29,21 +29,6 @@
 
 /* == Declarations ========================================================= */
 
-/** States of the pointer FSM. */
-typedef enum {
-    PFSMS_PASSTHROUGH,
-    PFSMS_MOVE,
-    PFSMS_RESIZE
-} pointer_state_t;
-
-/** Events for the pointer FSM. */
-typedef enum {
-    PFSME_BEGIN_MOVE,
-    PFSME_RELEASED,
-    PFSME_MOTION,
-    PFSME_RESET,
-} pointer_state_event_t;
-
 /** State of the workspace. */
 struct _wlmtk_workspace_t {
     /** Superclass: Container. */
@@ -83,6 +68,21 @@ static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 
 /* == Data ================================================================= */
+
+/** States of the pointer FSM. */
+typedef enum {
+    PFSMS_PASSTHROUGH,
+    PFSMS_MOVE,
+    PFSMS_RESIZE
+} pointer_state_t;
+
+/** Events for the pointer FSM. */
+typedef enum {
+    PFSME_BEGIN_MOVE,
+    PFSME_RELEASED,
+    PFSME_MOTION,
+    PFSME_RESET,
+} pointer_state_event_t;
 
 /** Method table for the container's virtual methods. */
 const wlmtk_container_impl_t  workspace_container_impl = {
