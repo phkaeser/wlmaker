@@ -44,13 +44,12 @@ bool wlmtk_fsm_event(
          ++transition_ptr) {
         if (transition_ptr->state == fsm_ptr->state &&
             transition_ptr->event == event) {
+            bool rv = true;
             if (NULL != transition_ptr->handler) {
-                bool rv = transition_ptr->handler(fsm_ptr, ud_ptr);
-                fsm_ptr->state = transition_ptr->to_state;
-                return rv;
-            } else {
-                return true;
+                rv = transition_ptr->handler(fsm_ptr, ud_ptr);
             }
+            fsm_ptr->state = transition_ptr->to_state;
+            return rv;
         }
     }
     return false;

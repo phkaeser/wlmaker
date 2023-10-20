@@ -20,6 +20,9 @@
 #ifndef __WLMTK_BUTTON_H__
 #define __WLMTK_BUTTON_H__
 
+// BTN_LEFT, BTN_RIGHT, ...
+#include <linux/input-event-codes.h>
+
 /** Forward declaration: Button event. */
 typedef struct _wlmtk_button_event_t wlmtk_button_event_t;
 

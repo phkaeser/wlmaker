@@ -20,6 +20,8 @@
 
 #include "workspace.h"
 
+#include "fsm.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
@@ -29,18 +31,17 @@
 
 /** States of the pointer FSM. */
 typedef enum {
-    POINTER_STATE_PASSTHROUGH,
-    POINTER_STATE_MOVE,
-    POINTER_STATE_RESIZE
+    PFSMS_PASSTHROUGH,
+    PFSMS_MOVE,
+    PFSMS_RESIZE
 } pointer_state_t;
 
 /** Events for the pointer FSM. */
 typedef enum {
-    POINTER_STATE_EVENT_BEGIN_MOVE,
-    POINTER_STATE_EVENT_BEGIN_RESIZE,
-    POINTER_STATE_EVENT_BTN_RELEASED,
-    POINTER_STATE_EVENT_RESET,
-    POINTER_STATE_EVENT_MOTION,
+    PFSME_BEGIN_MOVE,
+    PFSME_RELEASED,
+    PFSME_MOTION,
+    PFSME_RESET,
 } pointer_state_event_t;
 
 /** State of the workspace. */
@@ -51,7 +52,7 @@ struct _wlmtk_workspace_t {
     wlmtk_element_impl_t      parent_element_impl;
 
     /** Current FSM state. */
-    pointer_state_t current_state;
+    wlmtk_fsm_t               fsm;
 
     /** The grabbed window. */
     wlmtk_window_t            *grabbed_window_ptr;
@@ -63,7 +64,6 @@ struct _wlmtk_workspace_t {
     int                       initial_x;
     /** Element's Y position when initiating a move or resize. */
     int                       initial_y;
-
 };
 
 static void workspace_container_destroy(wlmtk_container_t *container_ptr);
@@ -95,35 +95,18 @@ typedef struct {
     void (*handler)(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
 } state_transition_t;
 
-static void begin_move(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
-static void move_motion(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
-static void move_end(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
-static void handle_state(wlmtk_workspace_t *workspace_ptr,
-                         pointer_state_event_t event,
-                         void *ud_ptr);
+static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 
 /* == Data ================================================================= */
 
 /** Finite state machine definition for pointer events. */
-static const state_transition_t pointer_states[] = {
-    {
-        POINTER_STATE_PASSTHROUGH,
-        POINTER_STATE_EVENT_BEGIN_MOVE,
-        POINTER_STATE_MOVE,
-        begin_move },
-    {
-        POINTER_STATE_MOVE,
-        POINTER_STATE_EVENT_MOTION,
-        POINTER_STATE_MOVE,
-        move_motion
-    },
-    {
-        POINTER_STATE_MOVE,
-        POINTER_STATE_EVENT_BTN_RELEASED,
-        POINTER_STATE_PASSTHROUGH,
-        move_end,
-    },
-    { 0, 0, 0, NULL }  // sentinel.
+static const wlmtk_fsm_transition_t pfsm_transitions[] = {
+    { PFSMS_PASSTHROUGH, PFSME_BEGIN_MOVE, PFSMS_MOVE, pfsm_move_begin },
+    { PFSMS_MOVE, PFSME_MOTION, PFSMS_MOVE, pfsm_move_motion },
+    { PFSMS_MOVE, PFSME_RELEASED, PFSMS_PASSTHROUGH, NULL },
+    { PFSMS_MOVE, PFSME_RESET, PFSMS_PASSTHROUGH, NULL },
+    WLMTK_FSM_TRANSITION_SENTINEL,
 };
 
 /* == Exported methods ===================================================== */
@@ -151,6 +134,8 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         element_pointer_button;
     workspace_ptr->super_container.super_element.impl.pointer_leave =
         element_pointer_leave;
+
+    wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
 }
 
@@ -244,7 +229,7 @@ void wlmtk_workspace_begin_window_move(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr)
 {
-    handle_state(workspace_ptr, POINTER_STATE_EVENT_BEGIN_MOVE, window_ptr);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_MOVE, window_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -279,7 +264,7 @@ bool element_pointer_motion(
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
-    handle_state(workspace_ptr, POINTER_STATE_EVENT_MOTION, NULL);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
 
     return workspace_ptr->parent_element_impl.pointer_motion(
         element_ptr, x, y, time_msec);
@@ -301,10 +286,13 @@ bool element_pointer_button(
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
-    if (button_event_ptr->type == WLMTK_BUTTON_UP) {
-        handle_state(workspace_ptr,
-                     POINTER_STATE_EVENT_BTN_RELEASED,
-                     NULL);
+    // TODO(kaeser@gubbe.ch): We should retract as to which event had triggered
+    // the move, and then figure out the exit condition (button up? key? ...)
+    // from there.
+    // See xdg_toplevel::move doc at https://wayland.app/protocols/xdg-shell.
+    if (button_event_ptr->button == BTN_LEFT &&
+        button_event_ptr->type == WLMTK_BUTTON_UP) {
+        wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RELEASED, NULL);
     }
 
     return workspace_ptr->parent_element_impl.pointer_button(
@@ -323,34 +311,20 @@ void element_pointer_leave(
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
-    handle_state(workspace_ptr, POINTER_STATE_EVENT_RESET, NULL);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
 
     workspace_ptr->parent_element_impl.pointer_leave(element_ptr);
 }
 
-/* ------------------------------------------------------------------------- */
-/** State machine handler. */
-void handle_state(wlmtk_workspace_t *workspace_ptr,
-                  pointer_state_event_t event,
-                  void *ud_ptr)
-{
-    for (const state_transition_t *transition_ptr = &pointer_states[0];
-         NULL != transition_ptr->handler;
-         transition_ptr++) {
-        if (transition_ptr->state == workspace_ptr->current_state &&
-            transition_ptr->event == event) {
-            transition_ptr->handler(workspace_ptr, ud_ptr);
-            workspace_ptr->current_state = transition_ptr->new_state;
-            return;
-        }
-    }
-}
 
 
 /* ------------------------------------------------------------------------- */
 /** Initiates a move. */
-void begin_move(wlmtk_workspace_t *workspace_ptr, void *ud_ptr)
+bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 {
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        fsm_ptr, wlmtk_workspace_t, fsm);
+
     workspace_ptr->grabbed_window_ptr = ud_ptr;
     workspace_ptr->motion_x =
         workspace_ptr->super_container.super_element.last_pointer_x;
@@ -361,13 +335,17 @@ void begin_move(wlmtk_workspace_t *workspace_ptr, void *ud_ptr)
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
         &workspace_ptr->initial_x,
         &workspace_ptr->initial_y);
+
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Handles motion during a move. */
-void move_motion(wlmtk_workspace_t *workspace_ptr,
-                 __UNUSED__ void *ud_ptr)
+bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
 {
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        fsm_ptr, wlmtk_workspace_t, fsm);
+
     double rel_x = workspace_ptr->super_container.super_element.last_pointer_x -
         workspace_ptr->motion_x;
     double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
@@ -377,14 +355,8 @@ void move_motion(wlmtk_workspace_t *workspace_ptr,
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
         workspace_ptr->initial_x + rel_x,
         workspace_ptr->initial_y + rel_y);
-}
 
-/* ------------------------------------------------------------------------- */
-/** Ends the move. */
-void move_end(__UNUSED__ wlmtk_workspace_t *workspace_ptr,
-              __UNUSED__ void *ud_ptr)
-{
-    // Nothing to do.
+    return true;
 }
 
 /* == Unit tests =========================================================== */
