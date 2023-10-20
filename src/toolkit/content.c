@@ -383,7 +383,7 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
         return NULL;
     }
 
-    BS_ASSERT(NULL != fake_content_ptr->content.super_element.impl_ptr);
+    BS_ASSERT(NULL != fake_content_ptr->content.super_element.impl.destroy);
     BS_ASSERT(NULL != fake_content_ptr->content.impl_ptr);
     return fake_content_ptr;
 }
@@ -398,7 +398,7 @@ void fake_content_destroy(wlmtk_content_t *content_ptr)
     wlmtk_content_fini(&fake_content_ptr->content);
 
     // Also expect the super element to be un-initialized.
-    BS_ASSERT(NULL == fake_content_ptr->content.super_element.impl_ptr);
+    BS_ASSERT(NULL == fake_content_ptr->content.super_element.impl.destroy);
     BS_ASSERT(NULL == fake_content_ptr->content.impl_ptr);
     free(fake_content_ptr);
 }
@@ -458,7 +458,7 @@ void test_init_fini(bs_test_t *test_ptr)
     // Also expect the super element to be initialized.
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        fake_content_ptr->content.super_element.impl_ptr);
+        fake_content_ptr->content.super_element.impl.destroy);
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
         fake_content_ptr->content.impl_ptr);
