@@ -78,34 +78,23 @@ static bool element_pointer_button(
 static void element_pointer_leave(
     wlmtk_element_t *element_ptr);
 
+static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+
+/* == Data ================================================================= */
+
 /** Method table for the container's virtual methods. */
 const wlmtk_container_impl_t  workspace_container_impl = {
     .destroy = workspace_container_destroy
 };
 
-/** State machine definition. */
-typedef struct {
-    /** Starting state. */
-    pointer_state_t           state;
-    /** Event. */
-    pointer_state_event_t     event;
-    /** Updated state. */
-    pointer_state_t           new_state;
-    /** Handler invoked by the (state, event) match. */
-    void (*handler)(wlmtk_workspace_t *workspace_ptr, void *ud_ptr);
-} state_transition_t;
-
-static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
-static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
-
-/* == Data ================================================================= */
-
 /** Finite state machine definition for pointer events. */
 static const wlmtk_fsm_transition_t pfsm_transitions[] = {
     { PFSMS_PASSTHROUGH, PFSME_BEGIN_MOVE, PFSMS_MOVE, pfsm_move_begin },
     { PFSMS_MOVE, PFSME_MOTION, PFSMS_MOVE, pfsm_move_motion },
-    { PFSMS_MOVE, PFSME_RELEASED, PFSMS_PASSTHROUGH, NULL },
-    { PFSMS_MOVE, PFSME_RESET, PFSMS_PASSTHROUGH, NULL },
+    { PFSMS_MOVE, PFSME_RELEASED, PFSMS_PASSTHROUGH, pfsm_reset },
+    { PFSMS_MOVE, PFSME_RESET, PFSMS_PASSTHROUGH, pfsm_reset },
     WLMTK_FSM_TRANSITION_SENTINEL,
 };
 
@@ -165,6 +154,12 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 {
     BS_ASSERT(workspace_ptr == wlmtk_workspace_from_container(
                   wlmtk_window_element(window_ptr)->parent_container_ptr));
+
+    if (workspace_ptr->grabbed_window_ptr == window_ptr) {
+        wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
+        BS_ASSERT(NULL == workspace_ptr->grabbed_window_ptr);
+    }
+
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
     wlmtk_container_remove_element(
         &workspace_ptr->super_container,
@@ -356,6 +351,16 @@ bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         workspace_ptr->initial_x + rel_x,
         workspace_ptr->initial_y + rel_y);
 
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Resets the state machine. */
+bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        fsm_ptr, wlmtk_workspace_t, fsm);
+    workspace_ptr->grabbed_window_ptr = NULL;
     return true;
 }
 
