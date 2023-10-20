@@ -369,12 +369,15 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_map_unmap(bs_test_t *test_ptr);
 static void test_button(bs_test_t *test_ptr);
-
+static void test_move(bs_test_t *test_ptr);
+static void test_unmap_during_move(bs_test_t *test_ptr);
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "map_unmap", test_map_unmap },
     { 1, "button", test_button },
-    { 0, NULL, NULL }
+    { 1, "move", test_move },
+    { 1, "unmap_during_move", test_unmap_during_move },
+{ 0, NULL, NULL }
 };
 
 /* ------------------------------------------------------------------------- */
@@ -496,6 +499,96 @@ void test_button(bs_test_t *test_ptr)
         &workspace_ptr->super_container, &fake_element_ptr->element);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests moving a window. */
+void test_move(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        fake_parent_ptr->wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != workspace_ptr);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &fake_content_ptr->content);
+    BS_ASSERT(NULL != window_ptr);
+    wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
+
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
+
+    // Starts a move for the window. Will move it...
+    wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
+    wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+
+    // Releases the button. Should end the move.
+    struct wlr_pointer_button_event wlr_pointer_button_event = {
+        .button = BTN_LEFT,
+        .state = WLR_BUTTON_RELEASED,
+        .time_msec = 44,
+    };
+    wlmtk_workspace_button(workspace_ptr, &wlr_pointer_button_event);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, workspace_ptr->grabbed_window_ptr);
+
+    // More motion, no longer updates the position.
+    wlmtk_workspace_motion(workspace_ptr, 3, 4, 45);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+
+    wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests moving a window that unmaps during the move. */
+void test_unmap_during_move(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        fake_parent_ptr->wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != workspace_ptr);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &fake_content_ptr->content);
+    BS_ASSERT(NULL != window_ptr);
+    wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
+
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
+
+    // Starts a move for the window. Will move it...
+    wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
+    wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, workspace_ptr->grabbed_window_ptr);
+
+    // More motion, no longer updates the position.
+    wlmtk_workspace_motion(workspace_ptr, 3, 4, 45);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+
+
+    // More motion, no longer updates the position.
+    wlmtk_workspace_motion(workspace_ptr, 3, 4, 45);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+
+    wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy(fake_parent_ptr);
 }
