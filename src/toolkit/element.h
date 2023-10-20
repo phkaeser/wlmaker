@@ -38,50 +38,6 @@ struct wlr_scene_tree;
 extern "C" {
 #endif  // __cplusplus
 
-/** State of an element. */
-struct _wlmtk_element_t {
-    /** X position of the element, relative to the container. */
-    int x;
-    /** Y position of the element, relative to the container. */
-    int y;
-
-    /** The container this element belongs to, if any. */
-    wlmtk_container_t         *parent_container_ptr;
-    /** The node of elements. */
-    bs_dllist_node_t          dlnode;
-
-    /** Implementation of abstract virtual methods. */
-    const wlmtk_element_impl_t *impl_ptr;
-
-    /** Points to the wlroots scene graph API node, if attached. */
-    struct wlr_scene_node     *wlr_scene_node_ptr;
-
-    /** Whether the element is visible (drawn, when part of a scene graph). */
-    bool                      visible;
-
-    /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
-    struct wl_listener        wlr_scene_node_destroy_listener;
-
-    /**
-     * Horizontal pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if @ref
-     * wlmtk_element_pointer_leave was called since.
-     *
-     * Does not imply that the element has pointer focus.
-     */
-    double                    last_pointer_x;
-    /**
-     * Vertical pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if @ref
-     * wlmtk_element_pointer_leave was called since.
-     *
-     * Does not imply that the element has pointer focus.
-     */
-    double                    last_pointer_y;
-    /** Time of last @ref wlmtk_element_pointer_motion call, 0 otherwise. */
-    uint32_t                  last_pointer_time_msec;
-};
-
 /** Pointers to the implementation of Element's virtual methods. */
 struct _wlmtk_element_impl_t {
     /** Destroys the implementation of the element. */
@@ -129,6 +85,50 @@ struct _wlmtk_element_impl_t {
 
     /** Indicates the pointer has left the element's area. */
     void (*pointer_leave)(wlmtk_element_t *element_ptr);
+};
+
+/** State of an element. */
+struct _wlmtk_element_t {
+    /** X position of the element, relative to the container. */
+    int x;
+    /** Y position of the element, relative to the container. */
+    int y;
+
+    /** The container this element belongs to, if any. */
+    wlmtk_container_t         *parent_container_ptr;
+    /** The node of elements. */
+    bs_dllist_node_t          dlnode;
+
+    /** Implementation of abstract virtual methods. */
+    wlmtk_element_impl_t      impl;
+
+    /** Points to the wlroots scene graph API node, if attached. */
+    struct wlr_scene_node     *wlr_scene_node_ptr;
+
+    /** Whether the element is visible (drawn, when part of a scene graph). */
+    bool                      visible;
+
+    /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
+    struct wl_listener        wlr_scene_node_destroy_listener;
+
+    /**
+     * Horizontal pointer position from last @ref wlmtk_element_pointer_motion
+     * call. NAN if there was no motion call yet, or if @ref
+     * wlmtk_element_pointer_leave was called since.
+     *
+     * Does not imply that the element has pointer focus.
+     */
+    double                    last_pointer_x;
+    /**
+     * Vertical pointer position from last @ref wlmtk_element_pointer_motion
+     * call. NAN if there was no motion call yet, or if @ref
+     * wlmtk_element_pointer_leave was called since.
+     *
+     * Does not imply that the element has pointer focus.
+     */
+    double                    last_pointer_y;
+    /** Time of last @ref wlmtk_element_pointer_motion call, 0 otherwise. */
+    uint32_t                  last_pointer_time_msec;
 };
 
 /**
@@ -294,8 +294,8 @@ static inline bool wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
-    if (NULL == element_ptr->impl_ptr->pointer_button) return false;
-    return element_ptr->impl_ptr->pointer_button(
+    if (NULL == element_ptr->impl.pointer_button) return false;
+    return element_ptr->impl.pointer_button(
         element_ptr, button_event_ptr);
 }
 
@@ -308,7 +308,7 @@ static inline bool wlmtk_element_pointer_button(
  */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {
-    element_ptr->impl_ptr->destroy(element_ptr);
+    element_ptr->impl.destroy(element_ptr);
 }
 
 /** Unit tests for the element. */

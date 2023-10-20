@@ -41,13 +41,12 @@ bool wlmtk_element_init(
     const wlmtk_element_impl_t *element_impl_ptr)
 {
     BS_ASSERT(NULL != element_ptr);
+    memset(element_ptr, 0, sizeof(wlmtk_element_t));
     BS_ASSERT(NULL != element_impl_ptr);
     BS_ASSERT(NULL != element_impl_ptr->destroy);
     BS_ASSERT(NULL != element_impl_ptr->create_scene_node);
     BS_ASSERT(NULL != element_impl_ptr->get_dimensions);
-    memset(element_ptr, 0, sizeof(wlmtk_element_t));
-
-    element_ptr->impl_ptr = element_impl_ptr;
+    memcpy(&element_ptr->impl, element_impl_ptr, sizeof(wlmtk_element_impl_t));
 
     element_ptr->last_pointer_x = NAN;
     element_ptr->last_pointer_y = NAN;
@@ -63,7 +62,7 @@ void wlmtk_element_fini(
     BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
 
-    element_ptr->impl_ptr = NULL;
+    memset(element_ptr, 0, sizeof(wlmtk_element_t));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -110,7 +109,7 @@ void wlmtk_element_attach_to_scene_graph(
     }
 
     if (NULL == element_ptr->wlr_scene_node_ptr) {
-        element_ptr->wlr_scene_node_ptr = element_ptr->impl_ptr->create_scene_node(
+        element_ptr->wlr_scene_node_ptr = element_ptr->impl.create_scene_node(
             element_ptr, parent_wlr_scene_tree_ptr);
         wlmtk_util_connect_listener_signal(
             &element_ptr->wlr_scene_node_ptr->events.destroy,
@@ -183,7 +182,7 @@ void wlmtk_element_get_dimensions(
     int *right_ptr,
     int *bottom_ptr)
 {
-    element_ptr->impl_ptr->get_dimensions(
+    element_ptr->impl.get_dimensions(
         element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
 }
 
@@ -195,8 +194,8 @@ void wlmtk_element_get_pointer_area(
     int *right_ptr,
     int *bottom_ptr)
 {
-    if (NULL != element_ptr->impl_ptr->get_pointer_area) {
-        element_ptr->impl_ptr->get_pointer_area(
+    if (NULL != element_ptr->impl.get_pointer_area) {
+        element_ptr->impl.get_pointer_area(
             element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
     } else {
         wlmtk_element_get_dimensions(
@@ -216,9 +215,9 @@ bool wlmtk_element_pointer_motion(
     element_ptr->last_pointer_time_msec = time_msec;
 
     // Guard clause: No implementation for `pointer_motion`.
-    if (NULL == element_ptr->impl_ptr->pointer_motion) return false;
+    if (NULL == element_ptr->impl.pointer_motion) return false;
 
-    return element_ptr->impl_ptr->pointer_motion(
+    return element_ptr->impl.pointer_motion(
         element_ptr, x, y, time_msec);
 }
 
@@ -226,8 +225,8 @@ bool wlmtk_element_pointer_motion(
 void wlmtk_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
-    if (NULL != element_ptr->impl_ptr->pointer_leave) {
-        element_ptr->impl_ptr->pointer_leave(element_ptr);
+    if (NULL != element_ptr->impl.pointer_leave) {
+        element_ptr->impl.pointer_leave(element_ptr);
     }
     element_ptr->last_pointer_x = NAN;
     element_ptr->last_pointer_y = NAN;
@@ -434,10 +433,10 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_init(&element, &wlmtk_fake_element_impl));
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.impl_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.impl.destroy);
 
     wlmtk_element_fini(&element);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.impl_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.impl.destroy);
 }
 
 /* ------------------------------------------------------------------------- */

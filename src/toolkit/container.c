@@ -592,13 +592,13 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
                             &container, &wlmtk_container_fake_impl));
     // Also expect the super element to be initialized.
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl.destroy);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl_ptr);
 
     wlmtk_container_destroy(&container);
 
     // Also expect the super element to be un-initialized.
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.impl_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.impl.destroy);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl_ptr);
 }
 
