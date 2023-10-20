@@ -47,6 +47,8 @@ typedef enum {
 struct _wlmtk_workspace_t {
     /** Superclass: Container. */
     wlmtk_container_t         super_container;
+    /** Original virtual method table. We're overwriting parts. */
+    wlmtk_element_impl_t      parent_element_impl;
 
     /** Current FSM state. */
     pointer_state_t current_state;
@@ -61,9 +63,20 @@ struct _wlmtk_workspace_t {
     int                       initial_x;
     /** Element's Y position when initiating a move or resize. */
     int                       initial_y;
+
 };
 
 static void workspace_container_destroy(wlmtk_container_t *container_ptr);
+
+static bool element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec);
+static bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+static void element_pointer_leave(
+    wlmtk_element_t *element_ptr);
 
 /** Method table for the container's virtual methods. */
 const wlmtk_container_impl_t  workspace_container_impl = {
@@ -129,7 +142,15 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }
-
+    memcpy(&workspace_ptr->parent_element_impl,
+           &workspace_ptr->super_container.super_element.impl,
+           sizeof(wlmtk_element_impl_t));
+    workspace_ptr->super_container.super_element.impl.pointer_motion =
+        element_pointer_motion;
+    workspace_ptr->super_container.super_element.impl.pointer_button =
+        element_pointer_button;
+    workspace_ptr->super_container.super_element.impl.pointer_leave =
+        element_pointer_leave;
     return workspace_ptr;
 }
 
@@ -183,43 +204,33 @@ bool wlmtk_workspace_motion(
     double y,
     uint32_t time_msec)
 {
-    bool rv = wlmtk_element_pointer_motion(
+    return wlmtk_element_pointer_motion(
         &workspace_ptr->super_container.super_element, x, y, time_msec);
-    handle_state(workspace_ptr, POINTER_STATE_EVENT_MOTION, NULL);
-    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Improe this, and add tests to tatch UP to CLICK.
+// TODO(kaeser@gubbe.ch): Improve this, and add tests to tatch UP to CLICK.
 void wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
     const struct wlr_pointer_button_event *event_ptr)
 {
     wlmtk_button_event_t event;
-    wlmtk_element_t *focused_element_ptr;
-
-    if (WLR_BUTTON_RELEASED == event_ptr->state) {
-        handle_state(workspace_ptr,
-                     POINTER_STATE_EVENT_BTN_RELEASED,
-                     NULL);
-    }
 
     // Guard clause: nothing to pass on if no element has the focus.
-    focused_element_ptr =
-        workspace_ptr->super_container.pointer_focus_element_ptr;
-    if (NULL == focused_element_ptr) return;
-
     event.button = event_ptr->button;
     event.time_msec = event_ptr->time_msec;
     if (WLR_BUTTON_PRESSED == event_ptr->state) {
         event.type = WLMTK_BUTTON_DOWN;
-        wlmtk_element_pointer_button(focused_element_ptr, &event);
+        wlmtk_element_pointer_button(
+            &workspace_ptr->super_container.super_element, &event);
 
     } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
         event.type = WLMTK_BUTTON_UP;
-        wlmtk_element_pointer_button(focused_element_ptr, &event);
+        wlmtk_element_pointer_button(
+            &workspace_ptr->super_container.super_element, &event);
         event.type = WLMTK_BUTTON_CLICK;
-        wlmtk_element_pointer_button(focused_element_ptr, &event);
+        wlmtk_element_pointer_button(
+            &workspace_ptr->super_container.super_element, &event);
 
     } else {
         bs_log(BS_WARNING,
@@ -245,6 +256,76 @@ void workspace_container_destroy(wlmtk_container_t *container_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_workspace_t, super_container);
     wlmtk_workspace_destroy(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Extends wlmtk_container_t::pointer_button: Feeds the motion into the
+ * workspace's pointer state machine, and only passes it to the container's
+ * handler if the event isn't consumed yet.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return Whether the motion encountered an active element.
+ */
+bool element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, super_container.super_element);
+
+    handle_state(workspace_ptr, POINTER_STATE_EVENT_MOTION, NULL);
+
+    return workspace_ptr->parent_element_impl.pointer_motion(
+        element_ptr, x, y, time_msec);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Extends wlmtk_container_t::pointer_button.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return Whether the button event was consumed.
+ */
+bool element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, super_container.super_element);
+
+    if (button_event_ptr->type == WLMTK_BUTTON_UP) {
+        handle_state(workspace_ptr,
+                     POINTER_STATE_EVENT_BTN_RELEASED,
+                     NULL);
+    }
+
+    return workspace_ptr->parent_element_impl.pointer_button(
+        element_ptr, button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Extends wlmtk_container_t::leave.
+ *
+ * @param element_ptr
+ */
+void element_pointer_leave(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, super_container.super_element);
+
+    handle_state(workspace_ptr, POINTER_STATE_EVENT_RESET, NULL);
+
+    workspace_ptr->parent_element_impl.pointer_leave(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
