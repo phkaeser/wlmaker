@@ -32,6 +32,21 @@ typedef struct _wlmtk_content_impl_t wlmtk_content_impl_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Method table of the content. */
+struct _wlmtk_content_impl_t {
+    /** Destroys the implementation of the content. */
+    void (*destroy)(wlmtk_content_t *content_ptr);
+    /** Creates content's scene graph API node, child to wlr_scene_tree_ptr. */
+    struct wlr_scene_node *(*create_scene_node)(
+        wlmtk_content_t *content_ptr,
+        struct wlr_scene_tree *wlr_scene_tree_ptr);
+    /** Gets width and height of the content. */
+    void (*get_size)(wlmtk_content_t *content_ptr,
+                     int *width_ptr, int *height_ptr);
+    /** Sets whether the content is activated (has keyboard focus). */
+    void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
+};
+
 /** State of the element. */
 struct _wlmtk_content_t {
     /** Temporary: Identifier, to disambiguate from XDG nodes. */
@@ -41,7 +56,7 @@ struct _wlmtk_content_t {
     wlmtk_element_t           super_element;
 
     /** Implementation of abstract virtual methods. */
-    const wlmtk_content_impl_t *impl_ptr;
+    wlmtk_content_impl_t      impl;
 
     /**
      * The window this content belongs to. Will be set when creating
@@ -58,21 +73,6 @@ struct _wlmtk_content_t {
      * elements (eg. buffer), this should be abstracted away.
      */
     struct wlr_surface        *wlr_surface_ptr;
-};
-
-/** Method table of the content. */
-struct _wlmtk_content_impl_t {
-    /** Destroys the implementation of the content. */
-    void (*destroy)(wlmtk_content_t *content_ptr);
-    /** Creates content's scene graph API node, child to wlr_scene_tree_ptr. */
-    struct wlr_scene_node *(*create_scene_node)(
-        wlmtk_content_t *content_ptr,
-        struct wlr_scene_tree *wlr_scene_tree_ptr);
-    /** Gets width and height of the content. */
-    void (*get_size)(wlmtk_content_t *content_ptr,
-                     int *width_ptr, int *height_ptr);
-    /** Sets whether the content is activated (has keyboard focus). */
-    void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
 
 /**
@@ -119,19 +119,19 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
 /** Wraps to @ref wlmtk_content_impl_t::destroy. */
 static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
-    content_ptr->impl_ptr->destroy(content_ptr);
+    content_ptr->impl.destroy(content_ptr);
 }
 /** Wraps to @ref wlmtk_content_impl_t::get_size. */
 static inline void wlmtk_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr, int *height_ptr) {
-    content_ptr->impl_ptr->get_size(content_ptr, width_ptr, height_ptr);
+    content_ptr->impl.get_size(content_ptr, width_ptr, height_ptr);
 }
 /** Wraps to @ref wlmtk_content_impl_t::set_activated. */
 static inline void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated) {
-    content_ptr->impl_ptr->set_activated(content_ptr, activated);
+    content_ptr->impl.set_activated(content_ptr, activated);
 }
 
 /**

@@ -79,13 +79,12 @@ bool wlmtk_content_init(
     struct wlr_seat *wlr_seat_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
+    memset(content_ptr, 0, sizeof(wlmtk_content_t));
     BS_ASSERT(NULL != content_impl_ptr);
     BS_ASSERT(NULL != content_impl_ptr->destroy);
     BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
     BS_ASSERT(NULL != content_impl_ptr->get_size);
     BS_ASSERT(NULL != content_impl_ptr->set_activated);
-
-    memset(content_ptr, 0, sizeof(wlmtk_content_t));
 
     if (!wlmtk_element_init(&content_ptr->super_element,
                             &super_element_impl)) {
@@ -93,17 +92,16 @@ bool wlmtk_content_init(
     }
 
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
-
-    content_ptr->impl_ptr = content_impl_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
-    return true;
+
+    memcpy(&content_ptr->impl, content_impl_ptr, sizeof(wlmtk_content_impl_t));    return true;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_content_fini(wlmtk_content_t *content_ptr)
 {
     wlmtk_element_fini(&content_ptr->super_element);
-    content_ptr->impl_ptr = NULL;
+    memset(content_ptr, 0, sizeof(wlmtk_content_t));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -134,7 +132,7 @@ void element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
-    content_ptr->impl_ptr->destroy(content_ptr);
+    content_ptr->impl.destroy(content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -152,7 +150,7 @@ struct wlr_scene_node *element_create_scene_node(
 {
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
-    return content_ptr->impl_ptr->create_scene_node(
+    return content_ptr->impl.create_scene_node(
         content_ptr, wlr_scene_tree_ptr);
 }
 
@@ -384,7 +382,7 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
     }
 
     BS_ASSERT(NULL != fake_content_ptr->content.super_element.impl.destroy);
-    BS_ASSERT(NULL != fake_content_ptr->content.impl_ptr);
+    BS_ASSERT(NULL != fake_content_ptr->content.impl.destroy);
     return fake_content_ptr;
 }
 
@@ -399,7 +397,7 @@ void fake_content_destroy(wlmtk_content_t *content_ptr)
 
     // Also expect the super element to be un-initialized.
     BS_ASSERT(NULL == fake_content_ptr->content.super_element.impl.destroy);
-    BS_ASSERT(NULL == fake_content_ptr->content.impl_ptr);
+    BS_ASSERT(NULL == fake_content_ptr->content.impl.destroy);
     free(fake_content_ptr);
 }
 
@@ -461,7 +459,7 @@ void test_init_fini(bs_test_t *test_ptr)
         fake_content_ptr->content.super_element.impl.destroy);
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        fake_content_ptr->content.impl_ptr);
+        fake_content_ptr->content.impl.destroy);
 
     int l, t, r, b;
     fake_content_ptr->width = 42;
