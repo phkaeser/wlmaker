@@ -82,16 +82,18 @@ bool wlmtk_container_init(
     const wlmtk_container_impl_t *container_impl_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
+    memset(container_ptr, 0, sizeof(wlmtk_container_t));
     BS_ASSERT(NULL != container_impl_ptr);
     BS_ASSERT(NULL != container_impl_ptr->destroy);
-    memset(container_ptr, 0, sizeof(wlmtk_container_t));
 
     if (!wlmtk_element_init(&container_ptr->super_element,
                             &super_element_impl)) {
         return false;
     }
 
-    container_ptr->impl_ptr = container_impl_ptr;
+    memcpy(&container_ptr->impl,
+           container_impl_ptr,
+           sizeof(wlmtk_container_impl_t));
     return true;
 }
 
@@ -136,7 +138,7 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
     }
 
     wlmtk_element_fini(&container_ptr->super_element);
-    container_ptr->impl_ptr = NULL;
+    memset(container_ptr, 0, sizeof(wlmtk_container_t));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -213,7 +215,7 @@ void element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
-    container_ptr->impl_ptr->destroy(container_ptr);
+    container_ptr->impl.destroy(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -593,13 +595,13 @@ void test_init_fini(bs_test_t *test_ptr)
                             &container, &wlmtk_container_fake_impl));
     // Also expect the super element to be initialized.
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl.destroy);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl.destroy);
 
     wlmtk_container_destroy(&container);
 
     // Also expect the super element to be un-initialized.
     BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.impl.destroy);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl.destroy);
 }
 
 /* ------------------------------------------------------------------------- */

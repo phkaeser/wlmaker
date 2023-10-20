@@ -34,6 +34,12 @@ typedef struct _wlmtk_container_impl_t wlmtk_container_impl_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Virtual method table of the container. */
+struct _wlmtk_container_impl_t {
+    /** dtor. */
+    void (*destroy)(wlmtk_container_t *container_ptr);
+};
+
 /** State of the container. */
 struct _wlmtk_container_t {
     /** Super class of the container. */
@@ -43,7 +49,7 @@ struct _wlmtk_container_t {
     bs_dllist_t               elements;
 
     /** Implementation of the container's virtual methods. */
-    const wlmtk_container_impl_t *impl_ptr;
+    wlmtk_container_impl_t    impl;
 
     /** Scene tree. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
@@ -53,12 +59,6 @@ struct _wlmtk_container_t {
 
     /** Stores the element with current pointer focus. May be NULL. */
     wlmtk_element_t           *pointer_focus_element_ptr;
-};
-
-/** Virtual method table of the container. */
-struct _wlmtk_container_impl_t {
-    /** dtor. */
-    void (*destroy)(wlmtk_container_t *container_ptr);
 };
 
 /**
@@ -148,7 +148,7 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
 /** Virtual method: Calls the dtor of the container's implementation. */
 static inline void wlmtk_container_destroy(
     wlmtk_container_t *container_ptr) {
-    container_ptr->impl_ptr->destroy(container_ptr);
+    container_ptr->impl.destroy(container_ptr);
 }
 
 /** Unit tests for the container. */
