@@ -92,17 +92,17 @@ class Workspace {
 Container *-- Workspace
 
 class HBox {
-  Container parent
+  Container super_container
 }
 Container <|-- HBox
 
 class VBox {
-  Container parent
+  Container super_container
 }
 Container <|-- VBox
 
 abstract class Content {
-  Element parent
+  Element super_element
 
   init(handlers)
   fini()
@@ -140,18 +140,24 @@ Content <|-- XdgToplevelSurface
 
 class Buffer {
   Element parent
+
+  init(handlers, struct wlr_buffer *)
+  set(struct wlr_buffer *)
 }
 Element <|-- Buffer
 
 class Button {
+  Buffer super_buffer
 
+  init(handlers, texture_up, texture_down, texture_blurred)
+  update(texture_up, texture_down, texture_blurred)
 }
 Buffer <|-- Button
 
 class Window {
   VBox super_container
   Content *content
-  TitleBar title_bar
+  TitleBar *title_bar
 
   Window *create(Content*)
   destroy()
@@ -165,9 +171,19 @@ class Window {
 VBox *-- Window
 
 class TitleBar {
-  HBox parent
+  HBox super_hbox
 }
 HBox *-- TitleBar
+
+class TitleBarButton {
+  Button super_button
+
+  init(handlers, overlay_texture, texture, posx, posy)
+  redraw(texture, posx, posy)
+
+  get_width(int *)
+  set_width(int)
+}
 
 class Menu {
   VBox parent
