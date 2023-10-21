@@ -91,6 +91,7 @@ bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
     const wlmtk_content_impl_t *content_impl_ptr,
     struct wlr_seat *wlr_seat_ptr);
+
 /**
  * Cleans up the content.
  *
