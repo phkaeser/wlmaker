@@ -36,8 +36,10 @@ struct _wlmtk_window_t {
 
 static void window_container_destroy(wlmtk_container_t *container_ptr);
 
+/* == Data ================================================================= */
+
 /** Method table for the container's virtual methods. */
-const wlmtk_container_impl_t  window_container_impl = {
+static const wlmtk_container_impl_t window_container_impl = {
     .destroy = window_container_destroy
 };
 
