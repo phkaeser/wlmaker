@@ -29,6 +29,7 @@ class Element {
   Container *parent_container_ptr
 
   bool init(handlers)
+  bool init_attached(handlers, struct wlr_scene_tree *)
   void fini()
   -void set_parent_container(Container*)
   -void attach_to_scene_graph()
@@ -64,10 +65,6 @@ class Container {
   -struct wlr_scene_tree *wlr_scene_tree()
 
   {abstract}#void destroy()
-
-  void motion(double, double)
-  void leave()
-  void click()
 }
 Element <|-- Container
 note right of Element::"add_element(Element*)"
@@ -113,12 +110,11 @@ abstract class Content {
   Element *element()
   -set_window(Window*)
 
+  {abstract}#void get_size(int *, int *)
+  {abstract}#void set_size(int, int)
   {abstract}#void set_activated(bool)
   {abstract}#void set_maximized(bool)
   {abstract}#void set_fullscreen(bool)
-  {abstract}#void motion(double, double)
-  {abstract}#void leave()
-  {abstract}#void click()
 }
 Element <|-- Content
 note right of Content
@@ -129,10 +125,6 @@ end note
 
 class LayerElement {
   Element parent
-
-  {abstract}#void motion(double, double)
-  {abstract}#void leave()
-  {abstract}#void click()
 
   {abstract}#configure()
   }
@@ -167,6 +159,8 @@ class Window {
 
   set_activated(bool)
   set_server_side_decorated(bool)
+  get_size(int *, int *)
+  set_size(int, int)
 }
 VBox *-- Window
 
