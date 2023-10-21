@@ -58,7 +58,7 @@ static bool element_pointer_button(
 /* == Data ================================================================= */
 
 /** Method table for the container's virtual methods. */
-const wlmtk_element_impl_t  super_element_impl = {
+static const wlmtk_element_impl_t super_element_impl = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
@@ -95,7 +95,8 @@ bool wlmtk_content_init(
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
 
-    memcpy(&content_ptr->impl, content_impl_ptr, sizeof(wlmtk_content_impl_t));    return true;
+    memcpy(&content_ptr->impl, content_impl_ptr, sizeof(wlmtk_content_impl_t));
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
