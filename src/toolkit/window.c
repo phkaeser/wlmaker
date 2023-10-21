@@ -108,6 +108,26 @@ void wlmtk_window_set_server_side_decorated(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_get_size(
+    wlmtk_window_t *window_ptr,
+    int *width_ptr,
+    int *height_ptr)
+{
+    // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
+    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_size(
+    wlmtk_window_t *window_ptr,
+    int width,
+    int height)
+{
+    // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
+    wlmtk_content_set_size(window_ptr->content_ptr, width, height);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(NULL !=
@@ -115,6 +135,16 @@ void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
         window_ptr->super_container.super_element.parent_container_ptr);
     wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
+{
+    BS_ASSERT(NULL !=
+              window_ptr->super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
+        window_ptr->super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_begin_window_resize(workspace_ptr, window_ptr, edges);
 }
 
 /* == Local (static) methods =============================================== */

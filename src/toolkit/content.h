@@ -43,6 +43,9 @@ struct _wlmtk_content_impl_t {
     /** Gets width and height of the content. */
     void (*get_size)(wlmtk_content_t *content_ptr,
                      int *width_ptr, int *height_ptr);
+    /** Sets width and height of the content. */
+    void (*set_size)(wlmtk_content_t *content_ptr,
+                     int width, int height);
     /** Sets whether the content is activated (has keyboard focus). */
     void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
@@ -126,6 +129,12 @@ static inline void wlmtk_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr, int *height_ptr) {
     content_ptr->impl.get_size(content_ptr, width_ptr, height_ptr);
+}
+/** Wraps to @ref wlmtk_content_impl_t::set_size. */
+static inline void wlmtk_content_set_size(
+    wlmtk_content_t *content_ptr,
+    int width, int height) {
+    content_ptr->impl.set_size(content_ptr, width, height);
 }
 /** Wraps to @ref wlmtk_content_impl_t::set_activated. */
 static inline void wlmtk_content_set_activated(

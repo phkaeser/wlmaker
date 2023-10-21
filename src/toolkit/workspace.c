@@ -25,6 +25,7 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -49,6 +50,12 @@ struct _wlmtk_workspace_t {
     int                       initial_x;
     /** Element's Y position when initiating a move or resize. */
     int                       initial_y;
+    /** Window's width when initiazing the resize. */
+    int                       initial_width;
+    /** Window's height  when initiazing the resize. */
+    int                       initial_height;
+    /** Edges currently active for resizing: `enum wlr_edges`. */
+    uint32_t                  resize_edges;
 };
 
 static void workspace_container_destroy(wlmtk_container_t *container_ptr);
@@ -65,6 +72,8 @@ static void element_pointer_leave(
 
 static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+static bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+static bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 
 /* == Data ================================================================= */
@@ -79,6 +88,7 @@ typedef enum {
 /** Events for the pointer FSM. */
 typedef enum {
     PFSME_BEGIN_MOVE,
+    PFSME_BEGIN_RESIZE,
     PFSME_RELEASED,
     PFSME_MOTION,
     PFSME_RESET,
@@ -95,6 +105,10 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
     { PFSMS_MOVE, PFSME_MOTION, PFSMS_MOVE, pfsm_move_motion },
     { PFSMS_MOVE, PFSME_RELEASED, PFSMS_PASSTHROUGH, pfsm_reset },
     { PFSMS_MOVE, PFSME_RESET, PFSMS_PASSTHROUGH, pfsm_reset },
+    { PFSMS_PASSTHROUGH, PFSME_BEGIN_RESIZE, PFSMS_RESIZE, pfsm_resize_begin },
+    { PFSMS_RESIZE, PFSME_MOTION, PFSMS_RESIZE, pfsm_resize_motion },
+    { PFSMS_RESIZE, PFSME_RELEASED, PFSMS_PASSTHROUGH, pfsm_reset },
+    { PFSMS_RESIZE, PFSME_RESET, PFSMS_PASSTHROUGH, pfsm_reset },
     WLMTK_FSM_TRANSITION_SENTINEL,
 };
 
@@ -227,6 +241,16 @@ void wlmtk_workspace_begin_window_move(
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_MOVE, window_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_begin_window_resize(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr,
+    uint32_t edges)
+{
+    workspace_ptr->resize_edges = edges;
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_RESIZE, window_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -351,6 +375,74 @@ bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         workspace_ptr->initial_x + rel_x,
         workspace_ptr->initial_y + rel_y);
 
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Initiates a resize. */
+bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        fsm_ptr, wlmtk_workspace_t, fsm);
+
+    workspace_ptr->grabbed_window_ptr = ud_ptr;
+    workspace_ptr->motion_x =
+        workspace_ptr->super_container.super_element.last_pointer_x;
+    workspace_ptr->motion_y =
+        workspace_ptr->super_container.super_element.last_pointer_y;
+
+    wlmtk_element_get_position(
+        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
+        &workspace_ptr->initial_x,
+        &workspace_ptr->initial_y);
+
+    wlmtk_window_get_size(
+        workspace_ptr->grabbed_window_ptr,
+        &workspace_ptr->initial_width,
+        &workspace_ptr->initial_height);
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles motion during a resize. */
+bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        fsm_ptr, wlmtk_workspace_t, fsm);
+
+    double rel_x = workspace_ptr->super_container.super_element.last_pointer_x -
+        workspace_ptr->motion_x;
+    double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
+        workspace_ptr->motion_y;
+
+    // Update new boundaries by the relative movement.
+    int top = workspace_ptr->initial_y;
+    int bottom = workspace_ptr->initial_y + workspace_ptr->initial_height;
+    if (workspace_ptr->resize_edges & WLR_EDGE_TOP) {
+        top += rel_y;
+        if (top >= bottom) top = bottom - 1;
+    } else if (workspace_ptr->resize_edges & WLR_EDGE_BOTTOM) {
+        bottom += rel_y;
+        if (bottom <= top) bottom = top + 1;
+    }
+
+    int left = workspace_ptr->initial_x;
+    int right = workspace_ptr->initial_x + workspace_ptr->initial_width;
+    if (workspace_ptr->resize_edges & WLR_EDGE_LEFT) {
+        left += rel_x;
+        if (left >= right) left = right - 1 ;
+    } else if (workspace_ptr->resize_edges & WLR_EDGE_RIGHT) {
+        right += rel_x;
+        if (right <= left) right = left + 1;
+    }
+
+    wlmtk_element_set_position(
+        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
+        left, top);
+    wlmtk_window_set_size(
+        workspace_ptr->grabbed_window_ptr,
+        right - left, bottom - top);
     return true;
 }
 

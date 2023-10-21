@@ -84,6 +84,30 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated);
 
 /**
+ * Obtains the size of the window, including potential decorations.
+ *
+ * @param window_ptr
+ * @param width_ptr           May be NULL.
+ * @param height_ptr          May be NULL.
+ */
+void wlmtk_window_get_size(
+    wlmtk_window_t *window_ptr,
+    int *width_ptr,
+    int *height_ptr);
+
+/**
+ * Sets the size of the window, including potential decorations.
+ *
+ * @param window_ptr
+ * @param width
+ * @param height
+ */
+void wlmtk_window_set_size(
+    wlmtk_window_t *window_ptr,
+    int width,
+    int height);
+
+/**
  * Requests a move for the window.
  *
  * Requires the window to be mapped (to a workspace), and forwards the call to
@@ -92,6 +116,17 @@ void wlmtk_window_set_server_side_decorated(
  * @param window_ptr
  */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr);
+
+/**
+ * Requests the window to be resized.
+ *
+ * Requires the window to be mapped (to a workspace), and forwards the call to
+ * @ref wlmtk_workspace_begin_window_resize.
+ *
+ * @param window_ptr
+ * @param edges
+ */
+void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];

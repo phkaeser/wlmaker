@@ -40,8 +40,10 @@ typedef struct {
     /** Listener for the `unmap` signal of the `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
 
-    /** Listener for the `move` signal of the `wlr_xdg_toplevel`. */
+    /** Listener for `request_move` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_move_listener;
+    /** Listener for `request_resize` signal of `wlr_xdg_toplevel::events`. */
+    struct wl_listener        toplevel_request_resize_listener;
 } wlmtk_xdg_toplevel_content_t;
 
 static wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
@@ -60,6 +62,9 @@ static void handle_surface_unmap(
 static void handle_toplevel_request_move(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_toplevel_request_resize(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void content_destroy(wlmtk_content_t *content_ptr);
 static struct wlr_scene_node *content_create_scene_node(
@@ -69,6 +74,10 @@ static void content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,
     int *height_ptr);
+static void content_set_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height);
 static void content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated);
@@ -80,6 +89,7 @@ const wlmtk_content_impl_t    content_impl = {
     .destroy = content_destroy,
     .create_scene_node = content_create_scene_node,
     .get_size = content_get_size,
+    .set_size = content_set_size,
     .set_activated = content_set_activated,
 };
 
@@ -138,6 +148,10 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &wlr_xdg_surface_ptr->toplevel->events.request_move,
         &xdg_tl_content_ptr->toplevel_request_move_listener,
         handle_toplevel_request_move);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->toplevel->events.request_resize,
+        &xdg_tl_content_ptr->toplevel_request_resize_listener,
+        handle_toplevel_request_resize);
 
     xdg_tl_content_ptr->wlr_xdg_surface_ptr->data =
         &xdg_tl_content_ptr->super_content;
@@ -153,6 +167,7 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
 void xdg_toplevel_content_destroy(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr)
 {
+    wl_list_remove(&xdg_tl_content_ptr->toplevel_request_resize_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_move_listener.link);
 
     wl_list_remove(&xdg_tl_content_ptr->surface_map_listener.link);
@@ -200,7 +215,7 @@ struct wlr_scene_node *content_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Gets the dimensions of the element in pixels, relative to the position.
+ * Gets the dimensions of the element in pixels.
  *
  * @param content_ptr
  * @param width_ptr            Width of content. May be NULL.
@@ -221,6 +236,27 @@ void content_get_size(
     // FIXME -- WARNING: THIS HAS A x AND y WITH RELATIVE POSITION!!
     if (NULL != width_ptr) *width_ptr = geo_box.width;
     if (NULL != height_ptr) *height_ptr = geo_box.height;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Sets the dimensions of the element in pixels.
+ *
+ * @param content_ptr
+ * @param width               Width of content.
+ * @param height              Height of content.
+ */
+void content_set_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+
+    // FIXME: Catch serial.
+    wlr_xdg_toplevel_set_size(
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -315,7 +351,7 @@ void handle_surface_unmap(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for the `reuqest_move` signal.
+ * Handler for the `request_move` signal.
  *
  * @param listener_ptr
  * @param data_ptr
@@ -329,6 +365,27 @@ void handle_toplevel_request_move(
         wlmtk_xdg_toplevel_content_t,
         toplevel_request_move_listener);
     wlmtk_window_request_move(xdg_tl_content_ptr->super_content.window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `requestp_resize` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to a struct wlr_xdg_toplevel_resize_event.
+ */
+void handle_toplevel_request_resize(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmtk_xdg_toplevel_content_t,
+        toplevel_request_resize_listener);
+    struct wlr_xdg_toplevel_resize_event *resize_event_ptr = data_ptr;
+    wlmtk_window_request_resize(
+        xdg_tl_content_ptr->super_content.window_ptr,
+        resize_event_ptr->edges);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

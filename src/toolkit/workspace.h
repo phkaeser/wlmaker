@@ -120,6 +120,18 @@ void wlmtk_workspace_begin_window_move(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
 
+/**
+ * Initiates a 'resize' for the window.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ * @param edges
+ */
+void wlmtk_workspace_begin_window_resize(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr,
+    uint32_t edges);
+
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
