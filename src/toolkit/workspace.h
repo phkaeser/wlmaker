@@ -85,6 +85,16 @@ wlmtk_workspace_t *wlmtk_workspace_from_container(
 
 /**
  * Handles a motion event.
+ *
+ * TODO(kaeser@gubbe.ch): Move this to the server, and have the workspace's
+ * motion handling dealt with the element's pointer_motion method.
+ *
+ * @param workspace_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return Whether there was an element under the pointer.
  */
 bool wlmtk_workspace_motion(
     wlmtk_workspace_t *workspace_ptr,
@@ -101,7 +111,8 @@ bool wlmtk_workspace_motion(
  * DRAG event.
  * These events will be forwarded to the event currently having pointer focus.
  *
- * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events.
+ * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events. Also, move
+ * this code into the server and make it well tested.
  *
  * @param workspace_ptr
  * @param event_ptr

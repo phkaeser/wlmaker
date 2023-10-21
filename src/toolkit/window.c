@@ -125,6 +125,13 @@ void wlmtk_window_set_size(
 {
     // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
     wlmtk_content_set_size(window_ptr->content_ptr, width, height);
+
+    // TODO(kaeser@gubbe.ch): For client content (eg. a wlr_surface), setting
+    // the size is an asynchronous operation and should be handled as such.
+    // Meaning: In example of resizing at the top-left corner, we'll want to
+    // request the content to adjust size, but wait with adjusting the
+    // content position until the size adjustment is applied. This implies we
+    // may need to combine the set_size and set_position methods for window.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -199,6 +206,5 @@ void test_set_activated(bs_test_t *test_ptr)
 
     wlmtk_window_destroy(window_ptr);
 }
-
 
 /* == End of window.c ====================================================== */

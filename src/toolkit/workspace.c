@@ -203,7 +203,8 @@ bool wlmtk_workspace_motion(
 }
 
 /* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Improve this, and add tests to tatch UP to CLICK.
+// TODO(kaeser@gubbe.ch): Improve this, has multiple bugs: It won't keep
+// different buttons apart, and there's currently no test associated.
 void wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
     const struct wlr_pointer_button_event *event_ptr)
@@ -329,13 +330,9 @@ void element_pointer_leave(
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
-
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
-
     workspace_ptr->parent_element_impl.pointer_leave(element_ptr);
 }
-
-
 
 /* ------------------------------------------------------------------------- */
 /** Initiates a move. */
@@ -355,6 +352,8 @@ bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
         &workspace_ptr->initial_x,
         &workspace_ptr->initial_y);
 
+    // TODO(kaeser@gubbe.ch): When in move mode, set (and keep) a corresponding
+    // cursor image.
     return true;
 }
 
