@@ -21,6 +21,7 @@ SET(PUBLIC_HEADER_FILES
   toolkit.h
   util.h
 
+  box.h
   buffer.h
   container.h
   content.h
@@ -31,6 +32,7 @@ SET(PUBLIC_HEADER_FILES
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
+  box.c
   buffer.c
   container.c
   content.c
