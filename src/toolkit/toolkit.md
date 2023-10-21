@@ -184,6 +184,14 @@ class MenuItem {
 
 }
 Buffer <|-- MenuItem
+
+class Cursor {
+  Cursor *create()
+  void destroy()
+
+  attach_input_device(struct wlr_input_device*)
+  set_image(const char *
+}
 ```
 
 ### Pending work
