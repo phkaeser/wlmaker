@@ -463,6 +463,7 @@ static void test_map_unmap(bs_test_t *test_ptr);
 static void test_button(bs_test_t *test_ptr);
 static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
+static void test_resize(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -470,6 +471,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "button", test_button },
     { 1, "move", test_move },
     { 1, "unmap_during_move", test_unmap_during_move },
+    { 1, "resize", test_resize },
     { 0, NULL, NULL }
 };
 
@@ -681,6 +683,55 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
 
+    wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests resizing a window. */
+void test_resize(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        fake_parent_ptr->wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != workspace_ptr);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_content_set_size(&fake_content_ptr->content, 40, 20);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &fake_content_ptr->content);
+    BS_ASSERT(NULL != window_ptr);
+    wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
+
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
+    int width, height;
+    wlmtk_window_get_size(window_ptr, &width, &height);
+    BS_TEST_VERIFY_EQ(test_ptr, 40, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, height);
+
+    // Starts a resize for the window. Will resize & move it...
+    wlmtk_workspace_begin_window_resize(
+        workspace_ptr, window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
+    wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+    wlmtk_window_get_size(window_ptr, &width, &height);
+    BS_TEST_VERIFY_EQ(test_ptr, 39, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 18, height);
+
+    // Releases the button. Should end the move.
+    struct wlr_pointer_button_event wlr_pointer_button_event = {
+        .button = BTN_LEFT,
+        .state = WLR_BUTTON_RELEASED,
+        .time_msec = 44,
+    };
+    wlmtk_workspace_button(workspace_ptr, &wlr_pointer_button_event);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, workspace_ptr->grabbed_window_ptr);
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy(fake_parent_ptr);
