@@ -38,7 +38,8 @@ static const wlmtk_container_impl_t container_impl = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    const wlmtk_box_impl_t *box_impl_ptr)
+    const wlmtk_box_impl_t *box_impl_ptr,
+    wlmtk_box_orientation_t orientation)
 {
     BS_ASSERT(NULL != box_ptr);
     BS_ASSERT(NULL != box_impl_ptr);
@@ -47,6 +48,7 @@ bool wlmtk_box_init(
         return false;
     }
     memcpy(&box_ptr->impl, box_impl_ptr, sizeof(wlmtk_box_impl_t));
+    box_ptr->orientation = orientation;
 
     return true;
 }
@@ -105,11 +107,11 @@ void container_update_layout(wlmtk_container_t *container_ptr)
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
-static void test_layout(bs_test_t *test_ptr);
+static void test_layout_horizontal(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_box_test_cases[] = {
     { 1, "init_fini", test_init_fini },
-    { 1, "layout", test_layout },
+    { 1, "layout_horizontal", test_layout_horizontal },
     { 0, NULL, NULL }
 };
 
@@ -127,17 +129,17 @@ static const wlmtk_box_impl_t test_box_impl = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, &test_box_impl);
+    wlmtk_box_init(&box, &test_box_impl, WLMTK_BOX_HORIZONTAL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, box.impl.destroy);
     box.impl.destroy(&box);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests layouting. */
-void test_layout(bs_test_t *test_ptr)
+/** Tests layouting horizontally */
+void test_layout_horizontal(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, &test_box_impl);
+    wlmtk_box_init(&box, &test_box_impl, WLMTK_BOX_HORIZONTAL);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);

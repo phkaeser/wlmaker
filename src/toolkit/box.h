@@ -37,12 +37,20 @@ struct _wlmtk_box_impl_t {
     void (*destroy)(wlmtk_box_t *box_ptr);
 };
 
+/** Orientation of the box. */
+typedef enum {
+    WLMTK_BOX_HORIZONTAL,
+    WLMTK_BOX_VERTICAL,
+} wlmtk_box_orientation_t;
+
 /** State of the box. */
 struct _wlmtk_box_t {
     /** Super class of the box. */
     wlmtk_container_t         super_container;
     /** Virtual method table of the box. */
     wlmtk_box_impl_t          impl;
+    /** Orientation of the box. */
+    wlmtk_box_orientation_t   orientation;
 };
 
 /**
@@ -50,12 +58,14 @@ struct _wlmtk_box_t {
  *
  * @param box_ptr
  * @param box_impl_ptr
+ * @param orientation
  *
  * @return true on success.
  */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    const wlmtk_box_impl_t *box_impl_ptr);
+    const wlmtk_box_impl_t *box_impl_ptr,
+    wlmtk_box_orientation_t orientation);
 
 /**
  * Un-initializes the box.
