@@ -38,6 +38,8 @@ extern "C" {
 struct _wlmtk_container_impl_t {
     /** dtor. */
     void (*destroy)(wlmtk_container_t *container_ptr);
+    /** Updates the layout of the container elements. */
+    void (*update_layout)(wlmtk_container_t *container_ptr);
 };
 
 /** State of the container. */
@@ -123,15 +125,16 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr);
 
 /**
- * Re-computes pointer focus for the entire container tree.
+ * Updates the layout of the container.
  *
- * Will retract to the top of parent containers, and then (re)compute the
- * pointer focus from there.
- *
- * @param container_ptr
+ * @param container_ptr       Container to update. NULL implies a no-op.
  */
-void wlmtk_container_pointer_refocus_tree(
-    wlmtk_container_t *container_ptr);
+static inline void wlmtk_container_update_layout(
+    wlmtk_container_t *container_ptr) {
+    if (NULL != container_ptr) {
+        container_ptr->impl.update_layout(container_ptr);
+    }
+}
 
 /**
  * Returns the wlroots scene graph tree for this node.

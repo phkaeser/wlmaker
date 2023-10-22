@@ -41,6 +41,8 @@ struct _wlmtk_box_impl_t {
 struct _wlmtk_box_t {
     /** Super class of the box. */
     wlmtk_container_t         super_container;
+    /** Virtual method table of the box. */
+    wlmtk_box_impl_t          impl;
 };
 
 /**
@@ -61,6 +63,9 @@ bool wlmtk_box_init(
  * @param box_ptr
  */
 void wlmtk_box_fini(wlmtk_box_t *box_ptr);
+
+/** Unit tests. */
+extern const bs_test_case_t wlmtk_box_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

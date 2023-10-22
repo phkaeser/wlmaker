@@ -62,6 +62,7 @@ static bool update_pointer_focus_at(
     double x,
     double y,
     uint32_t time_msec);
+static void base_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_impl_t super_element_impl = {
@@ -94,6 +95,9 @@ bool wlmtk_container_init(
     memcpy(&container_ptr->impl,
            container_impl_ptr,
            sizeof(wlmtk_container_impl_t));
+    if (NULL == container_ptr->impl.update_layout) {
+        container_ptr->impl.update_layout = base_container_update_layout;
+    }
     return true;
 }
 
@@ -154,9 +158,7 @@ void wlmtk_container_add_element(
         wlmtk_dlnode_from_element(element_ptr));
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
 
-    // Need to re-compute pointer focus, since we might have added an element
-    // below the current cursor position.
-    wlmtk_container_pointer_refocus_tree(container_ptr);
+    wlmtk_container_update_layout(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -171,11 +173,7 @@ void wlmtk_container_remove_element(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
 
-    // We can be more lenient in asking for re-focus: If the removed element
-    // is NOT having pointer focus, we won't have to bother.
-    if (element_ptr == container_ptr->pointer_focus_element_ptr) {
-        wlmtk_container_pointer_refocus_tree(container_ptr);
-    }
+    wlmtk_container_update_layout(container_ptr);
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
 }
 
@@ -184,23 +182,6 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr)
 {
     return container_ptr->wlr_scene_tree_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_container_pointer_refocus_tree(wlmtk_container_t *container_ptr)
-{
-    // Guard clause: Don't throw over if there's no container.
-    if (NULL == container_ptr) return;
-
-    while (NULL != container_ptr->super_element.parent_container_ptr) {
-        container_ptr = container_ptr->super_element.parent_container_ptr;
-    }
-
-    update_pointer_focus_at(
-        container_ptr,
-        container_ptr->super_element.last_pointer_x,
-        container_ptr->super_element.last_pointer_y,
-        container_ptr->super_element.last_pointer_time_msec);
 }
 
 /* == Local (static) methods =============================================== */
@@ -488,6 +469,28 @@ bool update_pointer_focus_at(
         container_ptr->pointer_focus_element_ptr = NULL;
     }
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Base implementation of wlmtk_container_impl_t::update_layout. If there's
+ * a paraent, will call @ref wlmtk_container_update_layout. Otherwise, will
+ * update the pointer focus.
+ *
+ * @param container_ptr
+ */
+void base_container_update_layout(wlmtk_container_t *container_ptr)
+{
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_update_layout(
+            container_ptr->super_element.parent_container_ptr);
+    } else {
+        update_pointer_focus_at(
+            container_ptr,
+            container_ptr->super_element.last_pointer_x,
+            container_ptr->super_element.last_pointer_y,
+            container_ptr->super_element.last_pointer_time_msec);
+    }
 }
 
 /* == Helper for unit test: A fake container =============================== */

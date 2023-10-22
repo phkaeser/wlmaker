@@ -184,10 +184,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 wlmtk_workspace_t *wlmtk_workspace_from_container(
     wlmtk_container_t *container_ptr)
 {
-    BS_ASSERT(0 == memcmp(
-                  &container_ptr->impl,
-                  &workspace_container_impl,
-                  sizeof(wlmtk_container_impl_t)));
+    BS_ASSERT(container_ptr->impl.destroy == workspace_container_impl.destroy);
     return BS_CONTAINER_OF(container_ptr, wlmtk_workspace_t, super_container);
 }
 

@@ -144,8 +144,7 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
     }
 
-    // Changing visibility may lose or re-gain focus. Re-compute thta.
-    wlmtk_container_pointer_refocus_tree(element_ptr->parent_container_ptr);
+    wlmtk_container_update_layout(element_ptr->parent_container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

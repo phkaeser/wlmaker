@@ -65,6 +65,7 @@ class Container {
   -struct wlr_scene_tree *wlr_scene_tree()
 
   {abstract}#void destroy()
+  #void configure()
 }
 Element <|-- Container
 note right of Element::"add_element(Element*)"
