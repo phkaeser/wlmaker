@@ -98,7 +98,8 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create();
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
-    wlmtk_titlebar_destroy(titlebar_ptr);
+
+    wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
 }
 
 /* == End of titlebar.c ==================================================== */

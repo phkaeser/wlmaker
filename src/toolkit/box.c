@@ -67,7 +67,7 @@ void container_destroy(wlmtk_container_t *container_ptr)
 {
     wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_box_t, super_container);
-    wlmtk_box_fini(box_ptr);
+    box_ptr->impl.destroy(box_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
