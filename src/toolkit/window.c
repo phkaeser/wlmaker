@@ -20,27 +20,27 @@
 
 #include "window.h"
 
-#include "container.h"
+#include "box.h"
 #include "workspace.h"
 
 /* == Declarations ========================================================= */
 
 /** State of the window. */
 struct _wlmtk_window_t {
-    /** Superclass: Container. */
-    wlmtk_container_t         super_container;
+    /** Superclass: Box. */
+    wlmtk_box_t               super_box;
 
     /** Content of this window. */
     wlmtk_content_t           *content_ptr;
 };
 
-static void window_container_destroy(wlmtk_container_t *container_ptr);
+static void window_box_destroy(wlmtk_box_t *box_ptr);
 
 /* == Data ================================================================= */
 
-/** Method table for the container's virtual methods. */
-static const wlmtk_container_impl_t window_container_impl = {
-    .destroy = window_container_destroy
+/** Method table for the box's virtual methods. */
+static const wlmtk_box_impl_t window_box_impl = {
+    .destroy = window_box_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -51,14 +51,15 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
 
-    if (!wlmtk_container_init(&window_ptr->super_container,
-                              &window_container_impl)) {
+    if (!wlmtk_box_init(&window_ptr->super_box,
+                        &window_box_impl,
+                        WLMTK_BOX_VERTICAL)) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
 
     wlmtk_container_add_element(
-        &window_ptr->super_container,
+        &window_ptr->super_box.super_container,
         wlmtk_content_element(content_ptr));
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
@@ -70,7 +71,7 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
     wlmtk_container_remove_element(
-        &window_ptr->super_container,
+        &window_ptr->super_box.super_container,
         wlmtk_content_element(window_ptr->content_ptr));
     wlmtk_element_set_visible(
         wlmtk_content_element(window_ptr->content_ptr), false);
@@ -81,14 +82,14 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
         window_ptr->content_ptr = NULL;
     }
 
-    wlmtk_container_fini(&window_ptr->super_container);
+    wlmtk_box_fini(&window_ptr->super_box);
     free(window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
-    return &window_ptr->super_container.super_element;
+    return &window_ptr->super_box.super_container.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -139,31 +140,33 @@ void wlmtk_window_set_size(
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
-    BS_ASSERT(NULL !=
-              window_ptr->super_container.super_element.parent_container_ptr);
+    BS_ASSERT(
+        NULL !=
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_container.super_element.parent_container_ptr);
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
 {
-    BS_ASSERT(NULL !=
-              window_ptr->super_container.super_element.parent_container_ptr);
+    BS_ASSERT(
+        NULL !=
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_container.super_element.parent_container_ptr);
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_begin_window_resize(workspace_ptr, window_ptr, edges);
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from container. Wraps to our dtor. */
-void window_container_destroy(wlmtk_container_t *container_ptr)
+/** Virtual destructor, in case called from box. Wraps to our dtor. */
+void window_box_destroy(wlmtk_box_t *box_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_window_t, super_container);
+        box_ptr, wlmtk_window_t, super_box);
     wlmtk_window_destroy(window_ptr);
 }
 

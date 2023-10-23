@@ -92,15 +92,12 @@ class Workspace {
 }
 Container *-- Workspace
 
-class HBox {
+class Box {
   Container super_container
-}
-Container <|-- HBox
 
-class VBox {
-  Container super_container
+  bool init(handlers, wlmtk_box_orientation_t)
 }
-Container <|-- VBox
+Container <|-- Box
 
 abstract class Content {
   Element super_element
@@ -156,7 +153,7 @@ class Button {
 Buffer <|-- Button
 
 class Window {
-  VBox super_container
+  Box super_box
   Content *content
   TitleBar *title_bar
 
@@ -169,12 +166,12 @@ class Window {
   get_size(int *, int *)
   set_size(int, int)
 }
-VBox *-- Window
+Box *-- Window
 
 class TitleBar {
-  HBox super_hbox
+  Box super_box
 }
-HBox *-- TitleBar
+Box *-- TitleBar
 
 class TitleBarButton {
   Button super_button
@@ -187,9 +184,9 @@ class TitleBarButton {
 }
 
 class Menu {
-  VBox parent
+  Box super_box
 }
-VBox *-- Menu
+Box *-- Menu
 
 class MenuItem {
 
