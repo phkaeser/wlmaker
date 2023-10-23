@@ -38,6 +38,7 @@
 #include "fsm.h"
 #include "window.h"
 #include "workspace.h"
+#include "titlebar.h"
 
 #ifdef __cplusplus
 extern "C" {

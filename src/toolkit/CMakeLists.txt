@@ -27,6 +27,7 @@ SET(PUBLIC_HEADER_FILES
   content.h
   element.h
   fsm.h
+  titlebar.h
   window.h
   workspace.h)
 
@@ -40,6 +41,7 @@ TARGET_SOURCES(toolkit PRIVATE
   fsm.c
   gfxbuf.c
   primitives.c
+  titlebar.c
   util.c
   window.c
   workspace.c)
