@@ -57,21 +57,21 @@ typedef struct {
     uint32_t                  titlebar_blurred_text_color;
 
     /** Fill style of the title bar, when focussed. Including buttons. */
-    wlmaker_style_fill_t      titlebar_focussed_fill;
+    wlmtk_style_fill_t        titlebar_focussed_fill;
     /** Fill style of the title bar, when blurred. Including buttons. */
-    wlmaker_style_fill_t      titlebar_blurred_fill;
+    wlmtk_style_fill_t       titlebar_blurred_fill;
 
     /** Fill style of the resize bar. */
-    wlmaker_style_fill_t      resizebar_fill;
+    wlmtk_style_fill_t        resizebar_fill;
     /** Fill style of a tile. */
-    wlmaker_style_fill_t      tile_fill;
+    wlmtk_style_fill_t        tile_fill;
     /** File style of the title element of an iconified. */
-    wlmaker_style_fill_t      iconified_title_fill;
+    wlmtk_style_fill_t        iconified_title_fill;
     /** Color of the iconified's title. */
     uint32_t                  iconified_title_color;
 
     /** Fill style of the menu's background. */
-    wlmaker_style_fill_t      menu_fill;
+    wlmtk_style_fill_t        menu_fill;
     /** Color of the menu's margin and padding. */
     uint32_t                  menu_margin_color;
     /** Width of the menu's margin. */
@@ -80,16 +80,16 @@ typedef struct {
     uint32_t                  menu_padding_width;
 
     /** Fill style of a menu item when enabled. */
-    wlmaker_style_fill_t      menu_item_enabled_fill;
+    wlmtk_style_fill_t        menu_item_enabled_fill;
     /** Text color of menu item when enabled. */
     uint32_t                  menu_item_enabled_text_color;
     /** Fill style of a menu item when selected. */
-    wlmaker_style_fill_t      menu_item_selected_fill;
+    wlmtk_style_fill_t        menu_item_selected_fill;
     /** Text color of menu item when selected. */
     uint32_t                  menu_item_selected_text_color;
 
     /** Fill style of the task list. */
-    wlmaker_style_fill_t      task_list_fill;
+    wlmtk_style_fill_t        task_list_fill;
     /** Color of the text describing tasks in the task list. */
     uint32_t                  task_list_text_color;
 } wlmaker_config_theme_t;

@@ -128,7 +128,7 @@ void wlmaker_menu_item_draw(
         cairo_ptr, menu_item_ptr->x, menu_item_ptr->y,
         menu_item_ptr->width, menu_item_ptr->height, 1.0, true);
 
-    const wlmaker_style_fill_t *fill_ptr = NULL;
+    const wlmtk_style_fill_t *fill_ptr = NULL;
     uint32_t text_color = 0;
     switch (menu_item_ptr->state) {
     case WLMAKER_MENU_ITEM_STATE_ENABLED:
@@ -244,8 +244,8 @@ static const wlmaker_menu_item_descriptor_t test_descriptor = {
 };
 
 /** Properties of the fill, used for the unit test. */
-static const wlmaker_style_fill_t test_fill = {
-    .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+static const wlmtk_style_fill_t test_fill = {
+    .type = WLMTK_STYLE_COLOR_DGRADIENT,
     .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
 };
 

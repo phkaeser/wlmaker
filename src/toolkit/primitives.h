@@ -37,7 +37,7 @@ extern "C" {
  */
 void wlmaker_primitives_cairo_fill(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr);
+    const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Fills the cairo with the specified style at the specified rectangle.
@@ -55,7 +55,7 @@ void wlmaker_primitives_cairo_fill_at(
     int y,
     unsigned width,
     unsigned height,
-    const wlmaker_style_fill_t *fill_ptr);
+    const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Sets the bezel color.

@@ -50,7 +50,7 @@ extern const uint32_t         wlmaker_decorations_clip_button_size;
  * @return a `cairo_surface_t` image target, filled as specificed.
  */
 cairo_surface_t *wlmaker_decorations_titlebar_create_background(
-    uint32_t width, const wlmaker_style_fill_t *fill_ptr);
+    uint32_t width, const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Creates a cairo image surface for the background of the resize bar.
@@ -63,7 +63,7 @@ cairo_surface_t *wlmaker_decorations_titlebar_create_background(
  * @return a `cairo_surface_t` image target, filled as specificed.
  */
 cairo_surface_t *wlmaker_decorations_resizebar_create_background(
-    uint32_t width, const wlmaker_style_fill_t *fill_ptr);
+    uint32_t width, const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Draws a tile into the `cairo_t`.
@@ -74,7 +74,7 @@ cairo_surface_t *wlmaker_decorations_resizebar_create_background(
  */
 void wlmaker_decorations_draw_tile(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed);
 
 /**
@@ -99,7 +99,7 @@ bool wlmaker_decorations_draw_tile_icon(
  */
 void wlmaker_decorations_draw_iconified(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     uint32_t font_color,
     const char *title_ptr);
 
@@ -117,7 +117,7 @@ void wlmaker_decorations_draw_iconified(
  */
 bool wlmaker_decorations_draw_clip(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed);
 
 /**
@@ -131,7 +131,7 @@ bool wlmaker_decorations_draw_clip(
  */
 bool wlmaker_decorations_draw_clip_button_next(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed);
 
 /**
@@ -145,7 +145,7 @@ bool wlmaker_decorations_draw_clip_button_next(
  */
 bool wlmaker_decorations_draw_clip_button_prev(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed);
 
 /** Unit tests. */
