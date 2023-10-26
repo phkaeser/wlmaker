@@ -28,9 +28,15 @@
 struct _wlmtk_titlebar_t {
     /** Superclass: Box. */
     wlmtk_box_t               super_box;
+
+    /** Titlebar background, when focussed. */
+    bs_gfxbuf_t               *focussed_gfxbuf_ptr;
+    /** Titlebar background, when blurred. */
+    bs_gfxbuf_t               *blurred_gfxbuf_ptr;
 };
 
 static void titlebar_box_destroy(wlmtk_box_t *box_ptr);
+static bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr);
 
 /* == Data ================================================================= */
 
@@ -56,6 +62,11 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(void)
         return NULL;
     }
 
+    if (!redraw_buffers(titlebar_ptr)) {
+        wlmtk_titlebar_destroy(titlebar_ptr);
+        return NULL;
+    }
+
     return titlebar_ptr;
 }
 
@@ -63,6 +74,16 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(void)
 void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 {
     wlmtk_box_fini(&titlebar_ptr->super_box);
+
+    if (NULL != titlebar_ptr->blurred_gfxbuf_ptr) {
+        bs_gfxbuf_destroy(titlebar_ptr->blurred_gfxbuf_ptr);
+        titlebar_ptr->blurred_gfxbuf_ptr = NULL;
+    }
+    if (NULL != titlebar_ptr->focussed_gfxbuf_ptr) {
+        bs_gfxbuf_destroy(titlebar_ptr->focussed_gfxbuf_ptr);
+        titlebar_ptr->focussed_gfxbuf_ptr = NULL;
+    }
+
     free(titlebar_ptr);
 }
 
@@ -81,6 +102,44 @@ void titlebar_box_destroy(wlmtk_box_t *box_ptr)
     wlmtk_titlebar_t *titlebar_ptr = BS_CONTAINER_OF(
         box_ptr, wlmtk_titlebar_t, super_box);
     wlmtk_titlebar_destroy(titlebar_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Redraws the titlebar's background in appropriate size. */
+bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr)
+{
+    cairo_t *cairo_ptr;
+    int width = 120;
+    int height = 22;
+
+    bs_gfxbuf_t *focussed_gfxbuf_ptr = bs_gfxbuf_create(width, height);
+    if (NULL == focussed_gfxbuf_ptr) return false;
+    cairo_ptr = cairo_create_from_bs_gfxbuf(focussed_gfxbuf_ptr);
+    if (NULL == cairo_ptr) {
+        bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
+        return false;
+    }
+    cairo_destroy(cairo_ptr);
+
+    bs_gfxbuf_t *blurred_gfxbuf_ptr = bs_gfxbuf_create(width, height);
+    if (NULL == blurred_gfxbuf_ptr) return false;
+    cairo_ptr = cairo_create_from_bs_gfxbuf(focussed_gfxbuf_ptr);
+    if (NULL == cairo_ptr) {
+        bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
+        bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
+        return false;
+    }
+    cairo_destroy(cairo_ptr);
+
+    if (NULL != titlebar_ptr->focussed_gfxbuf_ptr) {
+        bs_gfxbuf_destroy(titlebar_ptr->focussed_gfxbuf_ptr);
+    }
+    titlebar_ptr->focussed_gfxbuf_ptr = focussed_gfxbuf_ptr;
+    if (NULL != titlebar_ptr->blurred_gfxbuf_ptr) {
+        bs_gfxbuf_destroy(titlebar_ptr->blurred_gfxbuf_ptr);
+    }
+    titlebar_ptr->blurred_gfxbuf_ptr = blurred_gfxbuf_ptr;
+    return true;
 }
 
 /* == Unit tests =========================================================== */
