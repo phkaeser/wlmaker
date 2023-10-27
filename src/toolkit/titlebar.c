@@ -31,17 +31,6 @@
 
 /* == Declarations ========================================================= */
 
-/** State of the title bar. */
-struct _wlmtk_titlebar_t {
-    /** Superclass: Box. */
-    wlmtk_box_t               super_box;
-
-    /** Titlebar background, when focussed. */
-    bs_gfxbuf_t               *focussed_gfxbuf_ptr;
-    /** Titlebar background, when blurred. */
-    bs_gfxbuf_t               *blurred_gfxbuf_ptr;
-};
-
 /** State of the title bar's title. */
 typedef struct {
     /** Superclass; Buffer. */
@@ -52,6 +41,20 @@ typedef struct {
     /** The drawn title, when blurred. */
     struct wlr_buffer         *blurred_wlr_buffer_ptr;
 } wlmtk_titlebar_title_t;
+
+/** State of the title bar. */
+struct _wlmtk_titlebar_t {
+    /** Superclass: Box. */
+    wlmtk_box_t               super_box;
+
+    /** Title element of the title bar. */
+    wlmtk_titlebar_title_t    *title_ptr;
+
+    /** Titlebar background, when focussed. */
+    bs_gfxbuf_t               *focussed_gfxbuf_ptr;
+    /** Titlebar background, when blurred. */
+    bs_gfxbuf_t               *blurred_gfxbuf_ptr;
+};
 
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
@@ -96,13 +99,32 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(void)
         return NULL;
     }
 
+    titlebar_ptr->title_ptr = wlmtk_titlebar_title_create(
+        titlebar_ptr->focussed_gfxbuf_ptr,
+        titlebar_ptr->blurred_gfxbuf_ptr,
+        0, 120,
+        true);
+    if (NULL == titlebar_ptr->title_ptr) {
+        wlmtk_titlebar_destroy(titlebar_ptr);
+        return NULL;
+    }
+    wlmtk_container_add_element(
+        &titlebar_ptr->super_box.super_container,
+        &titlebar_ptr->title_ptr->super_buffer.super_element);
+
     return titlebar_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 {
-    wlmtk_box_fini(&titlebar_ptr->super_box);
+    if (NULL != titlebar_ptr->title_ptr) {
+        wlmtk_container_remove_element(
+            &titlebar_ptr->super_box.super_container,
+            &titlebar_ptr->title_ptr->super_buffer.super_element);
+        wlmtk_titlebar_title_destroy(titlebar_ptr->title_ptr);
+        titlebar_ptr->title_ptr = NULL;
+    }
 
     if (NULL != titlebar_ptr->blurred_gfxbuf_ptr) {
         bs_gfxbuf_destroy(titlebar_ptr->blurred_gfxbuf_ptr);
@@ -112,6 +134,8 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
         bs_gfxbuf_destroy(titlebar_ptr->focussed_gfxbuf_ptr);
         titlebar_ptr->focussed_gfxbuf_ptr = NULL;
     }
+
+    wlmtk_box_fini(&titlebar_ptr->super_box);
 
     free(titlebar_ptr);
 }
@@ -295,7 +319,8 @@ bool title_redraw_buffers(
     BS_ASSERT(titlebar_height == focussed_gfxbuf_ptr->height);
     BS_ASSERT(titlebar_height == blurred_gfxbuf_ptr->height);
     BS_ASSERT(position < focussed_gfxbuf_ptr->width);
-    BS_ASSERT(position + width < focussed_gfxbuf_ptr->width);
+    BS_ASSERT(0 < width);
+    BS_ASSERT(position + width <= focussed_gfxbuf_ptr->width);
 
     struct wlr_buffer *focussed_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         width, titlebar_height);
