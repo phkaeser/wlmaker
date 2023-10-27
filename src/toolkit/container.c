@@ -406,6 +406,7 @@ void handle_wlr_scene_tree_node_destroy(
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+        // Will read the parent container's wlr_scene_tree_ptr == NULL.
         wlmtk_element_attach_to_scene_graph(element_ptr);
     }
 
