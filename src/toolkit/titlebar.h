@@ -25,17 +25,36 @@ typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 
 #include "element.h"
 
+#include "primitives.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** Style options for the titlebar. */
+typedef struct {
+    /** Fill style for when the titlebar is focussed (activated). */
+    wlmtk_style_fill_t        focussed_fill;
+    /** Fill style for when the titlebar is blurred (not activated). */
+    wlmtk_style_fill_t        blurred_fill;
+    /** Color of the title text when focussed. */
+    uint32_t                  focussed_text_color;
+    /** Color of the title text when blurred. */
+    uint32_t                  blurred_text_color;
+    /** Height of the title bar, in pixels. */
+    uint32_t                  height;
+} wlmtk_titlebar_style_t;
 
 /**
  * Creates a title bar, suitable as a window title.
  *
  * @return Pointer to the title bar state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_titlebar_destroy.
+ *
+ * @param style_ptr
  */
-wlmtk_titlebar_t *wlmtk_titlebar_create(void);
+wlmtk_titlebar_t *wlmtk_titlebar_create(
+    const wlmtk_titlebar_style_t *style_ptr);
 
 /**
  * Destroys the title bar.

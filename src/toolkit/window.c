@@ -46,6 +46,22 @@ static const wlmtk_box_impl_t window_box_impl = {
     .destroy = window_box_destroy
 };
 
+/** Style of the title bar. */
+// TODO(kaeser@gubbe.ch): Move to central config. */
+static const wlmtk_titlebar_style_t titlebar_style = {
+    .focussed_fill = {
+        .type = WLMTK_STYLE_COLOR_HGRADIENT,
+        .param = { .hgradient = { .from = 0xff505a5e,.to = 0xff202a2e }}
+    },
+    .blurred_fill = {
+        .type = WLMTK_STYLE_COLOR_HGRADIENT,
+        .param = { .hgradient = { .from = 0xffc2c0c5,.to = 0xff828085 }}
+    },
+    .focussed_text_color = 0xffffffff,
+    .blurred_text_color = 0xff000000,
+    .height = 22,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -68,7 +84,7 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
     wlmtk_content_set_window(content_ptr, window_ptr);
     wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
 
-    window_ptr->titlebar_ptr = wlmtk_titlebar_create();
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create(&titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
