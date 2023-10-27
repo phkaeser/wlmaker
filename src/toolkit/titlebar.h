@@ -48,12 +48,14 @@ typedef struct {
 /**
  * Creates a title bar, suitable as a window title.
  *
+ * @param width
+ * @param style_ptr
+ *
  * @return Pointer to the title bar state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_titlebar_destroy.
- *
- * @param style_ptr
  */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
+    unsigned width,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /**

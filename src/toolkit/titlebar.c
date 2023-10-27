@@ -100,6 +100,7 @@ static const wlmtk_box_impl_t titlebar_box_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
+    unsigned width,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
@@ -114,7 +115,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         return NULL;
     }
 
-    if (!redraw_buffers(titlebar_ptr, 120)) {
+    if (!redraw_buffers(titlebar_ptr, width)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -410,8 +411,7 @@ bool title_redraw_buffers(
     BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
     BS_ASSERT(style_ptr->height == focussed_gfxbuf_ptr->height);
     BS_ASSERT(style_ptr->height == blurred_gfxbuf_ptr->height);
-    BS_ASSERT(position < focussed_gfxbuf_ptr->width);
-    BS_ASSERT(0 < width);
+    BS_ASSERT(position <= focussed_gfxbuf_ptr->width);
     BS_ASSERT(position + width <= focussed_gfxbuf_ptr->width);
 
     struct wlr_buffer *focussed_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
@@ -480,10 +480,12 @@ bool title_redraw_buffers(
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_create_empty(bs_test_t *test_ptr);
 static void test_title(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_titlebar_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "create_empty", test_create_empty },
     { 1, "title", test_title },
     { 0, NULL, NULL }
 };
@@ -493,7 +495,18 @@ const bs_test_case_t wlmtk_titlebar_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_titlebar_style_t style = {};
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(&style);
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(120, &style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
+
+    wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests setup and teardown. */
+void test_create_empty(bs_test_t *test_ptr)
+{
+    wlmtk_titlebar_style_t style = {};
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(0, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
