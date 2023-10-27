@@ -31,16 +31,8 @@
 
 /* == Declarations ========================================================= */
 
-/** State of the title bar's title. */
-typedef struct {
-    /** Superclass; Buffer. */
-    wlmtk_buffer_t            super_buffer;
-
-    /** The drawn title, when focussed. */
-    struct wlr_buffer         *focussed_wlr_buffer_ptr;
-    /** The drawn title, when blurred. */
-    struct wlr_buffer         *blurred_wlr_buffer_ptr;
-} wlmtk_titlebar_title_t;
+/** Forward declaration. */
+typedef struct _wlmtk_titlebar_title_t wlmtk_titlebar_title_t;
 
 /** State of the title bar. */
 struct _wlmtk_titlebar_t {
@@ -55,21 +47,47 @@ struct _wlmtk_titlebar_t {
     /** Titlebar background, when blurred. */
     bs_gfxbuf_t               *blurred_gfxbuf_ptr;
 
+    /** Current width of the title bar. */
+    unsigned                  width;
+    /** Whether the title bar is currently displayed as activated. */
+    bool                      activated;
+
     /** Title bar style. */
     wlmtk_titlebar_style_t    style;
 };
 
-wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
+/** State of the title bar's title. */
+struct _wlmtk_titlebar_title_t {
+    /** Superclass; Buffer. */
+    wlmtk_buffer_t            super_buffer;
+
+    /** The drawn title, when focussed. */
+    struct wlr_buffer         *focussed_wlr_buffer_ptr;
+    /** The drawn title, when blurred. */
+    struct wlr_buffer         *blurred_wlr_buffer_ptr;
+} ;
+
+static wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     int position,
     int width,
     bool activated,
     const wlmtk_titlebar_style_t *style_ptr);
-void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *title_ptr);
+static void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *title_ptr);
+static bool wlmtk_titlebar_title_redraw(
+    wlmtk_titlebar_title_t *title_ptr,
+    bs_gfxbuf_t *focussed_gfxbuf_ptr,
+    bs_gfxbuf_t *blurred_gfxbuf_ptr,
+    int position,
+    int width,
+    bool activated,
+    const wlmtk_titlebar_style_t *style_ptr);
 
 static void titlebar_box_destroy(wlmtk_box_t *box_ptr);
-static bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr);
+static bool redraw_buffers(
+    wlmtk_titlebar_t *titlebar_ptr,
+    unsigned width);
 
 /* == Data ================================================================= */
 
@@ -77,7 +95,6 @@ static bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr);
 static const wlmtk_box_impl_t titlebar_box_impl = {
     .destroy = titlebar_box_destroy
 };
-
 
 /* == Exported methods ===================================================== */
 
@@ -97,7 +114,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         return NULL;
     }
 
-    if (!redraw_buffers(titlebar_ptr)) {
+    if (!redraw_buffers(titlebar_ptr, 120)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -105,8 +122,9 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     titlebar_ptr->title_ptr = wlmtk_titlebar_title_create(
         titlebar_ptr->focussed_gfxbuf_ptr,
         titlebar_ptr->blurred_gfxbuf_ptr,
-        0, 120,
-        true,
+        0,
+        titlebar_ptr->width,
+        titlebar_ptr->activated,
         &titlebar_ptr->style);
     if (NULL == titlebar_ptr->title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
@@ -147,6 +165,32 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_titlebar_set_width(
+    wlmtk_titlebar_t *titlebar_ptr,
+    unsigned width)
+{
+    if (titlebar_ptr->width == width) return true;
+    redraw_buffers(titlebar_ptr, width);
+    BS_ASSERT(width == titlebar_ptr->width);
+
+    if (!wlmtk_titlebar_title_redraw(
+            titlebar_ptr->title_ptr,
+            titlebar_ptr->focussed_gfxbuf_ptr,
+            titlebar_ptr->blurred_gfxbuf_ptr,
+            0,
+            titlebar_ptr->width,
+            titlebar_ptr->activated,
+            &titlebar_ptr->style)) {
+        return false;
+    }
+
+
+    // Don't forget to re-position the elements.
+    wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_titlebar_element(wlmtk_titlebar_t *titlebar_ptr)
 {
     return &titlebar_ptr->super_box.super_container.super_element;
@@ -165,10 +209,9 @@ void titlebar_box_destroy(wlmtk_box_t *box_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Redraws the titlebar's background in appropriate size. */
-bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr)
+bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
 {
     cairo_t *cairo_ptr;
-    int width = 120;
 
     bs_gfxbuf_t *focussed_gfxbuf_ptr = bs_gfxbuf_create(
         width, titlebar_ptr->style.height);
@@ -203,6 +246,7 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr)
         bs_gfxbuf_destroy(titlebar_ptr->blurred_gfxbuf_ptr);
     }
     titlebar_ptr->blurred_gfxbuf_ptr = blurred_gfxbuf_ptr;
+    titlebar_ptr->width = width;
     return true;
 }
 
@@ -269,6 +313,40 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
 
     title_set_activated(title_ptr, activated);
     return title_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Redraws the title section of the title bar.
+ *
+ * @param title_ptr
+ * @param focussed_gfxbuf_ptr Titlebar background when focussed.
+ * @param blurred_gfxbuf_ptr  Titlebar background when blurred.
+ * @param position            Position of title telative to titlebar.
+ * @param width               Width of title.
+ * @param activated           Whether the title bar should start focussed.
+ * @param style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_titlebar_title_redraw(
+    wlmtk_titlebar_title_t *title_ptr,
+    bs_gfxbuf_t *focussed_gfxbuf_ptr,
+    bs_gfxbuf_t *blurred_gfxbuf_ptr,
+    int position,
+    int width,
+    bool activated,
+    const wlmtk_titlebar_style_t *style_ptr)
+{
+    if (!title_redraw_buffers(
+            title_ptr,
+            focussed_gfxbuf_ptr,
+            blurred_gfxbuf_ptr,
+            position, width, style_ptr)) {
+        return false;
+    }
+    title_set_activated(title_ptr, activated);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -387,11 +465,11 @@ bool title_redraw_buffers(
 
     cairo_destroy(cairo_ptr);
 
-    if (NULL == title_ptr->focussed_wlr_buffer_ptr) {
+    if (NULL != title_ptr->focussed_wlr_buffer_ptr) {
         wlr_buffer_drop(title_ptr->focussed_wlr_buffer_ptr);
     }
     title_ptr->focussed_wlr_buffer_ptr = focussed_wlr_buffer_ptr;
-    if (NULL == title_ptr->blurred_wlr_buffer_ptr) {
+    if (NULL != title_ptr->blurred_wlr_buffer_ptr) {
         wlr_buffer_drop(title_ptr->blurred_wlr_buffer_ptr);
     }
     title_ptr->blurred_wlr_buffer_ptr = blurred_wlr_buffer_ptr;
@@ -461,8 +539,16 @@ void test_title(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/title_blurred.png");
 
-    wlmtk_element_destroy(&title_ptr->super_buffer.super_element);
+    // Redraw with shorter width. Verify that's still correct.
+    wlmtk_titlebar_title_redraw(
+        title_ptr, focussed_gfxbuf_ptr, blurred_gfxbuf_ptr,
+        10, 70, false, &style);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
+        "toolkit/title_blurred_short.png");
 
+    wlmtk_element_destroy(&title_ptr->super_buffer.super_element);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
 }

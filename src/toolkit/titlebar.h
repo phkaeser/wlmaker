@@ -64,6 +64,16 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
 void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr);
 
 /**
+ * Sets the width of the title bar.
+ *
+ * @param titlebar_ptr
+ * @param width
+ *
+ * @return Whether the operation was successful.
+ */
+bool wlmtk_titlebar_set_width(wlmtk_titlebar_t *titlebar_ptr, unsigned width);
+
+/**
  * Returns the super Element of the titlebar.
  *
  * @param titlebar_ptr
