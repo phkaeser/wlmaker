@@ -77,7 +77,9 @@ void wlmtk_buffer_fini(wlmtk_buffer_t *buffer_ptr)
         buffer_ptr->wlr_buffer_ptr = NULL;
     }
 
-    if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
+    if (NULL != buffer_ptr->super_element.wlr_scene_node_ptr) {
+        // TODO: Wire up a destry listener, and clear the local pointer
+        // if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
         wlr_scene_node_destroy(&buffer_ptr->wlr_scene_buffer_ptr->node);
         buffer_ptr->wlr_scene_buffer_ptr = NULL;
     }
