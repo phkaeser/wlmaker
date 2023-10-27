@@ -21,6 +21,7 @@
 #include "window.h"
 
 #include "box.h"
+#include "titlebar.h"
 #include "workspace.h"
 
 /* == Declarations ========================================================= */
@@ -32,6 +33,8 @@ struct _wlmtk_window_t {
 
     /** Content of this window. */
     wlmtk_content_t           *content_ptr;
+    /** Titlebar. */
+    wlmtk_titlebar_t          *titlebar_ptr;
 };
 
 static void window_box_destroy(wlmtk_box_t *box_ptr);
@@ -64,12 +67,32 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
     wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
+
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create();
+    if (NULL == window_ptr->titlebar_ptr) {
+        wlmtk_window_destroy(window_ptr);
+        return NULL;
+    }
+    wlmtk_container_add_element(
+        &window_ptr->super_box.super_container,
+        wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
+
     return window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
+    if (NULL != window_ptr->titlebar_ptr) {
+        wlmtk_container_remove_element(
+            &window_ptr->super_box.super_container,
+            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+        wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
+        window_ptr->titlebar_ptr = NULL;
+    }
+
     wlmtk_container_remove_element(
         &window_ptr->super_box.super_container,
         wlmtk_content_element(window_ptr->content_ptr));

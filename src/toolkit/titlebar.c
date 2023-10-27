@@ -108,6 +108,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(void)
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
+    wlmtk_element_set_visible(
+        &titlebar_ptr->title_ptr->super_buffer.super_element, true);
     wlmtk_container_add_element(
         &titlebar_ptr->super_box.super_container,
         &titlebar_ptr->title_ptr->super_buffer.super_element);
