@@ -89,11 +89,28 @@ static bool redraw_buffers(
     wlmtk_titlebar_t *titlebar_ptr,
     unsigned width);
 
+static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
+static void title_set_activated(
+    wlmtk_titlebar_title_t *title_ptr,
+    bool activated);
+static bool title_redraw_buffers(
+    wlmtk_titlebar_title_t *title_ptr,
+    bs_gfxbuf_t *focussed_gfxbuf_ptr,
+    bs_gfxbuf_t *blurred_gfxbuf_ptr,
+    unsigned position,
+    unsigned width,
+    const wlmtk_titlebar_style_t *style_ptr);
+
 /* == Data ================================================================= */
 
 /** Method table for the box's virtual methods. */
 static const wlmtk_box_impl_t titlebar_box_impl = {
     .destroy = titlebar_box_destroy
+};
+
+/** Buffer implementation for title of the title bar. */
+static const wlmtk_buffer_impl_t title_buffer_impl = {
+    .destroy = title_buffer_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -185,10 +202,19 @@ bool wlmtk_titlebar_set_width(
         return false;
     }
 
-
     // Don't forget to re-position the elements.
     wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_titlebar_set_activated(
+    wlmtk_titlebar_t *titlebar_ptr,
+    bool activated)
+{
+    if (titlebar_ptr->activated == activated) return;
+    titlebar_ptr->activated = activated;
+    title_set_activated(titlebar_ptr->title_ptr, titlebar_ptr->activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -252,23 +278,6 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
 }
 
 /* == Title buffer methods ================================================= */
-
-static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
-static void title_set_activated(
-    wlmtk_titlebar_title_t *title_ptr,
-    bool activated);
-static bool title_redraw_buffers(
-    wlmtk_titlebar_title_t *title_ptr,
-    bs_gfxbuf_t *focussed_gfxbuf_ptr,
-    bs_gfxbuf_t *blurred_gfxbuf_ptr,
-    unsigned position,
-    unsigned width,
-    const wlmtk_titlebar_style_t *style_ptr);
-
-/** Buffer implementation for title of the title bar. */
-static const wlmtk_buffer_impl_t title_buffer_impl = {
-    .destroy = title_buffer_destroy
-};
 
 /* ------------------------------------------------------------------------- */
 /**

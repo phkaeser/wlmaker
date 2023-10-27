@@ -73,7 +73,19 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr);
  *
  * @return Whether the operation was successful.
  */
-bool wlmtk_titlebar_set_width(wlmtk_titlebar_t *titlebar_ptr, unsigned width);
+bool wlmtk_titlebar_set_width(
+    wlmtk_titlebar_t *titlebar_ptr,
+    unsigned width);
+
+/**
+ * Sets whether the title bar is activated.
+ *
+ * @param titlebar_ptr
+ * @param activated
+ */
+void wlmtk_titlebar_set_activated(
+    wlmtk_titlebar_t *titlebar_ptr,
+    bool activated);
 
 /**
  * Returns the super Element of the titlebar.

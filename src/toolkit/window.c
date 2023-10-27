@@ -139,6 +139,9 @@ void wlmtk_window_set_activated(
     bool activated)
 {
     wlmtk_content_set_activated(window_ptr->content_ptr, activated);
+    if (NULL != window_ptr->titlebar_ptr) {
+        wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
