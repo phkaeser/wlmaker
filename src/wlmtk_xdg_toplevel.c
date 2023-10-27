@@ -39,6 +39,8 @@ typedef struct {
     struct wl_listener        surface_map_listener;
     /** Listener for the `unmap` signal of the `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
+    /** Listener for the `commit` signal of the `wlr_surface`. */
+    struct wl_listener        surface_commit_listener;
 
     /** Listener for `request_move` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_move_listener;
@@ -57,6 +59,9 @@ static void handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_toplevel_request_move(
@@ -143,6 +148,10 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &wlr_xdg_surface_ptr->surface->events.unmap,
         &xdg_tl_content_ptr->surface_unmap_listener,
         handle_surface_unmap);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->surface->events.commit,
+        &xdg_tl_content_ptr->surface_commit_listener,
+        handle_surface_commit);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_move,
@@ -170,6 +179,7 @@ void xdg_toplevel_content_destroy(
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_resize_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_move_listener.link);
 
+    wl_list_remove(&xdg_tl_content_ptr->surface_commit_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_map_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_unmap_listener.link);
 
@@ -347,6 +357,23 @@ void handle_surface_unmap(
         wlmtk_workspace_from_container(
             wlmtk_window_element(window_ptr)->parent_container_ptr),
         window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `commit` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_xdg_toplevel_content_t, surface_commit_listener);
+
+    bs_log(BS_INFO, "Commit %p", xdg_tl_content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
