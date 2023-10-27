@@ -57,6 +57,9 @@ struct _wlmtk_buffer_t {
     struct wlr_buffer        *wlr_buffer_ptr;
     /** Scene graph API node. Only set after calling `create_scene_node`. */
     struct wlr_scene_buffer  *wlr_scene_buffer_ptr;
+
+    /** Listener for the `destroy` signal of `wlr_scene_buffer_ptr->node`. */
+    struct wl_listener        wlr_scene_buffer_node_destroy_listener;
 };
 
 /**

@@ -20,6 +20,8 @@
 
 #include "buffer.h"
 
+#include "util.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
@@ -36,6 +38,9 @@ static void element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
+static void handle_wlr_scene_buffer_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
@@ -77,9 +82,7 @@ void wlmtk_buffer_fini(wlmtk_buffer_t *buffer_ptr)
         buffer_ptr->wlr_buffer_ptr = NULL;
     }
 
-    if (NULL != buffer_ptr->super_element.wlr_scene_node_ptr) {
-        // TODO: Wire up a destry listener, and clear the local pointer
-        // if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
+    if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
         wlr_scene_node_destroy(&buffer_ptr->wlr_scene_buffer_ptr->node);
         buffer_ptr->wlr_scene_buffer_ptr = NULL;
     }
@@ -143,6 +146,10 @@ struct wlr_scene_node *element_create_scene_node(
         buffer_ptr->wlr_buffer_ptr);
     BS_ASSERT(NULL != buffer_ptr->wlr_scene_buffer_ptr);
 
+    wlmtk_util_connect_listener_signal(
+        &buffer_ptr->wlr_scene_buffer_ptr->node.events.destroy,
+        &buffer_ptr->wlr_scene_buffer_node_destroy_listener,
+        handle_wlr_scene_buffer_node_destroy);
     return &buffer_ptr->wlr_scene_buffer_ptr->node;
 }
 
@@ -170,6 +177,27 @@ void element_get_dimensions(
     if (NULL != top_ptr) *top_ptr = 0;
     if (NULL != right_ptr) *right_ptr = buffer_ptr->wlr_buffer_ptr->width;
     if (NULL != bottom_ptr) *bottom_ptr = buffer_ptr->wlr_buffer_ptr->height;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the 'destroy' callback of wlr_scene_buffer_ptr->node.
+ *
+ * Will reset the wlr_scene_buffer_ptr value. Destruction of the node had
+ * been triggered (hence the callback).
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_wlr_scene_buffer_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_buffer_t, wlr_scene_buffer_node_destroy_listener);
+
+    buffer_ptr->wlr_scene_buffer_ptr = NULL;
+    wl_list_remove(&buffer_ptr->wlr_scene_buffer_node_destroy_listener.link);
 }
 
 /* == End of buffer.c ====================================================== */
