@@ -58,6 +58,7 @@ bool wlmtk_buffer_init(
     memset(buffer_ptr, 0, sizeof(wlmtk_buffer_t));
     BS_ASSERT(NULL != buffer_impl_ptr);
     BS_ASSERT(NULL != buffer_impl_ptr->destroy);
+    memcpy(&buffer_ptr->impl, buffer_impl_ptr, sizeof(wlmtk_buffer_impl_t));
 
     if (!wlmtk_element_init(
             &buffer_ptr->super_element, &super_element_impl)) {
