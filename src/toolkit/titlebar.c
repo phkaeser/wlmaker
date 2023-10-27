@@ -175,7 +175,10 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr)
 /* == Title buffer methods ================================================= */
 
 static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
-bool title_redraw_buffers(
+static void title_set_activated(
+    wlmtk_titlebar_title_t *title_ptr,
+    bool activated);
+static bool title_redraw_buffers(
     wlmtk_titlebar_title_t *title_ptr,
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
@@ -227,9 +230,7 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
         return NULL;
     }
 
-    wlmtk_buffer_set(
-        &title_ptr->super_buffer,
-        activated ? title_ptr->focussed_wlr_buffer_ptr : title_ptr->blurred_wlr_buffer_ptr);
+    title_set_activated(title_ptr, activated);
     return title_ptr;
 }
 
@@ -261,6 +262,22 @@ void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
     wlmtk_titlebar_title_t *title_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
     wlmtk_titlebar_title_destroy(title_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Sets whether the title is drawn focussed (activated) or blurred.
+ *
+ * @param title_ptr
+ * @param activated
+ */
+void title_set_activated(wlmtk_titlebar_title_t *title_ptr, bool activated)
+{
+    wlmtk_buffer_set(
+        &title_ptr->super_buffer,
+        activated ?
+        title_ptr->focussed_wlr_buffer_ptr :
+        title_ptr->blurred_wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -384,6 +401,19 @@ void test_title(bs_test_t *test_ptr)
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(title_ptr->blurred_wlr_buffer_ptr),
+        "toolkit/title_blurred.png");
+
+    // We had started as "activated", verify that's correct.
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
+        "toolkit/title_focussed.png");
+
+    // De-activated the title. Verify that was propagated.
+    title_set_activated(title_ptr, false);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/title_blurred.png");
 
     wlmtk_element_destroy(&title_ptr->super_buffer.super_element);
