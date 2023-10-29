@@ -171,7 +171,7 @@ void wlmtk_window_set_size(
     int height)
 {
     // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
-    wlmtk_content_set_size(window_ptr->content_ptr, width, height);
+    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
 
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);

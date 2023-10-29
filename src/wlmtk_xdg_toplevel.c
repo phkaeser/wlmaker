@@ -79,7 +79,7 @@ static void content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,
     int *height_ptr);
-static void content_set_size(
+static void content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
@@ -94,7 +94,7 @@ const wlmtk_content_impl_t    content_impl = {
     .destroy = content_destroy,
     .create_scene_node = content_create_scene_node,
     .get_size = content_get_size,
-    .set_size = content_set_size,
+    .request_size = content_request_size,
     .set_activated = content_set_activated,
 };
 
@@ -256,7 +256,7 @@ void content_get_size(
  * @param width               Width of content.
  * @param height              Height of content.
  */
-void content_set_size(
+void content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height)
@@ -265,7 +265,7 @@ void content_set_size(
         content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
 
     // FIXME: Catch serial.
-    wlr_xdg_toplevel_set_size(
+    wlr_xdg_toplevel_request_size(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 

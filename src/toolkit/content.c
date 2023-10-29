@@ -84,7 +84,7 @@ bool wlmtk_content_init(
     BS_ASSERT(NULL != content_impl_ptr->destroy);
     BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
     BS_ASSERT(NULL != content_impl_ptr->get_size);
-    BS_ASSERT(NULL != content_impl_ptr->set_size);
+    BS_ASSERT(NULL != content_impl_ptr->request_size);
     BS_ASSERT(NULL != content_impl_ptr->set_activated);
 
     if (!wlmtk_element_init(&content_ptr->super_element,
@@ -357,7 +357,7 @@ static void fake_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,
     int *height_ptr);
-static void fake_content_set_size(
+static void fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
@@ -370,7 +370,7 @@ static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
     .destroy = fake_content_destroy,
     .create_scene_node = fake_content_create_scene_node,
     .get_size = fake_content_get_size,
-    .set_size = fake_content_set_size,
+    .request_size = fake_content_request_size,
     .set_activated = fake_content_set_activated,
 };
 
@@ -433,7 +433,7 @@ void fake_content_get_size(
 
 /* ------------------------------------------------------------------------- */
 /** Sets the size of the fake content. */
-void fake_content_set_size(
+void fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width, int height)
 {
@@ -481,7 +481,7 @@ void test_init_fini(bs_test_t *test_ptr)
         fake_content_ptr->content.impl.destroy);
 
     int l, t, r, b;
-    wlmtk_content_set_size(&fake_content_ptr->content, 42, 21);
+    wlmtk_content_request_size(&fake_content_ptr->content, 42, 21);
     wlmtk_element_get_dimensions(
         &fake_content_ptr->content.super_element, &l, &t, &r, &b);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l);

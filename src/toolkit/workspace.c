@@ -694,7 +694,7 @@ void test_resize(bs_test_t *test_ptr)
         fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
-    wlmtk_content_set_size(&fake_content_ptr->content, 40, 20);
+    wlmtk_content_request_size(&fake_content_ptr->content, 40, 20);
     wlmtk_window_t *window_ptr = wlmtk_window_create(
         &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
