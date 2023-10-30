@@ -37,13 +37,15 @@ struct _wlmtk_window_t {
     wlmtk_titlebar_t          *titlebar_ptr;
 };
 
+static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
 
 /* == Data ================================================================= */
 
 /** Method table for the box's virtual methods. */
 static const wlmtk_box_impl_t window_box_impl = {
-    .destroy = window_box_destroy
+    .destroy = window_box_destroy,
+    .update_layout = box_update_layout,
 };
 
 /** Style of the title bar. */
@@ -86,7 +88,8 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
 
     int width;
     wlmtk_content_get_size(content_ptr, &width, NULL);
-    window_ptr->titlebar_ptr = wlmtk_titlebar_create(width, &titlebar_style);
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create(
+        width, &titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
@@ -173,10 +176,6 @@ void wlmtk_window_set_size(
     // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
     wlmtk_content_request_size(window_ptr->content_ptr, width, height);
 
-    if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
-    }
-
     // TODO(kaeser@gubbe.ch): For client content (eg. a wlr_surface), setting
     // the size is an asynchronous operation and should be handled as such.
     // Meaning: In example of resizing at the top-left corner, we'll want to
@@ -208,6 +207,30 @@ void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of @ref wlmtk_box_impl_t::update_layout.
+ *
+ * Invoked when the window's contained elements triggered a layout update,
+ * and will use this to trigger (potential) size updates to the window
+ * decorations.
+ *
+ * @param box_ptr
+ */
+void box_update_layout(wlmtk_box_t *box_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        box_ptr, wlmtk_window_t, super_box);
+
+    if (NULL != window_ptr->content_ptr) {
+        int width;
+        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
+        if (NULL != window_ptr->titlebar_ptr) {
+            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
+        }
+    }
+}
 
 /* ------------------------------------------------------------------------- */
 /** Virtual destructor, in case called from box. Wraps to our dtor. */

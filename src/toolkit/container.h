@@ -38,7 +38,17 @@ extern "C" {
 struct _wlmtk_container_impl_t {
     /** dtor. */
     void (*destroy)(wlmtk_container_t *container_ptr);
-    /** Updates the layout of the container elements. */
+    /**
+     * Updates the layout of the container elements.
+     *
+     * Will be called by this, when an element is added or removed.
+     * Additionally, this should be invoked by contained elements when
+     * the visibility or dimensions change.
+     *
+     * Each container will propagate a wlmtk_container_impl::update_layout call
+     * upwards to it's parent container. The root container will then trigger
+     * an update to pointer focus (since by then, the layout is updated).
+      */
     void (*update_layout)(wlmtk_container_t *container_ptr);
 };
 

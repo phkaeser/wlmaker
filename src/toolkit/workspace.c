@@ -694,7 +694,7 @@ void test_resize(bs_test_t *test_ptr)
         fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
-    wlmtk_content_request_size(&fake_content_ptr->content, 40, 20);
+    wlmtk_content_commit_size(&fake_content_ptr->content, 40, 20);
     wlmtk_window_t *window_ptr = wlmtk_window_create(
         &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
@@ -714,6 +714,9 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 39, fake_content_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 18, fake_content_ptr->requested_height);
+    wlmtk_content_commit_size(&fake_content_ptr->content, 39, 18);
     wlmtk_window_get_size(window_ptr, &width, &height);
     BS_TEST_VERIFY_EQ(test_ptr, 39, width);
     BS_TEST_VERIFY_EQ(test_ptr, 18, height);

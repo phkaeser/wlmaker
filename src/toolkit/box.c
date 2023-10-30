@@ -114,6 +114,11 @@ void container_update_layout(wlmtk_container_t *container_ptr)
         wlmtk_element_set_position(element_ptr, x, y);
     }
 
+    // Forward to virtual methods, if any.
+    if (NULL != box_ptr->impl.update_layout) {
+        box_ptr->impl.update_layout(box_ptr);
+    }
+
     // configure parent container.
     wlmtk_container_update_layout(
         container_ptr->super_element.parent_container_ptr);

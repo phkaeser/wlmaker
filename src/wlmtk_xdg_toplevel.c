@@ -75,10 +75,6 @@ static void content_destroy(wlmtk_content_t *content_ptr);
 static struct wlr_scene_node *content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void content_get_size(
-    wlmtk_content_t *content_ptr,
-    int *width_ptr,
-    int *height_ptr);
 static void content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
@@ -93,7 +89,6 @@ static void content_set_activated(
 const wlmtk_content_impl_t    content_impl = {
     .destroy = content_destroy,
     .create_scene_node = content_create_scene_node,
-    .get_size = content_get_size,
     .request_size = content_request_size,
     .set_activated = content_set_activated,
 };
@@ -225,31 +220,6 @@ struct wlr_scene_node *content_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Gets the dimensions of the element in pixels.
- *
- * @param content_ptr
- * @param width_ptr            Width of content. May be NULL.
- * @param height_ptr           Height of content. May be NULL.
- */
-void content_get_size(
-    wlmtk_content_t *content_ptr,
-    int *width_ptr,
-    int *height_ptr)
-{
-    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
-
-    // FIXME -> this should be get_pointer_area !
-    struct wlr_box geo_box;
-    wlr_xdg_surface_get_geometry(
-        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->base, &geo_box);
-    // FIXME -- WARNING: THIS HAS A x AND y WITH RELATIVE POSITION!!
-    if (NULL != width_ptr) *width_ptr = geo_box.width;
-    if (NULL != height_ptr) *height_ptr = geo_box.height;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
  * Sets the dimensions of the element in pixels.
  *
  * @param content_ptr
@@ -265,7 +235,7 @@ void content_request_size(
         content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
 
     // FIXME: Catch serial.
-    wlr_xdg_toplevel_request_size(
+    wlr_xdg_toplevel_set_size(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 
@@ -373,7 +343,12 @@ void handle_surface_commit(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_content_t, surface_commit_listener);
 
-    bs_log(BS_INFO, "Commit %p", xdg_tl_content_ptr);
+    if (NULL == xdg_tl_content_ptr->wlr_xdg_surface_ptr) return;
+
+    wlmtk_content_commit_size(
+        &xdg_tl_content_ptr->super_content,
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.width,
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 }
 
 /* ------------------------------------------------------------------------- */

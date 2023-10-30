@@ -40,9 +40,6 @@ struct _wlmtk_content_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_content_t *content_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
-    /** Gets width and height of the content. */
-    void (*get_size)(wlmtk_content_t *content_ptr,
-                     int *width_ptr, int *height_ptr);
     /** Sets width and height of the content. */
     void (*request_size)(wlmtk_content_t *content_ptr,
                      int width, int height);
@@ -76,6 +73,11 @@ struct _wlmtk_content_t {
      * elements (eg. buffer), this should be abstracted away.
      */
     struct wlr_surface        *wlr_surface_ptr;
+
+    /** Committed width of the content. See @ref wlmtk_content_commit_size. */
+    unsigned                  committed_width;
+    /** Committed height of the content. See @ref wlmtk_content_commit_size. */
+    unsigned                  committed_height;
 };
 
 /**
@@ -112,6 +114,36 @@ void wlmtk_content_set_window(
     wlmtk_window_t *window_ptr);
 
 /**
+ * Sets the committed size of the content.
+ *
+ * Size operations on Wayland content are (often) asynchronous. The server
+ * should call @ref wlmtk_content_request_size, which (as a virtual method)
+ * forwards the request to the content (eg. the Wayland client surface). The
+ * client then configures it's surface and commits it. The content needs to
+ * catch that commit and call @ref wlmtk_content_commit_size accordingly.
+ * This will then update the parent container's (and window's) layout.
+ *
+ * @param content_ptr
+ * @param width
+ * @param height
+ */
+void wlmtk_content_commit_size(
+    wlmtk_content_t *content_ptr,
+    unsigned width,
+    unsigned height);
+
+/**
+ * Returns committed size of the content.
+ *
+ * @param content_ptr
+ * @param width_ptr
+ * @param height_ptr
+ */
+void wlmtk_content_get_size(
+    wlmtk_content_t *content_ptr,
+    int *width_ptr, int *height_ptr);
+
+/**
  * Returns the super Element of the content.
  *
  * @param content_ptr
@@ -124,12 +156,6 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 /** Wraps to @ref wlmtk_content_impl_t::destroy. */
 static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
     content_ptr->impl.destroy(content_ptr);
-}
-/** Wraps to @ref wlmtk_content_impl_t::get_size. */
-static inline void wlmtk_content_get_size(
-    wlmtk_content_t *content_ptr,
-    int *width_ptr, int *height_ptr) {
-    content_ptr->impl.get_size(content_ptr, width_ptr, height_ptr);
 }
 /** Wraps to @ref wlmtk_content_impl_t::request_size. */
 static inline void wlmtk_content_request_size(
@@ -158,10 +184,10 @@ extern const bs_test_case_t wlmtk_content_test_cases[];
 typedef struct {
     /** State of the content. */
     wlmtk_content_t           content;
-    /** Width to return on a wlmtk_content_impl_t::get_size call. */
-    int                       width;
-    /** Height to return on a wlmtk_content_impl_t::get_size call. */
-    int                       height;
+    /** `width` argument eof last @ref wlmtk_content_request_size call. */
+    int                       requested_width;
+    /** `height` argument of last @ref wlmtk_content_request_size call. */
+    int                       requested_height;
     /** Argument of last @ref wlmtk_content_set_activated call. */
     bool                      activated;
 } wlmtk_fake_content_t;
