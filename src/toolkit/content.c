@@ -118,9 +118,12 @@ void wlmtk_content_set_window(
 /* ------------------------------------------------------------------------- */
 void wlmtk_content_commit_size(
     wlmtk_content_t *content_ptr,
+    uint32_t serial,
     unsigned width,
     unsigned height)
 {
+    serial = serial;
+
     if (content_ptr->committed_width == width &&
         content_ptr->committed_height == height) return;
 
@@ -383,7 +386,7 @@ static void fake_content_destroy(
 static struct wlr_scene_node *fake_content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void fake_content_request_size(
+static uint32_t fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
@@ -446,7 +449,7 @@ struct wlr_scene_node *fake_content_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /** Sets the size of the fake content. */
-void fake_content_request_size(
+uint32_t fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height)
@@ -455,6 +458,7 @@ void fake_content_request_size(
         content_ptr, wlmtk_fake_content_t, content);
     fake_content_ptr->requested_width = width;
     fake_content_ptr->requested_height = height;
+    return fake_content_ptr->return_request_size;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -495,7 +499,11 @@ void test_init_fini(bs_test_t *test_ptr)
         fake_content_ptr->content.impl.destroy);
 
     int l, t, r, b;
-    wlmtk_content_request_size(&fake_content_ptr->content, 42, 21);
+    fake_content_ptr->return_request_size = 42;
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        42,
+        wlmtk_content_request_size(&fake_content_ptr->content, 42, 21));
     wlmtk_element_get_dimensions(
         &fake_content_ptr->content.super_element, &l, &t, &r, &b);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l);
@@ -503,7 +511,7 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, r);
     BS_TEST_VERIFY_EQ(test_ptr, 0, b);
 
-    wlmtk_content_commit_size(&fake_content_ptr->content, 42, 21);
+    wlmtk_content_commit_size(&fake_content_ptr->content, 1, 42, 21);
     wlmtk_content_get_size(&fake_content_ptr->content, &r, &b);
     BS_TEST_VERIFY_EQ(test_ptr, 42, r);
     BS_TEST_VERIFY_EQ(test_ptr, 21, b);

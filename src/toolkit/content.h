@@ -40,9 +40,9 @@ struct _wlmtk_content_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_content_t *content_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
-    /** Sets width and height of the content. */
-    void (*request_size)(wlmtk_content_t *content_ptr,
-                     int width, int height);
+    /** Sets width and height of the content. Returns serial. */
+    uint32_t (*request_size)(wlmtk_content_t *content_ptr,
+                             int width, int height);
     /** Sets whether the content is activated (has keyboard focus). */
     void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
@@ -124,11 +124,13 @@ void wlmtk_content_set_window(
  * This will then update the parent container's (and window's) layout.
  *
  * @param content_ptr
+ * @param serial
  * @param width
  * @param height
  */
 void wlmtk_content_commit_size(
     wlmtk_content_t *content_ptr,
+    uint32_t serial,
     unsigned width,
     unsigned height);
 
@@ -158,10 +160,11 @@ static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
     content_ptr->impl.destroy(content_ptr);
 }
 /** Wraps to @ref wlmtk_content_impl_t::request_size. */
-static inline void wlmtk_content_request_size(
+static inline uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
-    int width, int height) {
-    content_ptr->impl.request_size(content_ptr, width, height);
+    int width,
+    int height) {
+    return content_ptr->impl.request_size(content_ptr, width, height);
 }
 /** Wraps to @ref wlmtk_content_impl_t::set_activated. */
 static inline void wlmtk_content_set_activated(
@@ -188,6 +191,8 @@ typedef struct {
     int                       requested_width;
     /** `height` argument of last @ref wlmtk_content_request_size call. */
     int                       requested_height;
+    /** Return value of @ref wlmtk_content_request_size call. */
+    uint32_t                  return_request_size;
     /** Argument of last @ref wlmtk_content_set_activated call. */
     bool                      activated;
 } wlmtk_fake_content_t;

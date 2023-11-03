@@ -75,7 +75,7 @@ static void content_destroy(wlmtk_content_t *content_ptr);
 static struct wlr_scene_node *content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void content_request_size(
+static uint32_t content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
@@ -225,8 +225,10 @@ struct wlr_scene_node *content_create_scene_node(
  * @param content_ptr
  * @param width               Width of content.
  * @param height              Height of content.
+ *
+ * @return The serial.
  */
-void content_request_size(
+uint32_t content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height)
@@ -234,8 +236,7 @@ void content_request_size(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
 
-    // FIXME: Catch serial.
-    wlr_xdg_toplevel_set_size(
+    return wlr_xdg_toplevel_set_size(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 
@@ -334,7 +335,7 @@ void handle_surface_unmap(
  * Handler for the `commit` signal.
  *
  * @param listener_ptr
- * @param data_ptr
+ * @param data_ptr            Points to the const struct wlr_surface.
  */
 void handle_surface_commit(
     struct wl_listener *listener_ptr,
@@ -347,6 +348,7 @@ void handle_surface_commit(
 
     wlmtk_content_commit_size(
         &xdg_tl_content_ptr->super_content,
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.configure_serial,
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 }
