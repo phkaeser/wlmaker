@@ -28,6 +28,7 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #undef WLR_USE_UNSTABLE
 
@@ -488,10 +489,10 @@ void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
         time_msec);
 
     if (!rv) {  // FIXME
-        wlr_xcursor_manager_set_cursor_image(
+        wlr_cursor_set_xcursor(
+            cursor_ptr->wlr_cursor_ptr,
             cursor_ptr->wlr_xcursor_manager_ptr,
-            "left_ptr",
-            cursor_ptr->wlr_cursor_ptr);
+            "left_ptr");
     }
 
     if (true) return;
@@ -553,10 +554,10 @@ void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
         &rel_y);
     update_under_cursor_view(cursor_ptr, view_ptr);
     if (NULL == view_ptr) {
-        wlr_xcursor_manager_set_cursor_image(
+        wlr_cursor_set_xcursor(
+            cursor_ptr->wlr_cursor_ptr,
             cursor_ptr->wlr_xcursor_manager_ptr,
-            "left_ptr",
-            cursor_ptr->wlr_cursor_ptr);
+            "left_ptr");
     } else {
         wlmaker_view_handle_motion(
             view_ptr,

@@ -26,7 +26,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
-#include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -187,10 +187,10 @@ void _titlebar_enter(wlmaker_interactive_t *interactive_ptr)
         cursor_name_ptr = xcursor_name_move;
     }
 
-    wlr_xcursor_manager_set_cursor_image(
+    wlr_cursor_set_xcursor(
+        interactive_ptr->cursor_ptr->wlr_cursor_ptr,
         interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-        cursor_name_ptr,
-        interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+        cursor_name_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -227,10 +227,10 @@ void _titlebar_motion(
             titlebar_ptr->interactive.cursor_ptr,
             titlebar_ptr->view_ptr);
 
-        wlr_xcursor_manager_set_cursor_image(
+        wlr_cursor_set_xcursor(
+            interactive_ptr->cursor_ptr->wlr_cursor_ptr,
             interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-            xcursor_name_move,
-            interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+            xcursor_name_move);
     }
 }
 
@@ -304,10 +304,10 @@ void _titlebar_button(
         titlebar_ptr->state = TITLEBAR_IDLE;
         // Reset cursor to default, if it is within our bounds.
         if (wlmaker_interactive_contains(&titlebar_ptr->interactive, x, y)) {
-            wlr_xcursor_manager_set_cursor_image(
+            wlr_cursor_set_xcursor(
+                interactive_ptr->cursor_ptr->wlr_cursor_ptr,
                 interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-                xcursor_name_default,
-                interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+                xcursor_name_default);
         }
         break;
 

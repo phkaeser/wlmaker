@@ -24,7 +24,7 @@
 #include <wlr/util/edges.h>
 
 #define WLR_USE_UNSTABLE
-#include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -171,10 +171,10 @@ void _resizebar_enter(
         xcursor_name_ptr = "sw-resize";
     }
 
-    wlr_xcursor_manager_set_cursor_image(
+    wlr_cursor_set_xcursor(
+        interactive_ptr->cursor_ptr->wlr_cursor_ptr,
         interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-        xcursor_name_ptr,
-        interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+        xcursor_name_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

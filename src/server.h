@@ -72,6 +72,8 @@ struct _wlmaker_server_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
+    /** The scene output layout. */
+    struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
     /**
      * Another scene graph, not connected to any output.
      *

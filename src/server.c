@@ -193,8 +193,10 @@ wlmaker_server_t *wlmaker_server_create(void)
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    if (!wlr_scene_attach_output_layout(server_ptr->wlr_scene_ptr,
-                                        server_ptr->wlr_output_layout_ptr)) {
+    server_ptr->wlr_scene_output_layout_ptr = wlr_scene_attach_output_layout(
+        server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr);
+    if (NULL == server_ptr->wlr_scene_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -402,8 +404,16 @@ void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
     // outputs from left-to-right in the order they appear. A sophisticated
     // compositor would let the user configure the arrangement of outputs in
     // the layout.
-    wlr_output_layout_add_auto(server_ptr->wlr_output_layout_ptr,
-                               output_ptr->wlr_output_ptr);
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        wlr_output_layout_add_auto(server_ptr->wlr_output_layout_ptr,
+                                   output_ptr->wlr_output_ptr);
+    struct wlr_scene_output *wlr_scene_output_ptr =
+        wlr_scene_output_create(server_ptr->wlr_scene_ptr,
+                                output_ptr->wlr_output_ptr);
+    wlr_scene_output_layout_add_output(
+        server_ptr->wlr_scene_output_layout_ptr,
+        wlr_output_layout_output_ptr,
+        wlr_scene_output_ptr);
     bs_dllist_push_back(&server_ptr->outputs, &output_ptr->node);
 }
 

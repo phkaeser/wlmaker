@@ -217,11 +217,12 @@ void handle_decoration_request_mode(
 {
     wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
         listener_ptr, decoration_ptr, request_mode_listener);
+
     struct wlr_scene_tree *wlr_scene_tree_ptr = (struct wlr_scene_tree*)
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
 
     wlmtk_content_t *content_ptr = (wlmtk_content_t*)
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
     if (NULL != content_ptr &&
         content_ptr->identifier_ptr == wlmtk_content_identifier_ptr) {
         bs_log(BS_WARNING,
@@ -273,7 +274,7 @@ void handle_decoration_request_mode(
 
     bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, view %p: "
            "Current %d, pending %d, scheduled %d, requested %d. Set: %d",
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface,
+           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->surface,
            view_ptr,
            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->current.mode,
            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->pending.mode,
