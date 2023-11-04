@@ -168,7 +168,7 @@ void wlmtk_window_get_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_set_size(
+void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
     int width,
     int height)
@@ -181,7 +181,7 @@ void wlmtk_window_set_size(
     // Meaning: In example of resizing at the top-left corner, we'll want to
     // request the content to adjust size, but wait with adjusting the
     // content position until the size adjustment is applied. This implies we
-    // may need to combine the set_size and set_position methods for window.
+    // may need to combine the request_size and set_position methods for window.
 }
 
 /* ------------------------------------------------------------------------- */

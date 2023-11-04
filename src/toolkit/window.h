@@ -96,13 +96,15 @@ void wlmtk_window_get_size(
     int *height_ptr);
 
 /**
- * Sets the size of the window, including potential decorations.
+ * Requesta a new size for the window, including potential decorations.
+ *
+ * This may be implemented as an asynchronous operation.x
  *
  * @param window_ptr
  * @param width
  * @param height
  */
-void wlmtk_window_set_size(
+void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
     int width,
     int height);

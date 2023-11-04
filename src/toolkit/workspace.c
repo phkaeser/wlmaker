@@ -436,7 +436,7 @@ bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     wlmtk_element_set_position(
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
         left, top);
-    wlmtk_window_set_size(
+    wlmtk_window_request_size(
         workspace_ptr->grabbed_window_ptr,
         right - left, bottom - top);
     return true;
