@@ -29,22 +29,6 @@
 /** Maximum number of pending state updates. */
 #define WLMTK_WINDOW_MAX_PENDING 64
 
-/** State of the window. */
-struct _wlmtk_window_t {
-    /** Superclass: Box. */
-    wlmtk_box_t               super_box;
-
-    /** Content of this window. */
-    wlmtk_content_t           *content_ptr;
-    /** Titlebar. */
-    wlmtk_titlebar_t          *titlebar_ptr;
-
-    /** Pending updates. */
-    bs_dllist_t               pending_updates;
-    /** Set of pre-allocated updates. */
-    bs_dllist_t               updates_available;
-};
-
 /** Pending positional updates. */
 typedef struct {
     /** Node within @ref wlmtk_window_t::pending_updates. */
@@ -60,6 +44,25 @@ typedef struct {
     /** Height that is to be committed at serial. */
     unsigned                  height;
 } wlmtk_pending_update_t;
+
+/** State of the window. */
+struct _wlmtk_window_t {
+    /** Superclass: Box. */
+    wlmtk_box_t               super_box;
+
+    /** Content of this window. */
+    wlmtk_content_t           *content_ptr;
+    /** Titlebar. */
+    wlmtk_titlebar_t          *titlebar_ptr;
+
+    /** Pending updates. */
+    bs_dllist_t               pending_updates;
+    /** List of udpates currently available. */
+    bs_dllist_t               available_updates;
+    /** Pre-alloocated updates. */
+    wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+};
+
 
 static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
@@ -95,6 +98,10 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
+    for (size_t i = 0; i < WLMTK_WINDOW_MAX_PENDING; ++i) {
+        bs_dllist_push_back(&window_ptr->available_updates,
+                            &window_ptr->pre_allocated_updates[i].dlnode);
+    }
 
     if (!wlmtk_box_init(&window_ptr->super_box,
                         &window_box_impl,
@@ -219,11 +226,12 @@ void wlmtk_window_request_position_and_size(
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
 
-    // TODO(kaeser@gubbe.ch): Use a pre-allocated array, and apply pending
-    // states when in risk of overflow.
-    wlmtk_pending_update_t *pending_update_ptr = logged_calloc(
-        1, sizeof(wlmtk_pending_update_t));
-    BS_ASSERT(NULL != pending_update_ptr);
+    // TODO(kaeser@gubbe.ch): Handle case of not having a node.
+    bs_dllist_node_t *dlnode_ptr = bs_dllist_pop_front(
+        &window_ptr->available_updates);
+    BS_ASSERT(NULL != dlnode_ptr);
+    wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmtk_pending_update_t, dlnode);
     pending_update_ptr->serial = serial;
     pending_update_ptr->x = x;
     pending_update_ptr->y = y;
@@ -253,7 +261,8 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
         BS_ASSERT(dlnode_ptr == bs_dllist_pop_front(
                       &window_ptr->pending_updates));
         if (pending_update_ptr->serial < serial) {
-            free(pending_update_ptr);
+            bs_dllist_push_front(&window_ptr->available_updates,
+                                 &pending_update_ptr->dlnode);
             continue;
         }
 
@@ -262,7 +271,8 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
             wlmtk_window_element(window_ptr),
             pending_update_ptr->x,
             pending_update_ptr->y);
-        free(pending_update_ptr);
+        bs_dllist_push_front(&window_ptr->available_updates,
+                             &pending_update_ptr->dlnode);
     }
 }
 
