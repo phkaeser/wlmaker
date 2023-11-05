@@ -27,6 +27,7 @@ SET(PUBLIC_HEADER_FILES
   content.h
   element.h
   fsm.h
+  resizebar.h
   titlebar.h
   window.h
   workspace.h)
@@ -41,6 +42,7 @@ TARGET_SOURCES(toolkit PRIVATE
   fsm.c
   gfxbuf.c
   primitives.c
+  resizebar.c
   titlebar.c
   util.c
   window.c

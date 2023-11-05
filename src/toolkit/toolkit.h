@@ -36,9 +36,10 @@
 #include "content.h"
 #include "element.h"
 #include "fsm.h"
+#include "resizebar.h"
+#include "titlebar.h"
 #include "window.h"
 #include "workspace.h"
-#include "titlebar.h"
 
 #ifdef __cplusplus
 extern "C" {
