@@ -89,4 +89,24 @@ void resizebar_box_destroy(wlmtk_box_t *box_ptr)
     wlmtk_resizebar_destroy(resizebar_ptr);
 }
 
+/* == Unit tests =========================================================== */
+
+static void test_create_destroy(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_resizebar_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Exercises @ref wlmtk_resizebar_create and @ref wlmtk_resizebar_destroy. */
+void test_create_destroy(bs_test_t *test_ptr)
+{
+    wlmtk_resizebar_style_t style = {};
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(120, &style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
+
+    wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
+}
+
 /* == End of resizebar.c =================================================== */
