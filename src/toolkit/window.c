@@ -255,6 +255,17 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
         int32_t delta = pending_update_ptr->serial - serial;
         if (0 < delta) break;
 
+        if (pending_update_ptr->serial == serial) {
+            if (window_ptr->content_ptr->committed_width !=
+                pending_update_ptr->width) {
+                bs_log(BS_ERROR, "FIXME: width mismatch!");
+            }
+            if (window_ptr->content_ptr->committed_height !=
+                pending_update_ptr->height) {
+                bs_log(BS_ERROR, "FIXME: height mismatch!");
+            }
+        }
+
         wlmtk_element_set_position(
             wlmtk_window_element(window_ptr),
             pending_update_ptr->x,
