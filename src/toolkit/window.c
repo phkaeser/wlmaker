@@ -26,6 +26,9 @@
 
 /* == Declarations ========================================================= */
 
+/** Maximum number of pending state updates. */
+#define WLMTK_WINDOW_MAX_PENDING 64
+
 /** State of the window. */
 struct _wlmtk_window_t {
     /** Superclass: Box. */
@@ -36,13 +39,15 @@ struct _wlmtk_window_t {
     /** Titlebar. */
     wlmtk_titlebar_t          *titlebar_ptr;
 
-    /** Pending states. */
-    bs_dllist_t               ps;
+    /** Pending updates. */
+    bs_dllist_t               pending_updates;
+    /** Set of pre-allocated updates. */
+    bs_dllist_t               updates_available;
 };
 
 /** Pending positional updates. */
 typedef struct {
-    /** Node within wlmtk_window_t::ps. */
+    /** Node within @ref wlmtk_window_t::pending_updates. */
     bs_dllist_node_t          dlnode;
     /** Serial of the update. */
     uint32_t                  serial;
@@ -54,7 +59,7 @@ typedef struct {
     unsigned                  width;
     /** Height that is to be committed at serial. */
     unsigned                  height;
-} wlmtk_pending_t;
+} wlmtk_pending_update_t;
 
 static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
@@ -216,14 +221,16 @@ void wlmtk_window_request_position_and_size(
 
     // TODO(kaeser@gubbe.ch): Use a pre-allocated array, and apply pending
     // states when in risk of overflow.
-    wlmtk_pending_t *pending_ptr = logged_calloc(1, sizeof(wlmtk_pending_t));
-    BS_ASSERT(NULL != pending_ptr);
-    pending_ptr->serial = serial;
-    pending_ptr->x = x;
-    pending_ptr->y = y;
-    pending_ptr->width = width;
-    pending_ptr->height = height;
-    bs_dllist_push_back(&window_ptr->ps, &pending_ptr->dlnode);
+    wlmtk_pending_update_t *pending_update_ptr = logged_calloc(
+        1, sizeof(wlmtk_pending_update_t));
+    BS_ASSERT(NULL != pending_update_ptr);
+    pending_update_ptr->serial = serial;
+    pending_update_ptr->x = x;
+    pending_update_ptr->y = y;
+    pending_update_ptr->width = width;
+    pending_update_ptr->height = height;
+    bs_dllist_push_back(&window_ptr->pending_updates,
+                        &pending_update_ptr->dlnode);
 
     // TODO(kaeser@gubbe.ch): Handle synchronous case: @ref wlmtk_window_serial
     // may have been called early, so we should check if serial had just been
@@ -234,27 +241,28 @@ void wlmtk_window_request_position_and_size(
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 {
-    while (!bs_dllist_empty(&window_ptr->ps)) {
-        bs_dllist_node_t *dlnode_ptr = window_ptr->ps.head_ptr;
-        wlmtk_pending_t *pending_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmtk_pending_t, dlnode);
+    while (!bs_dllist_empty(&window_ptr->pending_updates)) {
+        bs_dllist_node_t *dlnode_ptr = window_ptr->pending_updates.head_ptr;
+        wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmtk_pending_update_t, dlnode);
 
-        if (pending_ptr->serial > serial) {
+        if (pending_update_ptr->serial > serial) {
             break;
         }
 
-        BS_ASSERT(dlnode_ptr == bs_dllist_pop_front(&window_ptr->ps));
-        if (pending_ptr->serial < serial) {
-            free(pending_ptr);
+        BS_ASSERT(dlnode_ptr == bs_dllist_pop_front(
+                      &window_ptr->pending_updates));
+        if (pending_update_ptr->serial < serial) {
+            free(pending_update_ptr);
             continue;
         }
 
-        BS_ASSERT(pending_ptr->serial == serial);
+        BS_ASSERT(pending_update_ptr->serial == serial);
         wlmtk_element_set_position(
             wlmtk_window_element(window_ptr),
-            pending_ptr->x,
-            pending_ptr->y);
-        free(pending_ptr);
+            pending_update_ptr->x,
+            pending_update_ptr->y);
+        free(pending_update_ptr);
     }
 }
 
