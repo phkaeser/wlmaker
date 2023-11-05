@@ -254,7 +254,6 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 
         int32_t delta = pending_update_ptr->serial - serial;
         if (0 < delta) break;
-        //        if (pending_update_ptr->serial > serial) break;
 
         wlmtk_element_set_position(
             wlmtk_window_element(window_ptr),
