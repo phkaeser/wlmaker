@@ -188,7 +188,7 @@ bool wlmtk_titlebar_set_width(
     unsigned width)
 {
     if (titlebar_ptr->width == width) return true;
-    redraw_buffers(titlebar_ptr, width);
+    if (!redraw_buffers(titlebar_ptr, width)) return false;
     BS_ASSERT(width == titlebar_ptr->width);
 
     if (!wlmtk_titlebar_title_redraw(
