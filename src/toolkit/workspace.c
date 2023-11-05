@@ -433,11 +433,9 @@ bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         if (right <= left) right = left + 1;
     }
 
-    wlmtk_element_set_position(
-        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
-        left, top);
-    wlmtk_window_request_size(
+    wlmtk_window_request_position_and_size(
         workspace_ptr->grabbed_window_ptr,
+        left, top,
         right - left, bottom - top);
     return true;
 }
@@ -711,13 +709,17 @@ void test_resize(bs_test_t *test_ptr)
     // Starts a resize for the window. Will resize & move it...
     wlmtk_workspace_begin_window_resize(
         workspace_ptr, window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
+    fake_content_ptr->return_request_size = 1;  // The serial.
     wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 39, fake_content_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 18, fake_content_ptr->requested_height);
+    // This updates for the given serial.
     wlmtk_content_commit_size(&fake_content_ptr->content, 1, 39, 18);
     wlmtk_window_get_size(window_ptr, &width, &height);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 39, width);
     BS_TEST_VERIFY_EQ(test_ptr, 18, height);
 

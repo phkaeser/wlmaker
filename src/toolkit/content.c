@@ -122,16 +122,19 @@ void wlmtk_content_commit_size(
     unsigned width,
     unsigned height)
 {
-    serial = serial;
+    if (content_ptr->committed_width != width ||
+        content_ptr->committed_height != height) {
+        content_ptr->committed_width = width;
+        content_ptr->committed_height = height;
+    }
 
-    if (content_ptr->committed_width == width &&
-        content_ptr->committed_height == height) return;
+    if (NULL != content_ptr->window_ptr) {
+        wlmtk_window_serial(content_ptr->window_ptr, serial);
+    }
 
-    content_ptr->committed_width = width;
-    content_ptr->committed_height = height;
     if (NULL != content_ptr->super_element.parent_container_ptr) {
         wlmtk_container_update_layout(
-            content_ptr->super_element.parent_container_ptr);
+        content_ptr->super_element.parent_container_ptr);
     }
 }
 

@@ -35,7 +35,26 @@ struct _wlmtk_window_t {
     wlmtk_content_t           *content_ptr;
     /** Titlebar. */
     wlmtk_titlebar_t          *titlebar_ptr;
+
+    /** Pending states. */
+    bs_dllist_t               ps;
 };
+
+/** Pending positional updates. */
+typedef struct {
+    /** Node within wlmtk_window_t::ps. */
+    bs_dllist_node_t          dlnode;
+    /** Serial of the update. */
+    uint32_t                  serial;
+    /** Pending X position. */
+    int                       x;
+    /** Pending Y position. */
+    int                       y;
+    /** Width that is to be committed at serial. */
+    unsigned                  width;
+    /** Height that is to be committed at serial. */
+    unsigned                  height;
+} wlmtk_pending_t;
 
 static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
@@ -182,6 +201,61 @@ void wlmtk_window_request_size(
     // request the content to adjust size, but wait with adjusting the
     // content position until the size adjustment is applied. This implies we
     // may need to combine the request_size and set_position methods for window.
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_position_and_size(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height)
+{
+    uint32_t serial = wlmtk_content_request_size(
+        window_ptr->content_ptr, width, height);
+
+    // TODO(kaeser@gubbe.ch): Use a pre-allocated array, and apply pending
+    // states when in risk of overflow.
+    wlmtk_pending_t *pending_ptr = logged_calloc(1, sizeof(wlmtk_pending_t));
+    BS_ASSERT(NULL != pending_ptr);
+    pending_ptr->serial = serial;
+    pending_ptr->x = x;
+    pending_ptr->y = y;
+    pending_ptr->width = width;
+    pending_ptr->height = height;
+    bs_dllist_push_back(&window_ptr->ps, &pending_ptr->dlnode);
+
+    // TODO(kaeser@gubbe.ch): Handle synchronous case: @ref wlmtk_window_serial
+    // may have been called early, so we should check if serial had just been
+    // called before (or is below the last @wlmt_window_serial). In that case,
+    // the pending state should be applied right away.
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
+{
+    while (!bs_dllist_empty(&window_ptr->ps)) {
+        bs_dllist_node_t *dlnode_ptr = window_ptr->ps.head_ptr;
+        wlmtk_pending_t *pending_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmtk_pending_t, dlnode);
+
+        if (pending_ptr->serial > serial) {
+            break;
+        }
+
+        BS_ASSERT(dlnode_ptr == bs_dllist_pop_front(&window_ptr->ps));
+        if (pending_ptr->serial < serial) {
+            free(pending_ptr);
+            continue;
+        }
+
+        BS_ASSERT(pending_ptr->serial == serial);
+        wlmtk_element_set_position(
+            wlmtk_window_element(window_ptr),
+            pending_ptr->x,
+            pending_ptr->y);
+        free(pending_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

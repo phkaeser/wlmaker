@@ -96,9 +96,9 @@ void wlmtk_window_get_size(
     int *height_ptr);
 
 /**
- * Requesta a new size for the window, including potential decorations.
+ * Requests a new size for the window, including potential decorations.
  *
- * This may be implemented as an asynchronous operation.x
+ * This may be implemented as an asynchronous operation.
  *
  * @param window_ptr
  * @param width
@@ -106,6 +106,26 @@ void wlmtk_window_get_size(
  */
 void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
+    int width,
+    int height);
+
+/**
+ * Requests an updated position and size for the window, including potential
+ * decorations.
+ *
+ * This may be implemented as an asynchronous operation. The re-positioning
+ * will be applied only once the size change has been committed by the client.
+ *
+ * @param window_ptr
+ * @param x
+ * @param y
+ * @param width
+ * @param height
+ */
+void wlmtk_window_request_position_and_size(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
     int width,
     int height);
 
@@ -129,6 +149,21 @@ void wlmtk_window_request_move(wlmtk_window_t *window_ptr);
  * @param edges
  */
 void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges);
+
+/**
+ * Updates the window state to what was requested at the `serial`.
+ *
+ * Used for example when resizing a window from the top or left edges. In that
+ * case, @ref wlmtk_content_request_size may be asynchronous and returns a
+ * serial. The content is expected to call @ref wlmtk_window_serial with the
+ * returned serial when the size is committed.
+ * Only then, the corresponding positional update on the top/left edges are
+ * supposed to be applied.
+ *
+ * @param window_ptr
+ * @param serial
+ */
+void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];
