@@ -120,7 +120,6 @@ void wlmaker_tile_container_add(
     wlmaker_iconified_t *iconified_ptr)
 {
     bs_dllist_node_t *dlnode_ptr = wlmaker_dlnode_from_iconified(iconified_ptr);
-    BS_ASSERT(bs_dllist_node_orphaned(dlnode_ptr));
     bs_dllist_push_back(&tile_container_ptr->tiles, dlnode_ptr);
 
     struct wlr_scene_node *wlr_scene_node_ptr =
