@@ -63,6 +63,11 @@ struct _wlmtk_window_t {
     wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
 };
 
+static wlmtk_pending_update_t *prepare_update(
+    wlmtk_window_t *window_ptr);
+static void release_update(
+    wlmtk_window_t *window_ptr,
+    wlmtk_pending_update_t *update_ptr);
 
 static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
@@ -226,19 +231,12 @@ void wlmtk_window_request_position_and_size(
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
 
-    // TODO(kaeser@gubbe.ch): Handle case of not having a node.
-    bs_dllist_node_t *dlnode_ptr = bs_dllist_pop_front(
-        &window_ptr->available_updates);
-    BS_ASSERT(NULL != dlnode_ptr);
-    wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
-        dlnode_ptr, wlmtk_pending_update_t, dlnode);
+    wlmtk_pending_update_t *pending_update_ptr = prepare_update(window_ptr);
     pending_update_ptr->serial = serial;
     pending_update_ptr->x = x;
     pending_update_ptr->y = y;
     pending_update_ptr->width = width;
     pending_update_ptr->height = height;
-    bs_dllist_push_back(&window_ptr->pending_updates,
-                        &pending_update_ptr->dlnode);
 
     // TODO(kaeser@gubbe.ch): Handle synchronous case: @ref wlmtk_window_serial
     // may have been called early, so we should check if serial had just been
@@ -249,30 +247,20 @@ void wlmtk_window_request_position_and_size(
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 {
-    while (!bs_dllist_empty(&window_ptr->pending_updates)) {
-        bs_dllist_node_t *dlnode_ptr = window_ptr->pending_updates.head_ptr;
+    bs_dllist_node_t *dlnode_ptr;
+    while (NULL != (dlnode_ptr = window_ptr->pending_updates.head_ptr)) {
         wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
             dlnode_ptr, wlmtk_pending_update_t, dlnode);
 
-        if (pending_update_ptr->serial > serial) {
-            break;
-        }
+        int32_t delta = pending_update_ptr->serial - serial;
+        if (0 < delta) break;
+        //        if (pending_update_ptr->serial > serial) break;
 
-        BS_ASSERT(dlnode_ptr == bs_dllist_pop_front(
-                      &window_ptr->pending_updates));
-        if (pending_update_ptr->serial < serial) {
-            bs_dllist_push_front(&window_ptr->available_updates,
-                                 &pending_update_ptr->dlnode);
-            continue;
-        }
-
-        BS_ASSERT(pending_update_ptr->serial == serial);
         wlmtk_element_set_position(
             wlmtk_window_element(window_ptr),
             pending_update_ptr->x,
             pending_update_ptr->y);
-        bs_dllist_push_front(&window_ptr->available_updates,
-                             &pending_update_ptr->dlnode);
+        release_update(window_ptr, pending_update_ptr);
     }
 }
 
@@ -299,6 +287,48 @@ void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Prepares a positional update: Allocates an item and attach it to the end
+ * of the list of pending updates.
+ *
+ * @param window_ptr
+ *
+ * @return A pointer to a @ref wlmtk_pending_update_t, already positioned at the
+ *     back of @ref wlmtk_window_t::pending_updates.
+ */
+wlmtk_pending_update_t *prepare_update(
+    wlmtk_window_t *window_ptr)
+{
+    bs_dllist_node_t *dlnode_ptr = bs_dllist_pop_front(
+        &window_ptr->available_updates);
+    if (NULL == dlnode_ptr) {
+        dlnode_ptr = bs_dllist_pop_front(&window_ptr->pending_updates);
+        bs_log(BS_WARNING, "Window %p: No updates available.", window_ptr);
+        // TODO(kaeser@gubbe.ch): Hm, should we apply this (old) update?
+    }
+    wlmtk_pending_update_t *update_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmtk_pending_update_t, dlnode);
+    bs_dllist_push_back(&window_ptr->pending_updates, &update_ptr->dlnode);
+    return update_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Releases a pending positional update. Moves it to the list of
+ * @ref wlmtk_window_t::available_updates.
+ *
+ * @param window_ptr
+ * @param update_ptr
+ */
+void release_update(
+    wlmtk_window_t *window_ptr,
+    wlmtk_pending_update_t *update_ptr)
+{
+    bs_dllist_remove(&window_ptr->pending_updates, &update_ptr->dlnode);
+    bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
