@@ -162,6 +162,33 @@ void wlmtk_container_add_element(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_container_add_element_before(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *reference_element_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(NULL == element_ptr->parent_container_ptr);
+    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
+    BS_ASSERT(
+        NULL == reference_element_ptr ||
+        container_ptr == reference_element_ptr->parent_container_ptr);
+
+    if (NULL == reference_element_ptr) {
+        bs_dllist_push_back(
+            &container_ptr->elements,
+            wlmtk_dlnode_from_element(element_ptr));
+    } else {
+        bs_dllist_insert_node_before(
+            &container_ptr->elements,
+            wlmtk_dlnode_from_element(reference_element_ptr),
+            wlmtk_dlnode_from_element(element_ptr));
+    }
+
+    wlmtk_element_set_parent_container(element_ptr, container_ptr);
+    wlmtk_container_update_layout(container_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_container_remove_element(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr)
@@ -624,18 +651,37 @@ void test_add_remove(bs_test_t *test_ptr)
     elem3_ptr = wlmtk_fake_element_create();
     BS_ASSERT(NULL != elem3_ptr);
 
+    // Build sequence: 3 -> 2 -> 1.
     wlmtk_container_add_element(&container, &elem1_ptr->element);
     BS_TEST_VERIFY_EQ(
-        test_ptr, elem1_ptr->element.parent_container_ptr, &container);
+        test_ptr, &container, elem1_ptr->element.parent_container_ptr);
     wlmtk_container_add_element(&container, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(
-        test_ptr, elem2_ptr->element.parent_container_ptr, &container);
+        test_ptr, &container, elem2_ptr->element.parent_container_ptr);
     wlmtk_container_add_element(&container, &elem3_ptr->element);
     BS_TEST_VERIFY_EQ(
-        test_ptr, elem3_ptr->element.parent_container_ptr, &container);
+        test_ptr, &container, elem3_ptr->element.parent_container_ptr);
 
+    // Remove 2, then add at the end: 3 -> 1 -> 2.
     wlmtk_container_remove_element(&container, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, elem2_ptr->element.parent_container_ptr);
+    wlmtk_container_add_element_before(&container, NULL, &elem2_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, &container, elem2_ptr->element.parent_container_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_element(&elem1_ptr->element)->next_ptr,
+        wlmtk_dlnode_from_element(&elem2_ptr->element));
+
+    // Remove elem3 and add before elem2: 1 -> 3 -> 2.
+    wlmtk_container_remove_element(&container, &elem3_ptr->element);
+    wlmtk_container_add_element_before(
+        &container, &elem2_ptr->element, &elem3_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_element(&elem3_ptr->element)->next_ptr,
+        wlmtk_dlnode_from_element(&elem2_ptr->element));
+
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
     wlmtk_element_destroy(&elem2_ptr->element);
 
     // Will destroy contained elements.

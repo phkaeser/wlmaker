@@ -123,6 +123,20 @@ void wlmtk_container_add_element(
     wlmtk_element_t *element_ptr);
 
 /**
+ * Adds `element_ptr` to the container at (before) the reference's position.
+ *
+ * If reference_element_ptr is NULL, the element will be added at the back.
+ *
+ * @param container_ptr
+ * @param reference_element_ptr Must be an element of this container.
+ * @param element_ptr
+ */
+void wlmtk_container_add_element_before(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *reference_element_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
  * Removes `element_ptr` from the container.
  *
  * Expects that `container_ptr` is `element_ptr`'s parent container.

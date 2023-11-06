@@ -155,8 +155,9 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
+    wlmtk_container_add_element_before(
         &window_ptr->super_box.super_container,
+        NULL,
         wlmtk_resizebar_element(window_ptr->resizebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
