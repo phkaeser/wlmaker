@@ -58,14 +58,14 @@ struct _wlmtk_titlebar_t {
 
 /** State of the title bar's title. */
 struct _wlmtk_titlebar_title_t {
-    /** Superclass; Buffer. */
+    /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
 
     /** The drawn title, when focussed. */
     struct wlr_buffer         *focussed_wlr_buffer_ptr;
     /** The drawn title, when blurred. */
     struct wlr_buffer         *blurred_wlr_buffer_ptr;
-} ;
+};
 
 static wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
