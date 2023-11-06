@@ -20,6 +20,8 @@ extern "C" {
 typedef struct {
     /** Fill style for the complete resizebar. */
     wlmtk_style_fill_t        fill;
+    /** Height of the resize bar. */
+    unsigned                  height;
 } wlmtk_resizebar_style_t;
 
 /**
@@ -46,8 +48,10 @@ void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr);
  *
  * @param resizebar_ptr
  * @param width
+ *
+ * @return true on success.
  */
-void wlmtk_resizebar_set_width(
+bool wlmtk_resizebar_set_width(
     wlmtk_resizebar_t * resizebar_ptr,
     unsigned width);
 

@@ -21,6 +21,7 @@
 #include "window.h"
 
 #include "box.h"
+#include "resizebar.h"
 #include "titlebar.h"
 #include "workspace.h"
 
@@ -54,6 +55,8 @@ struct _wlmtk_window_t {
     wlmtk_content_t           *content_ptr;
     /** Titlebar. */
     wlmtk_titlebar_t          *titlebar_ptr;
+    /** Resizebar. */
+    wlmtk_resizebar_t         *resizebar_ptr;
 
     /** Pending updates. */
     bs_dllist_t               pending_updates;
@@ -96,6 +99,16 @@ static const wlmtk_titlebar_style_t titlebar_style = {
     .height = 22,
 };
 
+/** Style of the resize bar. */
+// TODO(kaeser@gubbe.ch): Move to central config. */
+static const wlmtk_resizebar_style_t resizebar_style = {
+    .fill = {
+        .type = WLMTK_STYLE_COLOR_SOLID,
+        .param = { .solid = { .color = 0xffc2c0c5 }}
+    },
+    .height = 8,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -136,12 +149,32 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
+    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+        width, &resizebar_style);
+    if (NULL == window_ptr->resizebar_ptr) {
+        wlmtk_window_destroy(window_ptr);
+        return NULL;
+    }
+    wlmtk_container_add_element(
+        &window_ptr->super_box.super_container,
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
+
     return window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
+    if (NULL != window_ptr->resizebar_ptr) {
+        wlmtk_container_remove_element(
+            &window_ptr->super_box.super_container,
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
+        window_ptr->resizebar_ptr = NULL;
+    }
+
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_container_remove_element(
             &window_ptr->super_box.super_container,
@@ -360,6 +393,9 @@ void box_update_layout(wlmtk_box_t *box_ptr)
         wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
         if (NULL != window_ptr->titlebar_ptr) {
             wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
+        }
+        if (NULL != window_ptr->resizebar_ptr) {
+            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
         }
     }
 }
