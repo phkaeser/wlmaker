@@ -38,8 +38,7 @@ struct wlr_scene_buffer;
 extern "C" {
 #endif  // __cplusplus
 
-
-/** Method table of the content. */
+/** Method table of the buffer. */
 struct _wlmtk_buffer_impl_t {
     /** Destroys the implementation of the buffer. */
     void (*destroy)(wlmtk_buffer_t *buffer_ptr);

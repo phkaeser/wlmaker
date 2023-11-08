@@ -23,6 +23,7 @@
 /** Toolkit unit tests. */
 const bs_test_set_t toolkit_tests[] = {
     { 1, "box", wlmtk_box_test_cases },
+    { 1, "button", wlmtk_button_test_cases },
     { 1, "container", wlmtk_container_test_cases },
     { 1, "content", wlmtk_content_test_cases },
     { 1, "element", wlmtk_element_test_cases },

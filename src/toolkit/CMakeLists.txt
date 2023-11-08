@@ -23,6 +23,7 @@ SET(PUBLIC_HEADER_FILES
 
   box.h
   buffer.h
+  button.h
   container.h
   content.h
   element.h
@@ -37,6 +38,7 @@ ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
   box.c
   buffer.c
+  button.c
   container.c
   content.c
   element.c
