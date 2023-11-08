@@ -54,11 +54,6 @@ bool wlmtk_button_init(
     BS_ASSERT(NULL != button_impl_ptr->destroy);
     memcpy(&button_ptr->impl, button_impl_ptr, sizeof(wlmtk_button_impl_t));
 
-    button_ptr->released_wlr_buffer_ptr = wlr_buffer_lock(
-        released_wlr_buffer_ptr);
-    button_ptr->pressed_wlr_buffer_ptr = wlr_buffer_lock(
-        pressed_wlr_buffer_ptr);
-
     if (!wlmtk_buffer_init(
             &button_ptr->super_buffer,
             &button_buffer_impl,
@@ -66,6 +61,9 @@ bool wlmtk_button_init(
         wlmtk_button_fini(button_ptr);
         return false;
     }
+
+    wlmtk_button_set(
+        button_ptr, released_wlr_buffer_ptr, pressed_wlr_buffer_ptr);
 
     return true;
 }
@@ -87,11 +85,31 @@ void wlmtk_button_fini(wlmtk_button_t *button_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_button_set(
-    __UNUSED__ wlmtk_button_t *button_ptr,
-    __UNUSED__ struct wlr_buffer *pressed_wlr_buffer_ptr,
-    __UNUSED__ struct wlr_buffer *released_wlr_buffer_ptr)
+    wlmtk_button_t *button_ptr,
+    struct wlr_buffer *released_wlr_buffer_ptr,
+    struct wlr_buffer *pressed_wlr_buffer_ptr)
 {
-    // FIXME.
+    if (NULL != button_ptr->released_wlr_buffer_ptr) {
+        wlr_buffer_unlock(button_ptr->released_wlr_buffer_ptr);
+    }
+    button_ptr->released_wlr_buffer_ptr = wlr_buffer_lock(
+        released_wlr_buffer_ptr);
+
+    if (NULL != button_ptr->pressed_wlr_buffer_ptr) {
+        wlr_buffer_unlock(button_ptr->pressed_wlr_buffer_ptr);
+    }
+    button_ptr->pressed_wlr_buffer_ptr = wlr_buffer_lock(
+        pressed_wlr_buffer_ptr);
+
+    if (button_ptr->pressed) {
+        wlmtk_buffer_set(
+            &button_ptr->super_buffer,
+            button_ptr->pressed_wlr_buffer_ptr);
+    } else {
+        wlmtk_buffer_set(
+            &button_ptr->super_buffer,
+            button_ptr->released_wlr_buffer_ptr);
+    }
 }
 
 /* == Local (static) methods =============================================== */
@@ -127,13 +145,13 @@ const wlmtk_button_impl_t fake_button_impl = {
 /** Exercises @ref wlmtk_button_init and @ref wlmtk_button_fini. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    struct wlr_buffer *buf_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     wlmtk_button_t button;
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_button_init(&button,  &fake_button_impl, wlr_buffer_ptr, wlr_buffer_ptr));
-    wlr_buffer_drop(wlr_buffer_ptr);
+        wlmtk_button_init(&button,  &fake_button_impl, buf_ptr, buf_ptr));
+    wlr_buffer_drop(buf_ptr);
 
     wlmtk_element_destroy(&button.super_buffer.super_element);
 }

@@ -48,6 +48,9 @@ struct _wlmtk_button_t {
     struct wlr_buffer         *released_wlr_buffer_ptr;
     /** WLR buffer holding the button in pressed state. */
     struct wlr_buffer         *pressed_wlr_buffer_ptr;
+
+    /** Whether the button is currently pressed. */
+    bool                      pressed;
 };
 
 /**
