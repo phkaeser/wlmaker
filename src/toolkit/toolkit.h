@@ -30,12 +30,14 @@
 #include <libbase/libbase.h>
 #include <wayland-server.h>
 
+
 #include "box.h"
 #include "buffer.h"
 #include "container.h"
 #include "content.h"
 #include "element.h"
 #include "fsm.h"
+#include "input.h"
 #include "resizebar.h"
 #include "titlebar.h"
 #include "window.h"

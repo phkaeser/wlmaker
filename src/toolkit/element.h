@@ -32,7 +32,7 @@ typedef struct _wlmtk_element_impl_t wlmtk_element_impl_t;
 typedef struct _wlmtk_container_t wlmtk_container_t;
 struct wlr_scene_tree;
 
-#include "button.h"
+#include "input.h"
 
 #ifdef __cplusplus
 extern "C" {

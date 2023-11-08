@@ -20,34 +20,10 @@
 #ifndef __WLMTK_BUTTON_H__
 #define __WLMTK_BUTTON_H__
 
-// BTN_LEFT, BTN_RIGHT, ...
-#include <linux/input-event-codes.h>
-
-/** Forward declaration: Button event. */
-typedef struct _wlmtk_button_event_t wlmtk_button_event_t;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Button state. */
-typedef enum {
-    WLMTK_BUTTON_DOWN,
-    WLMTK_BUTTON_UP,
-    WLMTK_BUTTON_CLICK,
-    WLMTK_BUTTON_DOUBLE_CLICK,
-} wlmtk_button_event_type_t;
-
-/** Button events. */
-struct _wlmtk_button_event_t {
-    /** Button for which the event applies: linux/input-event-codes.h */
-    uint32_t                  button;
-    /** Type of the event: DOWN, UP, ... */
-    wlmtk_button_event_type_t type;
-    /** Time of the button event, in milliseconds. */
-    uint32_t                  time_msec;
-};
 
 #ifdef __cplusplus
 }  // extern "C"

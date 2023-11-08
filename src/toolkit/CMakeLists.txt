@@ -27,6 +27,7 @@ SET(PUBLIC_HEADER_FILES
   content.h
   element.h
   fsm.h
+  input.h
   resizebar.h
   titlebar.h
   window.h
