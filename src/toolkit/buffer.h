@@ -76,14 +76,12 @@ struct _wlmtk_buffer_t {
  *
  * @param buffer_ptr
  * @param buffer_impl_ptr
- * @param wlr_buffer_ptr
  *
  * @return true on success.
  */
 bool wlmtk_buffer_init(
     wlmtk_buffer_t *buffer_ptr,
-    const wlmtk_buffer_impl_t *buffer_impl_ptr,
-    struct wlr_buffer *wlr_buffer_ptr);
+    const wlmtk_buffer_impl_t *buffer_impl_ptr);
 
 /**
  * Cleans up the buffer.

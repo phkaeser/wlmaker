@@ -51,6 +51,9 @@ struct _wlmtk_button_t {
 
     /** Whether the button is currently pressed. */
     bool                      pressed;
+
+    /** Whether the pointer is currently inside. */
+    bool                      pointer_inside;
 };
 
 /**
@@ -58,16 +61,12 @@ struct _wlmtk_button_t {
  *
  * @param button_ptr
  * @param button_impl_ptr
- * @param released_wlr_buffer_ptr
- * @param pressed_wlr_buffer_ptr
  *
  * @return true on success.
  */
 bool wlmtk_button_init(
     wlmtk_button_t *button_ptr,
-    const wlmtk_button_impl_t *button_impl_ptr,
-    struct wlr_buffer *released_wlr_buffer_ptr,
-    struct wlr_buffer *pressed_wlr_buffer_ptr);
+    const wlmtk_button_impl_t *button_impl_ptr);
 
 /**
  * Cleans up the button.

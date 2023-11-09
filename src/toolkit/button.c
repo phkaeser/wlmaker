@@ -31,12 +31,24 @@
 /* == Declarations ========================================================= */
 
 static void button_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
+static bool buffer_pointer_motion(
+    wlmtk_buffer_t *buffer_ptr,
+    double x, double y,
+    uint32_t time_msec);
+static bool buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+static void buffer_pointer_leave(
+    wlmtk_buffer_t *buffer_ptr);
 
 /* == Data ================================================================= */
 
 /** Virtual method table for @ref wlmtk_button_t::super_buffer. */
 static const wlmtk_buffer_impl_t button_buffer_impl = {
     .destroy = button_buffer_destroy,
+    .pointer_motion = buffer_pointer_motion,
+    .pointer_button = buffer_pointer_button,
+    .pointer_leave = buffer_pointer_leave,
 };
 
 /* == Exported methods ===================================================== */
@@ -44,9 +56,7 @@ static const wlmtk_buffer_impl_t button_buffer_impl = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_button_init(
     wlmtk_button_t *button_ptr,
-    const wlmtk_button_impl_t *button_impl_ptr,
-    struct wlr_buffer *released_wlr_buffer_ptr,
-    struct wlr_buffer *pressed_wlr_buffer_ptr)
+    const wlmtk_button_impl_t *button_impl_ptr)
 {
     BS_ASSERT(NULL != button_ptr);
     memset(button_ptr, 0, sizeof(wlmtk_button_t));
@@ -56,14 +66,10 @@ bool wlmtk_button_init(
 
     if (!wlmtk_buffer_init(
             &button_ptr->super_buffer,
-            &button_buffer_impl,
-            released_wlr_buffer_ptr)) {
+            &button_buffer_impl)) {
         wlmtk_button_fini(button_ptr);
         return false;
     }
-
-    wlmtk_button_set(
-        button_ptr, released_wlr_buffer_ptr, pressed_wlr_buffer_ptr);
 
     return true;
 }
@@ -123,6 +129,51 @@ void button_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
     button_ptr->impl.destroy(button_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_motion. */
+bool buffer_pointer_motion(
+    wlmtk_buffer_t *buffer_ptr,
+    __UNUSED__ double x,
+    __UNUSED__ double y,
+    __UNUSED__ uint32_t time_msec)
+{
+    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_button_t, super_buffer);
+
+    if (!button_ptr->pointer_inside) {
+        bs_log(BS_INFO, "FIXME: enter.");
+    }
+    button_ptr->pointer_inside = true;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_button. */
+bool buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_button_t, super_buffer);
+
+    bs_log(BS_INFO, "FIXME: event %p for %p", button_event_ptr, button_ptr);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_leave. */
+void buffer_pointer_leave(
+    wlmtk_buffer_t *buffer_ptr)
+{
+    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_button_t, super_buffer);
+
+    if (button_ptr->pointer_inside) {
+        bs_log(BS_INFO, "FIXME: leave.");
+    }
+    button_ptr->pointer_inside = false;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -145,14 +196,11 @@ const wlmtk_button_impl_t fake_button_impl = {
 /** Exercises @ref wlmtk_button_init and @ref wlmtk_button_fini. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    struct wlr_buffer *buf_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     wlmtk_button_t button;
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_button_init(&button,  &fake_button_impl, buf_ptr, buf_ptr));
-    wlr_buffer_drop(buf_ptr);
-
+        wlmtk_button_init(&button,  &fake_button_impl));
     wlmtk_element_destroy(&button.super_buffer.super_element);
 }
 

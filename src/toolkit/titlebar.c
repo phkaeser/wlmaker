@@ -304,19 +304,18 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
         1, sizeof(wlmtk_titlebar_title_t));
     if (NULL == title_ptr) return NULL;
 
+    if (!wlmtk_buffer_init(
+            &title_ptr->super_buffer,
+            &title_buffer_impl)) {
+        wlmtk_titlebar_title_destroy(title_ptr);
+        return NULL;
+    }
+
     if (!title_redraw_buffers(
             title_ptr,
             focussed_gfxbuf_ptr,
             blurred_gfxbuf_ptr,
             position, width, style_ptr)) {
-        wlmtk_titlebar_title_destroy(title_ptr);
-        return NULL;
-    }
-
-    if (!wlmtk_buffer_init(
-            &title_ptr->super_buffer,
-            &title_buffer_impl,
-            title_ptr->focussed_wlr_buffer_ptr)) {
         wlmtk_titlebar_title_destroy(title_ptr);
         return NULL;
     }

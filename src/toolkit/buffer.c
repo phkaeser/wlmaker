@@ -69,8 +69,7 @@ static const wlmtk_element_impl_t super_element_impl = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_buffer_init(
     wlmtk_buffer_t *buffer_ptr,
-    const wlmtk_buffer_impl_t *buffer_impl_ptr,
-    struct wlr_buffer *wlr_buffer_ptr)
+    const wlmtk_buffer_impl_t *buffer_impl_ptr)
 {
     BS_ASSERT(NULL != buffer_ptr);
     memset(buffer_ptr, 0, sizeof(wlmtk_buffer_t));
@@ -82,8 +81,6 @@ bool wlmtk_buffer_init(
             &buffer_ptr->super_element, &super_element_impl)) {
         return false;
     }
-
-    wlmtk_buffer_set(buffer_ptr, wlr_buffer_ptr);
     return true;
 }
 
@@ -111,7 +108,12 @@ void wlmtk_buffer_set(
     if (NULL != buffer_ptr->wlr_buffer_ptr) {
         wlr_buffer_unlock(buffer_ptr->wlr_buffer_ptr);
     }
-    buffer_ptr->wlr_buffer_ptr = wlr_buffer_lock(wlr_buffer_ptr);
+
+    if (NULL != wlr_buffer_ptr) {
+        buffer_ptr->wlr_buffer_ptr = wlr_buffer_lock(wlr_buffer_ptr);
+    } else {
+        buffer_ptr->wlr_buffer_ptr = NULL;
+    }
 
     if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
         wlr_scene_buffer_set_buffer(
@@ -188,6 +190,13 @@ void element_get_dimensions(
 
     if (NULL != left_ptr) *left_ptr = 0;
     if (NULL != top_ptr) *top_ptr = 0;
+
+    if (NULL == buffer_ptr->wlr_buffer_ptr) {
+        if (NULL != right_ptr) *right_ptr = 0;
+        if (NULL != bottom_ptr) *bottom_ptr = 0;
+        return;
+    }
+
     if (NULL != right_ptr) *right_ptr = buffer_ptr->wlr_buffer_ptr->width;
     if (NULL != bottom_ptr) *bottom_ptr = buffer_ptr->wlr_buffer_ptr->height;
 }

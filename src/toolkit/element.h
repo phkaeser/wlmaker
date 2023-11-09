@@ -77,13 +77,24 @@ struct _wlmtk_element_impl_t {
      *     as having pointer focus.
      */
     bool (*pointer_motion)(wlmtk_element_t *element_ptr,
-                                       double x, double y,
-                                       uint32_t time_msec);
-    /** Indicates pointer button event. */
+                           double x, double y,
+                           uint32_t time_msec);
+    /**
+     * Indicates pointer button event.
+     *
+     * @param element_ptr
+     * @param button_event_ptr
+     *
+     * @return true If the button event was consumed.
+     */
     bool (*pointer_button)(wlmtk_element_t *element_ptr,
                            const wlmtk_button_event_t *button_event_ptr);
 
-    /** Indicates the pointer has left the element's area. */
+    /**
+     * Indicates the pointer has left the element's area.
+     *
+     * @param element_ptr
+     */
     void (*pointer_leave)(wlmtk_element_t *element_ptr);
 };
 
