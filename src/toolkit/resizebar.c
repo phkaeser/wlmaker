@@ -251,12 +251,8 @@ bool wlmtk_resizebar_button_redraw(
         return false;
     }
     wlmaker_primitives_draw_bezel_at(
-        cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
+        cairo_ptr, 0, 0, width, style_ptr->height, 1.0, false);
     cairo_destroy(cairo_ptr);
-
-
-
-
 
     struct wlr_buffer *pressed_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         width, style_ptr->height);

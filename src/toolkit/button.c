@@ -40,6 +40,7 @@ static bool buffer_pointer_button(
     const wlmtk_button_event_t *button_event_ptr);
 static void buffer_pointer_leave(
     wlmtk_buffer_t *buffer_ptr);
+static void apply_state(wlmtk_button_t *button_ptr);
 
 /* == Data ================================================================= */
 
@@ -107,15 +108,7 @@ void wlmtk_button_set(
     button_ptr->pressed_wlr_buffer_ptr = wlr_buffer_lock(
         pressed_wlr_buffer_ptr);
 
-    if (button_ptr->pressed) {
-        wlmtk_buffer_set(
-            &button_ptr->super_buffer,
-            button_ptr->pressed_wlr_buffer_ptr);
-    } else {
-        wlmtk_buffer_set(
-            &button_ptr->super_buffer,
-            button_ptr->released_wlr_buffer_ptr);
-    }
+    apply_state(button_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -139,10 +132,6 @@ bool buffer_pointer_motion(
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_button_t, super_buffer);
-
-    if (!button_ptr->pointer_inside) {
-        bs_log(BS_INFO, "FIXME: enter.");
-    }
     button_ptr->pointer_inside = true;
     return true;
 }
@@ -156,7 +145,26 @@ bool buffer_pointer_button(
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_button_t, super_buffer);
 
-    bs_log(BS_INFO, "FIXME: event %p for %p", button_event_ptr, button_ptr);
+    if (button_event_ptr->button != BTN_LEFT) return false;
+
+    switch (button_event_ptr->type) {
+    case WLMTK_BUTTON_DOWN:
+        button_ptr->pressed = true;
+        apply_state(button_ptr);
+        break;
+
+    case WLMTK_BUTTON_UP:
+        button_ptr->pressed = false;
+        apply_state(button_ptr);
+        break;
+
+    case WLMTK_BUTTON_CLICK:
+        bs_log(BS_INFO, "FIXME: Click!");
+        break;
+    default:
+        break;
+    }
+
     return true;
 }
 
@@ -168,10 +176,24 @@ void buffer_pointer_leave(
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_button_t, super_buffer);
 
-    if (button_ptr->pointer_inside) {
-        bs_log(BS_INFO, "FIXME: leave.");
-    }
     button_ptr->pointer_inside = false;
+    button_ptr->pressed = false;
+    apply_state(button_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Sets the appropriate texture for the button. */
+void apply_state(wlmtk_button_t *button_ptr)
+{
+    if (button_ptr->pressed) {
+        wlmtk_buffer_set(
+            &button_ptr->super_buffer,
+            button_ptr->pressed_wlr_buffer_ptr);
+    } else {
+        wlmtk_buffer_set(
+            &button_ptr->super_buffer,
+            button_ptr->released_wlr_buffer_ptr);
+    }
 }
 
 /* == Unit tests =========================================================== */
