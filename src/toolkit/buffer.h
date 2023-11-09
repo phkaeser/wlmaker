@@ -42,6 +42,16 @@ extern "C" {
 struct _wlmtk_buffer_impl_t {
     /** Destroys the implementation of the buffer. */
     void (*destroy)(wlmtk_buffer_t *buffer_ptr);
+
+    /** Optional. See @ref wlmtk_element_impl_t::pointer_motion. */
+    bool (*pointer_motion)(wlmtk_buffer_t *buffer_ptr,
+                           double x, double y,
+                           uint32_t time_msec);
+    /** Optional. See @ref wlmtk_element_impl_t::pointer_button. */
+    bool (*pointer_button)(wlmtk_buffer_t *buffer_ptr,
+                           const wlmtk_button_event_t *button_event_ptr);
+    /** Optional. See @ref wlmtk_element_impl_t::pointer_leave. */
+    void (*pointer_leave)(wlmtk_buffer_t *buffer_ptr);
 };
 
 /** State of a texture-backed buffer. */
