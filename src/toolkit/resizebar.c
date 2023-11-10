@@ -59,6 +59,8 @@ static bool wlmtk_resizebar_button_redraw(
     unsigned position,
     unsigned width,
     const wlmtk_resizebar_style_t *style_ptr);
+static wlmtk_element_t *wlmtk_resizebar_button_element(
+    wlmtk_resizebar_button_t *resizebar_button_ptr);
 
 static void resizebar_box_destroy(wlmtk_box_t *box_ptr);
 static bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width);
@@ -108,7 +110,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     }
     wlmtk_container_add_element(
         &resizebar_ptr->super_box.super_container,
-        &resizebar_ptr->left_button_ptr->super_button.super_buffer.super_element);
+        wlmtk_resizebar_button_element(resizebar_ptr->left_button_ptr));
 
     resizebar_ptr->center_button_ptr = wlmtk_resizebar_button_create();
     if (NULL == resizebar_ptr->center_button_ptr) {
@@ -118,7 +120,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_container_add_element_before(
         &resizebar_ptr->super_box.super_container,
         NULL,
-        &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element);
+        wlmtk_resizebar_button_element(resizebar_ptr->center_button_ptr));
 
     resizebar_ptr->right_button_ptr = wlmtk_resizebar_button_create();
     if (NULL == resizebar_ptr->right_button_ptr) {
@@ -128,7 +130,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_container_add_element_before(
         &resizebar_ptr->super_box.super_container,
         NULL,
-        &resizebar_ptr->right_button_ptr->super_button.super_buffer.super_element);
+        wlmtk_resizebar_button_element(resizebar_ptr->right_button_ptr));
 
     if (!wlmtk_resizebar_set_width(resizebar_ptr, width)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
@@ -144,21 +146,22 @@ void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
     if (NULL != resizebar_ptr->right_button_ptr) {
         wlmtk_container_remove_element(
             &resizebar_ptr->super_box.super_container,
-            &resizebar_ptr->right_button_ptr->super_button.super_buffer.super_element);
+            wlmtk_resizebar_button_element(resizebar_ptr->right_button_ptr));
         wlmtk_resizebar_button_destroy(resizebar_ptr->right_button_ptr);
         resizebar_ptr->right_button_ptr = NULL;
     }
     if (NULL != resizebar_ptr->center_button_ptr) {
         wlmtk_container_remove_element(
             &resizebar_ptr->super_box.super_container,
-            &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element);
+            wlmtk_resizebar_button_element(resizebar_ptr->center_button_ptr));
         wlmtk_resizebar_button_destroy(resizebar_ptr->center_button_ptr);
         resizebar_ptr->center_button_ptr = NULL;
     }
     if (NULL != resizebar_ptr->left_button_ptr) {
         wlmtk_container_remove_element(
             &resizebar_ptr->super_box.super_container,
-            &resizebar_ptr->left_button_ptr->super_button.super_buffer.super_element);
+            wlmtk_resizebar_button_element(resizebar_ptr->left_button_ptr));
+
         wlmtk_resizebar_button_destroy(resizebar_ptr->left_button_ptr);
         resizebar_ptr->left_button_ptr = NULL;
     }
@@ -191,13 +194,13 @@ bool wlmtk_resizebar_set_width(
         0, (int)width - right_corner_width - left_corner_width);
 
     wlmtk_element_set_visible(
-        &resizebar_ptr->left_button_ptr->super_button.super_buffer.super_element,
+        wlmtk_resizebar_button_element(resizebar_ptr->left_button_ptr),
         0 < left_corner_width);
     wlmtk_element_set_visible(
-        &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element,
+        wlmtk_resizebar_button_element(resizebar_ptr->center_button_ptr),
         0 < center_width);
     wlmtk_element_set_visible(
-        &resizebar_ptr->right_button_ptr->super_button.super_buffer.super_element,
+        wlmtk_resizebar_button_element(resizebar_ptr->right_button_ptr),
         0 < right_corner_width);
 
     if (!wlmtk_resizebar_button_redraw(
@@ -341,6 +344,14 @@ bool wlmtk_resizebar_button_redraw(
     wlr_buffer_drop(released_wlr_buffer_ptr);
     wlr_buffer_drop(pressed_wlr_buffer_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns the button's super_buffer.super_element address. */
+wlmtk_element_t *wlmtk_resizebar_button_element(
+    wlmtk_resizebar_button_t *resizebar_button_ptr)
+{
+    return &resizebar_button_ptr->super_button.super_buffer.super_element;
 }
 
 /* == Local (static) methods =============================================== */
