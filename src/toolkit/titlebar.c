@@ -47,6 +47,8 @@ struct _wlmtk_titlebar_t {
 
     /** Minimize button. */
     wlmtk_titlebar_button_t  *minimize_button_ptr;
+    /** Close button. */
+    wlmtk_titlebar_button_t  *close_button_ptr;
 
     /** Titlebar background, when focussed. */
     bs_gfxbuf_t               *focussed_gfxbuf_ptr;
@@ -206,12 +208,33 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         &titlebar_ptr->super_box.super_container,
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
+    titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
+        wlmaker_primitives_draw_close_icon);
+    if (NULL == titlebar_ptr->close_button_ptr) {
+        wlmtk_titlebar_destroy(titlebar_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr),
+        true);
+    wlmtk_container_add_element_before(
+        &titlebar_ptr->super_box.super_container, NULL,
+        wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
+
     return titlebar_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 {
+    if (NULL != titlebar_ptr->close_button_ptr) {
+        wlmtk_container_remove_element(
+            &titlebar_ptr->super_box.super_container,
+            wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
+        wlmtk_titlebar_button_destroy(titlebar_ptr->close_button_ptr);
+        titlebar_ptr->close_button_ptr = NULL;
+    }
+
     if (NULL != titlebar_ptr->minimize_button_ptr) {
         wlmtk_container_remove_element(
             &titlebar_ptr->super_box.super_container,
@@ -264,6 +287,15 @@ bool wlmtk_titlebar_set_width(
 
     if (!wlmtk_titlebar_button_redraw(
             titlebar_ptr->minimize_button_ptr,
+            titlebar_ptr->focussed_gfxbuf_ptr,
+            titlebar_ptr->blurred_gfxbuf_ptr,
+            0,
+            &titlebar_ptr->style)) {
+        return false;
+    }
+
+    if (!wlmtk_titlebar_button_redraw(
+            titlebar_ptr->close_button_ptr,
             titlebar_ptr->focussed_gfxbuf_ptr,
             titlebar_ptr->blurred_gfxbuf_ptr,
             0,
