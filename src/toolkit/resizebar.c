@@ -48,6 +48,7 @@ struct _wlmtk_resizebar_button_t {
 
 static wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
     bs_gfxbuf_t *gfxbuf_ptr,
+    int position,
     int width,
     const wlmtk_resizebar_style_t *style_ptr);
 static void wlmtk_resizebar_button_destroy(
@@ -101,7 +102,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     }
 
     resizebar_ptr->button_ptr = wlmtk_resizebar_button_create(
-        resizebar_ptr->gfxbuf_ptr, width, &resizebar_ptr->style);
+        resizebar_ptr->gfxbuf_ptr, 0, width, &resizebar_ptr->style);
     if (NULL == resizebar_ptr->button_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -168,6 +169,7 @@ wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr)
  * Creates a resizebar button.
  *
  * @param gfxbuf_ptr
+ * @param position
  * @param width
  * @param style_ptr
  *
@@ -175,6 +177,7 @@ wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr)
  */
 wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
     bs_gfxbuf_t *gfxbuf_ptr,
+    int position,
     int width,
     const wlmtk_resizebar_style_t *style_ptr)
 {
@@ -192,7 +195,7 @@ wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
     if (!wlmtk_resizebar_button_redraw(
             resizebar_button,
             gfxbuf_ptr,
-            0,
+            position,
             width,
             style_ptr)) {
         wlmtk_resizebar_button_destroy(resizebar_button);
