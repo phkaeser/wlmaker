@@ -34,6 +34,9 @@ typedef struct _wlmtk_button_t wlmtk_button_t;
 typedef struct {
     /** Destroys the implementation of the button. */
     void (*destroy)(wlmtk_button_t *button_ptr);
+
+    /** Optional: Called when the button has been clicked. */
+    void (*clicked)(wlmtk_button_t *button_ptr);
 } wlmtk_button_impl_t;
 
 /** State of a button. */

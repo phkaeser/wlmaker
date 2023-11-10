@@ -169,7 +169,9 @@ bool buffer_pointer_button(
         break;
 
     case WLMTK_BUTTON_CLICK:
-        bs_log(BS_INFO, "FIXME: Click!");
+        if (NULL != button_ptr->impl.clicked) {
+            button_ptr->impl.clicked(button_ptr);
+        }
         break;
 
     default:
@@ -222,12 +224,18 @@ const bs_test_case_t wlmtk_button_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+static bool fake_button_got_clicked = false;
+
 /** Fake destructor. */
 static void fake_button_destroy(__UNUSED__ wlmtk_button_t *button_ptr) {}
+static void fake_button_clicked(__UNUSED__ wlmtk_button_t *button_ptr) {
+    fake_button_got_clicked = true;
+}
 
 /** Virtual method table of fake button. */
 const wlmtk_button_impl_t fake_button_impl = {
     .destroy = fake_button_destroy,
+    .clicked = fake_button_clicked,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -255,6 +263,7 @@ void test_press_release(bs_test_t *test_ptr)
 
     wlmtk_button_event_t event = { .button = BTN_LEFT, .time_msec = 42 };
     wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
+    fake_button_got_clicked = false;
 
     // Initial state: released.
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
@@ -286,6 +295,13 @@ void test_press_release(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_button(element_ptr, &event));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    event.type = WLMTK_BUTTON_CLICK;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_button_got_clicked);
 
     wlr_buffer_drop(r_ptr);
     wlr_buffer_drop(p_ptr);
