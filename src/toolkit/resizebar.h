@@ -22,6 +22,8 @@ typedef struct {
     wlmtk_style_fill_t        fill;
     /** Height of the resize bar. */
     unsigned                  height;
+    /** Width of the corners. */
+    unsigned                  corner_width;
 } wlmtk_resizebar_style_t;
 
 /**

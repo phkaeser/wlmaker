@@ -36,8 +36,8 @@ struct _wlmtk_resizebar_t {
     /** Background. */
     bs_gfxbuf_t               *gfxbuf_ptr;
 
-    /** Element of the resizebar. */
-    wlmtk_resizebar_button_t  *button_ptr;
+    /** Center element of the resizebar. */
+    wlmtk_resizebar_button_t  *center_button_ptr;
 };
 
 /** State of an element of the resize bar. */
@@ -46,11 +46,7 @@ struct _wlmtk_resizebar_button_t {
     wlmtk_button_t            super_button;
 };
 
-static wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
-    bs_gfxbuf_t *gfxbuf_ptr,
-    int position,
-    int width,
-    const wlmtk_resizebar_style_t *style_ptr);
+static wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(void);
 static void wlmtk_resizebar_button_destroy(
     wlmtk_resizebar_button_t *resizebar_button_ptr);
 static bool wlmtk_resizebar_button_redraw(
@@ -101,17 +97,19 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         return NULL;
     }
 
-    resizebar_ptr->button_ptr = wlmtk_resizebar_button_create(
-        resizebar_ptr->gfxbuf_ptr, 0, width, &resizebar_ptr->style);
-    if (NULL == resizebar_ptr->button_ptr) {
+    resizebar_ptr->center_button_ptr = wlmtk_resizebar_button_create();
+    if (NULL == resizebar_ptr->center_button_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(
-        &resizebar_ptr->button_ptr->super_button.super_buffer.super_element, true);
     wlmtk_container_add_element(
         &resizebar_ptr->super_box.super_container,
-        &resizebar_ptr->button_ptr->super_button.super_buffer.super_element);
+        &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element);
+
+    if (!wlmtk_resizebar_set_width(resizebar_ptr, width)) {
+        wlmtk_resizebar_destroy(resizebar_ptr);
+        return NULL;
+    }
 
     return resizebar_ptr;
 }
@@ -119,12 +117,12 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
 {
-    if (NULL != resizebar_ptr->button_ptr) {
+    if (NULL != resizebar_ptr->center_button_ptr) {
         wlmtk_container_remove_element(
             &resizebar_ptr->super_box.super_container,
-            &resizebar_ptr->button_ptr->super_button.super_buffer.super_element);
-        wlmtk_resizebar_button_destroy(resizebar_ptr->button_ptr);
-        resizebar_ptr->button_ptr = NULL;
+            &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element);
+        wlmtk_resizebar_button_destroy(resizebar_ptr->center_button_ptr);
+        resizebar_ptr->center_button_ptr = NULL;
     }
 
     if (NULL != resizebar_ptr->gfxbuf_ptr) {
@@ -138,17 +136,30 @@ void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_resizebar_set_width(
-    wlmtk_resizebar_t * resizebar_ptr,
+    wlmtk_resizebar_t *resizebar_ptr,
     unsigned width)
 {
     if (resizebar_ptr->width == width) return true;
     if (!redraw_buffers(resizebar_ptr, width)) return false;
     BS_ASSERT(width == resizebar_ptr->width);
+    BS_ASSERT(width == resizebar_ptr->gfxbuf_ptr->width);
+
+    int right_corner_width = BS_MIN(
+        (int)width, (int)resizebar_ptr->style.corner_width);
+    int left_corner_width = BS_MAX(
+        0, BS_MIN((int)width - right_corner_width,
+                  (int)resizebar_ptr->style.corner_width));
+    int center_width = BS_MAX(
+        0, (int)width - right_corner_width - left_corner_width);
+
+    wlmtk_element_set_visible(
+        &resizebar_ptr->center_button_ptr->super_button.super_buffer.super_element,
+        0 < center_width);
 
     if (!wlmtk_resizebar_button_redraw(
-            resizebar_ptr->button_ptr,
+            resizebar_ptr->center_button_ptr,
             resizebar_ptr->gfxbuf_ptr,
-            0, width,
+            left_corner_width, center_width,
             &resizebar_ptr->style)) {
         return false;
     }
@@ -168,18 +179,9 @@ wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr)
 /**
  * Creates a resizebar button.
  *
- * @param gfxbuf_ptr
- * @param position
- * @param width
- * @param style_ptr
- *
  * @return Pointer to the resizebar button.
  */
-wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
-    bs_gfxbuf_t *gfxbuf_ptr,
-    int position,
-    int width,
-    const wlmtk_resizebar_style_t *style_ptr)
+wlmtk_resizebar_button_t *wlmtk_resizebar_button_create()
 {
     wlmtk_resizebar_button_t *resizebar_button = logged_calloc(
         1, sizeof(wlmtk_resizebar_button_t));
@@ -191,16 +193,6 @@ wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(
         wlmtk_resizebar_button_destroy(resizebar_button);
         return NULL;
     }
-
-    if (!wlmtk_resizebar_button_redraw(
-            resizebar_button,
-            gfxbuf_ptr,
-            position,
-            width,
-            style_ptr)) {
-        wlmtk_resizebar_button_destroy(resizebar_button);
-        return NULL;
-   }
 
     return resizebar_button;
 }

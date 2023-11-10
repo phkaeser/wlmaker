@@ -106,7 +106,8 @@ static const wlmtk_resizebar_style_t resizebar_style = {
         .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xffc2c0c5 }}
     },
-    .height = 8,
+    .height = 20,  // FIXME: 7
+    .corner_width = 29,
 };
 
 /* == Exported methods ===================================================== */
