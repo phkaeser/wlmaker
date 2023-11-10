@@ -224,10 +224,12 @@ const bs_test_case_t wlmtk_button_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** Test outcome: Whether 'clicked' was called. */
 static bool fake_button_got_clicked = false;
 
 /** Fake destructor. */
 static void fake_button_destroy(__UNUSED__ wlmtk_button_t *button_ptr) {}
+/** Fake 'clicked' handler. */
 static void fake_button_clicked(__UNUSED__ wlmtk_button_t *button_ptr) {
     fake_button_got_clicked = true;
 }
