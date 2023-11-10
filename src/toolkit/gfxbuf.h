@@ -46,6 +46,15 @@ struct wlr_buffer *bs_gfxbuf_create_wlr_buffer(
     unsigned height);
 
 /**
+ * Drops a WLR buffer, and sets the pointer to NULL.
+ *
+ * @param wlr_buffer_ptr_ptr  Points to a pointer to a WLR buffer. The pointer
+ *                            to the WLR buffer may be NULL; in that case, the
+ *                            call is a no-op.
+ */
+void wlr_buffer_drop_nullify(struct wlr_buffer **wlr_buffer_ptr_ptr);
+
+/**
  * Returns the libbase graphics buffer for the `struct wlr_buffer`.
  *
  * @param wlr_buffer_ptr      Pointer to a `struct wlr_buffer`. Must be a
