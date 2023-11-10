@@ -1184,6 +1184,7 @@ void test_pointer_button(bs_test_t *test_ptr)
         test_ptr,
         NULL,
         container.left_button_element_ptr);
+    wlmtk_element_destroy(&elem2_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
     wlmtk_container_fini(&container);
 }
