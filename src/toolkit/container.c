@@ -200,6 +200,10 @@ void wlmtk_container_remove_element(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
 
+    if (container_ptr->left_button_element_ptr == element_ptr) {
+        container_ptr->left_button_element_ptr = NULL;
+    }
+
     wlmtk_container_update_layout(container_ptr);
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
 }
@@ -388,6 +392,48 @@ bool element_pointer_button(
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
+    bool accepted = false;
+
+    // TODO: Generalize this for non-LEFT buttons.
+    if (BTN_LEFT == button_event_ptr->button) {
+
+        switch (button_event_ptr->type) {
+        case WLMTK_BUTTON_DOWN:
+            // Forward to the pointer focus element, if any. If it
+            // was accepted: remember the element.
+            if (NULL != container_ptr->pointer_focus_element_ptr) {
+                accepted = wlmtk_element_pointer_button(
+                    container_ptr->pointer_focus_element_ptr,
+                    button_event_ptr);
+                if (accepted) {
+                    container_ptr->left_button_element_ptr =
+                        container_ptr->pointer_focus_element_ptr;
+                } else {
+                    container_ptr->left_button_element_ptr = NULL;
+                }
+            }
+            break;
+
+        case WLMTK_BUTTON_UP:
+        case WLMTK_BUTTON_CLICK:
+        case WLMTK_BUTTON_DOUBLE_CLICK:
+            // Forward to the element that received the DOWN, if any.
+            if (NULL != container_ptr->left_button_element_ptr) {
+                accepted = wlmtk_element_pointer_button(
+                    container_ptr->left_button_element_ptr,
+                    button_event_ptr);
+            }
+            break;
+
+        default:  // Uh, don't know about this...
+            bs_log(BS_FATAL, "Unhandled button type %d",
+                   button_event_ptr->type);
+        }
+
+        return accepted;
+    }
+
+
     if (NULL == container_ptr->pointer_focus_element_ptr) return false;
 
     return wlmtk_element_pointer_button(
@@ -490,7 +536,7 @@ bool update_pointer_focus_at(
     }
 
     // Getting here implies we didn't have an element catching the motion,
-    // so it must have happened outside our araea. We also should free
+    // so it must have happened outside our araea. We also should reset
     // pointer focus element now.
     if (NULL != container_ptr->pointer_focus_element_ptr) {
         wlmtk_element_pointer_leave(container_ptr->pointer_focus_element_ptr);
@@ -1026,33 +1072,93 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests that pointer button is forwarded to element with pointer focus. */
+/** Tests that pointer DOWN is forwarded to element with pointer focus. */
 void test_pointer_button(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
     BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
 
-    wlmtk_fake_element_t *elem_ptr = wlmtk_fake_element_create();
-    wlmtk_element_set_visible(&elem_ptr->element, true);
-    wlmtk_container_add_element(&container, &elem_ptr->element);
+    wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    elem1_ptr->width = 1;
+    elem1_ptr->height = 1;
+    wlmtk_container_add_element(&container, &elem1_ptr->element);
 
-    wlmtk_button_event_t button = {};
+    wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_position(&elem2_ptr->element, 10, 10);
+    wlmtk_element_set_visible(&elem2_ptr->element, true);
+    wlmtk_container_add_element_before(&container, NULL, &elem2_ptr->element);
+
+    wlmtk_button_event_t button = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
+    };
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_pointer_button(&container.super_element, &button));
 
+    // DOWN events go to the focussed element.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem1_ptr->element,
+        container.left_button_element_ptr);
     BS_TEST_VERIFY_TRUE(
-        test_ptr, elem_ptr->pointer_button_called);
+        test_ptr, elem1_ptr->pointer_button_called);
 
-    wlmtk_container_remove_element(&container, &elem_ptr->element);
-    wlmtk_element_destroy(&elem_ptr->element);
+    // Moves, pointer focus is now on elem2.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&container.super_element, 10, 10, 7));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem2_ptr->element,
+        container.pointer_focus_element_ptr);
+
+    // The UP event is still received by elem1.
+    elem1_ptr->pointer_button_called = false;
+    button.type = WLMTK_BUTTON_UP;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, elem1_ptr->pointer_button_called);
+
+    // New DOWN event goes to elem2, though.
+    elem2_ptr->pointer_button_called = false;
+    button.type = WLMTK_BUTTON_DOWN;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, elem2_ptr->pointer_button_called);
+
+    // And UP event now goes to elem2.
+    elem2_ptr->pointer_button_called = false;
+    button.type = WLMTK_BUTTON_UP;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, elem2_ptr->pointer_button_called);
+
+    // After removing, further UP events won't be accidentally sent there.
+    wlmtk_container_remove_element(&container, &elem1_ptr->element);
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        container.left_button_element_ptr);
+    wlmtk_element_destroy(&elem1_ptr->element);
     wlmtk_container_fini(&container);
 }
+
 
 /* == End of container.c =================================================== */

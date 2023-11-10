@@ -171,6 +171,7 @@ bool buffer_pointer_button(
     case WLMTK_BUTTON_CLICK:
         bs_log(BS_INFO, "FIXME: Click!");
         break;
+
     default:
         break;
     }

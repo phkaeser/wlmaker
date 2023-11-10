@@ -71,6 +71,8 @@ struct _wlmtk_container_t {
 
     /** Stores the element with current pointer focus. May be NULL. */
     wlmtk_element_t           *pointer_focus_element_ptr;
+    /** Stores the element which received WLMTK_BUTTON_DOWN for BTN_LEFT. */
+    wlmtk_element_t           *left_button_element_ptr;
 };
 
 /**
