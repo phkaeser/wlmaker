@@ -94,8 +94,17 @@ void wlmtk_button_fini(wlmtk_button_t *button_ptr)
 void wlmtk_button_set(
     wlmtk_button_t *button_ptr,
     struct wlr_buffer *released_wlr_buffer_ptr,
-    struct wlr_buffer *pressed_wlr_buffer_ptr)
+    struct wlr_buffer *pressed_wlr_buffer_ptr )
 {
+    if (NULL == released_wlr_buffer_ptr) {
+        BS_ASSERT(NULL == pressed_wlr_buffer_ptr);
+    } else {
+        BS_ASSERT(released_wlr_buffer_ptr->width ==
+                  pressed_wlr_buffer_ptr->width);
+        BS_ASSERT(released_wlr_buffer_ptr->height ==
+                  pressed_wlr_buffer_ptr->height);
+    }
+
     if (NULL != button_ptr->released_wlr_buffer_ptr) {
         wlr_buffer_unlock(button_ptr->released_wlr_buffer_ptr);
     }
@@ -133,6 +142,7 @@ bool buffer_pointer_motion(
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_button_t, super_buffer);
     button_ptr->pointer_inside = true;
+    apply_state(button_ptr);
     return true;
 }
 
@@ -177,7 +187,6 @@ void buffer_pointer_leave(
         buffer_ptr, wlmtk_button_t, super_buffer);
 
     button_ptr->pointer_inside = false;
-    button_ptr->pressed = false;
     apply_state(button_ptr);
 }
 
@@ -185,7 +194,7 @@ void buffer_pointer_leave(
 /** Sets the appropriate texture for the button. */
 void apply_state(wlmtk_button_t *button_ptr)
 {
-    if (button_ptr->pressed) {
+    if (button_ptr->pointer_inside && button_ptr->pressed) {
         wlmtk_buffer_set(
             &button_ptr->super_buffer,
             button_ptr->pressed_wlr_buffer_ptr);
@@ -199,10 +208,16 @@ void apply_state(wlmtk_button_t *button_ptr)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_press_release(bs_test_t *test_ptr);
+static void test_press_release_outside(bs_test_t *test_ptr);
+static void test_press_right(bs_test_t *test_ptr);
 
 /** Test case definition. */
 const bs_test_case_t wlmtk_button_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "press_release", test_press_release },
+    { 1, "press_release_outside", test_press_release_outside },
+    { 1, "press_right", test_press_right },
     { 0, NULL, NULL }
 };
 
@@ -224,6 +239,136 @@ void test_create_destroy(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_button_init(&button,  &fake_button_impl));
     wlmtk_element_destroy(&button.super_buffer.super_element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests button pressing & releasing. */
+void test_press_release(bs_test_t *test_ptr)
+{
+    wlmtk_button_t button;
+    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+
+    struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    wlmtk_button_set(&button, r_ptr, p_ptr);
+
+    wlmtk_button_event_t event = { .button = BTN_LEFT, .time_msec = 42 };
+    wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
+
+    // Initial state: released.
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    // Button down: pressed.
+    event.type = WLMTK_BUTTON_DOWN;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
+
+    // Pointer leaves the area: released.
+    wlmtk_element_pointer_leave(element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    // Pointer re-enters the area: pressed.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
+
+    // Button up: released.
+    event.type = WLMTK_BUTTON_UP;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    wlr_buffer_drop(r_ptr);
+    wlr_buffer_drop(p_ptr);
+    wlmtk_button_fini(&button);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests button when releasing outside the pointer focus. */
+void test_press_release_outside(bs_test_t *test_ptr)
+{
+    wlmtk_button_t button;
+    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+
+    struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    wlmtk_button_set(&button, r_ptr, p_ptr);
+
+    wlmtk_button_event_t event = { .button = BTN_LEFT, .time_msec = 42 };
+    wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
+
+    // Enter the ara. Released.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    // Button down: pressed.
+    event.type = WLMTK_BUTTON_DOWN;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
+
+    // Pointer leaves the area: released.
+    wlmtk_element_pointer_leave(element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    // Button up, outside the area. Then, re-enter: Still released.
+    event.type = WLMTK_BUTTON_UP;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    wlr_buffer_drop(r_ptr);
+    wlr_buffer_drop(p_ptr);
+    wlmtk_button_fini(&button);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests button when releasing outside the pointer focus. */
+void test_press_right(bs_test_t *test_ptr)
+{
+    wlmtk_button_t button;
+    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+
+    struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
+    wlmtk_button_set(&button, r_ptr, p_ptr);
+
+    wlmtk_button_event_t event = {
+        .button = BTN_RIGHT, .type = WLMTK_BUTTON_DOWN, .time_msec = 42,
+    };
+    wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
+
+    // Enter the ara. Released.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    // Right button down: Not claimed, and remains released.
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr, &event));
+    BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+
+    wlr_buffer_drop(r_ptr);
+    wlr_buffer_drop(p_ptr);
+    wlmtk_button_fini(&button);
 }
 
 /* == End of button.c ====================================================== */
