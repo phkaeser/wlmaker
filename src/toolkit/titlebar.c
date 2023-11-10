@@ -467,15 +467,8 @@ bool wlmtk_titlebar_title_redraw(
  */
 void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *title_ptr)
 {
-    if (NULL != title_ptr->focussed_wlr_buffer_ptr) {
-        wlr_buffer_drop(title_ptr->focussed_wlr_buffer_ptr);
-        title_ptr->focussed_wlr_buffer_ptr = NULL;
-    }
-    if (NULL != title_ptr->blurred_wlr_buffer_ptr) {
-        wlr_buffer_drop(title_ptr->blurred_wlr_buffer_ptr);
-        title_ptr->blurred_wlr_buffer_ptr = NULL;
-    }
-
+    wlr_buffer_drop_nullify(&title_ptr->focussed_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(&title_ptr->blurred_wlr_buffer_ptr);
     wlmtk_buffer_fini(&title_ptr->super_buffer);
     free(title_ptr);
 }
