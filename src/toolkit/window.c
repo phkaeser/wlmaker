@@ -97,6 +97,7 @@ static const wlmtk_titlebar_style_t titlebar_style = {
     .focussed_text_color = 0xffffffff,
     .blurred_text_color = 0xff000000,
     .height = 22,
+    .bezel_width = 1,
 };
 
 /** Style of the resize bar. */

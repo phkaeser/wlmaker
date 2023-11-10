@@ -43,6 +43,8 @@ typedef struct {
     uint32_t                  blurred_text_color;
     /** Height of the title bar, in pixels. */
     uint32_t                  height;
+    /** Width of the bezel. */
+    uint32_t                  bezel_width;
 } wlmtk_titlebar_style_t;
 
 /**
