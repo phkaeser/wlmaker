@@ -415,8 +415,6 @@ bool element_pointer_button(
             break;
 
         case WLMTK_BUTTON_UP:
-        case WLMTK_BUTTON_CLICK:
-        case WLMTK_BUTTON_DOUBLE_CLICK:
             // Forward to the element that received the DOWN, if any.
             if (NULL != container_ptr->left_button_element_ptr) {
                 accepted = wlmtk_element_pointer_button(
@@ -424,6 +422,20 @@ bool element_pointer_button(
                     button_event_ptr);
             }
             break;
+
+        case WLMTK_BUTTON_CLICK:
+        case WLMTK_BUTTON_DOUBLE_CLICK:
+            // Will only be forwarded, if the element still (or again)
+            // has pointer focus.
+            if (NULL != container_ptr->left_button_element_ptr &&
+                container_ptr->left_button_element_ptr ==
+                container_ptr->pointer_focus_element_ptr) {
+                accepted = wlmtk_element_pointer_button(
+                    container_ptr->left_button_element_ptr,
+                    button_event_ptr);
+            }
+            break;
+
 
         default:  // Uh, don't know about this...
             bs_log(BS_FATAL, "Unhandled button type %d",
@@ -1128,6 +1140,12 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr, elem1_ptr->pointer_button_called);
 
+    // Click will be ignored
+    button.type = WLMTK_BUTTON_CLICK;
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+
     // New DOWN event goes to elem2, though.
     elem2_ptr->pointer_button_called = false;
     button.type = WLMTK_BUTTON_DOWN;
@@ -1146,9 +1164,19 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr, elem2_ptr->pointer_button_called);
 
+    // Here, CLICK goes to elem2.
+    elem2_ptr->pointer_button_called = false;
+    button.type = WLMTK_BUTTON_CLICK;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(&container.super_element, &button));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, elem2_ptr->pointer_button_called);
+
     // After removing, further UP events won't be accidentally sent there.
     wlmtk_container_remove_element(&container, &elem1_ptr->element);
     wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    button.type = WLMTK_BUTTON_UP;
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_pointer_button(&container.super_element, &button));
