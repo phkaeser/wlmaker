@@ -82,9 +82,10 @@ static wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     int width,
     bool activated,
     const wlmtk_titlebar_style_t *style_ptr);
-static void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *title_ptr);
+static void wlmtk_titlebar_title_destroy(
+    wlmtk_titlebar_title_t *titlebar_title_ptr);
 static bool wlmtk_titlebar_title_redraw(
-    wlmtk_titlebar_title_t *title_ptr,
+    wlmtk_titlebar_title_t *titlebar_title_ptr,
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     int position,
@@ -132,10 +133,10 @@ static bool redraw_buffers(
 
 static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
 static void title_set_activated(
-    wlmtk_titlebar_title_t *title_ptr,
+    wlmtk_titlebar_title_t *titlebar_title_ptr,
     bool activated);
 static bool title_redraw_buffers(
-    wlmtk_titlebar_title_t *title_ptr,
+    wlmtk_titlebar_title_t *titlebar_title_ptr,
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     unsigned position,
@@ -415,35 +416,35 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     bool activated,
     const wlmtk_titlebar_style_t *style_ptr)
 {
-    wlmtk_titlebar_title_t *title_ptr = logged_calloc(
+    wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_title_t));
-    if (NULL == title_ptr) return NULL;
+    if (NULL == titlebar_title_ptr) return NULL;
 
     if (!wlmtk_buffer_init(
-            &title_ptr->super_buffer,
+            &titlebar_title_ptr->super_buffer,
             &title_buffer_impl)) {
-        wlmtk_titlebar_title_destroy(title_ptr);
+        wlmtk_titlebar_title_destroy(titlebar_title_ptr);
         return NULL;
     }
 
     if (!title_redraw_buffers(
-            title_ptr,
+            titlebar_title_ptr,
             focussed_gfxbuf_ptr,
             blurred_gfxbuf_ptr,
             position, width, style_ptr)) {
-        wlmtk_titlebar_title_destroy(title_ptr);
+        wlmtk_titlebar_title_destroy(titlebar_title_ptr);
         return NULL;
     }
 
-    title_set_activated(title_ptr, activated);
-    return title_ptr;
+    title_set_activated(titlebar_title_ptr, activated);
+    return titlebar_title_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
  * Redraws the title section of the title bar.
  *
- * @param title_ptr
+ * @param titlebar_title_ptr
  * @param focussed_gfxbuf_ptr Titlebar background when focussed.
  * @param blurred_gfxbuf_ptr  Titlebar background when blurred.
  * @param position            Position of title telative to titlebar.
@@ -454,7 +455,7 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
  * @return true on success.
  */
 bool wlmtk_titlebar_title_redraw(
-    wlmtk_titlebar_title_t *title_ptr,
+    wlmtk_titlebar_title_t *titlebar_title_ptr,
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     int position,
@@ -463,13 +464,13 @@ bool wlmtk_titlebar_title_redraw(
     const wlmtk_titlebar_style_t *style_ptr)
 {
     if (!title_redraw_buffers(
-            title_ptr,
+            titlebar_title_ptr,
             focussed_gfxbuf_ptr,
             blurred_gfxbuf_ptr,
             position, width, style_ptr)) {
         return false;
     }
-    title_set_activated(title_ptr, activated);
+    title_set_activated(titlebar_title_ptr, activated);
     return true;
 }
 
@@ -477,39 +478,41 @@ bool wlmtk_titlebar_title_redraw(
 /**
  * Destroys the titlebar title.
  *
- * @param title_ptr
+ * @param titlebar_title_ptr
  */
-void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *title_ptr)
+void wlmtk_titlebar_title_destroy(wlmtk_titlebar_title_t *titlebar_title_ptr)
 {
-    wlr_buffer_drop_nullify(&title_ptr->focussed_wlr_buffer_ptr);
-    wlr_buffer_drop_nullify(&title_ptr->blurred_wlr_buffer_ptr);
-    wlmtk_buffer_fini(&title_ptr->super_buffer);
-    free(title_ptr);
+    wlr_buffer_drop_nullify(&titlebar_title_ptr->focussed_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(&titlebar_title_ptr->blurred_wlr_buffer_ptr);
+    wlmtk_buffer_fini(&titlebar_title_ptr->super_buffer);
+    free(titlebar_title_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Dtor. Forwards to @ref wlmtk_titlebar_title_destroy. */
 void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
 {
-    wlmtk_titlebar_title_t *title_ptr = BS_CONTAINER_OF(
+    wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
-    wlmtk_titlebar_title_destroy(title_ptr);
+    wlmtk_titlebar_title_destroy(titlebar_title_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
  * Sets whether the title is drawn focussed (activated) or blurred.
  *
- * @param title_ptr
+ * @param titlebar_title_ptr
  * @param activated
  */
-void title_set_activated(wlmtk_titlebar_title_t *title_ptr, bool activated)
+void title_set_activated(
+    wlmtk_titlebar_title_t *titlebar_title_ptr,
+    bool activated)
 {
     wlmtk_buffer_set(
-        &title_ptr->super_buffer,
+        &titlebar_title_ptr->super_buffer,
         activated ?
-        title_ptr->focussed_wlr_buffer_ptr :
-        title_ptr->blurred_wlr_buffer_ptr);
+        titlebar_title_ptr->focussed_wlr_buffer_ptr :
+        titlebar_title_ptr->blurred_wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -820,42 +823,43 @@ void test_title(bs_test_t *test_ptr)
     bs_gfxbuf_clear(focussed_gfxbuf_ptr, 0xff2020c0);
     bs_gfxbuf_clear(blurred_gfxbuf_ptr, 0xff404040);
 
-    wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar_title_create(
+    wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
         focussed_gfxbuf_ptr, blurred_gfxbuf_ptr, 10, 90, true, &style);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, title_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);
 
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(title_ptr->focussed_wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(titlebar_title_ptr->focussed_wlr_buffer_ptr),
         "toolkit/title_focussed.png");
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(title_ptr->blurred_wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(titlebar_title_ptr->blurred_wlr_buffer_ptr),
         "toolkit/title_blurred.png");
 
     // We had started as "activated", verify that's correct.
+    wlmtk_buffer_t *super_buffer_ptr = &titlebar_title_ptr->super_buffer;
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_focussed.png");
 
     // De-activated the title. Verify that was propagated.
-    title_set_activated(title_ptr, false);
+    title_set_activated(titlebar_title_ptr, false);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_blurred.png");
 
     // Redraw with shorter width. Verify that's still correct.
     wlmtk_titlebar_title_redraw(
-        title_ptr, focussed_gfxbuf_ptr, blurred_gfxbuf_ptr,
+        titlebar_title_ptr, focussed_gfxbuf_ptr, blurred_gfxbuf_ptr,
         10, 70, false, &style);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(title_ptr->super_buffer.wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_blurred_short.png");
 
-    wlmtk_element_destroy(&title_ptr->super_buffer.super_element);
+    wlmtk_element_destroy(&titlebar_title_ptr->super_buffer.super_element);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
 }
