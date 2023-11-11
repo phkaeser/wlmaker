@@ -31,6 +31,7 @@ SET(PUBLIC_HEADER_FILES
   input.h
   resizebar.h
   titlebar.h
+  titlebar_title.h
   window.h
   workspace.h)
 
@@ -47,6 +48,7 @@ TARGET_SOURCES(toolkit PRIVATE
   primitives.c
   resizebar.c
   titlebar.c
+  titlebar_title.c
   util.c
   window.c
   workspace.c)
