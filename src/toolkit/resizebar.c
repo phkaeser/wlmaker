@@ -274,6 +274,46 @@ void wlmtk_resizebar_button_destroy(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Creates a resizebar button texture.
+ *
+ * @param gfxbuf_ptr
+ * @param position
+ * @param width
+ * @param style_ptr
+ * @param pressed
+ *
+ * @return A pointer to a newly allocated `struct wlr_buffer`.
+ */
+struct wlr_buffer *create_buffer(
+    bs_gfxbuf_t *gfxbuf_ptr,
+    unsigned position,
+    unsigned width,
+    const wlmtk_resizebar_style_t *style_ptr,
+    bool pressed)
+{
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        width, style_ptr->height);
+    if (NULL == wlr_buffer_ptr) return NULL;
+
+    bs_gfxbuf_copy_area(
+        bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr), 0, 0,
+        gfxbuf_ptr, position, 0, width, style_ptr->height);
+
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+    if (NULL == cairo_ptr) {
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return false;
+    }
+    wlmaker_primitives_draw_bezel_at(
+        cairo_ptr, 0, 0, width,
+        style_ptr->height, style_ptr->bezel_width, !pressed);
+    cairo_destroy(cairo_ptr);
+
+    return wlr_buffer_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Redraws the element, with updated position and width.
  *
  * @param resizebar_button_ptr
@@ -291,55 +331,23 @@ bool wlmtk_resizebar_button_redraw(
     unsigned width,
     const wlmtk_resizebar_style_t *style_ptr)
 {
-    struct wlr_buffer *released_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        width, style_ptr->height);
-    if (NULL == released_wlr_buffer_ptr) return false;
+    struct wlr_buffer *released_wlr_buffer_ptr = create_buffer(
+        gfxbuf_ptr, position, width, style_ptr, false);
+    struct wlr_buffer *pressed_wlr_buffer_ptr = create_buffer(
+        gfxbuf_ptr, position, width, style_ptr, true);
 
-    bs_gfxbuf_copy_area(
-        bs_gfxbuf_from_wlr_buffer(released_wlr_buffer_ptr),
-        0, 0,
-        gfxbuf_ptr,
-        position, 0,
-        width, style_ptr->height);
-
-    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(released_wlr_buffer_ptr);
-    if (NULL == cairo_ptr) {
-        wlr_buffer_drop(released_wlr_buffer_ptr);
+    if (NULL == released_wlr_buffer_ptr ||
+        NULL == pressed_wlr_buffer_ptr) {
+        wlr_buffer_drop_nullify(&released_wlr_buffer_ptr);
+        wlr_buffer_drop_nullify(&pressed_wlr_buffer_ptr);
         return false;
     }
-    wlmaker_primitives_draw_bezel_at(
-        cairo_ptr, 0, 0, width, style_ptr->height, 1.0, false);
-    cairo_destroy(cairo_ptr);
-
-    struct wlr_buffer *pressed_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        width, style_ptr->height);
-    if (NULL == pressed_wlr_buffer_ptr) {
-        wlr_buffer_drop(released_wlr_buffer_ptr);
-        return false;
-    }
-
-    bs_gfxbuf_copy_area(
-        bs_gfxbuf_from_wlr_buffer(pressed_wlr_buffer_ptr),
-        0, 0,
-        gfxbuf_ptr,
-        position, 0,
-        width, style_ptr->height);
-
-    cairo_ptr = cairo_create_from_wlr_buffer(pressed_wlr_buffer_ptr);
-    if (NULL == cairo_ptr) {
-        wlr_buffer_drop(released_wlr_buffer_ptr);
-        wlr_buffer_drop(pressed_wlr_buffer_ptr);
-        return false;
-    }
-    wlmaker_primitives_draw_bezel_at(
-        cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
-    cairo_destroy(cairo_ptr);
 
     // Will take ownershp of the buffers.
     wlmtk_button_set(
         &resizebar_button_ptr->super_button,
-        pressed_wlr_buffer_ptr,
-        released_wlr_buffer_ptr);
+        released_wlr_buffer_ptr,
+        pressed_wlr_buffer_ptr);
 
     wlr_buffer_drop(released_wlr_buffer_ptr);
     wlr_buffer_drop(pressed_wlr_buffer_ptr);

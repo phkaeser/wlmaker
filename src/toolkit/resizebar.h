@@ -24,6 +24,8 @@ typedef struct {
     unsigned                  height;
     /** Width of the corners. */
     unsigned                  corner_width;
+    /** Width of the bezel. */
+    uint32_t                  bezel_width;
 } wlmtk_resizebar_style_t;
 
 /**

@@ -109,6 +109,7 @@ static const wlmtk_resizebar_style_t resizebar_style = {
     },
     .height = 20,  // FIXME: 7
     .corner_width = 29,
+    .bezel_width = 1,
 };
 
 /* == Exported methods ===================================================== */
