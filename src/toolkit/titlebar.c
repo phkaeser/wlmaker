@@ -131,12 +131,11 @@ static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
 static void title_set_activated(
     wlmtk_titlebar_title_t *titlebar_title_ptr,
     bool activated);
-static bool title_redraw_buffers(
-    wlmtk_titlebar_title_t *titlebar_title_ptr,
-    bs_gfxbuf_t *focussed_gfxbuf_ptr,
-    bs_gfxbuf_t *blurred_gfxbuf_ptr,
+struct wlr_buffer *title_create_buffer(
+    bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
+    uint32_t text_color,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /* == Data ================================================================= */
@@ -430,13 +429,31 @@ bool wlmtk_titlebar_title_redraw(
     bool activated,
     const wlmtk_titlebar_style_t *style_ptr)
 {
-    if (!title_redraw_buffers(
-            titlebar_title_ptr,
-            focussed_gfxbuf_ptr,
-            blurred_gfxbuf_ptr,
-            position, width, style_ptr)) {
+    BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
+    BS_ASSERT(style_ptr->height == focussed_gfxbuf_ptr->height);
+    BS_ASSERT(style_ptr->height == blurred_gfxbuf_ptr->height);
+    BS_ASSERT(position <= (int)focussed_gfxbuf_ptr->width);
+    BS_ASSERT(position + width <= (int)focussed_gfxbuf_ptr->width);
+
+    struct wlr_buffer *focussed_wlr_buffer_ptr = title_create_buffer(
+        focussed_gfxbuf_ptr, position, width,
+        style_ptr->focussed_text_color, style_ptr);
+    struct wlr_buffer *blurred_wlr_buffer_ptr = title_create_buffer(
+        blurred_gfxbuf_ptr, position, width,
+        style_ptr->blurred_text_color, style_ptr);
+
+    if (NULL == focussed_wlr_buffer_ptr ||
+        NULL == blurred_wlr_buffer_ptr) {
+        wlr_buffer_drop_nullify(&focussed_wlr_buffer_ptr);
+        wlr_buffer_drop_nullify(&blurred_wlr_buffer_ptr);
         return false;
     }
+
+    wlr_buffer_drop_nullify(&titlebar_title_ptr->focussed_wlr_buffer_ptr);
+    titlebar_title_ptr->focussed_wlr_buffer_ptr = focussed_wlr_buffer_ptr;
+    wlr_buffer_drop_nullify(&titlebar_title_ptr->blurred_wlr_buffer_ptr);
+    titlebar_title_ptr->blurred_wlr_buffer_ptr = blurred_wlr_buffer_ptr;
+
     title_set_activated(titlebar_title_ptr, activated);
     return true;
 }
@@ -497,83 +514,47 @@ void title_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Redraws the title buffers. */
-bool title_redraw_buffers(
-    wlmtk_titlebar_title_t *title_ptr,
-    bs_gfxbuf_t *focussed_gfxbuf_ptr,
-    bs_gfxbuf_t *blurred_gfxbuf_ptr,
+/**
+ * Creates a WLR buffer with the title's texture, as specified.
+ *
+ * @param gfxbuf_ptr
+ * @param position
+ * @param width
+ * @param text_color
+ * @param style_ptr
+ *
+ * @return A pointer to a `struct wlr_buffer` with the texture.
+ */
+struct wlr_buffer *title_create_buffer(
+    bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
+    uint32_t text_color,
     const wlmtk_titlebar_style_t *style_ptr)
 {
-    cairo_t *cairo_ptr;
-
-    BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
-    BS_ASSERT(style_ptr->height == focussed_gfxbuf_ptr->height);
-    BS_ASSERT(style_ptr->height == blurred_gfxbuf_ptr->height);
-    BS_ASSERT(position <= focussed_gfxbuf_ptr->width);
-    BS_ASSERT(position + width <= focussed_gfxbuf_ptr->width);
-
-    struct wlr_buffer *focussed_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         width, style_ptr->height);
-    if (NULL == focussed_wlr_buffer_ptr) return false;
+    if (NULL == wlr_buffer_ptr) return NULL;
 
     bs_gfxbuf_copy_area(
-        bs_gfxbuf_from_wlr_buffer(focussed_wlr_buffer_ptr),
+        bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr),
         0, 0,
-        focussed_gfxbuf_ptr,
+        gfxbuf_ptr,
         position, 0,
         width, style_ptr->height);
 
-    cairo_ptr = cairo_create_from_wlr_buffer(focussed_wlr_buffer_ptr);
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
-        wlr_buffer_drop(focussed_wlr_buffer_ptr);
-        return false;
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return NULL;
     }
-
     wlmaker_primitives_draw_bezel_at(
         cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
     wlmaker_primitives_draw_window_title(
-        cairo_ptr, "Title", style_ptr->focussed_text_color);
-
+        cairo_ptr, "Title", text_color);
     cairo_destroy(cairo_ptr);
 
-    struct wlr_buffer *blurred_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        width, style_ptr->height);
-    if (NULL == blurred_wlr_buffer_ptr) {
-        wlr_buffer_drop(focussed_wlr_buffer_ptr);
-        return false;
-    }
-
-    bs_gfxbuf_copy_area(
-        bs_gfxbuf_from_wlr_buffer(blurred_wlr_buffer_ptr),
-        0, 0,
-        blurred_gfxbuf_ptr,
-        position, 0,
-        width, style_ptr->height);
-
-    cairo_ptr = cairo_create_from_wlr_buffer(blurred_wlr_buffer_ptr);
-    if (NULL == cairo_ptr) {
-        wlr_buffer_drop(blurred_wlr_buffer_ptr);
-        return false;
-    }
-
-    wlmaker_primitives_draw_bezel_at(
-        cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
-    wlmaker_primitives_draw_window_title(
-        cairo_ptr, "Title", style_ptr->blurred_text_color);
-
-    cairo_destroy(cairo_ptr);
-
-    if (NULL != title_ptr->focussed_wlr_buffer_ptr) {
-        wlr_buffer_drop(title_ptr->focussed_wlr_buffer_ptr);
-    }
-    title_ptr->focussed_wlr_buffer_ptr = focussed_wlr_buffer_ptr;
-    if (NULL != title_ptr->blurred_wlr_buffer_ptr) {
-        wlr_buffer_drop(title_ptr->blurred_wlr_buffer_ptr);
-    }
-    title_ptr->blurred_wlr_buffer_ptr = blurred_wlr_buffer_ptr;
-    return true;
+    return wlr_buffer_ptr;
 }
 
 /* == Title bar button ===================================================== */
