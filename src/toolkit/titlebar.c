@@ -92,6 +92,8 @@ static bool wlmtk_titlebar_title_redraw(
     int width,
     bool activated,
     const wlmtk_titlebar_style_t *style_ptr);
+static wlmtk_element_t *wlmtk_titlebar_title_element(
+    wlmtk_titlebar_title_t *titlebar_title_ptr);
 
 /** Function pointer to method for drawing the button contents. */
 typedef void (*wlmtk_titlebar_button_draw_t)(
@@ -191,10 +193,10 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         return NULL;
     }
     wlmtk_element_set_visible(
-        &titlebar_ptr->title_ptr->super_buffer.super_element, true);
+        wlmtk_titlebar_title_element(titlebar_ptr->title_ptr), true);
     wlmtk_container_add_element(
         &titlebar_ptr->super_box.super_container,
-        &titlebar_ptr->title_ptr->super_buffer.super_element);
+        wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
         wlmaker_primitives_draw_minimize_icon);
@@ -241,7 +243,7 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
     if (NULL != titlebar_ptr->title_ptr) {
         wlmtk_container_remove_element(
             &titlebar_ptr->super_box.super_container,
-            &titlebar_ptr->title_ptr->super_buffer.super_element);
+            wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
         wlmtk_titlebar_title_destroy(titlebar_ptr->title_ptr);
         titlebar_ptr->title_ptr = NULL;
     }
@@ -472,6 +474,20 @@ bool wlmtk_titlebar_title_redraw(
     }
     title_set_activated(titlebar_title_ptr, activated);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns the superclass @ref wlmtk_element_t for the titlebar title.
+ *
+ * @param tittlebar_title_ptr
+ *
+ * @return Pointer to the super element.
+ */
+wlmtk_element_t *wlmtk_titlebar_title_element(
+    wlmtk_titlebar_title_t *titlebar_title_ptr)
+{
+    return &titlebar_title_ptr->super_buffer.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -859,7 +875,7 @@ void test_title(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_blurred_short.png");
 
-    wlmtk_element_destroy(&titlebar_title_ptr->super_buffer.super_element);
+    wlmtk_element_destroy(wlmtk_titlebar_title_element(titlebar_title_ptr));
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
 }
