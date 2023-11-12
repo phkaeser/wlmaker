@@ -45,6 +45,12 @@ struct _wlmtk_resizebar_area_t {
 
     /** Whether the area is currently pressed or not. */
     bool                      pressed;
+
+    /** Window to which the resize bar area belongs. To initiate resizing. */
+    wlmtk_window_t            *window_ptr;
+    /** Edges that the resizebar area controls. */
+    uint32_t                  edges;
+
 };
 
 static void buffer_destroy(wlmtk_buffer_t *buffer_ptr);
@@ -71,11 +77,15 @@ static const wlmtk_buffer_impl_t area_buffer_impl = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_resizebar_area_t *wlmtk_resizebar_area_create()
+wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
+    wlmtk_window_t *window_ptr,
+    uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
+    resizebar_area_ptr->window_ptr = window_ptr;
+    resizebar_area_ptr->edges = edges;
 
     if (!wlmtk_buffer_init(
             &resizebar_area_ptr->super_buffer,
@@ -164,13 +174,15 @@ bool buffer_pointer_button(
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
-        bs_log(BS_INFO, "FIXME: Down!");
+
+        wlmtk_window_request_resize(
+            resizebar_area_ptr->window_ptr,
+            resizebar_area_ptr->edges);
         draw_state(resizebar_area_ptr);
         break;
 
     case WLMTK_BUTTON_UP:
         resizebar_area_ptr->pressed = false;
-        bs_log(BS_INFO, "FIXME: Up!");
         draw_state(resizebar_area_ptr);
         break;
 

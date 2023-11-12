@@ -107,7 +107,7 @@ static const wlmtk_resizebar_style_t resizebar_style = {
         .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xffc2c0c5 }}
     },
-    .height = 20,  // FIXME: 7
+    .height = 7,
     .corner_width = 29,
     .bezel_width = 1,
 };
@@ -153,7 +153,7 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-        width, &resizebar_style);
+        window_ptr, width, &resizebar_style);
     if (NULL == window_ptr->resizebar_ptr) {
         wlmtk_window_destroy(window_ptr);
         return NULL;

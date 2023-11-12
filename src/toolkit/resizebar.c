@@ -30,6 +30,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -69,6 +70,7 @@ static const wlmtk_box_impl_t resizebar_box_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
+    wlmtk_window_t *window_ptr,
     unsigned width,
     const wlmtk_resizebar_style_t *style_ptr)
 {
@@ -89,7 +91,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         return NULL;
     }
 
-    resizebar_ptr->left_area_ptr = wlmtk_resizebar_area_create();
+    resizebar_ptr->left_area_ptr = wlmtk_resizebar_area_create(
+        window_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->left_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -98,7 +101,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         &resizebar_ptr->super_box.super_container,
         wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
 
-    resizebar_ptr->center_area_ptr = wlmtk_resizebar_area_create();
+    resizebar_ptr->center_area_ptr = wlmtk_resizebar_area_create(
+        window_ptr, WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->center_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -108,7 +112,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         NULL,
         wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
 
-    resizebar_ptr->right_area_ptr = wlmtk_resizebar_area_create();
+    resizebar_ptr->right_area_ptr = wlmtk_resizebar_area_create(
+        window_ptr, WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->right_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -271,7 +276,8 @@ const bs_test_case_t wlmtk_resizebar_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_resizebar_style_t style = {};
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(120, &style);
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
+        NULL, 120, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
