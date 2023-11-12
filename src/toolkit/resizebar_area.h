@@ -23,7 +23,7 @@
 #include <libbase/libbase.h>
 
 /** Forward declaration: Element of the resizebar. */
-typedef struct _wlmtk_resizebar_button_t wlmtk_resizebar_button_t ;
+typedef struct _wlmtk_resizebar_area_t wlmtk_resizebar_area_t ;
 
 #include "resizebar.h"
 
@@ -36,20 +36,20 @@ extern "C" {
  *
  * @return Pointer to the resizebar button.
  */
-wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(void);
+wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(void);
 
 /**
  * Destroys the resizebar element.
  *
- * @param resizebar_button_ptr
+ * @param resizebar_area_ptr
  */
-void wlmtk_resizebar_button_destroy(
-    wlmtk_resizebar_button_t *resizebar_button_ptr);
+void wlmtk_resizebar_area_destroy(
+    wlmtk_resizebar_area_t *resizebar_area_ptr);
 
 /**
  * Redraws the element, with updated position and width.
  *
- * @param resizebar_button_ptr
+ * @param resizebar_area_ptr
  * @param gfxbuf_ptr
  * @param position
  * @param width
@@ -57,16 +57,16 @@ void wlmtk_resizebar_button_destroy(
  *
  * @return true on success.
  */
-bool wlmtk_resizebar_button_redraw(
-    wlmtk_resizebar_button_t *resizebar_button_ptr,
+bool wlmtk_resizebar_area_redraw(
+    wlmtk_resizebar_area_t *resizebar_area_ptr,
     bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
     const wlmtk_resizebar_style_t *style_ptr);
 
 /** Returns the button's super_buffer.super_element address. */
-wlmtk_element_t *wlmtk_resizebar_button_element(
-    wlmtk_resizebar_button_t *resizebar_button_ptr);
+wlmtk_element_t *wlmtk_resizebar_area_element(
+    wlmtk_resizebar_area_t *resizebar_area_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
