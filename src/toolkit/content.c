@@ -1,7 +1,6 @@
 /* ========================================================================= */
 /**
  * @file content.c
- * Copyright (c) 2023 by Philipp Kaeser <kaeser@gubbe.ch>
  *
  * @copyright
  * Copyright 2023 Google LLC
