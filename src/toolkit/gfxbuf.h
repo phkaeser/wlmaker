@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __GFXBUF_H__
-#define __GFXBUF_H__
+#ifndef __WLMTK_GFXBUF_H__
+#define __WLMTK_GFXBUF_H__
 
 #include <libbase/libbase.h>
 #include <cairo.h>
@@ -81,5 +81,5 @@ cairo_t *cairo_create_from_wlr_buffer(struct wlr_buffer *wlr_buffer_ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __GFXBUF_H__ */
+#endif /* __WLMTK_GFXBUF_H__ */
 /* == End of gfxbuf.h ====================================================== */

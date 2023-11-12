@@ -18,8 +18,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLTMK_FSM_H__
-#define __WLTMK_FSM_H__
+#ifndef __WLMTK_FSM_H__
+#define __WLMTK_FSM_H__
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -98,5 +98,5 @@ extern const bs_test_case_t wlmtk_fsm_test_cases[];
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLTMK_FSM_H__ */
+#endif /* __WLMTK_FSM_H__ */
 /* == End of fsm.h ====================================================== */

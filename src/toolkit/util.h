@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_UTIL_H__
-#define __WLMAKER_UTIL_H__
+#ifndef __WLMTK_UTIL_H__
+#define __WLMTK_UTIL_H__
 
 #include <wayland-server-core.h>
 
@@ -47,5 +47,5 @@ void wlmtk_util_connect_listener_signal(
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMAKER_UTIL_H__ */
+#endif /* __WLMTK_UTIL_H__ */
 /* == End of util.h ======================================================== */

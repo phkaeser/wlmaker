@@ -1,14 +1,27 @@
 /* ========================================================================= */
 /**
  * @file resizebar_area.c
- * Copyright (c) 2023 by Philipp Kaeser <kaeser@gubbe.ch>
+ *
+ * @copyright
+ * Copyright 2023 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "resizebar_area.h"
 
 #include "box.h"
 #include "buffer.h"
-#include "button.h"
 #include "gfxbuf.h"
 #include "primitives.h"
 
@@ -23,10 +36,23 @@
 /** State of an element of the resize bar. */
 struct _wlmtk_resizebar_area_t {
     /** Superclass: Buffer. */
-    wlmtk_button_t            super_button;
+    wlmtk_buffer_t            super_buffer;
+
+    /** WLR buffer holding the buffer in released state. */
+    struct wlr_buffer         *released_wlr_buffer_ptr;
+    /** WLR buffer holding the buffer in pressed state. */
+    struct wlr_buffer         *pressed_wlr_buffer_ptr;
+
+    /** Whether the area is currently pressed or not. */
+    bool                      pressed;
 };
 
-static void button_destroy(wlmtk_button_t *button_ptr);
+static void buffer_destroy(wlmtk_buffer_t *buffer_ptr);
+static bool buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
+static void draw_state(wlmtk_resizebar_area_t *resizebar_area_ptr);
 static struct wlr_buffer *create_buffer(
     bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
@@ -37,8 +63,9 @@ static struct wlr_buffer *create_buffer(
 /* == Data ================================================================= */
 
 /** Buffer implementation for title of the title bar. */
-static const wlmtk_button_impl_t element_button_impl = {
-    .destroy = button_destroy
+static const wlmtk_buffer_impl_t area_buffer_impl = {
+    .destroy = buffer_destroy,
+    .pointer_button = buffer_pointer_button,
 };
 
 /* == Exported methods ===================================================== */
@@ -46,25 +73,31 @@ static const wlmtk_button_impl_t element_button_impl = {
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create()
 {
-    wlmtk_resizebar_area_t *resizebar_area = logged_calloc(
+    wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
-    if (NULL == resizebar_area) return NULL;
+    if (NULL == resizebar_area_ptr) return NULL;
 
-    if (!wlmtk_button_init(
-            &resizebar_area->super_button,
-            &element_button_impl)) {
-        wlmtk_resizebar_area_destroy(resizebar_area);
+    if (!wlmtk_buffer_init(
+            &resizebar_area_ptr->super_buffer,
+            &area_buffer_impl)) {
+        wlmtk_resizebar_area_destroy(resizebar_area_ptr);
         return NULL;
     }
 
-    return resizebar_area;
+    draw_state(resizebar_area_ptr);
+    return resizebar_area_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_resizebar_area_destroy(
     wlmtk_resizebar_area_t *resizebar_area_ptr)
 {
-    wlmtk_button_fini(&resizebar_area_ptr->super_button);
+    wlr_buffer_drop_nullify(
+        &resizebar_area_ptr->released_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(
+        &resizebar_area_ptr->pressed_wlr_buffer_ptr);
+
+    wlmtk_buffer_fini(&resizebar_area_ptr->super_buffer);
     free(resizebar_area_ptr);
 }
 
@@ -88,14 +121,14 @@ bool wlmtk_resizebar_area_redraw(
         return false;
     }
 
-    // Will take ownershp of the buffers.
-    wlmtk_button_set(
-        &resizebar_area_ptr->super_button,
-        released_wlr_buffer_ptr,
-        pressed_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(
+        &resizebar_area_ptr->released_wlr_buffer_ptr);
+    resizebar_area_ptr->released_wlr_buffer_ptr = released_wlr_buffer_ptr;
+    wlr_buffer_drop_nullify(
+        &resizebar_area_ptr->pressed_wlr_buffer_ptr);
+    resizebar_area_ptr->pressed_wlr_buffer_ptr = pressed_wlr_buffer_ptr;
 
-    wlr_buffer_drop(released_wlr_buffer_ptr);
-    wlr_buffer_drop(pressed_wlr_buffer_ptr);
+    draw_state(resizebar_area_ptr);
     return true;
 }
 
@@ -103,23 +136,73 @@ bool wlmtk_resizebar_area_redraw(
 wlmtk_element_t *wlmtk_resizebar_area_element(
     wlmtk_resizebar_area_t *resizebar_area_ptr)
 {
-    return &resizebar_area_ptr->super_button.super_buffer.super_element;
+    return &resizebar_area_ptr->super_buffer.super_element;
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Dtor. Forwards to @ref wlmtk_resizebar_area_destroy. */
-void button_destroy(wlmtk_button_t *button_ptr)
+void buffer_destroy(wlmtk_buffer_t *buffer_ptr)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
-        button_ptr, wlmtk_resizebar_area_t, super_button);
+        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
     wlmtk_resizebar_area_destroy(resizebar_area_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_button. */
+bool buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
+
+    if (button_event_ptr->button != BTN_LEFT) return false;
+
+    switch (button_event_ptr->type) {
+    case WLMTK_BUTTON_DOWN:
+        resizebar_area_ptr->pressed = true;
+        bs_log(BS_INFO, "FIXME: Down!");
+        draw_state(resizebar_area_ptr);
+        break;
+
+    case WLMTK_BUTTON_UP:
+        resizebar_area_ptr->pressed = false;
+        bs_log(BS_INFO, "FIXME: Up!");
+        draw_state(resizebar_area_ptr);
+        break;
+
+    default:
+        break;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 /**
- * Creates a resizebar button texture.
+ * Draws the buffer in current state (released or pressed).
+ *
+ * @param resizebar_area_ptr
+ */
+void draw_state(wlmtk_resizebar_area_t *resizebar_area_ptr)
+{
+    if (!resizebar_area_ptr->pressed) {
+        wlmtk_buffer_set(
+            &resizebar_area_ptr->super_buffer,
+            resizebar_area_ptr->released_wlr_buffer_ptr);
+    } else {
+        wlmtk_buffer_set(
+            &resizebar_area_ptr->super_buffer,
+            resizebar_area_ptr->pressed_wlr_buffer_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a resizebar area texture.
  *
  * @param gfxbuf_ptr
  * @param position

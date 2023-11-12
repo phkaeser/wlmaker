@@ -231,7 +231,7 @@ bool element_pointer_motion(
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
-    if (NULL == buffer_ptr->impl.pointer_motion) return false;
+    if (NULL == buffer_ptr->impl.pointer_motion) return true;
 
     return buffer_ptr->impl.pointer_motion(buffer_ptr, x, y, time_msec);
 }

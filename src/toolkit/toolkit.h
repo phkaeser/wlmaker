@@ -19,8 +19,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TOOLKIT_H__
-#define __TOOLKIT_H__
+#ifndef __WLMTK_TOOLKIT_H__
+#define __WLMTK_TOOLKIT_H__
 
 #include "gfxbuf.h"
 #include "primitives.h"
@@ -53,5 +53,5 @@ extern "C" {
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __TOOLKIT_H__ */
+#endif /* __WLMTK_TOOLKIT_H__ */
 /* == End of toolkit.h ===================================================== */
