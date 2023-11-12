@@ -1,16 +1,30 @@
 /* ========================================================================= */
 /**
  * @file resizebar.c
- * Copyright (c) 2023 by Philipp Kaeser <kaeser@gubbe.ch>
+ *
+ * @copyright
+ * Copyright 2023 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "resizebar.h"
 
 #include "box.h"
 #include "buffer.h"
-#include "button.h"
 #include "gfxbuf.h"
 #include "primitives.h"
+#include "resizebar_area.h"
 
 #include <libbase/libbase.h>
 
@@ -19,9 +33,6 @@
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
-
-/** Forward declaration: Element of the resizebar. */
-typedef struct _wlmtk_resizebar_button_t wlmtk_resizebar_button_t ;
 
 /** State of the title bar. */
 struct _wlmtk_resizebar_t {
@@ -44,39 +55,14 @@ struct _wlmtk_resizebar_t {
     wlmtk_resizebar_button_t  *right_button_ptr;
 };
 
-/** State of an element of the resize bar. */
-struct _wlmtk_resizebar_button_t {
-    /** Superclass: Buffer. */
-    wlmtk_button_t            super_button;
-};
-
-static wlmtk_resizebar_button_t *wlmtk_resizebar_button_create(void);
-static void wlmtk_resizebar_button_destroy(
-    wlmtk_resizebar_button_t *resizebar_button_ptr);
-static bool wlmtk_resizebar_button_redraw(
-    wlmtk_resizebar_button_t *resizebar_button_ptr,
-    bs_gfxbuf_t *gfxbuf_ptr,
-    unsigned position,
-    unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr);
-static wlmtk_element_t *wlmtk_resizebar_button_element(
-    wlmtk_resizebar_button_t *resizebar_button_ptr);
-
 static void resizebar_box_destroy(wlmtk_box_t *box_ptr);
 static bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width);
-
-static void button_destroy(wlmtk_button_t *button_ptr);
 
 /* == Data ================================================================= */
 
 /** Method table for the box's virtual methods. */
 static const wlmtk_box_impl_t resizebar_box_impl = {
     .destroy = resizebar_box_destroy
-};
-
-/** Buffer implementation for title of the title bar. */
-static const wlmtk_button_impl_t element_button_impl = {
-    .destroy = button_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -235,133 +221,6 @@ wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr)
     return &resizebar_ptr->super_box.super_container.super_element;
 }
 
-/* == Resizebar element methods ============================================ */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Creates a resizebar button.
- *
- * @return Pointer to the resizebar button.
- */
-wlmtk_resizebar_button_t *wlmtk_resizebar_button_create()
-{
-    wlmtk_resizebar_button_t *resizebar_button = logged_calloc(
-        1, sizeof(wlmtk_resizebar_button_t));
-    if (NULL == resizebar_button) return NULL;
-
-    if (!wlmtk_button_init(
-            &resizebar_button->super_button,
-            &element_button_impl)) {
-        wlmtk_resizebar_button_destroy(resizebar_button);
-        return NULL;
-    }
-
-    return resizebar_button;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Destroys the resizebar element.
- *
- * @param resizebar_button_ptr
- */
-void wlmtk_resizebar_button_destroy(
-    wlmtk_resizebar_button_t *resizebar_button_ptr)
-{
-    wlmtk_button_fini(&resizebar_button_ptr->super_button);
-    free(resizebar_button_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Creates a resizebar button texture.
- *
- * @param gfxbuf_ptr
- * @param position
- * @param width
- * @param style_ptr
- * @param pressed
- *
- * @return A pointer to a newly allocated `struct wlr_buffer`.
- */
-struct wlr_buffer *create_buffer(
-    bs_gfxbuf_t *gfxbuf_ptr,
-    unsigned position,
-    unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr,
-    bool pressed)
-{
-    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        width, style_ptr->height);
-    if (NULL == wlr_buffer_ptr) return NULL;
-
-    bs_gfxbuf_copy_area(
-        bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr), 0, 0,
-        gfxbuf_ptr, position, 0, width, style_ptr->height);
-
-    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
-    if (NULL == cairo_ptr) {
-        wlr_buffer_drop(wlr_buffer_ptr);
-        return false;
-    }
-    wlmaker_primitives_draw_bezel_at(
-        cairo_ptr, 0, 0, width,
-        style_ptr->height, style_ptr->bezel_width, !pressed);
-    cairo_destroy(cairo_ptr);
-
-    return wlr_buffer_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Redraws the element, with updated position and width.
- *
- * @param resizebar_button_ptr
- * @param gfxbuf_ptr
- * @param position
- * @param width
- * @param style_ptr
- *
- * @return true on success.
- */
-bool wlmtk_resizebar_button_redraw(
-    wlmtk_resizebar_button_t *resizebar_button_ptr,
-    bs_gfxbuf_t *gfxbuf_ptr,
-    unsigned position,
-    unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr)
-{
-    struct wlr_buffer *released_wlr_buffer_ptr = create_buffer(
-        gfxbuf_ptr, position, width, style_ptr, false);
-    struct wlr_buffer *pressed_wlr_buffer_ptr = create_buffer(
-        gfxbuf_ptr, position, width, style_ptr, true);
-
-    if (NULL == released_wlr_buffer_ptr ||
-        NULL == pressed_wlr_buffer_ptr) {
-        wlr_buffer_drop_nullify(&released_wlr_buffer_ptr);
-        wlr_buffer_drop_nullify(&pressed_wlr_buffer_ptr);
-        return false;
-    }
-
-    // Will take ownershp of the buffers.
-    wlmtk_button_set(
-        &resizebar_button_ptr->super_button,
-        released_wlr_buffer_ptr,
-        pressed_wlr_buffer_ptr);
-
-    wlr_buffer_drop(released_wlr_buffer_ptr);
-    wlr_buffer_drop(pressed_wlr_buffer_ptr);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Returns the button's super_buffer.super_element address. */
-wlmtk_element_t *wlmtk_resizebar_button_element(
-    wlmtk_resizebar_button_t *resizebar_button_ptr)
-{
-    return &resizebar_button_ptr->super_button.super_buffer.super_element;
-}
-
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -396,15 +255,6 @@ bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width)
     resizebar_ptr->gfxbuf_ptr = gfxbuf_ptr;
     resizebar_ptr->width = width;
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Dtor. Forwards to @ref wlmtk_resizebar_button_destroy. */
-void button_destroy(wlmtk_button_t *button_ptr)
-{
-    wlmtk_resizebar_button_t *resizebar_button_ptr = BS_CONTAINER_OF(
-        button_ptr, wlmtk_resizebar_button_t, super_button);
-    wlmtk_resizebar_button_destroy(resizebar_button_ptr);
 }
 
 /* == Unit tests =========================================================== */

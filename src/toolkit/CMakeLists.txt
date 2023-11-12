@@ -30,6 +30,7 @@ SET(PUBLIC_HEADER_FILES
   fsm.h
   input.h
   resizebar.h
+  resizebar_area.h
   titlebar.h
   titlebar_button.h
   titlebar_title.h
@@ -48,6 +49,7 @@ TARGET_SOURCES(toolkit PRIVATE
   gfxbuf.c
   primitives.c
   resizebar.c
+  resizebar_area.c
   titlebar.c
   titlebar_button.c
   titlebar_title.c
