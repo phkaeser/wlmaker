@@ -46,6 +46,8 @@ typedef struct {
 /**
  * Creates the resize bar.
  *
+ * @param wlr_cursor_ptr
+ * @param wlr_xcursor_manager_ptr
  * @param window_ptr
  * @param width
  * @param style_ptr
@@ -53,6 +55,8 @@ typedef struct {
  * @return Pointer to the resizebar state, or NULL on error.
  */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
     wlmtk_window_t *window_ptr,
     unsigned width,
     const wlmtk_resizebar_style_t *style_ptr);

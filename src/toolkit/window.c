@@ -115,7 +115,10 @@ static const wlmtk_resizebar_style_t resizebar_style = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
+wlmtk_window_t *wlmtk_window_create(
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
+    wlmtk_content_t *content_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
@@ -153,6 +156,7 @@ wlmtk_window_t *wlmtk_window_create(wlmtk_content_t *content_ptr)
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+        wlr_cursor_ptr, wlr_xcursor_manager_ptr,
         window_ptr, width, &resizebar_style);
     if (NULL == window_ptr->resizebar_ptr) {
         wlmtk_window_destroy(window_ptr);
@@ -430,7 +434,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
                       fake_content_ptr->content.window_ptr);
@@ -444,7 +448,7 @@ void test_set_activated(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
 
     wlmtk_window_set_activated(window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->activated);

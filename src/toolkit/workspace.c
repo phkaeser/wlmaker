@@ -502,7 +502,7 @@ void test_map_unmap(bs_test_t *test_ptr)
 
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
@@ -603,7 +603,7 @@ void test_move(bs_test_t *test_ptr)
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -649,7 +649,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -694,7 +694,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_content_commit_size(&fake_content_ptr->content, 1, 40, 20);
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        &fake_content_ptr->content);
+        NULL, NULL, &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 

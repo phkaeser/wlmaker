@@ -29,6 +29,8 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
+#include <wlr/types/wlr_cursor.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -51,9 +53,19 @@ struct _wlmtk_resizebar_area_t {
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
 
+    /** Points to a `wlr_cursor`. */
+    struct wlr_cursor         *wlr_cursor_ptr;
+    /** Points to a `wlr_xcursor_manager`. */
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
+    /** Name of the cursor to show when having pointer focus. */
+    const char                 *xcursor_name_ptr;
 };
 
 static void buffer_destroy(wlmtk_buffer_t *buffer_ptr);
+static bool buffer_pointer_motion(
+    wlmtk_buffer_t *buffer_ptr,
+    double x, double y,
+    uint32_t time_msec);
 static bool buffer_pointer_button(
     wlmtk_buffer_t *buffer_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -71,6 +83,7 @@ static struct wlr_buffer *create_buffer(
 /** Buffer implementation for title of the title bar. */
 static const wlmtk_buffer_impl_t area_buffer_impl = {
     .destroy = buffer_destroy,
+    .pointer_motion = buffer_pointer_motion,
     .pointer_button = buffer_pointer_button,
 };
 
@@ -78,14 +91,33 @@ static const wlmtk_buffer_impl_t area_buffer_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
     wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
+    resizebar_area_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
+    resizebar_area_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
     resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
+
+    resizebar_area_ptr->xcursor_name_ptr = "default";  // Fail-safe value.
+    switch (resizebar_area_ptr->edges) {
+    case WLR_EDGE_BOTTOM:
+        resizebar_area_ptr->xcursor_name_ptr = "s-resize";
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+        resizebar_area_ptr->xcursor_name_ptr = "sw-resize";
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+        resizebar_area_ptr->xcursor_name_ptr = "se-resize";
+        break;
+    default:
+        bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
+    }
 
     if (!wlmtk_buffer_init(
             &resizebar_area_ptr->super_buffer,
@@ -158,6 +190,23 @@ void buffer_destroy(wlmtk_buffer_t *buffer_ptr)
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
     wlmtk_resizebar_area_destroy(resizebar_area_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_motion. */
+bool buffer_pointer_motion(
+    wlmtk_buffer_t *buffer_ptr,
+    __UNUSED__ double x, __UNUSED__ double y,
+    __UNUSED__ uint32_t time_msec)
+{
+    wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
+    //
+    wlr_cursor_set_xcursor(
+        resizebar_area_ptr->wlr_cursor_ptr,
+        resizebar_area_ptr->wlr_xcursor_manager_ptr,
+        resizebar_area_ptr->xcursor_name_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
