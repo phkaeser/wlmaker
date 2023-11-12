@@ -179,14 +179,21 @@ bool wlmtk_titlebar_set_width(
     if (!redraw_buffers(titlebar_ptr, width)) return false;
     BS_ASSERT(width == titlebar_ptr->width);
 
-    int close_position = width - titlebar_ptr->style.height;
+    int close_position = width;
+    if (3 * titlebar_ptr->style.height < width) {
+        close_position = width - titlebar_ptr->style.height;
+    }
+    int title_position = 0;
+    if (4 * titlebar_ptr->style.height < width) {
+        title_position = titlebar_ptr->style.height;
+    }
 
     if (!wlmtk_titlebar_title_redraw(
             titlebar_ptr->title_ptr,
             titlebar_ptr->focussed_gfxbuf_ptr,
             titlebar_ptr->blurred_gfxbuf_ptr,
-            0,
-            titlebar_ptr->width,
+            title_position,
+            close_position - title_position,
             titlebar_ptr->activated,
             &titlebar_ptr->style)) {
         return false;
@@ -194,7 +201,7 @@ bool wlmtk_titlebar_set_width(
     wlmtk_element_set_visible(
         wlmtk_titlebar_title_element(titlebar_ptr->title_ptr), true);
 
-    if (titlebar_ptr->style.height <= width) {
+    if (0 < title_position) {
         if (!wlmtk_titlebar_button_redraw(
                 titlebar_ptr->minimize_button_ptr,
                 titlebar_ptr->focussed_gfxbuf_ptr,
@@ -212,7 +219,7 @@ bool wlmtk_titlebar_set_width(
             false);
     }
 
-    if ((int)titlebar_ptr->style.height <= close_position) {
+    if (close_position < (int)width) {
         if (!wlmtk_titlebar_button_redraw(
                 titlebar_ptr->close_button_ptr,
                 titlebar_ptr->focussed_gfxbuf_ptr,
