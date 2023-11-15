@@ -218,23 +218,51 @@ void test_button(bs_test_t *test_ptr)
 
     wlmtk_titlebar_style_t style = {
         .height = 22,
+        .focussed_text_color = 0xffffffff,
         .bezel_width = 1
     };
     bs_gfxbuf_t *f_ptr = bs_gfxbuf_create(100, 22);
     bs_gfxbuf_clear(f_ptr, 0xff4040c0);
     bs_gfxbuf_t *b_ptr = bs_gfxbuf_create(100, 22);
-    bs_gfxbuf_clear(f_ptr, 0xff303030);
+    bs_gfxbuf_clear(b_ptr, 0xff303030);
+
+    // For improved readability.
+    wlmtk_buffer_t *super_buffer_ptr = &button_ptr->super_button.super_buffer;
+    wlmtk_element_t *element_ptr = wlmtk_titlebar_button_element(button_ptr);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_button_redraw(button_ptr, f_ptr, b_ptr, 30, &style));
-
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
-        bs_gfxbuf_from_wlr_buffer(button_ptr->super_button.super_buffer.wlr_buffer_ptr),
-        "toolkit/title_button_focussed.png");
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
+        "toolkit/title_button_focussed_released.png");
 
-    wlmtk_element_destroy(wlmtk_titlebar_button_element(button_ptr));
+    // Pointer must be inside the button for accepting DOWN.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 11, 11, 0));
+
+    // Button down: pressed.
+    wlmtk_button_event_t button = { .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
+        "toolkit/title_button_focussed_pressed.png");
+
+    button.type = WLMTK_BUTTON_UP;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
+        "toolkit/title_button_focussed_released.png");
+
+    wlmtk_element_destroy(element_ptr);
 }
 
 /* == End of titlebar_button.c ============================================= */
