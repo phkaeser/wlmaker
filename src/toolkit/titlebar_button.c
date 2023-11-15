@@ -216,6 +216,11 @@ void test_button(bs_test_t *test_ptr)
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
 
+    // For improved readability.
+    wlmtk_buffer_t *super_buffer_ptr = &button_ptr->super_button.super_buffer;
+    wlmtk_element_t *element_ptr = wlmtk_titlebar_button_element(button_ptr);
+
+    // Draw contents.
     wlmtk_titlebar_style_t style = {
         .height = 22,
         .focussed_text_color = 0xffffffff,
@@ -225,14 +230,11 @@ void test_button(bs_test_t *test_ptr)
     bs_gfxbuf_clear(f_ptr, 0xff4040c0);
     bs_gfxbuf_t *b_ptr = bs_gfxbuf_create(100, 22);
     bs_gfxbuf_clear(b_ptr, 0xff303030);
-
-    // For improved readability.
-    wlmtk_buffer_t *super_buffer_ptr = &button_ptr->super_button.super_buffer;
-    wlmtk_element_t *element_ptr = wlmtk_titlebar_button_element(button_ptr);
-
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_button_redraw(button_ptr, f_ptr, b_ptr, 30, &style));
+    bs_gfxbuf_destroy(b_ptr);
+    bs_gfxbuf_destroy(f_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
