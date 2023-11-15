@@ -270,9 +270,11 @@ bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_variable_width(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_resizebar_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "variable_width", test_variable_width },
     { 0, NULL, NULL }
 };
 
@@ -284,6 +286,55 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
         NULL, NULL, NULL, 120, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
+
+    wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Performs resizing and verifies the elements are shown as expected. */
+void test_variable_width(bs_test_t *test_ptr)
+{
+    wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
+        NULL, NULL, NULL, 0, &style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
+
+    wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(
+        resizebar_ptr->left_area_ptr);
+    wlmtk_element_t *center_elem_ptr = wlmtk_resizebar_area_element(
+        resizebar_ptr->center_area_ptr);
+    wlmtk_element_t *right_elem_ptr = wlmtk_resizebar_area_element(
+        resizebar_ptr->right_area_ptr);
+
+    // Zero width. Zero visibility.
+    BS_TEST_VERIFY_FALSE(test_ptr, left_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, center_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, right_elem_ptr->visible);
+
+    // Sufficient space for all the elements.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 33));
+    BS_TEST_VERIFY_TRUE(test_ptr, left_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, center_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, right_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, center_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 17, right_elem_ptr->x);
+
+    // Not enough space for the center element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 32));
+    BS_TEST_VERIFY_TRUE(test_ptr, left_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, center_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, right_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, right_elem_ptr->x);
+
+    // Not enough space for center and left element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 16));
+    BS_TEST_VERIFY_FALSE(test_ptr, left_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, center_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, right_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, right_elem_ptr->x);
 
     wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
 }
