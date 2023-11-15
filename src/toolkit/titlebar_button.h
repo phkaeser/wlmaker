@@ -82,6 +82,9 @@ bool wlmtk_titlebar_button_redraw(
 wlmtk_element_t *wlmtk_titlebar_button_element(
     wlmtk_titlebar_button_t *titlebar_button_ptr);
 
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_titlebar_button_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

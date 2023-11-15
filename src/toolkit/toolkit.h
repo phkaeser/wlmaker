@@ -40,6 +40,7 @@
 #include "input.h"
 #include "resizebar.h"
 #include "titlebar.h"
+#include "titlebar_button.h"
 #include "titlebar_title.h"
 #include "window.h"
 #include "workspace.h"

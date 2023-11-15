@@ -30,6 +30,7 @@ const bs_test_set_t toolkit_tests[] = {
     { 1, "fsm", wlmtk_fsm_test_cases },
     { 1, "resizebar", wlmtk_resizebar_test_cases },
     { 1, "titlebar", wlmtk_titlebar_test_cases },
+    { 1, "titlebar_button", wlmtk_titlebar_button_test_cases },
     { 1, "titlebar_title", wlmtk_titlebar_title_test_cases },
     { 1, "window", wlmtk_window_test_cases },
     { 1, "workspace", wlmtk_workspace_test_cases },
