@@ -76,6 +76,49 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Configurable keyboard map (in code or commandline arg)
 
+* Support `xdg_shell`, based on toolkit.
+
+* Support `layer_shell`, based on toolkit.
+
+* Support window decoration protocol, based on toolkit.
+  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
+  * Window menu, with basic window actions (not required to adapt to state).
+
+* Multiple workspaces, based on toolkit.
+  * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+
+* Dock, visible across workspaces, based on toolkit.
+  * Style similar to Window Maker.
+  * With application launchers (hardcoded).
+
+*  Clip, based on toolkit.
+  *  Display the current workspace.
+  *  Buttons to switch between workspaces.
+
+*  Application launchers, based on toolkit.
+  *  Display an icon.
+  *  Display application status (*starting*, *running*).
+  *  Configurable (in code).
+
+* Window actions, based on toolkit.
+  * Move (drag via title bar, or window-alt-click)
+  * Resize windows, including a resize bar.
+  * Fullscreen windows.
+  * Maximize windows.
+  * Minimize (*iconify*) windows.
+  * Roll up (*shade*) windows.
+  * Raise window when activated.
+
+*  Visualization of iconified applications, based on toolkit.
+
+*  Task list (window-alt-esc), cycling through windows, based on toolkit.
+
+### Internals and code organization
+
+* [done] Design a toolkit and re-factor the codebase to make use of it.
+  * Ensure the main features (eg. all explicit actions and features above) are
+    tested.
+
 ## Pending
 
 Features for further versions, not ordered by priority nor timeline.
