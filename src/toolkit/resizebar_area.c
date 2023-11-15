@@ -201,11 +201,15 @@ bool buffer_pointer_motion(
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
-    //
-    wlr_cursor_set_xcursor(
-        resizebar_area_ptr->wlr_cursor_ptr,
-        resizebar_area_ptr->wlr_xcursor_manager_ptr,
-        resizebar_area_ptr->xcursor_name_ptr);
+
+    // TODO(kaeser@gubbe.ch): Inject something testable here.
+    if (NULL != resizebar_area_ptr->wlr_cursor_ptr &&
+        NULL != resizebar_area_ptr->wlr_xcursor_manager_ptr) {
+        wlr_cursor_set_xcursor(
+            resizebar_area_ptr->wlr_cursor_ptr,
+            resizebar_area_ptr->wlr_xcursor_manager_ptr,
+            resizebar_area_ptr->xcursor_name_ptr);
+    }
     return true;
 }
 
@@ -224,9 +228,11 @@ bool buffer_pointer_button(
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
 
-        wlmtk_window_request_resize(
-            resizebar_area_ptr->window_ptr,
-            resizebar_area_ptr->edges);
+        if (NULL != resizebar_area_ptr->window_ptr) {
+            wlmtk_window_request_resize(
+                resizebar_area_ptr->window_ptr,
+                resizebar_area_ptr->edges);
+        }
         draw_state(resizebar_area_ptr);
         break;
 
@@ -299,6 +305,59 @@ struct wlr_buffer *create_buffer(
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_area(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
+    { 1, "area", test_area },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests the area behaviour. */
+void test_area(bs_test_t *test_ptr)
+{
+    wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
+        NULL, NULL, NULL, WLR_EDGE_BOTTOM);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
+    wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
+
+    // Draw and verify release state.
+    wlmtk_resizebar_style_t style = { .height = 7, .bezel_width = 1.0 };
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(30, 7);
+    bs_gfxbuf_clear(gfxbuf_ptr, 0xff604020);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_resizebar_area_redraw(area_ptr, gfxbuf_ptr, 10, 12, &style));
+    bs_gfxbuf_destroy(gfxbuf_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
+        "toolkit/resizebar_area_released.png");
+
+    // Pointer must be inside the button for accepting DOWN.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, 1, 1, 0));
+    // Button down: pressed.
+    wlmtk_button_event_t button = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
+    };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
+        "toolkit/resizebar_area_pressed.png");
+
+    // TODO(kaeser@gubbe.ch): Should verify call to wlmtk_window_request_resize
+    // and for setting the cursor.
+
+    wlmtk_element_destroy(element_ptr);
 }
 
 /* == End of resizebar_area.c ============================================== */

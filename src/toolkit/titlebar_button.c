@@ -246,7 +246,9 @@ void test_button(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(element_ptr, 11, 11, 0));
 
     // Button down: pressed.
-    wlmtk_button_event_t button = { .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN };
+    wlmtk_button_event_t button = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
+    };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(element_ptr,  &button));

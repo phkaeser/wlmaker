@@ -39,6 +39,7 @@
 #include "fsm.h"
 #include "input.h"
 #include "resizebar.h"
+#include "resizebar_area.h"
 #include "titlebar.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
