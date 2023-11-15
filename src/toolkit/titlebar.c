@@ -316,11 +316,11 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
-static void test_create_empty(bs_test_t *test_ptr);
+static void test_variable_width(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_titlebar_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
-    { 1, "create_empty", test_create_empty },
+    { 1, "variable_width", test_variable_width },
     { 0, NULL, NULL }
 };
 
@@ -336,12 +336,54 @@ void test_create_destroy(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests setup and teardown. */
-void test_create_empty(bs_test_t *test_ptr)
+/** Tests titlebar with variable width. */
+void test_variable_width(bs_test_t *test_ptr)
 {
-    wlmtk_titlebar_style_t style = {};
+    wlmtk_titlebar_style_t style = { .height = 22 };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(0, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
+
+    // Short names, for improved readability.
+    wlmtk_element_t *title_elem_ptr = wlmtk_titlebar_title_element(
+        titlebar_ptr->title_ptr);
+    wlmtk_element_t *minimize_elem_ptr = wlmtk_titlebar_button_element(
+        titlebar_ptr->minimize_button_ptr);
+    wlmtk_element_t *close_elem_ptr = wlmtk_titlebar_button_element(
+        titlebar_ptr->close_button_ptr);
+    int width;
+
+    // Created with zero width: All invisible. */
+    BS_TEST_VERIFY_FALSE(test_ptr, title_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
+
+    // Width sufficient for all: All elements visible and placed.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 89));
+    BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, minimize_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 22, title_elem_ptr->x);
+    wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
+
+    // Width sufficient only for 1 button.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 67));
+    BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
+    wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+
+    // Width doesn't permit any button.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 66));
+    BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
+    wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 66, width);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
 }
