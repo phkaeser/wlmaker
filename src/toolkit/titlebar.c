@@ -77,7 +77,6 @@ static const wlmtk_box_impl_t titlebar_box_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
-    unsigned width,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
@@ -88,11 +87,6 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         &titlebar_box_impl,
                         WLMTK_BOX_HORIZONTAL)) {
-        wlmtk_titlebar_destroy(titlebar_ptr);
-        return NULL;
-    }
-
-    if (!redraw_buffers(titlebar_ptr, width)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -329,7 +323,7 @@ const bs_test_case_t wlmtk_titlebar_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_titlebar_style_t style = {};
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(120, &style);
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(&style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
@@ -340,7 +334,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_titlebar_style_t style = { .height = 22 };
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(0, &style);
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(&style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.

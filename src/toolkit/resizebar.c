@@ -71,7 +71,6 @@ static const wlmtk_box_impl_t resizebar_box_impl = {
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_window_t *window_ptr,
-    unsigned width,
     const wlmtk_resizebar_style_t *style_ptr)
 {
     wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
@@ -82,11 +81,6 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
                         &resizebar_box_impl,
                         WLMTK_BOX_HORIZONTAL)) {
-        wlmtk_resizebar_destroy(resizebar_ptr);
-        return NULL;
-    }
-
-    if (!redraw_buffers(resizebar_ptr, width)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
@@ -122,11 +116,6 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         &resizebar_ptr->super_box.super_container,
         NULL,
         wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr));
-
-    if (!wlmtk_resizebar_set_width(resizebar_ptr, width)) {
-        wlmtk_resizebar_destroy(resizebar_ptr);
-        return NULL;
-    }
 
     return resizebar_ptr;
 }
@@ -298,8 +287,7 @@ const bs_test_case_t wlmtk_resizebar_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_resizebar_style_t style = {};
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        NULL, 120, &style);
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(NULL, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
@@ -310,8 +298,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        NULL, 0, &style);
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(NULL, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(
