@@ -22,6 +22,11 @@
 
 /** Forward declaration: Title bar. */
 typedef struct _wlmtk_resizebar_t wlmtk_resizebar_t;
+/** Forward declaration. */
+struct wlr_cursor;
+/** Forward declaration. */
+struct wlr_xcursor_manager;
+
 
 #include "element.h"
 #include "primitives.h"

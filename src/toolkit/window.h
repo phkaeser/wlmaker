@@ -23,8 +23,11 @@
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
 
-#include "element.h"
+#include "box.h"
 #include "content.h"
+#include "element.h"
+#include "resizebar.h"
+#include "titlebar.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +37,72 @@ extern "C" {
 struct wlr_cursor;
 /** Forward declaration. */
 struct wlr_xcursor_manager;
+
+/** Maximum number of pending state updates. */
+#define WLMTK_WINDOW_MAX_PENDING 64
+
+/** Pending positional updates. */
+typedef struct {
+    /** Node within @ref wlmtk_window_t::pending_updates. */
+    bs_dllist_node_t          dlnode;
+    /** Serial of the update. */
+    uint32_t                  serial;
+    /** Pending X position. */
+    int                       x;
+    /** Pending Y position. */
+    int                       y;
+    /** Width that is to be committed at serial. */
+    unsigned                  width;
+    /** Height that is to be committed at serial. */
+    unsigned                  height;
+} wlmtk_pending_update_t;
+
+/** Virtual method table for @ref wlmtk_window_t. */
+typedef struct {
+    /** Destructor. */
+    void (*destroy)(wlmtk_window_t *window_ptr);
+    /** See @ref wlmtk_window_set_activated. */
+    void (*set_activated)(wlmtk_window_t *window_ptr,
+                          bool activated);
+    /** See @ref wlmtk_window_set_server_side_decorated. */
+    void (*set_server_side_decorated)(wlmtk_window_t *window_ptr,
+                                      bool decorated);
+
+    /** See @ref wlmtk_window_request_move. */
+    void (*request_move)(wlmtk_window_t *window_ptr);
+    /** See @ref wlmtk_window_request_resize. */
+    void (*request_resize)(wlmtk_window_t *window_ptr,
+                           uint32_t edges);
+
+    /** See @ref wlmtk_window_request_size. */
+    void (*request_size)(wlmtk_window_t *window_ptr,
+                         int x, int y);
+    /** See @ref wlmtk_window_request_position_and_size. */
+    void (*request_position_and_size)(wlmtk_window_t *window_ptr,
+                                      int x, int y, int width, int height);
+} wlmtk_window_impl_t;
+
+/** State of the window. */
+struct _wlmtk_window_t {
+    /** Superclass: Box. */
+    wlmtk_box_t               super_box;
+    /** Virtual method table. */
+    wlmtk_window_impl_t       impl;
+
+    /** Content of this window. */
+    wlmtk_content_t           *content_ptr;
+    /** Titlebar. */
+    wlmtk_titlebar_t          *titlebar_ptr;
+    /** Resizebar. */
+    wlmtk_resizebar_t         *resizebar_ptr;
+
+    /** Pending updates. */
+    bs_dllist_t               pending_updates;
+    /** List of udpates currently available. */
+    bs_dllist_t               available_updates;
+    /** Pre-alloocated updates. */
+    wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+};
 
 /**
  * Creates a window for the given content.
@@ -175,6 +244,39 @@ void wlmtk_window_request_position_and_size(
  * @param serial
  */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
+
+/** State of the fake window, for tests. */
+typedef struct {
+    /** Window state. */
+    wlmtk_window_t            window;
+    /** Argument to last @ref wlmtk_window_set_activated call. */
+    bool                      activated;
+    /** Argument to last @ref wlmtk_window_set_server_side_decorated call. */
+    bool                      decorated;
+    /** Whether @ref wlmtk_window_request_move was called. */
+    bool                      request_move_called;
+    /** Whether @ref wlmtk_window_request_resize was called. */
+    bool                      request_resize_called;
+    /** Argument to last @ref wlmtk_window_request_resize call. */
+    uint32_t                  request_resize_edges;
+    /** Whether @ref wlmtk_window_request_size was called. */
+    bool                      request_size_called;
+    /** Whether @ref wlmtk_window_request_position_and_size was called. */
+    bool                      request_position_and_size_called;
+    /** Argument to last @ref wlmtk_window_request_size call. */
+    int                       x;
+    /** Argument to last @ref wlmtk_window_request_size call. */
+    int                       y;
+    /** Argument to last @ref wlmtk_window_request_size call. */
+    int                       width;
+    /** Argument to last @ref wlmtk_window_request_size call. */
+    int                       height;
+} wlmtk_fake_window_t;
+
+/** Ctor. */
+wlmtk_fake_window_t *wlmtk_fake_window_create(void);
+/** Dtor. */
+void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];

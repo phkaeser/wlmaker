@@ -20,78 +20,9 @@
 
 #include "window.h"
 
-#include "box.h"
-#include "resizebar.h"
-#include "titlebar.h"
 #include "workspace.h"
 
 /* == Declarations ========================================================= */
-
-/** Maximum number of pending state updates. */
-#define WLMTK_WINDOW_MAX_PENDING 64
-
-/** Pending positional updates. */
-typedef struct {
-    /** Node within @ref wlmtk_window_t::pending_updates. */
-    bs_dllist_node_t          dlnode;
-    /** Serial of the update. */
-    uint32_t                  serial;
-    /** Pending X position. */
-    int                       x;
-    /** Pending Y position. */
-    int                       y;
-    /** Width that is to be committed at serial. */
-    unsigned                  width;
-    /** Height that is to be committed at serial. */
-    unsigned                  height;
-} wlmtk_pending_update_t;
-
-/** Virtual method table for @ref wlmtk_window_t. */
-typedef struct {
-    /** Destructor. */
-    void (*destroy)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_set_activated. */
-    void (*set_activated)(wlmtk_window_t *window_ptr,
-                          bool activated);
-    /** See @ref wlmtk_window_set_server_side_decorated. */
-    void (*set_server_side_decorated)(wlmtk_window_t *window_ptr,
-                                      bool decorated);
-
-    /** See @ref wlmtk_window_request_move. */
-    void (*request_move)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_request_resize. */
-    void (*request_resize)(wlmtk_window_t *window_ptr,
-                           uint32_t edges);
-
-    /** See @ref wlmtk_window_request_size. */
-    void (*request_size)(wlmtk_window_t *window_ptr,
-                         int x, int y);
-    /** See @ref wlmtk_window_request_position_and_size. */
-    void (*request_position_and_size)(wlmtk_window_t *window_ptr,
-                                      int x, int y, int width, int height);
-} wlmtk_window_impl_t;
-
-/** State of the window. */
-struct _wlmtk_window_t {
-    /** Superclass: Box. */
-    wlmtk_box_t               super_box;
-    /** Virtual method table. */
-    wlmtk_window_impl_t       impl;
-
-    /** Content of this window. */
-    wlmtk_content_t           *content_ptr;
-    /** Titlebar. */
-    wlmtk_titlebar_t          *titlebar_ptr;
-    /** Resizebar. */
-    wlmtk_resizebar_t         *resizebar_ptr;
-
-    /** Pending updates. */
-    bs_dllist_t               pending_updates;
-    /** List of udpates currently available. */
-    bs_dllist_t               available_updates;
-    /** Pre-alloocated updates. */
-    wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
-};
 
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        const wlmtk_window_impl_t *impl_ptr);
@@ -112,6 +43,28 @@ static void wlmtk_window_request_size_impl(
     int width,
     int height);
 static void wlmtk_window_request_position_and_size_impl(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height);
+
+static void fake_window_destroy(wlmtk_window_t *window_ptr);
+static void fake_window_set_activated(
+    wlmtk_window_t *window_ptr,
+    bool activated);
+static void fake_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
+    bool decorated);
+static void fake_window_request_move(wlmtk_window_t *window_ptr);
+static void fake_window_request_resize(
+    wlmtk_window_t *window_ptr,
+    uint32_t edges);
+static void fake_window_request_size(
+    wlmtk_window_t *window_ptr,
+    int width,
+    int height);
+static void fake_window_request_position_and_size(
     wlmtk_window_t *window_ptr,
     int x,
     int y,
@@ -144,6 +97,17 @@ static const wlmtk_window_impl_t window_default_impl = {
     .request_resize = wlmtk_window_request_resize_impl,
     .request_size = wlmtk_window_request_size_impl,
     .request_position_and_size = wlmtk_window_request_position_and_size_impl,
+};
+
+/** Default methods of @ref wlmtk_window_t. To override for a mock. */
+static const wlmtk_window_impl_t fake_window_impl = {
+    .destroy = fake_window_destroy,
+    .set_activated = fake_window_set_activated,
+    .set_server_side_decorated = fake_window_set_server_side_decorated,
+    .request_move = fake_window_request_move,
+    .request_resize = fake_window_request_resize,
+    .request_size = fake_window_request_size,
+    .request_position_and_size = fake_window_request_position_and_size,
 };
 
 /** Style of the title bar. */
@@ -410,6 +374,28 @@ void wlmtk_window_request_position_and_size(
         window_ptr, x, y, width, height);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_fake_window_t *wlmtk_fake_window_create(void)
+{
+    wlmtk_fake_window_t *fake_window_ptr = logged_calloc(
+        1, sizeof(wlmtk_fake_window_t));
+    if (NULL == fake_window_ptr) return NULL;
+
+    if (!wlmtk_window_init(&fake_window_ptr->window, &fake_window_impl)) {
+        wlmtk_fake_window_destroy(fake_window_ptr);
+        return NULL;
+    }
+
+    return fake_window_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
+{
+    wlmtk_window_fini(&fake_window_ptr->window);
+    free(fake_window_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -580,14 +566,103 @@ void window_box_destroy(wlmtk_box_t *box_ptr)
     wlmtk_window_destroy(window_ptr);
 }
 
+/* == Virtual method implementation for the fake window ==================== */
+
+/* ------------------------------------------------------------------------- */
+/** Virtual dtor, wraps to @ref wlmtk_fake_window_destroy. */
+void fake_window_destroy(wlmtk_window_t *window_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    wlmtk_fake_window_destroy(fake_window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_set_activated. */
+void fake_window_set_activated(
+    wlmtk_window_t *window_ptr,
+    bool activated)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->activated = activated;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_set_server_side_decorated. */
+void fake_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
+    bool decorated)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->decorated = decorated;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_request_move. */
+void fake_window_request_move(wlmtk_window_t *window_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->request_move_called = true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_request_resize. */
+void fake_window_request_resize(
+    wlmtk_window_t *window_ptr,
+    uint32_t edges)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->request_resize_called = true;
+    fake_window_ptr->request_resize_edges = edges;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_request_size. */
+void fake_window_request_size(
+    wlmtk_window_t *window_ptr,
+    int width,
+    int height)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->request_size_called = true;
+    fake_window_ptr->width = width;
+    fake_window_ptr->height = height;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_request_position_and_size. */
+void fake_window_request_position_and_size(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->request_position_and_size_called = true;
+    fake_window_ptr->x = x;
+    fake_window_ptr->y = y;
+    fake_window_ptr->width = width;
+    fake_window_ptr->height = height;
+}
+
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
+static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "set_activated", test_set_activated },
+    { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
 
@@ -620,6 +695,15 @@ void test_set_activated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fake_content_ptr->activated);
 
     wlmtk_window_destroy(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests fake window ctor and dtor. */
+void test_fake(bs_test_t *test_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_window_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of window.c ====================================================== */
