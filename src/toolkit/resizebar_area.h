@@ -41,16 +41,12 @@ struct wlr_xcursor_manager;
 /**
  * Creates a resizebar button.
  *
- * @param wlr_cursor_ptr
- * @param wlr_xcursor_manager_ptr
  * @param window_ptr
  * @param edges
  *
  * @return Pointer to the resizebar button.
  */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
     wlmtk_window_t *window_ptr,
     uint32_t edges);
 
@@ -61,6 +57,20 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
  */
 void wlmtk_resizebar_area_destroy(
     wlmtk_resizebar_area_t *resizebar_area_ptr);
+
+/**
+ * Sets cursor pointers.
+ *
+ * TODO(kaeser@gubbe.ch): Abstract this away.
+ *
+ * @param resizebar_area_ptr
+ * @param wlr_cursor_ptr
+ * @param wlr_xcursor_manager_ptr
+ */
+void wlmtk_resizebar_area_set_cursor(
+    wlmtk_resizebar_area_t *resizebar_area_ptr,
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr);
 
 /**
  * Redraws the element, with updated position and width.

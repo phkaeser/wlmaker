@@ -91,16 +91,12 @@ static const wlmtk_buffer_impl_t area_buffer_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
     wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
-    resizebar_area_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
-    resizebar_area_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
     resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
@@ -141,6 +137,16 @@ void wlmtk_resizebar_area_destroy(
 
     wlmtk_buffer_fini(&resizebar_area_ptr->super_buffer);
     free(resizebar_area_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_resizebar_area_set_cursor(
+    wlmtk_resizebar_area_t *resizebar_area_ptr,
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr)
+{
+    resizebar_area_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
+    resizebar_area_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -321,7 +327,7 @@ const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
 void test_area(bs_test_t *test_ptr)
 {
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        NULL, NULL, NULL, WLR_EDGE_BOTTOM);
+        NULL, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
 

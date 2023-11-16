@@ -48,6 +48,8 @@ typedef struct {
 
 /** Virtual method table for @ref wlmtk_window_t. */
 typedef struct {
+    /** Destructor. */
+    void (*destroy)(wlmtk_window_t *window_ptr);
     /** See @ref wlmtk_window_set_activated. */
     void (*set_activated)(wlmtk_window_t *window_ptr,
                           bool activated);
@@ -91,6 +93,10 @@ struct _wlmtk_window_t {
     wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
 };
 
+bool wlmtk_window_init(wlmtk_window_t *window_ptr,
+                       const wlmtk_window_impl_t *impl_ptr);
+void wlmtk_window_fini(wlmtk_window_t *window_ptr);
+
 static void wlmtk_window_set_activated_impl(
     wlmtk_window_t *window_ptr,
     bool activated);
@@ -131,6 +137,7 @@ static const wlmtk_box_impl_t window_box_impl = {
 
 /** Default methods of @ref wlmtk_window_t. To override for a mock. */
 static const wlmtk_window_impl_t window_default_impl = {
+    .destroy = wlmtk_window_destroy,
     .set_activated = wlmtk_window_set_activated_impl,
     .set_server_side_decorated = wlmtk_window_set_server_side_decorated_impl,
     .request_move = wlmtk_window_request_move_impl,
@@ -171,42 +178,57 @@ static const wlmtk_resizebar_style_t resizebar_style = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window_t *wlmtk_window_create(
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
-    wlmtk_content_t *content_ptr)
+/**
+ * Initializes the window.
+ *
+ * @param window_ptr
+ * @param impl_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_window_init(wlmtk_window_t *window_ptr,
+                       const wlmtk_window_impl_t *impl_ptr)
 {
-    wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
-    if (NULL == window_ptr) return NULL;
+    BS_ASSERT(NULL != window_ptr);
+    BS_ASSERT(NULL != impl_ptr);
+    BS_ASSERT(NULL != impl_ptr->destroy);
+    BS_ASSERT(NULL != impl_ptr->set_activated);
+    BS_ASSERT(NULL != impl_ptr->set_server_side_decorated);
+    BS_ASSERT(NULL != impl_ptr->request_move);
+    BS_ASSERT(NULL != impl_ptr->request_resize);
+    BS_ASSERT(NULL != impl_ptr->request_size);
+    BS_ASSERT(NULL != impl_ptr->request_position_and_size);
+    memcpy(&window_ptr->impl, impl_ptr, sizeof(wlmtk_window_impl_t));
+
     for (size_t i = 0; i < WLMTK_WINDOW_MAX_PENDING; ++i) {
         bs_dllist_push_back(&window_ptr->available_updates,
                             &window_ptr->pre_allocated_updates[i].dlnode);
     }
-    memcpy(&window_ptr->impl,
-           &window_default_impl,
-           sizeof(wlmtk_window_impl_t));
 
     if (!wlmtk_box_init(&window_ptr->super_box,
                         &window_box_impl,
                         WLMTK_BOX_VERTICAL)) {
-        wlmtk_window_destroy(window_ptr);
-        return NULL;
+        wlmtk_window_fini(window_ptr);
+        return false;
     }
 
+    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+        window_ptr, 0  /* FIXME: width */, &resizebar_style);
+    if (NULL == window_ptr->resizebar_ptr) {
+        wlmtk_window_fini(window_ptr);
+        return false;
+    }
     wlmtk_container_add_element(
         &window_ptr->super_box.super_container,
-        wlmtk_content_element(content_ptr));
-    window_ptr->content_ptr = content_ptr;
-    wlmtk_content_set_window(content_ptr, window_ptr);
-    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
 
-    int width;
-    wlmtk_content_get_size(content_ptr, &width, NULL);
     window_ptr->titlebar_ptr = wlmtk_titlebar_create(
-        width, &titlebar_style);
+        0  /* FIXME: width */, &titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
-        wlmtk_window_destroy(window_ptr);
-        return NULL;
+        wlmtk_window_fini(window_ptr);
+        return false;
     }
     wlmtk_container_add_element(
         &window_ptr->super_box.super_container,
@@ -214,34 +236,17 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
-    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-        wlr_cursor_ptr, wlr_xcursor_manager_ptr,
-        window_ptr, width, &resizebar_style);
-    if (NULL == window_ptr->resizebar_ptr) {
-        wlmtk_window_destroy(window_ptr);
-        return NULL;
-    }
-    wlmtk_container_add_element_before(
-        &window_ptr->super_box.super_container,
-        NULL,
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
-
-    return window_ptr;
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
+/**
+ * Uninitializes the winodw.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
-    if (NULL != window_ptr->resizebar_ptr) {
-        wlmtk_container_remove_element(
-            &window_ptr->super_box.super_container,
-            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
-        window_ptr->resizebar_ptr = NULL;
-    }
-
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_container_remove_element(
             &window_ptr->super_box.super_container,
@@ -250,6 +255,50 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
         window_ptr->titlebar_ptr = NULL;
     }
 
+    if (NULL != window_ptr->resizebar_ptr) {
+        wlmtk_container_remove_element(
+            &window_ptr->super_box.super_container,
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
+        window_ptr->resizebar_ptr = NULL;
+    }
+
+    wlmtk_box_fini(&window_ptr->super_box);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_window_t *wlmtk_window_create(
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
+    wlmtk_content_t *content_ptr)
+{
+    wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
+    if (NULL == window_ptr) return NULL;
+
+    if (!wlmtk_window_init(window_ptr, &window_default_impl)) {
+        wlmtk_window_destroy(window_ptr);
+        return NULL;
+    }
+
+    wlmtk_resizebar_set_cursor(
+        window_ptr->resizebar_ptr,
+        wlr_cursor_ptr,
+        wlr_xcursor_manager_ptr);
+
+    wlmtk_container_add_element_before(
+        &window_ptr->super_box.super_container,
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr),
+        wlmtk_content_element(content_ptr));
+    window_ptr->content_ptr = content_ptr;
+    wlmtk_content_set_window(content_ptr, window_ptr);
+    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
+
+    return window_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
+{
     wlmtk_container_remove_element(
         &window_ptr->super_box.super_container,
         wlmtk_content_element(window_ptr->content_ptr));
@@ -262,7 +311,7 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
         window_ptr->content_ptr = NULL;
     }
 
-    wlmtk_box_fini(&window_ptr->super_box);
+    wlmtk_window_fini(window_ptr);
     free(window_ptr);
 }
 
