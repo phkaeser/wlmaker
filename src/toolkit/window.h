@@ -71,6 +71,18 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
 /**
+ * Obtains the size of the window, including potential decorations.
+ *
+ * @param window_ptr
+ * @param width_ptr           May be NULL.
+ * @param height_ptr          May be NULL.
+ */
+void wlmtk_window_get_size(
+    wlmtk_window_t *window_ptr,
+    int *width_ptr,
+    int *height_ptr);
+
+/**
  * Sets the window as activated, depending on the argument's value.
  *
  * An activated window will have keyboard focus and would have distinct
@@ -94,16 +106,26 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated);
 
 /**
- * Obtains the size of the window, including potential decorations.
+ * Requests a move for the window.
+ *
+ * Requires the window to be mapped (to a workspace), and forwards the call to
+ * @ref wlmtk_workspace_begin_window_move.
  *
  * @param window_ptr
- * @param width_ptr           May be NULL.
- * @param height_ptr          May be NULL.
  */
-void wlmtk_window_get_size(
-    wlmtk_window_t *window_ptr,
-    int *width_ptr,
-    int *height_ptr);
+void wlmtk_window_request_move(wlmtk_window_t *window_ptr);
+
+/**
+ * Requests the window to be resized.
+ *
+ * Requires the window to be mapped (to a workspace), and forwards the call to
+ * @ref wlmtk_workspace_begin_window_resize.
+ *
+ * @param window_ptr
+ * @param edges
+ */
+void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
+                                 uint32_t edges);
 
 /**
  * Requests a new size for the window, including potential decorations.
@@ -138,27 +160,6 @@ void wlmtk_window_request_position_and_size(
     int y,
     int width,
     int height);
-
-/**
- * Requests a move for the window.
- *
- * Requires the window to be mapped (to a workspace), and forwards the call to
- * @ref wlmtk_workspace_begin_window_move.
- *
- * @param window_ptr
- */
-void wlmtk_window_request_move(wlmtk_window_t *window_ptr);
-
-/**
- * Requests the window to be resized.
- *
- * Requires the window to be mapped (to a workspace), and forwards the call to
- * @ref wlmtk_workspace_begin_window_resize.
- *
- * @param window_ptr
- * @param edges
- */
-void wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges);
 
 /**
  * Updates the window state to what was requested at the `serial`.
