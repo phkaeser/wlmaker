@@ -98,6 +98,7 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
+    BS_ASSERT(NULL != window_ptr);
     resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
@@ -235,11 +236,9 @@ bool buffer_pointer_button(
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
 
-        if (NULL != resizebar_area_ptr->window_ptr) {
-            wlmtk_window_request_resize(
-                resizebar_area_ptr->window_ptr,
-                resizebar_area_ptr->edges);
-        }
+        wlmtk_window_request_resize(
+            resizebar_area_ptr->window_ptr,
+            resizebar_area_ptr->edges);
         draw_state(resizebar_area_ptr);
         break;
 
@@ -370,7 +369,6 @@ void test_area(bs_test_t *test_ptr)
         test_ptr,
         WLR_EDGE_BOTTOM,
         fake_window_ptr->request_resize_edges);
-
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
