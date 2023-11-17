@@ -563,7 +563,7 @@ void window_box_destroy(wlmtk_box_t *box_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         box_ptr, wlmtk_window_t, super_box);
-    wlmtk_window_destroy(window_ptr);
+    window_ptr->impl.destroy(window_ptr);
 }
 
 /* == Virtual method implementation for the fake window ==================== */
