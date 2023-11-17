@@ -188,7 +188,8 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
 
-    window_ptr->titlebar_ptr = wlmtk_titlebar_create(&titlebar_style);
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create(
+        window_ptr, &titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
         wlmtk_window_fini(window_ptr);
         return false;

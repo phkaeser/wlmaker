@@ -27,6 +27,7 @@
 #include "primitives.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
+#include "window.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
@@ -77,6 +78,7 @@ static const wlmtk_box_impl_t titlebar_box_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
+    wlmtk_window_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
@@ -91,7 +93,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         return NULL;
     }
 
-    titlebar_ptr->title_ptr = wlmtk_titlebar_title_create();
+    titlebar_ptr->title_ptr = wlmtk_titlebar_title_create(window_ptr);
     if (NULL == titlebar_ptr->title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
@@ -322,19 +324,24 @@ const bs_test_case_t wlmtk_titlebar_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_style_t style = {};
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(&style);
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
+        &fake_window_ptr->window, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests titlebar with variable width. */
 void test_variable_width(bs_test_t *test_ptr)
 {
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_style_t style = { .height = 22 };
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(&style);
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
+        &fake_window_ptr->window, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.
@@ -380,6 +387,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 66, width);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of titlebar.c ==================================================== */

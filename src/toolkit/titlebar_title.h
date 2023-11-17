@@ -35,9 +35,12 @@ extern "C" {
 /**
  * Creates a title bar title.
  *
+ * @param window_ptr
+ *
  * @return Title handle.
  */
-wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(void);
+wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the titlebar title.

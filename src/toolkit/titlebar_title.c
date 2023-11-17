@@ -23,6 +23,7 @@
 #include "buffer.h"
 #include "gfxbuf.h"
 #include "primitives.h"
+#include "window.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
@@ -34,6 +35,8 @@
 struct _wlmtk_titlebar_title_t {
     /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
+    /** Pointer to the window the title element belongs to. */
+    wlmtk_window_t            *window_ptr;
 
     /** The drawn title, when focussed. */
     struct wlr_buffer         *focussed_wlr_buffer_ptr;
@@ -42,6 +45,9 @@ struct _wlmtk_titlebar_title_t {
 };
 
 static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
+static bool title_buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
 static void title_set_activated(
     wlmtk_titlebar_title_t *titlebar_title_ptr,
     bool activated);
@@ -56,17 +62,20 @@ struct wlr_buffer *title_create_buffer(
 
 /** Buffer implementation for title of the title bar. */
 static const wlmtk_buffer_impl_t title_buffer_impl = {
-    .destroy = title_buffer_destroy
+    .destroy = title_buffer_destroy,
+    .pointer_button = title_buffer_pointer_button,
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(void)
+wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
+    wlmtk_window_t *window_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_title_t));
     if (NULL == titlebar_title_ptr) return NULL;
+    titlebar_title_ptr->window_ptr = window_ptr;
 
     if (!wlmtk_buffer_init(
             &titlebar_title_ptr->super_buffer,
@@ -150,6 +159,30 @@ void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
         buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
     wlmtk_titlebar_title_destroy(titlebar_title_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** See @ref wlmtk_buffer_impl_t::pointer_button. */
+bool title_buffer_pointer_button(
+    wlmtk_buffer_t *buffer_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
+        buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
+
+    if (button_event_ptr->button != BTN_LEFT) return false;
+
+    switch (button_event_ptr->type) {
+    case WLMTK_BUTTON_DOWN:
+        bs_log(BS_INFO, "FIXME: %p", titlebar_title_ptr);
+        break;
+
+    default:  // Can be ignored.
+        break;
+    }
+
+    return true;
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -237,7 +270,9 @@ void test_title(bs_test_t *test_ptr)
     bs_gfxbuf_clear(focussed_gfxbuf_ptr, 0xff2020c0);
     bs_gfxbuf_clear(blurred_gfxbuf_ptr, 0xff404040);
 
-    wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create();
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
+        &fake_window_ptr->window);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -278,6 +313,7 @@ void test_title(bs_test_t *test_ptr)
         "toolkit/title_blurred_short.png");
 
     wlmtk_element_destroy(wlmtk_titlebar_title_element(titlebar_title_ptr));
+    wlmtk_fake_window_destroy(fake_window_ptr);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
 }
