@@ -24,6 +24,7 @@
 #include "buffer.h"
 #include "gfxbuf.h"
 #include "primitives.h"
+#include "window.h"
 
 #include <libbase/libbase.h>
 
@@ -326,8 +327,10 @@ const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
 /** Tests the area behaviour. */
 void test_area(bs_test_t *test_ptr)
 {
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        NULL, WLR_EDGE_BOTTOM);
+        &fake_window_ptr->window, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
 
@@ -343,6 +346,7 @@ void test_area(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/resizebar_area_released.png");
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_resize_called);
 
     // Pointer must be inside the button for accepting DOWN.
     BS_TEST_VERIFY_TRUE(
@@ -360,10 +364,16 @@ void test_area(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/resizebar_area_pressed.png");
 
-    // TODO(kaeser@gubbe.ch): Should verify call to wlmtk_window_request_resize
-    // and for setting the cursor.
+    // TODO(kaeser@gubbe.ch): Should verify setting the cursor.
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_resize_called);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_EDGE_BOTTOM,
+        fake_window_ptr->request_resize_edges);
+
 
     wlmtk_element_destroy(element_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of resizebar_area.c ============================================== */
