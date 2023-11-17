@@ -174,7 +174,7 @@ bool title_buffer_pointer_button(
 
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
-        bs_log(BS_INFO, "FIXME: %p", titlebar_title_ptr);
+        wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
         break;
 
     default:  // Can be ignored.
@@ -273,6 +273,8 @@ void test_title(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
         &fake_window_ptr->window);
+    wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
+        titlebar_title_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -312,7 +314,17 @@ void test_title(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_blurred_short.png");
 
-    wlmtk_element_destroy(wlmtk_titlebar_title_element(titlebar_title_ptr));
+    // Pressing a button should trigger a move.
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_move_called);
+    wlmtk_button_event_t button = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
+    };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_move_called);
+
+    wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
