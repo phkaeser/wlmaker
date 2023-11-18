@@ -70,6 +70,8 @@ typedef struct {
 
     /** See @ref wlmtk_window_request_close. */
     void (*request_close)(wlmtk_window_t *window_ptr);
+    /** See @ref wlmtk_window_request_minimize. */
+    void (*request_minimize)(wlmtk_window_t *window_ptr);
     /** See @ref wlmtk_window_request_move. */
     void (*request_move)(wlmtk_window_t *window_ptr);
     /** See @ref wlmtk_window_request_resize. */
@@ -184,6 +186,13 @@ void wlmtk_window_set_server_side_decorated(
 void wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 
 /**
+ * Requests to minimize (iconify) the window.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
+
+/**
  * Requests a move for the window.
  *
  * Requires the window to be mapped (to a workspace), and forwards the call to
@@ -264,7 +273,9 @@ typedef struct {
     bool                      decorated;
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
-    /** Whether @ref wlmtk_window_request_move was called. */
+    /** Whether @ref wlmtk_window_request_minimize was called. */
+    bool                      request_minimize_called;
+   /** Whether @ref wlmtk_window_request_move was called. */
     bool                      request_move_called;
     /** Whether @ref wlmtk_window_request_resize was called. */
     bool                      request_resize_called;

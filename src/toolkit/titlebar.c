@@ -103,7 +103,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
-        wlmtk_window_request_close,
+        wlmtk_window_request_minimize,
         window_ptr,
         wlmaker_primitives_draw_minimize_icon);
     if (NULL == titlebar_ptr->minimize_button_ptr) {
