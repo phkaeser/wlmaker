@@ -67,6 +67,8 @@ typedef struct {
     /** See @ref wlmtk_window_set_server_side_decorated. */
     void (*set_server_side_decorated)(wlmtk_window_t *window_ptr,
                                       bool decorated);
+    /** See @ref wlmtk_window_set_title. */
+    void (*set_title)(wlmtk_window_t *window_ptr, const char *title_ptr);
 
     /** See @ref wlmtk_window_request_close. */
     void (*request_close)(wlmtk_window_t *window_ptr);
@@ -179,6 +181,16 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated);
 
 /**
+ * Sets the title for the window.
+ *
+ * @param window_ptr
+ * @param title_ptr           May be NULL.
+ */
+void wlmtk_window_set_title(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr);
+
+/**
  * Requests to close the window.
  *
  * @param window_ptr
@@ -271,6 +283,8 @@ typedef struct {
     bool                      activated;
     /** Argument to last @ref wlmtk_window_set_server_side_decorated call. */
     bool                      decorated;
+    /** Argument to last call of @ref wlmtk_window_set_title. */
+    const char                *title_ptr;
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */

@@ -46,6 +46,8 @@ typedef struct {
     struct wl_listener        toplevel_request_move_listener;
     /** Listener for `request_resize` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_resize_listener;
+    /** Listener for the `set_title` signal of the `wlr_xdg_toplevel`. */
+    struct wl_listener        toplevel_set_title_listener;
 } wlmtk_xdg_toplevel_content_t;
 
 static wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
@@ -68,6 +70,9 @@ static void handle_toplevel_request_move(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_toplevel_request_resize(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_toplevel_set_title(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -161,6 +166,10 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &wlr_xdg_surface_ptr->toplevel->events.request_resize,
         &xdg_tl_content_ptr->toplevel_request_resize_listener,
         handle_toplevel_request_resize);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->toplevel->events.set_title,
+        &xdg_tl_content_ptr->toplevel_set_title_listener,
+        handle_toplevel_set_title);
 
     xdg_tl_content_ptr->wlr_xdg_surface_ptr->data =
         &xdg_tl_content_ptr->super_content;
@@ -176,6 +185,8 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
 void xdg_toplevel_content_destroy(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr)
 {
+    wl_list_remove(
+        &xdg_tl_content_ptr->toplevel_set_title_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_resize_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_move_listener.link);
 
@@ -394,7 +405,7 @@ void handle_toplevel_request_move(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for the `requestp_resize` signal.
+ * Handler for the `request_resize` signal.
  *
  * @param listener_ptr
  * @param data_ptr            Points to a struct wlr_xdg_toplevel_resize_event.
@@ -411,6 +422,27 @@ void handle_toplevel_request_resize(
     wlmtk_window_request_resize(
         xdg_tl_content_ptr->super_content.window_ptr,
         resize_event_ptr->edges);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_title` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_toplevel_set_title(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmtk_xdg_toplevel_content_t,
+        toplevel_set_title_listener);
+
+    wlmtk_window_set_title(
+        xdg_tl_content_ptr->super_content.window_ptr,
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->title);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

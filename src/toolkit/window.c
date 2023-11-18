@@ -31,6 +31,9 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr);
 static void wlmtk_window_set_activated_impl(
     wlmtk_window_t *window_ptr,
     bool activated);
+static void wlmtk_window_set_title_impl(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr);
 static void wlmtk_window_set_server_side_decorated_impl(
     wlmtk_window_t *window_ptr,
     bool decorated);
@@ -55,6 +58,9 @@ static void fake_window_destroy(wlmtk_window_t *window_ptr);
 static void fake_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated);
+static void fake_window_set_title(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr);
 static void fake_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated);
@@ -96,6 +102,7 @@ static const wlmtk_box_impl_t window_box_impl = {
 static const wlmtk_window_impl_t window_default_impl = {
     .destroy = wlmtk_window_destroy,
     .set_activated = wlmtk_window_set_activated_impl,
+    .set_title = wlmtk_window_set_title_impl,
     .set_server_side_decorated = wlmtk_window_set_server_side_decorated_impl,
     .request_close = wlmtk_window_request_close_impl,
     .request_minimize = wlmtk_window_request_minimize_impl,
@@ -109,6 +116,7 @@ static const wlmtk_window_impl_t window_default_impl = {
 static const wlmtk_window_impl_t fake_window_impl = {
     .destroy = fake_window_destroy,
     .set_activated = fake_window_set_activated,
+    .set_title = fake_window_set_title,
     .set_server_side_decorated = fake_window_set_server_side_decorated,
     .request_close = fake_window_request_close,
     .request_minimize = fake_window_request_minimize,
@@ -165,6 +173,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     BS_ASSERT(NULL != impl_ptr);
     BS_ASSERT(NULL != impl_ptr->destroy);
     BS_ASSERT(NULL != impl_ptr->set_activated);
+    BS_ASSERT(NULL != impl_ptr->set_title);
     BS_ASSERT(NULL != impl_ptr->set_server_side_decorated);
     BS_ASSERT(NULL != impl_ptr->request_close);
     BS_ASSERT(NULL != impl_ptr->request_minimize);
@@ -344,6 +353,14 @@ void wlmtk_window_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_set_title(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr)
+{
+    window_ptr->impl.set_title(window_ptr, title_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated)
@@ -431,6 +448,17 @@ void wlmtk_window_set_activated_impl(
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Sets the window title: Passes it on to the titlebar. */
+void wlmtk_window_set_title_impl(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr)
+{
+    // FIXME
+    window_ptr = window_ptr;
+    title_ptr = title_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -626,6 +654,17 @@ void fake_window_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_set_title. */
+void fake_window_set_title(
+    wlmtk_window_t *window_ptr,
+    const char *title_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->title_ptr = title_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_set_server_side_decorated. */
 void fake_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
@@ -711,12 +750,14 @@ void fake_window_request_position_and_size(
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_set_title(bs_test_t *test_ptr);
 static void test_request_close(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "set_title", test_set_title },
     { 1, "request_close", test_request_close },
     { 1, "set_activated", test_set_activated },
     { 1, "fake", test_fake },
@@ -733,6 +774,23 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
                       fake_content_ptr->content.window_ptr);
+
+    wlmtk_window_destroy(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests title. */
+void test_set_title(bs_test_t *test_ptr)
+{
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        NULL, NULL, &fake_content_ptr->content);
+
+    wlmtk_window_set_title(window_ptr, "Title");
+    // FIXME
+    test_ptr = test_ptr;
+    wlmtk_window_set_title(window_ptr, NULL);
+    // FIXME
 
     wlmtk_window_destroy(window_ptr);
 }
