@@ -55,7 +55,9 @@ struct _wlmtk_titlebar_t {
 
     /** Current width of the title bar. */
     unsigned                  width;
+    /** Position of the close button. */
     int                       close_position;
+    /** Position of the title element. */
     int                       title_position;
     /** Whether the title bar is currently displayed as activated. */
     bool                      activated;
