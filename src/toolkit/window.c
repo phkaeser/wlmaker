@@ -456,9 +456,9 @@ void wlmtk_window_set_title_impl(
     wlmtk_window_t *window_ptr,
     const char *title_ptr)
 {
-    // FIXME
-    window_ptr = window_ptr;
-    title_ptr = title_ptr;
+    if (NULL != window_ptr->titlebar_ptr) {
+        wlmtk_titlebar_set_title(window_ptr->titlebar_ptr, title_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -787,10 +787,16 @@ void test_set_title(bs_test_t *test_ptr)
         NULL, NULL, &fake_content_ptr->content);
 
     wlmtk_window_set_title(window_ptr, "Title");
-    // FIXME
-    test_ptr = test_ptr;
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "Title",
+        wlmtk_titlebar_get_title(window_ptr->titlebar_ptr));
+
     wlmtk_window_set_title(window_ptr, NULL);
-    // FIXME
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_titlebar_get_title(window_ptr->titlebar_ptr));
 
     wlmtk_window_destroy(window_ptr);
 }

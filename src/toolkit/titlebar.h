@@ -81,6 +81,26 @@ bool wlmtk_titlebar_set_width(
     unsigned width);
 
 /**
+ * Sets the title for the titlebar.
+ *
+ * @param titlebar_ptr
+ * @param title_ptr
+ */
+void wlmtk_titlebar_set_title(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const char *title_ptr);
+
+/**
+ * Returns the title of of the titlebar.
+ *
+ * @param titlebar_ptr
+ *
+ * @return Pointer to the title.
+ */
+const char *wlmtk_titlebar_get_title(
+    wlmtk_titlebar_t *titlebar_ptr);
+
+/**
  * Sets whether the title bar is activated.
  *
  * @param titlebar_ptr

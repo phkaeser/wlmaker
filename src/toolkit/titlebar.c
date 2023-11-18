@@ -41,7 +41,7 @@ struct _wlmtk_titlebar_t {
     wlmtk_box_t               super_box;
 
     /** Title element of the title bar. */
-    wlmtk_titlebar_title_t    *title_ptr;
+    wlmtk_titlebar_title_t    *titlebar_title_ptr;
 
     /** Minimize button. */
     wlmtk_titlebar_button_t  *minimize_button_ptr;
@@ -57,6 +57,9 @@ struct _wlmtk_titlebar_t {
     unsigned                  width;
     /** Whether the title bar is currently displayed as activated. */
     bool                      activated;
+
+    /** Points to the title of the bar. May be NULL. */
+    char                      *title_ptr;
 
     /** Title bar style. */
     wlmtk_titlebar_style_t    style;
@@ -93,14 +96,14 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         return NULL;
     }
 
-    titlebar_ptr->title_ptr = wlmtk_titlebar_title_create(window_ptr);
-    if (NULL == titlebar_ptr->title_ptr) {
+    titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(window_ptr);
+    if (NULL == titlebar_ptr->titlebar_title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
     wlmtk_container_add_element(
         &titlebar_ptr->super_box.super_container,
-        wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
+        wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
         wlmtk_window_request_minimize,
@@ -148,12 +151,12 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
         titlebar_ptr->minimize_button_ptr = NULL;
     }
 
-    if (NULL != titlebar_ptr->title_ptr) {
+    if (NULL != titlebar_ptr->titlebar_title_ptr) {
         wlmtk_container_remove_element(
             &titlebar_ptr->super_box.super_container,
-            wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
-        wlmtk_titlebar_title_destroy(titlebar_ptr->title_ptr);
-        titlebar_ptr->title_ptr = NULL;
+            wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
+        wlmtk_titlebar_title_destroy(titlebar_ptr->titlebar_title_ptr);
+        titlebar_ptr->titlebar_title_ptr = NULL;
     }
 
     if (NULL != titlebar_ptr->blurred_gfxbuf_ptr) {
@@ -163,6 +166,11 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
     if (NULL != titlebar_ptr->focussed_gfxbuf_ptr) {
         bs_gfxbuf_destroy(titlebar_ptr->focussed_gfxbuf_ptr);
         titlebar_ptr->focussed_gfxbuf_ptr = NULL;
+    }
+
+    if (NULL != titlebar_ptr->title_ptr) {
+        free(titlebar_ptr->title_ptr);
+        titlebar_ptr->title_ptr = NULL;
     }
 
     wlmtk_box_fini(&titlebar_ptr->super_box);
@@ -189,7 +197,7 @@ bool wlmtk_titlebar_set_width(
     }
 
     if (!wlmtk_titlebar_title_redraw(
-            titlebar_ptr->title_ptr,
+            titlebar_ptr->titlebar_title_ptr,
             titlebar_ptr->focussed_gfxbuf_ptr,
             titlebar_ptr->blurred_gfxbuf_ptr,
             title_position,
@@ -199,7 +207,7 @@ bool wlmtk_titlebar_set_width(
         return false;
     }
     wlmtk_element_set_visible(
-        wlmtk_titlebar_title_element(titlebar_ptr->title_ptr), true);
+        wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr), true);
 
     if (0 < title_position) {
         if (!wlmtk_titlebar_button_redraw(
@@ -243,6 +251,32 @@ bool wlmtk_titlebar_set_width(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_titlebar_set_title(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const char *title_ptr)
+{
+    if (NULL != titlebar_ptr->title_ptr) {
+        free(titlebar_ptr->title_ptr);
+        titlebar_ptr->title_ptr = NULL;
+    }
+
+    if (NULL != title_ptr) {
+        titlebar_ptr->title_ptr = logged_strdup(title_ptr);
+        // That will be an error, but... well.
+        if (NULL != titlebar_ptr->title_ptr) return;
+    }
+
+    // FIXME: Redraw.
+}
+
+/* ------------------------------------------------------------------------- */
+const char *wlmtk_titlebar_get_title(
+    wlmtk_titlebar_t *titlebar_ptr)
+{
+    return titlebar_ptr->title_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_titlebar_set_activated(
     wlmtk_titlebar_t *titlebar_ptr,
     bool activated)
@@ -250,7 +284,7 @@ void wlmtk_titlebar_set_activated(
     if (titlebar_ptr->activated == activated) return;
     titlebar_ptr->activated = activated;
     wlmtk_titlebar_title_set_activated(
-        titlebar_ptr->title_ptr, titlebar_ptr->activated);
+        titlebar_ptr->titlebar_title_ptr, titlebar_ptr->activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -350,7 +384,7 @@ void test_variable_width(bs_test_t *test_ptr)
 
     // Short names, for improved readability.
     wlmtk_element_t *title_elem_ptr = wlmtk_titlebar_title_element(
-        titlebar_ptr->title_ptr);
+        titlebar_ptr->titlebar_title_ptr);
     wlmtk_element_t *minimize_elem_ptr = wlmtk_titlebar_button_element(
         titlebar_ptr->minimize_button_ptr);
     wlmtk_element_t *close_elem_ptr = wlmtk_titlebar_button_element(
