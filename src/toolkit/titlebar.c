@@ -103,6 +103,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_title_element(titlebar_ptr->title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
+        window_ptr,
         wlmaker_primitives_draw_minimize_icon);
     if (NULL == titlebar_ptr->minimize_button_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
@@ -113,6 +114,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
     titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
+        window_ptr,
         wlmaker_primitives_draw_close_icon);
     if (NULL == titlebar_ptr->close_button_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);

@@ -35,6 +35,8 @@ struct _wlmtk_titlebar_button_t {
     /** Superclass: Button. */
     wlmtk_button_t            super_button;
 
+    /** Points to the @ref wlmtk_window_t that carries this titlebar. */
+    wlmtk_window_t            *window_ptr;
     /** For drawing the button contents. */
     wlmtk_titlebar_button_draw_t draw;
 
@@ -65,11 +67,13 @@ static const wlmtk_button_impl_t titlebar_button_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
+    wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_button_t));
     if (NULL == titlebar_button_ptr) return NULL;
+    titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
     if (!wlmtk_button_init(
@@ -212,7 +216,9 @@ const bs_test_case_t wlmtk_titlebar_button_test_cases[] = {
 /** Tests button visualization. */
 void test_button(bs_test_t *test_ptr)
 {
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
+        &fake_window_ptr->window,
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
 
@@ -267,6 +273,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_focussed_released.png");
 
     wlmtk_element_destroy(element_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of titlebar_button.c ============================================= */

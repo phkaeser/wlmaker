@@ -34,6 +34,7 @@ static void wlmtk_window_set_activated_impl(
 static void wlmtk_window_set_server_side_decorated_impl(
     wlmtk_window_t *window_ptr,
     bool decorated);
+static void wlmtk_window_request_close_impl(wlmtk_window_t *window_ptr);
 static void wlmtk_window_request_move_impl(wlmtk_window_t *window_ptr);
 static void wlmtk_window_request_resize_impl(
     wlmtk_window_t *window_ptr,
@@ -56,6 +57,7 @@ static void fake_window_set_activated(
 static void fake_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated);
+static void fake_window_request_close(wlmtk_window_t *window_ptr);
 static void fake_window_request_move(wlmtk_window_t *window_ptr);
 static void fake_window_request_resize(
     wlmtk_window_t *window_ptr,
@@ -93,6 +95,7 @@ static const wlmtk_window_impl_t window_default_impl = {
     .destroy = wlmtk_window_destroy,
     .set_activated = wlmtk_window_set_activated_impl,
     .set_server_side_decorated = wlmtk_window_set_server_side_decorated_impl,
+    .request_close = wlmtk_window_request_close_impl,
     .request_move = wlmtk_window_request_move_impl,
     .request_resize = wlmtk_window_request_resize_impl,
     .request_size = wlmtk_window_request_size_impl,
@@ -104,6 +107,7 @@ static const wlmtk_window_impl_t fake_window_impl = {
     .destroy = fake_window_destroy,
     .set_activated = fake_window_set_activated,
     .set_server_side_decorated = fake_window_set_server_side_decorated,
+    .request_close = fake_window_request_close,
     .request_move = fake_window_request_move,
     .request_resize = fake_window_request_resize,
     .request_size = fake_window_request_size,
@@ -158,6 +162,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     BS_ASSERT(NULL != impl_ptr->destroy);
     BS_ASSERT(NULL != impl_ptr->set_activated);
     BS_ASSERT(NULL != impl_ptr->set_server_side_decorated);
+    BS_ASSERT(NULL != impl_ptr->request_close);
     BS_ASSERT(NULL != impl_ptr->request_move);
     BS_ASSERT(NULL != impl_ptr->request_resize);
     BS_ASSERT(NULL != impl_ptr->request_size);
@@ -342,6 +347,12 @@ void wlmtk_window_set_server_side_decorated(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_request_close(wlmtk_window_t *window_ptr)
+{
+    window_ptr->impl.request_close(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
     window_ptr->impl.request_move(window_ptr);
@@ -420,6 +431,13 @@ void wlmtk_window_set_server_side_decorated_impl(
     // TODO(kaeser@gubbe.ch): Implement.
     bs_log(BS_INFO, "Set server side decoration for window %p: %d",
            window_ptr, decorated);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Default implementation of @ref wlmtk_window_request_close. */
+void wlmtk_window_request_close_impl(wlmtk_window_t *window_ptr)
+{
+    bs_log(BS_INFO, "Requesting window %p to close.", window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -598,6 +616,15 @@ void fake_window_set_server_side_decorated(
     wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
         window_ptr, wlmtk_fake_window_t, window);
     fake_window_ptr->decorated = decorated;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake implementation of @ref wlmtk_window_request_close. */
+void fake_window_request_close(wlmtk_window_t *window_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_t, window);
+    fake_window_ptr->request_close_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
