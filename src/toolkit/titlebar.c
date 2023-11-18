@@ -55,6 +55,8 @@ struct _wlmtk_titlebar_t {
 
     /** Current width of the title bar. */
     unsigned                  width;
+    int                       close_position;
+    int                       title_position;
     /** Whether the title bar is currently displayed as activated. */
     bool                      activated;
 
@@ -187,21 +189,21 @@ bool wlmtk_titlebar_set_width(
     if (!redraw_buffers(titlebar_ptr, width)) return false;
     BS_ASSERT(width == titlebar_ptr->width);
 
-    int close_position = width;
+    titlebar_ptr->close_position = width;
     if (3 * titlebar_ptr->style.height < width) {
-        close_position = width - titlebar_ptr->style.height;
+        titlebar_ptr->close_position = width - titlebar_ptr->style.height;
     }
-    int title_position = 0;
+    titlebar_ptr->title_position = 0;
     if (4 * titlebar_ptr->style.height < width) {
-        title_position = titlebar_ptr->style.height;
+        titlebar_ptr->title_position = titlebar_ptr->style.height;
     }
 
     if (!wlmtk_titlebar_title_redraw(
             titlebar_ptr->titlebar_title_ptr,
             titlebar_ptr->focussed_gfxbuf_ptr,
             titlebar_ptr->blurred_gfxbuf_ptr,
-            title_position,
-            close_position - title_position,
+            titlebar_ptr->title_position,
+            titlebar_ptr->close_position - titlebar_ptr->title_position,
             titlebar_ptr->activated,
             titlebar_ptr->title_ptr,
             &titlebar_ptr->style)) {
@@ -210,7 +212,7 @@ bool wlmtk_titlebar_set_width(
     wlmtk_element_set_visible(
         wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr), true);
 
-    if (0 < title_position) {
+    if (0 < titlebar_ptr->title_position) {
         if (!wlmtk_titlebar_button_redraw(
                 titlebar_ptr->minimize_button_ptr,
                 titlebar_ptr->focussed_gfxbuf_ptr,
@@ -228,12 +230,12 @@ bool wlmtk_titlebar_set_width(
             false);
     }
 
-    if (close_position < (int)width) {
+    if (titlebar_ptr->close_position < (int)width) {
         if (!wlmtk_titlebar_button_redraw(
                 titlebar_ptr->close_button_ptr,
                 titlebar_ptr->focussed_gfxbuf_ptr,
                 titlebar_ptr->blurred_gfxbuf_ptr,
-                close_position,
+                titlebar_ptr->close_position,
                 &titlebar_ptr->style)) {
             return false;
         }
@@ -267,7 +269,17 @@ void wlmtk_titlebar_set_title(
         if (NULL != titlebar_ptr->title_ptr) return;
     }
 
-    // FIXME: Redraw.
+    if (0 < titlebar_ptr->width) {
+        wlmtk_titlebar_title_redraw(
+            titlebar_ptr->titlebar_title_ptr,
+            titlebar_ptr->focussed_gfxbuf_ptr,
+            titlebar_ptr->blurred_gfxbuf_ptr,
+            titlebar_ptr->title_position,
+            titlebar_ptr->close_position - titlebar_ptr->title_position,
+            titlebar_ptr->activated,
+            titlebar_ptr->title_ptr,
+            &titlebar_ptr->style);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
