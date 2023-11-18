@@ -75,6 +75,8 @@ static void content_destroy(wlmtk_content_t *content_ptr);
 static struct wlr_scene_node *content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void content_request_close(
+    wlmtk_content_t *content_ptr);
 static uint32_t content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
@@ -89,6 +91,7 @@ static void content_set_activated(
 const wlmtk_content_impl_t    content_impl = {
     .destroy = content_destroy,
     .create_scene_node = content_create_scene_node,
+    .request_close = content_request_close,
     .request_size = content_request_size,
     .set_activated = content_set_activated,
 };
@@ -219,6 +222,22 @@ struct wlr_scene_node *content_create_scene_node(
             xdg_tl_content_ptr->wlr_xdg_surface_ptr);
     return &surface_wlr_scene_tree_ptr->node;
 }
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Requests the content to close: Sends a 'close' message to the toplevel.
+ *
+ * @param content_ptr
+ */
+void content_request_close(wlmtk_content_t *content_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+
+    wlr_xdg_toplevel_send_close(
+        xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel);
+}
+
 
 /* ------------------------------------------------------------------------- */
 /**

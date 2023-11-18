@@ -84,6 +84,7 @@ bool wlmtk_content_init(
     BS_ASSERT(NULL != content_impl_ptr);
     BS_ASSERT(NULL != content_impl_ptr->destroy);
     BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
+    BS_ASSERT(NULL != content_impl_ptr->request_close);
     BS_ASSERT(NULL != content_impl_ptr->request_size);
     BS_ASSERT(NULL != content_impl_ptr->set_activated);
 
@@ -388,6 +389,8 @@ static void fake_content_destroy(
 static struct wlr_scene_node *fake_content_create_scene_node(
     wlmtk_content_t *content_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static void fake_content_request_close(
+    wlmtk_content_t *content_ptr);
 static uint32_t fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
@@ -400,6 +403,7 @@ static void fake_content_set_activated(
 static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
     .destroy = fake_content_destroy,
     .create_scene_node = fake_content_create_scene_node,
+    .request_close = fake_content_request_close,
     .request_size = fake_content_request_size,
     .set_activated = fake_content_set_activated,
 };
@@ -447,6 +451,15 @@ struct wlr_scene_node *fake_content_create_scene_node(
     struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
         wlr_scene_tree_ptr, NULL);
     return &wlr_scene_buffer_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Records that @ref wlmtk_content_request_close was called. */
+void fake_content_request_close(wlmtk_content_t *content_ptr)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->request_close_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -499,6 +512,9 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
         fake_content_ptr->content.impl.destroy);
+
+    wlmtk_content_request_close(&fake_content_ptr->content);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->request_close_called);
 
     int l, t, r, b;
     fake_content_ptr->return_request_size = 42;

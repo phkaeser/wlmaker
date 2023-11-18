@@ -40,6 +40,8 @@ struct _wlmtk_content_impl_t {
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_content_t *content_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
+    /** Requests the content to close. */
+    void (*request_close)(wlmtk_content_t *content_ptr);
     /** Sets width and height of the content. Returns serial. */
     uint32_t (*request_size)(wlmtk_content_t *content_ptr,
                              int width, int height);
@@ -159,6 +161,10 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
     content_ptr->impl.destroy(content_ptr);
 }
+/** Wraps to @ref wlmtk_content_impl_t::request_close. */
+static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
+    content_ptr->impl.request_close(content_ptr);
+}
 /** Wraps to @ref wlmtk_content_impl_t::request_size. */
 static inline uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
@@ -187,6 +193,8 @@ extern const bs_test_case_t wlmtk_content_test_cases[];
 typedef struct {
     /** State of the content. */
     wlmtk_content_t           content;
+    /** Whether @ref wlmtk_content_request_close was called. */
+    bool                      request_close_called;
     /** `width` argument eof last @ref wlmtk_content_request_size call. */
     int                       requested_width;
     /** `height` argument of last @ref wlmtk_content_request_size call. */
