@@ -59,6 +59,7 @@ void wlmtk_titlebar_title_destroy(
  * @param position            Position of title telative to titlebar.
  * @param width               Width of title.
  * @param activated           Whether the title bar should start focussed.
+ * @param title_ptr           Title, or NULL.
  * @param style_ptr
  *
  * @return true on success.
@@ -70,6 +71,7 @@ bool wlmtk_titlebar_title_redraw(
     int position,
     int width,
     bool activated,
+    const char *title_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /**

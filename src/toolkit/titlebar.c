@@ -203,6 +203,7 @@ bool wlmtk_titlebar_set_width(
             title_position,
             close_position - title_position,
             titlebar_ptr->activated,
+            titlebar_ptr->title_ptr,
             &titlebar_ptr->style)) {
         return false;
     }

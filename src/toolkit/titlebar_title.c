@@ -56,6 +56,7 @@ struct wlr_buffer *title_create_buffer(
     unsigned position,
     unsigned width,
     uint32_t text_color,
+    const char *title_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /* == Data ================================================================= */
@@ -104,6 +105,7 @@ bool wlmtk_titlebar_title_redraw(
     int position,
     int width,
     bool activated,
+    const char *title_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
@@ -112,12 +114,14 @@ bool wlmtk_titlebar_title_redraw(
     BS_ASSERT(position <= (int)focussed_gfxbuf_ptr->width);
     BS_ASSERT(position + width <= (int)focussed_gfxbuf_ptr->width);
 
+    if (NULL == title_ptr) title_ptr = "";
+
     struct wlr_buffer *focussed_wlr_buffer_ptr = title_create_buffer(
         focussed_gfxbuf_ptr, position, width,
-        style_ptr->focussed_text_color, style_ptr);
+        style_ptr->focussed_text_color, title_ptr, style_ptr);
     struct wlr_buffer *blurred_wlr_buffer_ptr = title_create_buffer(
         blurred_gfxbuf_ptr, position, width,
-        style_ptr->blurred_text_color, style_ptr);
+        style_ptr->blurred_text_color, title_ptr, style_ptr);
 
     if (NULL == focussed_wlr_buffer_ptr ||
         NULL == blurred_wlr_buffer_ptr) {
@@ -211,6 +215,7 @@ void title_set_activated(
  * @param position
  * @param width
  * @param text_color
+ * @param title_ptr
  * @param style_ptr
  *
  * @return A pointer to a `struct wlr_buffer` with the texture.
@@ -220,8 +225,10 @@ struct wlr_buffer *title_create_buffer(
     unsigned position,
     unsigned width,
     uint32_t text_color,
+    const char *title_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
+    BS_ASSERT(NULL != title_ptr);
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         width, style_ptr->height);
     if (NULL == wlr_buffer_ptr) return NULL;
@@ -241,7 +248,7 @@ struct wlr_buffer *title_create_buffer(
     wlmaker_primitives_draw_bezel_at(
         cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
     wlmaker_primitives_draw_window_title(
-        cairo_ptr, "Title", text_color);
+        cairo_ptr, title_ptr, text_color);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
@@ -280,7 +287,8 @@ void test_title(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_titlebar_title_redraw(
             titlebar_title_ptr,
-            focussed_gfxbuf_ptr, blurred_gfxbuf_ptr, 10, 90, true, &style));
+            focussed_gfxbuf_ptr, blurred_gfxbuf_ptr,
+            10, 90, true, "Title", &style));
 
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
@@ -308,7 +316,7 @@ void test_title(bs_test_t *test_ptr)
     // Redraw with shorter width. Verify that's still correct.
     wlmtk_titlebar_title_redraw(
         titlebar_title_ptr, focussed_gfxbuf_ptr, blurred_gfxbuf_ptr,
-        10, 70, false, &style);
+        10, 70, false, "Title", &style);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
