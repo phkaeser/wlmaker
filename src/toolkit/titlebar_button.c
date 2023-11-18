@@ -49,6 +49,7 @@ struct _wlmtk_titlebar_button_t {
 };
 
 static void titlebar_button_destroy(wlmtk_button_t *button_ptr);
+static void titlebar_button_clicked(wlmtk_button_t *button_ptr);
 static struct wlr_buffer *create_buf(
     bs_gfxbuf_t *gfxbuf_ptr,
     int position,
@@ -60,7 +61,8 @@ static struct wlr_buffer *create_buf(
 
 /** Buffer implementation for title of the title bar. */
 static const wlmtk_button_impl_t titlebar_button_impl = {
-    .destroy = titlebar_button_destroy
+    .destroy = titlebar_button_destroy,
+    .clicked = titlebar_button_clicked,
 };
 
 /* == Exported methods ===================================================== */
@@ -174,6 +176,16 @@ void titlebar_button_destroy(wlmtk_button_t *button_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles button clicks: Passes the request to the window. */
+void titlebar_button_clicked(wlmtk_button_t *button_ptr)
+{
+    wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
+        button_ptr, wlmtk_titlebar_button_t, super_button);
+
+    wlmtk_window_request_close(titlebar_button_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Helper: Creates a WLR buffer for the button. */
 struct wlr_buffer *create_buf(
     bs_gfxbuf_t *gfxbuf_ptr,
@@ -271,6 +283,21 @@ void test_button(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_button_focussed_released.png");
+
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        fake_window_ptr->request_close_called);
+    button.type = WLMTK_BUTTON_CLICK;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
+        "toolkit/title_button_focussed_released.png");
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        fake_window_ptr->request_close_called);
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
