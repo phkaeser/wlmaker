@@ -35,6 +35,8 @@ struct _wlmtk_titlebar_button_t {
     /** Superclass: Button. */
     wlmtk_button_t            super_button;
 
+    /** Callback for when the button is clicked. */
+    void                      (*click_handler)(wlmtk_window_t *window_ptr);
     /** Points to the @ref wlmtk_window_t that carries this titlebar. */
     wlmtk_window_t            *window_ptr;
     /** For drawing the button contents. */
@@ -69,12 +71,17 @@ static const wlmtk_button_impl_t titlebar_button_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
+    void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
 {
+    BS_ASSERT(NULL != window_ptr);
+    BS_ASSERT(NULL != click_handler);
+    BS_ASSERT(NULL != draw);
     wlmtk_titlebar_button_t *titlebar_button_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_button_t));
     if (NULL == titlebar_button_ptr) return NULL;
+    titlebar_button_ptr->click_handler = click_handler;
     titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
@@ -181,8 +188,7 @@ void titlebar_button_clicked(wlmtk_button_t *button_ptr)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
         button_ptr, wlmtk_titlebar_button_t, super_button);
-
-    wlmtk_window_request_close(titlebar_button_ptr->window_ptr);
+    titlebar_button_ptr->click_handler(titlebar_button_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -230,6 +236,7 @@ void test_button(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
+        wlmtk_window_request_close,
         &fake_window_ptr->window,
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
