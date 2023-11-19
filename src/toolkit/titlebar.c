@@ -212,8 +212,12 @@ void wlmtk_titlebar_set_activated(
 {
     if (titlebar_ptr->activated == activated) return;
     titlebar_ptr->activated = activated;
+    wlmtk_titlebar_button_set_activated(
+        titlebar_ptr->minimize_button_ptr, titlebar_ptr->activated);
     wlmtk_titlebar_title_set_activated(
         titlebar_ptr->titlebar_title_ptr, titlebar_ptr->activated);
+    wlmtk_titlebar_button_set_activated(
+        titlebar_ptr->close_button_ptr, titlebar_ptr->activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -288,6 +292,7 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Redraws the titlebar elements. */
 bool redraw(wlmtk_titlebar_t *titlebar_ptr)
 {
     // Guard clause: Nothing to do... yet.

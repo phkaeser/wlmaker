@@ -59,6 +59,16 @@ void wlmtk_titlebar_button_destroy(
     wlmtk_titlebar_button_t *titlebar_button_ptr);
 
 /**
+ * Sets the activation status (focussed / blurred) of the titlebar button.
+ *
+ * @param titlebar_button_ptr
+ * @param activated
+ */
+void wlmtk_titlebar_button_set_activated(
+    wlmtk_titlebar_button_t *titlebar_button_ptr,
+    bool activated);
+
+/**
  * Redraws the titlebar button for given textures, position and style.
  *
  * @param titlebar_button_ptr

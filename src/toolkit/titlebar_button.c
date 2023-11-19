@@ -34,6 +34,8 @@
 struct _wlmtk_titlebar_button_t {
     /** Superclass: Button. */
     wlmtk_button_t            super_button;
+    /** Whether the titlebar button is activated (focussed). */
+    bool                      activated;
 
     /** Callback for when the button is clicked. */
     void                      (*click_handler)(wlmtk_window_t *window_ptr);
@@ -52,6 +54,7 @@ struct _wlmtk_titlebar_button_t {
 
 static void titlebar_button_destroy(wlmtk_button_t *button_ptr);
 static void titlebar_button_clicked(wlmtk_button_t *button_ptr);
+static void update_buffers(wlmtk_titlebar_button_t *titlebar_button_ptr);
 static struct wlr_buffer *create_buf(
     bs_gfxbuf_t *gfxbuf_ptr,
     int position,
@@ -111,6 +114,16 @@ void wlmtk_titlebar_button_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_titlebar_button_set_activated(
+    wlmtk_titlebar_button_t *titlebar_button_ptr,
+    bool activated)
+{
+    if (titlebar_button_ptr->activated == activated) return;
+    titlebar_button_ptr->activated = activated;
+    update_buffers(titlebar_button_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmtk_titlebar_button_redraw(
     wlmtk_titlebar_button_t *titlebar_button_ptr,
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
@@ -149,12 +162,7 @@ bool wlmtk_titlebar_button_redraw(
             focussed_pressed_ptr;
         titlebar_button_ptr->blurred_wlr_buffer_ptr = blurred_ptr;
 
-        // FIXME: Depend on focus/blur.
-        wlmtk_button_set(
-            &titlebar_button_ptr->super_button,
-            titlebar_button_ptr->focussed_released_wlr_buffer_ptr,
-            titlebar_button_ptr->focussed_pressed_wlr_buffer_ptr);
-
+        update_buffers(titlebar_button_ptr);
         return true;
     }
 
@@ -189,6 +197,28 @@ void titlebar_button_clicked(wlmtk_button_t *button_ptr)
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
         button_ptr, wlmtk_titlebar_button_t, super_button);
     titlebar_button_ptr->click_handler(titlebar_button_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Updates the button's buffer depending on activation status. */
+void update_buffers(wlmtk_titlebar_button_t *titlebar_button_ptr)
+{
+    // No buffer: Nothing to update.
+    if (NULL == titlebar_button_ptr->focussed_released_wlr_buffer_ptr ||
+        NULL == titlebar_button_ptr->focussed_pressed_wlr_buffer_ptr ||
+        NULL == titlebar_button_ptr->blurred_wlr_buffer_ptr) return;
+
+    if (titlebar_button_ptr->activated) {
+        wlmtk_button_set(
+            &titlebar_button_ptr->super_button,
+            titlebar_button_ptr->focussed_released_wlr_buffer_ptr,
+            titlebar_button_ptr->focussed_pressed_wlr_buffer_ptr);
+    } else {
+        wlmtk_button_set(
+            &titlebar_button_ptr->super_button,
+            titlebar_button_ptr->blurred_wlr_buffer_ptr,
+            titlebar_button_ptr->blurred_wlr_buffer_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -240,6 +270,7 @@ void test_button(bs_test_t *test_ptr)
         &fake_window_ptr->window,
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
+    wlmtk_titlebar_button_set_activated(button_ptr, true);
 
     // For improved readability.
     wlmtk_buffer_t *super_buffer_ptr = &button_ptr->super_button.super_buffer;
@@ -291,6 +322,7 @@ void test_button(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_button_focussed_released.png");
 
+    // Click: To be passed along, no change to visual.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         fake_window_ptr->request_close_called);
@@ -305,6 +337,13 @@ void test_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         fake_window_ptr->request_close_called);
+
+    // De-activate: Show as blurred.
+    wlmtk_titlebar_button_set_activated(button_ptr, false);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
+        "toolkit/title_button_blurred.png");
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
