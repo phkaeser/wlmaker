@@ -91,15 +91,16 @@ void wlmtk_titlebar_set_activated(
     bool activated);
 
 /**
- * Redraws the title bar.
- *
- * Should be triggered eg. by the parent window when the title changed.
+ * Updates the title text of the titlebar.
  *
  * @param titlebar_ptr
- *
- * @return Whether redrawing succeeded.
+ * @param title_ptr           Expected to remain valid until the next call of
+ *                            @ref wlmtk_titlebar_set_title or until the
+ *                            `titlebar_ptr` is destroyed.
  */
-bool wlmtk_titlebar_redraw(wlmtk_titlebar_t *titlebar_ptr);
+void wlmtk_titlebar_set_title(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const char *title_ptr);
 
 /**
  * Returns the super Element of the titlebar.

@@ -375,7 +375,8 @@ void wlmtk_window_set_title(
     window_ptr->title_ptr = new_title_ptr;
 
     if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_titlebar_redraw(window_ptr->titlebar_ptr);
+        wlmtk_titlebar_set_title(window_ptr->titlebar_ptr,
+                                 window_ptr->title_ptr);
     }
 }
 

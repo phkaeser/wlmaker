@@ -39,8 +39,8 @@
 struct _wlmtk_titlebar_t {
     /** Superclass: Box. */
     wlmtk_box_t               super_box;
-    /** Back-link to the window the title bar is for. */
-    wlmtk_window_t            *window_ptr;
+    /** Link to the titlebar's title. */
+    const char                *title_ptr;
 
     /** Title element of the title bar. */
     wlmtk_titlebar_title_t    *titlebar_title_ptr;
@@ -72,6 +72,7 @@ static void titlebar_box_destroy(wlmtk_box_t *box_ptr);
 static bool redraw_buffers(
     wlmtk_titlebar_t *titlebar_ptr,
     unsigned width);
+static bool redraw(wlmtk_titlebar_t *titlebar_ptr);
 
 /* == Data ================================================================= */
 
@@ -91,7 +92,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
     memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
-    titlebar_ptr->window_ptr = window_ptr;
+    titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         &titlebar_box_impl,
@@ -195,7 +196,7 @@ bool wlmtk_titlebar_set_width(
         titlebar_ptr->title_position = titlebar_ptr->style.height;
     }
 
-    if (!wlmtk_titlebar_redraw(titlebar_ptr)) {
+    if (!redraw(titlebar_ptr)) {
         return false;
     }
 
@@ -216,62 +217,14 @@ void wlmtk_titlebar_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_titlebar_redraw(wlmtk_titlebar_t *titlebar_ptr)
+void wlmtk_titlebar_set_title(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const char *title_ptr)
 {
-    // Guard clause: Nothing to do... yet.
-    if (0 >= titlebar_ptr->width) return true;
+    if (titlebar_ptr->title_ptr == title_ptr) return;
 
-    if (!wlmtk_titlebar_title_redraw(
-            titlebar_ptr->titlebar_title_ptr,
-            titlebar_ptr->focussed_gfxbuf_ptr,
-            titlebar_ptr->blurred_gfxbuf_ptr,
-            titlebar_ptr->title_position,
-            titlebar_ptr->close_position - titlebar_ptr->title_position,
-            titlebar_ptr->activated,
-            wlmtk_window_get_title(titlebar_ptr->window_ptr),
-            &titlebar_ptr->style)) {
-        return false;
-    }
-    wlmtk_element_set_visible(
-        wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr), true);
-
-    if (0 < titlebar_ptr->title_position) {
-        if (!wlmtk_titlebar_button_redraw(
-                titlebar_ptr->minimize_button_ptr,
-                titlebar_ptr->focussed_gfxbuf_ptr,
-                titlebar_ptr->blurred_gfxbuf_ptr,
-                0,
-                &titlebar_ptr->style)) {
-            return false;
-        }
-        wlmtk_element_set_visible(
-            wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr),
-            true);
-    } else {
-        wlmtk_element_set_visible(
-            wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr),
-            false);
-    }
-
-    if (titlebar_ptr->close_position < (int)titlebar_ptr->width) {
-        if (!wlmtk_titlebar_button_redraw(
-                titlebar_ptr->close_button_ptr,
-                titlebar_ptr->focussed_gfxbuf_ptr,
-                titlebar_ptr->blurred_gfxbuf_ptr,
-                titlebar_ptr->close_position,
-                &titlebar_ptr->style)) {
-            return false;
-        }
-        wlmtk_element_set_visible(
-            wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr),
-            true);
-    } else {
-        wlmtk_element_set_visible(
-            wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr),
-            false);
-    }
-
-    return true;
+    titlebar_ptr->title_ptr = title_ptr;
+    redraw(titlebar_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -331,6 +284,65 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
     }
     titlebar_ptr->blurred_gfxbuf_ptr = blurred_gfxbuf_ptr;
     titlebar_ptr->width = width;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+bool redraw(wlmtk_titlebar_t *titlebar_ptr)
+{
+    // Guard clause: Nothing to do... yet.
+    if (0 >= titlebar_ptr->width) return true;
+
+    if (!wlmtk_titlebar_title_redraw(
+            titlebar_ptr->titlebar_title_ptr,
+            titlebar_ptr->focussed_gfxbuf_ptr,
+            titlebar_ptr->blurred_gfxbuf_ptr,
+            titlebar_ptr->title_position,
+            titlebar_ptr->close_position - titlebar_ptr->title_position,
+            titlebar_ptr->activated,
+            titlebar_ptr->title_ptr,
+            &titlebar_ptr->style)) {
+        return false;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr), true);
+
+    if (0 < titlebar_ptr->title_position) {
+        if (!wlmtk_titlebar_button_redraw(
+                titlebar_ptr->minimize_button_ptr,
+                titlebar_ptr->focussed_gfxbuf_ptr,
+                titlebar_ptr->blurred_gfxbuf_ptr,
+                0,
+                &titlebar_ptr->style)) {
+            return false;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr),
+            true);
+    } else {
+        wlmtk_element_set_visible(
+            wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr),
+            false);
+    }
+
+    if (titlebar_ptr->close_position < (int)titlebar_ptr->width) {
+        if (!wlmtk_titlebar_button_redraw(
+                titlebar_ptr->close_button_ptr,
+                titlebar_ptr->focussed_gfxbuf_ptr,
+                titlebar_ptr->blurred_gfxbuf_ptr,
+                titlebar_ptr->close_position,
+                &titlebar_ptr->style)) {
+            return false;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr),
+            true);
+    } else {
+        wlmtk_element_set_visible(
+            wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr),
+            false);
+    }
+
     return true;
 }
 
