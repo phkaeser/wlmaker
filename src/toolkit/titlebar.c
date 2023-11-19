@@ -39,6 +39,8 @@
 struct _wlmtk_titlebar_t {
     /** Superclass: Box. */
     wlmtk_box_t               super_box;
+    /** Back-link to the window the title bar is for. */
+    wlmtk_window_t            *window_ptr;
 
     /** Title element of the title bar. */
     wlmtk_titlebar_title_t    *titlebar_title_ptr;
@@ -61,9 +63,6 @@ struct _wlmtk_titlebar_t {
     int                       title_position;
     /** Whether the title bar is currently displayed as activated. */
     bool                      activated;
-
-    /** Points to the title of the bar. May be NULL. */
-    char                      *title_ptr;
 
     /** Title bar style. */
     wlmtk_titlebar_style_t    style;
@@ -92,6 +91,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
     memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
+    titlebar_ptr->window_ptr = window_ptr;
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         &titlebar_box_impl,
@@ -172,11 +172,6 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
         titlebar_ptr->focussed_gfxbuf_ptr = NULL;
     }
 
-    if (NULL != titlebar_ptr->title_ptr) {
-        free(titlebar_ptr->title_ptr);
-        titlebar_ptr->title_ptr = NULL;
-    }
-
     wlmtk_box_fini(&titlebar_ptr->super_box);
 
     free(titlebar_ptr);
@@ -200,6 +195,32 @@ bool wlmtk_titlebar_set_width(
         titlebar_ptr->title_position = titlebar_ptr->style.height;
     }
 
+    if (!wlmtk_titlebar_redraw(titlebar_ptr)) {
+        return false;
+    }
+
+    // Don't forget to re-position the elements.
+    wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_titlebar_set_activated(
+    wlmtk_titlebar_t *titlebar_ptr,
+    bool activated)
+{
+    if (titlebar_ptr->activated == activated) return;
+    titlebar_ptr->activated = activated;
+    wlmtk_titlebar_title_set_activated(
+        titlebar_ptr->titlebar_title_ptr, titlebar_ptr->activated);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_titlebar_redraw(wlmtk_titlebar_t *titlebar_ptr)
+{
+    // Guard clause: Nothing to do... yet.
+    if (0 >= titlebar_ptr->width) return true;
+
     if (!wlmtk_titlebar_title_redraw(
             titlebar_ptr->titlebar_title_ptr,
             titlebar_ptr->focussed_gfxbuf_ptr,
@@ -207,7 +228,7 @@ bool wlmtk_titlebar_set_width(
             titlebar_ptr->title_position,
             titlebar_ptr->close_position - titlebar_ptr->title_position,
             titlebar_ptr->activated,
-            titlebar_ptr->title_ptr,
+            wlmtk_window_get_title(titlebar_ptr->window_ptr),
             &titlebar_ptr->style)) {
         return false;
     }
@@ -232,7 +253,7 @@ bool wlmtk_titlebar_set_width(
             false);
     }
 
-    if (titlebar_ptr->close_position < (int)width) {
+    if (titlebar_ptr->close_position < (int)titlebar_ptr->width) {
         if (!wlmtk_titlebar_button_redraw(
                 titlebar_ptr->close_button_ptr,
                 titlebar_ptr->focussed_gfxbuf_ptr,
@@ -250,56 +271,7 @@ bool wlmtk_titlebar_set_width(
             false);
     }
 
-    // Don't forget to re-position the elements.
-    wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_titlebar_set_title(
-    wlmtk_titlebar_t *titlebar_ptr,
-    const char *title_ptr)
-{
-    if (NULL != titlebar_ptr->title_ptr) {
-        free(titlebar_ptr->title_ptr);
-        titlebar_ptr->title_ptr = NULL;
-    }
-
-    if (NULL != title_ptr) {
-        titlebar_ptr->title_ptr = logged_strdup(title_ptr);
-        // That will be an error, but... well.
-        if (NULL != titlebar_ptr->title_ptr) return;
-    }
-
-    if (0 < titlebar_ptr->width) {
-        wlmtk_titlebar_title_redraw(
-            titlebar_ptr->titlebar_title_ptr,
-            titlebar_ptr->focussed_gfxbuf_ptr,
-            titlebar_ptr->blurred_gfxbuf_ptr,
-            titlebar_ptr->title_position,
-            titlebar_ptr->close_position - titlebar_ptr->title_position,
-            titlebar_ptr->activated,
-            titlebar_ptr->title_ptr,
-            &titlebar_ptr->style);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-const char *wlmtk_titlebar_get_title(
-    wlmtk_titlebar_t *titlebar_ptr)
-{
-    return titlebar_ptr->title_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_titlebar_set_activated(
-    wlmtk_titlebar_t *titlebar_ptr,
-    bool activated)
-{
-    if (titlebar_ptr->activated == activated) return;
-    titlebar_ptr->activated = activated;
-    wlmtk_titlebar_title_set_activated(
-        titlebar_ptr->titlebar_title_ptr, titlebar_ptr->activated);
 }
 
 /* ------------------------------------------------------------------------- */

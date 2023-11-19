@@ -102,6 +102,9 @@ struct _wlmtk_window_t {
     /** Resizebar. */
     wlmtk_resizebar_t         *resizebar_ptr;
 
+    /** Window title. */
+    char                      *title_ptr;
+
     /** Pending updates. */
     bs_dllist_t               pending_updates;
     /** List of udpates currently available. */
@@ -183,12 +186,25 @@ void wlmtk_window_set_server_side_decorated(
 /**
  * Sets the title for the window.
  *
+ * If `title_ptr` is NULL, a generic name is set.
+ *
  * @param window_ptr
  * @param title_ptr           May be NULL.
  */
 void wlmtk_window_set_title(
     wlmtk_window_t *window_ptr,
     const char *title_ptr);
+
+/**
+ * Returns the title of the window.
+ *
+ * @param window_ptr
+ *
+ * @returns Pointer to the window title. Will remain valid until the next call
+ *     to @ref wlmtk_window_set_title, or until the window is destroyed. Will
+ *     never be NULL.
+ */
+const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr);
 
 /**
  * Requests to close the window.
@@ -283,8 +299,6 @@ typedef struct {
     bool                      activated;
     /** Argument to last @ref wlmtk_window_set_server_side_decorated call. */
     bool                      decorated;
-    /** Argument to last call of @ref wlmtk_window_set_title. */
-    const char                *title_ptr;
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */

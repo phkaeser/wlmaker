@@ -81,26 +81,6 @@ bool wlmtk_titlebar_set_width(
     unsigned width);
 
 /**
- * Sets the title for the titlebar.
- *
- * @param titlebar_ptr
- * @param title_ptr
- */
-void wlmtk_titlebar_set_title(
-    wlmtk_titlebar_t *titlebar_ptr,
-    const char *title_ptr);
-
-/**
- * Returns the title of of the titlebar.
- *
- * @param titlebar_ptr
- *
- * @return Pointer to the title.
- */
-const char *wlmtk_titlebar_get_title(
-    wlmtk_titlebar_t *titlebar_ptr);
-
-/**
  * Sets whether the title bar is activated.
  *
  * @param titlebar_ptr
@@ -109,6 +89,17 @@ const char *wlmtk_titlebar_get_title(
 void wlmtk_titlebar_set_activated(
     wlmtk_titlebar_t *titlebar_ptr,
     bool activated);
+
+/**
+ * Redraws the title bar.
+ *
+ * Should be triggered eg. by the parent window when the title changed.
+ *
+ * @param titlebar_ptr
+ *
+ * @return Whether redrawing succeeded.
+ */
+bool wlmtk_titlebar_redraw(wlmtk_titlebar_t *titlebar_ptr);
 
 /**
  * Returns the super Element of the titlebar.
