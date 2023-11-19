@@ -102,7 +102,7 @@ struct _wlmtk_window_t {
     /** Resizebar. */
     wlmtk_resizebar_t         *resizebar_ptr;
 
-    /** Window title. */
+    /** Window title. Set through @ref wlmtk_window_set_title. */
     char                      *title_ptr;
 
     /** Pending updates. */

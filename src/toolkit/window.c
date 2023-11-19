@@ -185,6 +185,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_window_fini(window_ptr);
         return false;
     }
+    wlmtk_window_set_title(window_ptr, NULL);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
         window_ptr, &resizebar_style);
@@ -210,7 +211,6 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
-    wlmtk_window_set_title(window_ptr, NULL);
     return true;
 }
 
