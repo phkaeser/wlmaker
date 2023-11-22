@@ -149,6 +149,16 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
 /**
+ * Returns the window from the super Element.
+ *
+ * @param element_ptr
+ *
+ * @return Pointer to the @ref wlmtk_window_t, for which `element_ptr` is
+ *     the ancestor.
+ */
+wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr);
+
+/**
  * Obtains the size of the window, including potential decorations.
  *
  * @param window_ptr
@@ -321,6 +331,9 @@ typedef struct {
     int                       width;
     /** Argument to last @ref wlmtk_window_request_size call. */
     int                       height;
+
+    /** Fake content, to manipulate the fake window's content. */
+    wlmtk_fake_content_t      *fake_content_ptr;
 } wlmtk_fake_window_t;
 
 /** Ctor. */

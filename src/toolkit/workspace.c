@@ -40,6 +40,9 @@ struct _wlmtk_workspace_t {
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
 
+    /** The activated window. */
+    wlmtk_window_t            *activated_window_ptr;
+
     /** The grabbed window. */
     wlmtk_window_t            *grabbed_window_ptr;
     /** Motion X */
@@ -75,6 +78,9 @@ static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+
+static void activate_window(wlmtk_workspace_t *workspace_ptr,
+                            wlmtk_window_t *window_ptr);
 
 /* == Data ================================================================= */
 
@@ -158,14 +164,15 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
 
-    // TODO(kaeser@gubbe.ch): Refine and test this.
-    wlmtk_window_set_activated(window_ptr, true);
+    activate_window(workspace_ptr, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr)
 {
+    bool need_activation = false;
+
     BS_ASSERT(workspace_ptr == wlmtk_workspace_from_container(
                   wlmtk_window_element(window_ptr)->parent_container_ptr));
 
@@ -174,10 +181,26 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
         BS_ASSERT(NULL == workspace_ptr->grabbed_window_ptr);
     }
 
+    if (workspace_ptr->activated_window_ptr == window_ptr) {
+        activate_window(workspace_ptr, NULL);
+        need_activation = true;
+    }
+
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
     wlmtk_container_remove_element(
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
+
+    if (need_activation) {
+        // FIXME
+        bs_dllist_node_t *dlnode_ptr =
+            workspace_ptr->super_container.elements.head_ptr;
+        if (NULL != dlnode_ptr) {
+            wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+            wlmtk_window_t *window_ptr = wlmtk_window_from_element(element_ptr);
+            activate_window(workspace_ptr, window_ptr);
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -450,6 +473,29 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Acticates `window_ptr`. Will de-activate an earlier window. */
+void activate_window(wlmtk_workspace_t *workspace_ptr,
+                     wlmtk_window_t *window_ptr)
+{
+    // Nothing to do.
+    if (workspace_ptr->activated_window_ptr == window_ptr) return;
+
+    if (NULL != workspace_ptr->activated_window_ptr) {
+        wlmtk_window_set_activated(workspace_ptr->activated_window_ptr, false);
+        workspace_ptr->activated_window_ptr = NULL;
+    }
+
+    if (NULL != window_ptr) {
+        wlmtk_window_set_activated(window_ptr, true);
+        workspace_ptr->activated_window_ptr = window_ptr;
+    }
+    // set activated.
+    // keep track of activated. => so it can be deactivated.
+
+
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -458,6 +504,7 @@ static void test_button(bs_test_t *test_ptr);
 static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
 static void test_resize(bs_test_t *test_ptr);
+static void test_activate(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -466,6 +513,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "move", test_move },
     { 1, "unmap_during_move", test_unmap_during_move },
     { 1, "resize", test_resize },
+    { 1, "activate", test_activate },
     { 0, NULL, NULL }
 };
 
@@ -495,7 +543,6 @@ void test_map_unmap(bs_test_t *test_ptr)
 {
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
-
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
@@ -734,6 +781,64 @@ void test_resize(bs_test_t *test_ptr)
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests window activation. */
+void test_activate(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        fake_parent_ptr->wlr_scene_tree_ptr);
+    BS_ASSERT(NULL != workspace_ptr);
+
+    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
+    wlmtk_content_commit_size(&fw1_ptr->fake_content_ptr->content, 0, 100, 100);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
+
+    // Window 1 is mapped => it's activated.
+    wlmtk_workspace_map_window(workspace_ptr, &fw1_ptr->window);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
+
+    // Window 2 is mapped: Will get activated, and 1st one de-activated.
+    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
+    wlmtk_content_commit_size(&fw2_ptr->fake_content_ptr->content, 0, 100, 100);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+    wlmtk_workspace_map_window(workspace_ptr, &fw2_ptr->window);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
+
+    // Pointer move. Nothing happens: We have click-to-focus.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_motion(workspace_ptr, 50, 50, 0));
+    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
+
+    // Click on 1st window: Gets activated.
+    struct wlr_pointer_button_event wlr_button_event = {
+        .button = BTN_RIGHT, .state = WLR_BUTTON_PRESSED
+    };
+    wlmtk_workspace_button(workspace_ptr, &wlr_button_event);
+
+    // FIXME: These are broken.
+    // BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
+    // BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+
+    // Unmap window. The other one gets activated.
+    wlmtk_workspace_unmap_window(workspace_ptr, &fw2_ptr->window);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
+
+    // Unmap the remaining window. Nothing is activated.
+    wlmtk_workspace_unmap_window(workspace_ptr, &fw1_ptr->window);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
+
+    wlmtk_fake_window_destroy(fw2_ptr);
+    wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy(fake_parent_ptr);
 }

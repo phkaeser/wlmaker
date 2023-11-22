@@ -243,8 +243,8 @@ void element_get_pointer_area(
         // DEBT: Should only get initialized with a valid surface.
         box.x = 0;
         box.y = 0;
-        box.width = 0;
-        box.height = 0;
+        box.width = content_ptr->committed_width;
+        box.height = content_ptr->committed_height;
     } else {
         wlr_surface_get_extends(content_ptr->wlr_surface_ptr, &box);
     }
@@ -399,6 +399,17 @@ static void fake_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated);
 
+// Debt: Should separate content abstract implementation from surface.
+static void fake_content_element_pointer_leave(wlmtk_element_t *element_ptr);
+static bool fake_content_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec);
+static bool fake_content_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
 /** Method table of the fake content. */
 static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
     .destroy = fake_content_destroy,
@@ -424,6 +435,14 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
 
     BS_ASSERT(NULL != fake_content_ptr->content.super_element.impl.destroy);
     BS_ASSERT(NULL != fake_content_ptr->content.impl.destroy);
+
+    fake_content_ptr->content.super_element.impl.pointer_leave =
+        fake_content_element_pointer_leave;
+    fake_content_ptr->content.super_element.impl.pointer_motion =
+        fake_content_element_pointer_motion;
+    fake_content_ptr->content.super_element.impl.pointer_button =
+        fake_content_element_pointer_button;
+
     return fake_content_ptr;
 }
 
@@ -485,6 +504,38 @@ void fake_content_set_activated(
     wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmtk_fake_content_t, content);
     fake_content_ptr->activated = activated;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Does nothing. */
+void fake_content_element_pointer_leave(
+    __UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing to do.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns (x, y) in [(0, committed_with), (0, committed_height)). */
+bool fake_content_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    __UNUSED__ uint32_t time_msec)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_content_t, content.super_element);
+
+    return (0 <= x && x < fake_content_ptr->content.committed_width &&
+            0 <= y && y < fake_content_ptr->content.committed_height);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns true. */
+bool fake_content_element_pointer_button(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ const wlmtk_button_event_t *button_event_ptr)
+{
+    return true;
 }
 
 /* == Unit tests =========================================================== */

@@ -25,6 +25,9 @@ typedef struct _wlmtk_content_t wlmtk_content_t;
 
 /** Forward declaration: Content virtual method implementations. */
 typedef struct _wlmtk_content_impl_t wlmtk_content_impl_t;
+/** Forward declaration: Fake content, for tests. */
+typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
+
 
 #include "window.h"
 
@@ -190,7 +193,7 @@ extern void *wlmtk_content_identifier_ptr;
 extern const bs_test_case_t wlmtk_content_test_cases[];
 
 /** Fake content, useful for unit test. */
-typedef struct {
+struct _wlmtk_fake_content_t {
     /** State of the content. */
     wlmtk_content_t           content;
     /** Whether @ref wlmtk_content_request_close was called. */
@@ -203,7 +206,7 @@ typedef struct {
     uint32_t                  return_request_size;
     /** Argument of last @ref wlmtk_content_set_activated call. */
     bool                      activated;
-} wlmtk_fake_content_t;
+};
 
 /** Ctor for a fake content. */
 wlmtk_fake_content_t *wlmtk_fake_content_create(void);

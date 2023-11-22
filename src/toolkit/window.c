@@ -25,7 +25,8 @@
 /* == Declarations ========================================================= */
 
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
-                       const wlmtk_window_impl_t *impl_ptr);
+                       const wlmtk_window_impl_t *impl_ptr,
+                       wlmtk_content_t *content_ptr);
 void wlmtk_window_fini(wlmtk_window_t *window_ptr);
 
 static void wlmtk_window_set_activated_impl(
@@ -155,11 +156,13 @@ static const wlmtk_resizebar_style_t resizebar_style = {
  *
  * @param window_ptr
  * @param impl_ptr
+ * @param content_ptr         Will take ownership of it.
  *
  * @return true on success.
  */
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
-                       const wlmtk_window_impl_t *impl_ptr)
+                       const wlmtk_window_impl_t *impl_ptr,
+                       wlmtk_content_t *content_ptr)
 {
     BS_ASSERT(NULL != window_ptr);
     BS_ASSERT(NULL != impl_ptr);
@@ -198,6 +201,14 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_resizebar_element(window_ptr->resizebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
+
+    wlmtk_container_add_element_before(
+        &window_ptr->super_box.super_container,
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr),
+        wlmtk_content_element(content_ptr));
+    window_ptr->content_ptr = content_ptr;
+    wlmtk_content_set_window(content_ptr, window_ptr);
+    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
 
     window_ptr->titlebar_ptr = wlmtk_titlebar_create(
         window_ptr, &titlebar_style);
@@ -238,6 +249,18 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
         window_ptr->resizebar_ptr = NULL;
     }
 
+    if (NULL != window_ptr->content_ptr) {
+        wlmtk_container_remove_element(
+            &window_ptr->super_box.super_container,
+            wlmtk_content_element(window_ptr->content_ptr));
+        wlmtk_element_set_visible(
+            wlmtk_content_element(window_ptr->content_ptr), false);
+        wlmtk_content_set_window(window_ptr->content_ptr, NULL);
+
+        wlmtk_content_destroy(window_ptr->content_ptr);
+        window_ptr->content_ptr = NULL;
+    }
+
     if (NULL != window_ptr->title_ptr) {
         free(window_ptr->title_ptr);
         window_ptr->title_ptr = NULL;
@@ -255,7 +278,7 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
 
-    if (!wlmtk_window_init(window_ptr, &window_default_impl)) {
+    if (!wlmtk_window_init(window_ptr, &window_default_impl, content_ptr)) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
@@ -265,32 +288,12 @@ wlmtk_window_t *wlmtk_window_create(
         wlr_cursor_ptr,
         wlr_xcursor_manager_ptr);
 
-    wlmtk_container_add_element_before(
-        &window_ptr->super_box.super_container,
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr),
-        wlmtk_content_element(content_ptr));
-    window_ptr->content_ptr = content_ptr;
-    wlmtk_content_set_window(content_ptr, window_ptr);
-    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
-
     return window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
-    wlmtk_container_remove_element(
-        &window_ptr->super_box.super_container,
-        wlmtk_content_element(window_ptr->content_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_content_element(window_ptr->content_ptr), false);
-    wlmtk_content_set_window(window_ptr->content_ptr, NULL);
-
-    if (NULL != window_ptr->content_ptr) {
-        wlmtk_content_destroy(window_ptr->content_ptr);
-        window_ptr->content_ptr = NULL;
-    }
-
     wlmtk_window_fini(window_ptr);
     free(window_ptr);
 }
@@ -300,6 +303,17 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->super_box.super_container.super_element;
 }
+
+/* ------------------------------------------------------------------------- */
+wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
+{
+    // DEBT: FIXME - The assertion here is too lose.
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window_t, super_box.super_container.super_element);
+    BS_ASSERT(window_box_destroy == window_ptr->super_box.impl.destroy);
+    return window_ptr;
+}
+
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_get_size(
@@ -448,7 +462,15 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         1, sizeof(wlmtk_fake_window_t));
     if (NULL == fake_window_ptr) return NULL;
 
-    if (!wlmtk_window_init(&fake_window_ptr->window, &fake_window_impl)) {
+    fake_window_ptr->fake_content_ptr = wlmtk_fake_content_create();
+    if (NULL == fake_window_ptr->fake_content_ptr) {
+        wlmtk_fake_window_destroy(fake_window_ptr);
+        return NULL;
+    }
+
+    if (!wlmtk_window_init(&fake_window_ptr->window,
+                           &fake_window_impl,
+                           &fake_window_ptr->fake_content_ptr->content)) {
         wlmtk_fake_window_destroy(fake_window_ptr);
         return NULL;
     }
