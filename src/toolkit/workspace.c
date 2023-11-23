@@ -35,7 +35,7 @@ struct _wlmtk_workspace_t {
     /** Superclass: Container. */
     wlmtk_container_t         super_container;
     /** Original virtual method table. We're overwriting parts. */
-    wlmtk_element_impl_t      parent_element_impl;
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
@@ -105,6 +105,13 @@ const wlmtk_container_impl_t  workspace_container_impl = {
     .destroy = workspace_container_destroy
 };
 
+/** Extensions to the workspace's super element's virtual methods. */
+const wlmtk_element_vmt_t     workspace_element_vmt = {
+    .pointer_motion = element_pointer_motion,
+    .pointer_button = element_pointer_button,
+    .pointer_leave = element_pointer_leave,
+};
+
 /** Finite state machine definition for pointer events. */
 static const wlmtk_fsm_transition_t pfsm_transitions[] = {
     { PFSMS_PASSTHROUGH, PFSME_BEGIN_MOVE, PFSMS_MOVE, pfsm_move_begin },
@@ -134,15 +141,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }
-    memcpy(&workspace_ptr->parent_element_impl,
-           &workspace_ptr->super_container.super_element.impl,
-           sizeof(wlmtk_element_impl_t));
-    workspace_ptr->super_container.super_element.impl.pointer_motion =
-        element_pointer_motion;
-    workspace_ptr->super_container.super_element.impl.pointer_button =
-        element_pointer_button;
-    workspace_ptr->super_container.super_element.impl.pointer_leave =
-        element_pointer_leave;
+    workspace_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &workspace_ptr->super_container.super_element,
+        &workspace_element_vmt);
 
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
@@ -303,11 +304,10 @@ bool element_pointer_motion(
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
-
-    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
-
-    return workspace_ptr->parent_element_impl.pointer_motion(
+    bool rv = workspace_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, x, y, time_msec);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -335,7 +335,7 @@ bool element_pointer_button(
         wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RELEASED, NULL);
     }
 
-    return workspace_ptr->parent_element_impl.pointer_button(
+    return workspace_ptr->orig_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
 }
 
@@ -351,7 +351,7 @@ void element_pointer_leave(
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
-    workspace_ptr->parent_element_impl.pointer_leave(element_ptr);
+    workspace_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

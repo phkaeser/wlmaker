@@ -39,18 +39,19 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Method table of the buffer. */
+// FIXME: Make this obsolete through extending element.
 struct _wlmtk_buffer_impl_t {
     /** Destroys the implementation of the buffer. */
     void (*destroy)(wlmtk_buffer_t *buffer_ptr);
 
-    /** Optional. See @ref wlmtk_element_impl_t::pointer_motion. */
+    /** Optional. See @ref wlmtk_element_vmt_t::pointer_motion. */
     bool (*pointer_motion)(wlmtk_buffer_t *buffer_ptr,
                            double x, double y,
                            uint32_t time_msec);
-    /** Optional. See @ref wlmtk_element_impl_t::pointer_button. */
+    /** Optional. See @ref wlmtk_element_vmt_t::pointer_button. */
     bool (*pointer_button)(wlmtk_buffer_t *buffer_ptr,
                            const wlmtk_button_event_t *button_event_ptr);
-    /** Optional. See @ref wlmtk_element_impl_t::pointer_leave. */
+    /** Optional. See @ref wlmtk_element_vmt_t::pointer_leave. */
     void (*pointer_leave)(wlmtk_buffer_t *buffer_ptr);
 };
 
@@ -58,6 +59,8 @@ struct _wlmtk_buffer_impl_t {
 struct _wlmtk_buffer_t {
     /** Super class of the buffer: An element. */
     wlmtk_element_t           super_element;
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Implementation of abstract virtual methods. */
     wlmtk_buffer_impl_t      impl;

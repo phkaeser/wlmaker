@@ -55,7 +55,7 @@ static void element_pointer_leave(
 /* == Data ================================================================= */
 
 /** Method table for the buffer's virtual methods. */
-static const wlmtk_element_impl_t super_element_impl = {
+static const wlmtk_element_vmt_t buffer_element_vmt = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
@@ -77,10 +77,11 @@ bool wlmtk_buffer_init(
     BS_ASSERT(NULL != buffer_impl_ptr->destroy);
     memcpy(&buffer_ptr->impl, buffer_impl_ptr, sizeof(wlmtk_buffer_impl_t));
 
-    if (!wlmtk_element_init(
-            &buffer_ptr->super_element, &super_element_impl)) {
+    if (!wlmtk_element_init(&buffer_ptr->super_element)) {
         return false;
     }
+    buffer_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &buffer_ptr->super_element, &buffer_element_vmt);
     return true;
 }
 
@@ -223,7 +224,7 @@ void handle_wlr_scene_buffer_node_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_impl_t::pointer_motion. */
+/** See @ref wlmtk_element_vmt_t::pointer_motion. */
 bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
@@ -231,33 +232,38 @@ bool element_pointer_motion(
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
-    if (NULL == buffer_ptr->impl.pointer_motion) return true;
+    buffer_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 
+    if (NULL == buffer_ptr->impl.pointer_motion) return true;
     return buffer_ptr->impl.pointer_motion(buffer_ptr, x, y, time_msec);
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_impl_t::pointer_button. */
+/** See @ref wlmtk_element_vmt_t::pointer_button. */
 bool element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
-    if (NULL == buffer_ptr->impl.pointer_button) return false;
+    buffer_ptr->orig_super_element_vmt.pointer_button(
+        element_ptr, button_event_ptr);
 
+    if (NULL == buffer_ptr->impl.pointer_button) return false;
     return buffer_ptr->impl.pointer_button(buffer_ptr, button_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_impl_t::pointer_leave. */
+/** See @ref wlmtk_element_vmt_t::pointer_leave. */
 void element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
-    if (NULL == buffer_ptr->impl.pointer_leave) return;
+    buffer_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 
+    if (NULL == buffer_ptr->impl.pointer_leave) return;
     buffer_ptr->impl.pointer_leave(buffer_ptr);
 }
 

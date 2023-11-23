@@ -56,6 +56,8 @@ struct _wlmtk_container_impl_t {
 struct _wlmtk_container_t {
     /** Super class of the container. */
     wlmtk_element_t           super_element;
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Elements contained here. */
     bs_dllist_t               elements;

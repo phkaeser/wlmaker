@@ -25,8 +25,8 @@
 
 /** Forward declaration: Element. */
 typedef struct _wlmtk_element_t wlmtk_element_t;
-/** Forward declaration: Element virtual method implementations. */
-typedef struct _wlmtk_element_impl_t wlmtk_element_impl_t;
+/** Forward declaration: Element virtual method table. */
+typedef struct _wlmtk_element_vmt_t wlmtk_element_vmt_t;
 
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
@@ -38,23 +38,23 @@ struct wlr_scene_tree;
 extern "C" {
 #endif  // __cplusplus
 
-/** Pointers to the implementation of Element's virtual methods. */
-struct _wlmtk_element_impl_t {
-    /** Destroys the implementation of the element. */
+/** Virtual method table for the element. */
+struct _wlmtk_element_vmt_t {
+    /** Abstract: Destroys the implementation of the element. */
     void (*destroy)(wlmtk_element_t *element_ptr);
 
-    /** Creates element's scene graph API node, child to wlr_scene_tree_ptr. */
+    /** Abstract: Creates element's scene graph API node, child to wlr_scene_tree_ptr. */
     struct wlr_scene_node *(*create_scene_node)(
         wlmtk_element_t *element_ptr,
         struct wlr_scene_tree *wlr_scene_tree_ptr);
 
-    /** Gets dimensions of the element, relative to the position. */
+    /** Abstract: Gets dimensions of the element, relative to the element's position. */
     void (*get_dimensions)(
         wlmtk_element_t *element_ptr,
-        int *left_ptr,
-        int *top_ptr,
-        int *right_ptr,
-        int *bottom_ptr);
+        int *x1_ptr,
+        int *y1_ptr,
+        int *x2_ptr,
+        int *y2_ptr);
 
     /** Gets element area to accept pointer activity, relative to position. */
     void (*get_pointer_area)(
@@ -66,6 +66,14 @@ struct _wlmtk_element_impl_t {
 
     /**
      * Indicates pointer motion into or within the element area to (x,y).
+     *
+     * The default implementation at @ref _wlmtk_element_pointer_motion updates
+     * @ref wlmtk_element_t::last_pointer_x,
+     * @ref wlmtk_element_t::last_pointer_y
+     * and @ref wlmtk_element_t::last_pointer_time_msec.
+     *
+     * Derived classes that overwrite this method are advised to call the
+     * initial implementation for keeping these internals updated.
      *
      * @param element_ptr
      * @param x
@@ -79,6 +87,7 @@ struct _wlmtk_element_impl_t {
     bool (*pointer_motion)(wlmtk_element_t *element_ptr,
                            double x, double y,
                            uint32_t time_msec);
+
     /**
      * Indicates pointer button event.
      *
@@ -110,8 +119,8 @@ struct _wlmtk_element_t {
     /** The node of elements. */
     bs_dllist_node_t          dlnode;
 
-    /** Implementation of abstract virtual methods. */
-    wlmtk_element_impl_t      impl;
+    /** Virtual method table for the element. */
+    wlmtk_element_vmt_t       vmt;
 
     /** Points to the wlroots scene graph API node, if attached. */
     struct wlr_scene_node     *wlr_scene_node_ptr;
@@ -146,13 +155,22 @@ struct _wlmtk_element_t {
  * Initializes the element.
  *
  * @param element_ptr
- * @param element_impl_ptr
  *
  * @return true on success.
  */
-bool wlmtk_element_init(
+bool wlmtk_element_init(wlmtk_element_t *element_ptr);
+
+/**
+ * Extends the element's virtual methods.
+ *
+ * @param element_ptr
+ * @param element_vmt_ptr
+ *
+ * @return The previous virtual method table.
+ */
+wlmtk_element_vmt_t wlmtk_element_extend(
     wlmtk_element_t *element_ptr,
-    const wlmtk_element_impl_t *element_impl_ptr);
+    const wlmtk_element_vmt_t *element_vmt_ptr);
 
 /**
  * Cleans up the element.
@@ -191,7 +209,7 @@ void wlmtk_element_set_parent_container(
  *
  * If the element has a parent, and that parent is itself attached to the
  * wlroots scene tree, this will either re-parent an already existing node,
- * or invoke wlmtk_element_impl_t::create_scene_node to create and attach a
+ * or invoke @ref wlmtk_element_vmt_t::create_scene_node to create and attach a
  * new node to the paren'ts tree.
  * Otherwise, it will clear any existing node.
  *
@@ -238,6 +256,30 @@ void wlmtk_element_set_position(
     int y);
 
 /**
+ * Gets the area that the element on which the element accepts pointer events.
+ *
+ * The area extents are relative to the element's position. By default, this
+ * overlaps with the element dimensions. Some elements (eg. a surface with
+ * further-extending sub-surfaces) may differ.
+ *
+ * @param element_ptr
+ * @param x1_ptr              Leftmost position of pointer area. May be NULL.
+ * @param y1_ptr              Topmost position of pointer area. May be NULL.
+ * @param x2_ptr              Rightmost position of pointer area. May be NULL.
+ * @param y2_ptr              Bottommost position of pointer area. May be NULL.
+ */
+static inline void wlmtk_element_get_pointer_area(
+    wlmtk_element_t *element_ptr,
+    int *x1_ptr,
+    int *y1_ptr,
+    int *x2_ptr,
+    int *y2_ptr)
+{
+    element_ptr->vmt.get_pointer_area(
+        element_ptr, x1_ptr, y1_ptr, x2_ptr, y2_ptr);
+}
+
+/**
  * Gets the dimensions of the element in pixels, relative to the position.
  *
  * @param element_ptr
@@ -246,68 +288,40 @@ void wlmtk_element_set_position(
  * @param right_ptr           Rightmost position. Ma be NULL.
  * @param bottom_ptr          Bottommost position. May be NULL.
  */
-void wlmtk_element_get_dimensions(
+static inline void wlmtk_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
     int *right_ptr,
-    int *bottom_ptr);
+    int *bottom_ptr)
+{
+    element_ptr->vmt.get_dimensions(
+        element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
+}
 
-/**
- * Gets the area that the element on which the element accepts pointer events.
- *
- * The area extents are relative to the element's position. By default, this
- * overlaps with the element dimensions. Some elements (eg. a surface with
- * further-extending sub-surfaces) may differ.
- *
- * @param element_ptr
- * @param left_ptr            Leftmost position of pointer area. May be NULL.
- * @param top_ptr             Topmost position of pointer area. May be NULL.
- * @param right_ptr           Rightmost position of pointer area. May be NULL.
- * @param bottom_ptr          Bottommost position of pointer area. May be NULL.
- */
-void wlmtk_element_get_pointer_area(
-    wlmtk_element_t *element_ptr,
-    int *left_ptr,
-    int *top_ptr,
-    int *right_ptr,
-    int *bottom_ptr);
-
-/**
- * Virtual method: Calls 'pointer_motion' for the element's implementation.
- *
- * Also updates wlmtk_element_t::last_pointer_x,
- * wlmtk_element_t::last_pointer_y and wlmtk_element_t::last_pointer_time_msec.
- *
- * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
- *
- * @return Whether the coordinates are within this element's area that accepts
- *     pointer events. May be a subset of @ref wlmtk_element_get_pointer_area.
- *
- */
-bool wlmtk_element_pointer_motion(
+/** Calls @ref wlmtk_element_vmt_t::pointer_button. */
+static inline bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
-    uint32_t time_msec);
+    uint32_t time_msec)
+{
+    return element_ptr->vmt.pointer_motion(element_ptr, x, y, time_msec);
+}
 
-/**
- * Virtual method: Calls 'pointer_leave' for the element's implementation.
- */
-void wlmtk_element_pointer_leave(
-    wlmtk_element_t *element_ptr);
-
-/** Virtual method: calls 'button' for the element's implementation. */
+/** Calls @ref wlmtk_element_vmt_t::pointer_button. */
 static inline bool wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
-    if (NULL == element_ptr->impl.pointer_button) return false;
-    return element_ptr->impl.pointer_button(
-        element_ptr, button_event_ptr);
+    return element_ptr->vmt.pointer_button(element_ptr, button_event_ptr);
+}
+
+/** Calls @ref wlmtk_element_vmt_t::pointer_leave. */
+static inline void wlmtk_element_pointer_leave(
+    wlmtk_element_t *element_ptr)
+{
+    element_ptr->vmt.pointer_leave(element_ptr);
 }
 
 /**
@@ -319,7 +333,7 @@ static inline bool wlmtk_element_pointer_button(
  */
 static inline void wlmtk_element_destroy(
     wlmtk_element_t *element_ptr) {
-    element_ptr->impl.destroy(element_ptr);
+    element_ptr->vmt.destroy(element_ptr);
 }
 
 /** Unit tests for the element. */
@@ -329,6 +343,8 @@ extern const bs_test_case_t wlmtk_element_test_cases[];
 typedef struct {
     /** State of the element. */
     wlmtk_element_t           element;
+    /** Original VMT. */
+    wlmtk_element_vmt_t       orig_vmt;
     /** Width of the element, in pixels. */
     int width;
     /** Height of the element, in pixels. */
@@ -350,7 +366,7 @@ typedef struct {
 wlmtk_fake_element_t *wlmtk_fake_element_create(void);
 
 /** Implementation table of a "fake" element for tests. */
-extern const wlmtk_element_impl_t wlmtk_fake_element_impl;
+extern const wlmtk_element_vmt_t fake_element_vmt;
 
 #ifdef __cplusplus
 }  // extern "C"

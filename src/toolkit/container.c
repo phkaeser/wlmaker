@@ -65,7 +65,7 @@ static bool update_pointer_focus_at(
 static void base_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
-static const wlmtk_element_impl_t super_element_impl = {
+static const wlmtk_element_vmt_t container_element_vmt = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
@@ -87,10 +87,11 @@ bool wlmtk_container_init(
     BS_ASSERT(NULL != container_impl_ptr);
     BS_ASSERT(NULL != container_impl_ptr->destroy);
 
-    if (!wlmtk_element_init(&container_ptr->super_element,
-                            &super_element_impl)) {
+    if (!wlmtk_element_init(&container_ptr->super_element)) {
         return false;
     }
+    container_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &container_ptr->super_element, &container_element_vmt);
 
     memcpy(&container_ptr->impl,
            container_impl_ptr,
@@ -372,6 +373,8 @@ bool element_pointer_motion(
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
+    container_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 
     return update_pointer_focus_at(container_ptr, x, y, time_msec);
 }
@@ -683,13 +686,13 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
                             &container, &wlmtk_container_fake_impl));
     // Also expect the super element to be initialized.
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.impl.destroy);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.vmt.destroy);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl.destroy);
 
     wlmtk_container_destroy(&container);
 
     // Also expect the super element to be un-initialized.
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.impl.destroy);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.vmt.destroy);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl.destroy);
 }
 
@@ -764,10 +767,10 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL, container.super_element.wlr_scene_node_ptr);
 
+    // FIXME: Should use fake_element!
     wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_init(&element, &wlmtk_fake_element_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element));
+    wlmtk_element_extend(&element, &fake_element_vmt);
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
     wlmtk_container_add_element(&container, &element);

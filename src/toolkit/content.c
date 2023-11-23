@@ -59,7 +59,7 @@ static bool element_pointer_button(
 /* == Data ================================================================= */
 
 /** Method table for the container's virtual methods. */
-static const wlmtk_element_impl_t super_element_impl = {
+static const wlmtk_element_vmt_t content_element_vmt = {
     .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
@@ -88,10 +88,11 @@ bool wlmtk_content_init(
     BS_ASSERT(NULL != content_impl_ptr->request_size);
     BS_ASSERT(NULL != content_impl_ptr->set_activated);
 
-    if (!wlmtk_element_init(&content_ptr->super_element,
-                            &super_element_impl)) {
+    if (!wlmtk_element_init(&content_ptr->super_element)) {
         return false;
     }
+    content_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &content_ptr->super_element, &content_element_vmt);
 
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
@@ -419,6 +420,13 @@ static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
     .set_activated = fake_content_set_activated,
 };
 
+/** Extensions to the content's super elements virtual methods. */
+static const wlmtk_element_vmt_t fake_content_element_vmt = {
+    .pointer_motion = fake_content_element_pointer_motion,
+    .pointer_button = fake_content_element_pointer_button,
+    .pointer_leave = fake_content_element_pointer_leave,
+};
+
 /* ------------------------------------------------------------------------- */
 wlmtk_fake_content_t *wlmtk_fake_content_create(void)
 {
@@ -433,16 +441,11 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
         return NULL;
     }
 
-    BS_ASSERT(NULL != fake_content_ptr->content.super_element.impl.destroy);
+    BS_ASSERT(NULL != fake_content_ptr->content.super_element.vmt.destroy);
     BS_ASSERT(NULL != fake_content_ptr->content.impl.destroy);
 
-    fake_content_ptr->content.super_element.impl.pointer_leave =
-        fake_content_element_pointer_leave;
-    fake_content_ptr->content.super_element.impl.pointer_motion =
-        fake_content_element_pointer_motion;
-    fake_content_ptr->content.super_element.impl.pointer_button =
-        fake_content_element_pointer_button;
-
+    fake_content_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &fake_content_ptr->content.super_element, &fake_content_element_vmt);
     return fake_content_ptr;
 }
 
@@ -456,7 +459,6 @@ void fake_content_destroy(wlmtk_content_t *content_ptr)
     wlmtk_content_fini(&fake_content_ptr->content);
 
     // Also expect the super element to be un-initialized.
-    BS_ASSERT(NULL == fake_content_ptr->content.super_element.impl.destroy);
     BS_ASSERT(NULL == fake_content_ptr->content.impl.destroy);
     free(fake_content_ptr);
 }
@@ -507,23 +509,17 @@ void fake_content_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Does nothing. */
-void fake_content_element_pointer_leave(
-    __UNUSED__ wlmtk_element_t *element_ptr)
-{
-    // Nothing to do.
-}
-
-/* ------------------------------------------------------------------------- */
 /** Returns (x, y) in [(0, committed_with), (0, committed_height)). */
 bool fake_content_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
-    __UNUSED__ uint32_t time_msec)
+    uint32_t time_msec)
 {
     wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_content_t, content.super_element);
+    fake_content_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 
     return (0 <= x && x < fake_content_ptr->content.committed_width &&
             0 <= y && y < fake_content_ptr->content.committed_height);
@@ -536,6 +532,14 @@ bool fake_content_element_pointer_button(
     __UNUSED__ const wlmtk_button_event_t *button_event_ptr)
 {
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Does nothing. */
+void fake_content_element_pointer_leave(
+    __UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing to do.
 }
 
 /* == Unit tests =========================================================== */
@@ -559,7 +563,7 @@ void test_init_fini(bs_test_t *test_ptr)
     // Also expect the super element to be initialized.
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
-        fake_content_ptr->content.super_element.impl.destroy);
+        fake_content_ptr->content.super_element.vmt.destroy);
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
         fake_content_ptr->content.impl.destroy);

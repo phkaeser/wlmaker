@@ -59,6 +59,8 @@ struct _wlmtk_content_t {
 
     /** Super class of the content: An element. */
     wlmtk_element_t           super_element;
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Implementation of abstract virtual methods. */
     wlmtk_content_impl_t      impl;
@@ -196,6 +198,8 @@ extern const bs_test_case_t wlmtk_content_test_cases[];
 struct _wlmtk_fake_content_t {
     /** State of the content. */
     wlmtk_content_t           content;
+    /** Original virtual method table of the content's super element. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
     /** Whether @ref wlmtk_content_request_close was called. */
     bool                      request_close_called;
     /** `width` argument eof last @ref wlmtk_content_request_size call. */
