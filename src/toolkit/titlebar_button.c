@@ -64,14 +64,14 @@ static struct wlr_buffer *create_buf(
 
 /* == Data ================================================================= */
 
-/** Buffer implementation for title of the title bar. */
-static const wlmtk_button_impl_t titlebar_button_impl = {
-    .clicked = titlebar_button_clicked,
-};
-
 /** Extension to the superclass element's virtual method table. */
 static const wlmtk_element_vmt_t titlebar_button_element_vmt = {
     .destroy = titlebar_button_element_destroy,
+};
+
+/** Extension to the parent button class' virtual methods. */
+static const wlmtk_button_vmt_t titlebar_button_vmt = {
+    .clicked = titlebar_button_clicked,
 };
 
 /* == Exported methods ===================================================== */
@@ -92,15 +92,16 @@ wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
-    if (!wlmtk_button_init(
-            &titlebar_button_ptr->super_button,
-            &titlebar_button_impl)) {
+    if (!wlmtk_button_init(&titlebar_button_ptr->super_button)) {
         wlmtk_titlebar_button_destroy(titlebar_button_ptr);
         return NULL;
     }
     wlmtk_element_extend(
         &titlebar_button_ptr->super_button.super_buffer.super_element,
         &titlebar_button_element_vmt);
+    wlmtk_button_extend(
+        &titlebar_button_ptr->super_button,
+        &titlebar_button_vmt);
 
     return titlebar_button_ptr;
 }

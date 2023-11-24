@@ -30,6 +30,8 @@
 
 /* == Declarations ========================================================= */
 
+static void _wlmtk_button_clicked(wlmtk_button_t *button_ptr);
+
 static bool _wlmtk_button_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
@@ -51,17 +53,19 @@ static const wlmtk_element_vmt_t button_element_vmt = {
     .pointer_leave = _wlmtk_button_element_pointer_leave,
 };
 
+/** Virtual method table for the button. */
+static const wlmtk_button_vmt_t button_vmt = {
+    .clicked = _wlmtk_button_clicked,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_button_init(
-    wlmtk_button_t *button_ptr,
-    const wlmtk_button_impl_t *button_impl_ptr)
+bool wlmtk_button_init(wlmtk_button_t *button_ptr)
 {
     BS_ASSERT(NULL != button_ptr);
     memset(button_ptr, 0, sizeof(wlmtk_button_t));
-    BS_ASSERT(NULL != button_impl_ptr);
-    memcpy(&button_ptr->impl, button_impl_ptr, sizeof(wlmtk_button_impl_t));
+    button_ptr->vmt = button_vmt;
 
     if (!wlmtk_buffer_init(&button_ptr->super_buffer)) {
         wlmtk_button_fini(button_ptr);
@@ -72,6 +76,20 @@ bool wlmtk_button_init(
         &button_element_vmt);
 
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_button_vmt_t wlmtk_button_extend(
+    wlmtk_button_t *button_ptr,
+    const wlmtk_button_vmt_t *button_vmt_ptr)
+{
+    wlmtk_button_vmt_t orig_vmt = button_ptr->vmt;
+
+    if (NULL != button_vmt_ptr->clicked) {
+        button_ptr->vmt.clicked = button_vmt_ptr->clicked;
+    }
+
+    return orig_vmt;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -122,6 +140,13 @@ void wlmtk_button_set(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
+/** Default implementation of @ref wlmtk_button_vmt_t::clicked. Nothing. */
+void _wlmtk_button_clicked(__UNUSED__ wlmtk_button_t *button_ptr)
+{
+    // Nothing.
+}
+
+/* ------------------------------------------------------------------------- */
 /** See @ref wlmtk_element_vmt_t::pointer_motion. */
 bool _wlmtk_button_element_pointer_motion(
     wlmtk_element_t *element_ptr,
@@ -161,9 +186,7 @@ bool _wlmtk_button_element_pointer_button(
         break;
 
     case WLMTK_BUTTON_CLICK:
-        if (NULL != button_ptr->impl.clicked) {
-            button_ptr->impl.clicked(button_ptr);
-        }
+        button_ptr->vmt.clicked(button_ptr);
         break;
 
     default:
@@ -220,16 +243,13 @@ const bs_test_case_t wlmtk_button_test_cases[] = {
 /** Test outcome: Whether 'clicked' was called. */
 static bool fake_button_got_clicked = false;
 
-/** Fake destructor. */
-static void fake_button_destroy(__UNUSED__ wlmtk_button_t *button_ptr) {}
 /** Fake 'clicked' handler. */
 static void fake_button_clicked(__UNUSED__ wlmtk_button_t *button_ptr) {
     fake_button_got_clicked = true;
 }
 
 /** Virtual method table of fake button. */
-const wlmtk_button_impl_t fake_button_impl = {
-    .destroy = fake_button_destroy,
+static const wlmtk_button_vmt_t fake_button_vmt = {
     .clicked = fake_button_clicked,
 };
 
@@ -239,9 +259,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
 
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_button_init(&button,  &fake_button_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_button_init(&button));
     wlmtk_button_fini(&button);
 }
 
@@ -250,7 +268,8 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_press_release(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+    BS_ASSERT(wlmtk_button_init(&button));
+    wlmtk_button_extend(&button, &fake_button_vmt);
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -308,7 +327,7 @@ void test_press_release(bs_test_t *test_ptr)
 void test_press_release_outside(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+    BS_ASSERT(wlmtk_button_init(&button));
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -355,7 +374,7 @@ void test_press_release_outside(bs_test_t *test_ptr)
 void test_press_right(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button,  &fake_button_impl));
+    BS_ASSERT(wlmtk_button_init(&button));
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);

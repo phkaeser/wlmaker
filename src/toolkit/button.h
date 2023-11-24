@@ -30,14 +30,11 @@ extern "C" {
 /** Forward declaration: State of a button. */
 typedef struct _wlmtk_button_t wlmtk_button_t;
 
-/** Method table of the button. */
+/** Virtual method table of the button. */
 typedef struct {
-    /** Destroys the implementation of the button. */
-    void (*destroy)(wlmtk_button_t *button_ptr);
-
     /** Optional: Called when the button has been clicked. */
     void (*clicked)(wlmtk_button_t *button_ptr);
-} wlmtk_button_impl_t;
+} wlmtk_button_vmt_t;
 
 /** State of a button. */
 struct _wlmtk_button_t {
@@ -45,8 +42,8 @@ struct _wlmtk_button_t {
     wlmtk_buffer_t            super_buffer;
     /** Original virtual method table of the superclass element. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-    /** Implementation of abstract virtual methods. */
-    wlmtk_button_impl_t       impl;
+    /** The virtual method table. */
+    wlmtk_button_vmt_t        vmt;
 
     /** WLR buffer holding the button in released state. */
     struct wlr_buffer         *released_wlr_buffer_ptr;
@@ -64,13 +61,22 @@ struct _wlmtk_button_t {
  * Initializes the button.
  *
  * @param button_ptr
- * @param button_impl_ptr
  *
  * @return true on success.
  */
-bool wlmtk_button_init(
+bool wlmtk_button_init(wlmtk_button_t *button_ptr);
+
+/**
+ * Extends the button's virtual methods.
+ *
+ * @param button_ptr
+ * @param button_vmt_ptr
+ *
+ * @return The original virtual method table.
+ */
+wlmtk_button_vmt_t wlmtk_button_extend(
     wlmtk_button_t *button_ptr,
-    const wlmtk_button_impl_t *button_impl_ptr);
+    const wlmtk_button_vmt_t *button_vmt_ptr);
 
 /**
  * Cleans up the button.
