@@ -256,7 +256,7 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
             wlmtk_content_element(window_ptr->content_ptr), false);
         wlmtk_content_set_window(window_ptr->content_ptr, NULL);
 
-        wlmtk_content_destroy(window_ptr->content_ptr);
+        wlmtk_element_destroy(wlmtk_content_element(window_ptr->content_ptr));
         window_ptr->content_ptr = NULL;
     }
 

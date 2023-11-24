@@ -30,10 +30,6 @@
 
 /* == Declarations ========================================================= */
 
-static void element_destroy(wlmtk_element_t *element_ptr);
-static struct wlr_scene_node *element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
@@ -60,8 +56,6 @@ static bool element_pointer_button(
 
 /** Method table for the container's virtual methods. */
 static const wlmtk_element_vmt_t content_element_vmt = {
-    .destroy = element_destroy,
-    .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
     .get_pointer_area = element_get_pointer_area,
     .pointer_leave = element_pointer_leave,
@@ -76,17 +70,10 @@ void *wlmtk_content_identifier_ptr = wlmtk_content_init;
 /* ------------------------------------------------------------------------- */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    const wlmtk_content_impl_t *content_impl_ptr,
     struct wlr_seat *wlr_seat_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
-    BS_ASSERT(NULL != content_impl_ptr);
-    BS_ASSERT(NULL != content_impl_ptr->destroy);
-    BS_ASSERT(NULL != content_impl_ptr->create_scene_node);
-    BS_ASSERT(NULL != content_impl_ptr->request_close);
-    BS_ASSERT(NULL != content_impl_ptr->request_size);
-    BS_ASSERT(NULL != content_impl_ptr->set_activated);
 
     if (!wlmtk_element_init(&content_ptr->super_element)) {
         return false;
@@ -96,9 +83,27 @@ bool wlmtk_content_init(
 
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
-
-    memcpy(&content_ptr->impl, content_impl_ptr, sizeof(wlmtk_content_impl_t));
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_content_vmt_t wlmtk_content_extend(
+    wlmtk_content_t *content_ptr,
+    const wlmtk_content_vmt_t *content_vmt_ptr)
+{
+    wlmtk_content_vmt_t orig_vmt = content_ptr->vmt;
+
+    if (NULL != content_vmt_ptr->request_close) {
+        content_ptr->vmt.request_close = content_vmt_ptr->request_close;
+    }
+    if (NULL != content_vmt_ptr->request_size) {
+        content_ptr->vmt.request_size = content_vmt_ptr->request_size;
+    }
+    if (NULL != content_vmt_ptr->set_activated) {
+        content_ptr->vmt.set_activated = content_vmt_ptr->set_activated;
+    }
+
+    return orig_vmt;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -156,40 +161,6 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr)
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implementation of the superclass wlmtk_element_t::destroy method.
- *
- * Forwards the call to the wlmtk_content_t::destroy method.
- *
- * @param element_ptr
- */
-void element_destroy(wlmtk_element_t *element_ptr)
-{
-    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_content_t, super_element);
-    content_ptr->impl.destroy(content_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implementation of the superclass wlmtk_element_t::create_scene_node method.
- *
- * Forwards the call to the wlmtk_content_t::create_scene_node method.
- *
- * @param element_ptr
- * @param wlr_scene_tree_ptr
- */
-struct wlr_scene_node *element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_content_t, super_element);
-    return content_ptr->impl.create_scene_node(
-        content_ptr, wlr_scene_tree_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -389,9 +360,9 @@ bool element_pointer_button(
 /* == Fake content, useful for unit tests. ================================= */
 
 static void fake_content_destroy(
-    wlmtk_content_t *content_ptr);
+    wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *fake_content_create_scene_node(
-    wlmtk_content_t *content_ptr,
+    wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void fake_content_request_close(
     wlmtk_content_t *content_ptr);
@@ -414,20 +385,19 @@ static bool fake_content_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
-/** Method table of the fake content. */
-static const wlmtk_content_impl_t wlmtk_fake_content_impl = {
-    .destroy = fake_content_destroy,
-    .create_scene_node = fake_content_create_scene_node,
-    .request_close = fake_content_request_close,
-    .request_size = fake_content_request_size,
-    .set_activated = fake_content_set_activated,
-};
-
 /** Extensions to the content's super elements virtual methods. */
 static const wlmtk_element_vmt_t fake_content_element_vmt = {
+    .destroy = fake_content_destroy,
+    .create_scene_node = fake_content_create_scene_node,
     .pointer_motion = fake_content_element_pointer_motion,
     .pointer_button = fake_content_element_pointer_button,
     .pointer_leave = fake_content_element_pointer_leave,
+};
+/** Extensions to the content's virtual methods. */
+static const wlmtk_content_vmt_t fake_content_vmt = {
+    .request_close = fake_content_request_close,
+    .request_size = fake_content_request_size,
+    .set_activated = fake_content_set_activated,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -437,15 +407,11 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
         1, sizeof(wlmtk_fake_content_t));
     if (NULL == fake_content_ptr) return NULL;
 
-    if (!wlmtk_content_init(&fake_content_ptr->content,
-                            &wlmtk_fake_content_impl,
-                            NULL)) {
+    if (!wlmtk_content_init(&fake_content_ptr->content, NULL)) {
         free(fake_content_ptr);
         return NULL;
     }
-
-    BS_ASSERT(NULL != fake_content_ptr->content.super_element.vmt.destroy);
-    BS_ASSERT(NULL != fake_content_ptr->content.impl.destroy);
+    wlmtk_content_extend(&fake_content_ptr->content, &fake_content_vmt);
 
     fake_content_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &fake_content_ptr->content.super_element, &fake_content_element_vmt);
@@ -454,22 +420,19 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
 
 /* ------------------------------------------------------------------------- */
 /** Dtor for the fake content. */
-void fake_content_destroy(wlmtk_content_t *content_ptr)
+void fake_content_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmtk_fake_content_t, content);
+        element_ptr, wlmtk_fake_content_t, content.super_element);
 
     wlmtk_content_fini(&fake_content_ptr->content);
-
-    // Also expect the super element to be un-initialized.
-    BS_ASSERT(NULL == fake_content_ptr->content.impl.destroy);
     free(fake_content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Creates a scene node for the fake content. */
 struct wlr_scene_node *fake_content_create_scene_node(
-    __UNUSED__ wlmtk_content_t *content_ptr,
+    __UNUSED__ wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
     struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
@@ -567,9 +530,6 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL,
         fake_content_ptr->content.super_element.vmt.destroy);
-    BS_TEST_VERIFY_NEQ(
-        test_ptr, NULL,
-        fake_content_ptr->content.impl.destroy);
 
     wlmtk_content_request_close(&fake_content_ptr->content);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->request_close_called);

@@ -76,9 +76,9 @@ static void handle_toplevel_set_title(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void content_destroy(wlmtk_content_t *content_ptr);
-static struct wlr_scene_node *content_create_scene_node(
-    wlmtk_content_t *content_ptr,
+static void content_element_destroy(wlmtk_element_t *element_ptr);
+static struct wlr_scene_node *content_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void content_request_close(
     wlmtk_content_t *content_ptr);
@@ -92,15 +92,18 @@ static void content_set_activated(
 
 /* == Data ================================================================= */
 
-/** Method table for the `wlmtk_content_t` virtual methods. */
-const wlmtk_content_impl_t    content_impl = {
-    .destroy = content_destroy,
-    .create_scene_node = content_create_scene_node,
+/** Virtual methods for XDG toplevel content, for the Element superclass. */
+const wlmtk_element_vmt_t     _wlmtk_xdg_toplevel_element_vmt = {
+    .destroy = content_element_destroy,
+    .create_scene_node = content_element_create_scene_node,
+};
+
+/** Virtual methods for XDG toplevel content, for the Content superclass. */
+const wlmtk_content_vmt_t     _wlmtk_xdg_toplevel_content_vmt = {
     .request_close = content_request_close,
     .request_size = content_request_size,
     .set_activated = content_set_activated,
 };
-
 
 /* == Exported methods ===================================================== */
 
@@ -118,7 +121,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         server_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
         &content_ptr->super_content);
     if (NULL == wlmtk_window_ptr) {
-        wlmtk_content_destroy(&content_ptr->super_content);
+        content_element_destroy(&content_ptr->super_content.super_element);
         return NULL;
     }
 
@@ -137,11 +140,16 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
     if (NULL == xdg_tl_content_ptr) return NULL;
 
     if (!wlmtk_content_init(&xdg_tl_content_ptr->super_content,
-                            &content_impl,
                             server_ptr->wlr_seat_ptr)) {
         xdg_toplevel_content_destroy(xdg_tl_content_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &xdg_tl_content_ptr->super_content.super_element,
+        &_wlmtk_xdg_toplevel_element_vmt);
+    wlmtk_content_extend(
+        &xdg_tl_content_ptr->super_content,
+        &_wlmtk_xdg_toplevel_content_vmt);
     xdg_tl_content_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
     xdg_tl_content_ptr->server_ptr = server_ptr;
 
@@ -204,10 +212,11 @@ void xdg_toplevel_content_destroy(
  *
  * @param content_ptr
  */
-void content_destroy(wlmtk_content_t *content_ptr)
+void content_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+        element_ptr, wlmtk_xdg_toplevel_content_t,
+        super_content.super_element);
     xdg_toplevel_content_destroy(xdg_tl_content_ptr);
 }
 
@@ -220,12 +229,13 @@ void content_destroy(wlmtk_content_t *content_ptr)
  *
  * @return Scene graph API node that represents the content.
  */
-struct wlr_scene_node *content_create_scene_node(
-    wlmtk_content_t *content_ptr,
+struct wlr_scene_node *content_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmtk_xdg_toplevel_content_t, super_content);
+        element_ptr, wlmtk_xdg_toplevel_content_t,
+        super_content.super_element);
 
     struct wlr_scene_tree *surface_wlr_scene_tree_ptr =
         wlr_scene_xdg_surface_create(

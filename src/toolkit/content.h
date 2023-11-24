@@ -23,8 +23,8 @@
 /** Forward declaration: Window content. */
 typedef struct _wlmtk_content_t wlmtk_content_t;
 
-/** Forward declaration: Content virtual method implementations. */
-typedef struct _wlmtk_content_impl_t wlmtk_content_impl_t;
+/** Forward declaration: Content virtual method table. */
+typedef struct _wlmtk_content_vmt_t wlmtk_content_vmt_t;
 /** Forward declaration: Fake content, for tests. */
 typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
@@ -35,20 +35,14 @@ typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Method table of the content. */
-struct _wlmtk_content_impl_t {
-    /** Destroys the implementation of the content. */
-    void (*destroy)(wlmtk_content_t *content_ptr);
-    /** Creates content's scene graph API node, child to wlr_scene_tree_ptr. */
-    struct wlr_scene_node *(*create_scene_node)(
-        wlmtk_content_t *content_ptr,
-        struct wlr_scene_tree *wlr_scene_tree_ptr);
-    /** Requests the content to close. */
+/** The content's virtual method table. */
+struct _wlmtk_content_vmt_t {
+    /** Abstract: Requests the content to close. */
     void (*request_close)(wlmtk_content_t *content_ptr);
-    /** Sets width and height of the content. Returns serial. */
+    /** Abstract: Sets width and height of the content. Returns serial. */
     uint32_t (*request_size)(wlmtk_content_t *content_ptr,
                              int width, int height);
-    /** Sets whether the content is activated (has keyboard focus). */
+    /** Abstract: Sets whether the content is activated (keyboard focus). */
     void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
 
@@ -62,8 +56,8 @@ struct _wlmtk_content_t {
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
 
-    /** Implementation of abstract virtual methods. */
-    wlmtk_content_impl_t      impl;
+    /** Virtual method table of the content. */
+    wlmtk_content_vmt_t       vmt;
 
     /**
      * The window this content belongs to. Will be set when creating
@@ -91,15 +85,25 @@ struct _wlmtk_content_t {
  * Initializes the content.
  *
  * @param content_ptr
- * @param content_impl_ptr
  * @param wlr_seat_ptr
  *
  * @return true on success.
  */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    const wlmtk_content_impl_t *content_impl_ptr,
     struct wlr_seat *wlr_seat_ptr);
+
+/**
+ * Extends the content's virtual methods.
+ *
+ * @param content_ptr
+ * @param content_vmt_ptr
+ *
+ * @return The original virtual method table.
+ */
+wlmtk_content_vmt_t wlmtk_content_extend(
+    wlmtk_content_t *content_ptr,
+    const wlmtk_content_vmt_t *content_vmt_ptr);
 
 /**
  * Cleans up the content.
@@ -162,26 +166,25 @@ void wlmtk_content_get_size(
  */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
-/** Wraps to @ref wlmtk_content_impl_t::destroy. */
-static inline void wlmtk_content_destroy(wlmtk_content_t *content_ptr) {
-    content_ptr->impl.destroy(content_ptr);
+/** Wraps to @ref wlmtk_content_vmt_t::request_close. */
+static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr)
+{
+    content_ptr->vmt.request_close(content_ptr);
 }
-/** Wraps to @ref wlmtk_content_impl_t::request_close. */
-static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
-    content_ptr->impl.request_close(content_ptr);
-}
-/** Wraps to @ref wlmtk_content_impl_t::request_size. */
+/** Wraps to @ref wlmtk_content_vmt_t::request_size. */
 static inline uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
-    int height) {
-    return content_ptr->impl.request_size(content_ptr, width, height);
+    int height)
+{
+    return content_ptr->vmt.request_size(content_ptr, width, height);
 }
-/** Wraps to @ref wlmtk_content_impl_t::set_activated. */
+/** Wraps to @ref wlmtk_content_vmt_t::set_activated. */
 static inline void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
-    bool activated) {
-    content_ptr->impl.set_activated(content_ptr, activated);
+    bool activated)
+{
+    content_ptr->vmt.set_activated(content_ptr, activated);
 }
 
 /**
