@@ -362,7 +362,13 @@ typedef struct {
     wlmtk_button_event_t      pointer_button_event;
 } wlmtk_fake_element_t;
 
-/** Ctor for the fake element. */
+/**
+ * Ctor for the fake element, useful for tests.
+ *
+ * @return A pointer to @ref wlmtk_fake_element_t. Should be destroyed via
+ *     @ref wlmtk_element_destroy, by passing the pointer to
+ *     @ref wlmtk_fake_element_t::element as argument.
+ */
 wlmtk_fake_element_t *wlmtk_fake_element_create(void);
 
 #ifdef __cplusplus
