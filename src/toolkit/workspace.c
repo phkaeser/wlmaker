@@ -78,9 +78,6 @@ static bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 
-static void activate_window(wlmtk_workspace_t *workspace_ptr,
-                            wlmtk_window_t *window_ptr);
-
 /* == Data ================================================================= */
 
 /** States of the pointer FSM. */
@@ -159,7 +156,7 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
         &workspace_ptr->super_container,
         wlmtk_window_element(window_ptr));
 
-    activate_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -177,7 +174,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     }
 
     if (workspace_ptr->activated_window_ptr == window_ptr) {
-        activate_window(workspace_ptr, NULL);
+        wlmtk_workspace_activate_window(workspace_ptr, NULL);
         need_activation = true;
     }
 
@@ -193,7 +190,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
         if (NULL != dlnode_ptr) {
             wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
             wlmtk_window_t *window_ptr = wlmtk_window_from_element(element_ptr);
-            activate_window(workspace_ptr, window_ptr);
+            wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
         }
     }
 }
@@ -266,6 +263,30 @@ void wlmtk_workspace_begin_window_resize(
 {
     workspace_ptr->resize_edges = edges;
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_RESIZE, window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Acticates `window_ptr`. Will de-activate an earlier window. */
+void wlmtk_workspace_activate_window(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    // Nothing to do.
+    if (workspace_ptr->activated_window_ptr == window_ptr) return;
+
+    if (NULL != workspace_ptr->activated_window_ptr) {
+        wlmtk_window_set_activated(workspace_ptr->activated_window_ptr, false);
+        workspace_ptr->activated_window_ptr = NULL;
+    }
+
+    if (NULL != window_ptr) {
+        wlmtk_window_set_activated(window_ptr, true);
+        workspace_ptr->activated_window_ptr = window_ptr;
+    }
+    // set activated.
+    // keep track of activated. => so it can be deactivated.
+
+
 }
 
 /* == Local (static) methods =============================================== */
@@ -466,29 +487,6 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         fsm_ptr, wlmtk_workspace_t, fsm);
     workspace_ptr->grabbed_window_ptr = NULL;
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Acticates `window_ptr`. Will de-activate an earlier window. */
-void activate_window(wlmtk_workspace_t *workspace_ptr,
-                     wlmtk_window_t *window_ptr)
-{
-    // Nothing to do.
-    if (workspace_ptr->activated_window_ptr == window_ptr) return;
-
-    if (NULL != workspace_ptr->activated_window_ptr) {
-        wlmtk_window_set_activated(workspace_ptr->activated_window_ptr, false);
-        workspace_ptr->activated_window_ptr = NULL;
-    }
-
-    if (NULL != window_ptr) {
-        wlmtk_window_set_activated(window_ptr, true);
-        workspace_ptr->activated_window_ptr = window_ptr;
-    }
-    // set activated.
-    // keep track of activated. => so it can be deactivated.
-
-
 }
 
 /* == Unit tests =========================================================== */
@@ -792,6 +790,7 @@ void test_activate(bs_test_t *test_ptr)
 
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw1_ptr->fake_content_ptr->content, 0, 100, 100);
+    wlmtk_element_set_position(wlmtk_window_element(&fw1_ptr->window), 0, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
 
     // Window 1 is mapped => it's activated.
@@ -801,6 +800,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw2_ptr->fake_content_ptr->content, 0, 100, 100);
+    wlmtk_element_set_position(wlmtk_window_element(&fw1_ptr->window), 200, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
     wlmtk_workspace_map_window(workspace_ptr, &fw2_ptr->window);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
@@ -820,7 +820,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_workspace_button(workspace_ptr, &wlr_button_event);
 
     // FIXME: These are broken.
-    // BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
     // BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
 
     // Unmap window. The other one gets activated.

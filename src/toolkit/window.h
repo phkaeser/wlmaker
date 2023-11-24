@@ -92,7 +92,9 @@ typedef struct {
 struct _wlmtk_window_t {
     /** Superclass: Box. */
     wlmtk_box_t               super_box;
-    /** Original virtual method table of the box' container superclass. */
+    /** Original virtual method table of the window's element superclass. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+    /** Original virtual method table of the window' container superclass. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
 
     /** Virtual method table. */

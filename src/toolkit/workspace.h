@@ -143,6 +143,11 @@ void wlmtk_workspace_begin_window_resize(
     wlmtk_window_t *window_ptr,
     uint32_t edges);
 
+/** Acticates `window_ptr`. Will de-activate an earlier window. */
+void wlmtk_workspace_activate_window(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr);
+
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 

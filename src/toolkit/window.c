@@ -29,7 +29,11 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        wlmtk_content_t *content_ptr);
 void wlmtk_window_fini(wlmtk_window_t *window_ptr);
 
-static void wlmtk_window_set_activated_impl(
+static bool _wlmtk_window_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
+    static void wlmtk_window_set_activated_impl(
     wlmtk_window_t *window_ptr,
     bool activated);
 static void wlmtk_window_set_server_side_decorated_impl(
@@ -86,6 +90,10 @@ static void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr);
 
 /* == Data ================================================================= */
 
+/** Virtual method table for the window's element superclass. */
+static const wlmtk_element_vmt_t window_element_vmt = {
+    .pointer_button = _wlmtk_window_element_pointer_button,
+};
 /** Virtual method table for the window's container superclass. */
 static const wlmtk_container_vmt_t window_container_vmt = {
     .update_layout = _wlmtk_box_update_layout,
@@ -184,6 +192,9 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_window_fini(window_ptr);
         return false;
     }
+    window_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &window_ptr->super_box.super_container.super_element,
+        &window_element_vmt);
     window_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &window_ptr->super_box.super_container, &window_container_vmt);
 
@@ -487,6 +498,27 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Activates window on button press, and calls the parent's implementation. */
+bool _wlmtk_window_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window_t, super_box.super_container.super_element);
+
+    // We shouldn't receive buttons when not mapped.
+    BS_ASSERT(
+        NULL !=
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
+        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
+
+    return window_ptr->orig_super_element_vmt.pointer_button(
+        element_ptr, button_event_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Default implementation of @ref wlmtk_window_set_activated. */
