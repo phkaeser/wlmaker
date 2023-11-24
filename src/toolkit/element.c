@@ -325,7 +325,7 @@ static void fake_pointer_leave(
     wlmtk_element_t *element_ptr);
 
 /** Virtual method table for the fake element. */
-const wlmtk_element_vmt_t fake_element_vmt = {
+static const wlmtk_element_vmt_t fake_element_vmt = {
     .destroy = fake_destroy,
     .create_scene_node = fake_create_scene_node,
     .get_dimensions = fake_get_dimensions,

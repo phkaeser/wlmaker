@@ -365,9 +365,6 @@ typedef struct {
 /** Ctor for the fake element. */
 wlmtk_fake_element_t *wlmtk_fake_element_create(void);
 
-/** Implementation table of a "fake" element for tests. */
-extern const wlmtk_element_vmt_t fake_element_vmt;
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
