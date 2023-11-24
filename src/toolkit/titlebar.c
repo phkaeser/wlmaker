@@ -68,7 +68,7 @@ struct _wlmtk_titlebar_t {
     wlmtk_titlebar_style_t    style;
 };
 
-static void titlebar_box_destroy(wlmtk_box_t *box_ptr);
+static void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr);
 static bool redraw_buffers(
     wlmtk_titlebar_t *titlebar_ptr,
     unsigned width);
@@ -76,9 +76,9 @@ static bool redraw(wlmtk_titlebar_t *titlebar_ptr);
 
 /* == Data ================================================================= */
 
-/** Method table for the box's virtual methods. */
-static const wlmtk_box_impl_t titlebar_box_impl = {
-    .destroy = titlebar_box_destroy
+/** Virtual method table extension for the titlebar's element superclass. */
+static const wlmtk_element_vmt_t titlebar_element_vmt = {
+    .destroy = _wlmtk_titlebar_element_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -95,11 +95,14 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
-                        &titlebar_box_impl,
+                        NULL,
                         WLMTK_BOX_HORIZONTAL)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &titlebar_ptr->super_box.super_container.super_element,
+        &titlebar_element_vmt);
 
     titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(window_ptr);
     if (NULL == titlebar_ptr->titlebar_title_ptr) {
@@ -240,11 +243,12 @@ wlmtk_element_t *wlmtk_titlebar_element(wlmtk_titlebar_t *titlebar_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from box. Wraps to our dtor. */
-void titlebar_box_destroy(wlmtk_box_t *box_ptr)
+/** Virtual destructor, wraps to our dtor. */
+void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = BS_CONTAINER_OF(
-        box_ptr, wlmtk_titlebar_t, super_box);
+        element_ptr, wlmtk_titlebar_t,
+        super_box.super_container.super_element);
     wlmtk_titlebar_destroy(titlebar_ptr);
 }
 

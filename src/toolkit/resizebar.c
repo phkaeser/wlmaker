@@ -56,14 +56,14 @@ struct _wlmtk_resizebar_t {
     wlmtk_resizebar_area_t    *right_area_ptr;
 };
 
-static void resizebar_box_destroy(wlmtk_box_t *box_ptr);
+static void _wlmtk_resizebar_element_destroy(wlmtk_element_t *element_ptr);
 static bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width);
 
 /* == Data ================================================================= */
 
-/** Method table for the box's virtual methods. */
-static const wlmtk_box_impl_t resizebar_box_impl = {
-    .destroy = resizebar_box_destroy
+/** Virtual method table extension for the resizebar's element superclass. */
+static const wlmtk_element_vmt_t resizebar_element_vmt = {
+    .destroy = _wlmtk_resizebar_element_destroy,
 };
 
 /* == Exported methods ===================================================== */
@@ -79,11 +79,14 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
 
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
-                        &resizebar_box_impl,
+                        NULL,
                         WLMTK_BOX_HORIZONTAL)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &resizebar_ptr->super_box.super_container.super_element,
+        &resizebar_element_vmt);
 
     resizebar_ptr->left_area_ptr = wlmtk_resizebar_area_create(
         window_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
@@ -238,11 +241,12 @@ wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from box. Wraps to our dtor. */
-void resizebar_box_destroy(wlmtk_box_t *box_ptr)
+/** Virtual destructor: Wraps to our dtor. */
+void _wlmtk_resizebar_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_resizebar_t *resizebar_ptr = BS_CONTAINER_OF(
-        box_ptr, wlmtk_resizebar_t, super_box);
+        element_ptr, wlmtk_resizebar_t,
+        super_box.super_container.super_element);
     wlmtk_resizebar_destroy(resizebar_ptr);
 }
 

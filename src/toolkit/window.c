@@ -82,6 +82,7 @@ static void release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
 
+static void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr);
 static void box_update_layout(wlmtk_box_t *box_ptr);
 static void window_box_destroy(wlmtk_box_t *box_ptr);
 
@@ -91,6 +92,11 @@ static void window_box_destroy(wlmtk_box_t *box_ptr);
 static const wlmtk_box_impl_t window_box_impl = {
     .destroy = window_box_destroy,
     .update_layout = box_update_layout,
+};
+
+/** Virtual method table for the window's container superclass. */
+static const wlmtk_container_vmt_t window_container_vmt = {
+    .update_layout = _wlmtk_box_update_layout,
 };
 
 /** Default methods of @ref wlmtk_window_t. To override for a mock. */
@@ -188,6 +194,9 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_window_fini(window_ptr);
         return false;
     }
+    window_ptr->orig_super_container_vmt = wlmtk_container_extend(
+        &window_ptr->super_box.super_container, &window_container_vmt);
+
     wlmtk_window_set_title(window_ptr, NULL);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
@@ -631,6 +640,35 @@ void release_update(
 {
     bs_dllist_remove(&window_ptr->pending_updates, &update_ptr->dlnode);
     bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of @ref wlmtk_container_vmt_t::update_layout.
+ *
+ * Invoked when the window's contained elements triggered a layout update,
+ * and will use this to trigger (potential) size updates to the window
+ * decorations.
+ *
+ * @param container_ptr
+ */
+void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        container_ptr, wlmtk_window_t, super_box.super_container);
+
+    window_ptr->orig_super_container_vmt.update_layout(container_ptr);
+
+    if (NULL != window_ptr->content_ptr) {
+        int width;
+        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
+        if (NULL != window_ptr->titlebar_ptr) {
+            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
+        }
+        if (NULL != window_ptr->resizebar_ptr) {
+            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------- */

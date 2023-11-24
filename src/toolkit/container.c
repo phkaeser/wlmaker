@@ -28,7 +28,6 @@
 
 /* == Declarations ========================================================= */
 
-static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
@@ -62,11 +61,10 @@ static bool update_pointer_focus_at(
     double x,
     double y,
     uint32_t time_msec);
-static void base_container_update_layout(wlmtk_container_t *container_ptr);
+static void _wlmtk_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t container_element_vmt = {
-    .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
     .get_pointer_area = element_get_pointer_area,
@@ -75,17 +73,19 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .pointer_leave = element_pointer_leave,
 };
 
+/** Default virtual method table. Initializes non-abstract methods. */
+static const wlmtk_container_vmt_t container_vmt = {
+    .update_layout = _wlmtk_container_update_layout,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_container_init(
-    wlmtk_container_t *container_ptr,
-    const wlmtk_container_impl_t *container_impl_ptr)
+bool wlmtk_container_init(wlmtk_container_t *container_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
     memset(container_ptr, 0, sizeof(wlmtk_container_t));
-    BS_ASSERT(NULL != container_impl_ptr);
-    BS_ASSERT(NULL != container_impl_ptr->destroy);
+    container_ptr->vmt = container_vmt;
 
     if (!wlmtk_element_init(&container_ptr->super_element)) {
         return false;
@@ -93,22 +93,15 @@ bool wlmtk_container_init(
     container_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &container_ptr->super_element, &container_element_vmt);
 
-    memcpy(&container_ptr->impl,
-           container_impl_ptr,
-           sizeof(wlmtk_container_impl_t));
-    if (NULL == container_ptr->impl.update_layout) {
-        container_ptr->impl.update_layout = base_container_update_layout;
-    }
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_container_init_attached(
     wlmtk_container_t *container_ptr,
-    const wlmtk_container_impl_t *container_impl_ptr,
     struct wlr_scene_tree *root_wlr_scene_tree_ptr)
 {
-    if (!wlmtk_container_init(container_ptr, container_impl_ptr)) return false;
+    if (!wlmtk_container_init(container_ptr)) return false;
 
     container_ptr->super_element.wlr_scene_node_ptr =
         element_create_scene_node(
@@ -120,6 +113,19 @@ bool wlmtk_container_init_attached(
 
     BS_ASSERT(NULL != container_ptr->super_element.wlr_scene_node_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_container_vmt_t wlmtk_container_extend(
+    wlmtk_container_t *container_ptr,
+    const wlmtk_container_vmt_t *container_vmt_ptr)
+{
+    wlmtk_container_vmt_t orig_vmt = container_ptr->vmt;
+
+    if (NULL != container_vmt_ptr->update_layout) {
+        container_ptr->vmt.update_layout = container_vmt_ptr->update_layout;
+    }
+    return orig_vmt;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -217,19 +223,6 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implementation of the superclass wlmtk_element_t::destroy method.
- *
- * @param element_ptr
- */
-void element_destroy(wlmtk_element_t *element_ptr)
-{
-    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_container_t, super_element);
-    container_ptr->impl.destroy(container_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -562,13 +555,13 @@ bool update_pointer_focus_at(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Base implementation of wlmtk_container_impl_t::update_layout. If there's
- * a paraent, will call @ref wlmtk_container_update_layout. Otherwise, will
+ * Base implementation of wlmtk_container_vmt_t::update_layout. If there's
+ * a parent, will call @ref wlmtk_container_update_layout. Otherwise, will
  * update the pointer focus.
  *
  * @param container_ptr
  */
-void base_container_update_layout(wlmtk_container_t *container_ptr)
+void _wlmtk_container_update_layout(wlmtk_container_t *container_ptr)
 {
     if (NULL != container_ptr->super_element.parent_container_ptr) {
         wlmtk_container_update_layout(
@@ -582,22 +575,6 @@ void base_container_update_layout(wlmtk_container_t *container_ptr)
     }
 }
 
-/* == Helper for unit test: A fake container =============================== */
-
-static void fake_destroy(wlmtk_container_t *container_ptr);
-
-/** Method table for the container we're using for test. */
-const wlmtk_container_impl_t wlmtk_container_fake_impl = {
-    .destroy = fake_destroy
-};
-
-/* ------------------------------------------------------------------------- */
-/** dtor for the container under test. */
-void fake_destroy(wlmtk_container_t *container_ptr)
-{
-    wlmtk_container_fini(container_ptr);
-}
-
 /* == Helper for unit tests: A fake container with a tree, as parent ======= */
 
 /** State of the "fake" parent container. Refers to a scene graph. */
@@ -608,30 +585,25 @@ typedef struct {
     struct wlr_scene          *wlr_scene_ptr;
 } fake_parent_container_t;
 
-static void fake_parent_destroy(wlmtk_container_t *container_ptr);
-
 /* ------------------------------------------------------------------------- */
 wlmtk_container_t *wlmtk_container_create_fake_parent(void)
 {
-    static const wlmtk_container_impl_t fake_parent_impl = {
-        .destroy = fake_parent_destroy
-    };
-
     fake_parent_container_t *fake_parent_container_ptr = logged_calloc(
         1, sizeof(fake_parent_container_t));
     if (NULL == fake_parent_container_ptr) return NULL;
 
     fake_parent_container_ptr->wlr_scene_ptr = wlr_scene_create();
     if (NULL == fake_parent_container_ptr->wlr_scene_ptr) {
-        fake_parent_destroy(&fake_parent_container_ptr->container);
+        wlmtk_container_destroy_fake_parent(
+            &fake_parent_container_ptr->container);
         return NULL;
     }
 
     if (!wlmtk_container_init_attached(
             &fake_parent_container_ptr->container,
-            &fake_parent_impl,
             &fake_parent_container_ptr->wlr_scene_ptr->tree)) {
-        fake_parent_destroy(&fake_parent_container_ptr->container);
+        wlmtk_container_destroy_fake_parent(
+            &fake_parent_container_ptr->container);
         return NULL;
     }
 
@@ -639,8 +611,7 @@ wlmtk_container_t *wlmtk_container_create_fake_parent(void)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Destructor for the "fake" parent, to be used for tests. */
-void fake_parent_destroy(wlmtk_container_t *container_ptr)
+void wlmtk_container_destroy_fake_parent(wlmtk_container_t *container_ptr)
 {
     fake_parent_container_t *fake_parent_container_ptr = BS_CONTAINER_OF(
         container_ptr, fake_parent_container_t, container);
@@ -683,17 +654,15 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &wlmtk_container_fake_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));;
     // Also expect the super element to be initialized.
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.super_element.vmt.destroy);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, container.impl.destroy);
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, NULL, container.super_element.vmt.pointer_motion);
 
-    wlmtk_container_destroy(&container);
-
+    wlmtk_container_fini(&container);
     // Also expect the super element to be un-initialized.
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.super_element.vmt.destroy);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.impl.destroy);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, NULL, container.super_element.vmt.pointer_motion);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -701,8 +670,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_add_remove(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &wlmtk_container_fake_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
 
     wlmtk_fake_element_t *elem1_ptr, *elem2_ptr, *elem3_ptr;
     elem1_ptr = wlmtk_fake_element_create();
@@ -754,8 +722,7 @@ void test_add_remove(bs_test_t *test_ptr)
 void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(
-                            &container, &wlmtk_container_fake_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
 
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_parent_ptr);
@@ -782,7 +749,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     wlmtk_element_set_parent_container(&container.super_element, NULL);
     wlmtk_container_fini(&container);
 
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -790,7 +757,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 void test_pointer_motion(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&container));
     wlmtk_element_set_visible(&container.super_element, true);
 
     // Note: pointer area extends by (-1, -2, 3, 4) on each fake element.
@@ -823,8 +790,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
 
     // Same must hold for the parent container.
     wlmtk_container_t parent_container;
-    BS_ASSERT(wlmtk_container_init(&parent_container,
-                                   &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&parent_container));
     wlmtk_container_add_element(&parent_container,
                                 &container.super_element);
 
@@ -923,7 +889,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
 void test_pointer_focus(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&container));
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);
@@ -1014,9 +980,9 @@ void test_pointer_focus(bs_test_t *test_ptr)
 void test_pointer_focus_layered(bs_test_t *test_ptr)
 {
     wlmtk_container_t container1;
-    BS_ASSERT(wlmtk_container_init(&container1, &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&container1));
     wlmtk_container_t container2;
-    BS_ASSERT(wlmtk_container_init(&container2, &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&container2));
     wlmtk_element_set_visible(&container2.super_element, true);
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
@@ -1091,7 +1057,7 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
 void test_pointer_button(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container, &wlmtk_container_fake_impl));
+    BS_ASSERT(wlmtk_container_init(&container));
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);

@@ -38,9 +38,9 @@ struct _wlmtk_box_impl_t {
     /**
      * Updates the layout of the elements.
      *
-     * The box's @ref container_update_layout method will invoke this optional
-     * method when a contained element changes visibility, dimensions or was
-     * added or removed.
+     * The box's @ref _wlmtk_box_container_update_layout method will invoke
+     * this optional method when a contained element changes visibility,
+     * dimensions or was added or removed.
      * A derived class (eg. a window) can use this eg. to recompute dimensions
      * of window decorations, when eg. a call to @ref wlmtk_content_commit_size
      * had committed an update to the window content's dimensions.
@@ -58,6 +58,8 @@ typedef enum {
 struct _wlmtk_box_t {
     /** Super class of the box. */
     wlmtk_container_t         super_container;
+    /** Virtual method table of the superclass' container. */
+    wlmtk_container_vmt_t     orig_super_container_vmt;
     /** Virtual method table of the box. */
     wlmtk_box_impl_t          impl;
     /** Orientation of the box. */

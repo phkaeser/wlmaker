@@ -25,8 +25,8 @@
 
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
-/** Forward declaration: Container virtual method implementations. */
-typedef struct _wlmtk_container_impl_t wlmtk_container_impl_t;
+/** Forward declaration: Container virtual method table. */
+typedef struct _wlmtk_container_vmt_t wlmtk_container_vmt_t;
 
 #include "element.h"
 
@@ -35,9 +35,7 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Virtual method table of the container. */
-struct _wlmtk_container_impl_t {
-    /** dtor. */
-    void (*destroy)(wlmtk_container_t *container_ptr);
+struct _wlmtk_container_vmt_t {
     /**
      * Updates the layout of the container elements.
      *
@@ -45,7 +43,8 @@ struct _wlmtk_container_impl_t {
      * Additionally, this should be invoked by contained elements when
      * the visibility or dimensions change.
      *
-     * Each container will propagate a wlmtk_container_impl::update_layout call
+     * Each container will propagate a
+     * @ref wlmtk_container_vmt_t::update_layout call
      * upwards to it's parent container. The root container will then trigger
      * an update to pointer focus (since by then, the layout is updated).
       */
@@ -59,11 +58,11 @@ struct _wlmtk_container_t {
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
 
+    /** Virtual method table for the container. */
+    wlmtk_container_vmt_t     vmt;
+
     /** Elements contained here. */
     bs_dllist_t               elements;
-
-    /** Implementation of the container's virtual methods. */
-    wlmtk_container_impl_t    impl;
 
     /** Scene tree. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
@@ -81,26 +80,33 @@ struct _wlmtk_container_t {
  * Initializes the container with the provided virtual method table.
  *
  * @param container_ptr
- * @param container_impl_ptr
  *
  * @return true on success.
  */
-bool wlmtk_container_init(
+bool wlmtk_container_init(wlmtk_container_t *container_ptr);
+
+/**
+ * Extends the container's virtual methods.
+ *
+ * @param container_ptr
+ * @param container_vmt_ptr
+ *
+ * @return The previous virtual method table.
+ */
+wlmtk_container_vmt_t wlmtk_container_extend(
     wlmtk_container_t *container_ptr,
-    const wlmtk_container_impl_t *container_impl_ptr);
+    const wlmtk_container_vmt_t *container_vmt_ptr);
 
 /**
  * Initializes the container, and attach to WLR sene graph.
  *
  * @param container_ptr
- * @param container_impl_ptr
  * @param root_wlr_scene_tree_ptr
  *
  * @return true on success.
  */
 bool wlmtk_container_init_attached(
     wlmtk_container_t *container_ptr,
-    const wlmtk_container_impl_t *container_impl_ptr,
     struct wlr_scene_tree *root_wlr_scene_tree_ptr);
 
 /**
@@ -158,10 +164,9 @@ void wlmtk_container_remove_element(
  * @param container_ptr       Container to update. NULL implies a no-op.
  */
 static inline void wlmtk_container_update_layout(
-    wlmtk_container_t *container_ptr) {
-    if (NULL != container_ptr) {
-        container_ptr->impl.update_layout(container_ptr);
-    }
+    wlmtk_container_t *container_ptr)
+{
+    container_ptr->vmt.update_layout(container_ptr);
 }
 
 /**
@@ -176,20 +181,13 @@ static inline void wlmtk_container_update_layout(
 struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr);
 
-/** Virtual method: Calls the dtor of the container's implementation. */
-static inline void wlmtk_container_destroy(
-    wlmtk_container_t *container_ptr) {
-    container_ptr->impl.destroy(container_ptr);
-}
-
 /** Unit tests for the container. */
 extern const bs_test_case_t wlmtk_container_test_cases[];
 
-/** Implementation table of a "fake" container for tests. */
-extern const wlmtk_container_impl_t wlmtk_container_fake_impl;
-
 /** Constructor for a fake container with a scene tree. */
 wlmtk_container_t *wlmtk_container_create_fake_parent(void);
+/** Destructor for that fake container. */
+void wlmtk_container_destroy_fake_parent(wlmtk_container_t *container_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

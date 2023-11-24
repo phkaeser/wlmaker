@@ -22,15 +22,14 @@
 
 /* == Declarations ========================================================= */
 
-static void container_destroy(wlmtk_container_t *container_ptr);
-static void container_update_layout(wlmtk_container_t *container_ptr);
+static void _wlmtk_box_container_update_layout(
+    wlmtk_container_t *container_ptr);
 
 /* == Data ================================================================= */
 
-/** Method table for the box's virtual methods. */
-static const wlmtk_container_impl_t container_impl = {
-    .destroy = container_destroy,
-    .update_layout = container_update_layout,
+/** Virtual method table: @ref wlmtk_container_t at @ref wlmtk_box_t level. */
+static const wlmtk_container_vmt_t box_container_vmt = {
+    .update_layout = _wlmtk_box_container_update_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -42,12 +41,17 @@ bool wlmtk_box_init(
     wlmtk_box_orientation_t orientation)
 {
     BS_ASSERT(NULL != box_ptr);
-    BS_ASSERT(NULL != box_impl_ptr);
-    BS_ASSERT(NULL != box_impl_ptr->destroy);
-    if (!wlmtk_container_init(&box_ptr->super_container, &container_impl)) {
+    if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
-    memcpy(&box_ptr->impl, box_impl_ptr, sizeof(wlmtk_box_impl_t));
+    box_ptr->orig_super_container_vmt = wlmtk_container_extend(
+        &box_ptr->super_container, &box_container_vmt);
+
+    if (NULL != box_impl_ptr) {
+        BS_ASSERT(NULL != box_impl_ptr);
+        BS_ASSERT(NULL != box_impl_ptr->destroy);
+        memcpy(&box_ptr->impl, box_impl_ptr, sizeof(wlmtk_box_impl_t));
+    }
     box_ptr->orientation = orientation;
 
     return true;
@@ -62,15 +66,6 @@ void wlmtk_box_fini(__UNUSED__ wlmtk_box_t *box_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from container. Wraps to our dtor. */
-void container_destroy(wlmtk_container_t *container_ptr)
-{
-    wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_box_t, super_container);
-    box_ptr->impl.destroy(box_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /**
  * Updates the layout of the box.
  *
@@ -79,7 +74,8 @@ void container_destroy(wlmtk_container_t *container_ptr)
  *
  * @param container_ptr
  */
-void container_update_layout(wlmtk_container_t *container_ptr)
+void _wlmtk_box_container_update_layout(
+    wlmtk_container_t *container_ptr)
 {
     wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_box_t, super_container);
@@ -109,10 +105,14 @@ void container_update_layout(wlmtk_container_t *container_ptr)
             break;
 
         default:
-            bs_log(BS_FATAL, "Weird orientatin %d.", box_ptr->orientation);
+            bs_log(BS_FATAL, "Weird orientation %d.", box_ptr->orientation);
         }
         wlmtk_element_set_position(element_ptr, x, y);
     }
+
+    // Run the base class' update layout; may update pointer focus.
+    // We do this only after having updated the position of the elements.
+    box_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
     // Forward to virtual methods, if any.
     if (NULL != box_ptr->impl.update_layout) {
@@ -120,8 +120,10 @@ void container_update_layout(wlmtk_container_t *container_ptr)
     }
 
     // configure parent container.
-    wlmtk_container_update_layout(
-        container_ptr->super_element.parent_container_ptr);
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_update_layout(
+            container_ptr->super_element.parent_container_ptr);
+    }
 }
 
 /* == Unit tests =========================================================== */

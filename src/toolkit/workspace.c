@@ -61,8 +61,7 @@ struct _wlmtk_workspace_t {
     uint32_t                  resize_edges;
 };
 
-static void workspace_container_destroy(wlmtk_container_t *container_ptr);
-
+static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
 static bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
@@ -100,13 +99,9 @@ typedef enum {
     PFSME_RESET,
 } pointer_state_event_t;
 
-/** Method table for the container's virtual methods. */
-const wlmtk_container_impl_t  workspace_container_impl = {
-    .destroy = workspace_container_destroy
-};
-
 /** Extensions to the workspace's super element's virtual methods. */
 const wlmtk_element_vmt_t     workspace_element_vmt = {
+    .destroy = _wlmtk_workspace_element_destroy,
     .pointer_motion = element_pointer_motion,
     .pointer_button = element_pointer_button,
     .pointer_leave = element_pointer_leave,
@@ -136,7 +131,6 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     if (NULL == workspace_ptr) return NULL;
 
     if (!wlmtk_container_init_attached(&workspace_ptr->super_container,
-                                       &workspace_container_impl,
                                        wlr_scene_tree_ptr)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
@@ -208,7 +202,8 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 wlmtk_workspace_t *wlmtk_workspace_from_container(
     wlmtk_container_t *container_ptr)
 {
-    BS_ASSERT(container_ptr->impl.destroy == workspace_container_impl.destroy);
+    BS_ASSERT(container_ptr->super_element.vmt.destroy ==
+              _wlmtk_workspace_element_destroy);
     return BS_CONTAINER_OF(container_ptr, wlmtk_workspace_t, super_container);
 }
 
@@ -276,11 +271,11 @@ void wlmtk_workspace_begin_window_resize(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from container. Wraps to our dtor. */
-void workspace_container_destroy(wlmtk_container_t *container_ptr)
+/** Virtual destructor, wraps to our dtor. */
+void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_workspace_t, super_container);
+        element_ptr, wlmtk_workspace_t, super_container.super_element);
     wlmtk_workspace_destroy(workspace_ptr);
 }
 
@@ -534,7 +529,7 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_workspace_from_container(&workspace_ptr->super_container));
 
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -577,7 +572,7 @@ void test_map_unmap(bs_test_t *test_ptr)
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -636,7 +631,7 @@ void test_button(bs_test_t *test_ptr)
 
     wlmtk_element_destroy(&fake_element_ptr->element);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -682,7 +677,7 @@ void test_move(bs_test_t *test_ptr)
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -726,7 +721,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -782,7 +777,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -840,7 +835,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw2_ptr);
     wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* == End of workspace.c =================================================== */

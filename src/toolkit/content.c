@@ -304,6 +304,9 @@ bool element_pointer_motion(
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
 
+    // FIXME
+    if (NULL == content_ptr->super_element.wlr_scene_node_ptr) return false;
+
     // Get the layout local coordinates of the node, so we can adjust the
     // node-local (x, y) for the `wlr_scene_node_at` call.
     int lx, ly;

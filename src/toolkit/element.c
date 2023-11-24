@@ -198,7 +198,9 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
     }
 
-    wlmtk_container_update_layout(element_ptr->parent_container_ptr);
+    if (NULL != element_ptr->parent_container_ptr) {
+        wlmtk_container_update_layout(element_ptr->parent_container_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -492,9 +494,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
 
     // Setting a parent without a scene graph tree will not set a node.
     wlmtk_container_t parent_no_tree;
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_container_init(&parent_no_tree, &wlmtk_container_fake_impl));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&parent_no_tree));
     wlmtk_element_set_parent_container(&element, &parent_no_tree);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
@@ -527,8 +527,8 @@ void test_set_parent_container(bs_test_t *test_ptr)
     wlmtk_element_set_parent_container(&element, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
-    wlmtk_container_destroy(other_parent_ptr);
-    wlmtk_container_destroy(parent_ptr);
+    wlmtk_container_destroy_fake_parent(other_parent_ptr);
+    wlmtk_container_destroy_fake_parent(parent_ptr);
     wlmtk_element_fini(&element);
 }
 
@@ -566,7 +566,7 @@ void test_set_get_position(bs_test_t *test_ptr)
 
     wlmtk_element_set_parent_container(&element, NULL);
     wlmtk_element_fini(&element);
-    wlmtk_container_destroy(fake_parent_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
