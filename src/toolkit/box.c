@@ -37,23 +37,17 @@ static const wlmtk_container_vmt_t box_container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    const wlmtk_box_impl_t *box_impl_ptr,
     wlmtk_box_orientation_t orientation)
 {
     BS_ASSERT(NULL != box_ptr);
+    memset(box_ptr, 0, sizeof(wlmtk_box_t));
     if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &box_ptr->super_container, &box_container_vmt);
 
-    if (NULL != box_impl_ptr) {
-        BS_ASSERT(NULL != box_impl_ptr);
-        BS_ASSERT(NULL != box_impl_ptr->destroy);
-        memcpy(&box_ptr->impl, box_impl_ptr, sizeof(wlmtk_box_impl_t));
-    }
     box_ptr->orientation = orientation;
-
     return true;
 }
 
@@ -114,11 +108,6 @@ void _wlmtk_box_container_update_layout(
     // We do this only after having updated the position of the elements.
     box_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
-    // Forward to virtual methods, if any.
-    if (NULL != box_ptr->impl.update_layout) {
-        box_ptr->impl.update_layout(box_ptr);
-    }
-
     // configure parent container.
     if (NULL != container_ptr->super_element.parent_container_ptr) {
         wlmtk_container_update_layout(
@@ -139,23 +128,13 @@ const bs_test_case_t wlmtk_box_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-/** dtor for the testcase. */
-static void test_box_destroy(wlmtk_box_t *box_ptr) {
-    wlmtk_box_fini(box_ptr);
-}
-/** A testcase box implementation. */
-static const wlmtk_box_impl_t test_box_impl = {
-    .destroy = test_box_destroy,
-};
-
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown. */
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, &test_box_impl, WLMTK_BOX_HORIZONTAL);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, box.impl.destroy);
-    box.impl.destroy(&box);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_box_init(&box, WLMTK_BOX_HORIZONTAL));
+    wlmtk_box_fini(&box);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -163,7 +142,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_layout_horizontal(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, &test_box_impl, WLMTK_BOX_HORIZONTAL);
+    wlmtk_box_init(&box, WLMTK_BOX_HORIZONTAL);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
@@ -208,7 +187,7 @@ void test_layout_horizontal(bs_test_t *test_ptr)
     wlmtk_element_destroy(&e3_ptr->element);
     wlmtk_element_destroy(&e2_ptr->element);
     wlmtk_element_destroy(&e1_ptr->element);
-    box.impl.destroy(&box);
+    wlmtk_box_fini(&box);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -216,7 +195,7 @@ void test_layout_horizontal(bs_test_t *test_ptr)
 void test_layout_vertical(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, &test_box_impl, WLMTK_BOX_VERTICAL);
+    wlmtk_box_init(&box, WLMTK_BOX_VERTICAL);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
@@ -244,7 +223,7 @@ void test_layout_vertical(bs_test_t *test_ptr)
 
     wlmtk_element_destroy(&e2_ptr->element);
     wlmtk_element_destroy(&e1_ptr->element);
-    box.impl.destroy(&box);
+    wlmtk_box_fini(&box);
 }
 
 /* == End of box.c ========================================================= */

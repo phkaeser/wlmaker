@@ -78,9 +78,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     if (NULL == resizebar_ptr) return NULL;
     memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
 
-    if (!wlmtk_box_init(&resizebar_ptr->super_box,
-                        NULL,
-                        WLMTK_BOX_HORIZONTAL)) {
+    if (!wlmtk_box_init(&resizebar_ptr->super_box, WLMTK_BOX_HORIZONTAL)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }

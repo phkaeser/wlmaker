@@ -94,9 +94,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
-    if (!wlmtk_box_init(&titlebar_ptr->super_box,
-                        NULL,
-                        WLMTK_BOX_HORIZONTAL)) {
+    if (!wlmtk_box_init(&titlebar_ptr->super_box, WLMTK_BOX_HORIZONTAL)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }

@@ -83,16 +83,8 @@ static void release_update(
     wlmtk_pending_update_t *update_ptr);
 
 static void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr);
-static void box_update_layout(wlmtk_box_t *box_ptr);
-static void window_box_destroy(wlmtk_box_t *box_ptr);
 
 /* == Data ================================================================= */
-
-/** Method table for the box's virtual methods. */
-static const wlmtk_box_impl_t window_box_impl = {
-    .destroy = window_box_destroy,
-    .update_layout = box_update_layout,
-};
 
 /** Virtual method table for the window's container superclass. */
 static const wlmtk_container_vmt_t window_container_vmt = {
@@ -188,9 +180,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                             &window_ptr->pre_allocated_updates[i].dlnode);
     }
 
-    if (!wlmtk_box_init(&window_ptr->super_box,
-                        &window_box_impl,
-                        WLMTK_BOX_VERTICAL)) {
+    if (!wlmtk_box_init(&window_ptr->super_box, WLMTK_BOX_VERTICAL)) {
         wlmtk_window_fini(window_ptr);
         return false;
     }
@@ -319,7 +309,9 @@ wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
     // DEBT: FIXME - The assertion here is too lose.
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_box.super_container.super_element);
-    BS_ASSERT(window_box_destroy == window_ptr->super_box.impl.destroy);
+
+    BS_ASSERT(_wlmtk_box_update_layout ==
+              window_ptr->super_box.super_container.vmt.update_layout);
     return window_ptr;
 }
 
@@ -669,42 +661,6 @@ void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr)
             wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
         }
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implementation of @ref wlmtk_box_impl_t::update_layout.
- *
- * Invoked when the window's contained elements triggered a layout update,
- * and will use this to trigger (potential) size updates to the window
- * decorations.
- *
- * @param box_ptr
- */
-void box_update_layout(wlmtk_box_t *box_ptr)
-{
-    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        box_ptr, wlmtk_window_t, super_box);
-
-    if (NULL != window_ptr->content_ptr) {
-        int width;
-        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
-        if (NULL != window_ptr->titlebar_ptr) {
-            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
-        }
-        if (NULL != window_ptr->resizebar_ptr) {
-            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
-        }
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Virtual destructor, in case called from box. Wraps to our dtor. */
-void window_box_destroy(wlmtk_box_t *box_ptr)
-{
-    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        box_ptr, wlmtk_window_t, super_box);
-    window_ptr->impl.destroy(window_ptr);
 }
 
 /* == Virtual method implementation for the fake window ==================== */
