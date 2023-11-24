@@ -227,6 +227,8 @@ void wlmtk_element_set_position(
                                     element_ptr->x,
                                     element_ptr->y);
     }
+
+    // FIXME: We should probably update the layout?
 }
 
 /* == Local (static) methods =============================================== */
