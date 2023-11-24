@@ -721,12 +721,10 @@ void test_add_remove(bs_test_t *test_ptr)
 /** Tests that elements are attached, resp. detached from scene graph. */
 void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 {
-    wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
-
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_parent_ptr);
-
+    wlmtk_container_t container;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
     wlmtk_element_set_parent_container(
         &container.super_element, fake_parent_ptr);
 
@@ -734,21 +732,21 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL, container.super_element.wlr_scene_node_ptr);
 
-    // FIXME: Should use fake_element!
-    wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element));
-    wlmtk_element_extend(&element, &fake_element_vmt);
+    // Fresh element: No scene graph node yet.
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe_ptr->element.wlr_scene_node_ptr);
 
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
-    wlmtk_container_add_element(&container, &element);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.wlr_scene_node_ptr);
+    // Add to container with attached graph: Element now has a graph node.
+    wlmtk_container_add_element(&container, &fe_ptr->element);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fe_ptr->element.wlr_scene_node_ptr);
 
-    wlmtk_container_remove_element(&container, &element);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
+    // Remove: The element's graph node must be destroyed & cleared..
+    wlmtk_container_remove_element(&container, &fe_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe_ptr->element.wlr_scene_node_ptr);
+    wlmtk_element_destroy(&fe_ptr->element);
 
     wlmtk_element_set_parent_container(&container.super_element, NULL);
     wlmtk_container_fini(&container);
-
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
