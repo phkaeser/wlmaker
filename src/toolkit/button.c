@@ -30,26 +30,25 @@
 
 /* == Declarations ========================================================= */
 
-static void button_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
-static bool buffer_pointer_motion(
-    wlmtk_buffer_t *buffer_ptr,
+static bool _wlmtk_button_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
-static bool buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+static bool _wlmtk_button_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void buffer_pointer_leave(
-    wlmtk_buffer_t *buffer_ptr);
+static void _wlmtk_button_element_pointer_leave(
+    wlmtk_element_t *element_ptr);
+
 static void apply_state(wlmtk_button_t *button_ptr);
 
 /* == Data ================================================================= */
 
-/** Virtual method table for @ref wlmtk_button_t::super_buffer. */
-static const wlmtk_buffer_impl_t button_buffer_impl = {
-    .destroy = button_buffer_destroy,
-    .pointer_motion = buffer_pointer_motion,
-    .pointer_button = buffer_pointer_button,
-    .pointer_leave = buffer_pointer_leave,
+/** Virtual method table for the button's element super class. */
+static const wlmtk_element_vmt_t button_element_vmt = {
+    .pointer_motion = _wlmtk_button_element_pointer_motion,
+    .pointer_button = _wlmtk_button_element_pointer_button,
+    .pointer_leave = _wlmtk_button_element_pointer_leave,
 };
 
 /* == Exported methods ===================================================== */
@@ -62,15 +61,15 @@ bool wlmtk_button_init(
     BS_ASSERT(NULL != button_ptr);
     memset(button_ptr, 0, sizeof(wlmtk_button_t));
     BS_ASSERT(NULL != button_impl_ptr);
-    BS_ASSERT(NULL != button_impl_ptr->destroy);
     memcpy(&button_ptr->impl, button_impl_ptr, sizeof(wlmtk_button_impl_t));
 
-    if (!wlmtk_buffer_init(
-            &button_ptr->super_buffer,
-            &button_buffer_impl)) {
+    if (!wlmtk_buffer_init(&button_ptr->super_buffer)) {
         wlmtk_button_fini(button_ptr);
         return false;
     }
+    button_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &button_ptr->super_buffer.super_element,
+        &button_element_vmt);
 
     return true;
 }
@@ -123,37 +122,30 @@ void wlmtk_button_set(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Destructor: Wraps to @ref wlmtk_button_impl_t::destroy. */
-void button_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
+/** See @ref wlmtk_element_vmt_t::pointer_motion. */
+bool _wlmtk_button_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_button_t, super_buffer);
-    button_ptr->impl.destroy(button_ptr);
-}
+        element_ptr, wlmtk_button_t, super_buffer.super_element);
 
-/* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_motion. */
-bool buffer_pointer_motion(
-    wlmtk_buffer_t *buffer_ptr,
-    __UNUSED__ double x,
-    __UNUSED__ double y,
-    __UNUSED__ uint32_t time_msec)
-{
-    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_button_t, super_buffer);
+    button_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
     button_ptr->pointer_inside = true;
     apply_state(button_ptr);
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_button. */
-bool buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+/** See @ref wlmtk_element_vmt_t::pointer_button. */
+bool _wlmtk_button_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_button_t, super_buffer);
+        element_ptr, wlmtk_button_t, super_buffer.super_element);
 
     if (button_event_ptr->button != BTN_LEFT) return false;
 
@@ -182,13 +174,14 @@ bool buffer_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_leave. */
-void buffer_pointer_leave(
-    wlmtk_buffer_t *buffer_ptr)
+/** See @ref wlmtk_element_vmt_t::pointer_leave. */
+void _wlmtk_button_element_pointer_leave(
+    wlmtk_element_t *element_ptr)
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_button_t, super_buffer);
+        element_ptr, wlmtk_button_t, super_buffer.super_element);
 
+    button_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
     button_ptr->pointer_inside = false;
     apply_state(button_ptr);
 }
@@ -249,7 +242,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_button_init(&button,  &fake_button_impl));
-    wlmtk_element_destroy(&button.super_buffer.super_element);
+    wlmtk_button_fini(&button);
 }
 
 /* ------------------------------------------------------------------------- */

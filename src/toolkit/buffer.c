@@ -28,7 +28,6 @@
 
 /* == Declarations ========================================================= */
 
-static void element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
@@ -42,40 +41,21 @@ static void handle_wlr_scene_buffer_node_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static bool element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
-static bool element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr);
-static void element_pointer_leave(
-    wlmtk_element_t *element_ptr);
-
 /* == Data ================================================================= */
 
 /** Method table for the buffer's virtual methods. */
 static const wlmtk_element_vmt_t buffer_element_vmt = {
-    .destroy = element_destroy,
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
-    .pointer_motion = element_pointer_motion,
-    .pointer_button = element_pointer_button,
-    .pointer_leave = element_pointer_leave,
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_buffer_init(
-    wlmtk_buffer_t *buffer_ptr,
-    const wlmtk_buffer_impl_t *buffer_impl_ptr)
+bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr)
 {
     BS_ASSERT(NULL != buffer_ptr);
     memset(buffer_ptr, 0, sizeof(wlmtk_buffer_t));
-    BS_ASSERT(NULL != buffer_impl_ptr);
-    BS_ASSERT(NULL != buffer_impl_ptr->destroy);
-    memcpy(&buffer_ptr->impl, buffer_impl_ptr, sizeof(wlmtk_buffer_impl_t));
 
     if (!wlmtk_element_init(&buffer_ptr->super_element)) {
         return false;
@@ -124,21 +104,6 @@ void wlmtk_buffer_set(
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implementation of the superclass wlmtk_element_t::destroy method.
- *
- * Forwards the call to the wlmtk_buffer_t::destroy method.
- *
- * @param element_ptr
- */
-void element_destroy(wlmtk_element_t *element_ptr)
-{
-    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_buffer_t, super_element);
-    buffer_ptr->impl.destroy(buffer_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -221,50 +186,6 @@ void handle_wlr_scene_buffer_node_destroy(
 
     buffer_ptr->wlr_scene_buffer_ptr = NULL;
     wl_list_remove(&buffer_ptr->wlr_scene_buffer_node_destroy_listener.link);
-}
-
-/* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_motion. */
-bool element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
-{
-    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_buffer_t, super_element);
-    buffer_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
-
-    if (NULL == buffer_ptr->impl.pointer_motion) return true;
-    return buffer_ptr->impl.pointer_motion(buffer_ptr, x, y, time_msec);
-}
-
-/* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_button. */
-bool element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr)
-{
-    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_buffer_t, super_element);
-    buffer_ptr->orig_super_element_vmt.pointer_button(
-        element_ptr, button_event_ptr);
-
-    if (NULL == buffer_ptr->impl.pointer_button) return false;
-    return buffer_ptr->impl.pointer_button(buffer_ptr, button_event_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_leave. */
-void element_pointer_leave(
-    wlmtk_element_t *element_ptr)
-{
-    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_buffer_t, super_element);
-    buffer_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
-
-    if (NULL == buffer_ptr->impl.pointer_leave) return;
-    buffer_ptr->impl.pointer_leave(buffer_ptr);
 }
 
 /* == End of buffer.c ====================================================== */

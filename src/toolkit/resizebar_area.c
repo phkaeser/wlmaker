@@ -40,6 +40,8 @@
 struct _wlmtk_resizebar_area_t {
     /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
+    /** Original virtual method table of the superclass element. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** WLR buffer holding the buffer in released state. */
     struct wlr_buffer         *released_wlr_buffer_ptr;
@@ -62,13 +64,14 @@ struct _wlmtk_resizebar_area_t {
     const char                 *xcursor_name_ptr;
 };
 
-static void buffer_destroy(wlmtk_buffer_t *buffer_ptr);
-static bool buffer_pointer_motion(
-    wlmtk_buffer_t *buffer_ptr,
+static void _wlmtk_resizebar_area_element_destroy(
+    wlmtk_element_t *element_ptr);
+static bool _wlmtk_resizebar_area_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
-static bool buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+static bool _wlmtk_resizebar_area_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
 static void draw_state(wlmtk_resizebar_area_t *resizebar_area_ptr);
@@ -79,13 +82,13 @@ static struct wlr_buffer *create_buffer(
     const wlmtk_resizebar_style_t *style_ptr,
     bool pressed);
 
-/* == Data ================================================================= */
+/* ========================================================================= */
 
 /** Buffer implementation for title of the title bar. */
-static const wlmtk_buffer_impl_t area_buffer_impl = {
-    .destroy = buffer_destroy,
-    .pointer_motion = buffer_pointer_motion,
-    .pointer_button = buffer_pointer_button,
+static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
+    .destroy = _wlmtk_resizebar_area_element_destroy,
+    .pointer_motion = _wlmtk_resizebar_area_element_pointer_motion,
+    .pointer_button = _wlmtk_resizebar_area_element_pointer_button,
 };
 
 /* == Exported methods ===================================================== */
@@ -117,12 +120,13 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
         bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
     }
 
-    if (!wlmtk_buffer_init(
-            &resizebar_area_ptr->super_buffer,
-            &area_buffer_impl)) {
+    if (!wlmtk_buffer_init(&resizebar_area_ptr->super_buffer)) {
         wlmtk_resizebar_area_destroy(resizebar_area_ptr);
         return NULL;
     }
+    resizebar_area_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &resizebar_area_ptr->super_buffer.super_element,
+        &resizebar_area_element_vmt);
 
     draw_state(resizebar_area_ptr);
     return resizebar_area_ptr;
@@ -192,23 +196,26 @@ wlmtk_element_t *wlmtk_resizebar_area_element(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Dtor. Forwards to @ref wlmtk_resizebar_area_destroy. */
-void buffer_destroy(wlmtk_buffer_t *buffer_ptr)
+/** Dtor. */
+void _wlmtk_resizebar_area_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
+        element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
     wlmtk_resizebar_area_destroy(resizebar_area_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_motion. */
-bool buffer_pointer_motion(
-    wlmtk_buffer_t *buffer_ptr,
-    __UNUSED__ double x, __UNUSED__ double y,
-    __UNUSED__ uint32_t time_msec)
+/** See @ref wlmtk_element_vmt_t::pointer_motion. */
+bool _wlmtk_resizebar_area_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
+        element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
+    resizebar_area_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 
     // TODO(kaeser@gubbe.ch): Inject something testable here.
     if (NULL != resizebar_area_ptr->wlr_cursor_ptr &&
@@ -222,13 +229,13 @@ bool buffer_pointer_motion(
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_button. */
-bool buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+/** See @ref wlmtk_element_vmt_t::pointer_button. */
+bool _wlmtk_resizebar_area_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_resizebar_area_t, super_buffer);
+        element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
 
     if (button_event_ptr->button != BTN_LEFT) return false;
 

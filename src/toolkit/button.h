@@ -43,7 +43,8 @@ typedef struct {
 struct _wlmtk_button_t {
     /** Super class of the button: A buffer. */
     wlmtk_buffer_t            super_buffer;
-
+    /** Original virtual method table of the superclass element. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
     /** Implementation of abstract virtual methods. */
     wlmtk_button_impl_t       impl;
 

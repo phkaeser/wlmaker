@@ -44,10 +44,12 @@ struct _wlmtk_titlebar_title_t {
     struct wlr_buffer         *blurred_wlr_buffer_ptr;
 };
 
-static void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr);
-static bool title_buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+static void _wlmtk_titlebar_title_element_destroy(
+    wlmtk_element_t *element_ptr);
+static bool _wlmtk_titlebar_title_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+
 static void title_set_activated(
     wlmtk_titlebar_title_t *titlebar_title_ptr,
     bool activated);
@@ -61,10 +63,10 @@ struct wlr_buffer *title_create_buffer(
 
 /* == Data ================================================================= */
 
-/** Buffer implementation for title of the title bar. */
-static const wlmtk_buffer_impl_t title_buffer_impl = {
-    .destroy = title_buffer_destroy,
-    .pointer_button = title_buffer_pointer_button,
+/** Extension to the superclass elment's virtual method table. */
+static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
+    .destroy = _wlmtk_titlebar_title_element_destroy,
+    .pointer_button = _wlmtk_titlebar_title_element_pointer_button,
 };
 
 /* == Exported methods ===================================================== */
@@ -78,12 +80,13 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     if (NULL == titlebar_title_ptr) return NULL;
     titlebar_title_ptr->window_ptr = window_ptr;
 
-    if (!wlmtk_buffer_init(
-            &titlebar_title_ptr->super_buffer,
-            &title_buffer_impl)) {
+    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &titlebar_title_ptr->super_buffer.super_element,
+        &titlebar_title_element_vmt);
 
     return titlebar_title_ptr;
 }
@@ -157,22 +160,23 @@ wlmtk_element_t *wlmtk_titlebar_title_element(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Dtor. Forwards to @ref wlmtk_titlebar_title_destroy. */
-void title_buffer_destroy(wlmtk_buffer_t *buffer_ptr)
+/** Dtor. */
+void _wlmtk_titlebar_title_element_destroy(
+    wlmtk_element_t *element_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
+        element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
     wlmtk_titlebar_title_destroy(titlebar_title_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_buffer_impl_t::pointer_button. */
-bool title_buffer_pointer_button(
-    wlmtk_buffer_t *buffer_ptr,
+/** See @ref wlmtk_element_vmt_t::pointer_button. */
+bool _wlmtk_titlebar_title_element_pointer_button(
+    wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
-        buffer_ptr, wlmtk_titlebar_title_t, super_buffer);
+        element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
     if (button_event_ptr->button != BTN_LEFT) return false;
 

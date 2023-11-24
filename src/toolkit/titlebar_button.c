@@ -52,7 +52,7 @@ struct _wlmtk_titlebar_button_t {
     struct wlr_buffer         *blurred_wlr_buffer_ptr;
 };
 
-static void titlebar_button_destroy(wlmtk_button_t *button_ptr);
+static void titlebar_button_element_destroy(wlmtk_element_t *element_ptr);
 static void titlebar_button_clicked(wlmtk_button_t *button_ptr);
 static void update_buffers(wlmtk_titlebar_button_t *titlebar_button_ptr);
 static struct wlr_buffer *create_buf(
@@ -66,8 +66,12 @@ static struct wlr_buffer *create_buf(
 
 /** Buffer implementation for title of the title bar. */
 static const wlmtk_button_impl_t titlebar_button_impl = {
-    .destroy = titlebar_button_destroy,
     .clicked = titlebar_button_clicked,
+};
+
+/** Extension to the superclass element's virtual method table. */
+static const wlmtk_element_vmt_t titlebar_button_element_vmt = {
+    .destroy = titlebar_button_element_destroy,
 };
 
 /* == Exported methods ===================================================== */
@@ -94,6 +98,9 @@ wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
         wlmtk_titlebar_button_destroy(titlebar_button_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &titlebar_button_ptr->super_button.super_buffer.super_element,
+        &titlebar_button_element_vmt);
 
     return titlebar_button_ptr;
 }
@@ -183,10 +190,11 @@ wlmtk_element_t *wlmtk_titlebar_button_element(
 
 /* ------------------------------------------------------------------------- */
 /** Virtual destructor, wraps to @ref wlmtk_titlebar_button_destroy. */
-void titlebar_button_destroy(wlmtk_button_t *button_ptr)
+void titlebar_button_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
-        button_ptr, wlmtk_titlebar_button_t, super_button);
+        element_ptr, wlmtk_titlebar_button_t,
+        super_button.super_buffer.super_element);
     wlmtk_titlebar_button_destroy(titlebar_button_ptr);
 }
 

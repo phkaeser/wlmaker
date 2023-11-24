@@ -38,32 +38,12 @@ struct wlr_scene_buffer;
 extern "C" {
 #endif  // __cplusplus
 
-/** Method table of the buffer. */
-// FIXME: Make this obsolete through extending element.
-struct _wlmtk_buffer_impl_t {
-    /** Destroys the implementation of the buffer. */
-    void (*destroy)(wlmtk_buffer_t *buffer_ptr);
-
-    /** Optional. See @ref wlmtk_element_vmt_t::pointer_motion. */
-    bool (*pointer_motion)(wlmtk_buffer_t *buffer_ptr,
-                           double x, double y,
-                           uint32_t time_msec);
-    /** Optional. See @ref wlmtk_element_vmt_t::pointer_button. */
-    bool (*pointer_button)(wlmtk_buffer_t *buffer_ptr,
-                           const wlmtk_button_event_t *button_event_ptr);
-    /** Optional. See @ref wlmtk_element_vmt_t::pointer_leave. */
-    void (*pointer_leave)(wlmtk_buffer_t *buffer_ptr);
-};
-
 /** State of a texture-backed buffer. */
 struct _wlmtk_buffer_t {
     /** Super class of the buffer: An element. */
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-
-    /** Implementation of abstract virtual methods. */
-    wlmtk_buffer_impl_t      impl;
 
     /** WLR buffer holding the contents. */
     struct wlr_buffer        *wlr_buffer_ptr;
@@ -78,13 +58,10 @@ struct _wlmtk_buffer_t {
  * Initializes the buffer.
  *
  * @param buffer_ptr
- * @param buffer_impl_ptr
  *
  * @return true on success.
  */
-bool wlmtk_buffer_init(
-    wlmtk_buffer_t *buffer_ptr,
-    const wlmtk_buffer_impl_t *buffer_impl_ptr);
+bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr);
 
 /**
  * Cleans up the buffer.
