@@ -24,8 +24,6 @@
 
 /** Forward declaration: Buffer state. */
 typedef struct _wlmtk_buffer_t wlmtk_buffer_t;
-/** Forward declaration: Buffer implementation. */
-typedef struct _wlmtk_buffer_impl_t wlmtk_buffer_impl_t;
 
 #include "element.h"
 
