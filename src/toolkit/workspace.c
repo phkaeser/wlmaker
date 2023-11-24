@@ -184,7 +184,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
         wlmtk_window_element(window_ptr));
 
     if (need_activation) {
-        // FIXME
+        // FIXME: What about raising?
         bs_dllist_node_t *dlnode_ptr =
             workspace_ptr->super_container.elements.head_ptr;
         if (NULL != dlnode_ptr) {
