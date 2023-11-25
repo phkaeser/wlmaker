@@ -81,7 +81,6 @@ void _wlmtk_box_container_update_layout(
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
         if (!element_ptr->visible) continue;
 
-
         int left, top, right, bottom;
         wlmtk_element_get_dimensions(element_ptr, &left, &top, &right, &bottom);
         int x, y;
