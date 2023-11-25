@@ -32,6 +32,8 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 /** Forward declaration. */
 struct wlr_pointer_button_event;
+/** Forward declaration. */
+struct wlr_box;
 
 /**
  * Creates a workspace.
@@ -53,6 +55,15 @@ wlmtk_workspace_t *wlmtk_workspace_create(
  * @param workspace_ptr
  */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Sets (or updates) the extents of the workspace.
+ *
+ * @param workspace_ptr
+ * @param extents_ptr
+ */
+void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
+                                 const struct wlr_box *extents_ptr);
 
 /**
  * Maps the window: Adds it to the workspace container and makes it visible.

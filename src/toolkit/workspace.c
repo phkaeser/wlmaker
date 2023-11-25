@@ -59,9 +59,30 @@ struct _wlmtk_workspace_t {
     int                       initial_height;
     /** Edges currently active for resizing: `enum wlr_edges`. */
     uint32_t                  resize_edges;
+
+    /** Top left X coordinate of workspace. */
+    int                       x1;
+    /** Top left Y coordinate of workspace. */
+    int                       y1;
+    /** Bottom right X coordinate of workspace. */
+    int                       x2;
+    /** Bottom right Y coordinate of workspace. */
+    int                       y2;
 };
 
 static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
+static void _wlmtk_workspace_element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
+static void _wlmtk_workspace_element_get_pointer_area(
+    wlmtk_element_t *element_ptr,
+    int *x1_ptr,
+    int *y1_ptr,
+    int *x2_ptr,
+    int *y2_ptr);
 static bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
@@ -99,6 +120,8 @@ typedef enum {
 /** Extensions to the workspace's super element's virtual methods. */
 const wlmtk_element_vmt_t     workspace_element_vmt = {
     .destroy = _wlmtk_workspace_element_destroy,
+    .get_dimensions = _wlmtk_workspace_element_get_dimensions,
+    .get_pointer_area = _wlmtk_workspace_element_get_pointer_area,
     .pointer_motion = element_pointer_motion,
     .pointer_button = element_pointer_button,
     .pointer_leave = element_pointer_leave,
@@ -145,6 +168,16 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
     wlmtk_container_fini(&workspace_ptr->super_container);
     free(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
+                                 const struct wlr_box *extents_ptr)
+{
+    workspace_ptr->x1 = extents_ptr->x;
+    workspace_ptr->y1 = extents_ptr->y;
+    workspace_ptr->x2 = extents_ptr->x + extents_ptr->width;
+    workspace_ptr->y2 = extents_ptr->y + extents_ptr->height;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -298,6 +331,37 @@ void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
     wlmtk_workspace_destroy(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns the workspace area. */
+void _wlmtk_workspace_element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, super_container.super_element);
+
+    if (NULL != left_ptr) *left_ptr = workspace_ptr->x1;
+    if (NULL != top_ptr) *top_ptr = workspace_ptr->y1;
+    if (NULL != right_ptr) *right_ptr = workspace_ptr->x2;
+    if (NULL != bottom_ptr) *bottom_ptr = workspace_ptr->y2;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns workspace area: @ref _wlmtk_workspace_element_get_dimensions. */
+void _wlmtk_workspace_element_get_pointer_area(
+    wlmtk_element_t *element_ptr,
+    int *x1_ptr,
+    int *y1_ptr,
+    int *x2_ptr,
+    int *y2_ptr)
+{
+    return _wlmtk_workspace_element_get_dimensions(
+        element_ptr, x1_ptr, y1_ptr, x2_ptr, y2_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -525,6 +589,17 @@ void test_create_destroy(bs_test_t *test_ptr)
         test_ptr,
         workspace_ptr,
         wlmtk_workspace_from_container(&workspace_ptr->super_container));
+
+    struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
+    wlmtk_workspace_set_extents(workspace_ptr, &box);
+    int x1, y1, x2, y2;
+    wlmtk_element_get_pointer_area(
+        &workspace_ptr->super_container.super_element, &x1, &y1, &x2, &y2);
+    BS_TEST_VERIFY_EQ(test_ptr, -10, x1);
+    BS_TEST_VERIFY_EQ(test_ptr, -20, y1);
+    BS_TEST_VERIFY_EQ(test_ptr, 90, x2);
+    BS_TEST_VERIFY_EQ(test_ptr, 180, y2);
+
 
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);

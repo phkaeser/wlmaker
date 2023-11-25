@@ -178,6 +178,10 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
         wlmaker_workspace_destroy(workspace_ptr);
         return NULL;
     }
+    struct wlr_box extents;
+    wlr_output_layout_get_box(
+        workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
+    wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr, &extents);
 #endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
 
     return workspace_ptr;
