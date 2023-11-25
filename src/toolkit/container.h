@@ -159,6 +159,13 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr);
 
 /**
+ * Updates pointer focus of the container.
+ *
+ * @param container_ptr
+ */
+void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
+
+/**
  * Updates the layout of the container.
  *
  * @param container_ptr       Container to update. NULL implies a no-op.

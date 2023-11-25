@@ -219,6 +219,9 @@ void wlmtk_element_set_position(
     int x,
     int y)
 {
+    // Optimization clause: No need for update, if coordinates didn't change.
+    if (element_ptr->x == x && element_ptr->y == y) return;
+
     element_ptr->x = x;
     element_ptr->y = y;
 
@@ -228,7 +231,9 @@ void wlmtk_element_set_position(
                                     element_ptr->y);
     }
 
-    // FIXME: We should probably update the layout?
+    if (NULL != element_ptr->parent_container_ptr) {
+        wlmtk_container_update_pointer_focus(element_ptr->parent_container_ptr);
+    }
 }
 
 /* == Local (static) methods =============================================== */

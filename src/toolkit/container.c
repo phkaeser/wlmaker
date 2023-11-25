@@ -216,6 +216,21 @@ void wlmtk_container_remove_element(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr)
+{
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_update_pointer_focus(
+            container_ptr->super_element.parent_container_ptr);
+    } else {
+        update_pointer_focus_at(
+            container_ptr,
+            container_ptr->super_element.last_pointer_x,
+            container_ptr->super_element.last_pointer_y,
+            container_ptr->super_element.last_pointer_time_msec);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr)
 {
@@ -567,11 +582,7 @@ void _wlmtk_container_update_layout(wlmtk_container_t *container_ptr)
         wlmtk_container_update_layout(
             container_ptr->super_element.parent_container_ptr);
     } else {
-        update_pointer_focus_at(
-            container_ptr,
-            container_ptr->super_element.last_pointer_x,
-            container_ptr->super_element.last_pointer_y,
-            container_ptr->super_element.last_pointer_time_msec);
+        wlmtk_container_update_pointer_focus(container_ptr);
     }
 }
 
@@ -635,6 +646,7 @@ static void test_add_remove(bs_test_t *test_ptr);
 static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
 static void test_pointer_motion(bs_test_t *test_ptr);
 static void test_pointer_focus(bs_test_t *test_ptr);
+static void test_pointer_focus_move(bs_test_t *test_ptr);
 static void test_pointer_focus_layered(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 
@@ -644,6 +656,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
     { 1, "pointer_motion", test_pointer_motion },
     { 1, "pointer_focus", test_pointer_focus },
+    { 1, "pointer_focus_move", test_pointer_focus_move },
     { 1, "pointer_focus_layered", test_pointer_focus_layered },
     { 1, "pointer_button", test_pointer_button },
     { 0, NULL, NULL }
@@ -972,6 +985,48 @@ void test_pointer_focus(bs_test_t *test_ptr)
     wlmtk_element_destroy(&elem1_ptr->element);
     wlmtk_container_fini(&container);
 }
+
+/* ------------------------------------------------------------------------- */
+/** Tests that pointer focus is updated when elements are moved. */
+void test_pointer_focus_move(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_ASSERT(wlmtk_container_init(&container));
+
+    // Setup to span an area where the container catches pointer coordinates.
+    wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    wlmtk_element_set_position(&elem1_ptr->element, -20, 0);
+    wlmtk_container_add_element(&container, &elem1_ptr->element);
+    wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&elem2_ptr->element, true);
+    wlmtk_element_set_position(&elem2_ptr->element, 20, 0);
+    wlmtk_container_add_element(&container, &elem2_ptr->element);
+
+    // Need the container to pick up the cursor position.
+    wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7);
+
+    // Is off the cursor, will get focus.
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        container.pointer_focus_element_ptr);
+
+    // Now moves below the cursor, will get focus.
+    wlmtk_element_set_position(&elem1_ptr->element, 0, 0);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &elem1_ptr->element,
+        container.pointer_focus_element_ptr);
+
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    wlmtk_container_remove_element(&container, &elem1_ptr->element);
+
+    wlmtk_element_destroy(&elem2_ptr->element);
+    wlmtk_element_destroy(&elem1_ptr->element);
+    wlmtk_container_fini(&container);
+}
+
 
 /* ------------------------------------------------------------------------- */
 /** Tests that pointer focus is updated across layers of containers. */
