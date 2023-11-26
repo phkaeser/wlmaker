@@ -102,6 +102,10 @@ struct _wlmtk_element_vmt_t {
     /**
      * Indicates the pointer has entered the element's area.
      *
+     * TODO(kaeser@gubbe.ch): pointer_enter and pointer_leave would better be
+     * handled as events, where clients subscribe via listeners. Consider
+     * changing that.
+     *
      * @param element_ptr
      */
     void (*pointer_enter)(wlmtk_element_t *element_ptr);
