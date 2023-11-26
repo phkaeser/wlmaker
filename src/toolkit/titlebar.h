@@ -51,6 +51,7 @@ typedef struct {
 /**
  * Creates a title bar, suitable as a window title.
  *
+ * @param cursor_ptr
  * @param window_ptr
  * @param style_ptr
  *
@@ -58,6 +59,7 @@ typedef struct {
  *     by calling @ref wlmtk_titlebar_destroy.
  */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 

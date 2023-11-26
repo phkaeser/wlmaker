@@ -59,13 +59,15 @@ static const wlmtk_button_vmt_t button_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_button_init(wlmtk_button_t *button_ptr)
+bool wlmtk_button_init(
+    wlmtk_button_t *button_ptr,
+    wlmtk_cursor_t *cursor_ptr)
 {
     BS_ASSERT(NULL != button_ptr);
     memset(button_ptr, 0, sizeof(wlmtk_button_t));
     button_ptr->vmt = button_vmt;
 
-    if (!wlmtk_buffer_init(&button_ptr->super_buffer)) {
+    if (!wlmtk_buffer_init(&button_ptr->super_buffer, cursor_ptr)) {
         wlmtk_button_fini(button_ptr);
         return false;
     }
@@ -252,7 +254,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_button_init(&button));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_button_init(&button, NULL));
     wlmtk_button_fini(&button);
 }
 
@@ -261,7 +263,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_press_release(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_ASSERT(wlmtk_button_init(&button, NULL));
     wlmtk_button_extend(&button, &fake_button_vmt);
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -320,7 +322,7 @@ void test_press_release(bs_test_t *test_ptr)
 void test_press_release_outside(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_ASSERT(wlmtk_button_init(&button, NULL));
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -367,7 +369,7 @@ void test_press_release_outside(bs_test_t *test_ptr)
 void test_press_right(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_ASSERT(wlmtk_button_init(&button, NULL));
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);

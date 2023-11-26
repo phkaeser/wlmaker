@@ -42,12 +42,14 @@ struct wlr_xcursor_manager;
  * Creates a resizebar button.
  *
  * @param window_ptr
+ * @param cursor_ptr
  * @param edges
  *
  * @return Pointer to the resizebar button.
  */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     wlmtk_window_t *window_ptr,
+    wlmtk_cursor_t *cursor_ptr,
     uint32_t edges);
 
 /**

@@ -41,12 +41,14 @@ struct wlr_box;
  * TODO(kaeser@gubbe.ch): Consider replacing the interface with a container,
  * and permit a "toplevel" container that will be at the server level.
  *
+ * @param cursor_ptr
  * @param wlr_scene_tree_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
+    wlmtk_cursor_t *cursor_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
 
 /**

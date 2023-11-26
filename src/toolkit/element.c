@@ -66,7 +66,9 @@ static const wlmtk_element_vmt_t element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_element_init(wlmtk_element_t *element_ptr)
+bool wlmtk_element_init(
+    wlmtk_element_t *element_ptr,
+    __UNUSED__ wlmtk_cursor_t *cursor_ptr)
 {
     BS_ASSERT(NULL != element_ptr);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
@@ -388,7 +390,7 @@ wlmtk_fake_element_t *wlmtk_fake_element_create(void)
         1, sizeof(wlmtk_fake_element_t));
     if (NULL == fake_element_ptr) return NULL;
 
-    if (!wlmtk_element_init(&fake_element_ptr->element)) {
+    if (!wlmtk_element_init(&fake_element_ptr->element, NULL)) {
         fake_destroy(&fake_element_ptr->element);
         return NULL;
     }
@@ -535,7 +537,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, NULL));
     wlmtk_element_extend(&element, &fake_element_vmt);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, element.vmt.destroy);
 
@@ -548,12 +550,12 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_set_parent_container(bs_test_t *test_ptr)
 {
     wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, NULL));
     wlmtk_element_extend(&element, &fake_element_vmt);
 
     // Setting a parent without a scene graph tree will not set a node.
     wlmtk_container_t parent_no_tree;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&parent_no_tree));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&parent_no_tree, NULL));
     wlmtk_element_set_parent_container(&element, &parent_no_tree);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, element.wlr_scene_node_ptr);
 
@@ -596,7 +598,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
 void test_set_get_position(bs_test_t *test_ptr)
 {
     wlmtk_element_t element;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_init(&element, NULL));
     wlmtk_element_extend(&element, &fake_element_vmt);
 
     // Exercise, must not crash.

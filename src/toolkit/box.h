@@ -50,11 +50,13 @@ struct _wlmtk_box_t {
  *
  * @param box_ptr
  * @param orientation
+ * @param cursor_ptr
  *
  * @return true on success.
  */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_box_orientation_t orientation);
 
 /**

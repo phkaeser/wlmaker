@@ -29,6 +29,8 @@ extern "C" {
 
 /** Forward declaration: Button event. */
 typedef struct _wlmtk_button_event_t wlmtk_button_event_t;
+/** Forward declaration: Cursor. */
+typedef struct _wlmtk_cursor_t wlmtk_cursor_t;
 
 /** Button state. */
 typedef enum {
@@ -47,6 +49,11 @@ struct _wlmtk_button_event_t {
     /** Time of the button event, in milliseconds. */
     uint32_t                  time_msec;
 };
+
+/** Ctor: Creates a fake cursor. */
+wlmtk_cursor_t *wlmtk_fake_cursor_create(void);
+/** Dtor: Destroys the fake cursor. */
+void wlmtk_fake_cursor_destroy(wlmtk_cursor_t *cursor_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

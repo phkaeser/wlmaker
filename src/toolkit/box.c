@@ -37,11 +37,12 @@ static const wlmtk_container_vmt_t box_container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_box_orientation_t orientation)
 {
     BS_ASSERT(NULL != box_ptr);
     memset(box_ptr, 0, sizeof(wlmtk_box_t));
-    if (!wlmtk_container_init(&box_ptr->super_container)) {
+    if (!wlmtk_container_init(&box_ptr->super_container, cursor_ptr)) {
         return false;
     }
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(
@@ -132,7 +133,8 @@ const bs_test_case_t wlmtk_box_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_box_init(&box, WLMTK_BOX_HORIZONTAL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_box_init(
+                            &box, NULL, WLMTK_BOX_HORIZONTAL));
     wlmtk_box_fini(&box);
 }
 
@@ -141,7 +143,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_layout_horizontal(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, WLMTK_BOX_HORIZONTAL);
+    wlmtk_box_init(&box, NULL, WLMTK_BOX_HORIZONTAL);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
@@ -194,7 +196,7 @@ void test_layout_horizontal(bs_test_t *test_ptr)
 void test_layout_vertical(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, WLMTK_BOX_VERTICAL);
+    wlmtk_box_init(&box, NULL, WLMTK_BOX_VERTICAL);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);

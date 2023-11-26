@@ -73,6 +73,7 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_window_t *window_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
@@ -80,7 +81,7 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     if (NULL == titlebar_title_ptr) return NULL;
     titlebar_title_ptr->window_ptr = window_ptr;
 
-    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
+    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer, cursor_ptr)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
         return NULL;
     }
@@ -283,7 +284,7 @@ void test_title(bs_test_t *test_ptr)
 
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
-        &fake_window_ptr->window);
+        NULL, &fake_window_ptr->window);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
         titlebar_title_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);

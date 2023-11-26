@@ -26,6 +26,7 @@
 
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        const wlmtk_window_impl_t *impl_ptr,
+                       wlmtk_cursor_t *cursor_ptr,
                        wlmtk_content_t *content_ptr);
 void wlmtk_window_fini(wlmtk_window_t *window_ptr);
 
@@ -162,12 +163,14 @@ static const wlmtk_resizebar_style_t resizebar_style = {
  *
  * @param window_ptr
  * @param impl_ptr
+ * @param cursor_ptr
  * @param content_ptr         Will take ownership of it.
  *
  * @return true on success.
  */
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        const wlmtk_window_impl_t *impl_ptr,
+                       wlmtk_cursor_t *cursor_ptr,
                        wlmtk_content_t *content_ptr)
 {
     BS_ASSERT(NULL != window_ptr);
@@ -188,7 +191,8 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                             &window_ptr->pre_allocated_updates[i].dlnode);
     }
 
-    if (!wlmtk_box_init(&window_ptr->super_box, WLMTK_BOX_VERTICAL)) {
+    if (!wlmtk_box_init(&window_ptr->super_box, cursor_ptr,
+                        WLMTK_BOX_VERTICAL)) {
         wlmtk_window_fini(window_ptr);
         return false;
     }
@@ -201,7 +205,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_window_set_title(window_ptr, NULL);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-        window_ptr, &resizebar_style);
+        cursor_ptr, window_ptr, &resizebar_style);
     if (NULL == window_ptr->resizebar_ptr) {
         wlmtk_window_fini(window_ptr);
         return false;
@@ -221,7 +225,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
 
     window_ptr->titlebar_ptr = wlmtk_titlebar_create(
-        window_ptr, &titlebar_style);
+        cursor_ptr, window_ptr, &titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
         wlmtk_window_fini(window_ptr);
         return false;
@@ -288,7 +292,8 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
 
-    if (!wlmtk_window_init(window_ptr, &window_default_impl, content_ptr)) {
+    if (!wlmtk_window_init(window_ptr, &window_default_impl, NULL,
+                           content_ptr)) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
@@ -482,6 +487,7 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
 
     if (!wlmtk_window_init(&fake_window_ptr->window,
                            &fake_window_impl,
+                           NULL,
                            &fake_window_ptr->fake_content_ptr->content)) {
         wlmtk_fake_window_destroy(fake_window_ptr);
         return NULL;

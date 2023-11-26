@@ -51,12 +51,14 @@ typedef struct {
 /**
  * Creates the resize bar.
  *
+ * @param cursor_ptr
  * @param window_ptr
  * @param style_ptr
  *
  * @return Pointer to the resizebar state, or NULL on error.
  */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr);
 

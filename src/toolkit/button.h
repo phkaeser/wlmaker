@@ -58,10 +58,12 @@ struct _wlmtk_button_t {
  * Initializes the button.
  *
  * @param button_ptr
+ * @param cursor_ptr
  *
  * @return true on success.
  */
-bool wlmtk_button_init(wlmtk_button_t *button_ptr);
+bool wlmtk_button_init(wlmtk_button_t *button_ptr,
+                       wlmtk_cursor_t *cursor_ptr);
 
 /**
  * Extends the button's virtual methods.

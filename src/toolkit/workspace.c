@@ -144,6 +144,7 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_workspace_create(
+    wlmtk_cursor_t *cursor_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
@@ -151,6 +152,7 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     if (NULL == workspace_ptr) return NULL;
 
     if (!wlmtk_container_init_attached(&workspace_ptr->super_container,
+                                       cursor_ptr,
                                        wlr_scene_tree_ptr)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
@@ -584,7 +586,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fake_parent_ptr);
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     BS_TEST_VERIFY_EQ(
@@ -614,7 +616,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
@@ -657,7 +659,7 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&fake_element_ptr->element, true);
@@ -716,7 +718,7 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
@@ -762,7 +764,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
@@ -806,7 +808,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_content_commit_size(&fake_content_ptr->content, 1, 40, 20);
@@ -862,7 +864,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_ASSERT(NULL != fake_parent_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
 
     // Window 1: from (0, 0) to (100, 100)

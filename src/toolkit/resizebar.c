@@ -70,6 +70,7 @@ static const wlmtk_element_vmt_t resizebar_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
+    wlmtk_cursor_t *cursor_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr)
 {
@@ -78,7 +79,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     if (NULL == resizebar_ptr) return NULL;
     memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
 
-    if (!wlmtk_box_init(&resizebar_ptr->super_box, WLMTK_BOX_HORIZONTAL)) {
+    if (!wlmtk_box_init(&resizebar_ptr->super_box, cursor_ptr,
+                        WLMTK_BOX_HORIZONTAL)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
@@ -87,7 +89,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         &resizebar_element_vmt);
 
     resizebar_ptr->left_area_ptr = wlmtk_resizebar_area_create(
-        window_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
+        window_ptr, cursor_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->left_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -97,7 +99,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
 
     resizebar_ptr->center_area_ptr = wlmtk_resizebar_area_create(
-        window_ptr, WLR_EDGE_BOTTOM);
+        window_ptr, cursor_ptr, WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->center_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -108,7 +110,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
 
     resizebar_ptr->right_area_ptr = wlmtk_resizebar_area_create(
-        window_ptr, WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM);
+        window_ptr, cursor_ptr, WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->right_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
@@ -291,7 +293,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_resizebar_style_t style = {};
     wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        &fake_window_ptr->window, &style);
+        NULL, &fake_window_ptr->window, &style);
 
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
@@ -306,7 +308,7 @@ void test_variable_width(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
     wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        &fake_window_ptr->window, &style);
+        NULL, &fake_window_ptr->window, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(

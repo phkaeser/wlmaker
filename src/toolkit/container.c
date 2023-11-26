@@ -78,13 +78,15 @@ static const wlmtk_container_vmt_t container_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_container_init(wlmtk_container_t *container_ptr)
+bool wlmtk_container_init(
+    wlmtk_container_t *container_ptr,
+    wlmtk_cursor_t *cursor_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
     memset(container_ptr, 0, sizeof(wlmtk_container_t));
     container_ptr->vmt = container_vmt;
 
-    if (!wlmtk_element_init(&container_ptr->super_element)) {
+    if (!wlmtk_element_init(&container_ptr->super_element, cursor_ptr)) {
         return false;
     }
     container_ptr->orig_super_element_vmt = wlmtk_element_extend(
@@ -96,9 +98,10 @@ bool wlmtk_container_init(wlmtk_container_t *container_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmtk_container_init_attached(
     wlmtk_container_t *container_ptr,
+    wlmtk_cursor_t *cursor_ptr,
     struct wlr_scene_tree *root_wlr_scene_tree_ptr)
 {
-    if (!wlmtk_container_init(container_ptr)) return false;
+    if (!wlmtk_container_init(container_ptr, cursor_ptr)) return false;
 
     container_ptr->super_element.wlr_scene_node_ptr =
         element_create_scene_node(
@@ -597,6 +600,7 @@ wlmtk_container_t *wlmtk_container_create_fake_parent(void)
 
     if (!wlmtk_container_init_attached(
             &fake_parent_container_ptr->container,
+            NULL,
             &fake_parent_container_ptr->wlr_scene_ptr->tree)) {
         wlmtk_container_destroy_fake_parent(
             &fake_parent_container_ptr->container);
@@ -652,7 +656,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container, NULL));
     // Also expect the super element to be initialized.
     BS_TEST_VERIFY_NEQ(
         test_ptr, NULL, container.super_element.vmt.pointer_motion);
@@ -668,7 +672,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_add_remove(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container, NULL));
 
     wlmtk_fake_element_t *elem1_ptr, *elem2_ptr, *elem3_ptr;
     elem1_ptr = wlmtk_fake_element_create();
@@ -722,7 +726,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_parent_ptr);
     wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_container_init(&container, NULL));
     wlmtk_element_set_parent_container(
         &container.super_element, fake_parent_ptr);
 
@@ -753,7 +757,7 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 void test_pointer_motion(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container));
+    BS_ASSERT(wlmtk_container_init(&container, NULL));
     wlmtk_element_set_visible(&container.super_element, true);
 
     // Note: pointer area extends by (-1, -2, 3, 4) on each fake element.
@@ -786,7 +790,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
 
     // Same must hold for the parent container.
     wlmtk_container_t parent_container;
-    BS_ASSERT(wlmtk_container_init(&parent_container));
+    BS_ASSERT(wlmtk_container_init(&parent_container, NULL));
     wlmtk_container_add_element(&parent_container,
                                 &container.super_element);
 
@@ -893,7 +897,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
 void test_pointer_focus(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container));
+    BS_ASSERT(wlmtk_container_init(&container, NULL));
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);
@@ -984,7 +988,7 @@ void test_pointer_focus(bs_test_t *test_ptr)
 void test_pointer_focus_move(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container));
+    BS_ASSERT(wlmtk_container_init(&container, NULL));
 
     // Setup to span an area where the container catches pointer coordinates.
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
@@ -1026,9 +1030,9 @@ void test_pointer_focus_move(bs_test_t *test_ptr)
 void test_pointer_focus_layered(bs_test_t *test_ptr)
 {
     wlmtk_container_t container1;
-    BS_ASSERT(wlmtk_container_init(&container1));
+    BS_ASSERT(wlmtk_container_init(&container1, NULL));
     wlmtk_container_t container2;
-    BS_ASSERT(wlmtk_container_init(&container2));
+    BS_ASSERT(wlmtk_container_init(&container2, NULL));
     wlmtk_element_set_visible(&container2.super_element, true);
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
@@ -1103,7 +1107,7 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
 void test_pointer_button(bs_test_t *test_ptr)
 {
     wlmtk_container_t container;
-    BS_ASSERT(wlmtk_container_init(&container));
+    BS_ASSERT(wlmtk_container_init(&container, NULL));
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);
