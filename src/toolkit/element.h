@@ -312,7 +312,18 @@ static inline void wlmtk_element_get_dimensions(
         element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
 }
 
-/* FIXME */
+/**
+ * Passes a pointer motion event on to the element.
+ *
+ * Will forward to @ref wlmtk_element_vmt_t::pointer_motion, and (depending on
+ * that return value) trigger @ref wlmtk_element_vmt_t::pointer_enter of
+ * @ref wlmtk_element_vmt_t::pointer_leave calls.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ */
 bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
