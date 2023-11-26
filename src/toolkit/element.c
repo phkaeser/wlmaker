@@ -243,6 +243,27 @@ void wlmtk_element_set_position(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmtk_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec)
+{
+    bool within = element_ptr->vmt.pointer_motion(element_ptr, x, y, time_msec);
+    if (within == element_ptr->pointer_inside) return within;
+
+    if (within) {
+        element_ptr->pointer_inside = true;
+        element_ptr->vmt.pointer_enter(element_ptr);
+    } else {
+        element_ptr->pointer_inside = false;
+        element_ptr->vmt.pointer_leave(element_ptr);
+    }
+
+    return within;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -258,7 +279,7 @@ void _wlmtk_element_get_pointer_area(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Stores the pointer coordinates and timestamp. Returns true. */
+/** Stores pointer coordinates and timestamp. Returns true is x,y not NAN. */
 bool _wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
@@ -266,26 +287,15 @@ bool _wlmtk_element_pointer_motion(
     uint32_t time_msec)
 {
     if (isnan(x) || isnan(y)) {
-        if (element_ptr->pointer_inside) {
-            element_ptr->pointer_inside = false;
-            element_ptr->vmt.pointer_leave(element_ptr);
-        }
-        element_ptr->last_pointer_x = NAN;
-        element_ptr->last_pointer_y = NAN;
-        element_ptr->last_pointer_time_msec = time_msec;
-        return true;
-    }
-
-    if (!element_ptr->pointer_inside) {
-        element_ptr->pointer_inside = true;
-        element_ptr->vmt.pointer_enter(element_ptr);
+        x = NAN;
+        y = NAN;
     }
 
     element_ptr->last_pointer_x = x;
     element_ptr->last_pointer_y = y;
     element_ptr->last_pointer_time_msec = time_msec;
 
-    return true;
+    return !isnan(x) && !isnan(y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -302,14 +312,12 @@ bool _wlmtk_element_pointer_button(
 void _wlmtk_element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
 {
     // Nothing.
-    bs_log(BS_WARNING, "FIXME: Pointer entered on %p", element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Handler for when the pointer leaves the area. Nothing for default impl. */
 void _wlmtk_element_pointer_leave(__UNUSED__ wlmtk_element_t *element_ptr)
 {
-    bs_log(BS_WARNING, "FIXME: Pointer left on %p", element_ptr);
     // Nothing.
 }
 

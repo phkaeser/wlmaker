@@ -159,9 +159,6 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container.super_element,
         &workspace_element_vmt);
 
-    bs_log(BS_WARNING, "FIXME: Workspace element %p",
-           &workspace_ptr->super_container.super_element);
-
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
 }
@@ -378,7 +375,7 @@ void _wlmtk_workspace_element_get_pointer_area(
  * @param y
  * @param time_msec
  *
- * @return Whether the motion encountered an active element.
+ * @return Always true.
  */
 bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
@@ -387,10 +384,12 @@ bool element_pointer_motion(
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
-    bool rv = workspace_ptr->orig_super_element_vmt.pointer_motion(
+
+    // Note: Workspace ignores the return value. All motion events are whitin.
+    workspace_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, x, y, time_msec);
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
-    return rv;
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */

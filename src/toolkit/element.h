@@ -312,15 +312,12 @@ static inline void wlmtk_element_get_dimensions(
         element_ptr, left_ptr, top_ptr, right_ptr, bottom_ptr);
 }
 
-/** Calls @ref wlmtk_element_vmt_t::pointer_button. */
-static inline bool wlmtk_element_pointer_motion(
+/* FIXME */
+bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
-    uint32_t time_msec)
-{
-    return element_ptr->vmt.pointer_motion(element_ptr, x, y, time_msec);
-}
+    uint32_t time_msec);
 
 /** Calls @ref wlmtk_element_vmt_t::pointer_button. */
 static inline bool wlmtk_element_pointer_button(
