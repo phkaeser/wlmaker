@@ -100,6 +100,13 @@ struct _wlmtk_element_vmt_t {
                            const wlmtk_button_event_t *button_event_ptr);
 
     /**
+     * Indicates the pointer has entered the element's area.
+     *
+     * @param element_ptr
+     */
+    void (*pointer_enter)(wlmtk_element_t *element_ptr);
+
+    /**
      * Indicates the pointer has left the element's area.
      *
      * @param element_ptr
@@ -133,22 +140,24 @@ struct _wlmtk_element_t {
 
     /**
      * Horizontal pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if @ref
-     * wlmtk_element_pointer_leave was called since.
+     * call. NAN if there was no motion call yet, or if the last motion call
+     * had NAN arguments.
      *
      * Does not imply that the element has pointer focus.
      */
     double                    last_pointer_x;
     /**
      * Vertical pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if @ref
-     * wlmtk_element_pointer_leave was called since.
+     * call. NAN if there was no motion call yet, or if the last motion call
+     * had NAN arguments.
      *
      * Does not imply that the element has pointer focus.
      */
     double                    last_pointer_y;
     /** Time of last @ref wlmtk_element_pointer_motion call, 0 otherwise. */
     uint32_t                  last_pointer_time_msec;
+    /** Whether the pointer is currently within the element's bounds. */
+    bool                      pointer_inside;
 };
 
 /**
@@ -317,13 +326,6 @@ static inline bool wlmtk_element_pointer_button(
     return element_ptr->vmt.pointer_button(element_ptr, button_event_ptr);
 }
 
-/** Calls @ref wlmtk_element_vmt_t::pointer_leave. */
-static inline void wlmtk_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
-{
-    element_ptr->vmt.pointer_leave(element_ptr);
-}
-
 /**
  * Virtual method: Calls the dtor of the element's implementation.
  *
@@ -350,13 +352,14 @@ typedef struct {
     /** Height of the element, in pixels. */
     int height;
 
-    /** Indicates that Element::pointer_motion() was called. */
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_motion() was called. */
     bool                      pointer_motion_called;
 
-    /** Indicates that Element::pointer_leave() was called. */
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_enter() was called. */
+    bool                      pointer_enter_called;
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_leave() was called. */
     bool                      pointer_leave_called;
-
-    /** Indicates that Element::pointer_button() was called. */
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_button() was called. */
     bool                      pointer_button_called;
     /** Last button event reveiced. */
     wlmtk_button_event_t      pointer_button_event;

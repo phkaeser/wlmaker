@@ -43,10 +43,12 @@ static bool _wlmtk_element_pointer_motion(
 static bool _wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void _wlmtk_element_pointer_enter(
+    wlmtk_element_t *element_ptr);
 static void _wlmtk_element_pointer_leave(
     wlmtk_element_t *element_ptr);
 
-    static void handle_wlr_scene_node_destroy(
+static void handle_wlr_scene_node_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -57,6 +59,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .get_pointer_area = _wlmtk_element_get_pointer_area,
     .pointer_motion = _wlmtk_element_pointer_motion,
     .pointer_button = _wlmtk_element_pointer_button,
+    .pointer_enter = _wlmtk_element_pointer_enter,
     .pointer_leave = _wlmtk_element_pointer_leave,
 };
 
@@ -100,6 +103,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->pointer_button) {
         element_ptr->vmt.pointer_button = element_vmt_ptr->pointer_button;
+    }
+    if (NULL != element_vmt_ptr->pointer_enter) {
+        element_ptr->vmt.pointer_enter = element_vmt_ptr->pointer_enter;
     }
     if (NULL != element_vmt_ptr->pointer_leave) {
         element_ptr->vmt.pointer_leave = element_vmt_ptr->pointer_leave;
@@ -232,7 +238,8 @@ void wlmtk_element_set_position(
     }
 
     if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_container_update_pointer_focus(element_ptr->parent_container_ptr);
+        wlmtk_container_update_pointer_focus(
+            element_ptr->parent_container_ptr);
     }
 }
 
@@ -258,9 +265,26 @@ bool _wlmtk_element_pointer_motion(
     double y,
     uint32_t time_msec)
 {
+    if (isnan(x) || isnan(y)) {
+        if (element_ptr->pointer_inside) {
+            element_ptr->pointer_inside = false;
+            element_ptr->vmt.pointer_leave(element_ptr);
+        }
+        element_ptr->last_pointer_x = NAN;
+        element_ptr->last_pointer_y = NAN;
+        element_ptr->last_pointer_time_msec = time_msec;
+        return true;
+    }
+
+    if (!element_ptr->pointer_inside) {
+        element_ptr->pointer_inside = true;
+        element_ptr->vmt.pointer_enter(element_ptr);
+    }
+
     element_ptr->last_pointer_x = x;
     element_ptr->last_pointer_y = y;
     element_ptr->last_pointer_time_msec = time_msec;
+
     return true;
 }
 
@@ -274,13 +298,18 @@ bool _wlmtk_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Resets the pointer coordinates. */
-void _wlmtk_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
+/** Handler for when the pointer enters the area. Nothing for default impl. */
+void _wlmtk_element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
 {
-    element_ptr->last_pointer_x = NAN;
-    element_ptr->last_pointer_y = NAN;
-    element_ptr->last_pointer_time_msec = 0;
+    // Nothing.
+    bs_log(BS_WARNING, "FIXME: Pointer entered on %p", element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for when the pointer leaves the area. Nothing for default impl. */
+void _wlmtk_element_pointer_leave(__UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -326,6 +355,8 @@ static bool fake_pointer_motion(
 static bool fake_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void fake_pointer_enter(
+    wlmtk_element_t *element_ptr);
 static void fake_pointer_leave(
     wlmtk_element_t *element_ptr);
 
@@ -337,6 +368,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .get_pointer_area = fake_get_pointer_area,
     .pointer_motion = fake_pointer_motion,
     .pointer_button = fake_pointer_button,
+    .pointer_enter = fake_pointer_enter,
     .pointer_leave = fake_pointer_leave,
 };
 
@@ -444,6 +476,17 @@ bool fake_pointer_button(
         button_event_ptr,
         sizeof(wlmtk_button_event_t));
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles 'enter' events for the fake element. */
+void fake_pointer_enter(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->orig_vmt.pointer_enter(element_ptr);
+    fake_element_ptr->pointer_enter_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -637,6 +680,7 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
         isnan(fake_element_ptr->element.last_pointer_y));
 
     wlmtk_element_pointer_motion(&fake_element_ptr->element, 1.0, 2.0, 1234);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_enter_called);
     BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->element.last_pointer_x);
     BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->element.last_pointer_y);
     BS_TEST_VERIFY_EQ(
@@ -644,7 +688,7 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
         1234,
         fake_element_ptr->element.last_pointer_time_msec);
 
-    wlmtk_element_pointer_leave(&fake_element_ptr->element);
+    wlmtk_element_pointer_motion(&fake_element_ptr->element, NAN, NAN, 1235);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_leave_called);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -654,7 +698,7 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
         isnan(fake_element_ptr->element.last_pointer_y));
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        0,
+        1235,
         fake_element_ptr->element.last_pointer_time_msec);
 
     wlmtk_element_destroy(&fake_element_ptr->element);

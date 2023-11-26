@@ -32,13 +32,11 @@
 
 static void _wlmtk_button_clicked(wlmtk_button_t *button_ptr);
 
-static bool _wlmtk_button_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
 static bool _wlmtk_button_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void _wlmtk_button_element_pointer_enter(
+    wlmtk_element_t *element_ptr);
 static void _wlmtk_button_element_pointer_leave(
     wlmtk_element_t *element_ptr);
 
@@ -48,8 +46,8 @@ static void apply_state(wlmtk_button_t *button_ptr);
 
 /** Virtual method table for the button's element super class. */
 static const wlmtk_element_vmt_t button_element_vmt = {
-    .pointer_motion = _wlmtk_button_element_pointer_motion,
     .pointer_button = _wlmtk_button_element_pointer_button,
+    .pointer_enter = _wlmtk_button_element_pointer_enter,
     .pointer_leave = _wlmtk_button_element_pointer_leave,
 };
 
@@ -147,23 +145,6 @@ void _wlmtk_button_clicked(__UNUSED__ wlmtk_button_t *button_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_motion. */
-bool _wlmtk_button_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
-{
-    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_button_t, super_buffer.super_element);
-
-    button_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
-    button_ptr->pointer_inside = true;
-    apply_state(button_ptr);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
 /** See @ref wlmtk_element_vmt_t::pointer_button. */
 bool _wlmtk_button_element_pointer_button(
     wlmtk_element_t *element_ptr,
@@ -197,7 +178,19 @@ bool _wlmtk_button_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_leave. */
+/** Pointer enters the area: We may need to update visualization. */
+void _wlmtk_button_element_pointer_enter(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_button_t, super_buffer.super_element);
+    button_ptr->orig_super_element_vmt.pointer_enter(element_ptr);
+
+    apply_state(button_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Pointer leaves the area: We may need to update visualization. */
 void _wlmtk_button_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
@@ -205,7 +198,6 @@ void _wlmtk_button_element_pointer_leave(
         element_ptr, wlmtk_button_t, super_buffer.super_element);
 
     button_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
-    button_ptr->pointer_inside = false;
     apply_state(button_ptr);
 }
 
@@ -213,7 +205,8 @@ void _wlmtk_button_element_pointer_leave(
 /** Sets the appropriate texture for the button. */
 void apply_state(wlmtk_button_t *button_ptr)
 {
-    if (button_ptr->pointer_inside && button_ptr->pressed) {
+    if (button_ptr->super_buffer.super_element.pointer_inside &&
+        button_ptr->pressed) {
         wlmtk_buffer_set(
             &button_ptr->super_buffer,
             button_ptr->pressed_wlr_buffer_ptr);
@@ -294,7 +287,7 @@ void test_press_release(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
 
     // Pointer leaves the area: released.
-    wlmtk_element_pointer_leave(element_ptr);
+    wlmtk_element_pointer_motion(element_ptr, NAN, NAN, 41);
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Pointer re-enters the area: pressed.
@@ -350,7 +343,7 @@ void test_press_release_outside(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
 
     // Pointer leaves the area: released.
-    wlmtk_element_pointer_leave(element_ptr);
+    wlmtk_element_pointer_motion(element_ptr, NAN, NAN, 41);
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Button up, outside the area. Then, re-enter: Still released.

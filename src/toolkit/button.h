@@ -52,9 +52,6 @@ struct _wlmtk_button_t {
 
     /** Whether the button is currently pressed. */
     bool                      pressed;
-
-    /** Whether the pointer is currently inside. */
-    bool                      pointer_inside;
 };
 
 /**
