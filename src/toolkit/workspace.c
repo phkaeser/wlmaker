@@ -159,6 +159,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container.super_element,
         &workspace_element_vmt);
 
+    bs_log(BS_WARNING, "FIXME: Workspace element %p",
+           &workspace_ptr->super_container.super_element);
+
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
 }

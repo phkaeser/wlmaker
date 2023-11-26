@@ -81,6 +81,8 @@ bool wlmtk_content_init(
     content_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &content_ptr->super_element, &content_element_vmt);
 
+    bs_log(BS_WARNING, "FIXME: Content element at %p", &content_ptr->super_element);
+
     content_ptr->wlr_seat_ptr = wlr_seat_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
     return true;
@@ -274,6 +276,11 @@ bool element_pointer_motion(
 {
     wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_content_t, super_element);
+
+    bs_log(BS_INFO, "Content motion %f, %f", x, y);
+
+    content_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 
     // FIXME
     if (NULL == content_ptr->super_element.wlr_scene_node_ptr) return false;

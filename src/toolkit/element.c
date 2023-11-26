@@ -309,6 +309,7 @@ void _wlmtk_element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
 /** Handler for when the pointer leaves the area. Nothing for default impl. */
 void _wlmtk_element_pointer_leave(__UNUSED__ wlmtk_element_t *element_ptr)
 {
+    bs_log(BS_WARNING, "FIXME: Pointer left on %p", element_ptr);
     // Nothing.
 }
 
