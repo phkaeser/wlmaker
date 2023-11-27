@@ -50,6 +50,8 @@ static bool element_pointer_motion(
 static bool element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void element_pointer_enter(
+    wlmtk_element_t *element_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -68,6 +70,7 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .get_pointer_area = element_get_pointer_area,
     .pointer_motion = element_pointer_motion,
     .pointer_button = element_pointer_button,
+    .pointer_enter = element_pointer_enter,
 };
 
 /** Default virtual method table. Initializes non-abstract methods. */
@@ -462,6 +465,13 @@ bool element_pointer_button(
     return wlmtk_element_pointer_button(
         container_ptr->pointer_focus_element_ptr,
         button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for when the pointer enters the area. Nothing for container. */
+void element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing. Do not call parent.
 }
 
 /* ------------------------------------------------------------------------- */
