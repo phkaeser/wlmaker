@@ -123,6 +123,7 @@ struct _wlmtk_window_t {
  *
  * @param wlr_cursor_ptr
  * @param wlr_xcursor_manager_ptr
+ * @param env_ptr
  * @param content_ptr         Will take ownership of content_ptr.
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
@@ -131,6 +132,7 @@ struct _wlmtk_window_t {
 wlmtk_window_t *wlmtk_window_create(
     struct wlr_cursor *wlr_cursor_ptr,
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_content_t *content_ptr);
 
 /**

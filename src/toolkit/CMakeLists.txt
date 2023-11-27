@@ -27,6 +27,7 @@ SET(PUBLIC_HEADER_FILES
   container.h
   content.h
   element.h
+  env.h
   fsm.h
   input.h
   resizebar.h
@@ -45,6 +46,7 @@ TARGET_SOURCES(toolkit PRIVATE
   container.c
   content.c
   element.c
+  env.c
   fsm.c
   gfxbuf.c
   primitives.c

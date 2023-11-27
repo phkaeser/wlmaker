@@ -287,13 +287,14 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 wlmtk_window_t *wlmtk_window_create(
     struct wlr_cursor *wlr_cursor_ptr,
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_content_t *content_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
 
-    if (!wlmtk_window_init(window_ptr, &window_default_impl, NULL,
-                           content_ptr)) {
+    if (!wlmtk_window_init(
+            window_ptr, &window_default_impl, env_ptr, content_ptr)) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
@@ -829,7 +830,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, NULL, &fake_content_ptr->content);
+        NULL, NULL, NULL, &fake_content_ptr->content);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
                       fake_content_ptr->content.window_ptr);
@@ -843,7 +844,7 @@ void test_set_title(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, NULL, &fake_content_ptr->content);
+        NULL, NULL, NULL, &fake_content_ptr->content);
 
     wlmtk_window_set_title(window_ptr, "Title");
     BS_TEST_VERIFY_STREQ(
@@ -866,7 +867,7 @@ void test_request_close(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, NULL, &fake_content_ptr->content);
+        NULL, NULL, NULL, &fake_content_ptr->content);
 
     wlmtk_window_request_close(window_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->request_close_called);
@@ -880,7 +881,7 @@ void test_set_activated(bs_test_t *test_ptr)
 {
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, NULL, &fake_content_ptr->content);
+        NULL, NULL, NULL, &fake_content_ptr->content);
 
     wlmtk_window_set_activated(window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->activated);

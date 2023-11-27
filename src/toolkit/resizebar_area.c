@@ -62,6 +62,8 @@ struct _wlmtk_resizebar_area_t {
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
     /** Name of the cursor to show when having pointer focus. */
     const char                 *xcursor_name_ptr;
+    /** The cursor to use when having pointer focus. */
+    wlmtk_env_cursor_t         cursor;
 };
 
 static void _wlmtk_resizebar_area_element_destroy(
@@ -106,15 +108,19 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
+    resizebar_area_ptr->cursor = WLMTK_CURSOR_DEFAULT;
     resizebar_area_ptr->xcursor_name_ptr = "default";  // Fail-safe value.
     switch (resizebar_area_ptr->edges) {
     case WLR_EDGE_BOTTOM:
+        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_S;
         resizebar_area_ptr->xcursor_name_ptr = "s-resize";
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SW;
         resizebar_area_ptr->xcursor_name_ptr = "sw-resize";
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SE;
         resizebar_area_ptr->xcursor_name_ptr = "se-resize";
         break;
     default:
@@ -218,14 +224,7 @@ bool _wlmtk_resizebar_area_element_pointer_motion(
     resizebar_area_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, x, y, time_msec);
 
-    // TODO(kaeser@gubbe.ch): Inject something testable here.
-    if (NULL != resizebar_area_ptr->wlr_cursor_ptr &&
-        NULL != resizebar_area_ptr->wlr_xcursor_manager_ptr) {
-        wlr_cursor_set_xcursor(
-            resizebar_area_ptr->wlr_cursor_ptr,
-            resizebar_area_ptr->wlr_xcursor_manager_ptr,
-            resizebar_area_ptr->xcursor_name_ptr);
-    }
+    wlmtk_env_set_cursor(element_ptr->env_ptr, resizebar_area_ptr->cursor);
     return true;
 }
 

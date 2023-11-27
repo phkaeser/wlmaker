@@ -32,6 +32,7 @@ typedef struct _wlmtk_element_vmt_t wlmtk_element_vmt_t;
 typedef struct _wlmtk_container_t wlmtk_container_t;
 struct wlr_scene_tree;
 
+#include "env.h"
 #include "input.h"
 
 #ifdef __cplusplus
@@ -132,6 +133,9 @@ struct _wlmtk_element_t {
 
     /** Virtual method table for the element. */
     wlmtk_element_vmt_t       vmt;
+
+    /** Toolkit environment. */
+    wlmtk_env_t               *env_ptr;
 
     /** Points to the wlroots scene graph API node, if attached. */
     struct wlr_scene_node     *wlr_scene_node_ptr;

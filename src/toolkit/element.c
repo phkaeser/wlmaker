@@ -68,11 +68,12 @@ static const wlmtk_element_vmt_t element_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_element_init(
     wlmtk_element_t *element_ptr,
-    __UNUSED__ wlmtk_env_t *env_ptr)
+    wlmtk_env_t *env_ptr)
 {
     BS_ASSERT(NULL != element_ptr);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));
     element_ptr->vmt = element_vmt;
+    element_ptr->env_ptr = env_ptr;
 
     element_ptr->last_pointer_x = NAN;
     element_ptr->last_pointer_y = NAN;

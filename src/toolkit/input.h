@@ -29,8 +29,6 @@ extern "C" {
 
 /** Forward declaration: Button event. */
 typedef struct _wlmtk_button_event_t wlmtk_button_event_t;
-/** Forward declaration: Environment. */
-typedef struct _wlmtk_env_t wlmtk_env_t;
 
 /** Button state. */
 typedef enum {

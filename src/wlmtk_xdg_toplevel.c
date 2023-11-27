@@ -119,6 +119,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
         server_ptr->cursor_ptr->wlr_cursor_ptr,
         server_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
+        server_ptr->env_ptr,
         &content_ptr->super_content);
     if (NULL == wlmtk_window_ptr) {
         content_element_destroy(&content_ptr->super_content.super_element);

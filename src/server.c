@@ -311,6 +311,15 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
+    server_ptr->env_ptr = wlmtk_env_create(
+        server_ptr->cursor_ptr->wlr_cursor_ptr,
+        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr);
+    if (NULL == server_ptr->env_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+
     return server_ptr;
 }
 
@@ -324,6 +333,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
     // * server_ptr->void_wlr_scene_ptr
+
+    if (NULL != server_ptr->env_ptr) {
+        wlmtk_env_destroy(server_ptr->env_ptr);
+        server_ptr->env_ptr = NULL;
+    }
 
     if (NULL != server_ptr->monitor_ptr) {
         wlmaker_subprocess_monitor_destroy(server_ptr->monitor_ptr);

@@ -33,11 +33,6 @@ typedef struct _wlmtk_resizebar_area_t wlmtk_resizebar_area_t ;
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration. */
-struct wlr_cursor;
-/** Forward declaration. */
-struct wlr_xcursor_manager;
-
 /**
  * Creates a resizebar button.
  *

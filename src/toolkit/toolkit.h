@@ -36,6 +36,7 @@
 #include "container.h"
 #include "content.h"
 #include "element.h"
+#include "env.h"
 #include "fsm.h"
 #include "input.h"
 #include "resizebar.h"
