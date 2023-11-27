@@ -144,16 +144,15 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_workspace_create(
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
         logged_calloc(1, sizeof(wlmtk_workspace_t));
     if (NULL == workspace_ptr) return NULL;
 
-    if (!wlmtk_container_init_attached(&workspace_ptr->super_container,
-                                       cursor_ptr,
-                                       wlr_scene_tree_ptr)) {
+    if (!wlmtk_container_init_attached(
+            &workspace_ptr->super_container, env_ptr, wlr_scene_tree_ptr)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }

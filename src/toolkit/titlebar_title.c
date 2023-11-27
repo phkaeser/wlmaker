@@ -73,7 +73,7 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
@@ -81,7 +81,7 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     if (NULL == titlebar_title_ptr) return NULL;
     titlebar_title_ptr->window_ptr = window_ptr;
 
-    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer, cursor_ptr)) {
+    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer, env_ptr)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
         return NULL;
     }

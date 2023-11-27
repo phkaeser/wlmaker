@@ -37,12 +37,12 @@ static const wlmtk_container_vmt_t box_container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_box_orientation_t orientation)
 {
     BS_ASSERT(NULL != box_ptr);
     memset(box_ptr, 0, sizeof(wlmtk_box_t));
-    if (!wlmtk_container_init(&box_ptr->super_container, cursor_ptr)) {
+    if (!wlmtk_container_init(&box_ptr->super_container, env_ptr)) {
         return false;
     }
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(

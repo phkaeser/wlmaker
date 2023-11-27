@@ -70,13 +70,13 @@ void *wlmtk_content_identifier_ptr = wlmtk_content_init;
 /* ------------------------------------------------------------------------- */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     struct wlr_seat *wlr_seat_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
 
-    if (!wlmtk_element_init(&content_ptr->super_element, cursor_ptr)) {
+    if (!wlmtk_element_init(&content_ptr->super_element, env_ptr)) {
         return false;
     }
     content_ptr->orig_super_element_vmt = wlmtk_element_extend(

@@ -85,7 +85,7 @@ static const wlmtk_element_vmt_t titlebar_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
@@ -95,7 +95,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
-    if (!wlmtk_box_init(&titlebar_ptr->super_box, cursor_ptr,
+    if (!wlmtk_box_init(&titlebar_ptr->super_box, env_ptr,
                         WLMTK_BOX_HORIZONTAL)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
@@ -105,7 +105,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         &titlebar_element_vmt);
 
     titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(
-        cursor_ptr, window_ptr);
+        env_ptr, window_ptr);
     if (NULL == titlebar_ptr->titlebar_title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
@@ -115,7 +115,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
-        cursor_ptr,
+        env_ptr,
         wlmtk_window_request_minimize,
         window_ptr,
         wlmaker_primitives_draw_minimize_icon);
@@ -128,7 +128,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
     titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
-        cursor_ptr,
+        env_ptr,
         wlmtk_window_request_close,
         window_ptr,
         wlmaker_primitives_draw_close_icon);

@@ -80,13 +80,13 @@ static const wlmtk_container_vmt_t container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_container_init(
     wlmtk_container_t *container_ptr,
-    wlmtk_cursor_t *cursor_ptr)
+    wlmtk_env_t *env_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
     memset(container_ptr, 0, sizeof(wlmtk_container_t));
     container_ptr->vmt = container_vmt;
 
-    if (!wlmtk_element_init(&container_ptr->super_element, cursor_ptr)) {
+    if (!wlmtk_element_init(&container_ptr->super_element, env_ptr)) {
         return false;
     }
     container_ptr->orig_super_element_vmt = wlmtk_element_extend(
@@ -98,10 +98,10 @@ bool wlmtk_container_init(
 /* ------------------------------------------------------------------------- */
 bool wlmtk_container_init_attached(
     wlmtk_container_t *container_ptr,
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     struct wlr_scene_tree *root_wlr_scene_tree_ptr)
 {
-    if (!wlmtk_container_init(container_ptr, cursor_ptr)) return false;
+    if (!wlmtk_container_init(container_ptr, env_ptr)) return false;
 
     container_ptr->super_element.wlr_scene_node_ptr =
         element_create_scene_node(

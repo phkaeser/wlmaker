@@ -39,7 +39,7 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
 /**
  * Creates a button for the titlebar.
  *
- * @param cursor_ptr
+ * @param env_ptr
  * @param click_handler
  * @param window_ptr
  * @param draw
@@ -47,7 +47,7 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
  * @return Pointer to the titlebar button, or NULL on error.
  */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw);

@@ -80,12 +80,12 @@ struct _wlmtk_container_t {
  * Initializes the container with the provided virtual method table.
  *
  * @param container_ptr
- * @param cursor_ptr
+ * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_container_init(wlmtk_container_t *container_ptr,
-                          wlmtk_cursor_t *cursor_ptr);
+                          wlmtk_env_t *env_ptr);
 
 /**
  * Extends the container's virtual methods.
@@ -103,14 +103,14 @@ wlmtk_container_vmt_t wlmtk_container_extend(
  * Initializes the container, and attach to WLR sene graph.
  *
  * @param container_ptr
- * @param cursor_ptr
+ * @param env_ptr
  * @param root_wlr_scene_tree_ptr
  *
  * @return true on success.
  */
 bool wlmtk_container_init_attached(
     wlmtk_container_t *container_ptr,
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     struct wlr_scene_tree *root_wlr_scene_tree_ptr);
 
 /**

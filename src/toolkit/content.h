@@ -85,14 +85,14 @@ struct _wlmtk_content_t {
  * Initializes the content.
  *
  * @param content_ptr
- * @param cursor_ptr
+ * @param env_ptr
  * @param wlr_seat_ptr
  *
  * @return true on success.
  */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     struct wlr_seat *wlr_seat_ptr);
 
 /**

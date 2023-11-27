@@ -168,12 +168,12 @@ struct _wlmtk_element_t {
  * Initializes the element.
  *
  * @param element_ptr
- * @param cursor_ptr
+ * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_element_init(wlmtk_element_t *element_ptr,
-                        wlmtk_cursor_t *cursor_ptr);
+                        wlmtk_env_t *env_ptr);
 
 /**
  * Extends the element's virtual methods.

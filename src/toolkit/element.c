@@ -68,7 +68,7 @@ static const wlmtk_element_vmt_t element_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_element_init(
     wlmtk_element_t *element_ptr,
-    __UNUSED__ wlmtk_cursor_t *cursor_ptr)
+    __UNUSED__ wlmtk_env_t *env_ptr)
 {
     BS_ASSERT(NULL != element_ptr);
     memset(element_ptr, 0, sizeof(wlmtk_element_t));

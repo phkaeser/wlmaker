@@ -26,7 +26,7 @@
 
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        const wlmtk_window_impl_t *impl_ptr,
-                       wlmtk_cursor_t *cursor_ptr,
+                       wlmtk_env_t *env_ptr,
                        wlmtk_content_t *content_ptr);
 void wlmtk_window_fini(wlmtk_window_t *window_ptr);
 
@@ -163,14 +163,14 @@ static const wlmtk_resizebar_style_t resizebar_style = {
  *
  * @param window_ptr
  * @param impl_ptr
- * @param cursor_ptr
+ * @param env_ptr
  * @param content_ptr         Will take ownership of it.
  *
  * @return true on success.
  */
 bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                        const wlmtk_window_impl_t *impl_ptr,
-                       wlmtk_cursor_t *cursor_ptr,
+                       wlmtk_env_t *env_ptr,
                        wlmtk_content_t *content_ptr)
 {
     BS_ASSERT(NULL != window_ptr);
@@ -191,7 +191,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                             &window_ptr->pre_allocated_updates[i].dlnode);
     }
 
-    if (!wlmtk_box_init(&window_ptr->super_box, cursor_ptr,
+    if (!wlmtk_box_init(&window_ptr->super_box, env_ptr,
                         WLMTK_BOX_VERTICAL)) {
         wlmtk_window_fini(window_ptr);
         return false;
@@ -205,7 +205,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_window_set_title(window_ptr, NULL);
 
     window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-        cursor_ptr, window_ptr, &resizebar_style);
+        env_ptr, window_ptr, &resizebar_style);
     if (NULL == window_ptr->resizebar_ptr) {
         wlmtk_window_fini(window_ptr);
         return false;
@@ -225,7 +225,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
 
     window_ptr->titlebar_ptr = wlmtk_titlebar_create(
-        cursor_ptr, window_ptr, &titlebar_style);
+        env_ptr, window_ptr, &titlebar_style);
     if (NULL == window_ptr->titlebar_ptr) {
         wlmtk_window_fini(window_ptr);
         return false;

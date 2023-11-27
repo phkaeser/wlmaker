@@ -53,12 +53,12 @@ static const wlmtk_element_vmt_t buffer_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr,
-                       wlmtk_cursor_t *cursor_ptr)
+                       wlmtk_env_t *env_ptr)
 {
     BS_ASSERT(NULL != buffer_ptr);
     memset(buffer_ptr, 0, sizeof(wlmtk_buffer_t));
 
-    if (!wlmtk_element_init(&buffer_ptr->super_element, cursor_ptr)) {
+    if (!wlmtk_element_init(&buffer_ptr->super_element, env_ptr)) {
         return false;
     }
     buffer_ptr->orig_super_element_vmt = wlmtk_element_extend(

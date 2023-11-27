@@ -35,13 +35,13 @@ extern "C" {
 /**
  * Creates a title bar title.
  *
- * @param cursor_ptr
+ * @param env_ptr
  * @param window_ptr
  *
  * @return Title handle.
  */
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
-    wlmtk_cursor_t *cursor_ptr,
+    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr);
 
 /**
