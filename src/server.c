@@ -216,6 +216,14 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
+    server_ptr->env_ptr = wlmtk_env_create(
+        server_ptr->cursor_ptr->wlr_cursor_ptr,
+        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr);
+    if (NULL == server_ptr->env_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     // TODO(kaeser@gubbe.ch): Create the workspaces depending on configuration.
     int workspace_idx = 0;
     const wlmaker_config_workspace_t *workspace_config_ptr;
@@ -311,15 +319,6 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
-    server_ptr->env_ptr = wlmtk_env_create(
-        server_ptr->cursor_ptr->wlr_cursor_ptr,
-        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr);
-    if (NULL == server_ptr->env_ptr) {
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
-
     return server_ptr;
 }
 
@@ -333,11 +332,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
     // * server_ptr->void_wlr_scene_ptr
-
-    if (NULL != server_ptr->env_ptr) {
-        wlmtk_env_destroy(server_ptr->env_ptr);
-        server_ptr->env_ptr = NULL;
-    }
 
     if (NULL != server_ptr->monitor_ptr) {
         wlmaker_subprocess_monitor_destroy(server_ptr->monitor_ptr);
@@ -374,6 +368,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     while (NULL != (dlnode_ptr = server_ptr->workspaces.head_ptr)) {
         bs_dllist_remove(&server_ptr->workspaces, dlnode_ptr);
         wlmaker_workspace_destroy(wlmaker_workspace_from_dlnode(dlnode_ptr));
+    }
+
+    if (NULL != server_ptr->env_ptr) {
+        wlmtk_env_destroy(server_ptr->env_ptr);
+        server_ptr->env_ptr = NULL;
     }
 
     if (NULL != server_ptr->cursor_ptr) {

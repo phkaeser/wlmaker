@@ -387,9 +387,17 @@ bool element_pointer_motion(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
     // Note: Workspace ignores the return value. All motion events are whitin.
-    workspace_ptr->orig_super_element_vmt.pointer_motion(
+    bool rv = workspace_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, x, y, time_msec);
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
+
+    // Focus wasn't claimed, so we'll set the cursor here.
+    if (!rv) {
+        wlmtk_env_set_cursor(
+            workspace_ptr->super_container.super_element.env_ptr,
+            WLMTK_CURSOR_DEFAULT);
+    }
+
     return true;
 }
 

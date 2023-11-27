@@ -173,7 +173,7 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
 #if defined(ENABLE_TOOLKIT_PROTOTYPE)
     // Transitional -- enable for prototyping: Toolkit-based workspace.
     workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
-        NULL, workspace_ptr->wlr_scene_tree_ptr);
+        workspace_ptr->server_ptr->env_ptr, workspace_ptr->wlr_scene_tree_ptr);
     if (NULL == workspace_ptr->wlmtk_workspace_ptr) {
         wlmaker_workspace_destroy(workspace_ptr);
         return NULL;
