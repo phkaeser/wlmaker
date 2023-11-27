@@ -159,26 +159,6 @@ void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_resizebar_set_cursor(
-    wlmtk_resizebar_t *resizebar_ptr,
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr)
-{
-    wlmtk_resizebar_area_set_cursor(
-        resizebar_ptr->left_area_ptr,
-        wlr_cursor_ptr,
-        wlr_xcursor_manager_ptr);
-    wlmtk_resizebar_area_set_cursor(
-        resizebar_ptr->center_area_ptr,
-        wlr_cursor_ptr,
-        wlr_xcursor_manager_ptr);
-    wlmtk_resizebar_area_set_cursor(
-        resizebar_ptr->right_area_ptr,
-        wlr_cursor_ptr,
-        wlr_xcursor_manager_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 bool wlmtk_resizebar_set_width(
     wlmtk_resizebar_t *resizebar_ptr,
     unsigned width)

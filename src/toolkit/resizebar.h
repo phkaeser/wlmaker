@@ -70,20 +70,6 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
 void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr);
 
 /**
- * Sets cursor pointers.
- *
- * TODO(kaeser@gubbe.ch): Abstract this away.
- *
- * @param resizebar_ptr
- * @param wlr_cursor_ptr
- * @param wlr_xcursor_manager_ptr
- */
-void wlmtk_resizebar_set_cursor(
-    wlmtk_resizebar_t *resizebar_ptr,
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr);
-
-/**
  * Sets the width of the resize bar.
  *
  * @param resizebar_ptr

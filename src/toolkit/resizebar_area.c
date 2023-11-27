@@ -56,12 +56,6 @@ struct _wlmtk_resizebar_area_t {
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
 
-    /** Points to a `wlr_cursor`. */
-    struct wlr_cursor         *wlr_cursor_ptr;
-    /** Points to a `wlr_xcursor_manager`. */
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
-    /** Name of the cursor to show when having pointer focus. */
-    const char                 *xcursor_name_ptr;
     /** The cursor to use when having pointer focus. */
     wlmtk_env_cursor_t         cursor;
 };
@@ -109,19 +103,15 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     resizebar_area_ptr->edges = edges;
 
     resizebar_area_ptr->cursor = WLMTK_CURSOR_DEFAULT;
-    resizebar_area_ptr->xcursor_name_ptr = "default";  // Fail-safe value.
     switch (resizebar_area_ptr->edges) {
     case WLR_EDGE_BOTTOM:
         resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_S;
-        resizebar_area_ptr->xcursor_name_ptr = "s-resize";
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
         resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SW;
-        resizebar_area_ptr->xcursor_name_ptr = "sw-resize";
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
         resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SE;
-        resizebar_area_ptr->xcursor_name_ptr = "se-resize";
         break;
     default:
         bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
@@ -150,16 +140,6 @@ void wlmtk_resizebar_area_destroy(
 
     wlmtk_buffer_fini(&resizebar_area_ptr->super_buffer);
     free(resizebar_area_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_resizebar_area_set_cursor(
-    wlmtk_resizebar_area_t *resizebar_area_ptr,
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr)
-{
-    resizebar_area_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
-    resizebar_area_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
 }
 
 /* ------------------------------------------------------------------------- */

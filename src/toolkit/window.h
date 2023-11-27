@@ -33,11 +33,6 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration. */
-struct wlr_cursor;
-/** Forward declaration. */
-struct wlr_xcursor_manager;
-
 /** Maximum number of pending state updates. */
 #define WLMTK_WINDOW_MAX_PENDING 64
 
@@ -121,8 +116,6 @@ struct _wlmtk_window_t {
 /**
  * Creates a window for the given content.
  *
- * @param wlr_cursor_ptr
- * @param wlr_xcursor_manager_ptr
  * @param env_ptr
  * @param content_ptr         Will take ownership of content_ptr.
  *
@@ -130,8 +123,6 @@ struct _wlmtk_window_t {
  *     by calling @ref wlmtk_window_destroy.
  */
 wlmtk_window_t *wlmtk_window_create(
-    struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
     wlmtk_env_t *env_ptr,
     wlmtk_content_t *content_ptr);
 
