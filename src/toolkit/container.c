@@ -194,6 +194,8 @@ void wlmtk_container_add_element_before(
             wlmtk_dlnode_from_element(element_ptr));
     }
 
+    // FIXME: This may add it to the scene graph, but may add it at the wrong
+    // position. Needs to be rectified.
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
     wlmtk_container_update_layout(container_ptr);
 }
@@ -271,6 +273,8 @@ struct wlr_scene_node *element_create_scene_node(
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
         BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
+        // FIXME: Each new node will be inserted at the top, but we're
+        // iterating head-to-tail. Should be tested and reversed.
         wlmtk_element_attach_to_scene_graph(element_ptr);
     }
 

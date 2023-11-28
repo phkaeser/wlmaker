@@ -332,7 +332,7 @@ void wlmtk_workspace_raise_window(
     // Guard clause: Nothing to do if already at the front.
     if (dlnode_ptr == workspace_ptr->super_container.elements.head_ptr) return;
 
-    // This is terrible. Should be at container.
+    // FIXME: This is terrible. Should be at container.
     bs_dllist_remove(&workspace_ptr->super_container.elements, dlnode_ptr);
     bs_dllist_push_front(&workspace_ptr->super_container.elements, dlnode_ptr);
     if (NULL != element_ptr->wlr_scene_node_ptr) {
