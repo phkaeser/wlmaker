@@ -515,6 +515,7 @@ bool _wlmtk_window_element_pointer_button(
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
         window_ptr->super_box.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
 
     return window_ptr->orig_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);

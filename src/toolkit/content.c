@@ -343,6 +343,9 @@ bool element_pointer_button(
     struct wlr_surface *focused_wlr_surface_ptr =
         content_ptr->wlr_seat_ptr->pointer_state.focused_surface;
     if (NULL == focused_wlr_surface_ptr) return false;
+    // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
+    // over to a non-activated window will trigger the condition here on the
+    // WLMTK_BUTTON_UP event. Needs a test and fixing.
     BS_ASSERT(content_ptr->wlr_surface_ptr ==
               wlr_surface_get_root_surface(focused_wlr_surface_ptr));
 

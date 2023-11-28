@@ -317,10 +317,29 @@ void wlmtk_workspace_activate_window(
         wlmtk_window_set_activated(window_ptr, true);
         workspace_ptr->activated_window_ptr = window_ptr;
     }
-    // set activated.
-    // keep track of activated. => so it can be deactivated.
+}
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_raise_window(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmtk_element_t *element_ptr = wlmtk_window_element(window_ptr);
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_element(element_ptr);
+    BS_ASSERT(bs_dllist_contains(
+                  &workspace_ptr->super_container.elements, dlnode_ptr));
 
+    // Guard clause: Nothing to do if already at the front.
+    if (dlnode_ptr == workspace_ptr->super_container.elements.head_ptr) return;
+
+    // This is terrible. Should be at container.
+    bs_dllist_remove(&workspace_ptr->super_container.elements, dlnode_ptr);
+    bs_dllist_push_front(&workspace_ptr->super_container.elements, dlnode_ptr);
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        wlr_scene_node_raise_to_top(element_ptr->wlr_scene_node_ptr);
+    }
+
+    wlmtk_container_update_pointer_focus(&workspace_ptr->super_container);
 }
 
 /* == Local (static) methods =============================================== */

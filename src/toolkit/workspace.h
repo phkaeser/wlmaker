@@ -161,6 +161,11 @@ void wlmtk_workspace_activate_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
 
+/** Raises `window_ptr`: Will show it atop all other windows. */
+void wlmtk_workspace_raise_window(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr);
+
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
