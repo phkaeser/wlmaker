@@ -61,7 +61,11 @@ struct _wlmtk_container_t {
     /** Virtual method table for the container. */
     wlmtk_container_vmt_t     vmt;
 
-    /** Elements contained here. */
+    /**
+     * Elements contained here.
+     *
+     * `head_ptr` is the topmost element, and `tail_ptr` the bottom-most one.
+     */
     bs_dllist_t               elements;
 
     /** Scene tree. */
@@ -127,7 +131,7 @@ void wlmtk_container_fini(
  * Adds `element_ptr` to the container.
  *
  * Requires that `element_ptr` is not added to a container yet. The element
- * will be added at the front of the container. *
+ * will be added at the top of the container.
  *
  * @param container_ptr
  * @param element_ptr
@@ -137,7 +141,7 @@ void wlmtk_container_add_element(
     wlmtk_element_t *element_ptr);
 
 /**
- * Adds `element_ptr` to the container at (before) the reference's position.
+ * Adds `element_ptr` to the container atop the reference's position.
  *
  * If reference_element_ptr is NULL, the element will be added at the back.
  *
@@ -145,7 +149,7 @@ void wlmtk_container_add_element(
  * @param reference_element_ptr Must be an element of this container.
  * @param element_ptr
  */
-void wlmtk_container_add_element_before(
+void wlmtk_container_add_element_atop(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *reference_element_ptr,
     wlmtk_element_t *element_ptr);

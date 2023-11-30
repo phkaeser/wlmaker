@@ -31,7 +31,9 @@ extern "C" {
 
 /** Orientation of the box. */
 typedef enum {
+    /** Horizontal box layout. The container's "top" is on the left. */
     WLMTK_BOX_HORIZONTAL,
+    /** Vertical box layout. The container's "top" is the top. */
     WLMTK_BOX_VERTICAL,
 } wlmtk_box_orientation_t;
 

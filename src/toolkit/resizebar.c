@@ -104,7 +104,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &resizebar_ptr->super_box.super_container,
         NULL,
         wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
@@ -115,7 +115,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &resizebar_ptr->super_box.super_container,
         NULL,
         wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr));

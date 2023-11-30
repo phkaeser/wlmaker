@@ -172,7 +172,7 @@ void wlmtk_container_add_element(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_container_add_element_before(
+void wlmtk_container_add_element_atop(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *reference_element_ptr,
     wlmtk_element_t *element_ptr)
@@ -710,19 +710,19 @@ void test_add_remove(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, &container, elem3_ptr->element.parent_container_ptr);
 
-    // Remove 2, then add at the end: 3 -> 1 -> 2.
+    // Remove 2, then add at the bottom: 3 -> 1 -> 2.
     wlmtk_container_remove_element(&container, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, elem2_ptr->element.parent_container_ptr);
-    wlmtk_container_add_element_before(&container, NULL, &elem2_ptr->element);
+    wlmtk_container_add_element_atop(&container, NULL, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, &container, elem2_ptr->element.parent_container_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         wlmtk_dlnode_from_element(&elem1_ptr->element)->next_ptr,
         wlmtk_dlnode_from_element(&elem2_ptr->element));
 
-    // Remove elem3 and add before elem2: 1 -> 3 -> 2.
+    // Remove elem3 and add atop elem2: 1 -> 3 -> 2.
     wlmtk_container_remove_element(&container, &elem3_ptr->element);
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &container, &elem2_ptr->element, &elem3_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -803,10 +803,10 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
         container.wlr_scene_tree_ptr->children.prev->prev->prev,
         &fe3_ptr->element.wlr_scene_node_ptr->link);
 
-    // One more element, but we add this in front of fe2.
+    // One more element, but we add this atop of fe2.
     wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fe1_ptr->element.wlr_scene_node_ptr);
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &container, &fe2_ptr->element, &fe1_ptr->element);
 
     BS_TEST_VERIFY_EQ(
@@ -1017,14 +1017,14 @@ void test_pointer_focus(bs_test_t *test_ptr)
         &elem1_ptr->element,
         container.pointer_focus_element_ptr);
 
-    // Case 4: Add another visible element. Focus changes, since in front.
+    // Case 4: Add another visible element. Focus changes, since on top.
     wlmtk_container_add_element(&container, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &elem2_ptr->element,
         container.pointer_focus_element_ptr);
 
-    // Case 5: Elem2 (added last = in front) becomes invisible. Focus changes.
+    // Case 5: Elem2 (added last = on top) becomes invisible. Focus changes.
     wlmtk_element_set_visible(&elem2_ptr->element, false);
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -1163,7 +1163,7 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
         container1.pointer_focus_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
 
-    // Case 3: Bring container2 in front. Now elem2 has focus.
+    // Case 3: Bring container2 to top. Now elem2 has focus.
     elem1_ptr->pointer_leave_called = false;
     wlmtk_container_remove_element(&container1, &container2.super_element);
     wlmtk_container_add_element(&container1, &container2.super_element);
@@ -1211,7 +1211,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_position(&elem2_ptr->element, 10, 10);
     wlmtk_element_set_visible(&elem2_ptr->element, true);
-    wlmtk_container_add_element_before(&container, NULL, &elem2_ptr->element);
+    wlmtk_container_add_element_atop(&container, NULL, &elem2_ptr->element);
 
     wlmtk_button_event_t button = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN

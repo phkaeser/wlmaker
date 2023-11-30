@@ -216,7 +216,7 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
 
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &window_ptr->super_box.super_container,
         wlmtk_resizebar_element(window_ptr->resizebar_ptr),
         wlmtk_content_element(content_ptr));

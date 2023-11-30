@@ -136,7 +136,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_before(
+    wlmtk_container_add_element_atop(
         &titlebar_ptr->super_box.super_container, NULL,
         wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
 
