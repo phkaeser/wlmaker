@@ -194,9 +194,12 @@ void wlmtk_container_add_element_before(
             wlmtk_dlnode_from_element(element_ptr));
     }
 
-    // FIXME: This may add it to the scene graph, but may add it at the wrong
-    // position. Needs to be rectified.
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        BS_ASSERT(NULL != reference_element_ptr->wlr_scene_node_ptr);
+        wlr_scene_node_place_above(element_ptr->wlr_scene_node_ptr,
+                                   reference_element_ptr->wlr_scene_node_ptr);
+    }
     wlmtk_container_update_layout(container_ptr);
 }
 
@@ -779,23 +782,54 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
         test_ptr, NULL, container.super_element.wlr_scene_node_ptr);
 
     // Fresh element: No scene graph node yet.
-    wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe1_ptr->element.wlr_scene_node_ptr);
+    wlmtk_fake_element_t *fe0_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe0_ptr->element.wlr_scene_node_ptr);
 
     // Add to container with attached graph: Element now has a graph node.
-    wlmtk_container_add_element(&container, &fe1_ptr->element);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fe1_ptr->element.wlr_scene_node_ptr);
+    wlmtk_container_add_element(&container, &fe0_ptr->element);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fe0_ptr->element.wlr_scene_node_ptr);
 
-    // Now fe1 has to be on top.
+    // Now fe0 has to be on top, followed by fe2 and fe3.
     BS_TEST_VERIFY_EQ(
         test_ptr,
         container.wlr_scene_tree_ptr->children.prev,
+        &fe0_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev->prev,
+        &fe2_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev->prev->prev,
+        &fe3_ptr->element.wlr_scene_node_ptr->link);
+
+    // One more element, but we add this in front of fe2.
+    wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe1_ptr->element.wlr_scene_node_ptr);
+    wlmtk_container_add_element_before(
+        &container, &fe2_ptr->element, &fe1_ptr->element);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev,
+        &fe0_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev->prev,
         &fe1_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev->prev->prev,
+        &fe2_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        container.wlr_scene_tree_ptr->children.prev->prev->prev->prev,
+        &fe3_ptr->element.wlr_scene_node_ptr->link);
 
     // Remove: The element's graph node must be destroyed & cleared..
-    wlmtk_container_remove_element(&container, &fe1_ptr->element);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe1_ptr->element.wlr_scene_node_ptr);
-    wlmtk_element_destroy(&fe1_ptr->element);
+    wlmtk_container_remove_element(&container, &fe0_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fe0_ptr->element.wlr_scene_node_ptr);
+    wlmtk_element_destroy(&fe0_ptr->element);
 
     wlmtk_element_set_parent_container(&container.super_element, NULL);
 
