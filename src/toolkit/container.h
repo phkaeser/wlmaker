@@ -167,6 +167,18 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr);
 
 /**
+ * Places `element_ptr` at the top (head) of the container.
+ *
+ * Expects that `container_ptr` is `element_ptr`'s parent container.
+ *
+ * @param container_ptr
+ * @param element_ptr
+ */
+void wlmtk_container_raise_element_to_top(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
  * Updates pointer focus of the container.
  *
  * @param container_ptr

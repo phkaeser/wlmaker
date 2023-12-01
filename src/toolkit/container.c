@@ -196,9 +196,15 @@ void wlmtk_container_add_element_atop(
 
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
     if (NULL != element_ptr->wlr_scene_node_ptr) {
-        BS_ASSERT(NULL != reference_element_ptr->wlr_scene_node_ptr);
-        wlr_scene_node_place_above(element_ptr->wlr_scene_node_ptr,
-                                   reference_element_ptr->wlr_scene_node_ptr);
+
+        if (NULL == reference_element_ptr) {
+            wlr_scene_node_lower_to_bottom(element_ptr->wlr_scene_node_ptr);
+        } else {
+            BS_ASSERT(NULL != reference_element_ptr->wlr_scene_node_ptr);
+            wlr_scene_node_place_above(
+                element_ptr->wlr_scene_node_ptr,
+                reference_element_ptr->wlr_scene_node_ptr);
+        }
     }
     wlmtk_container_update_layout(container_ptr);
 }
@@ -221,6 +227,27 @@ void wlmtk_container_remove_element(
 
     wlmtk_container_update_layout(container_ptr);
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_container_raise_element_to_top(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
+
+    bs_dllist_remove(
+        &container_ptr->elements,
+        wlmtk_dlnode_from_element(element_ptr));
+    bs_dllist_push_front(
+        &container_ptr->elements,
+        wlmtk_dlnode_from_element(element_ptr));
+
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        wlr_scene_node_raise_to_top(element_ptr->wlr_scene_node_ptr);
+    }
+
+    wlmtk_container_update_layout(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -650,6 +677,7 @@ void wlmtk_container_destroy_fake_parent(wlmtk_container_t *container_ptr)
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_add_remove(bs_test_t *test_ptr);
 static void test_add_remove_with_scene_graph(bs_test_t *test_ptr);
+static void test_add_with_raise(bs_test_t *test_ptr);
 static void test_pointer_motion(bs_test_t *test_ptr);
 static void test_pointer_focus(bs_test_t *test_ptr);
 static void test_pointer_focus_move(bs_test_t *test_ptr);
@@ -660,6 +688,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
+    { 1, "add_with_raise", test_add_with_raise },
     { 1, "pointer_motion", test_pointer_motion },
     { 1, "pointer_focus", test_pointer_focus },
     { 1, "pointer_focus_move", test_pointer_focus_move },
@@ -843,6 +872,78 @@ void test_add_remove_with_scene_graph(bs_test_t *test_ptr)
 
     wlmtk_container_fini(&container);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that elements inserted at position are also placed in scene graph. */
+void test_add_with_raise(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *c_ptr = wlmtk_container_create_fake_parent();
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, c_ptr);
+
+    // fe1 added. Sole element, is the top.
+    wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&fe1_ptr->element, true);
+    wlmtk_container_add_element(c_ptr, &fe1_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev,
+        &fe1_ptr->element.wlr_scene_node_ptr->link);
+
+    wlmtk_element_pointer_motion(&c_ptr->super_element, 0, 0, 7);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
+    fe1_ptr->pointer_motion_called = false;
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &fe1_ptr->element, c_ptr->pointer_focus_element_ptr);
+
+    // fe2 placed atop 'NULL', goes to back.
+    wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&fe2_ptr->element, true);
+    wlmtk_container_add_element_atop(c_ptr, NULL, &fe2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev->prev,
+        &fe2_ptr->element.wlr_scene_node_ptr->link);
+
+    // Raise fe2.
+    wlmtk_container_raise_element_to_top(c_ptr, &fe2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev,
+        &fe2_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev->prev,
+        &fe1_ptr->element.wlr_scene_node_ptr->link);
+
+    // Must also update pointer focus.
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &fe2_ptr->element, c_ptr->pointer_focus_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
+    fe2_ptr->pointer_motion_called = false;
+
+    // Now remove fe1 and add on top of fe2. Ensure scene graph has fe1 on top
+    // and pointer focus is on it, too.
+    wlmtk_container_remove_element(c_ptr, &fe1_ptr->element);
+    wlmtk_container_add_element_atop(c_ptr, &fe2_ptr->element, &fe1_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev,
+        &fe1_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        c_ptr->wlr_scene_tree_ptr->children.prev->prev,
+        &fe2_ptr->element.wlr_scene_node_ptr->link);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &fe1_ptr->element, c_ptr->pointer_focus_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
+
+    wlmtk_container_remove_element(c_ptr, &fe2_ptr->element);
+    wlmtk_element_destroy(&fe2_ptr->element);
+    wlmtk_container_remove_element(c_ptr, &fe1_ptr->element);
+    wlmtk_element_destroy(&fe1_ptr->element);
+
+    wlmtk_container_destroy_fake_parent(c_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
