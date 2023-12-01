@@ -39,6 +39,7 @@
 #include "env.h"
 #include "fsm.h"
 #include "input.h"
+#include "rectangle.h"
 #include "resizebar.h"
 #include "resizebar_area.h"
 #include "titlebar.h"
