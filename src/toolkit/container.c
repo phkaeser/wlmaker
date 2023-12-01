@@ -236,6 +236,10 @@ void wlmtk_container_raise_element_to_top(
 {
     BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
 
+    // Already at the top? Nothing to do.
+    if (wlmtk_dlnode_from_element(element_ptr) ==
+        container_ptr->elements.head_ptr) return;
+
     bs_dllist_remove(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
