@@ -53,9 +53,10 @@ bool wlmtk_box_init(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_box_fini(__UNUSED__ wlmtk_box_t *box_ptr)
+void wlmtk_box_fini(wlmtk_box_t *box_ptr)
 {
-    // nothing to do.
+    wlmtk_container_fini(&box_ptr->super_container);
+    memset(box_ptr, 0, sizeof(wlmtk_box_t));
 }
 
 /* == Local (static) methods =============================================== */
