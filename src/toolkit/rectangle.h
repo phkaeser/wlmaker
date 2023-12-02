@@ -68,6 +68,17 @@ void wlmtk_rectangle_set_size(
 /** Returns the superclass @ref wlmtk_element_t of the rectangle. */
 wlmtk_element_t *wlmtk_rectangle_element(wlmtk_rectangle_t *rectangle_ptr);
 
+/**
+ * Gets the @ref wlmtk_rectangle_t instance from it's element superclass.
+ *
+ * Requires `element_ptr` as pointer to @ref wlmtk_rectangle_t::super_element.
+ *
+ * @param element_ptr
+ *
+ * @return The pointer to the @ref wlmtk_rectangle_t instance.
+ */
+wlmtk_rectangle_t *wlmtk_rectangle_from_element(wlmtk_element_t *element_ptr);
+
 /** Unit tests. */
 extern const bs_test_case_t wlmtk_rectangle_test_cases[];
 

@@ -134,6 +134,15 @@ wlmtk_element_t *wlmtk_rectangle_element(wlmtk_rectangle_t *rectangle_ptr)
     return &rectangle_ptr->super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_rectangle_t *wlmtk_rectangle_from_element(wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(element_ptr->vmt.destroy = _wlmtk_rectangle_element_destroy);
+    wlmtk_rectangle_t *rectangle_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_rectangle_t, super_element);
+    return rectangle_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -251,6 +260,15 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, y1);
     BS_TEST_VERIFY_EQ(test_ptr, 10, x2);
     BS_TEST_VERIFY_EQ(test_ptr, 20, y2);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &rectangle_ptr->super_element,
+        wlmtk_rectangle_element(rectangle_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        rectangle_ptr,
+        wlmtk_rectangle_from_element(&rectangle_ptr->super_element));
 
     wlmtk_rectangle_destroy(rectangle_ptr);
 }
