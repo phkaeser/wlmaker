@@ -48,6 +48,21 @@ bool wlmtk_box_init(
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &box_ptr->super_container, &box_container_vmt);
 
+    if (!wlmtk_container_init(&box_ptr->element_container, env_ptr)) {
+        wlmtk_box_fini(box_ptr);
+        return false;
+    }
+    wlmtk_element_set_visible(&box_ptr->element_container.super_element, true);
+    wlmtk_container_add_element(&box_ptr->super_container,
+                                &box_ptr->element_container.super_element);
+    if (!wlmtk_container_init(&box_ptr->margin_container, env_ptr)) {
+        wlmtk_box_fini(box_ptr);
+        return false;
+    }
+    wlmtk_element_set_visible(&box_ptr->margin_container.super_element, true);
+    wlmtk_container_add_element(&box_ptr->super_container,
+                                &box_ptr->margin_container.super_element);
+
     box_ptr->orientation = orientation;
     return true;
 }
@@ -55,8 +70,43 @@ bool wlmtk_box_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_box_fini(wlmtk_box_t *box_ptr)
 {
+    if (NULL != box_ptr->margin_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &box_ptr->super_container,
+            &box_ptr->margin_container.super_element);
+    }
+    if (NULL != box_ptr->element_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &box_ptr->super_container,
+            &box_ptr->element_container.super_element);
+    }
+
+
     wlmtk_container_fini(&box_ptr->super_container);
     memset(box_ptr, 0, sizeof(wlmtk_box_t));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_box_add_element_front(
+    wlmtk_box_t *box_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_add_element(&box_ptr->element_container, element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_box_add_element_back(
+    wlmtk_box_t *box_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_add_element_atop(
+        &box_ptr->element_container, NULL, element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_remove_element(&box_ptr->element_container, element_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -77,7 +127,7 @@ void _wlmtk_box_container_update_layout(
         container_ptr, wlmtk_box_t, super_container);
 
     int position = 0;
-    for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
+    for (bs_dllist_node_t *dlnode_ptr = box_ptr->element_container.elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
@@ -160,9 +210,9 @@ void test_layout_horizontal(bs_test_t *test_ptr)
     e3_ptr->height = 4;
 
     // Note: Elements are added "in front" == left.
-    wlmtk_container_add_element(&box.super_container, &e1_ptr->element);
-    wlmtk_container_add_element(&box.super_container, &e2_ptr->element);
-    wlmtk_container_add_element(&box.super_container, &e3_ptr->element);
+    wlmtk_box_add_element_front(&box, &e1_ptr->element);
+    wlmtk_box_add_element_front(&box, &e2_ptr->element);
+    wlmtk_box_add_element_front(&box, &e3_ptr->element);
 
     // Layout: e3 | e1 (e2 is invisible).
     BS_TEST_VERIFY_EQ(test_ptr, 40, e1_ptr->element.x);
@@ -179,12 +229,12 @@ void test_layout_horizontal(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, e3_ptr->element.x);
 
     // Remove elements. Must update each.
-    wlmtk_container_remove_element(&box.super_container, &e3_ptr->element);
+    wlmtk_box_remove_element(&box, &e3_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 20, e1_ptr->element.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, e2_ptr->element.x);
-    wlmtk_container_remove_element(&box.super_container, &e2_ptr->element);
+    wlmtk_box_remove_element(&box, &e2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 0, e1_ptr->element.x);
-    wlmtk_container_remove_element(&box.super_container, &e1_ptr->element);
+    wlmtk_box_remove_element(&box, &e1_ptr->element);
 
     wlmtk_element_destroy(&e3_ptr->element);
     wlmtk_element_destroy(&e2_ptr->element);
@@ -209,8 +259,8 @@ void test_layout_vertical(bs_test_t *test_ptr)
     e2_ptr->height = 2;
 
     // Note: Elements are added "in front" == left.
-    wlmtk_container_add_element(&box.super_container, &e1_ptr->element);
-    wlmtk_container_add_element(&box.super_container, &e2_ptr->element);
+    wlmtk_box_add_element_front(&box, &e1_ptr->element);
+    wlmtk_box_add_element_front(&box, &e2_ptr->element);
 
     // Layout: e2 | e1.
     BS_TEST_VERIFY_EQ(test_ptr, 0, e1_ptr->element.x);
@@ -219,9 +269,9 @@ void test_layout_vertical(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, e2_ptr->element.y);
 
     // Remove elements. Must update each.
-    wlmtk_container_remove_element(&box.super_container, &e2_ptr->element);
+    wlmtk_box_remove_element(&box, &e2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 0, e1_ptr->element.y);
-    wlmtk_container_remove_element(&box.super_container, &e1_ptr->element);
+    wlmtk_box_remove_element(&box, &e1_ptr->element);
 
     wlmtk_element_destroy(&e2_ptr->element);
     wlmtk_element_destroy(&e1_ptr->element);

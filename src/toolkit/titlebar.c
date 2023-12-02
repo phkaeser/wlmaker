@@ -110,8 +110,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
-        &titlebar_ptr->super_box.super_container,
+    wlmtk_box_add_element_front(
+        &titlebar_ptr->super_box,
         wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
@@ -123,8 +123,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
-        &titlebar_ptr->super_box.super_container,
+    wlmtk_box_add_element_front(
+        &titlebar_ptr->super_box,
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
     titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
@@ -136,8 +136,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_atop(
-        &titlebar_ptr->super_box.super_container, NULL,
+    wlmtk_box_add_element_back(
+        &titlebar_ptr->super_box,
         wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
 
     return titlebar_ptr;
@@ -147,24 +147,24 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
 void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 {
     if (NULL != titlebar_ptr->close_button_ptr) {
-        wlmtk_container_remove_element(
-            &titlebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &titlebar_ptr->super_box,
             wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
         wlmtk_titlebar_button_destroy(titlebar_ptr->close_button_ptr);
         titlebar_ptr->close_button_ptr = NULL;
     }
 
     if (NULL != titlebar_ptr->minimize_button_ptr) {
-        wlmtk_container_remove_element(
-            &titlebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &titlebar_ptr->super_box,
             wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
         wlmtk_titlebar_button_destroy(titlebar_ptr->minimize_button_ptr);
         titlebar_ptr->minimize_button_ptr = NULL;
     }
 
     if (NULL != titlebar_ptr->titlebar_title_ptr) {
-        wlmtk_container_remove_element(
-            &titlebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &titlebar_ptr->super_box,
             wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
         wlmtk_titlebar_title_destroy(titlebar_ptr->titlebar_title_ptr);
         titlebar_ptr->titlebar_title_ptr = NULL;

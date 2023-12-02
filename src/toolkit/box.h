@@ -31,9 +31,9 @@ extern "C" {
 
 /** Orientation of the box. */
 typedef enum {
-    /** Horizontal box layout. The container's "top" is on the left. */
+    /** Horizontal box layout. The container's "front" is on the left. */
     WLMTK_BOX_HORIZONTAL,
-    /** Vertical box layout. The container's "top" is the top. */
+    /** Vertical box layout. The container's "front" is the top. */
     WLMTK_BOX_VERTICAL,
 } wlmtk_box_orientation_t;
 
@@ -45,6 +45,11 @@ struct _wlmtk_box_t {
     wlmtk_container_vmt_t     orig_super_container_vmt;
     /** Orientation of the box. */
     wlmtk_box_orientation_t   orientation;
+
+    /** Container for the box's elements. */
+    wlmtk_container_t         element_container;
+    /** Container for margin elements. */
+    wlmtk_container_t         margin_container;
 };
 
 /**
@@ -67,6 +72,32 @@ bool wlmtk_box_init(
  * @param box_ptr
  */
 void wlmtk_box_fini(wlmtk_box_t *box_ptr);
+
+/**
+ * Adds `element_ptr` to the front of the box.
+ *
+ * @param box_ptr
+ * @param element_ptr
+ */
+void wlmtk_box_add_element_front(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr);
+
+/**
+ * Adds `element_ptr` to the back of the box.
+ *
+ * @param box_ptr
+ * @param element_ptr
+ */
+void wlmtk_box_add_element_back(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr);
+
+/**
+ * Removes `element_ptr` from the box.
+ *
+ * Requires that element_ptr is an element of the box.
+ *
+ * @param box_ptr
+ * @param element_ptr
+ */
+void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr);
 
 /** Unit tests. */
 extern const bs_test_case_t wlmtk_box_test_cases[];

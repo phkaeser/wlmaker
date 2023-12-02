@@ -94,8 +94,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
-        &resizebar_ptr->super_box.super_container,
+    wlmtk_box_add_element_front(
+        &resizebar_ptr->super_box,
         wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
 
     resizebar_ptr->center_area_ptr = wlmtk_resizebar_area_create(
@@ -104,9 +104,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_atop(
-        &resizebar_ptr->super_box.super_container,
-        NULL,
+    wlmtk_box_add_element_back(
+        &resizebar_ptr->super_box,
         wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
 
     resizebar_ptr->right_area_ptr = wlmtk_resizebar_area_create(
@@ -115,9 +114,8 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
-    wlmtk_container_add_element_atop(
-        &resizebar_ptr->super_box.super_container,
-        NULL,
+    wlmtk_box_add_element_back(
+        &resizebar_ptr->super_box,
         wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr));
 
     return resizebar_ptr;
@@ -127,22 +125,22 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
 void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
 {
     if (NULL != resizebar_ptr->right_area_ptr) {
-        wlmtk_container_remove_element(
-            &resizebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &resizebar_ptr->super_box,
             wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr));
         wlmtk_resizebar_area_destroy(resizebar_ptr->right_area_ptr);
         resizebar_ptr->right_area_ptr = NULL;
     }
     if (NULL != resizebar_ptr->center_area_ptr) {
-        wlmtk_container_remove_element(
-            &resizebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &resizebar_ptr->super_box,
             wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
         wlmtk_resizebar_area_destroy(resizebar_ptr->center_area_ptr);
         resizebar_ptr->center_area_ptr = NULL;
     }
     if (NULL != resizebar_ptr->left_area_ptr) {
-        wlmtk_container_remove_element(
-            &resizebar_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &resizebar_ptr->super_box,
             wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
 
         wlmtk_resizebar_area_destroy(resizebar_ptr->left_area_ptr);

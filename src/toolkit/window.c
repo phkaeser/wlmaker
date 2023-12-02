@@ -210,15 +210,14 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_window_fini(window_ptr);
         return false;
     }
-    wlmtk_container_add_element(
-        &window_ptr->super_box.super_container,
+    wlmtk_box_add_element_front(
+        &window_ptr->super_box,
         wlmtk_resizebar_element(window_ptr->resizebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
 
-    wlmtk_container_add_element_atop(
-        &window_ptr->super_box.super_container,
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr),
+    wlmtk_box_add_element_front(
+        &window_ptr->super_box,
         wlmtk_content_element(content_ptr));
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
@@ -230,8 +229,8 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         wlmtk_window_fini(window_ptr);
         return false;
     }
-    wlmtk_container_add_element(
-        &window_ptr->super_box.super_container,
+    wlmtk_box_add_element_front(
+        &window_ptr->super_box,
         wlmtk_titlebar_element(window_ptr->titlebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
@@ -248,24 +247,24 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
 void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
     if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_container_remove_element(
-            &window_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &window_ptr->super_box,
             wlmtk_titlebar_element(window_ptr->titlebar_ptr));
         wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
         window_ptr->titlebar_ptr = NULL;
     }
 
     if (NULL != window_ptr->resizebar_ptr) {
-        wlmtk_container_remove_element(
-            &window_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &window_ptr->super_box,
             wlmtk_resizebar_element(window_ptr->resizebar_ptr));
         wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
         window_ptr->resizebar_ptr = NULL;
     }
 
     if (NULL != window_ptr->content_ptr) {
-        wlmtk_container_remove_element(
-            &window_ptr->super_box.super_container,
+        wlmtk_box_remove_element(
+            &window_ptr->super_box,
             wlmtk_content_element(window_ptr->content_ptr));
         wlmtk_element_set_visible(
             wlmtk_content_element(window_ptr->content_ptr), false);
