@@ -339,11 +339,13 @@ void element_get_dimensions(
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
 
-    int left = 0, top = 0, right = 0, bottom = 0;
+    int left = INT32_MAX, top = INT32_MAX;
+    int right = INT32_MIN, bottom = INT32_MIN;
     for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+        if (!element_ptr->visible) continue;
 
         int x_pos, y_pos;
         wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
@@ -354,6 +356,9 @@ void element_get_dimensions(
         right = BS_MAX(right, x_pos + x2);
         bottom = BS_MAX(bottom, y_pos + y2);
     }
+
+    if (left >= right) { left = 0; right = 0; }
+    if (top >= bottom) { top = 0; bottom = 0; }
 
     if (NULL != left_ptr) *left_ptr = left;
     if (NULL != top_ptr) *top_ptr = top;
@@ -381,11 +386,13 @@ void element_get_pointer_area(
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
 
-    int left = 0, top = 0, right = 0, bottom = 0;
+    int left = INT32_MAX, top = INT32_MAX;
+    int right = INT32_MIN, bottom = INT32_MIN;
     for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+        if (!element_ptr->visible) continue;
 
         int x_pos, y_pos;
         wlmtk_element_get_position(element_ptr, &x_pos, &y_pos);
@@ -396,6 +403,9 @@ void element_get_pointer_area(
         right = BS_MAX(right, x_pos + x2);
         bottom = BS_MAX(bottom, y_pos + y2);
     }
+
+    if (left >= right) { left = 0; right = 0; }
+    if (top >= bottom) { top = 0; bottom = 0; }
 
     if (NULL != left_ptr) *left_ptr = left;
     if (NULL != top_ptr) *top_ptr = top;
@@ -963,7 +973,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
     wlmtk_element_set_position(&elem1_ptr->element, -20, -40);
     elem1_ptr->width = 10;
     elem1_ptr->height = 5;
-    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    wlmtk_element_set_visible(&elem1_ptr->element, false);
     wlmtk_container_add_element(&container, &elem1_ptr->element);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_position(&elem2_ptr->element, 100, 200);
@@ -975,11 +985,26 @@ void test_pointer_motion(bs_test_t *test_ptr)
     // Verify 'dimensions' and 'pointer_area', derived from children.
     int l, t, r, b;
     wlmtk_element_get_dimensions(&container.super_element, &l, &t, &r, &b);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, l);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, t);
+    BS_TEST_VERIFY_EQ(test_ptr, 110, r);
+    BS_TEST_VERIFY_EQ(test_ptr, 205, b);
+
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    wlmtk_element_get_dimensions(&container.super_element, &l, &t, &r, &b);
     BS_TEST_VERIFY_EQ(test_ptr, -20, l);
     BS_TEST_VERIFY_EQ(test_ptr, -40, t);
     BS_TEST_VERIFY_EQ(test_ptr, 110, r);
     BS_TEST_VERIFY_EQ(test_ptr, 205, b);
 
+    wlmtk_element_set_visible(&elem1_ptr->element, false);
+    wlmtk_element_get_pointer_area(&container.super_element, &l, &t, &r, &b);
+    BS_TEST_VERIFY_EQ(test_ptr, 99, l);
+    BS_TEST_VERIFY_EQ(test_ptr, 198, t);
+    BS_TEST_VERIFY_EQ(test_ptr, 113, r);
+    BS_TEST_VERIFY_EQ(test_ptr, 209, b);
+
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
     wlmtk_element_get_pointer_area(&container.super_element, &l, &t, &r, &b);
     BS_TEST_VERIFY_EQ(test_ptr, -21, l);
     BS_TEST_VERIFY_EQ(test_ptr, -42, t);
