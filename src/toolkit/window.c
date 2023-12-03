@@ -141,6 +141,7 @@ static const wlmtk_titlebar_style_t titlebar_style = {
     .blurred_text_color = 0xff000000,
     .height = 22,
     .bezel_width = 1,
+    .margin_style = { .width = 1, .color = 0xff000000 },
 };
 
 /** Style of the resize bar. */
@@ -153,6 +154,13 @@ static const wlmtk_resizebar_style_t resizebar_style = {
     .height = 7,
     .corner_width = 29,
     .bezel_width = 1,
+    .margin_style = { .width = 0, .color = 0xff000000 },
+};
+
+/** Style of the margin between title, content and resizebar. */
+static const wlmtk_margin_style_t margin_style = {
+    .width = 1,
+    .color = 0xff000000,
 };
 
 /* == Exported methods ===================================================== */
@@ -192,7 +200,8 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     }
 
     if (!wlmtk_box_init(&window_ptr->super_box, env_ptr,
-                        WLMTK_BOX_VERTICAL)) {
+                        WLMTK_BOX_VERTICAL,
+                        &margin_style)) {
         wlmtk_window_fini(window_ptr);
         return false;
     }

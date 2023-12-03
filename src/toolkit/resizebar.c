@@ -78,9 +78,12 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
         1, sizeof(wlmtk_resizebar_t));
     if (NULL == resizebar_ptr) return NULL;
     memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
+    BS_ASSERT(0 == resizebar_ptr->style.margin_style.width);
 
-    if (!wlmtk_box_init(&resizebar_ptr->super_box, env_ptr,
-                        WLMTK_BOX_HORIZONTAL)) {
+    if (!wlmtk_box_init(&resizebar_ptr->super_box,
+                        env_ptr,
+                        WLMTK_BOX_HORIZONTAL,
+                        &resizebar_ptr->style.margin_style)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }
@@ -310,7 +313,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 16, center_elem_ptr->x);
     BS_TEST_VERIFY_EQ(test_ptr, 17, right_elem_ptr->x);
 
-    // Not enough space for the center element.
+    // Not enough space for the center element with all margins.
     BS_TEST_VERIFY_TRUE(
         test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 32));
     BS_TEST_VERIFY_TRUE(test_ptr, left_elem_ptr->visible);

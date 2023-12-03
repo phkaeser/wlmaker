@@ -46,6 +46,8 @@ typedef struct {
     uint32_t                  height;
     /** Width of the bezel. */
     uint32_t                  bezel_width;
+    /** Style of the margin within the resizebar. */
+    wlmtk_margin_style_t      margin_style;
 } wlmtk_titlebar_style_t;
 
 /**

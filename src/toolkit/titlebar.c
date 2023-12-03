@@ -61,6 +61,8 @@ struct _wlmtk_titlebar_t {
     int                       close_position;
     /** Position of the title element. */
     int                       title_position;
+    /** Width of the title element. */
+    int                       title_width;
     /** Whether the title bar is currently displayed as activated. */
     bool                      activated;
 
@@ -96,7 +98,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box, env_ptr,
-                        WLMTK_BOX_HORIZONTAL)) {
+                        WLMTK_BOX_HORIZONTAL,
+                        &titlebar_ptr->style.margin_style)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -192,14 +195,22 @@ bool wlmtk_titlebar_set_width(
     if (titlebar_ptr->width == width) return true;
     if (!redraw_buffers(titlebar_ptr, width)) return false;
     BS_ASSERT(width == titlebar_ptr->width);
+    titlebar_ptr->title_width = width;
 
+    // Room for a close button?
     titlebar_ptr->close_position = width;
     if (3 * titlebar_ptr->style.height < width) {
         titlebar_ptr->close_position = width - titlebar_ptr->style.height;
+        titlebar_ptr->title_width -= titlebar_ptr->style.height +
+            titlebar_ptr->style.margin_style.width;
     }
     titlebar_ptr->title_position = 0;
+    // Also having room for a minimize button?
     if (4 * titlebar_ptr->style.height < width) {
-        titlebar_ptr->title_position = titlebar_ptr->style.height;
+        titlebar_ptr->title_position = titlebar_ptr->style.height +
+            titlebar_ptr->style.margin_style.width;
+        titlebar_ptr->title_width -= titlebar_ptr->style.height +
+            titlebar_ptr->style.margin_style.width;
     }
 
     if (!redraw(titlebar_ptr)) {
@@ -310,7 +321,7 @@ bool redraw(wlmtk_titlebar_t *titlebar_ptr)
             titlebar_ptr->focussed_gfxbuf_ptr,
             titlebar_ptr->blurred_gfxbuf_ptr,
             titlebar_ptr->title_position,
-            titlebar_ptr->close_position - titlebar_ptr->title_position,
+            titlebar_ptr->title_width,
             titlebar_ptr->activated,
             titlebar_ptr->title_ptr,
             &titlebar_ptr->style)) {
@@ -388,7 +399,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
-    wlmtk_titlebar_style_t style = { .height = 22 };
+    wlmtk_titlebar_style_t style = { .height = 22, .margin_style = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
         NULL, &fake_window_ptr->window, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
@@ -412,9 +423,9 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
-    BS_TEST_VERIFY_EQ(test_ptr, 22, title_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 24, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 41, width);
     BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
 
     // Width sufficient only for 1 button.
@@ -424,7 +435,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 43, width);
 
     // Width doesn't permit any button.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 66));

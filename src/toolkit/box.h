@@ -24,6 +24,7 @@
 typedef struct _wlmtk_box_t wlmtk_box_t;
 
 #include "container.h"
+#include "style.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,10 +47,16 @@ struct _wlmtk_box_t {
     /** Orientation of the box. */
     wlmtk_box_orientation_t   orientation;
 
+    /** Environment. */
+    wlmtk_env_t               *env_ptr;
+
     /** Container for the box's elements. */
     wlmtk_container_t         element_container;
     /** Container for margin elements. */
     wlmtk_container_t         margin_container;
+
+    /** Margin style. */
+    wlmtk_margin_style_t      style;
 };
 
 /**
@@ -58,13 +65,15 @@ struct _wlmtk_box_t {
  * @param box_ptr
  * @param orientation
  * @param env_ptr
+ * @param style_ptr
  *
  * @return true on success.
  */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_box_orientation_t orientation);
+    wlmtk_box_orientation_t orientation,
+    const wlmtk_margin_style_t *style_ptr);
 
 /**
  * Un-initializes the box.
