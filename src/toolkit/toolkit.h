@@ -30,6 +30,7 @@
 #include <libbase/libbase.h>
 #include <wayland-server.h>
 
+#include "bordered.h"
 #include "box.h"
 #include "buffer.h"
 #include "button.h"
