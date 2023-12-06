@@ -262,10 +262,6 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
-    wlmtk_rectangle_t *rect_ptr = wlmtk_rectangle_create(
-        env_ptr, 100, 50, 0xff406080);
-    wlmtk_element_set_visible(wlmtk_rectangle_element(rect_ptr), true);
-
     return true;
 }
 
