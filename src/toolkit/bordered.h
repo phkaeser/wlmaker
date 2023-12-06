@@ -21,6 +21,7 @@
 #define __WLMTK_BORDERED_H__
 
 #include "container.h"
+#include "rectangle.h"
 #include "style.h"
 
 /** Forward declaration: Bordered container state. */
@@ -41,6 +42,15 @@ struct _wlmtk_bordered_t {
     wlmtk_element_t           *element_ptr;
     /** Style of the border. */
     wlmtk_margin_style_t      style;
+
+    /** Border element at the northern side. Includes east + west corners. */
+    wlmtk_rectangle_t         *northern_border_rectangle_ptr;
+    /** Border element at the eastern side. */
+    wlmtk_rectangle_t         *eastern_border_rectangle_ptr;
+    /** Border element at the southern side. Includes east + west corners. */
+    wlmtk_rectangle_t         *southern_border_rectangle_ptr;
+    /** Border element at the western side. */
+    wlmtk_rectangle_t         *western_border_rectangle_ptr;
 };
 
 /**
