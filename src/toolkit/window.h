@@ -23,6 +23,7 @@
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
 
+#include "bordered.h"
 #include "box.h"
 #include "content.h"
 #include "element.h"
@@ -85,8 +86,8 @@ typedef struct {
 
 /** State of the window. */
 struct _wlmtk_window_t {
-    /** Superclass: Box. */
-    wlmtk_box_t               super_box;
+    /** Superclass: Bordered. */
+    wlmtk_bordered_t          super_bordered;
     /** Original virtual method table of the window's element superclass. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
     /** Original virtual method table of the window' container superclass. */
@@ -94,6 +95,9 @@ struct _wlmtk_window_t {
 
     /** Virtual method table. */
     wlmtk_window_impl_t       impl;
+
+    /** Box: In `super_bordered`, holds tontent, title bar and resizebar. */
+    wlmtk_box_t               box;
 
     /** Content of this window. */
     wlmtk_content_t           *content_ptr;

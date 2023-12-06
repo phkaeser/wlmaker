@@ -20,6 +20,7 @@
 
 #include "window.h"
 
+#include "rectangle.h"
 #include "workspace.h"
 
 /* == Declarations ========================================================= */
@@ -163,6 +164,12 @@ static const wlmtk_margin_style_t margin_style = {
     .color = 0xff000000,
 };
 
+/** Style of the border around the window. */
+static const wlmtk_margin_style_t border_style = {
+    .width = 1,
+    .color = 0xff000000,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -199,17 +206,28 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
                             &window_ptr->pre_allocated_updates[i].dlnode);
     }
 
-    if (!wlmtk_box_init(&window_ptr->super_box, env_ptr,
+    if (!wlmtk_box_init(&window_ptr->box, env_ptr,
                         WLMTK_BOX_VERTICAL,
                         &margin_style)) {
         wlmtk_window_fini(window_ptr);
         return false;
     }
+    wlmtk_element_set_visible(
+        &window_ptr->box.super_container.super_element, true);
+
+    if (!wlmtk_bordered_init(&window_ptr->super_bordered,
+                             env_ptr,
+                             &window_ptr->box.super_container.super_element,
+                             &border_style)) {
+        wlmtk_window_fini(window_ptr);
+        return false;
+    }
+
     window_ptr->orig_super_element_vmt = wlmtk_element_extend(
-        &window_ptr->super_box.super_container.super_element,
+        &window_ptr->super_bordered.super_container.super_element,
         &window_element_vmt);
     window_ptr->orig_super_container_vmt = wlmtk_container_extend(
-        &window_ptr->super_box.super_container, &window_container_vmt);
+        &window_ptr->super_bordered.super_container, &window_container_vmt);
 
     wlmtk_window_set_title(window_ptr, NULL);
 
@@ -220,13 +238,13 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         return false;
     }
     wlmtk_box_add_element_front(
-        &window_ptr->super_box,
+        &window_ptr->box,
         wlmtk_resizebar_element(window_ptr->resizebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
 
     wlmtk_box_add_element_front(
-        &window_ptr->super_box,
+        &window_ptr->box,
         wlmtk_content_element(content_ptr));
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
@@ -239,10 +257,14 @@ bool wlmtk_window_init(wlmtk_window_t *window_ptr,
         return false;
     }
     wlmtk_box_add_element_front(
-        &window_ptr->super_box,
+        &window_ptr->box,
         wlmtk_titlebar_element(window_ptr->titlebar_ptr));
     wlmtk_element_set_visible(
         wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
+
+    wlmtk_rectangle_t *rect_ptr = wlmtk_rectangle_create(
+        env_ptr, 100, 50, 0xff406080);
+    wlmtk_element_set_visible(wlmtk_rectangle_element(rect_ptr), true);
 
     return true;
 }
@@ -257,7 +279,7 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_box_remove_element(
-            &window_ptr->super_box,
+            &window_ptr->box,
             wlmtk_titlebar_element(window_ptr->titlebar_ptr));
         wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
         window_ptr->titlebar_ptr = NULL;
@@ -265,7 +287,7 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 
     if (NULL != window_ptr->resizebar_ptr) {
         wlmtk_box_remove_element(
-            &window_ptr->super_box,
+            &window_ptr->box,
             wlmtk_resizebar_element(window_ptr->resizebar_ptr));
         wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
         window_ptr->resizebar_ptr = NULL;
@@ -273,7 +295,7 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
 
     if (NULL != window_ptr->content_ptr) {
         wlmtk_box_remove_element(
-            &window_ptr->super_box,
+            &window_ptr->box,
             wlmtk_content_element(window_ptr->content_ptr));
         wlmtk_element_set_visible(
             wlmtk_content_element(window_ptr->content_ptr), false);
@@ -288,7 +310,8 @@ void wlmtk_window_fini(wlmtk_window_t *window_ptr)
         window_ptr->title_ptr = NULL;
     }
 
-    wlmtk_box_fini(&window_ptr->super_box);
+    wlmtk_bordered_fini(&window_ptr->super_bordered);
+    wlmtk_box_fini(&window_ptr->box);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -318,7 +341,7 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
-    return &window_ptr->super_box.super_container.super_element;
+    return &window_ptr->super_bordered.super_container.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -326,10 +349,10 @@ wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
 {
     // DEBT: FIXME - The assertion here is too lose.
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window_t, super_box.super_container.super_element);
+        element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
     BS_ASSERT(_wlmtk_box_update_layout ==
-              window_ptr->super_box.super_container.vmt.update_layout);
+              window_ptr->super_bordered.super_container.vmt.update_layout);
     return window_ptr;
 }
 
@@ -514,14 +537,14 @@ bool _wlmtk_window_element_pointer_button(
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window_t, super_box.super_container.super_element);
+        element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
     // We shouldn't receive buttons when not mapped.
     BS_ASSERT(
         NULL !=
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
     wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
 
@@ -572,9 +595,9 @@ void wlmtk_window_request_move_impl(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(
         NULL !=
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
 }
 
@@ -584,9 +607,9 @@ void wlmtk_window_request_resize_impl(wlmtk_window_t *window_ptr, uint32_t edges
 {
     BS_ASSERT(
         NULL !=
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_box.super_container.super_element.parent_container_ptr);
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
     wlmtk_workspace_begin_window_resize(workspace_ptr, window_ptr, edges);
 }
 
@@ -688,7 +711,7 @@ void release_update(
 void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_window_t, super_box.super_container);
+        container_ptr, wlmtk_window_t, super_bordered.super_container);
 
     window_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
