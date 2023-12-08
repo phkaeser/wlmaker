@@ -22,6 +22,8 @@
 
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
+/** Forward declaration: Virtual method table. */
+typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 
 #include "bordered.h"
 #include "box.h"
@@ -53,36 +55,26 @@ typedef struct {
     unsigned                  height;
 } wlmtk_pending_update_t;
 
-/** Virtual method table for @ref wlmtk_window_t. */
-typedef struct {
+/** Virtual method table for the window. */
+struct  _wlmtk_window_vmt_t {
     /** Destructor. */
     void (*destroy)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_set_activated. */
+    /** Virtual method for @ref wlmtk_window_set_activated. */
     void (*set_activated)(wlmtk_window_t *window_ptr,
                           bool activated);
-    /** See @ref wlmtk_window_set_server_side_decorated. */
-    void (*set_server_side_decorated)(wlmtk_window_t *window_ptr,
-                                      bool decorated);
-    /** See @ref wlmtk_window_set_title. */
-    void (*set_title)(wlmtk_window_t *window_ptr, const char *title_ptr);
-
-    /** See @ref wlmtk_window_request_close. */
+    /** Virtual method for @ref wlmtk_window_request_close. */
     void (*request_close)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_request_minimize. */
+    /** Virtual method for @ref wlmtk_window_request_minimize. */
     void (*request_minimize)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_request_move. */
+    /** Virtual method for @ref wlmtk_window_request_move. */
     void (*request_move)(wlmtk_window_t *window_ptr);
-    /** See @ref wlmtk_window_request_resize. */
+    /** Virtual method for @ref wlmtk_window_request_resize. */
     void (*request_resize)(wlmtk_window_t *window_ptr,
                            uint32_t edges);
-
-    /** See @ref wlmtk_window_request_size. */
-    void (*request_size)(wlmtk_window_t *window_ptr,
-                         int x, int y);
-    /** See @ref wlmtk_window_request_position_and_size. */
+    /** Virtual method for @ref wlmtk_window_request_position_and_size. */
     void (*request_position_and_size)(wlmtk_window_t *window_ptr,
                                       int x, int y, int width, int height);
-} wlmtk_window_impl_t;
+};
 
 /** State of the window. */
 struct _wlmtk_window_t {
@@ -94,7 +86,7 @@ struct _wlmtk_window_t {
     wlmtk_container_vmt_t     orig_super_container_vmt;
 
     /** Virtual method table. */
-    wlmtk_window_impl_t       impl;
+    wlmtk_window_vmt_t        vmt;
 
     /** Box: In `super_bordered`, holds tontent, title bar and resizebar. */
     wlmtk_box_t               box;
@@ -307,6 +299,7 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
 typedef struct {
     /** Window state. */
     wlmtk_window_t            window;
+
     /** Argument to last @ref wlmtk_window_set_activated call. */
     bool                      activated;
     /** Argument to last @ref wlmtk_window_set_server_side_decorated call. */
