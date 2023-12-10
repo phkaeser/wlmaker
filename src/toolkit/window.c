@@ -115,6 +115,12 @@ static wlmtk_window_vmt_t _wlmtk_window_extend(
     wlmtk_window_t *window_ptr,
     const wlmtk_window_vmt_t *window_vmt_ptr);
 
+static bool _wlmtk_window_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+static void _wlmtk_window_container_update_layout(
+    wlmtk_container_t *container_ptr);
+
 static void _wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated);
@@ -131,38 +137,11 @@ static void _wlmtk_window_request_position_and_size(
     int width,
     int height);
 
-static bool _wlmtk_window_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr);
-
-
-
-
-
-
-static void _wlmtk_fake_window_set_activated(
-    wlmtk_window_t *window_ptr,
-    bool activated);
-static void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr);
-static void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr);
-static void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr);
-static void _wlmtk_fake_window_request_resize(
-    wlmtk_window_t *window_ptr,
-    uint32_t edges);
-static void _wlmtk_fake_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height);
-
-static wlmtk_pending_update_t *prepare_update(
+static wlmtk_pending_update_t *_wlmtk_window_prepare_update(
     wlmtk_window_t *window_ptr);
-static void release_update(
+static void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
-
-static void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr);
 
 /* == Data ================================================================= */
 
@@ -172,7 +151,7 @@ static const wlmtk_element_vmt_t window_element_vmt = {
 };
 /** Virtual method table for the window's container superclass. */
 static const wlmtk_container_vmt_t window_container_vmt = {
-    .update_layout = _wlmtk_box_update_layout,
+    .update_layout = _wlmtk_window_container_update_layout,
 };
 /** Virtual method table for the window itself. */
 static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
@@ -261,11 +240,9 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
 {
-    // DEBT: FIXME - The assertion here is too lose.
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
-
-    BS_ASSERT(_wlmtk_box_update_layout ==
+    BS_ASSERT(_wlmtk_window_container_update_layout ==
               window_ptr->super_bordered.super_container.vmt.update_layout);
     return window_ptr;
 }
@@ -306,7 +283,7 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
             wlmtk_window_element(window_ptr),
             pending_update_ptr->x,
             pending_update_ptr->y);
-        release_update(window_ptr, pending_update_ptr);
+        _wlmtk_window_release_update(window_ptr, pending_update_ptr);
     }
 }
 
@@ -418,57 +395,6 @@ void wlmtk_window_request_position_and_size(
 {
     window_ptr->vmt.request_position_and_size(
         window_ptr, x, y, width, height);
-}
-
-/** Virtual method table for the fake window itself. */
-static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
-    .set_activated = _wlmtk_fake_window_set_activated,
-    .request_close = _wlmtk_fake_window_request_close,
-    .request_minimize = _wlmtk_fake_window_request_minimize,
-    .request_move = _wlmtk_fake_window_request_move,
-    .request_resize = _wlmtk_fake_window_request_resize,
-    .request_position_and_size = _wlmtk_fake_window_request_position_and_size,
-
-};
-
-/* ------------------------------------------------------------------------- */
-wlmtk_fake_window_t *wlmtk_fake_window_create(void)
-{
-    wlmtk_fake_window_state_t *fake_window_state_ptr = logged_calloc(
-        1, sizeof(wlmtk_fake_window_state_t));
-    if (NULL == fake_window_state_ptr) return NULL;
-
-    fake_window_state_ptr->fake_window.fake_content_ptr =
-        wlmtk_fake_content_create();
-    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
-        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
-        return NULL;
-    }
-
-    if (!_wlmtk_window_init(
-            &fake_window_state_ptr->window,
-            NULL,
-            &fake_window_state_ptr->fake_window.fake_content_ptr->content)) {
-        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
-        return NULL;
-    }
-    fake_window_state_ptr->fake_window.window_ptr =
-        &fake_window_state_ptr->window;
-
-    // Extend. We don't save the VMT, since it's for fake only.
-    _wlmtk_window_extend(&fake_window_state_ptr->window,
-                         &_wlmtk_fake_window_vmt);
-    return &fake_window_state_ptr->fake_window;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
-{
-    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
-        fake_window_ptr, wlmtk_fake_window_state_t, fake_window);
-
-    _wlmtk_window_fini(&fake_window_state_ptr->window);
-    free(fake_window_state_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -638,6 +564,57 @@ wlmtk_window_vmt_t _wlmtk_window_extend(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Activates window on button press, and calls the parent's implementation. */
+bool _wlmtk_window_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
+
+    // We shouldn't receive buttons when not mapped.
+    BS_ASSERT(
+        NULL !=
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
+        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
+
+    return window_ptr->orig_super_element_vmt.pointer_button(
+        element_ptr, button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of @ref wlmtk_container_vmt_t::update_layout.
+ *
+ * Invoked when the window's contained elements triggered a layout update,
+ * and will use this to trigger (potential) size updates to the window
+ * decorations.
+ *
+ * @param container_ptr
+ */
+void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        container_ptr, wlmtk_window_t, super_bordered.super_container);
+
+    window_ptr->orig_super_container_vmt.update_layout(container_ptr);
+
+    if (NULL != window_ptr->content_ptr) {
+        int width;
+        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
+        if (NULL != window_ptr->titlebar_ptr) {
+            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
+        }
+        if (NULL != window_ptr->resizebar_ptr) {
+            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 /** Default implementation of @ref wlmtk_window_set_activated. */
 void _wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
@@ -699,7 +676,8 @@ void _wlmtk_window_request_position_and_size(
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
 
-    wlmtk_pending_update_t *pending_update_ptr = prepare_update(window_ptr);
+    wlmtk_pending_update_t *pending_update_ptr =
+        _wlmtk_window_prepare_update(window_ptr);
     pending_update_ptr->serial = serial;
     pending_update_ptr->x = x;
     pending_update_ptr->y = y;
@@ -713,28 +691,6 @@ void _wlmtk_window_request_position_and_size(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Activates window on button press, and calls the parent's implementation. */
-bool _wlmtk_window_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr)
-{
-    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
-
-    // We shouldn't receive buttons when not mapped.
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
-    wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
-
-    return window_ptr->orig_super_element_vmt.pointer_button(
-        element_ptr, button_event_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /**
  * Prepares a positional update: Allocates an item and attach it to the end
  * of the list of pending updates.
@@ -744,7 +700,7 @@ bool _wlmtk_window_element_pointer_button(
  * @return A pointer to a @ref wlmtk_pending_update_t, already positioned at the
  *     back of @ref wlmtk_window_t::pending_updates.
  */
-wlmtk_pending_update_t *prepare_update(
+wlmtk_pending_update_t *_wlmtk_window_prepare_update(
     wlmtk_window_t *window_ptr)
 {
     bs_dllist_node_t *dlnode_ptr = bs_dllist_pop_front(
@@ -768,7 +724,7 @@ wlmtk_pending_update_t *prepare_update(
  * @param window_ptr
  * @param update_ptr
  */
-void release_update(
+void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr)
 {
@@ -776,36 +732,74 @@ void release_update(
     bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
 }
 
+/* == Implementation of the fake window ==================================== */
+
+static void _wlmtk_fake_window_set_activated(
+    wlmtk_window_t *window_ptr,
+    bool activated);
+static void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr);
+static void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr);
+static void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr);
+static void _wlmtk_fake_window_request_resize(
+    wlmtk_window_t *window_ptr,
+    uint32_t edges);
+static void _wlmtk_fake_window_request_position_and_size(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height);
+
+/** Virtual method table for the fake window itself. */
+static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
+    .set_activated = _wlmtk_fake_window_set_activated,
+    .request_close = _wlmtk_fake_window_request_close,
+    .request_minimize = _wlmtk_fake_window_request_minimize,
+    .request_move = _wlmtk_fake_window_request_move,
+    .request_resize = _wlmtk_fake_window_request_resize,
+    .request_position_and_size = _wlmtk_fake_window_request_position_and_size,
+
+};
+
 /* ------------------------------------------------------------------------- */
-/**
- * Implementation of @ref wlmtk_container_vmt_t::update_layout.
- *
- * Invoked when the window's contained elements triggered a layout update,
- * and will use this to trigger (potential) size updates to the window
- * decorations.
- *
- * @param container_ptr
- */
-void _wlmtk_box_update_layout(wlmtk_container_t *container_ptr)
+wlmtk_fake_window_t *wlmtk_fake_window_create(void)
 {
-    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_window_t, super_bordered.super_container);
+    wlmtk_fake_window_state_t *fake_window_state_ptr = logged_calloc(
+        1, sizeof(wlmtk_fake_window_state_t));
+    if (NULL == fake_window_state_ptr) return NULL;
 
-    window_ptr->orig_super_container_vmt.update_layout(container_ptr);
-
-    if (NULL != window_ptr->content_ptr) {
-        int width;
-        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
-        if (NULL != window_ptr->titlebar_ptr) {
-            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
-        }
-        if (NULL != window_ptr->resizebar_ptr) {
-            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
-        }
+    fake_window_state_ptr->fake_window.fake_content_ptr =
+        wlmtk_fake_content_create();
+    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
+        return NULL;
     }
+
+    if (!_wlmtk_window_init(
+            &fake_window_state_ptr->window,
+            NULL,
+            &fake_window_state_ptr->fake_window.fake_content_ptr->content)) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
+        return NULL;
+    }
+    fake_window_state_ptr->fake_window.window_ptr =
+        &fake_window_state_ptr->window;
+
+    // Extend. We don't save the VMT, since it's for fake only.
+    _wlmtk_window_extend(&fake_window_state_ptr->window,
+                         &_wlmtk_fake_window_vmt);
+    return &fake_window_state_ptr->fake_window;
 }
 
-/* == Virtual method implementation for the fake window ==================== */
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
+{
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        fake_window_ptr, wlmtk_fake_window_state_t, fake_window);
+
+    _wlmtk_window_fini(&fake_window_state_ptr->window);
+    free(fake_window_state_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_set_activated. Records call. */
