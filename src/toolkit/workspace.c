@@ -882,20 +882,20 @@ void test_activate(bs_test_t *test_ptr)
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw1_ptr->fake_content_ptr->content, 0, 100, 100);
-    wlmtk_element_set_position(wlmtk_window_element(&fw1_ptr->window), 0, 0);
+    wlmtk_element_set_position(wlmtk_window_element(fw1_ptr->window_ptr), 0, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
 
     // Window 1 is mapped => it's activated.
-    wlmtk_workspace_map_window(workspace_ptr, &fw1_ptr->window);
+    wlmtk_workspace_map_window(workspace_ptr, fw1_ptr->window_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
 
     // Window 2: from (200, 0) to (300, 100).
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw2_ptr->fake_content_ptr->content, 0, 100, 100);
-    wlmtk_element_set_position(wlmtk_window_element(&fw2_ptr->window), 200, 0);
+    wlmtk_element_set_position(wlmtk_window_element(fw2_ptr->window_ptr), 200, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
-    wlmtk_workspace_map_window(workspace_ptr, &fw2_ptr->window);
+    wlmtk_workspace_map_window(workspace_ptr, fw2_ptr->window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
     BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
 
@@ -915,12 +915,12 @@ void test_activate(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
 
     // Unmap window 1. Now window 2 gets activated.
-    wlmtk_workspace_unmap_window(workspace_ptr, &fw1_ptr->window);
+    wlmtk_workspace_unmap_window(workspace_ptr, fw1_ptr->window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
     BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
 
     // Unmap the remaining window 2. Nothing is activated.
-    wlmtk_workspace_unmap_window(workspace_ptr, &fw2_ptr->window);
+    wlmtk_workspace_unmap_window(workspace_ptr, fw2_ptr->window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
 
     wlmtk_fake_window_destroy(fw2_ptr);

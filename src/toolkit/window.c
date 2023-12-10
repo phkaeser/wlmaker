@@ -25,6 +25,14 @@
 
 /* == Declarations ========================================================= */
 
+/** State of a fake window: Includes the public record and the window. */
+typedef struct {
+    /** Window state. */
+    wlmtk_window_t            window;
+    /** Fake window - public state. */
+    wlmtk_fake_window_t       fake_window;
+} wlmtk_fake_window_state_t;
+
 static bool _wlmtk_window_init(
     wlmtk_window_t *window_ptr,
     wlmtk_env_t *env_ptr,
@@ -350,35 +358,41 @@ static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_fake_window_t *wlmtk_fake_window_create(void)
 {
-    wlmtk_fake_window_t *fake_window_ptr = logged_calloc(
-        1, sizeof(wlmtk_fake_window_t));
-    if (NULL == fake_window_ptr) return NULL;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = logged_calloc(
+        1, sizeof(wlmtk_fake_window_state_t));
+    if (NULL == fake_window_state_ptr) return NULL;
 
-    fake_window_ptr->fake_content_ptr = wlmtk_fake_content_create();
-    if (NULL == fake_window_ptr->fake_content_ptr) {
-        wlmtk_fake_window_destroy(fake_window_ptr);
+    fake_window_state_ptr->fake_window.fake_content_ptr =
+        wlmtk_fake_content_create();
+    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
     }
 
-    if (!_wlmtk_window_init(&fake_window_ptr->window,
-                           NULL,
-                           &fake_window_ptr->fake_content_ptr->content)) {
-        wlmtk_fake_window_destroy(fake_window_ptr);
+    if (!_wlmtk_window_init(
+            &fake_window_state_ptr->window,
+            NULL,
+            &fake_window_state_ptr->fake_window.fake_content_ptr->content)) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
     }
-    fake_window_ptr->window_ptr = &fake_window_ptr->window;
+    fake_window_state_ptr->fake_window.window_ptr =
+        &fake_window_state_ptr->window;
 
     // Extend. We don't save the VMT, since it's for fake only.
-    _wlmtk_window_extend(fake_window_ptr->window_ptr,
+    _wlmtk_window_extend(&fake_window_state_ptr->window,
                          &_wlmtk_fake_window_vmt);
-    return fake_window_ptr;
+    return &fake_window_state_ptr->fake_window;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 {
-    _wlmtk_window_fini(&fake_window_ptr->window);
-    free(fake_window_ptr);
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        fake_window_ptr, wlmtk_fake_window_state_t, fake_window);
+
+    _wlmtk_window_fini(&fake_window_state_ptr->window);
+    free(fake_window_state_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -761,36 +775,36 @@ void _wlmtk_fake_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->activated = activated;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.activated = activated;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_request_close. Records call. */
 void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->request_close_called = true;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.request_close_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_request_minimize. Records call. */
 void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->request_minimize_called = true;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.request_minimize_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_request_move. Records call */
 void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->request_move_called = true;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.request_move_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -799,10 +813,10 @@ void _wlmtk_fake_window_request_resize(
     wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->request_resize_called = true;
-    fake_window_ptr->request_resize_edges = edges;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.request_resize_called = true;
+    fake_window_state_ptr->fake_window.request_resize_edges = edges;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -814,13 +828,13 @@ void _wlmtk_fake_window_request_position_and_size(
     int width,
     int height)
 {
-    wlmtk_fake_window_t *fake_window_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_t, window);
-    fake_window_ptr->request_position_and_size_called = true;
-    fake_window_ptr->x = x;
-    fake_window_ptr->y = y;
-    fake_window_ptr->width = width;
-    fake_window_ptr->height = height;
+    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
+        window_ptr, wlmtk_fake_window_state_t, window);
+    fake_window_state_ptr->fake_window.request_position_and_size_called = true;
+    fake_window_state_ptr->fake_window.x = x;
+    fake_window_state_ptr->fake_window.y = y;
+    fake_window_state_ptr->fake_window.width = width;
+    fake_window_state_ptr->fake_window.height = height;
 }
 
 /* == Unit tests =========================================================== */

@@ -295,13 +295,8 @@ void wlmtk_window_request_position_and_size(
  */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
 
-/** Forward declaration: Fake window state. */
-typedef struct _wlmtk_fake_window_t wlmtk_fake_window_t;
 /** State of the fake window, for tests. */
-struct _wlmtk_fake_window_t {
-    /** Window state - to be hidden. */
-    wlmtk_window_t            window;
-
+typedef struct {
     /** Window state. */
     wlmtk_window_t            *window_ptr;
     /** Fake content, to manipulate the fake window's content. */
@@ -310,9 +305,6 @@ struct _wlmtk_fake_window_t {
     /** Argument to last @ref wlmtk_window_set_activated call. */
     bool                      activated;
 
-    // FIXME
-    /** Argument to last @ref wlmtk_window_set_server_side_decorated call. */
-    bool                      decorated;
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */
@@ -323,9 +315,6 @@ struct _wlmtk_fake_window_t {
     bool                      request_resize_called;
     /** Argument to last @ref wlmtk_window_request_resize call. */
     uint32_t                  request_resize_edges;
-    // FIXME
-    /** Whether @ref wlmtk_window_request_size was called. */
-    bool                      request_size_called;
     /** Whether @ref wlmtk_window_request_position_and_size was called. */
     bool                      request_position_and_size_called;
     /** Argument to last @ref wlmtk_window_request_size call. */
@@ -336,7 +325,7 @@ struct _wlmtk_fake_window_t {
     int                       width;
     /** Argument to last @ref wlmtk_window_request_size call. */
     int                       height;
-};
+} wlmtk_fake_window_t;
 
 /** Ctor. */
 wlmtk_fake_window_t *wlmtk_fake_window_create(void);
