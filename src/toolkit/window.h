@@ -88,7 +88,7 @@ struct _wlmtk_window_t {
     /** Virtual method table. */
     wlmtk_window_vmt_t        vmt;
 
-    /** Box: In `super_bordered`, holds tontent, title bar and resizebar. */
+    /** Box: In `super_bordered`, holds content, title bar and resizebar. */
     wlmtk_box_t               box;
 
     /** Content of this window. */
