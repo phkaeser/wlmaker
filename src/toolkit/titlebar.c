@@ -387,7 +387,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_style_t style = {};
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
-        NULL, &fake_window_ptr->window, &style);
+        NULL, fake_window_ptr->window_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
@@ -401,7 +401,7 @@ void test_variable_width(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_style_t style = { .height = 22, .margin_style = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
-        NULL, &fake_window_ptr->window, &style);
+        NULL, fake_window_ptr->window_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.

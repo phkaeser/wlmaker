@@ -316,7 +316,7 @@ void test_area(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
 
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        &fake_window_ptr->window, NULL, WLR_EDGE_BOTTOM);
+        fake_window_ptr->window_ptr, NULL, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
 

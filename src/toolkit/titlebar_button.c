@@ -278,7 +278,7 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
         NULL,
         wlmtk_window_request_close,
-        &fake_window_ptr->window,
+        fake_window_ptr->window_ptr,
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
     wlmtk_titlebar_button_set_activated(button_ptr, true);

@@ -284,7 +284,7 @@ void test_title(bs_test_t *test_ptr)
 
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
-        NULL, &fake_window_ptr->window);
+        NULL, fake_window_ptr->window_ptr);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
         titlebar_title_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);
