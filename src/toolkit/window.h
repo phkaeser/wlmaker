@@ -36,79 +36,6 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Maximum number of pending state updates. */
-#define WLMTK_WINDOW_MAX_PENDING 64
-
-/** Pending positional updates. */
-typedef struct {
-    /** Node within @ref wlmtk_window_t::pending_updates. */
-    bs_dllist_node_t          dlnode;
-    /** Serial of the update. */
-    uint32_t                  serial;
-    /** Pending X position. */
-    int                       x;
-    /** Pending Y position. */
-    int                       y;
-    /** Width that is to be committed at serial. */
-    unsigned                  width;
-    /** Height that is to be committed at serial. */
-    unsigned                  height;
-} wlmtk_pending_update_t;
-
-/** Virtual method table for the window. */
-struct  _wlmtk_window_vmt_t {
-    /** Destructor. */
-    void (*destroy)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_set_activated. */
-    void (*set_activated)(wlmtk_window_t *window_ptr,
-                          bool activated);
-    /** Virtual method for @ref wlmtk_window_request_close. */
-    void (*request_close)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_request_minimize. */
-    void (*request_minimize)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_request_move. */
-    void (*request_move)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_request_resize. */
-    void (*request_resize)(wlmtk_window_t *window_ptr,
-                           uint32_t edges);
-    /** Virtual method for @ref wlmtk_window_request_position_and_size. */
-    void (*request_position_and_size)(wlmtk_window_t *window_ptr,
-                                      int x, int y, int width, int height);
-};
-
-/** State of the window. */
-struct _wlmtk_window_t {
-    /** Superclass: Bordered. */
-    wlmtk_bordered_t          super_bordered;
-    /** Original virtual method table of the window's element superclass. */
-    wlmtk_element_vmt_t       orig_super_element_vmt;
-    /** Original virtual method table of the window' container superclass. */
-    wlmtk_container_vmt_t     orig_super_container_vmt;
-
-    /** Virtual method table. */
-    wlmtk_window_vmt_t        vmt;
-
-    /** Box: In `super_bordered`, holds content, title bar and resizebar. */
-    wlmtk_box_t               box;
-
-    /** Content of this window. */
-    wlmtk_content_t           *content_ptr;
-    /** Titlebar. */
-    wlmtk_titlebar_t          *titlebar_ptr;
-    /** Resizebar. */
-    wlmtk_resizebar_t         *resizebar_ptr;
-
-    /** Window title. Set through @ref wlmtk_window_set_title. */
-    char                      *title_ptr;
-
-    /** Pending updates. */
-    bs_dllist_t               pending_updates;
-    /** List of udpates currently available. */
-    bs_dllist_t               available_updates;
-    /** Pre-alloocated updates. */
-    wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
-};
-
 /**
  * Creates a window for the given content.
  *
@@ -295,6 +222,8 @@ void wlmtk_window_request_position_and_size(
  */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
 
+/* ------------------------------------------------------------------------- */
+
 /** State of the fake window, for tests. */
 typedef struct {
     /** Window state. */
@@ -304,7 +233,6 @@ typedef struct {
 
     /** Argument to last @ref wlmtk_window_set_activated call. */
     bool                      activated;
-
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */
