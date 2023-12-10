@@ -96,6 +96,13 @@ struct _wlmtk_window_t {
     bs_dllist_t               available_updates;
     /** Pre-alloocated updates. */
     wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+
+    /**
+     * Stores whether the window is server-side decorated.
+     *
+     * This is equivalent to (titlebar_ptr != NULL && resizebar_ptr != NULL).
+     */
+    bool                       server_side_decorated;
 };
 
 /** State of a fake window: Includes the public record and the window. */
@@ -333,6 +340,46 @@ void wlmtk_window_set_server_side_decorated(
     // TODO(kaeser@gubbe.ch): Implement.
     bs_log(BS_INFO, "Set server side decoration for window %p: %d",
            window_ptr, decorated);
+
+    if (window_ptr->server_side_decorated == decorated) return;
+
+    if (decorated) {
+        // Create decoration.
+        window_ptr->titlebar_ptr = wlmtk_titlebar_create(
+            window_ptr->super_bordered.super_container.super_element.env_ptr,
+            window_ptr, &titlebar_style);
+        BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+        wlmtk_element_set_visible(
+            wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
+        wlmtk_box_add_element_front(
+            &window_ptr->box,
+            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+
+        window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+            window_ptr->super_bordered.super_container.super_element.env_ptr,
+            window_ptr, &resizebar_style);
+        BS_ASSERT(NULL != window_ptr->resizebar_ptr);
+        wlmtk_element_set_visible(
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
+        wlmtk_box_add_element_back(
+            &window_ptr->box,
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+    } else {
+        // Remove & destroy the decoration.
+        wlmtk_box_remove_element(
+            &window_ptr->box,
+            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+        wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
+        window_ptr->titlebar_ptr = NULL;
+
+        wlmtk_box_remove_element(
+            &window_ptr->box,
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
+        window_ptr->resizebar_ptr = NULL;
+    }
+
+    window_ptr->server_side_decorated = decorated;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -447,36 +494,12 @@ bool _wlmtk_window_init(
 
     wlmtk_window_set_title(window_ptr, NULL);
 
-    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-        env_ptr, window_ptr, &resizebar_style);
-    if (NULL == window_ptr->resizebar_ptr) {
-        _wlmtk_window_fini(window_ptr);
-        return false;
-    }
-    wlmtk_box_add_element_front(
-        &window_ptr->box,
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
-
     wlmtk_box_add_element_front(
         &window_ptr->box,
         wlmtk_content_element(content_ptr));
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
     wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
-
-    window_ptr->titlebar_ptr = wlmtk_titlebar_create(
-        env_ptr, window_ptr, &titlebar_style);
-    if (NULL == window_ptr->titlebar_ptr) {
-        _wlmtk_window_fini(window_ptr);
-        return false;
-    }
-    wlmtk_box_add_element_front(
-        &window_ptr->box,
-        wlmtk_titlebar_element(window_ptr->titlebar_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
 
     return true;
 }
@@ -489,21 +512,7 @@ bool _wlmtk_window_init(
  */
 void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
-    if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_box_remove_element(
-            &window_ptr->box,
-            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
-        wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
-        window_ptr->titlebar_ptr = NULL;
-    }
-
-    if (NULL != window_ptr->resizebar_ptr) {
-        wlmtk_box_remove_element(
-            &window_ptr->box,
-            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
-        window_ptr->resizebar_ptr = NULL;
-    }
+    wlmtk_window_set_server_side_decorated(window_ptr, false);
 
     if (NULL != window_ptr->content_ptr) {
         wlmtk_box_remove_element(
@@ -557,7 +566,8 @@ wlmtk_window_vmt_t _wlmtk_window_extend(
         window_ptr->vmt.request_resize = window_vmt_ptr->request_resize;
     }
     if (NULL != window_vmt_ptr->request_position_and_size) {
-        window_ptr->vmt.request_position_and_size = window_vmt_ptr->request_position_and_size;
+        window_ptr->vmt.request_position_and_size =
+            window_vmt_ptr->request_position_and_size;
     }
 
     return orig_vmt;
@@ -875,6 +885,7 @@ static void test_create_destroy(bs_test_t *test_ptr);
 static void test_set_title(bs_test_t *test_ptr);
 static void test_request_close(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
+static void test_server_side_decorated(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
@@ -882,6 +893,7 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "set_title", test_set_title },
     { 1, "request_close", test_request_close },
     { 1, "set_activated", test_set_activated },
+    { 1, "set_server_side_decorated", test_server_side_decorated },
     { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
@@ -950,6 +962,27 @@ void test_set_activated(bs_test_t *test_ptr)
 
     wlmtk_window_set_activated(window_ptr, false);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_content_ptr->activated);
+
+    wlmtk_window_destroy(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests enabling and disabling server-side decoration. */
+void test_server_side_decorated(bs_test_t *test_ptr)
+{
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        NULL, &fake_content_ptr->content);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_server_side_decorated(window_ptr, true);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_server_side_decorated(window_ptr, false);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
     wlmtk_window_destroy(window_ptr);
 }
