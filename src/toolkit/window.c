@@ -111,7 +111,6 @@ static bool _wlmtk_window_init(
     wlmtk_env_t *env_ptr,
     wlmtk_content_t *content_ptr);
 static void _wlmtk_window_fini(wlmtk_window_t *window_ptr);
-
 static wlmtk_window_vmt_t _wlmtk_window_extend(
     wlmtk_window_t *window_ptr,
     const wlmtk_window_vmt_t *window_vmt_ptr);
@@ -132,10 +131,14 @@ static void _wlmtk_window_request_position_and_size(
     int width,
     int height);
 
-
 static bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+
+
+
+
+
 
 static void _wlmtk_fake_window_set_activated(
     wlmtk_window_t *window_ptr,
@@ -729,44 +732,6 @@ bool _wlmtk_window_element_pointer_button(
 
     return window_ptr->orig_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_window_request_close. Requests content closure. */
-void wlmtk_window_request_close_impl(wlmtk_window_t *window_ptr)
-{
-    wlmtk_content_request_close(window_ptr->content_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_request_minimize. */
-void wlmtk_window_request_minimize_impl(wlmtk_window_t *window_ptr)
-{
-    bs_log(BS_INFO, "Requesting window %p to minimize.", window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_request_move. */
-void wlmtk_window_request_move_impl(wlmtk_window_t *window_ptr)
-{
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_request_resize. */
-void wlmtk_window_request_resize_impl(wlmtk_window_t *window_ptr, uint32_t edges)
-{
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_begin_window_resize(workspace_ptr, window_ptr, edges);
 }
 
 /* ------------------------------------------------------------------------- */
