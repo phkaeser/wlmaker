@@ -65,8 +65,6 @@ struct _wlmtk_content_t {
      */
     wlmtk_window_t            *window_ptr;
 
-    /** Back-link to the the associated seat. */
-    struct wlr_seat           *wlr_seat_ptr;
     /**
      * Surface associated with this content.
      *
@@ -86,14 +84,12 @@ struct _wlmtk_content_t {
  *
  * @param content_ptr
  * @param env_ptr
- * @param wlr_seat_ptr
  *
  * @return true on success.
  */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_env_t *env_ptr,
-    struct wlr_seat *wlr_seat_ptr);
+    wlmtk_env_t *env_ptr);
 
 /**
  * Extends the content's virtual methods.

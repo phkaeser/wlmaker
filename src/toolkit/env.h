@@ -26,6 +26,8 @@ typedef struct _wlmtk_env_t wlmtk_env_t;
 /** Forward declaration. */
 struct wlr_cursor;
 /** Forward declaration. */
+struct wlr_seat;
+/** Forward declaration. */
 struct wlr_xcursor_manager;
 
 #ifdef __cplusplus
@@ -49,12 +51,14 @@ typedef enum {
  *
  * @param wlr_cursor_ptr
  * @param wlr_xcursor_manager_ptr
+ * @param wlr_seat_ptr
  *
  * @return An environment state or NULL on error.
  */
 wlmtk_env_t *wlmtk_env_create(
     struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr);
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Destroys the environment state.
@@ -70,6 +74,13 @@ void wlmtk_env_destroy(wlmtk_env_t *env_ptr);
  * @param cursor
  */
 void wlmtk_env_set_cursor(wlmtk_env_t *env_ptr, wlmtk_env_cursor_t cursor);
+
+/**
+ * Returns the pointer to the wlr_seat.
+ *
+ * @param env_ptr
+ */
+struct wlr_seat *wlmtk_env_wlr_seat(wlmtk_env_t *env_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

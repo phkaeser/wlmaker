@@ -138,8 +138,7 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
     if (NULL == xdg_tl_content_ptr) return NULL;
 
     if (!wlmtk_content_init(&xdg_tl_content_ptr->super_content,
-                            server_ptr->env_ptr,
-                            server_ptr->wlr_seat_ptr)) {
+                            server_ptr->env_ptr)) {
         xdg_toplevel_content_destroy(xdg_tl_content_ptr);
         return NULL;
     }

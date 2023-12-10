@@ -70,8 +70,7 @@ void *wlmtk_content_identifier_ptr = wlmtk_content_init;
 /* ------------------------------------------------------------------------- */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_env_t *env_ptr,
-    struct wlr_seat *wlr_seat_ptr)
+    wlmtk_env_t *env_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
@@ -82,7 +81,6 @@ bool wlmtk_content_init(
     content_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &content_ptr->super_element, &content_element_vmt);
 
-    content_ptr->wlr_seat_ptr = wlr_seat_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
     return true;
 }
@@ -242,11 +240,13 @@ void element_pointer_leave(wlmtk_element_t *element_ptr)
 
     // If the current surface's parent is our surface: clear it.
     struct wlr_surface *focused_wlr_surface_ptr =
-        content_ptr->wlr_seat_ptr->pointer_state.focused_surface;
+        wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr
+            )->pointer_state.focused_surface;
     if (NULL != focused_wlr_surface_ptr &&
         wlr_surface_get_root_surface(focused_wlr_surface_ptr) ==
         content_ptr->wlr_surface_ptr) {
-        wlr_seat_pointer_clear_focus(content_ptr->wlr_seat_ptr);
+        wlr_seat_pointer_clear_focus(
+            wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr));
     }
 }
 
@@ -310,11 +310,11 @@ bool element_pointer_motion(
     BS_ASSERT(content_ptr->wlr_surface_ptr ==
               wlr_surface_get_root_surface(wlr_scene_surface_ptr->surface));
     wlr_seat_pointer_notify_enter(
-        content_ptr->wlr_seat_ptr,
+        wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr),
         wlr_scene_surface_ptr->surface,
         node_x, node_y);
     wlr_seat_pointer_notify_motion(
-        content_ptr->wlr_seat_ptr,
+        wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr),
         time_msec,
         node_x, node_y);
     return true;
@@ -341,7 +341,8 @@ bool element_pointer_button(
 
     // Complain if the surface isn't part of our responsibility.
     struct wlr_surface *focused_wlr_surface_ptr =
-        content_ptr->wlr_seat_ptr->pointer_state.focused_surface;
+        wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr
+            )->pointer_state.focused_surface;
     if (NULL == focused_wlr_surface_ptr) return false;
     // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
     // over to a non-activated window will trigger the condition here on the
@@ -353,7 +354,7 @@ bool element_pointer_button(
     if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
         WLMTK_BUTTON_UP == button_event_ptr->type) {
         wlr_seat_pointer_notify_button(
-            content_ptr->wlr_seat_ptr,
+            wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr),
             button_event_ptr->time_msec,
             button_event_ptr->button,
             (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
@@ -413,7 +414,7 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
         1, sizeof(wlmtk_fake_content_t));
     if (NULL == fake_content_ptr) return NULL;
 
-    if (!wlmtk_content_init(&fake_content_ptr->content, NULL, NULL)) {
+    if (!wlmtk_content_init(&fake_content_ptr->content, NULL)) {
         free(fake_content_ptr);
         return NULL;
     }
