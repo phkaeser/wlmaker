@@ -44,6 +44,8 @@ typedef struct {
     /** Listener for the `commit` signal of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
 
+    /** Listener for `maximize` signal of `wlr_xdg_toplevel::events`. */
+    struct wl_listener        toplevel_request_maximize_listener;
     /** Listener for `request_move` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_move_listener;
     /** Listener for `request_resize` signal of `wlr_xdg_toplevel::events`. */
@@ -68,6 +70,9 @@ static void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_toplevel_request_maximize(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_toplevel_request_move(
@@ -173,6 +178,10 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         handle_surface_commit);
 
     wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->toplevel->events.request_maximize,
+        &xdg_tl_content_ptr->toplevel_request_maximize_listener,
+        handle_toplevel_request_maximize);
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_move,
         &xdg_tl_content_ptr->toplevel_request_move_listener,
         handle_toplevel_request_move);
@@ -203,6 +212,7 @@ void xdg_toplevel_content_destroy(
         &xdg_tl_content_ptr->toplevel_set_title_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_resize_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->toplevel_request_move_listener.link);
+    wl_list_remove(&xdg_tl_content_ptr->toplevel_request_maximize_listener.link);
 
     wl_list_remove(&xdg_tl_content_ptr->surface_commit_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_map_listener.link);
@@ -415,6 +425,26 @@ void handle_surface_commit(
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.configure_serial,
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->current.geometry.height);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `request_maximize` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_toplevel_request_maximize(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmtk_xdg_toplevel_content_t,
+        toplevel_request_maximize_listener);
+    wlmtk_window_request_maximize(
+        xdg_tl_content_ptr->super_content.window_ptr,
+        !wlmtk_window_maximized(xdg_tl_content_ptr->super_content.window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
