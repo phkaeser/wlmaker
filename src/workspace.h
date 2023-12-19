@@ -190,6 +190,18 @@ const bs_dllist_t *wlmaker_workspace_get_views_dllist(
     wlmaker_workspace_t *workspace_ptr);
 
 /**
+ * Sets extents of the workspace.
+ *
+ * TODO(kaeser@gubbe.ch): Should re-trigger re-arranging.
+ *
+ * @param workspace_ptr
+ * @param extents_ptr
+ */
+void wlmaker_workspace_set_extents(
+    wlmaker_workspace_t *workspace_ptr,
+    const struct wlr_box *extents_ptr);
+
+/**
  * (Re)arranges the views in the workspace.
  *
  * This should be called whenever the output layout changes.

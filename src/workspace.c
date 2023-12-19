@@ -434,6 +434,20 @@ const bs_dllist_t *wlmaker_workspace_get_views_dllist(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmaker_workspace_set_extents(
+    wlmaker_workspace_t *workspace_ptr,
+    const struct wlr_box *extents_ptr)
+{
+#if defined(ENABLE_TOOLKIT_PROTOTYPE)
+    wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr,
+                                extents_ptr);
+#else
+    workspace_ptr = workspace_ptr;
+    extents_ptr = extents_ptr;
+#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmaker_workspace_arrange_views(wlmaker_workspace_t *workspace_ptr)
 {
     arrange_layers(workspace_ptr);
