@@ -139,7 +139,7 @@ void wlmtk_content_commit_size(
 
     if (NULL != content_ptr->super_element.parent_container_ptr) {
         wlmtk_container_update_layout(
-        content_ptr->super_element.parent_container_ptr);
+            content_ptr->super_element.parent_container_ptr);
     }
 }
 
@@ -423,6 +423,16 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(void)
     fake_content_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &fake_content_ptr->content.super_element, &fake_content_element_vmt);
     return fake_content_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
+{
+    wlmtk_content_commit_size(
+        &fake_content_ptr->content,
+        fake_content_ptr->return_request_size,
+        fake_content_ptr->requested_width,
+        fake_content_ptr->requested_height);
 }
 
 /* ------------------------------------------------------------------------- */

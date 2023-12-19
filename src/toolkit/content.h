@@ -216,6 +216,9 @@ struct _wlmtk_fake_content_t {
 /** Ctor for a fake content. */
 wlmtk_fake_content_t *wlmtk_fake_content_create(void);
 
+/** Commits dimensions from earlier @ref wlmtk_content_request_size call. */
+void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
