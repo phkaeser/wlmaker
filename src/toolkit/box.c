@@ -271,16 +271,16 @@ void test_layout_horizontal(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
-    e1_ptr->width = 10;
-    e1_ptr->height = 1;
+    e1_ptr->dimensions.width = 10;
+    e1_ptr->dimensions.height = 1;
     wlmtk_fake_element_t *e2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e2_ptr->element, false);
-    e2_ptr->width = 20;
-    e1_ptr->height = 2;
+    e2_ptr->dimensions.width = 20;
+    e1_ptr->dimensions.height = 2;
     wlmtk_fake_element_t *e3_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e3_ptr->element, true);
-    e3_ptr->width = 40;
-    e3_ptr->height = 4;
+    e3_ptr->dimensions.width = 40;
+    e3_ptr->dimensions.height = 4;
 
     // Note: Elements are added "in front" == left.
     wlmtk_box_add_element_front(&box, &e1_ptr->element);
@@ -334,12 +334,12 @@ void test_layout_vertical(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
-    e1_ptr->width = 100;
-    e1_ptr->height = 10;
+    e1_ptr->dimensions.width = 100;
+    e1_ptr->dimensions.height = 10;
     wlmtk_fake_element_t *e2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e2_ptr->element, true);
-    e2_ptr->width = 200;
-    e2_ptr->height = 20;
+    e2_ptr->dimensions.width = 200;
+    e2_ptr->dimensions.height = 20;
 
     // Note: Elements are added "in front" == left.
     wlmtk_box_add_element_front(&box, &e1_ptr->element);

@@ -971,14 +971,14 @@ void test_pointer_motion(bs_test_t *test_ptr)
     // Note: pointer area extends by (-1, -2, 3, 4) on each fake element.
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_position(&elem1_ptr->element, -20, -40);
-    elem1_ptr->width = 10;
-    elem1_ptr->height = 5;
+    elem1_ptr->dimensions.width = 10;
+    elem1_ptr->dimensions.height = 5;
     wlmtk_element_set_visible(&elem1_ptr->element, false);
     wlmtk_container_add_element(&container, &elem1_ptr->element);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_position(&elem2_ptr->element, 100, 200);
-    elem2_ptr->width = 10;
-    elem2_ptr->height = 5;
+    elem2_ptr->dimensions.width = 10;
+    elem2_ptr->dimensions.height = 5;
     wlmtk_element_set_visible(&elem2_ptr->element, true);
     wlmtk_container_add_element(&container, &elem2_ptr->element);
 
@@ -1334,8 +1334,8 @@ void test_pointer_button(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);
-    elem1_ptr->width = 1;
-    elem1_ptr->height = 1;
+    elem1_ptr->dimensions.width = 1;
+    elem1_ptr->dimensions.height = 1;
     wlmtk_container_add_element(&container, &elem1_ptr->element);
 
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();

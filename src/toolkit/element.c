@@ -437,10 +437,12 @@ void fake_get_dimensions(
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
-    if (NULL != left_ptr) *left_ptr = 0;
-    if (NULL != top_ptr) *top_ptr = 0;
-    if (NULL != right_ptr) *right_ptr = fake_element_ptr->width;
-    if (NULL != bottom_ptr) *bottom_ptr = fake_element_ptr->height;
+    if (NULL != left_ptr) *left_ptr = fake_element_ptr->dimensions.x;
+    if (NULL != top_ptr) *top_ptr = fake_element_ptr->dimensions.y;
+    if (NULL != right_ptr) *right_ptr = (
+        fake_element_ptr->dimensions.width - fake_element_ptr->dimensions.x);
+    if (NULL != bottom_ptr) *bottom_ptr = (
+        fake_element_ptr->dimensions.height - fake_element_ptr->dimensions.y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -456,8 +458,10 @@ void fake_get_pointer_area(
         element_ptr, wlmtk_fake_element_t, element);
     if (NULL != left_ptr) *left_ptr = -1;
     if (NULL != top_ptr) *top_ptr = -2;
-    if (NULL != right_ptr) *right_ptr = fake_element_ptr->width + 3;
-    if (NULL != bottom_ptr) *bottom_ptr = fake_element_ptr->height + 4;
+    if (NULL != right_ptr) *right_ptr = (
+        fake_element_ptr->dimensions.width + 3);
+    if (NULL != bottom_ptr) *bottom_ptr = (
+        fake_element_ptr->dimensions.height + 4);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -472,8 +476,8 @@ bool fake_pointer_motion(
         element_ptr, wlmtk_fake_element_t, element);
     fake_element_ptr->orig_vmt.pointer_motion(element_ptr, x, y, time_msec);
     fake_element_ptr->pointer_motion_called = true;
-    return (-1 <= x && x < fake_element_ptr->width + 3 &&
-            -2 < y && y < fake_element_ptr->height + 4);
+    return (-1 <= x && x < fake_element_ptr->dimensions.width + 3 &&
+            -2 < y && y < fake_element_ptr->dimensions.height + 4);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -639,8 +643,10 @@ void test_set_get_position(bs_test_t *test_ptr)
 void test_get_dimensions(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    fake_element_ptr->width = 42;
-    fake_element_ptr->height = 21;
+    fake_element_ptr->dimensions.x = -10;
+    fake_element_ptr->dimensions.y = -20;
+    fake_element_ptr->dimensions.width = 42;
+    fake_element_ptr->dimensions.height = 21;
 
     // Must not crash.
     wlmtk_element_get_dimensions(
@@ -649,10 +655,17 @@ void test_get_dimensions(bs_test_t *test_ptr)
     int top, left, right, bottom;
     wlmtk_element_get_dimensions(
         &fake_element_ptr->element, &top, &left, &right, &bottom);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, top);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, left);
-    BS_TEST_VERIFY_EQ(test_ptr, 42, right);
-    BS_TEST_VERIFY_EQ(test_ptr, 21, bottom);
+    BS_TEST_VERIFY_EQ(test_ptr, -10, top);
+    BS_TEST_VERIFY_EQ(test_ptr, -20, left);
+    BS_TEST_VERIFY_EQ(test_ptr, 52, right);
+    BS_TEST_VERIFY_EQ(test_ptr, 41, bottom);
+
+    struct wlr_box box = wlmtk_element_get_dimensions_box(
+        &fake_element_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, -10, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, -20, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 42, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 21, box.height);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }
@@ -662,8 +675,8 @@ void test_get_dimensions(bs_test_t *test_ptr)
 void test_get_pointer_area(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    fake_element_ptr->width = 42;
-    fake_element_ptr->height = 21;
+    fake_element_ptr->dimensions.width = 42;
+    fake_element_ptr->dimensions.height = 21;
 
     // Must not crash.
     wlmtk_element_get_pointer_area(

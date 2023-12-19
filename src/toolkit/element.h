@@ -23,6 +23,8 @@
 #include <libbase/libbase.h>
 #include <wayland-server.h>
 
+#include "wlr/util/box.h"
+
 /** Forward declaration: Element. */
 typedef struct _wlmtk_element_t wlmtk_element_t;
 /** Forward declaration: Element virtual method table. */
@@ -319,6 +321,25 @@ static inline void wlmtk_element_get_dimensions(
 }
 
 /**
+ * Gets the element's dimensions in pixel as wlr_box, relative to the position.
+ *
+ * @param element_ptr
+ *
+ * @return A struct wlr_box that specifies the top-left corner of the element
+ *     relative to it's position, and the element's total width and height.
+ */
+static inline struct wlr_box wlmtk_element_get_dimensions_box(
+    wlmtk_element_t *element_ptr)
+{
+    struct wlr_box box;
+    element_ptr->vmt.get_dimensions(
+        element_ptr, &box.x, &box.y, &box.width, &box.height);
+    box.width += box.x;
+    box.height += box.y;
+    return box;
+}
+
+/**
  * Passes a pointer motion event on to the element.
  *
  * Will forward to @ref wlmtk_element_vmt_t::pointer_motion, and (depending on
@@ -365,10 +386,8 @@ typedef struct {
     wlmtk_element_t           element;
     /** Original VMT. */
     wlmtk_element_vmt_t       orig_vmt;
-    /** Width of the element, in pixels. */
-    int width;
-    /** Height of the element, in pixels. */
-    int height;
+    /** Dimensions of the fake element, in pixels. */
+    struct wlr_box            dimensions;
 
     /** Indicates @ref wlmtk_element_vmt_t::pointer_motion() was called. */
     bool                      pointer_motion_called;

@@ -248,8 +248,8 @@ void test_rectangle_pos(bs_test_t *test_ptr, wlmtk_rectangle_t *rect_ptr,
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
-    fe_ptr->width = 100;
-    fe_ptr->height = 20;
+    fe_ptr->dimensions.width = 100;
+    fe_ptr->dimensions.height = 20;
     wlmtk_element_set_position(&fe_ptr->element, -10, -4);
 
     wlmtk_bordered_t bordered;
@@ -271,8 +271,8 @@ void test_init_fini(bs_test_t *test_ptr)
         -12, -4, 2, 20);
 
     // Update layout, test updated positions.
-    fe_ptr->width = 200;
-    fe_ptr->height = 120;
+    fe_ptr->dimensions.width = 200;
+    fe_ptr->dimensions.height = 120;
     wlmtk_container_update_layout(&bordered.super_container);
     test_rectangle_pos(
         test_ptr, bordered.northern_border_rectangle_ptr,
