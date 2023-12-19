@@ -182,6 +182,19 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
+struct wlr_box wlmtk_workspace_get_maximize_extents(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    // TODO(kaeser@gubbe.ch): Well, actually compute something sensible.
+    struct wlr_box box = {
+        .x = workspace_ptr->x1,
+        .y = workspace_ptr->y1,
+        .width = workspace_ptr->x2 - workspace_ptr->x1 - 64,
+        .height = workspace_ptr->y2 - workspace_ptr->y1 - 64 };
+    return box;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr)
 {
@@ -616,6 +629,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 90, x2);
     BS_TEST_VERIFY_EQ(test_ptr, 180, y2);
 
+    box = wlmtk_workspace_get_maximize_extents(workspace_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, -10, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, -20, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 36, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 136, box.height);
 
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);

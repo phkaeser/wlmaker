@@ -68,6 +68,16 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
                                  const struct wlr_box *extents_ptr);
 
 /**
+ * Returns the extents of the workspace available for maximized windows.
+ *
+ * @param workspace_ptr
+ *
+ * @return A `struct wlr_box` that lines out the available space and position.
+ */
+struct wlr_box wlmtk_workspace_get_maximize_extents(
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
  * Maps the window: Adds it to the workspace container and makes it visible.
  *
  * @param workspace_ptr
