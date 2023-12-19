@@ -504,6 +504,12 @@ void wlmtk_window_request_maximize(
     pending_update_ptr->height = box.height;
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_maximized(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->maximized;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -1073,6 +1079,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
 
     // Maximize.
     wlmtk_window_request_maximize(window_ptr, true);
@@ -1082,6 +1089,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_maximized(window_ptr));
 
     // Unmaximize. Restore earlier organic size and position.
     wlmtk_window_request_maximize(window_ptr, false);
@@ -1091,6 +1099,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);

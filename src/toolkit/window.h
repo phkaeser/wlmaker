@@ -190,6 +190,9 @@ void wlmtk_window_request_maximize(
     wlmtk_window_t *window_ptr,
     bool maximized);
 
+/** Returns whether the window is currently (requested to be) maximized. */
+bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
+
 /**
  * Requests a new size for the window, including potential decorations.
  *
