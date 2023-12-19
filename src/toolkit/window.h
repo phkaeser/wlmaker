@@ -174,6 +174,23 @@ void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
                                  uint32_t edges);
 
 /**
+ * Reuests the window to be maximized.
+ *
+ * Requires the window to be mapped (to a workspace). Will lookup the maximize
+ * extents from the workspace, and request a corresponding updated position and
+ * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
+ *
+ * This may be implemented as an asynchronous operation. Maximization will be
+ * applied once the size change has been committed by the content.
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window_request_maximize(
+    wlmtk_window_t *window_ptr,
+    bool maximized);
+
+/**
  * Requests a new size for the window, including potential decorations.
  *
  * This may be implemented as an asynchronous operation.
@@ -194,6 +211,8 @@ void wlmtk_window_request_size(
  * This may be implemented as an asynchronous operation. The re-positioning
  * will be applied only once the size change has been committed by the client.
  *
+ * The position and size will be stored in @ref wlmtk_window_t::organic_size.
+ *
  * @param window_ptr
  * @param x
  * @param y
@@ -208,6 +227,17 @@ void wlmtk_window_request_position_and_size(
     int height);
 
 /**
+ * Returns the current position and size of the window.
+ *
+ * @param window_ptr
+ *
+ * @return The position of the window (the window's element), and the currently
+ *     committed width and height of the window.
+ */
+struct wlr_box wlmtk_window_get_position_and_size(
+    wlmtk_window_t *window_ptr);
+
+/**
  * Updates the window state to what was requested at the `serial`.
  *
  * Used for example when resizing a window from the top or left edges. In that
@@ -216,6 +246,11 @@ void wlmtk_window_request_position_and_size(
  * returned serial when the size is committed.
  * Only then, the corresponding positional update on the top/left edges are
  * supposed to be applied.
+ *
+ * @ref wlmtk_window_t::organic_size will be updated, if there was no pending
+ * update: Meaning that the commit originated not from an earlier
+ * @ref wlmtk_window_request_position_and_size or @ref
+ * wlmtk_window_request_maximize call.
  *
  * @param window_ptr
  * @param serial

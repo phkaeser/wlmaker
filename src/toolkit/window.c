@@ -23,6 +23,8 @@
 #include "rectangle.h"
 #include "workspace.h"
 
+#include "wlr/util/box.h"
+
 /* == Declarations ========================================================= */
 
 /** Maximum number of pending state updates. */
@@ -49,19 +51,19 @@ struct  _wlmtk_window_vmt_t {
                                       int x, int y, int width, int height);
 };
 
-/** Pending positional updates. */
+/** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
 typedef struct {
     /** Node within @ref wlmtk_window_t::pending_updates. */
     bs_dllist_node_t          dlnode;
     /** Serial of the update. */
     uint32_t                  serial;
-    /** Pending X position. */
+    /** Pending X position of the content. */
     int                       x;
-    /** Pending Y position. */
+    /** Pending Y position of the content. */
     int                       y;
-    /** Width that is to be committed at serial. */
+    /** Content's width that is to be committed at serial. */
     unsigned                  width;
-    /** Height that is to be committed at serial. */
+    /** Content's hehight that is to be committed at serial. */
     unsigned                  height;
 } wlmtk_pending_update_t;
 
@@ -96,6 +98,11 @@ struct _wlmtk_window_t {
     bs_dllist_t               available_updates;
     /** Pre-alloocated updates. */
     wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+
+    /** Organic size of the window, ie. when not maximized. */
+    struct wlr_box             organic_size;
+    /** Whether the window has been requested as maximized. */
+    bool                       maximized;
 
     /**
      * Stores whether the window is server-side decorated.
@@ -149,6 +156,7 @@ static wlmtk_pending_update_t *_wlmtk_window_prepare_update(
 static void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
+static wlmtk_workspace_t *_wlmtk_window_workspace(wlmtk_window_t *window_ptr);
 
 /* == Data ================================================================= */
 
@@ -268,6 +276,13 @@ void wlmtk_window_get_size(
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 {
     bs_dllist_node_t *dlnode_ptr;
+
+    if (NULL == window_ptr->pending_updates.head_ptr) {
+        window_ptr->organic_size = wlmtk_element_get_dimensions_box(
+            wlmtk_window_element(window_ptr));
+        return;
+    }
+
     while (NULL != (dlnode_ptr = window_ptr->pending_updates.head_ptr)) {
         wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
             dlnode_ptr, wlmtk_pending_update_t, dlnode);
@@ -442,6 +457,51 @@ void wlmtk_window_request_position_and_size(
 {
     window_ptr->vmt.request_position_and_size(
         window_ptr, x, y, width, height);
+
+    window_ptr->organic_size.x = x;
+    window_ptr->organic_size.y = y;
+    window_ptr->organic_size.width = width;
+    window_ptr->organic_size.height = height;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_box wlmtk_window_get_position_and_size(
+    wlmtk_window_t *window_ptr)
+{
+    struct wlr_box box;
+
+    wlmtk_element_get_position(
+        wlmtk_window_element(window_ptr), &box.x, &box.y);
+    wlmtk_window_get_size(window_ptr, &box.width, &box.height);
+    return box;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_maximize(
+    wlmtk_window_t *window_ptr,
+    bool maximized)
+{
+    if (window_ptr->maximized == maximized) return;
+
+    window_ptr->maximized = maximized;
+
+    struct wlr_box box;
+    if (window_ptr->maximized) {
+        box = wlmtk_workspace_get_maximize_extents(
+            _wlmtk_window_workspace(window_ptr));
+    } else {
+        box = window_ptr->organic_size;
+    }
+
+    uint32_t serial = wlmtk_content_request_size(
+        window_ptr->content_ptr, box.width, box.height);
+    wlmtk_pending_update_t *pending_update_ptr =
+        _wlmtk_window_prepare_update(window_ptr);
+    pending_update_ptr->serial = serial;
+    pending_update_ptr->x = box.x;
+    pending_update_ptr->y = box.y;
+    pending_update_ptr->width = box.width;
+    pending_update_ptr->height = box.height;
 }
 
 /* == Local (static) methods =============================================== */
@@ -583,11 +643,7 @@ bool _wlmtk_window_element_pointer_button(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
     // We shouldn't receive buttons when not mapped.
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
+    wlmtk_workspace_t *workspace_ptr = _wlmtk_window_workspace(window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
     wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
 
@@ -654,24 +710,16 @@ void _wlmtk_window_request_minimize(wlmtk_window_t *window_ptr)
 /** Default implementation of @ref wlmtk_window_request_move. */
 void _wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_begin_window_move(workspace_ptr, window_ptr);
+    wlmtk_workspace_begin_window_move(
+        _wlmtk_window_workspace(window_ptr), window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Default implementation of @ref wlmtk_window_request_resize. */
 void _wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
 {
-    BS_ASSERT(
-        NULL !=
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_container(
-        window_ptr->super_bordered.super_container.super_element.parent_container_ptr);
-    wlmtk_workspace_begin_window_resize(workspace_ptr, window_ptr, edges);
+    wlmtk_workspace_begin_window_resize(
+        _wlmtk_window_workspace(window_ptr), window_ptr, edges);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -740,6 +788,15 @@ void _wlmtk_window_release_update(
 {
     bs_dllist_remove(&window_ptr->pending_updates, &update_ptr->dlnode);
     bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns the workspace of the (mapped) window. */
+wlmtk_workspace_t *_wlmtk_window_workspace(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(NULL != wlmtk_window_element(window_ptr)->parent_container_ptr);
+    return wlmtk_workspace_from_container(
+        wlmtk_window_element(window_ptr)->parent_container_ptr);
 }
 
 /* == Implementation of the fake window ==================================== */
@@ -886,6 +943,7 @@ static void test_set_title(bs_test_t *test_ptr);
 static void test_request_close(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
 static void test_server_side_decorated(bs_test_t *test_ptr);
+static void test_maximize(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
@@ -894,6 +952,7 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "request_close", test_request_close },
     { 1, "set_activated", test_set_activated },
     { 1, "set_server_side_decorated", test_server_side_decorated },
+    { 1, "maximize", test_maximize },
     { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
@@ -985,6 +1044,58 @@ void test_server_side_decorated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
     wlmtk_window_destroy(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests maximizing and un-maximizing a window. */
+void test_maximize(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
+    struct wlr_box extents = { .width = 1024, .height = 768 }, box;
+    wlmtk_workspace_set_extents(workspace_ptr, &extents);
+    BS_ASSERT(NULL != workspace_ptr);
+
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        NULL, &fake_content_ptr->content);
+    BS_ASSERT(NULL != window_ptr);
+    // Window must be mapped to get maximized: Need workspace dimensions.
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+
+    // Set up initial organic size, and verify.
+    wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
+    wlmtk_fake_content_commit(fake_content_ptr);
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+
+    // Maximize.
+    wlmtk_window_request_maximize(window_ptr, true);
+    wlmtk_fake_content_commit(fake_content_ptr);
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
+
+    // Unmaximize. Restore earlier organic size and position.
+    wlmtk_window_request_maximize(window_ptr, false);
+    wlmtk_fake_content_commit(fake_content_ptr);
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_window_destroy(window_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
