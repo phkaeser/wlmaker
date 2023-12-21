@@ -277,7 +277,8 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 {
     bs_dllist_node_t *dlnode_ptr;
 
-    if (NULL == window_ptr->pending_updates.head_ptr) {
+    if (!window_ptr->maximized &&
+        NULL == window_ptr->pending_updates.head_ptr) {
         window_ptr->organic_size = wlmtk_element_get_dimensions_box(
             wlmtk_window_element(window_ptr));
         return;
@@ -1090,6 +1091,9 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_maximized(window_ptr));
+
+    // A second commit: should not overwrite the organic dimension.
+    wlmtk_fake_content_commit(fake_content_ptr);
 
     // Unmaximize. Restore earlier organic size and position.
     wlmtk_window_request_maximize(window_ptr, false);
