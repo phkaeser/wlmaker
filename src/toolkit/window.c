@@ -289,12 +289,9 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 
     if (!window_ptr->maximized &&
         NULL == window_ptr->pending_updates.head_ptr) {
-        // The element's dimensions does not matter for window positioning,
-        // thus only store width & height.
-        struct wlr_box box = wlmtk_element_get_dimensions_box(
-            wlmtk_window_element(window_ptr));
-        window_ptr->organic_size.width = box.width;
-        window_ptr->organic_size.height = box.height;
+        wlmtk_window_get_size(window_ptr,
+                              &window_ptr->organic_size.width,
+                              &window_ptr->organic_size.height);
         return;
     }
 
@@ -485,10 +482,6 @@ void wlmtk_window_request_position_and_size(
     window_ptr->organic_size.y = y;
     window_ptr->organic_size.width = width;
     window_ptr->organic_size.height = height;
-
-    bs_log(BS_ERROR, "FIXME: %d, %d at %d x %d",
-           window_ptr->organic_size.x, window_ptr->organic_size.y,
-           window_ptr->organic_size.width, window_ptr->organic_size.height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1118,6 +1111,16 @@ void test_maximize(bs_test_t *test_ptr)
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+
+    // Trigger another serial update. Should not change position nor size.
+    wlmtk_window_serial(window_ptr, 1234);
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Maximize.
     wlmtk_window_request_maximize(window_ptr, true);
