@@ -80,18 +80,6 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr);
 
 /**
- * Obtains the size of the window, including potential decorations.
- *
- * @param window_ptr
- * @param width_ptr           May be NULL.
- * @param height_ptr          May be NULL.
- */
-void wlmtk_window_get_size(
-    wlmtk_window_t *window_ptr,
-    int *width_ptr,
-    int *height_ptr);
-
-/**
  * Sets the window as activated, depending on the argument's value.
  *
  * An activated window will have keyboard focus and would have distinct
@@ -152,6 +140,26 @@ void wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
 
 /**
+ * Reuests the window to be maximized.
+ *
+ * Requires the window to be mapped (to a workspace). Will lookup the maximize
+ * extents from the workspace, and request a corresponding updated position and
+ * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
+ *
+ * This may be implemented as an asynchronous operation. Maximization will be
+ * applied once the size change has been committed by the content.
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window_request_maximize(
+    wlmtk_window_t *window_ptr,
+    bool maximized);
+
+/** Returns whether the window is currently (requested to be) maximized. */
+bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
+
+/**
  * Requests a move for the window.
  *
  * Requires the window to be mapped (to a workspace), and forwards the call to
@@ -174,26 +182,6 @@ void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
                                  uint32_t edges);
 
 /**
- * Reuests the window to be maximized.
- *
- * Requires the window to be mapped (to a workspace). Will lookup the maximize
- * extents from the workspace, and request a corresponding updated position and
- * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
- *
- * This may be implemented as an asynchronous operation. Maximization will be
- * applied once the size change has been committed by the content.
- *
- * @param window_ptr
- * @param maximized
- */
-void wlmtk_window_request_maximize(
-    wlmtk_window_t *window_ptr,
-    bool maximized);
-
-/** Returns whether the window is currently (requested to be) maximized. */
-bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
-
-/**
  * Sets the window's position. This is a synchronous operation.
  *
  * Updates the position in @ref wlmtk_window_t::organic_size.
@@ -202,6 +190,18 @@ bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
  * @param y
  */
 void wlmtk_window_set_position(wlmtk_window_t *window_ptr, int x, int y);
+
+/**
+ * Obtains the size of the window, including potential decorations.
+ *
+ * @param window_ptr
+ * @param width_ptr           May be NULL.
+ * @param height_ptr          May be NULL.
+ */
+void wlmtk_window_get_size(
+    wlmtk_window_t *window_ptr,
+    int *width_ptr,
+    int *height_ptr);
 
 /**
  * Requests a new size for the window, including potential decorations.
@@ -216,6 +216,17 @@ void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
     int width,
     int height);
+
+/**
+ * Returns the current position and size of the window.
+ *
+ * @param window_ptr
+ *
+ * @return The position of the window (the window's element), and the currently
+ *     committed width and height of the window.
+ */
+struct wlr_box wlmtk_window_get_position_and_size(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Requests an updated position and size for the window, including potential
@@ -238,17 +249,6 @@ void wlmtk_window_request_position_and_size(
     int y,
     int width,
     int height);
-
-/**
- * Returns the current position and size of the window.
- *
- * @param window_ptr
- *
- * @return The position of the window (the window's element), and the currently
- *     committed width and height of the window.
- */
-struct wlr_box wlmtk_window_get_position_and_size(
-    wlmtk_window_t *window_ptr);
 
 /**
  * Updates the window state to what was requested at the `serial`.

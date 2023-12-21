@@ -263,100 +263,11 @@ wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_get_size(
+void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
-    int *width_ptr,
-    int *height_ptr)
+    bool activated)
 {
-    // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
-    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
-
-    if (NULL != window_ptr->titlebar_ptr) {
-        *height_ptr += titlebar_style.height + margin_style.width;
-    }
-    if (NULL != window_ptr->resizebar_ptr) {
-        *height_ptr += resizebar_style.height + margin_style.width;
-    }
-    *height_ptr += 2 * border_style.width;
-
-    *width_ptr += 2 * border_style.width;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
-{
-    bs_dllist_node_t *dlnode_ptr;
-
-    if (!window_ptr->maximized &&
-        NULL == window_ptr->pending_updates.head_ptr) {
-        wlmtk_window_get_size(window_ptr,
-                              &window_ptr->organic_size.width,
-                              &window_ptr->organic_size.height);
-        return;
-    }
-
-    while (NULL != (dlnode_ptr = window_ptr->pending_updates.head_ptr)) {
-        wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmtk_pending_update_t, dlnode);
-
-        int32_t delta = pending_update_ptr->serial - serial;
-        if (0 < delta) break;
-
-        if (pending_update_ptr->serial == serial) {
-            if (window_ptr->content_ptr->committed_width !=
-                pending_update_ptr->width) {
-                bs_log(BS_ERROR, "FIXME: width mismatch!");
-            }
-            if (window_ptr->content_ptr->committed_height !=
-                pending_update_ptr->height) {
-                bs_log(BS_ERROR, "FIXME: height mismatch!");
-            }
-        }
-
-        wlmtk_element_set_position(
-            wlmtk_window_element(window_ptr),
-            pending_update_ptr->x,
-            pending_update_ptr->y);
-        _wlmtk_window_release_update(window_ptr, pending_update_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_set_title(
-    wlmtk_window_t *window_ptr,
-    const char *title_ptr)
-{
-    char *new_title_ptr = NULL;
-    if (NULL != title_ptr) {
-        new_title_ptr = logged_strdup(title_ptr);
-        BS_ASSERT(NULL != new_title_ptr);
-    } else {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "Unnamed window %p", window_ptr);
-        new_title_ptr = logged_strdup(buf);
-        BS_ASSERT(NULL != new_title_ptr);
-    }
-
-    if (NULL != window_ptr->title_ptr) {
-        if (0 == strcmp(window_ptr->title_ptr, new_title_ptr)) {
-            free(new_title_ptr);
-            return;
-        }
-        free(window_ptr->title_ptr);
-    }
-    window_ptr->title_ptr = new_title_ptr;
-
-    if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_titlebar_set_title(window_ptr->titlebar_ptr,
-                                 window_ptr->title_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr)
-{
-    BS_ASSERT(NULL != window_ptr->title_ptr);
-    return window_ptr->title_ptr;
+    window_ptr->vmt.set_activated(window_ptr, activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -410,11 +321,41 @@ void wlmtk_window_set_server_side_decorated(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_set_activated(
+void wlmtk_window_set_title(
     wlmtk_window_t *window_ptr,
-    bool activated)
+    const char *title_ptr)
 {
-    window_ptr->vmt.set_activated(window_ptr, activated);
+    char *new_title_ptr = NULL;
+    if (NULL != title_ptr) {
+        new_title_ptr = logged_strdup(title_ptr);
+        BS_ASSERT(NULL != new_title_ptr);
+    } else {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Unnamed window %p", window_ptr);
+        new_title_ptr = logged_strdup(buf);
+        BS_ASSERT(NULL != new_title_ptr);
+    }
+
+    if (NULL != window_ptr->title_ptr) {
+        if (0 == strcmp(window_ptr->title_ptr, new_title_ptr)) {
+            free(new_title_ptr);
+            return;
+        }
+        free(window_ptr->title_ptr);
+    }
+    window_ptr->title_ptr = new_title_ptr;
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        wlmtk_titlebar_set_title(window_ptr->titlebar_ptr,
+                                 window_ptr->title_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(NULL != window_ptr->title_ptr);
+    return window_ptr->title_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -427,73 +368,6 @@ void wlmtk_window_request_close(wlmtk_window_t *window_ptr)
 void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr)
 {
     window_ptr->vmt.request_minimize(window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
-{
-    window_ptr->vmt.request_move(window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
-                                 uint32_t edges)
-{
-    window_ptr->vmt.request_resize(window_ptr, edges);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_set_position(wlmtk_window_t *window_ptr, int x, int y)
-{
-    window_ptr->organic_size.x = x;
-    window_ptr->organic_size.y = y;
-    wlmtk_element_set_position(wlmtk_window_element(window_ptr), x, y);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_request_size(
-    wlmtk_window_t *window_ptr,
-    int width,
-    int height)
-{
-    // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
-    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
-
-    // TODO(kaeser@gubbe.ch): For client content (eg. a wlr_surface), setting
-    // the size is an asynchronous operation and should be handled as such.
-    // Meaning: In example of resizing at the top-left corner, we'll want to
-    // request the content to adjust size, but wait with adjusting the
-    // content position until the size adjustment is applied. This implies we
-    // may need to combine the request_size and set_position methods for window.
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height)
-{
-    window_ptr->vmt.request_position_and_size(
-        window_ptr, x, y, width, height);
-
-    window_ptr->organic_size.x = x;
-    window_ptr->organic_size.y = y;
-    window_ptr->organic_size.width = width;
-    window_ptr->organic_size.height = height;
-}
-
-/* ------------------------------------------------------------------------- */
-struct wlr_box wlmtk_window_get_position_and_size(
-    wlmtk_window_t *window_ptr)
-{
-    struct wlr_box box;
-
-    wlmtk_element_get_position(
-        wlmtk_window_element(window_ptr), &box.x, &box.y);
-    wlmtk_window_get_size(window_ptr, &box.width, &box.height);
-    return box;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -521,6 +395,132 @@ void wlmtk_window_request_maximize(
 bool wlmtk_window_maximized(wlmtk_window_t *window_ptr)
 {
     return window_ptr->maximized;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
+{
+    window_ptr->vmt.request_move(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
+                                 uint32_t edges)
+{
+    window_ptr->vmt.request_resize(window_ptr, edges);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_position(wlmtk_window_t *window_ptr, int x, int y)
+{
+    window_ptr->organic_size.x = x;
+    window_ptr->organic_size.y = y;
+    wlmtk_element_set_position(wlmtk_window_element(window_ptr), x, y);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_get_size(
+    wlmtk_window_t *window_ptr,
+    int *width_ptr,
+    int *height_ptr)
+{
+    // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
+    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        *height_ptr += titlebar_style.height + margin_style.width;
+    }
+    if (NULL != window_ptr->resizebar_ptr) {
+        *height_ptr += resizebar_style.height + margin_style.width;
+    }
+    *height_ptr += 2 * border_style.width;
+
+    *width_ptr += 2 * border_style.width;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_size(
+    wlmtk_window_t *window_ptr,
+    int width,
+    int height)
+{
+    // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
+    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
+
+    // TODO(kaeser@gubbe.ch): For client content (eg. a wlr_surface), setting
+    // the size is an asynchronous operation and should be handled as such.
+    // Meaning: In example of resizing at the top-left corner, we'll want to
+    // request the content to adjust size, but wait with adjusting the
+    // content position until the size adjustment is applied. This implies we
+    // may need to combine the request_size and set_position methods for window.
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_box wlmtk_window_get_position_and_size(
+    wlmtk_window_t *window_ptr)
+{
+    struct wlr_box box;
+
+    wlmtk_element_get_position(
+        wlmtk_window_element(window_ptr), &box.x, &box.y);
+    wlmtk_window_get_size(window_ptr, &box.width, &box.height);
+    return box;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_position_and_size(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height)
+{
+    window_ptr->vmt.request_position_and_size(
+        window_ptr, x, y, width, height);
+
+    window_ptr->organic_size.x = x;
+    window_ptr->organic_size.y = y;
+    window_ptr->organic_size.width = width;
+    window_ptr->organic_size.height = height;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
+{
+    bs_dllist_node_t *dlnode_ptr;
+
+    if (!window_ptr->maximized &&
+        NULL == window_ptr->pending_updates.head_ptr) {
+        wlmtk_window_get_size(window_ptr,
+                              &window_ptr->organic_size.width,
+                              &window_ptr->organic_size.height);
+        return;
+    }
+
+    while (NULL != (dlnode_ptr = window_ptr->pending_updates.head_ptr)) {
+        wlmtk_pending_update_t *pending_update_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmtk_pending_update_t, dlnode);
+
+        int32_t delta = pending_update_ptr->serial - serial;
+        if (0 < delta) break;
+
+        if (pending_update_ptr->serial == serial) {
+            if (window_ptr->content_ptr->committed_width !=
+                pending_update_ptr->width) {
+                bs_log(BS_ERROR, "FIXME: width mismatch!");
+            }
+            if (window_ptr->content_ptr->committed_height !=
+                pending_update_ptr->height) {
+                bs_log(BS_ERROR, "FIXME: height mismatch!");
+            }
+        }
+
+        wlmtk_element_set_position(
+            wlmtk_window_element(window_ptr),
+            pending_update_ptr->x,
+            pending_update_ptr->y);
+        _wlmtk_window_release_update(window_ptr, pending_update_ptr);
+    }
 }
 
 /* == Local (static) methods =============================================== */
