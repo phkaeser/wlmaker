@@ -56,6 +56,9 @@ struct _wlmtk_bordered_t {
 /**
  * Initializes the bordered element.
  *
+ * The bordered element positions the element within such that north-western
+ * corner is at (0, 0).
+ *
  * @param bordered_ptr
  * @param env_ptr
  * @param element_ptr

@@ -173,14 +173,15 @@ void _wlmtk_bordered_set_positions(wlmtk_bordered_t *bordered_ptr)
 
     if (NULL == bordered_ptr->western_border_rectangle_ptr) return;
 
-    wlmtk_element_get_position(bordered_ptr->element_ptr, &x_pos, &y_pos);
+    int margin = bordered_ptr->style.width;
+
     wlmtk_element_get_dimensions(
         bordered_ptr->element_ptr, &x1, &y1, &x2, &y2);
-    x_pos -= x1;
-    y_pos -= y1;
+    x_pos = -x1 + margin;
+    y_pos = -y1 + margin;
     int width = x2 - x1;
     int height = y2 - y1;
-    int margin = bordered_ptr->style.width;
+    wlmtk_element_set_position(bordered_ptr->element_ptr, x_pos, y_pos);
 
     wlmtk_element_set_position(
         wlmtk_rectangle_element(bordered_ptr->northern_border_rectangle_ptr),
@@ -259,16 +260,16 @@ void test_init_fini(bs_test_t *test_ptr)
     // Positions of border elements.
     test_rectangle_pos(
         test_ptr, bordered.northern_border_rectangle_ptr,
-        -12, -6, 104, 2);
+        0, 0, 104, 2);
     test_rectangle_pos(
         test_ptr, bordered.eastern_border_rectangle_ptr,
-        90, -4, 2, 20);
+        102, 2, 2, 20);
     test_rectangle_pos(
         test_ptr, bordered.southern_border_rectangle_ptr,
-        -12, 16, 104, 2);
+        0, 22, 104, 2);
     test_rectangle_pos(
         test_ptr, bordered.western_border_rectangle_ptr,
-        -12, -4, 2, 20);
+        0, 2, 2, 20);
 
     // Update layout, test updated positions.
     fe_ptr->dimensions.width = 200;
@@ -276,16 +277,16 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_container_update_layout(&bordered.super_container);
     test_rectangle_pos(
         test_ptr, bordered.northern_border_rectangle_ptr,
-        -12, -6, 204, 2);
+        0, 0, 204, 2);
     test_rectangle_pos(
         test_ptr, bordered.eastern_border_rectangle_ptr,
-        190, -4, 2, 120);
+        202, 2, 2, 120);
     test_rectangle_pos(
         test_ptr, bordered.southern_border_rectangle_ptr,
-        -12, 116, 204, 2);
+        0, 122, 204, 2);
     test_rectangle_pos(
         test_ptr, bordered.western_border_rectangle_ptr,
-        -12, -4, 2, 120);
+        0, 2, 2, 120);
 
     wlmtk_bordered_fini(&bordered);
 
