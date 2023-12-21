@@ -194,6 +194,16 @@ void wlmtk_window_request_maximize(
 bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
 
 /**
+ * Sets the window's position. This is a synchronous operation.
+ *
+ * Updates the position in @ref wlmtk_window_t::organic_size.
+ * @param window_ptr
+ * @param x
+ * @param y
+ */
+void wlmtk_window_set_position(wlmtk_window_t *window_ptr, int x, int y);
+
+/**
  * Requests a new size for the window, including potential decorations.
  *
  * This may be implemented as an asynchronous operation.

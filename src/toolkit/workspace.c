@@ -498,8 +498,8 @@ bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
         workspace_ptr->motion_y;
 
-    wlmtk_element_set_position(
-        wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
+    wlmtk_window_set_position(
+        workspace_ptr->grabbed_window_ptr,
         workspace_ptr->initial_x + rel_x,
         workspace_ptr->initial_y + rel_y);
 
@@ -901,7 +901,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw1_ptr->fake_content_ptr->content, 0, 100, 100);
-    wlmtk_element_set_position(wlmtk_window_element(fw1_ptr->window_ptr), 0, 0);
+    wlmtk_window_set_position(fw1_ptr->window_ptr, 0, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
 
     // Window 1 is mapped => it's activated.
@@ -912,7 +912,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
     wlmtk_content_commit_size(&fw2_ptr->fake_content_ptr->content, 0, 100, 100);
-    wlmtk_element_set_position(wlmtk_window_element(fw2_ptr->window_ptr), 200, 0);
+    wlmtk_window_set_position(fw2_ptr->window_ptr, 200, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
     wlmtk_workspace_map_window(workspace_ptr, fw2_ptr->window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);

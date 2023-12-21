@@ -289,8 +289,12 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 
     if (!window_ptr->maximized &&
         NULL == window_ptr->pending_updates.head_ptr) {
-        window_ptr->organic_size = wlmtk_element_get_dimensions_box(
+        // The element's dimensions does not matter for window positioning,
+        // thus only store width & height.
+        struct wlr_box box = wlmtk_element_get_dimensions_box(
             wlmtk_window_element(window_ptr));
+        window_ptr->organic_size.width = box.width;
+        window_ptr->organic_size.height = box.height;
         return;
     }
 
@@ -442,6 +446,14 @@ void wlmtk_window_request_resize(wlmtk_window_t *window_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_set_position(wlmtk_window_t *window_ptr, int x, int y)
+{
+    window_ptr->organic_size.x = x;
+    window_ptr->organic_size.y = y;
+    wlmtk_element_set_position(wlmtk_window_element(window_ptr), x, y);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
     int width,
@@ -473,6 +485,10 @@ void wlmtk_window_request_position_and_size(
     window_ptr->organic_size.y = y;
     window_ptr->organic_size.width = width;
     window_ptr->organic_size.height = height;
+
+    bs_log(BS_ERROR, "FIXME: %d, %d at %d x %d",
+           window_ptr->organic_size.x, window_ptr->organic_size.y,
+           window_ptr->organic_size.width, window_ptr->organic_size.height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1097,6 +1113,12 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
 
+    // Re-position the window.
+    wlmtk_window_set_position(window_ptr, 50, 30);
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
+
     // Maximize.
     wlmtk_window_request_maximize(window_ptr, true);
     wlmtk_fake_content_commit(fake_content_ptr);
@@ -1114,8 +1136,8 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_request_maximize(window_ptr, false);
     wlmtk_fake_content_commit(fake_content_ptr);
     box = wlmtk_window_get_position_and_size(window_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
