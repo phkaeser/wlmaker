@@ -841,10 +841,11 @@ void test_resize(bs_test_t *test_ptr)
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
-    wlmtk_content_commit_size(&fake_content_ptr->content, 1, 40, 20);
     wlmtk_window_t *window_ptr = wlmtk_window_create(
         NULL, &fake_content_ptr->content);
     BS_ASSERT(NULL != window_ptr);
+    wlmtk_window_request_position_and_size(window_ptr, 0, 0, 40, 20);
+    wlmtk_fake_content_commit(fake_content_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
@@ -862,10 +863,10 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
-    BS_TEST_VERIFY_EQ(test_ptr, 39, fake_content_ptr->requested_width);
-    BS_TEST_VERIFY_EQ(test_ptr, 18, fake_content_ptr->requested_height);
+    BS_TEST_VERIFY_EQ(test_ptr, 37, fake_content_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, fake_content_ptr->requested_height);
     // This updates for the given serial.
-    wlmtk_content_commit_size(&fake_content_ptr->content, 1, 39, 18);
+    wlmtk_fake_content_commit(fake_content_ptr);
     wlmtk_window_get_size(window_ptr, &width, &height);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);

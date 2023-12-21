@@ -270,6 +270,16 @@ void wlmtk_window_get_size(
 {
     // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
     wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        *height_ptr += titlebar_style.height + margin_style.width;
+    }
+    if (NULL != window_ptr->resizebar_ptr) {
+        *height_ptr += resizebar_style.height + margin_style.width;
+    }
+    *height_ptr += 2 * border_style.width;
+
+    *width_ptr += 2 * border_style.width;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -494,15 +504,8 @@ void wlmtk_window_request_maximize(
         box = window_ptr->organic_size;
     }
 
-    uint32_t serial = wlmtk_content_request_size(
-        window_ptr->content_ptr, box.width, box.height);
-    wlmtk_pending_update_t *pending_update_ptr =
-        _wlmtk_window_prepare_update(window_ptr);
-    pending_update_ptr->serial = serial;
-    pending_update_ptr->x = box.x;
-    pending_update_ptr->y = box.y;
-    pending_update_ptr->width = box.width;
-    pending_update_ptr->height = box.height;
+    _wlmtk_window_request_position_and_size(
+        window_ptr, box.x, box.y, box.width, box.height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -738,6 +741,18 @@ void _wlmtk_window_request_position_and_size(
     int width,
     int height)
 {
+    // Correct for borders, margin and decoration.
+    if (NULL != window_ptr->titlebar_ptr) {
+        height -= titlebar_style.height + margin_style.width;
+    }
+    if (NULL != window_ptr->resizebar_ptr) {
+        height -= resizebar_style.height + margin_style.width;
+    }
+    height -= 2 * border_style.width;
+    width -= 2 * border_style.width;
+    height = BS_MAX(0, height);
+    width = BS_MAX(0, width);
+
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
 
