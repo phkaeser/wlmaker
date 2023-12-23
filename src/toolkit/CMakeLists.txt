@@ -31,6 +31,7 @@ SET(PUBLIC_HEADER_FILES
   env.h
   fsm.h
   input.h
+  surface.h
   rectangle.h
   resizebar.h
   resizebar_area.h
@@ -53,6 +54,7 @@ TARGET_SOURCES(toolkit PRIVATE
   fsm.c
   gfxbuf.c
   primitives.c
+  surface.c
   rectangle.c
   resizebar.c
   resizebar_area.c

@@ -1,8 +1,6 @@
 /* ========================================================================= */
 /**
- * @file toolkit.h
- *
- * See @ref toolkit_page for documentation.
+ * @file surface.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -19,45 +17,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMTK_TOOLKIT_H__
-#define __WLMTK_TOOLKIT_H__
-
-#include "gfxbuf.h"
-#include "primitives.h"
-#include "style.h"
-#include "util.h"
+#ifndef __WLMTK_SURFACE_H__
+#define __WLMTK_SURFACE_H__
 
 #include <libbase/libbase.h>
-#include <wayland-server.h>
 
-#include "bordered.h"
-#include "box.h"
-#include "buffer.h"
-#include "button.h"
-#include "container.h"
-#include "content.h"
-#include "element.h"
 #include "env.h"
-#include "fsm.h"
-#include "input.h"
-#include "surface.h"
-#include "rectangle.h"
-#include "resizebar.h"
-#include "resizebar_area.h"
-#include "titlebar.h"
-#include "titlebar_button.h"
-#include "titlebar_title.h"
-#include "window.h"
-#include "workspace.h"
+
+/** Forward declaration. */
+struct wlr_surface;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: State of a toolkit's WLR surface. */
+typedef struct _wlmtk_surface_t wlmtk_surface_t;
+
+/**
+ * Creates a surface.
+ *
+ * @param wlr_surface_ptr
+ * @param env_ptr
+ */
+wlmtk_surface_t *wlmtk_surface_create(
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the surface.
+ *
+ * @param surface_ptr
+ */
+void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_surface_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMTK_TOOLKIT_H__ */
-/* == End of toolkit.h ===================================================== */
+#endif /* __WLMTK_SURFACE_H__ */
+/* == End of surface.h ===================================================== */
