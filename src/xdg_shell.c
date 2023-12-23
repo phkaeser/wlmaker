@@ -133,7 +133,8 @@ void handle_new_surface(struct wl_listener *listener_ptr,
             break;
         }
         path_exe[rv] = '\0';
-        if (0 == strcmp(path_exe, "/usr/bin/foot")) {
+        if (0 == strcmp(path_exe, "/usr/bin/foot") ||
+            0 == strcmp(path_exe, "/opt/google/chrome/chrome")) {
             wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
                 wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
             bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
