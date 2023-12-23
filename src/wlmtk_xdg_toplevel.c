@@ -37,6 +37,8 @@ typedef struct {
 
     /** Listener for the `destroy` signal of the `wlr_xdg_surface::events`. */
     struct wl_listener        destroy_listener;
+    /** Listener for the `new_popup` signal of the `wlr_xdg_surface`. */
+    struct wl_listener        new_popup_listener;
     /** Listener for the `map` signal of the `wlr_surface`. */
     struct wl_listener        surface_map_listener;
     /** Listener for the `unmap` signal of the `wlr_surface`. */
@@ -61,6 +63,9 @@ static void xdg_toplevel_content_destroy(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr);
 
 static void handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_surface_map(
@@ -165,6 +170,10 @@ wlmtk_xdg_toplevel_content_t *xdg_toplevel_content_create(
         &xdg_tl_content_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->events.new_popup,
+        &xdg_tl_content_ptr->new_popup_listener,
+        handle_new_popup);
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.map,
         &xdg_tl_content_ptr->surface_map_listener,
         handle_surface_map);
@@ -217,6 +226,7 @@ void xdg_toplevel_content_destroy(
     wl_list_remove(&xdg_tl_content_ptr->surface_commit_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_map_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->surface_unmap_listener.link);
+    wl_list_remove(&xdg_tl_content_ptr->new_popup_listener.link);
     wl_list_remove(&xdg_tl_content_ptr->destroy_listener.link);
 
     wlmtk_content_fini(&xdg_tl_content_ptr->super_content);
@@ -356,6 +366,24 @@ void handle_destroy(struct wl_listener *listener_ptr,
         listener_ptr, wlmtk_xdg_toplevel_content_t, destroy_listener);
     // Destroy the window -> also destroys the content.
     wlmtk_window_destroy(xdg_tl_content_ptr->super_content.window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `new_popup` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_new_popup(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_xdg_toplevel_content_t, new_popup_listener);
+
+    bs_log(BS_WARNING, "FIXME: wlmtk_xdg_toplevel %p, New popup %p",
+           xdg_tl_content_ptr, data_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
