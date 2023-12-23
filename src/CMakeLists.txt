@@ -40,6 +40,7 @@ SET(SOURCES
   tile_container.c
   titlebar.c
   view.c
+  wlmtk_xdg_popup.c
   wlmtk_xdg_toplevel.c
   workspace.c
   xdg_decoration.c
@@ -74,6 +75,7 @@ SET(HEADERS
   tile.h
   titlebar.h
   view.h
+  wlmtk_xdg_popup.h
   wlmtk_xdg_toplevel.h
   workspace.h
   xdg_decoration.h
