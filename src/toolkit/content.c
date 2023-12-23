@@ -47,14 +47,14 @@ static bool element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
-    __UNUSED__ uint32_t time_msec);
+    uint32_t time_msec);
 static bool element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
 /* == Data ================================================================= */
 
-/** Method table for the container's virtual methods. */
+/** Method table for the element's virtual methods. */
 static const wlmtk_element_vmt_t content_element_vmt = {
     .get_dimensions = element_get_dimensions,
     .get_pointer_area = element_get_pointer_area,
