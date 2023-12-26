@@ -102,6 +102,12 @@ void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr)
     free(surface_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_surface_element(wlmtk_surface_t *surface_ptr)
+{
+    return &surface_ptr->super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -316,6 +322,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
 
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, surface_ptr);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &surface_ptr->super_element,
+        wlmtk_surface_element(surface_ptr));
 
     wlmtk_surface_destroy(surface_ptr);
 }

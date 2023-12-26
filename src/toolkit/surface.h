@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 
+#include "element.h"
 #include "env.h"
 
 /** Forward declaration. */
@@ -50,6 +51,15 @@ wlmtk_surface_t *wlmtk_surface_create(
  * @param surface_ptr
  */
 void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr);
+
+/**
+ * Returns a pointer to the surface's element superclass instance.
+ *
+ * @param surface_ptr
+ *
+ * @return Pointer to the corresponding @ref wlmtk_element_t.
+ */
+wlmtk_element_t *wlmtk_surface_element(wlmtk_surface_t *surface_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];

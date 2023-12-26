@@ -39,6 +39,7 @@ SET(PUBLIC_HEADER_FILES
   titlebar_button.h
   titlebar_title.h
   toplevel.h
+  window.h
   workspace.h)
 
 ADD_LIBRARY(toolkit STATIC)
@@ -61,6 +62,7 @@ TARGET_SOURCES(toolkit PRIVATE
   titlebar.c
   titlebar_button.c
   titlebar_title.c
+  window.c
   util.c
   toplevel.c
   workspace.c)
