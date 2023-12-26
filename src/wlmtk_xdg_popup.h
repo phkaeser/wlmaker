@@ -33,11 +33,11 @@ extern "C" {
  * Creates a popup.
  *
  * @param wlr_xdg_popup_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  */
 void wlmtk_create_popup(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_toplevel_t *toplevel_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -21,7 +21,7 @@
 #define __WLMTK_WORKSPACE_H__
 
 #include "container.h"
-#include "window.h"
+#include "toplevel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,7 +68,7 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
                                  const struct wlr_box *extents_ptr);
 
 /**
- * Returns the extents of the workspace available for maximized windows.
+ * Returns the extents of the workspace available for maximized toplevels.
  *
  * @param workspace_ptr
  *
@@ -78,22 +78,22 @@ struct wlr_box wlmtk_workspace_get_maximize_extents(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Maps the window: Adds it to the workspace container and makes it visible.
+ * Maps the toplevel: Adds it to the workspace container and makes it visible.
  *
  * @param workspace_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  */
-void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
-                                wlmtk_window_t *window_ptr);
+void wlmtk_workspace_map_toplevel(wlmtk_workspace_t *workspace_ptr,
+                                  wlmtk_toplevel_t *toplevel_ptr);
 
 /**
- * Unmaps the window: Sets it as invisible and removes it from the container.
+ * Unmaps the toplevel: Sets it as invisible and removes it from the container.
  *
  * @param workspace_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  */
-void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
-                                  wlmtk_window_t *window_ptr);
+void wlmtk_workspace_unmap_toplevel(wlmtk_workspace_t *workspace_ptr,
+                                    wlmtk_toplevel_t *toplevel_ptr);
 
 /**
  * Type conversion: Returns the @ref wlmtk_workspace_t from the container_ptr
@@ -145,36 +145,36 @@ void wlmtk_workspace_button(
     const struct wlr_pointer_button_event *event_ptr);
 
 /**
- * Initiates a 'move' for the window.
+ * Initiates a 'move' for the toplevel.
  *
  * @param workspace_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  */
-void wlmtk_workspace_begin_window_move(
+void wlmtk_workspace_begin_toplevel_move(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_toplevel_t *toplevel_ptr);
 
 /**
- * Initiates a 'resize' for the window.
+ * Initiates a 'resize' for the toplevel.
  *
  * @param workspace_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  * @param edges
  */
-void wlmtk_workspace_begin_window_resize(
+void wlmtk_workspace_begin_toplevel_resize(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr,
+    wlmtk_toplevel_t *toplevel_ptr,
     uint32_t edges);
 
-/** Acticates `window_ptr`. Will de-activate an earlier window. */
-void wlmtk_workspace_activate_window(
+/** Acticates `toplevel_ptr`. Will de-activate an earlier toplevel. */
+void wlmtk_workspace_activate_toplevel(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_toplevel_t *toplevel_ptr);
 
-/** Raises `window_ptr`: Will show it atop all other windows. */
-void wlmtk_workspace_raise_window(
+/** Raises `toplevel_ptr`: Will show it atop all other toplevels. */
+void wlmtk_workspace_raise_toplevel(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_toplevel_t *toplevel_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

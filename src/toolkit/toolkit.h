@@ -47,7 +47,7 @@
 #include "titlebar.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
-#include "window.h"
+#include "toplevel.h"
 #include "workspace.h"
 
 #ifdef __cplusplus

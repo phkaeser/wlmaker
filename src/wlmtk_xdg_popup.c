@@ -27,7 +27,7 @@
 /* ------------------------------------------------------------------------- */
 void wlmtk_create_popup(
     __UNUSED__ struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    __UNUSED__ wlmtk_window_t *window_ptr)
+    __UNUSED__ wlmtk_toplevel_t *toplevel_ptr)
 {
 }
 

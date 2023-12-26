@@ -25,9 +25,8 @@
 /** Forward declaration: Element of the resizebar. */
 typedef struct _wlmtk_resizebar_area_t wlmtk_resizebar_area_t ;
 
-
 #include "resizebar.h"
-#include "window.h"
+#include "toplevel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,14 +35,14 @@ extern "C" {
 /**
  * Creates a resizebar button.
  *
- * @param window_ptr
+ * @param toplevel_ptr
  * @param env_ptr
  * @param edges
  *
  * @return Pointer to the resizebar button.
  */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
-    wlmtk_window_t *window_ptr,
+    wlmtk_toplevel_t *toplevel_ptr,
     wlmtk_env_t *env_ptr,
     uint32_t edges);
 

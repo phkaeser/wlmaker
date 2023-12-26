@@ -81,11 +81,11 @@ class Workspace {
   Container *create()
   void destroy()
 
-  map_window(Window*)
-  unmap_window(Window*)
+  map_toplevel(Toplevel*)
+  unmap_toplevel(Toplevel*)
 
-  activate_window(Window*)
-  begin_window_move(Window*)
+  activate_toplevel(Toplevel*)
+  begin_toplevel_move(Toplevel*)
 
   map_layer_element(LayerElement *, layer)
   unmap_layer_element(LayerElement *, layer)
@@ -99,6 +99,19 @@ class Box {
 }
 Container <|-- Box
 
+
+
+abstract class Surface {
+}
+
+abstract class Window {
+  private Container super_container;
+
+  Surface surface;
+  Surface popups[];
+}
+
+
 abstract class Content {
   Element super_element
 
@@ -106,7 +119,7 @@ abstract class Content {
   fini()
   struct wlr_scene_node *create_scene_node()
   Element *element()
-  -set_window(Window*)
+  -set_toplevel(Toplevel*)
 
   {abstract}#void get_size(int *, int *)
   {abstract}#void set_size(int, int)
@@ -116,7 +129,7 @@ abstract class Content {
 }
 Element <|-- Content
 note right of Content
-  Interface for Window contents.
+  Interface for Toplevel contents.
   A surface (or... buffer? ...). Ultimately wraps a node,
   thus may be an element.
 end note
@@ -152,12 +165,12 @@ class Button {
 }
 Buffer <|-- Button
 
-class Window {
+class Toplevel {
   Box super_box
-  Content *content
+  Window *content
   TitleBar *title_bar
 
-  Window *create(Content*)
+  Toplevel *create(Content*)
   destroy()
   Element *element()
 
@@ -166,7 +179,7 @@ class Window {
   get_size(int *, int *)
   set_size(int, int)
 }
-Box *-- Window
+Box *-- Toplevel
 
 class TitleBar {
   Box super_box
@@ -220,56 +233,56 @@ class Cursor {
 
       => so yes, what will this do when mapped?
 
-  * Window::create(surface)
-    * registers the window for workspace
+  * Toplevel::create(surface)
+    * registers the toplevel for workspace
 
-    * creates the container, with parent of window element
+    * creates the container, with parent of toplevel element
     * if decoration:
 
 
   * will setup listeners for the various events, ...
     * request maximize
     * request move
-    * request show window menu
+    * request show toplevel menu
     * set title
     * ...
 
 
   set title handler:
 
-  * window::set_title
+  * toplevel::set_title
 
   request maximize handler:
-  * window::request_maximize
-    * window::set_maximized
+  * toplevel::request_maximize
+    * toplevel::set_maximized
       * internally: get view from workspace, ... set_size
       * callback to surface (if set): set_maximized
 
 
   upon surface::map
 
-  * workspace::add_window(window)   (unsure: do we need this?)
-    => should set "container" of window parent... element to workspace::container
+  * workspace::add_toplevel(toplevel)   (unsure: do we need this?)
+    => should set "container" of toplevel parent... element to workspace::container
     (ie. set_parent(...); and add "element" to "container")
 
-  * workspace::map_window(window)
-    => this should add window to the set of workspace::mapped_windows
-    => window element->container -> map_element(element)
+  * workspace::map_toplevel(toplevel)
+    => this should add toplevel to the set of workspace::mapped_toplevels
+    => toplevel element->container -> map_element(element)
       (expects the container to be mapped)
 
-    => will call map(node?) on window element
+    => will call map(node?) on toplevel element
       - is implemented in Container:
       - create a scene tree (from parents node) oc reparent (from parent)
       - calls map for every item in container
 
   upon surface::unmap
-  * workspace::unmap_window
+  * workspace::unmap_toplevel
 
-    => window element->container -> unmap_element(element)
-    => will call unmap() on window element
+    => toplevel element->container -> unmap_element(element)
+    => will call unmap() on toplevel element
       => destroy the node
 
-  * workspace::remove_window(window)   (do we need this?)
+  * workspace::remove_toplevel(toplevel)   (do we need this?)
 
 
 There is a click ("pointer button event") -> goes to workspace.

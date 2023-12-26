@@ -23,7 +23,7 @@
 #include "buffer.h"
 #include "gfxbuf.h"
 #include "primitives.h"
-#include "window.h"
+#include "toplevel.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
@@ -35,8 +35,8 @@
 struct _wlmtk_titlebar_title_t {
     /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
-    /** Pointer to the window the title element belongs to. */
-    wlmtk_window_t            *window_ptr;
+    /** Pointer to the toplevel the title element belongs to. */
+    wlmtk_toplevel_t          *toplevel_ptr;
 
     /** The drawn title, when focussed. */
     struct wlr_buffer         *focussed_wlr_buffer_ptr;
@@ -74,12 +74,12 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_toplevel_t *toplevel_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_title_t));
     if (NULL == titlebar_title_ptr) return NULL;
-    titlebar_title_ptr->window_ptr = window_ptr;
+    titlebar_title_ptr->toplevel_ptr = toplevel_ptr;
 
     if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer, env_ptr)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
@@ -183,7 +183,7 @@ bool _wlmtk_titlebar_title_element_pointer_button(
 
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
-        wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
+        wlmtk_toplevel_request_move(titlebar_title_ptr->toplevel_ptr);
         break;
 
     default:  // Can be ignored.
@@ -282,9 +282,9 @@ void test_title(bs_test_t *test_ptr)
     bs_gfxbuf_clear(focussed_gfxbuf_ptr, 0xff2020c0);
     bs_gfxbuf_clear(blurred_gfxbuf_ptr, 0xff404040);
 
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_fake_toplevel_t *fake_toplevel_ptr = wlmtk_fake_toplevel_create();
     wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
-        NULL, fake_window_ptr->window_ptr);
+        NULL, fake_toplevel_ptr->toplevel_ptr);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
         titlebar_title_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_title_ptr);
@@ -328,17 +328,17 @@ void test_title(bs_test_t *test_ptr)
         "toolkit/title_blurred_short.png");
 
     // Pressing a button should trigger a move.
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_move_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_toplevel_ptr->request_move_called);
     wlmtk_button_event_t button = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
     };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(element_ptr,  &button));
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_move_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_toplevel_ptr->request_move_called);
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_fake_window_destroy(fake_window_ptr);
+    wlmtk_fake_toplevel_destroy(fake_toplevel_ptr);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
 }

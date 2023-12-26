@@ -27,7 +27,7 @@
 #include "primitives.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
-#include "window.h"
+#include "toplevel.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
@@ -88,14 +88,14 @@ static const wlmtk_element_vmt_t titlebar_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_window_t *window_ptr,
+    wlmtk_toplevel_t *toplevel_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
     memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
-    titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
+    titlebar_ptr->title_ptr = wlmtk_toplevel_get_title(toplevel_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box, env_ptr,
                         WLMTK_BOX_HORIZONTAL,
@@ -108,7 +108,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
         &titlebar_element_vmt);
 
     titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(
-        env_ptr, window_ptr);
+        env_ptr, toplevel_ptr);
     if (NULL == titlebar_ptr->titlebar_title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
@@ -119,8 +119,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
         env_ptr,
-        wlmtk_window_request_minimize,
-        window_ptr,
+        wlmtk_toplevel_request_minimize,
+        toplevel_ptr,
         wlmaker_primitives_draw_minimize_icon);
     if (NULL == titlebar_ptr->minimize_button_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
@@ -132,8 +132,8 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
 
     titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
         env_ptr,
-        wlmtk_window_request_close,
-        window_ptr,
+        wlmtk_toplevel_request_close,
+        toplevel_ptr,
         wlmaker_primitives_draw_close_icon);
     if (NULL == titlebar_ptr->close_button_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
@@ -384,24 +384,24 @@ const bs_test_case_t wlmtk_titlebar_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_fake_toplevel_t *fake_toplevel_ptr = wlmtk_fake_toplevel_create();
     wlmtk_titlebar_style_t style = {};
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
-        NULL, fake_window_ptr->window_ptr, &style);
+        NULL, fake_toplevel_ptr->toplevel_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
-    wlmtk_fake_window_destroy(fake_window_ptr);
+    wlmtk_fake_toplevel_destroy(fake_toplevel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests titlebar with variable width. */
 void test_variable_width(bs_test_t *test_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_fake_toplevel_t *fake_toplevel_ptr = wlmtk_fake_toplevel_create();
     wlmtk_titlebar_style_t style = { .height = 22, .margin_style = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
-        NULL, fake_window_ptr->window_ptr, &style);
+        NULL, fake_toplevel_ptr->toplevel_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.
@@ -447,7 +447,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 66, width);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
-    wlmtk_fake_window_destroy(fake_window_ptr);
+    wlmtk_fake_toplevel_destroy(fake_toplevel_ptr);
 }
 
 /* == End of titlebar.c ==================================================== */

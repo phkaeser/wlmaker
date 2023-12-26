@@ -26,7 +26,7 @@ typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 #include "element.h"
 
 #include "primitives.h"
-#include "window.h"
+#include "toplevel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,10 +51,10 @@ typedef struct {
 } wlmtk_titlebar_style_t;
 
 /**
- * Creates a title bar, suitable as a window title.
+ * Creates a title bar, suitable as a toplevel title.
  *
  * @param env_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  * @param style_ptr
  *
  * @return Pointer to the title bar state, or NULL on error. Must be free'd
@@ -62,7 +62,7 @@ typedef struct {
  */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_window_t *window_ptr,
+    wlmtk_toplevel_t *toplevel_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /**

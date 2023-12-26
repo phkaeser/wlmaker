@@ -27,10 +27,9 @@ struct wlr_cursor;
 /** Forward declaration. */
 struct wlr_xcursor_manager;
 
-
 #include "element.h"
 #include "primitives.h"
-#include "window.h"
+#include "toplevel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,14 +53,14 @@ typedef struct {
  * Creates the resize bar.
  *
  * @param env_ptr
- * @param window_ptr
+ * @param toplevel_ptr
  * @param style_ptr
  *
  * @return Pointer to the resizebar state, or NULL on error.
  */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_window_t *window_ptr,
+    wlmtk_toplevel_t *toplevel_ptr,
     const wlmtk_resizebar_style_t *style_ptr);
 
 /**
