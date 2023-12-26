@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ENV_H__
-#define __ENV_H__
+#ifndef __WLMTK_ENV_H__
+#define __WLMTK_ENV_H__
 
 /** Forward declaration: Environment. */
 typedef struct _wlmtk_env_t wlmtk_env_t;
@@ -86,5 +86,5 @@ struct wlr_seat *wlmtk_env_wlr_seat(wlmtk_env_t *env_ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __ENV_H__ */
+#endif /* __WLMTK_ENV_H__ */
 /* == End of env.h ========================================================= */
