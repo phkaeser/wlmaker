@@ -74,14 +74,15 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_window_t window;
-    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
+    wlmtk_surface_t surface;
+    wlmtk_surface_init(&surface, NULL, NULL);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_window_init(&window, surface_ptr, NULL));
+        wlmtk_window_init(&window, &surface, NULL));
     wlmtk_window_fini(&window);
 
-    wlmtk_surface_destroy(surface_ptr);
+    wlmtk_surface_fini(&surface);
 }
 
 /* == End of window.c ====================================================== */

@@ -22,6 +22,11 @@
 
 #include <libbase/libbase.h>
 
+/** Forward declaration: State of a toolkit's WLR surface. */
+typedef struct _wlmtk_surface_t wlmtk_surface_t;
+/** Forward declaration: Virtual method table of the toolkit's WLR surface. */
+typedef struct _wlmtk_surface_vmt_t wlmtk_surface_vmt_t;
+
 #include "element.h"
 #include "env.h"
 
@@ -32,25 +37,68 @@ struct wlr_surface;
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration: State of a toolkit's WLR surface. */
-typedef struct _wlmtk_surface_t wlmtk_surface_t;
+/** Virtual method table of the surface. */
+struct _wlmtk_surface_vmt_t {
+    /** Abstract: Requests width and height of the surface. Returns serial. */
+    uint32_t (*request_size)(wlmtk_surface_t *surface_ptr,
+                             int width,
+                             int height);
+};
+
+/** State of a `struct wlr_surface`, encapsuled for toolkit. */
+struct _wlmtk_surface_t {
+    /** Super class of the surface: An element. */
+    wlmtk_element_t           super_element;
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+
+    /** The surface's virtual method table. */
+    wlmtk_surface_vmt_t       vmt;
+
+    /** The `struct wlr_surface` wrapped. */
+    struct wlr_surface        *wlr_surface_ptr;
+
+    /** Listener for the `commit` signal of the `wlr_surface_ptr`. */
+    struct wl_listener        surface_commit_listener;
+
+    /** Committed width of the surface, in pixels. */
+    int                       committed_width;
+    /** Committed height of the surface, in pixels. */
+    int                       committed_height;
+};
 
 /**
- * Creates a surface.
+ * Initializes the surface.
  *
+ * @param surface_ptr
  * @param wlr_surface_ptr
  * @param env_ptr
+ *
+ * @return true on success.
  */
-wlmtk_surface_t *wlmtk_surface_create(
+bool wlmtk_surface_init(
+    wlmtk_surface_t *surface_ptr,
     struct wlr_surface *wlr_surface_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
- * Destroys the surface.
+ * Un-initializes the surface.
  *
  * @param surface_ptr
  */
-void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr);
+void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
+
+/**
+ * Extends the surface's virtual methods.
+ *
+ * @param surface_ptr
+ * @param surface_vmt_ptr
+ *
+ * @return The earlier virtual method table.
+ */
+wlmtk_surface_vmt_t wlmtk_surface_extend(
+    wlmtk_surface_t *surface_ptr,
+    const wlmtk_surface_vmt_t *surface_vmt_ptr);
 
 /**
  * Returns a pointer to the surface's element superclass instance.
@@ -61,8 +109,59 @@ void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr);
  */
 wlmtk_element_t *wlmtk_surface_element(wlmtk_surface_t *surface_ptr);
 
+/**
+ * Virtual method: Request a new size and height for the surface.
+ *
+ * Wraps to @ref wlmtk_surface_vmt_t::request_size.
+ *
+ * @param surface_ptr
+ * @param width
+ * @param height
+ */
+static inline uint32_t wlmtk_surface_request_size(
+    wlmtk_surface_t *surface_ptr,
+    int width,
+    int height)
+{
+    return surface_ptr->vmt.request_size(surface_ptr, width, height);
+}
+
+/**
+ * Returns committed size of the surface.
+ *
+ * @param surface_ptr
+ * @param width_ptr
+ * @param height_ptr
+ */
+void wlmtk_surface_get_size(
+    wlmtk_surface_t *surface_ptr,
+    int *width_ptr,
+    int *height_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];
+
+/** Fake surface, useful for unit test. */
+typedef struct {
+    /** Superclass: surface. */
+    wlmtk_surface_t           surface;
+
+    /** Serial to return on next request_size call. */
+    uint32_t                  serial;
+    /** `width` argument eof last @ref wlmtk_surface_request_size call. */
+    int                       requested_width;
+    /** `height` argument of last @ref wlmtk_surface_request_size call. */
+    int                       requested_height;
+} wlmtk_fake_surface_t;
+
+/** Ctor for the fake surface.*/
+wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
+
+/** Dtor for the fake surface.*/
+void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr);
+
+/** Commits the earlier @ref wlmtk_surface_request_size data. */
+void wlmtk_fake_surface_commit(wlmtk_fake_surface_t *fake_surface_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
