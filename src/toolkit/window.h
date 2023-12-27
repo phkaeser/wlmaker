@@ -27,9 +27,9 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 
 #include "bordered.h"
 #include "box.h"
-#include "content.h"
 #include "element.h"
 #include "resizebar.h"
+#include "surface.h"
 #include "titlebar.h"
 
 #ifdef __cplusplus
@@ -37,17 +37,17 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a window for the given content.
+ * Creates a window for the given surface.
  *
  * @param env_ptr
- * @param content_ptr         Will take ownership of content_ptr.
+ * @param surface_ptr         Will take ownership of surface_ptr.
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
  */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr);
+    wlmtk_surface_t *surface_ptr);
 
 /**
  * Destroys the window.
@@ -147,7 +147,7 @@ void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
  * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
  *
  * This may be implemented as an asynchronous operation. Maximization will be
- * applied once the size change has been committed by the content.
+ * applied once the size change has been committed by the surface.
  *
  * @param window_ptr
  * @param maximized
@@ -254,8 +254,8 @@ void wlmtk_window_request_position_and_size(
  * Updates the window state to what was requested at the `serial`.
  *
  * Used for example when resizing a window from the top or left edges. In that
- * case, @ref wlmtk_content_request_size may be asynchronous and returns a
- * serial. The content is expected to call @ref wlmtk_window_serial with the
+ * case, @ref wlmtk_surface_request_size may be asynchronous and returns a
+ * serial. The surface is expected to call @ref wlmtk_window_serial with the
  * returned serial when the size is committed.
  * Only then, the corresponding positional update on the top/left edges are
  * supposed to be applied.
@@ -276,8 +276,8 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
 typedef struct {
     /** Window state. */
     wlmtk_window_t            *window_ptr;
-    /** Fake content, to manipulate the fake window's content. */
-    wlmtk_fake_content_t      *fake_content_ptr;
+    /** Fake surface, to manipulate the fake window's surface. */
+    wlmtk_fake_surface_t      *fake_surface_ptr;
 
     /** Argument to last @ref wlmtk_window_set_activated call. */
     bool                      activated;

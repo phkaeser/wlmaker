@@ -649,9 +649,9 @@ void test_map_unmap(bs_test_t *test_ptr)
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
@@ -663,7 +663,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(
         test_ptr,
         NULL,
-        fake_content_ptr->content.super_element.wlr_scene_node_ptr);
+        fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
@@ -674,7 +674,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
-        fake_content_ptr->content.super_element.wlr_scene_node_ptr);
+        fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_window_destroy(window_ptr);
@@ -750,9 +750,9 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -796,9 +796,9 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -840,12 +840,12 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_ASSERT(NULL != workspace_ptr);
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_window_request_position_and_size(window_ptr, 0, 0, 40, 20);
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
@@ -859,14 +859,14 @@ void test_resize(bs_test_t *test_ptr)
     // Starts a resize for the window. Will resize & move it...
     wlmtk_workspace_begin_window_resize(
         workspace_ptr, window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
-    fake_content_ptr->return_request_size = 1;  // The serial.
+    fake_surface_ptr->serial = 1;  // The serial.
     wlmtk_workspace_motion(workspace_ptr, 1, 2, 43);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(window_ptr)->y);
-    BS_TEST_VERIFY_EQ(test_ptr, 37, fake_content_ptr->requested_width);
-    BS_TEST_VERIFY_EQ(test_ptr, 16, fake_content_ptr->requested_height);
+    BS_TEST_VERIFY_EQ(test_ptr, 37, fake_surface_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, fake_surface_ptr->requested_height);
     // This updates for the given serial.
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
     wlmtk_window_get_size(window_ptr, &width, &height);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
@@ -900,7 +900,8 @@ void test_activate(bs_test_t *test_ptr)
 
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
-    wlmtk_content_commit_size(&fw1_ptr->fake_content_ptr->content, 0, 100, 100);
+    wlmtk_surface_request_size(&fw1_ptr->fake_surface_ptr->surface, 100, 100);
+    wlmtk_fake_surface_commit(fw1_ptr->fake_surface_ptr);
     wlmtk_window_set_position(fw1_ptr->window_ptr, 0, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
 
@@ -911,7 +912,8 @@ void test_activate(bs_test_t *test_ptr)
     // Window 2: from (200, 0) to (300, 100).
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
-    wlmtk_content_commit_size(&fw2_ptr->fake_content_ptr->content, 0, 100, 100);
+    wlmtk_surface_request_size(&fw2_ptr->fake_surface_ptr->surface, 100, 100);
+    wlmtk_fake_surface_commit(fw2_ptr->fake_surface_ptr);
     wlmtk_window_set_position(fw2_ptr->window_ptr, 200, 0);
     BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
     wlmtk_workspace_map_window(workspace_ptr, fw2_ptr->window_ptr);

@@ -26,9 +26,12 @@
 typedef struct _wlmtk_surface_t wlmtk_surface_t;
 /** Forward declaration: Virtual method table of the toolkit's WLR surface. */
 typedef struct _wlmtk_surface_vmt_t wlmtk_surface_vmt_t;
+/** Forward declaration: State of fake surface, for tests. */
+typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 
 #include "element.h"
 #include "env.h"
+#include "window.h"
 
 /** Forward declaration. */
 struct wlr_surface;
@@ -43,10 +46,17 @@ struct _wlmtk_surface_vmt_t {
     uint32_t (*request_size)(wlmtk_surface_t *surface_ptr,
                              int width,
                              int height);
+    /** Abstract: Requests the surface to close. */
+    void (*request_close)(wlmtk_surface_t *surface_ptr);
+    /** Abstract: Sets whether the surface is activated (keyboard focus). */
+    void (*set_activated)(wlmtk_surface_t *surface_ptr, bool activated);
 };
 
 /** State of a `struct wlr_surface`, encapsuled for toolkit. */
 struct _wlmtk_surface_t {
+    /** Temporary: Identifier, to disambiguate from XDG nodes. */
+    void                      *identifier_ptr;
+
     /** Super class of the surface: An element. */
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
@@ -55,17 +65,26 @@ struct _wlmtk_surface_t {
     /** The surface's virtual method table. */
     wlmtk_surface_vmt_t       vmt;
 
+    /**
+     * The window this surface belongs to. Will be set when creating
+     * the window.
+     */
+    wlmtk_window_t            *window_ptr;
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
-
-    /** Listener for the `commit` signal of the `wlr_surface_ptr`. */
-    struct wl_listener        surface_commit_listener;
 
     /** Committed width of the surface, in pixels. */
     int                       committed_width;
     /** Committed height of the surface, in pixels. */
     int                       committed_height;
 };
+
+/**
+ * Identifying pointer: Value unique to wlmtk_surface.
+ *
+ * TODO(kaeser@gubbe.ch): Remove, once migrated to toolkit.
+ */
+extern void *wlmtk_surface_identifier_ptr;
 
 /**
  * Initializes the surface.
@@ -87,6 +106,18 @@ bool wlmtk_surface_init(
  * @param surface_ptr
  */
 void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
+
+/**
+ * Sets the window for the surface.
+ *
+ * Private: Should only be called by Window ctor (a friend).
+ *
+ * @param surface_ptr
+ * @param window_ptr
+ */
+void wlmtk_surface_set_window(
+    wlmtk_surface_t *surface_ptr,
+    wlmtk_window_t *window_ptr);
 
 /**
  * Extends the surface's virtual methods.
@@ -126,6 +157,20 @@ static inline uint32_t wlmtk_surface_request_size(
     return surface_ptr->vmt.request_size(surface_ptr, width, height);
 }
 
+/** Wraps to @ref wlmtk_surface_vmt_t::request_close. */
+static inline void wlmtk_surface_request_close(wlmtk_surface_t *surface_ptr)
+{
+    surface_ptr->vmt.request_close(surface_ptr);
+}
+
+/** Wraps to @ref wlmtk_surface_vmt_t::set_activated. */
+static inline void wlmtk_surface_set_activated(
+    wlmtk_surface_t *surface_ptr,
+    bool activated)
+{
+    surface_ptr->vmt.set_activated(surface_ptr, activated);
+}
+
 /**
  * Returns committed size of the surface.
  *
@@ -138,11 +183,25 @@ void wlmtk_surface_get_size(
     int *width_ptr,
     int *height_ptr);
 
+/**
+ * Commits the given dimensions for the surface.
+ *
+ * @param surface_ptr
+ * @param serial
+ * @param width
+ * @param height
+ */
+void wlmtk_surface_commit_size(
+    wlmtk_surface_t *surface_ptr,
+    uint32_t serial,
+    int width,
+    int height);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];
 
 /** Fake surface, useful for unit test. */
-typedef struct {
+struct _wlmtk_fake_surface_t {
     /** Superclass: surface. */
     wlmtk_surface_t           surface;
 
@@ -152,7 +211,12 @@ typedef struct {
     int                       requested_width;
     /** `height` argument of last @ref wlmtk_surface_request_size call. */
     int                       requested_height;
-} wlmtk_fake_surface_t;
+
+    /** Whether @ref wlmtk_surface_request_close was called. */
+    bool                      request_close_called;
+    /** Argument of last @ref wlmtk_surface_set_activated call. */
+    bool                      activated;
+};
 
 /** Ctor for the fake surface.*/
 wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);

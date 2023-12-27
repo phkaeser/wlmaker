@@ -99,6 +99,22 @@ class Box {
 }
 Container <|-- Box
 
+abstract class Surface {
+  Element super_element
+  
+  Surface popups[]
+}
+
+
+class Toplevel {
+  Surface super_surface;
+  
+  request_close()
+  set_activated()
+}
+
+
+
 abstract class Content {
   Element super_element
 

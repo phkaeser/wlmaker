@@ -51,20 +51,20 @@ struct  _wlmtk_window_vmt_t {
                                       int x, int y, int width, int height);
 };
 
-/** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
+/** Pending positional updates for @ref wlmtk_window_t::surface_ptr. */
 typedef struct {
     /** Node within @ref wlmtk_window_t::pending_updates. */
     bs_dllist_node_t          dlnode;
     /** Serial of the update. */
     uint32_t                  serial;
-    /** Pending X position of the content. */
+    /** Pending X position of the surface. */
     int                       x;
-    /** Pending Y position of the content. */
+    /** Pending Y position of the surface. */
     int                       y;
-    /** Content's width that is to be committed at serial. */
-    unsigned                  width;
-    /** Content's hehight that is to be committed at serial. */
-    unsigned                  height;
+    /** Surface's width that is to be committed at serial. */
+    int                       width;
+    /** Surface's hehight that is to be committed at serial. */
+    int                       height;
 } wlmtk_pending_update_t;
 
 /** State of the window. */
@@ -79,11 +79,11 @@ struct _wlmtk_window_t {
     /** Virtual method table. */
     wlmtk_window_vmt_t        vmt;
 
-    /** Box: In `super_bordered`, holds content, title bar and resizebar. */
+    /** Box: In `super_bordered`, holds surface, title bar and resizebar. */
     wlmtk_box_t               box;
 
-    /** Content of this window. */
-    wlmtk_content_t           *content_ptr;
+    /** Surface of this window. */
+    wlmtk_surface_t           *surface_ptr;
     /** Titlebar. */
     wlmtk_titlebar_t          *titlebar_ptr;
     /** Resizebar. */
@@ -123,7 +123,7 @@ typedef struct {
 static bool _wlmtk_window_init(
     wlmtk_window_t *window_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr);
+    wlmtk_surface_t *surface_ptr);
 static void _wlmtk_window_fini(wlmtk_window_t *window_ptr);
 static wlmtk_window_vmt_t _wlmtk_window_extend(
     wlmtk_window_t *window_ptr,
@@ -209,7 +209,7 @@ static const wlmtk_resizebar_style_t resizebar_style = {
     .margin_style = { .width = 0, .color = 0xff000000 },
 };
 
-/** Style of the margin between title, content and resizebar. */
+/** Style of the margin between title, surface and resizebar. */
 static const wlmtk_margin_style_t margin_style = {
     .width = 1,
     .color = 0xff000000,
@@ -226,12 +226,12 @@ static const wlmtk_margin_style_t border_style = {
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr)
+    wlmtk_surface_t *surface_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
 
-    if (!_wlmtk_window_init(window_ptr, env_ptr, content_ptr)) {
+    if (!_wlmtk_window_init(window_ptr, env_ptr, surface_ptr)) {
         wlmtk_window_destroy(window_ptr);
         return NULL;
     }
@@ -425,7 +425,7 @@ void wlmtk_window_get_size(
     int *height_ptr)
 {
     // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
-    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
+    wlmtk_surface_get_size(window_ptr->surface_ptr, width_ptr, height_ptr);
 
     if (NULL != window_ptr->titlebar_ptr) {
         *height_ptr += titlebar_style.height + margin_style.width;
@@ -445,13 +445,13 @@ void wlmtk_window_request_size(
     int height)
 {
     // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
-    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
+    wlmtk_surface_request_size(window_ptr->surface_ptr, width, height);
 
-    // TODO(kaeser@gubbe.ch): For client content (eg. a wlr_surface), setting
+    // TODO(kaeser@gubbe.ch): For client surface (eg. a wlr_surface), setting
     // the size is an asynchronous operation and should be handled as such.
     // Meaning: In example of resizing at the top-left corner, we'll want to
-    // request the content to adjust size, but wait with adjusting the
-    // content position until the size adjustment is applied. This implies we
+    // request the surface to adjust size, but wait with adjusting the
+    // surface position until the size adjustment is applied. This implies we
     // may need to combine the request_size and set_position methods for window.
 }
 
@@ -505,11 +505,11 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
         if (0 < delta) break;
 
         if (pending_update_ptr->serial == serial) {
-            if (window_ptr->content_ptr->committed_width !=
+            if (window_ptr->surface_ptr->committed_width !=
                 pending_update_ptr->width) {
                 bs_log(BS_ERROR, "FIXME: width mismatch!");
             }
-            if (window_ptr->content_ptr->committed_height !=
+            if (window_ptr->surface_ptr->committed_height !=
                 pending_update_ptr->height) {
                 bs_log(BS_ERROR, "FIXME: height mismatch!");
             }
@@ -531,14 +531,14 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
  *
  * @param window_ptr
  * @param env_ptr
- * @param content_ptr
+ * @param surface_ptr
  *
  * @return true on success.
  */
 bool _wlmtk_window_init(
     wlmtk_window_t *window_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr)
+    wlmtk_surface_t *surface_ptr)
 {
     BS_ASSERT(NULL != window_ptr);
     memcpy(&window_ptr->vmt, &_wlmtk_window_vmt, sizeof(wlmtk_window_vmt_t));
@@ -575,10 +575,10 @@ bool _wlmtk_window_init(
 
     wlmtk_box_add_element_front(
         &window_ptr->box,
-        wlmtk_content_element(content_ptr));
-    window_ptr->content_ptr = content_ptr;
-    wlmtk_content_set_window(content_ptr, window_ptr);
-    wlmtk_element_set_visible(wlmtk_content_element(content_ptr), true);
+        wlmtk_surface_element(surface_ptr));
+    window_ptr->surface_ptr = surface_ptr;
+    wlmtk_surface_set_window(surface_ptr, window_ptr);
+    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
     return true;
 }
 
@@ -592,16 +592,16 @@ void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
     wlmtk_window_set_server_side_decorated(window_ptr, false);
 
-    if (NULL != window_ptr->content_ptr) {
+    if (NULL != window_ptr->surface_ptr) {
         wlmtk_box_remove_element(
             &window_ptr->box,
-            wlmtk_content_element(window_ptr->content_ptr));
+            wlmtk_surface_element(window_ptr->surface_ptr));
         wlmtk_element_set_visible(
-            wlmtk_content_element(window_ptr->content_ptr), false);
-        wlmtk_content_set_window(window_ptr->content_ptr, NULL);
+            wlmtk_surface_element(window_ptr->surface_ptr), false);
+        wlmtk_surface_set_window(window_ptr->surface_ptr, NULL);
 
-        wlmtk_element_destroy(wlmtk_content_element(window_ptr->content_ptr));
-        window_ptr->content_ptr = NULL;
+        wlmtk_element_destroy(wlmtk_surface_element(window_ptr->surface_ptr));
+        window_ptr->surface_ptr = NULL;
     }
 
     if (NULL != window_ptr->title_ptr) {
@@ -686,9 +686,9 @@ void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
 
     window_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
-    if (NULL != window_ptr->content_ptr) {
+    if (NULL != window_ptr->surface_ptr) {
         int width;
-        wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
+        wlmtk_surface_get_size(window_ptr->surface_ptr, &width, NULL);
         if (NULL != window_ptr->titlebar_ptr) {
             wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
         }
@@ -704,7 +704,7 @@ void _wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
-    wlmtk_content_set_activated(window_ptr->content_ptr, activated);
+    wlmtk_surface_set_activated(window_ptr->surface_ptr, activated);
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
     }
@@ -714,7 +714,7 @@ void _wlmtk_window_set_activated(
 /** Default implementation of @ref wlmtk_window_request_close. */
 void _wlmtk_window_request_close(wlmtk_window_t *window_ptr)
 {
-    wlmtk_content_request_close(window_ptr->content_ptr);
+    wlmtk_surface_request_close(window_ptr->surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -761,8 +761,8 @@ void _wlmtk_window_request_position_and_size(
     height = BS_MAX(0, height);
     width = BS_MAX(0, width);
 
-    uint32_t serial = wlmtk_content_request_size(
-        window_ptr->content_ptr, width, height);
+    uint32_t serial = wlmtk_surface_request_size(
+        window_ptr->surface_ptr, width, height);
 
     wlmtk_pending_update_t *pending_update_ptr =
         _wlmtk_window_prepare_update(window_ptr);
@@ -865,9 +865,9 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         1, sizeof(wlmtk_fake_window_state_t));
     if (NULL == fake_window_state_ptr) return NULL;
 
-    fake_window_state_ptr->fake_window.fake_content_ptr =
-        wlmtk_fake_content_create();
-    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
+    fake_window_state_ptr->fake_window.fake_surface_ptr =
+        wlmtk_fake_surface_create();
+    if (NULL == fake_window_state_ptr->fake_window.fake_surface_ptr) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
     }
@@ -875,7 +875,7 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
     if (!_wlmtk_window_init(
             &fake_window_state_ptr->window,
             NULL,
-            &fake_window_state_ptr->fake_window.fake_content_ptr->content)) {
+            &fake_window_state_ptr->fake_window.fake_surface_ptr->surface)) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
     }
@@ -991,12 +991,12 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr,
-                      fake_content_ptr->content.window_ptr);
+                      fake_surface_ptr->surface.window_ptr);
 
     wlmtk_window_destroy(window_ptr);
 }
@@ -1005,9 +1005,9 @@ void test_create_destroy(bs_test_t *test_ptr)
 /** Tests title. */
 void test_set_title(bs_test_t *test_ptr)
 {
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
 
     wlmtk_window_set_title(window_ptr, "Title");
     BS_TEST_VERIFY_STREQ(
@@ -1028,12 +1028,12 @@ void test_set_title(bs_test_t *test_ptr)
 /** Tests activation. */
 void test_request_close(bs_test_t *test_ptr)
 {
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
 
     wlmtk_window_request_close(window_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->request_close_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->request_close_called);
 
     wlmtk_window_destroy(window_ptr);
 }
@@ -1042,15 +1042,15 @@ void test_request_close(bs_test_t *test_ptr)
 /** Tests activation. */
 void test_set_activated(bs_test_t *test_ptr)
 {
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
 
     wlmtk_window_set_activated(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_content_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
 
     wlmtk_window_set_activated(window_ptr, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_content_ptr->activated);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
 
     wlmtk_window_destroy(window_ptr);
 }
@@ -1059,9 +1059,9 @@ void test_set_activated(bs_test_t *test_ptr)
 /** Tests enabling and disabling server-side decoration. */
 void test_server_side_decorated(bs_test_t *test_ptr)
 {
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
@@ -1088,16 +1088,16 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_workspace_set_extents(workspace_ptr, &extents);
     BS_ASSERT(NULL != workspace_ptr);
 
-    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create();
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_t *window_ptr = wlmtk_window_create(
-        NULL, &fake_content_ptr->content);
+        NULL, &fake_surface_ptr->surface);
     BS_ASSERT(NULL != window_ptr);
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
@@ -1123,7 +1123,7 @@ void test_maximize(bs_test_t *test_ptr)
 
     // Maximize.
     wlmtk_window_request_maximize(window_ptr, true);
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
@@ -1132,11 +1132,11 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_maximized(window_ptr));
 
     // A second commit: should not overwrite the organic dimension.
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
 
     // Unmaximize. Restore earlier organic size and position.
     wlmtk_window_request_maximize(window_ptr, false);
-    wlmtk_fake_content_commit(fake_content_ptr);
+    wlmtk_fake_surface_commit(fake_surface_ptr);
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
