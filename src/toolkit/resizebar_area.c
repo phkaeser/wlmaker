@@ -24,7 +24,7 @@
 #include "buffer.h"
 #include "gfxbuf.h"
 #include "primitives.h"
-#include "toplevel.h"
+#include "window.h"
 
 #include <libbase/libbase.h>
 
@@ -52,7 +52,7 @@ struct _wlmtk_resizebar_area_t {
     bool                      pressed;
 
     /** Window to which the resize bar area belongs. To initiate resizing. */
-    wlmtk_toplevel_t          *toplevel_ptr;
+    wlmtk_window_t            *window_ptr;
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
 
@@ -91,15 +91,15 @@ static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
-    wlmtk_toplevel_t *toplevel_ptr,
+    wlmtk_window_t *window_ptr,
     wlmtk_env_t *env_ptr,
     uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
-    BS_ASSERT(NULL != toplevel_ptr);
-    resizebar_area_ptr->toplevel_ptr = toplevel_ptr;
+    BS_ASSERT(NULL != window_ptr);
+    resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
     resizebar_area_ptr->cursor = WLMTK_CURSOR_DEFAULT;
@@ -223,8 +223,8 @@ bool _wlmtk_resizebar_area_element_pointer_button(
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
 
-        wlmtk_toplevel_request_resize(
-            resizebar_area_ptr->toplevel_ptr,
+        wlmtk_window_request_resize(
+            resizebar_area_ptr->window_ptr,
             resizebar_area_ptr->edges);
         draw_state(resizebar_area_ptr);
         break;
@@ -313,10 +313,10 @@ const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
 /** Tests the area behaviour. */
 void test_area(bs_test_t *test_ptr)
 {
-    wlmtk_fake_toplevel_t *fake_toplevel_ptr = wlmtk_fake_toplevel_create();
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
 
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        fake_toplevel_ptr->toplevel_ptr, NULL, WLR_EDGE_BOTTOM);
+        fake_window_ptr->window_ptr, NULL, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
 
@@ -332,7 +332,7 @@ void test_area(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/resizebar_area_released.png");
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_toplevel_ptr->request_resize_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_resize_called);
 
     // Pointer must be inside the button for accepting DOWN.
     BS_TEST_VERIFY_TRUE(
@@ -351,14 +351,14 @@ void test_area(bs_test_t *test_ptr)
         "toolkit/resizebar_area_pressed.png");
 
     // TODO(kaeser@gubbe.ch): Should verify setting the cursor.
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_toplevel_ptr->request_resize_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_resize_called);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_BOTTOM,
-        fake_toplevel_ptr->request_resize_edges);
+        fake_window_ptr->request_resize_edges);
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_fake_toplevel_destroy(fake_toplevel_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of resizebar_area.c ============================================== */

@@ -271,8 +271,8 @@ void handle_decoration_request_mode(
                decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode,
                mode);
 
-        wlmtk_toplevel_set_server_side_decorated(
-            content_ptr->toplevel_ptr,
+        wlmtk_window_set_server_side_decorated(
+            content_ptr->window_ptr,
             mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE);
 
     } else {

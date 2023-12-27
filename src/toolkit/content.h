@@ -20,7 +20,7 @@
 #ifndef __WLMTK_CONTENT_H__
 #define __WLMTK_CONTENT_H__
 
-/** Forward declaration: Toplevel content. */
+/** Forward declaration: Window content. */
 typedef struct _wlmtk_content_t wlmtk_content_t;
 
 /** Forward declaration: Content virtual method table. */
@@ -28,7 +28,8 @@ typedef struct _wlmtk_content_vmt_t wlmtk_content_vmt_t;
 /** Forward declaration: Fake content, for tests. */
 typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
-#include "toplevel.h"
+
+#include "window.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,10 +60,10 @@ struct _wlmtk_content_t {
     wlmtk_content_vmt_t       vmt;
 
     /**
-     * The toplevel this content belongs to. Will be set when creating
-     * the toplevel.
+     * The window this content belongs to. Will be set when creating
+     * the window.
      */
-    wlmtk_toplevel_t            *toplevel_ptr;
+    wlmtk_window_t            *window_ptr;
 
     /**
      * Surface associated with this content.
@@ -110,16 +111,16 @@ wlmtk_content_vmt_t wlmtk_content_extend(
 void wlmtk_content_fini(wlmtk_content_t *content_ptr);
 
 /**
- * Sets the toplevel for the content.
+ * Sets the window for the content.
  *
- * Private: Should only be called by Toplevel ctor (a friend).
+ * Private: Should only be called by Window ctor (a friend).
  *
  * @param content_ptr
- * @param toplevel_ptr
+ * @param window_ptr
  */
-void wlmtk_content_set_toplevel(
+void wlmtk_content_set_window(
     wlmtk_content_t *content_ptr,
-    wlmtk_toplevel_t *toplevel_ptr);
+    wlmtk_window_t *window_ptr);
 
 /**
  * Sets the committed size of the content.
@@ -129,7 +130,7 @@ void wlmtk_content_set_toplevel(
  * forwards the request to the content (eg. the Wayland client surface). The
  * client then configures it's surface and commits it. The content needs to
  * catch that commit and call @ref wlmtk_content_commit_size accordingly.
- * This will then update the parent container's (and toplevel's) layout.
+ * This will then update the parent container's (and window's) layout.
  *
  * @param content_ptr
  * @param serial

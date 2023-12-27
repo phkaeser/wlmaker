@@ -135,10 +135,10 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         path_exe[rv] = '\0';
         if (0 == strcmp(path_exe, "/usr/bin/foot") ||
             0 == strcmp(path_exe, "/opt/google/chrome/chrome")) {
-            wlmtk_toplevel_t *toplevel_ptr = wlmtk_toplevel_create_from_xdg_toplevel(
+            wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
                 wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
-            bs_log(BS_INFO, "XDG shell: Toolkit toplevel %p for surface %p",
-                   toplevel_ptr, wlr_xdg_surface_ptr);
+            bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
+                   window_ptr, wlr_xdg_surface_ptr);
             break;
         }
 #endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)

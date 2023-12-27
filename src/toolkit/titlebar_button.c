@@ -38,9 +38,9 @@ struct _wlmtk_titlebar_button_t {
     bool                      activated;
 
     /** Callback for when the button is clicked. */
-    void                      (*click_handler)(wlmtk_toplevel_t *toplevel_ptr);
-    /** Points to the @ref wlmtk_toplevel_t that carries this titlebar. */
-    wlmtk_toplevel_t            *toplevel_ptr;
+    void                      (*click_handler)(wlmtk_window_t *window_ptr);
+    /** Points to the @ref wlmtk_window_t that carries this titlebar. */
+    wlmtk_window_t            *window_ptr;
     /** For drawing the button contents. */
     wlmtk_titlebar_button_draw_t draw;
 
@@ -79,18 +79,18 @@ static const wlmtk_button_vmt_t titlebar_button_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     wlmtk_env_t *env_ptr,
-    void (*click_handler)(wlmtk_toplevel_t *toplevel_ptr),
-    wlmtk_toplevel_t *toplevel_ptr,
+    void (*click_handler)(wlmtk_window_t *window_ptr),
+    wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
 {
-    BS_ASSERT(NULL != toplevel_ptr);
+    BS_ASSERT(NULL != window_ptr);
     BS_ASSERT(NULL != click_handler);
     BS_ASSERT(NULL != draw);
     wlmtk_titlebar_button_t *titlebar_button_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_button_t));
     if (NULL == titlebar_button_ptr) return NULL;
     titlebar_button_ptr->click_handler = click_handler;
-    titlebar_button_ptr->toplevel_ptr = toplevel_ptr;
+    titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
     if (!wlmtk_button_init(&titlebar_button_ptr->super_button, env_ptr)) {
@@ -201,12 +201,12 @@ void titlebar_button_element_destroy(wlmtk_element_t *element_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles button clicks: Passes the request to the toplevel. */
+/** Handles button clicks: Passes the request to the window. */
 void titlebar_button_clicked(wlmtk_button_t *button_ptr)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
         button_ptr, wlmtk_titlebar_button_t, super_button);
-    titlebar_button_ptr->click_handler(titlebar_button_ptr->toplevel_ptr);
+    titlebar_button_ptr->click_handler(titlebar_button_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -274,11 +274,11 @@ const bs_test_case_t wlmtk_titlebar_button_test_cases[] = {
 /** Tests button visualization. */
 void test_button(bs_test_t *test_ptr)
 {
-    wlmtk_fake_toplevel_t *fake_toplevel_ptr = wlmtk_fake_toplevel_create();
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
         NULL,
-        wlmtk_toplevel_request_close,
-        fake_toplevel_ptr->toplevel_ptr,
+        wlmtk_window_request_close,
+        fake_window_ptr->window_ptr,
         wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
     wlmtk_titlebar_button_set_activated(button_ptr, true);
@@ -336,7 +336,7 @@ void test_button(bs_test_t *test_ptr)
     // Click: To be passed along, no change to visual.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        fake_toplevel_ptr->request_close_called);
+        fake_window_ptr->request_close_called);
     button.type = WLMTK_BUTTON_CLICK;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -347,7 +347,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_focussed_released.png");
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        fake_toplevel_ptr->request_close_called);
+        fake_window_ptr->request_close_called);
 
     // De-activate: Show as blurred.
     wlmtk_titlebar_button_set_activated(button_ptr, false);
@@ -357,7 +357,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_blurred.png");
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_fake_toplevel_destroy(fake_toplevel_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of titlebar_button.c ============================================= */

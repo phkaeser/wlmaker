@@ -113,11 +113,11 @@ void wlmtk_content_fini(wlmtk_content_t *content_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_content_set_toplevel(
+void wlmtk_content_set_window(
     wlmtk_content_t *content_ptr,
-    wlmtk_toplevel_t *toplevel_ptr)
+    wlmtk_window_t *window_ptr)
 {
-    content_ptr->toplevel_ptr = toplevel_ptr;
+    content_ptr->window_ptr = window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -133,8 +133,8 @@ void wlmtk_content_commit_size(
         content_ptr->committed_height = height;
     }
 
-    if (NULL != content_ptr->toplevel_ptr) {
-        wlmtk_toplevel_serial(content_ptr->toplevel_ptr, serial);
+    if (NULL != content_ptr->window_ptr) {
+        wlmtk_window_serial(content_ptr->window_ptr, serial);
     }
 
     if (NULL != content_ptr->super_element.parent_container_ptr) {
@@ -344,8 +344,8 @@ bool element_pointer_button(
         wlmtk_env_wlr_seat(content_ptr->super_element.env_ptr
             )->pointer_state.focused_surface;
     if (NULL == focused_wlr_surface_ptr) return false;
-    // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated toplevel
-    // over to a non-activated toplevel will trigger the condition here on the
+    // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
+    // over to a non-activated window will trigger the condition here on the
     // WLMTK_BUTTON_UP event. Needs a test and fixing.
     BS_ASSERT(content_ptr->wlr_surface_ptr ==
               wlr_surface_get_root_surface(focused_wlr_surface_ptr));

@@ -122,7 +122,7 @@ const wlmtk_content_vmt_t     _wlmtk_xdg_toplevel_content_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_toplevel_t *wlmtk_toplevel_create_from_xdg_toplevel(
+wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr,
     wlmaker_server_t *server_ptr)
 {
@@ -130,14 +130,14 @@ wlmtk_toplevel_t *wlmtk_toplevel_create_from_xdg_toplevel(
         wlr_xdg_surface_ptr, server_ptr);
     if (NULL == content_ptr) return NULL;
 
-    wlmtk_toplevel_t *wlmtk_toplevel_ptr = wlmtk_toplevel_create(
+    wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
         server_ptr->env_ptr, &content_ptr->super_content);
-    if (NULL == wlmtk_toplevel_ptr) {
+    if (NULL == wlmtk_window_ptr) {
         content_element_destroy(&content_ptr->super_content.super_element);
         return NULL;
     }
 
-    return wlmtk_toplevel_ptr;
+    return wlmtk_window_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -364,8 +364,8 @@ void handle_destroy(struct wl_listener *listener_ptr,
 {
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_content_t, destroy_listener);
-    // Destroy the toplevel -> also destroys the content.
-    wlmtk_toplevel_destroy(xdg_tl_content_ptr->super_content.toplevel_ptr);
+    // Destroy the window -> also destroys the content.
+    wlmtk_window_destroy(xdg_tl_content_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -406,9 +406,9 @@ void handle_surface_map(
     wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
         wlmaker_server_get_current_workspace(xdg_tl_content_ptr->server_ptr));
 
-    wlmtk_workspace_map_toplevel(
+    wlmtk_workspace_map_window(
         wlmtk_workspace_ptr,
-        xdg_tl_content_ptr->super_content.toplevel_ptr);
+        xdg_tl_content_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -425,11 +425,11 @@ void handle_surface_unmap(
     wlmtk_xdg_toplevel_content_t *xdg_tl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_content_t, surface_unmap_listener);
 
-    wlmtk_toplevel_t *toplevel_ptr = xdg_tl_content_ptr->super_content.toplevel_ptr;
-    wlmtk_workspace_unmap_toplevel(
+    wlmtk_window_t *window_ptr = xdg_tl_content_ptr->super_content.window_ptr;
+    wlmtk_workspace_unmap_window(
         wlmtk_workspace_from_container(
-            wlmtk_toplevel_element(toplevel_ptr)->parent_container_ptr),
-        toplevel_ptr);
+            wlmtk_window_element(window_ptr)->parent_container_ptr),
+        window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -470,9 +470,9 @@ void handle_toplevel_request_maximize(
         listener_ptr,
         wlmtk_xdg_toplevel_content_t,
         toplevel_request_maximize_listener);
-    wlmtk_toplevel_request_maximize(
-        xdg_tl_content_ptr->super_content.toplevel_ptr,
-        !wlmtk_toplevel_maximized(xdg_tl_content_ptr->super_content.toplevel_ptr));
+    wlmtk_window_request_maximize(
+        xdg_tl_content_ptr->super_content.window_ptr,
+        !wlmtk_window_maximized(xdg_tl_content_ptr->super_content.window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -490,7 +490,7 @@ void handle_toplevel_request_move(
         listener_ptr,
         wlmtk_xdg_toplevel_content_t,
         toplevel_request_move_listener);
-    wlmtk_toplevel_request_move(xdg_tl_content_ptr->super_content.toplevel_ptr);
+    wlmtk_window_request_move(xdg_tl_content_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -509,8 +509,8 @@ void handle_toplevel_request_resize(
         wlmtk_xdg_toplevel_content_t,
         toplevel_request_resize_listener);
     struct wlr_xdg_toplevel_resize_event *resize_event_ptr = data_ptr;
-    wlmtk_toplevel_request_resize(
-        xdg_tl_content_ptr->super_content.toplevel_ptr,
+    wlmtk_window_request_resize(
+        xdg_tl_content_ptr->super_content.window_ptr,
         resize_event_ptr->edges);
 }
 
@@ -530,8 +530,8 @@ void handle_toplevel_set_title(
         wlmtk_xdg_toplevel_content_t,
         toplevel_set_title_listener);
 
-    wlmtk_toplevel_set_title(
-        xdg_tl_content_ptr->super_content.toplevel_ptr,
+    wlmtk_window_set_title(
+        xdg_tl_content_ptr->super_content.window_ptr,
         xdg_tl_content_ptr->wlr_xdg_surface_ptr->toplevel->title);
 }
 

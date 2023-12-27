@@ -34,7 +34,7 @@ extern "C" {
  *
  * @return The window, or NULL on error.
  */
-wlmtk_toplevel_t *wlmtk_toplevel_create_from_xdg_toplevel(
+wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr,
     wlmaker_server_t *server_ptr);
 
