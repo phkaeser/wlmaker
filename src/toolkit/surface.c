@@ -448,6 +448,7 @@ void wlmtk_fake_surface_commit(wlmtk_fake_surface_t *fake_surface_ptr)
         BS_ASSERT(NULL != wlr_scene_buffer_ptr);
 
         wlr_scene_buffer_set_buffer(wlr_scene_buffer_ptr, wlr_buffer_ptr);
+        wlr_buffer_drop(wlr_buffer_ptr);
     }
 }
 
@@ -477,7 +478,8 @@ struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
 
     struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
         wlr_scene_tree_ptr, wlr_buffer_ptr);
-    return &wlr_scene_buffer_ptr->node;
+    wlr_buffer_drop(wlr_buffer_ptr);
+   return &wlr_scene_buffer_ptr->node;
 }
 
 /* ------------------------------------------------------------------------- */
