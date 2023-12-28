@@ -26,6 +26,7 @@ SET(PUBLIC_HEADER_FILES
   buffer.h
   button.h
   container.h
+  content.h
   element.h
   env.h
   fsm.h
@@ -47,6 +48,7 @@ TARGET_SOURCES(toolkit PRIVATE
   buffer.c
   button.c
   container.c
+  content.c
   element.c
   env.c
   fsm.c
