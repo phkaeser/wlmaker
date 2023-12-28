@@ -375,6 +375,10 @@ static void _wlmtk_fake_surface_element_destroy(
 static struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static bool _wlmtk_fake_surface_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    __UNUSED__ uint32_t time_msec);
 static bool _wlmtk_fake_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -385,6 +389,7 @@ static void _wlmtk_fake_surface_element_pointer_leave(
 static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
     .destroy = _wlmtk_fake_surface_element_destroy,
     .create_scene_node = _wlmtk_fake_surface_element_create_scene_node,
+    .pointer_motion = _wlmtk_fake_surface_element_pointer_motion,
     .pointer_button = _wlmtk_fake_surface_element_pointer_button,
     .pointer_leave = _wlmtk_fake_surface_element_pointer_leave,
 };
@@ -480,6 +485,20 @@ struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
         wlr_scene_tree_ptr, wlr_buffer_ptr);
     wlr_buffer_drop(wlr_buffer_ptr);
    return &wlr_scene_buffer_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake for @ref wlmtk_element_vmt_t::pointer_motion. True if in committed. */
+bool _wlmtk_fake_surface_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    __UNUSED__ uint32_t time_msec)
+{
+    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_surface_t, surface.super_element);
+
+    return (0 <= x && x < fake_surface_ptr->surface.committed_width &&
+            0 <= y && y < fake_surface_ptr->surface.committed_height);
 }
 
 /* ------------------------------------------------------------------------- */
