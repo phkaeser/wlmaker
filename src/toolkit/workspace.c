@@ -83,14 +83,14 @@ static void _wlmtk_workspace_element_get_pointer_area(
     int *y1_ptr,
     int *x2_ptr,
     int *y2_ptr);
-static bool element_pointer_motion(
+static bool _wlmtk_workspace_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
-static bool element_pointer_button(
+static bool _wlmtk_workspace_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void element_pointer_leave(
+static void _wlmtk_workspace_element_pointer_leave(
     wlmtk_element_t *element_ptr);
 
 static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
@@ -122,9 +122,9 @@ const wlmtk_element_vmt_t     workspace_element_vmt = {
     .destroy = _wlmtk_workspace_element_destroy,
     .get_dimensions = _wlmtk_workspace_element_get_dimensions,
     .get_pointer_area = _wlmtk_workspace_element_get_pointer_area,
-    .pointer_motion = element_pointer_motion,
-    .pointer_button = element_pointer_button,
-    .pointer_leave = element_pointer_leave,
+    .pointer_motion = _wlmtk_workspace_element_pointer_motion,
+    .pointer_button = _wlmtk_workspace_element_pointer_button,
+    .pointer_leave = _wlmtk_workspace_element_pointer_leave,
 };
 
 /** Finite state machine definition for pointer events. */
@@ -396,7 +396,7 @@ void _wlmtk_workspace_element_get_pointer_area(
  *
  * @return Always true.
  */
-bool element_pointer_motion(
+bool _wlmtk_workspace_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec)
@@ -428,7 +428,7 @@ bool element_pointer_motion(
  *
  * @return Whether the button event was consumed.
  */
-bool element_pointer_button(
+bool _wlmtk_workspace_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
@@ -454,7 +454,7 @@ bool element_pointer_button(
  *
  * @param element_ptr
  */
-void element_pointer_leave(
+void _wlmtk_workspace_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
