@@ -652,7 +652,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
@@ -754,7 +754,7 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -801,7 +801,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_motion(workspace_ptr, 0, 0, 42);
 
@@ -846,7 +846,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_window_request_position_and_size(window_ptr, 0, 0, 40, 20);
     wlmtk_content_commit_size(&content,

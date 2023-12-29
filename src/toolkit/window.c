@@ -51,7 +51,7 @@ struct  _wlmtk_window_vmt_t {
                                       int x, int y, int width, int height);
 };
 
-/** Pending positional updates for @ref wlmtk_window_t::surface_ptr. */
+/** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
 typedef struct {
     /** Node within @ref wlmtk_window_t::pending_updates. */
     bs_dllist_node_t          dlnode;
@@ -229,9 +229,9 @@ static const wlmtk_margin_style_t border_style = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window_t *wlmtk_window_create_content(
-    wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr)
+wlmtk_window_t *wlmtk_window_create(
+    wlmtk_content_t *content_ptr,
+    wlmtk_env_t *env_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
@@ -1029,7 +1029,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 
@@ -1043,7 +1043,7 @@ void test_set_title(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
     wlmtk_window_set_title(window_ptr, "Title");
     BS_TEST_VERIFY_STREQ(
@@ -1067,7 +1067,7 @@ void test_request_close(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
     wlmtk_window_request_close(window_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->request_close_called);
@@ -1082,7 +1082,7 @@ void test_set_activated(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
     wlmtk_window_set_activated(window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
@@ -1100,7 +1100,7 @@ void test_server_side_decorated(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
@@ -1131,7 +1131,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create_content(NULL, &content);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);

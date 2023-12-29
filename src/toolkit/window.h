@@ -46,9 +46,9 @@ extern "C" {
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
  */
-wlmtk_window_t *wlmtk_window_create_content(
-    wlmtk_env_t *env_ptr,
-    wlmtk_content_t *content_ptr);
+wlmtk_window_t *wlmtk_window_create(
+    wlmtk_content_t *content_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the window.
