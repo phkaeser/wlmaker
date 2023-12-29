@@ -162,7 +162,6 @@ void wlmtk_surface_commit_size(
         wlmtk_container_update_layout(
             surface_ptr->super_element.parent_container_ptr);
     }
-
 }
 
 /* == Local (static) methods =============================================== */

@@ -38,19 +38,6 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a window for the given surface.
- *
- * @param env_ptr
- * @param surface_ptr         Will take ownership of surface_ptr.
- *
- * @return Pointer to the window state, or NULL on error. Must be free'd
- *     by calling @ref wlmtk_window_destroy.
- */
-wlmtk_window_t *wlmtk_window_create(
-    wlmtk_env_t *env_ptr,
-    wlmtk_surface_t *surface_ptr);
-
-/**
  * Creates a window for the given content.
  *
  * @param env_ptr
