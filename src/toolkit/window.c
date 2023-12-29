@@ -85,8 +85,6 @@ struct _wlmtk_window_t {
     /** FIXME: Element. */
     wlmtk_element_t           *element_ptr;
 
-    /** Surface of this window. */
-    wlmtk_surface_t           *surface_ptr;
     /** Content of the window. */
     wlmtk_content_t           *content_ptr;
     /** Titlebar. */
@@ -437,13 +435,7 @@ void wlmtk_window_get_size(
     int *height_ptr)
 {
     // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
-    if (NULL != window_ptr->surface_ptr) {
-        wlmtk_surface_get_size(window_ptr->surface_ptr, width_ptr, height_ptr);
-    } else if (NULL != window_ptr->content_ptr) {
-        wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
-    } else {
-        bs_log(BS_FATAL, "FIXME");
-    }
+    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
 
     if (NULL != window_ptr->titlebar_ptr) {
         *height_ptr += titlebar_style.height + margin_style.width;
@@ -463,13 +455,7 @@ void wlmtk_window_request_size(
     int height)
 {
     // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
-    if (NULL != window_ptr->surface_ptr) {
-        wlmtk_surface_request_size(window_ptr->surface_ptr, width, height);
-    } else if (NULL != window_ptr->content_ptr) {
-        wlmtk_content_request_size(window_ptr->content_ptr, width, height);
-    } else {
-        bs_log(BS_FATAL, "FIXME");
-    }
+    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
 
     // TODO(kaeser@gubbe.ch): For client surface (eg. a wlr_surface), setting
     // the size is an asynchronous operation and should be handled as such.
@@ -529,16 +515,7 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
         if (0 < delta) break;
 
         if (pending_update_ptr->serial == serial) {
-            if (NULL != window_ptr->surface_ptr) {
-                if (window_ptr->surface_ptr->committed_width !=
-                    pending_update_ptr->width) {
-                    bs_log(BS_ERROR, "FIXME: width mismatch!");
-                }
-                if (window_ptr->surface_ptr->committed_height !=
-                    pending_update_ptr->height) {
-                    bs_log(BS_ERROR, "FIXME: height mismatch!");
-                }
-            } else if (NULL != window_ptr->content_ptr &&
+            if (NULL != window_ptr->content_ptr &&
                        NULL != window_ptr->content_ptr->surface_ptr) {
                 if (window_ptr->content_ptr->surface_ptr->committed_width !=
                     pending_update_ptr->width) {
@@ -625,9 +602,6 @@ void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
     wlmtk_window_set_server_side_decorated(window_ptr, false);
 
-    if (NULL != window_ptr->surface_ptr) {
-        wlmtk_surface_set_window(window_ptr->surface_ptr, NULL);
-    }
     if (NULL != window_ptr->content_ptr) {
         wlmtk_content_set_window(window_ptr->content_ptr, NULL);
     }
@@ -722,16 +696,7 @@ void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
 
     window_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
-    if (NULL != window_ptr->surface_ptr) {
-        int width;
-        wlmtk_surface_get_size(window_ptr->surface_ptr, &width, NULL);
-        if (NULL != window_ptr->titlebar_ptr) {
-            wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
-        }
-        if (NULL != window_ptr->resizebar_ptr) {
-            wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
-        }
-    } else if (NULL != window_ptr->content_ptr) {
+    if (NULL != window_ptr->content_ptr) {
         int width;
         wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
         if (NULL != window_ptr->titlebar_ptr) {
@@ -749,11 +714,7 @@ void _wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
-    if (NULL != window_ptr->surface_ptr) {
-        wlmtk_surface_set_activated(window_ptr->surface_ptr, activated);
-    } else if (NULL != window_ptr->content_ptr) {
-        wlmtk_content_set_activated(window_ptr->content_ptr, activated);
-    }
+    wlmtk_content_set_activated(window_ptr->content_ptr, activated);
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
     }
@@ -763,11 +724,7 @@ void _wlmtk_window_set_activated(
 /** Default implementation of @ref wlmtk_window_request_close. */
 void _wlmtk_window_request_close(wlmtk_window_t *window_ptr)
 {
-    if (NULL != window_ptr->surface_ptr) {
-        wlmtk_surface_request_close(window_ptr->surface_ptr);
-    } else if (NULL != window_ptr->content_ptr) {
-        wlmtk_content_request_close(window_ptr->content_ptr);
-    }
+    wlmtk_content_request_close(window_ptr->content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -815,13 +772,8 @@ void _wlmtk_window_request_position_and_size(
     width = BS_MAX(0, width);
 
     uint32_t serial;
-    if (NULL != window_ptr->surface_ptr) {
-        serial = wlmtk_surface_request_size(
-            window_ptr->surface_ptr, width, height);
-    } else if (NULL != window_ptr->content_ptr) {
-        serial = wlmtk_content_request_size(
-            window_ptr->content_ptr, width, height);
-    }
+    serial = wlmtk_content_request_size(
+        window_ptr->content_ptr, width, height);
 
     wlmtk_pending_update_t *pending_update_ptr =
         _wlmtk_window_prepare_update(window_ptr);
