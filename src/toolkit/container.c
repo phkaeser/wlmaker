@@ -28,29 +28,29 @@
 
 /* == Declarations ========================================================= */
 
-static struct wlr_scene_node *element_create_scene_node(
+static struct wlr_scene_node *_wlmtk_container_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void element_get_dimensions(
+static void _wlmtk_container_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static void element_get_pointer_area(
+static void _wlmtk_container_element_get_pointer_area(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static bool element_pointer_motion(
+static bool _wlmtk_container_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x, double y,
     uint32_t time_msec);
-static bool element_pointer_button(
+static bool _wlmtk_container_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void element_pointer_enter(
+static void _wlmtk_container_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
@@ -65,12 +65,12 @@ static void _wlmtk_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t container_element_vmt = {
-    .create_scene_node = element_create_scene_node,
-    .get_dimensions = element_get_dimensions,
-    .get_pointer_area = element_get_pointer_area,
-    .pointer_motion = element_pointer_motion,
-    .pointer_button = element_pointer_button,
-    .pointer_enter = element_pointer_enter,
+    .create_scene_node = _wlmtk_container_element_create_scene_node,
+    .get_dimensions = _wlmtk_container_element_get_dimensions,
+    .get_pointer_area = _wlmtk_container_element_get_pointer_area,
+    .pointer_motion = _wlmtk_container_element_pointer_motion,
+    .pointer_button = _wlmtk_container_element_pointer_button,
+    .pointer_enter = _wlmtk_container_element_pointer_enter,
 };
 
 /** Default virtual method table. Initializes non-abstract methods. */
@@ -107,7 +107,7 @@ bool wlmtk_container_init_attached(
     if (!wlmtk_container_init(container_ptr, env_ptr)) return false;
 
     container_ptr->super_element.wlr_scene_node_ptr =
-        element_create_scene_node(
+        _wlmtk_container_element_create_scene_node(
             &container_ptr->super_element, root_wlr_scene_tree_ptr);
     if (NULL == container_ptr->super_element.wlr_scene_node_ptr) {
         wlmtk_container_fini(container_ptr);
@@ -290,7 +290,7 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
  *
  * @return Pointer to the scene graph API node.
  */
-struct wlr_scene_node *element_create_scene_node(
+struct wlr_scene_node *_wlmtk_container_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr)
 {
@@ -329,7 +329,7 @@ struct wlr_scene_node *element_create_scene_node(
  * @param right_ptr           Rightmost position. Ma be NULL.
  * @param bottom_ptr          Bottommost position. May be NULL.
  */
-void element_get_dimensions(
+void _wlmtk_container_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
@@ -376,7 +376,7 @@ void element_get_dimensions(
  * @param right_ptr           Rightmost position. Ma be NULL.
  * @param bottom_ptr          Bottommost position. May be NULL.
  */
-void element_get_pointer_area(
+void _wlmtk_container_element_get_pointer_area(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
@@ -424,7 +424,7 @@ void element_get_pointer_area(
  *
  * @return Whether this container has an element that accepts the emotion.
  */
-bool element_pointer_motion(
+bool _wlmtk_container_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     double x,
     double y,
@@ -448,7 +448,7 @@ bool element_pointer_motion(
  *
  * @return true if the button was handled.
  */
-bool element_pointer_button(
+bool _wlmtk_container_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
@@ -517,7 +517,8 @@ bool element_pointer_button(
 
 /* ------------------------------------------------------------------------- */
 /** Handler for when the pointer enters the area. Nothing for container. */
-void element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
+void _wlmtk_container_element_pointer_enter(
+    __UNUSED__ wlmtk_element_t *element_ptr)
 {
     // Nothing. Do not call parent.
 }
