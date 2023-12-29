@@ -138,7 +138,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         surface_element_destroy(&surface_ptr->super_surface.super_element);
         return NULL;
     }
-    wlmtk_surface_set_window(&surface_ptr->super_surface, wlmtk_window_ptr);
+    wlmtk_content_set_window(&surface_ptr->super_content, wlmtk_window_ptr);
 
     return wlmtk_window_ptr;
 }
@@ -217,7 +217,7 @@ wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         handle_toplevel_set_title);
 
     xdg_tl_surface_ptr->wlr_xdg_surface_ptr->data =
-        &xdg_tl_surface_ptr->super_surface;
+        &xdg_tl_surface_ptr->super_content;
 
     return xdg_tl_surface_ptr;
 }
@@ -374,7 +374,7 @@ void handle_destroy(struct wl_listener *listener_ptr,
     wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_surface_t, destroy_listener);
     // Destroy the window -> also destroys the surface.
-    wlmtk_window_destroy(xdg_tl_surface_ptr->super_surface.window_ptr);
+    wlmtk_window_destroy(xdg_tl_surface_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -417,7 +417,7 @@ void handle_surface_map(
 
     wlmtk_workspace_map_window(
         wlmtk_workspace_ptr,
-        xdg_tl_surface_ptr->super_surface.window_ptr);
+        xdg_tl_surface_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -434,7 +434,7 @@ void handle_surface_unmap(
     wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_surface_t, surface_unmap_listener);
 
-    wlmtk_window_t *window_ptr = xdg_tl_surface_ptr->super_surface.window_ptr;
+    wlmtk_window_t *window_ptr = xdg_tl_surface_ptr->super_content.window_ptr;
     wlmtk_workspace_unmap_window(
         wlmtk_workspace_from_container(
             wlmtk_window_element(window_ptr)->parent_container_ptr),
@@ -499,7 +499,7 @@ void handle_toplevel_request_move(
         listener_ptr,
         wlmtk_xdg_toplevel_surface_t,
         toplevel_request_move_listener);
-    wlmtk_window_request_move(xdg_tl_surface_ptr->super_surface.window_ptr);
+    wlmtk_window_request_move(xdg_tl_surface_ptr->super_content.window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -519,7 +519,7 @@ void handle_toplevel_request_resize(
         toplevel_request_resize_listener);
     struct wlr_xdg_toplevel_resize_event *resize_event_ptr = data_ptr;
     wlmtk_window_request_resize(
-        xdg_tl_surface_ptr->super_surface.window_ptr,
+        xdg_tl_surface_ptr->super_content.window_ptr,
         resize_event_ptr->edges);
 }
 
@@ -540,7 +540,7 @@ void handle_toplevel_set_title(
         toplevel_set_title_listener);
 
     wlmtk_window_set_title(
-        xdg_tl_surface_ptr->super_surface.window_ptr,
+        xdg_tl_surface_ptr->super_content.window_ptr,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->title);
 }
 

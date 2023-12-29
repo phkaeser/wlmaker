@@ -24,6 +24,10 @@
 
 /* == Declarations ========================================================= */
 
+/* == Data ================================================================= */
+
+void *wlmtk_content_identifier_ptr = wlmtk_content_init;
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -44,6 +48,7 @@ bool wlmtk_content_init(
         &content_ptr->super_container,
         wlmtk_surface_element(surface_ptr));
     content_ptr->surface_ptr = surface_ptr;
+    content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
 
     wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
     return true;
