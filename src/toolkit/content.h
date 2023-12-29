@@ -41,9 +41,9 @@ struct _wlmtk_content_t {
 
     /** Super class of the content: A container, holding surface & popups. */
     wlmtk_container_t         super_container;
+
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
-
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
 };

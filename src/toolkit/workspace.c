@@ -679,6 +679,8 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(window_ptr)->visible);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
@@ -785,6 +787,8 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
@@ -830,6 +834,8 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(window_ptr)->y);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
@@ -894,6 +900,8 @@ void test_resize(bs_test_t *test_ptr)
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
