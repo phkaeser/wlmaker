@@ -95,14 +95,6 @@ void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_surface_set_window(
-    wlmtk_surface_t *surface_ptr,
-    wlmtk_window_t *window_ptr)
-{
-    surface_ptr->window_ptr = window_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 wlmtk_surface_vmt_t wlmtk_surface_extend(
     wlmtk_surface_t *surface_ptr,
     const wlmtk_surface_vmt_t *surface_vmt_ptr)
@@ -141,7 +133,7 @@ void wlmtk_surface_get_size(
 /* ------------------------------------------------------------------------- */
 void wlmtk_surface_commit_size(
     wlmtk_surface_t *surface_ptr,
-    uint32_t serial,
+    __UNUSED__ uint32_t serial,
     int width,
     int height)
 {
@@ -149,10 +141,6 @@ void wlmtk_surface_commit_size(
         surface_ptr->committed_height != height) {
         surface_ptr->committed_width = width;
         surface_ptr->committed_height = height;
-    }
-
-    if (NULL != surface_ptr->window_ptr) {
-        wlmtk_window_serial(surface_ptr->window_ptr, serial);
     }
 
     if (NULL != surface_ptr->super_element.parent_container_ptr) {

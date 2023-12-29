@@ -62,11 +62,6 @@ struct _wlmtk_surface_t {
     /** The surface's virtual method table. */
     wlmtk_surface_vmt_t       vmt;
 
-    /**
-     * The window this surface belongs to. Will be set when creating
-     * the window.
-     */
-    wlmtk_window_t            *window_ptr;
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
 
@@ -96,18 +91,6 @@ bool wlmtk_surface_init(
  * @param surface_ptr
  */
 void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
-
-/**
- * Sets the window for the surface.
- *
- * Private: Should only be called by Window ctor (a friend).
- *
- * @param surface_ptr
- * @param window_ptr
- */
-void wlmtk_surface_set_window(
-    wlmtk_surface_t *surface_ptr,
-    wlmtk_window_t *window_ptr);
 
 /**
  * Extends the surface's virtual methods.
