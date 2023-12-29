@@ -65,8 +65,6 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
     .pointer_button = _wlmtk_surface_element_pointer_button,
 };
 
-void *wlmtk_surface_identifier_ptr = wlmtk_surface_init;
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -86,7 +84,6 @@ bool wlmtk_surface_init(
         &surface_ptr->super_element, &surface_element_vmt);
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
-    surface_ptr->identifier_ptr = wlmtk_surface_identifier_ptr;
     return true;
 }
 

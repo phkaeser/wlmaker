@@ -54,9 +54,6 @@ struct _wlmtk_surface_vmt_t {
 
 /** State of a `struct wlr_surface`, encapsuled for toolkit. */
 struct _wlmtk_surface_t {
-    /** Temporary: Identifier, to disambiguate from XDG nodes. */
-    void                      *identifier_ptr;
-
     /** Super class of the surface: An element. */
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
@@ -78,13 +75,6 @@ struct _wlmtk_surface_t {
     /** Committed height of the surface, in pixels. */
     int                       committed_height;
 };
-
-/**
- * Identifying pointer: Value unique to wlmtk_surface.
- *
- * TODO(kaeser@gubbe.ch): Remove, once migrated to toolkit.
- */
-extern void *wlmtk_surface_identifier_ptr;
 
 /**
  * Initializes the surface.
