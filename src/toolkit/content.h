@@ -46,12 +46,6 @@ struct _wlmtk_content_t {
 
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
-
-
-    /** Committed width of the surface, in pixels. */
-    int                       committed_width;
-    /** Committed height of the surface, in pixels. */
-    int                       committed_height;
 };
 
 /**

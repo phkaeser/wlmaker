@@ -107,8 +107,6 @@ void wlmtk_content_commit_size(
     int height)
 {
     wlmtk_surface_commit_size(content_ptr->surface_ptr, serial, width, height);
-    content_ptr->committed_width = width;
-    content_ptr->committed_height = height;
 
     if (NULL != content_ptr->window_ptr) {
         wlmtk_window_serial(content_ptr->window_ptr, serial);
