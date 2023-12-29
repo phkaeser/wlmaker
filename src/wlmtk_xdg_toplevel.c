@@ -26,6 +26,8 @@
 typedef struct {
     /** Super class. */
     wlmtk_surface_t           super_surface;
+    /** The... other super class. FIXME. */
+    wlmtk_content_t           super_content;
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
@@ -130,12 +132,13 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         wlr_xdg_surface_ptr, server_ptr);
     if (NULL == surface_ptr) return NULL;
 
-    wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
-        server_ptr->env_ptr, &surface_ptr->super_surface);
+    wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create_content(
+        server_ptr->env_ptr, &surface_ptr->super_content);
     if (NULL == wlmtk_window_ptr) {
         surface_element_destroy(&surface_ptr->super_surface.super_element);
         return NULL;
     }
+    wlmtk_surface_set_window(&surface_ptr->super_surface, wlmtk_window_ptr);
 
     return wlmtk_window_ptr;
 }
@@ -166,6 +169,14 @@ wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &_wlmtk_xdg_toplevel_surface_vmt);
     xdg_tl_surface_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
     xdg_tl_surface_ptr->server_ptr = server_ptr;
+
+    if (!wlmtk_content_init(
+            &xdg_tl_surface_ptr->super_content,
+            &xdg_tl_surface_ptr->super_surface,
+            server_ptr->env_ptr)) {
+        xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
+        return NULL;
+    }
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.destroy,
@@ -446,8 +457,8 @@ void handle_surface_commit(
 
     if (NULL == xdg_tl_surface_ptr->wlr_xdg_surface_ptr) return;
 
-    wlmtk_surface_commit_size(
-        &xdg_tl_surface_ptr->super_surface,
+    wlmtk_content_commit_size(
+        &xdg_tl_surface_ptr->super_content,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
@@ -469,8 +480,8 @@ void handle_toplevel_request_maximize(
         wlmtk_xdg_toplevel_surface_t,
         toplevel_request_maximize_listener);
     wlmtk_window_request_maximize(
-        xdg_tl_surface_ptr->super_surface.window_ptr,
-        !wlmtk_window_maximized(xdg_tl_surface_ptr->super_surface.window_ptr));
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        !wlmtk_window_maximized(xdg_tl_surface_ptr->super_content.window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

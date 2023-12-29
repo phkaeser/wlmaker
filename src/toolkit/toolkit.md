@@ -99,18 +99,45 @@ class Box {
 }
 Container <|-- Box
 
+
+
 abstract class Surface {
   Element super_element
-  
-  Surface popups[]
+
+  request_size()
+  get_size()
 }
 
 
-class Toplevel {
-  Surface super_surface;
+abstract class Content {
+  Container super_container
+  
+  Surface surface
+  Surface popups[]
+  
+  init(surface)
+  fini()
+  
+  request_size()
+  get_size()
   
   request_close()
   set_activated()
+}
+
+
+
+
+class Toplevel {
+  Content super_content
+  
+  -- because: implement request_close, set_activated, ...
+  
+  -- but: Window ?
+}
+
+class Popup {
+  Surface super_surface
 }
 
 

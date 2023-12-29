@@ -27,6 +27,7 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 
 #include "bordered.h"
 #include "box.h"
+#include "content.h"
 #include "element.h"
 #include "resizebar.h"
 #include "surface.h"
@@ -48,6 +49,19 @@ extern "C" {
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_env_t *env_ptr,
     wlmtk_surface_t *surface_ptr);
+
+/**
+ * Creates a window for the given content.
+ *
+ * @param env_ptr
+ * @param content_ptr
+ *
+ * @return Pointer to the window state, or NULL on error. Must be free'd
+ *     by calling @ref wlmtk_window_destroy.
+ */
+wlmtk_window_t *wlmtk_window_create_content(
+    wlmtk_env_t *env_ptr,
+    wlmtk_content_t *content_ptr);
 
 /**
  * Destroys the window.
@@ -278,6 +292,8 @@ typedef struct {
     wlmtk_window_t            *window_ptr;
     /** Fake surface, to manipulate the fake window's surface. */
     wlmtk_fake_surface_t      *fake_surface_ptr;
+    /** Content, wraps the fake surface. */
+    wlmtk_content_t           *content_ptr;
 
     /** Argument to last @ref wlmtk_window_set_activated call. */
     bool                      activated;
