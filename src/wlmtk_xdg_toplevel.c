@@ -138,7 +138,6 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         surface_element_destroy(&surface_ptr->super_surface.super_element);
         return NULL;
     }
-    wlmtk_content_set_window(&surface_ptr->super_content, wlmtk_window_ptr);
 
     return wlmtk_window_ptr;
 }
@@ -237,6 +236,8 @@ void xdg_toplevel_surface_destroy(
     wl_list_remove(&xdg_tl_surface_ptr->surface_unmap_listener.link);
     wl_list_remove(&xdg_tl_surface_ptr->new_popup_listener.link);
     wl_list_remove(&xdg_tl_surface_ptr->destroy_listener.link);
+
+    wlmtk_content_fini(&xdg_tl_surface_ptr->super_content);
 
     wlmtk_surface_fini(&xdg_tl_surface_ptr->super_surface);
     free(xdg_tl_surface_ptr);
@@ -373,8 +374,9 @@ void handle_destroy(struct wl_listener *listener_ptr,
 {
     wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_surface_t, destroy_listener);
-    // Destroy the window -> also destroys the surface.
+
     wlmtk_window_destroy(xdg_tl_surface_ptr->super_content.window_ptr);
+    xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

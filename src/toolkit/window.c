@@ -610,7 +610,6 @@ void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
         wlmtk_box_remove_element(
             &window_ptr->box, window_ptr->element_ptr);
         wlmtk_element_set_visible(window_ptr->element_ptr, false);
-        // FIXME wlmtk_element_destroy(window_ptr->element_ptr);
         window_ptr->element_ptr = NULL;
     }
 
