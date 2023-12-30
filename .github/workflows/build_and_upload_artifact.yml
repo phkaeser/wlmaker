@@ -1,0 +1,58 @@
+name: Build and Upload Artifact
+
+on:
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        container:
+            image: debian:bookworm
+
+        steps:          
+        - name: Install dependencies
+          run: |
+                apt-get update
+                apt-get install -y git cmake glslang-dev glslang-tools graphviz libgbm-dev libinput-dev libudev-dev libvulkan-dev \
+                libxcb-composite0-dev libxcb-dri3-dev libxcb-ewmh-dev libxcb-icccm4-dev libxcb-present-dev libxcb-render-util0-dev \
+                libxcb-res0-dev libxcb-xinput-dev libxkbcommon-dev meson plantuml xmlto xsltproc wayland-protocols libwlroots-dev doxygen \
+                libexpat1-dev libexpat1 libxml2-dev hwdata libcairo2-dev libncurses-dev
+
+        - name: Checkout code
+          uses: actions/checkout@v2
+        
+        - name: Checkout submodules
+          run: |
+               git config --global --add safe.directory /__w/wlmaker/wlmaker
+               git submodule update --init --recursive --merge
+
+        - name: Build dependencies
+          run: |
+               cd dependencies
+               export LD_LIBRARY_PATH="${HOME}/.local/lib/x86_64-linux-gnu"
+               export PKG_CONFIG_PATH="${HOME}/.local/lib/x86_64-linux-gnu/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+               cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build
+               # build AND install into ${HOME}/.local
+               (cd build && make)
+               cd ..
+        
+        - name: Build
+          run: |
+               export LD_LIBRARY_PATH="${HOME}/.local/lib/x86_64-linux-gnu"
+               export PKG_CONFIG_PATH="${HOME}/.local/lib/x86_64-linux-gnu/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+               mkdir build
+               cd build
+               cmake ..
+               make -j
+               make install DESTDIR=appdir
+               zip -r ../appdir.zip appdir
+
+        - name: Upload artifact
+          uses: actions/upload-artifact@v2
+          with:
+              name: appdir
+              path: appdir.zip

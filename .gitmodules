@@ -1,6 +1,6 @@
 [submodule "submodules/libbase"]
         path = submodules/libbase
-        url = ../libbase
+        url = https://github.com/phkaeser/libbase
         branch = main
         update = rebase
 [submodule "dependencies/drm"]
