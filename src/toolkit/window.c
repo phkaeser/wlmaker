@@ -1032,6 +1032,8 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1056,6 +1058,8 @@ void test_set_title(bs_test_t *test_ptr)
         "Unnamed window .*");
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1071,6 +1075,8 @@ void test_request_close(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->request_close_called);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1089,6 +1095,8 @@ void test_set_activated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1112,6 +1120,8 @@ void test_server_side_decorated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1202,6 +1212,8 @@ void test_maximize(bs_test_t *test_ptr)
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }

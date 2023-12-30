@@ -179,6 +179,8 @@ void test_init_fini(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
 
     wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fs_ptr);
+
 }
 
 /* == End of content.c ===================================================== */
