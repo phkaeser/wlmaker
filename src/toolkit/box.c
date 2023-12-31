@@ -66,8 +66,11 @@ bool wlmtk_box_init(
         return false;
     }
     wlmtk_element_set_visible(&box_ptr->margin_container.super_element, true);
-    wlmtk_container_add_element(&box_ptr->super_container,
-                                &box_ptr->margin_container.super_element);
+    // Keep margins behind the box's elements.
+    wlmtk_container_add_element_atop(
+        &box_ptr->super_container,
+        NULL,
+        &box_ptr->margin_container.super_element);
 
     box_ptr->orientation = orientation;
     return true;

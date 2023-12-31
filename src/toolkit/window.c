@@ -299,6 +299,9 @@ void wlmtk_window_set_server_side_decorated(
         BS_ASSERT(NULL != window_ptr->titlebar_ptr);
         wlmtk_element_set_visible(
             wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
+        // Hm, if the content has a popup that extends over the titlebar area,
+        // it'll be partially obscured. That will look odd... Well, let's
+        // address that problem once there's a situation.
         wlmtk_box_add_element_front(
             &window_ptr->box,
             wlmtk_titlebar_element(window_ptr->titlebar_ptr));
