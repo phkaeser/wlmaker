@@ -154,15 +154,33 @@ void handle_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles further popups. Yet unimplemented. */
+/** Handles further popups. Creates them and adds them to parent's content. */
 void handle_new_popup(
     struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
+    void *data_ptr)
 {
     wlmtk_xdg_popup_t *xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_popup_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    bs_log(BS_WARNING, "Unhandled: new_popup on XDG popup %p", xdg_popup_ptr);
+    wlmtk_xdg_popup_t *new_xdg_popup_ptr = wlmtk_xdg_popup_create(
+        wlr_xdg_popup_ptr,
+        wlmtk_content_element(&xdg_popup_ptr->super_content)->env_ptr);
+    if (NULL == new_xdg_popup_ptr) {
+        bs_log(BS_ERROR, "Failed wlmtk_xdg_popup_create(%p, %p)",
+               wlr_xdg_popup_ptr,
+               wlmtk_content_element(&xdg_popup_ptr->super_content)->env_ptr);
+        return;
+    }
+
+    wlmtk_element_set_visible(
+        wlmtk_content_element(&new_xdg_popup_ptr->super_content), true);
+    wlmtk_container_add_element(
+        &xdg_popup_ptr->super_content.super_container,
+        wlmtk_content_element(&new_xdg_popup_ptr->super_content));
+
+    bs_log(BS_INFO, "XDG popup %p: New popup %p",
+           xdg_popup_ptr, new_xdg_popup_ptr);
 }
 
 /* == End of wlmtk_xdg_popup.c ============================================= */
