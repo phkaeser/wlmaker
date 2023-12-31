@@ -135,8 +135,9 @@ wlmtk_rectangle_t * _wlmtk_bordered_create_border_rectangle(
     if (NULL == rectangle_ptr) return NULL;
 
     wlmtk_element_set_visible(wlmtk_rectangle_element(rectangle_ptr), true);
-    wlmtk_container_add_element(
+    wlmtk_container_add_element_atop(
         &bordered_ptr->super_container,
+        NULL,
         wlmtk_rectangle_element(rectangle_ptr));
 
     return rectangle_ptr;
