@@ -22,22 +22,45 @@
 
 #include "toolkit/toolkit.h"
 
-/** Forward declaration. */
-struct wlr_xdg_popup;
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_xdg_shell.h>
+#undef WLR_USE_UNSTABLE
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: State of the toolkit's XDG popup. */
+typedef struct _wlmtk_xdg_popup_t wlmtk_xdg_popup_t;
+
+/** State of toolkit popup. */
+struct _wlmtk_xdg_popup_t {
+    /** Super class: Content. */
+    wlmtk_content_t           super_content;
+
+    /** Surface of the popup. */
+    wlmtk_surface_t           surface;
+    /** The WLR popup. */
+    struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
+};
+
 /**
  * Creates a popup.
  *
  * @param wlr_xdg_popup_ptr
- * @param window_ptr
+ * @param env_ptr
  */
-void wlmtk_create_popup(
+wlmtk_xdg_popup_t *wlmtk_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the popup.
+ *
+ * @param xdg_popup_ptr
+ */
+void wlmtk_xdg_popup_destroy(
+    wlmtk_xdg_popup_t *xdg_popup_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
