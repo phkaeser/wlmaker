@@ -20,6 +20,8 @@
 
 #include "xdg_toplevel.h"
 
+#include "wlmtk_xdg_popup.h"
+
 /* == Declarations ========================================================= */
 
 /** State of the content for an XDG toplevel surface. */
@@ -392,6 +394,23 @@ void handle_new_popup(
 {
     wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_xdg_toplevel_surface_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    wlmtk_xdg_popup_t *xdg_popup_ptr = wlmtk_xdg_popup_create(
+        wlr_xdg_popup_ptr, xdg_tl_surface_ptr->server_ptr->env_ptr);
+    if (NULL == xdg_popup_ptr) {
+        bs_log(BS_ERROR, "Failed wlmtk_xdg_popup_create(%p, %p)",
+               wlr_xdg_popup_ptr, xdg_tl_surface_ptr->server_ptr->env_ptr);
+        return;
+    }
+
+    // xdg_tl_surface_ptr->super_content -> super_container
+
+    wlmtk_element_set_visible(
+        wlmtk_content_element(&xdg_popup_ptr->super_content), true);
+    wlmtk_container_add_element(
+        &xdg_tl_surface_ptr->super_content.super_container,
+        wlmtk_content_element(&xdg_popup_ptr->super_content));
 
     bs_log(BS_WARNING, "FIXME: wlmtk_xdg_toplevel %p, New popup %p",
            xdg_tl_surface_ptr, data_ptr);

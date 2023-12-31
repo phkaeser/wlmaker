@@ -42,6 +42,13 @@ struct _wlmtk_xdg_popup_t {
     wlmtk_surface_t           surface;
     /** The WLR popup. */
     struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
+
+    /** Listener for the `reposition` signal of `wlr_xdg_popup::events` */
+    struct wl_listener        reposition_listener;
+    /** Listener for the `destroy` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        destroy_listener;
+    /** Listener for the `new_popup` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        new_popup_listener;
 };
 
 /**
