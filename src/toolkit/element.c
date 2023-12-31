@@ -218,6 +218,12 @@ void wlmtk_element_get_position(
     int *x_ptr,
     int *y_ptr)
 {
+    // The node may have been moved without us noticing... update it.
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        element_ptr->x = element_ptr->wlr_scene_node_ptr->x;
+        element_ptr->y = element_ptr->wlr_scene_node_ptr->y;
+    }
+
     if (NULL != x_ptr) *x_ptr = element_ptr->x;
     if (NULL != y_ptr) *y_ptr = element_ptr->y;
 }
@@ -228,17 +234,14 @@ void wlmtk_element_set_position(
     int x,
     int y)
 {
-    // Optimization clause: No need for update, if coordinates didn't change.
-    if (element_ptr->x == x && element_ptr->y == y) return;
+    if (NULL != element_ptr->wlr_scene_node_ptr) {
+        wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr, x, y);
+    }
 
+    // Optimization clause: Can leave here, if coordinates didn't change.
+    if (element_ptr->x == x && element_ptr->y == y) return;
     element_ptr->x = x;
     element_ptr->y = y;
-
-    if (NULL != element_ptr->wlr_scene_node_ptr) {
-        wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr,
-                                    element_ptr->x,
-                                    element_ptr->y);
-    }
 
     if (NULL != element_ptr->parent_container_ptr) {
         wlmtk_container_update_pointer_focus(
@@ -632,6 +635,11 @@ void test_set_get_position(bs_test_t *test_ptr)
     wlmtk_element_set_position(&element, 30, 40);
     BS_TEST_VERIFY_EQ(test_ptr, 30, element.wlr_scene_node_ptr->x);
     BS_TEST_VERIFY_EQ(test_ptr, 40, element.wlr_scene_node_ptr->y);
+
+    wlr_scene_node_set_position(element.wlr_scene_node_ptr, 50, 60);
+    wlmtk_element_get_position(&element, &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 60, y);
 
     wlmtk_element_set_parent_container(&element, NULL);
     wlmtk_element_fini(&element);

@@ -123,9 +123,19 @@ struct _wlmtk_element_vmt_t {
 
 /** State of an element. */
 struct _wlmtk_element_t {
-    /** X position of the element, relative to the container. */
+    /**
+     * X position of the element in pixels, relative to parent container.
+     *
+     * This value may be stale, if @ref wlmtk_element_t::wlr_scene_node_ptr is
+     * set and had been updated directly. Therefore, consider the value as
+     * "private", and access only through @ref wlmtk_element_get_position.
+     */
     int x;
-    /** Y position of the element, relative to the container. */
+    /**
+     * Y position of the element, relative to the container.
+     *
+     * Same observations apply as for @ref wlmtk_element_t::x.
+     */
     int y;
 
     /** The container this element belongs to, if any. */
