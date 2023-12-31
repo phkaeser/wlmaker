@@ -27,7 +27,7 @@ jobs:
         
         - name: Checkout submodules
           run: |
-               # git config --global --add safe.directory /__w/wlmaker/wlmaker
+               git config --global --add safe.directory /__w/wlmaker/wlmaker
                git submodule update --init --recursive --merge
 
         - name: Build dependencies
