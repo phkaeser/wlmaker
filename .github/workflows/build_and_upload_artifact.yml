@@ -19,15 +19,15 @@ jobs:
                 apt-get update
                 apt-get install -y git cmake glslang-dev glslang-tools graphviz libgbm-dev libinput-dev libudev-dev libvulkan-dev \
                 libxcb-composite0-dev libxcb-dri3-dev libxcb-ewmh-dev libxcb-icccm4-dev libxcb-present-dev libxcb-render-util0-dev \
-                libxcb-res0-dev libxcb-xinput-dev libxkbcommon-dev meson plantuml xmlto xsltproc wayland-protocols libwlroots-dev doxygen \
-                libexpat1-dev libexpat1 libxml2-dev hwdata libcairo2-dev libncurses-dev
+                libxcb-res0-dev libxcb-xinput-dev libxkbcommon-dev meson plantuml xmlto xsltproc libwlroots-dev doxygen \
+                libexpat1-dev libexpat1 libxml2-dev libcairo2-dev libncurses-dev
 
         - name: Checkout code
           uses: actions/checkout@v2
         
         - name: Checkout submodules
           run: |
-               git config --global --add safe.directory /__w/wlmaker/wlmaker
+               # git config --global --add safe.directory /__w/wlmaker/wlmaker
                git submodule update --init --recursive --merge
 
         - name: Build dependencies
