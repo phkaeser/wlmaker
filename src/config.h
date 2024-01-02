@@ -38,9 +38,9 @@ typedef enum {
     WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT,
     /** Mode NONE will be set to SERVER; but other modes left unchanged. */
     WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER,
-    /** Will set all windows to CLIENT, no mather what they requested. */
+    /** Will set all windows to CLIENT, no matter what they requested. */
     WLMAKER_CONFIG_DECORATION_ENFORCE_CLIENT,
-    /** Will set all windows to SERVER, no mather what they requested. */
+    /** Will set all windows to SERVER, no matter what they requested. */
     WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER
 } wlmaker_config_decoration_t;
 
