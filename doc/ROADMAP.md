@@ -68,6 +68,8 @@ Support for visual effects to improve usability, but not for pure show.
 * Issues to fix:
   * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
   * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+  * Hide window border when not having server-side decoration.
+  * Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
@@ -81,6 +83,15 @@ Support for visual effects to improve usability, but not for pure show.
 * Configurable keyboard map (in code or commandline arg)
 
 * Support `xdg_shell`, based on toolkit.
+  * [done] XDG Popups.
+  * [done] Move and Resize, compliant with asynchronous ops.
+  * [done] Maximize.
+  * [done] Set title.
+  * fullscreen.
+  * minimize.
+  * show window menu.
+  * set_parent.
+  * set app ID.
 
 * Support `layer_shell`, based on toolkit.
 
