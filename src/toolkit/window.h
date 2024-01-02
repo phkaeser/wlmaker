@@ -32,6 +32,7 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
+#include "workspace.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -270,6 +271,21 @@ void wlmtk_window_request_position_and_size(
  * @param serial
  */
 void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial);
+
+/**
+ * Sets @ref wlmtk_window_t::workspace_ptr.
+ *
+ * Protected method, to be called only from @ref wlmtk_workspace_t.
+ *
+ * @param window_ptr
+ * @param workspace_ptr
+ */
+void wlmtk_window_set_workspace(
+    wlmtk_window_t *window_ptr,
+    wlmtk_workspace_t *workspace_ptr);
+
+/** @return The value of @ref wlmtk_window_t::workspace_ptr. */
+wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr);
 
 /* ------------------------------------------------------------------------- */
 

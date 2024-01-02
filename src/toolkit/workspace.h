@@ -20,15 +20,15 @@
 #ifndef __WLMTK_WORKSPACE_H__
 #define __WLMTK_WORKSPACE_H__
 
+/** State of the workspace. */
+typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
+
 #include "container.h"
 #include "window.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** State of the workspace. */
-typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 /** Forward declaration. */
 struct wlr_pointer_button_event;
@@ -94,17 +94,6 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
-
-/**
- * Type conversion: Returns the @ref wlmtk_workspace_t from the container_ptr
- * pointing to wlmtk_workspace_t::super_container.
- *
- * Asserts that the container is indeed from a wlmtk_workspace_t.
- *
- * @return Pointer to the workspace.
- */
-wlmtk_workspace_t *wlmtk_workspace_from_container(
-    wlmtk_container_t *container_ptr);
 
 /**
  * Handles a motion event.

@@ -30,6 +30,13 @@
 
 /* == Declarations ========================================================= */
 
+// fullscreen: a container, on top of all.
+// -> workspace_make_fullscreen(workspace_ptr, window_ptr)
+//    => removes from the main container
+//    => adds to the fullscreen container
+//    => sets the window to fullscreen mode
+//    => activates the window. Request routing will go there *always*.
+
 /** State of the workspace. */
 struct _wlmtk_workspace_t {
     /** Superclass: Container. */
@@ -39,6 +46,9 @@ struct _wlmtk_workspace_t {
 
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
+
+    /** Container that holds the windows, ie. the window layer. */
+    wlmtk_container_t         window_container;
 
     /** The activated window. */
     wlmtk_window_t            *activated_window_ptr;
@@ -160,6 +170,17 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container.super_element,
         &workspace_element_vmt);
 
+    if (!wlmtk_container_init(&workspace_ptr->window_container, env_ptr)) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        &workspace_ptr->window_container.super_element,
+        true);
+    wlmtk_container_add_element(
+        &workspace_ptr->super_container,
+        &workspace_ptr->window_container.super_element);
+
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
 }
@@ -167,6 +188,13 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
+    if (NULL != workspace_ptr->window_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->super_container,
+            &workspace_ptr->window_container.super_element);
+    }
+    wlmtk_container_fini(&workspace_ptr->window_container);
+
     wlmtk_container_fini(&workspace_ptr->super_container);
     free(workspace_ptr);
 }
@@ -200,8 +228,9 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
 {
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), true);
     wlmtk_container_add_element(
-        &workspace_ptr->super_container,
+        &workspace_ptr->window_container,
         wlmtk_window_element(window_ptr));
+    wlmtk_window_set_workspace(window_ptr, workspace_ptr);
 
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 }
@@ -212,8 +241,8 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 {
     bool need_activation = false;
 
-    BS_ASSERT(workspace_ptr == wlmtk_workspace_from_container(
-                  wlmtk_window_element(window_ptr)->parent_container_ptr));
+    BS_ASSERT(&workspace_ptr->window_container ==
+              wlmtk_window_element(window_ptr)->parent_container_ptr);
 
     if (workspace_ptr->grabbed_window_ptr == window_ptr) {
         wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
@@ -227,28 +256,20 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
     wlmtk_container_remove_element(
-        &workspace_ptr->super_container,
+        &workspace_ptr->window_container,
         wlmtk_window_element(window_ptr));
+    wlmtk_window_set_workspace(window_ptr, NULL);
 
     if (need_activation) {
         // FIXME: What about raising?
         bs_dllist_node_t *dlnode_ptr =
-            workspace_ptr->super_container.elements.head_ptr;
+            workspace_ptr->window_container.elements.head_ptr;
         if (NULL != dlnode_ptr) {
             wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
             wlmtk_window_t *window_ptr = wlmtk_window_from_element(element_ptr);
             wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
         }
     }
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmtk_workspace_from_container(
-    wlmtk_container_t *container_ptr)
-{
-    BS_ASSERT(container_ptr->super_element.vmt.destroy ==
-              _wlmtk_workspace_element_destroy);
-    return BS_CONTAINER_OF(container_ptr, wlmtk_workspace_t, super_container);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -337,7 +358,7 @@ void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr)
 {
-    wlmtk_container_raise_element_to_top(&workspace_ptr->super_container,
+    wlmtk_container_raise_element_to_top(&workspace_ptr->window_container,
                                          wlmtk_window_element(window_ptr));
 }
 
@@ -613,11 +634,6 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         NULL, fake_parent_ptr->wlr_scene_tree_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
-
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        workspace_ptr,
-        wlmtk_workspace_from_container(&workspace_ptr->super_container));
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
     wlmtk_workspace_set_extents(workspace_ptr, &box);

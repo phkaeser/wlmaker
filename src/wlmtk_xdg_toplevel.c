@@ -455,8 +455,7 @@ void handle_surface_unmap(
 
     wlmtk_window_t *window_ptr = xdg_tl_surface_ptr->super_content.window_ptr;
     wlmtk_workspace_unmap_window(
-        wlmtk_workspace_from_container(
-            wlmtk_window_element(window_ptr)->parent_container_ptr),
+        wlmtk_window_get_workspace(window_ptr),
         window_ptr);
 }
 

@@ -84,6 +84,8 @@ struct _wlmtk_window_t {
 
     /** FIXME: Element. */
     wlmtk_element_t           *element_ptr;
+    /** Points to the workspace, if mapped. */
+    wlmtk_workspace_t         *workspace_ptr;
 
     /** Content of the window. */
     wlmtk_content_t           *content_ptr;
@@ -161,7 +163,6 @@ static wlmtk_pending_update_t *_wlmtk_window_prepare_update(
 static void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
-static wlmtk_workspace_t *_wlmtk_window_workspace(wlmtk_window_t *window_ptr);
 
 /* == Data ================================================================= */
 
@@ -388,6 +389,7 @@ void wlmtk_window_request_maximize(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
+    BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     if (window_ptr->maximized == maximized) return;
 
     window_ptr->maximized = maximized;
@@ -395,7 +397,7 @@ void wlmtk_window_request_maximize(
     struct wlr_box box;
     if (window_ptr->maximized) {
         box = wlmtk_workspace_get_maximize_extents(
-            _wlmtk_window_workspace(window_ptr));
+            wlmtk_window_get_workspace(window_ptr));
     } else {
         box = window_ptr->organic_size;
     }
@@ -539,6 +541,20 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
     }
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_workspace(
+    wlmtk_window_t *window_ptr,
+    wlmtk_workspace_t *workspace_ptr)
+{
+    window_ptr->workspace_ptr = workspace_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->workspace_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -673,7 +689,7 @@ bool _wlmtk_window_element_pointer_button(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
     // We shouldn't receive buttons when not mapped.
-    wlmtk_workspace_t *workspace_ptr = _wlmtk_window_workspace(window_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
     wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
 
@@ -740,16 +756,18 @@ void _wlmtk_window_request_minimize(wlmtk_window_t *window_ptr)
 /** Default implementation of @ref wlmtk_window_request_move. */
 void _wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
+    BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     wlmtk_workspace_begin_window_move(
-        _wlmtk_window_workspace(window_ptr), window_ptr);
+        wlmtk_window_get_workspace(window_ptr), window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Default implementation of @ref wlmtk_window_request_resize. */
 void _wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
 {
+    BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     wlmtk_workspace_begin_window_resize(
-        _wlmtk_window_workspace(window_ptr), window_ptr, edges);
+        wlmtk_window_get_workspace(window_ptr), window_ptr, edges);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -831,15 +849,6 @@ void _wlmtk_window_release_update(
 {
     bs_dllist_remove(&window_ptr->pending_updates, &update_ptr->dlnode);
     bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Returns the workspace of the (mapped) window. */
-wlmtk_workspace_t *_wlmtk_window_workspace(wlmtk_window_t *window_ptr)
-{
-    BS_ASSERT(NULL != wlmtk_window_element(window_ptr)->parent_container_ptr);
-    return wlmtk_workspace_from_container(
-        wlmtk_window_element(window_ptr)->parent_container_ptr);
 }
 
 /* == Implementation of the fake window ==================================== */
