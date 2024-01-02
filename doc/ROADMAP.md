@@ -65,6 +65,10 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.2
 
+* Issues to fix:
+  * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
+  * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
   * Surfaces will be shown in either tile container, clip or dock area,
@@ -102,9 +106,9 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Window actions, based on toolkit.
   * Move (drag via title bar, or window-alt-click)
-  * Resize windows, including a resize bar.
+  * [done] Resize windows, including a resize bar.
   * Fullscreen windows.
-  * Maximize windows.
+  * [done] Maximize windows.
   * Minimize (*iconify*) windows.
   * Roll up (*shade*) windows.
   * Raise window when activated.
