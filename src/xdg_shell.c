@@ -103,9 +103,8 @@ void handle_new_surface(struct wl_listener *listener_ptr,
                         __UNUSED__ void *data_ptr)
 {
     struct wlr_xdg_surface *wlr_xdg_surface_ptr;
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr;
-    wlmaker_xdg_shell_t *xdg_shell_ptr = wl_container_of(
-        listener_ptr, xdg_shell_ptr, new_surface_listener);
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_surface_listener);
     wlr_xdg_surface_ptr = data_ptr;
 
     switch (wlr_xdg_surface_ptr->role) {
@@ -119,35 +118,21 @@ void handle_new_surface(struct wl_listener *listener_ptr,
     case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 
 #if defined(ENABLE_TOOLKIT_PROTOTYPE)
-        pid_t pid;
-        wl_client_get_credentials(
-            wlr_xdg_surface_ptr->resource->client, &pid, NULL, NULL);
 
-        char path_procps[PATH_MAX], path_exe[PATH_MAX];
-        snprintf(path_procps, sizeof(path_procps), "/proc/%"PRIdMAX"/exe",
-                 (intmax_t)pid);
-        ssize_t rv = readlink(path_procps, path_exe, sizeof(path_exe));
-        if (0 > rv || (size_t)rv >= sizeof(path_exe)) {
-            bs_log(BS_WARNING | BS_ERRNO, "Failed readlink(%s, %p, %zu)",
-                   path_procps, path_exe, sizeof(path_exe));
-            break;
-        }
-        path_exe[rv] = '\0';
-        if (0 == strcmp(path_exe, "/usr/bin/foot") ||
-            0 == strcmp(path_exe, "/opt/google/chrome/chrome") ||
-            0 == strcmp(path_exe, "/usr/lib/firefox-esr/firefox-esr")) {
-            wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
-                wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
-            bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
-                   window_ptr, wlr_xdg_surface_ptr);
-            break;
-        }
-#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
+        wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
+            wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
+        bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
+               window_ptr, wlr_xdg_surface_ptr);
 
-        xdg_toplevel_ptr = wlmaker_xdg_toplevel_create(
+#else  // defined(ENABLE_TOOLKIT_PROTOTYPE)
+
+        wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wlmaker_xdg_toplevel_create(
             xdg_shell_ptr, wlr_xdg_surface_ptr);
         bs_log(BS_INFO, "XDG shell: Surface %p created toplevel view %p",
                wlr_xdg_surface_ptr, xdg_toplevel_ptr);
+
+#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
+
         break;
 
     default:
