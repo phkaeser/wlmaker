@@ -65,6 +65,16 @@ void wlmtk_rectangle_set_size(
     int width,
     int height);
 
+/**
+ * Sets (or updates) the color of the rectangle.
+ *
+ * @param rectangle_ptr
+ * @param color
+ */
+void wlmtk_rectangle_set_color(
+    wlmtk_rectangle_t *rectangle_ptr,
+    uint32_t color);
+
 /** Returns the superclass @ref wlmtk_element_t of the rectangle. */
 wlmtk_element_t *wlmtk_rectangle_element(wlmtk_rectangle_t *rectangle_ptr);
 

@@ -86,7 +86,7 @@ wlmtk_rectangle_t *wlmtk_rectangle_create(
     if (NULL == rectangle_ptr) return NULL;
     rectangle_ptr->width = width;
     rectangle_ptr->height = height;
-    rectangle_ptr->color = color;
+    wlmtk_rectangle_set_color(rectangle_ptr, color);
 
     if (!wlmtk_element_init(&rectangle_ptr->super_element, env_ptr)) {
         wlmtk_rectangle_destroy(rectangle_ptr);
@@ -125,6 +125,21 @@ void wlmtk_rectangle_set_size(
             rectangle_ptr->wlr_scene_rect_ptr,
             rectangle_ptr->width,
             rectangle_ptr->height);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_rectangle_set_color(
+    wlmtk_rectangle_t *rectangle_ptr,
+    uint32_t color)
+{
+    rectangle_ptr->color = color;
+
+    if (NULL != rectangle_ptr->wlr_scene_rect_ptr) {
+        float fcolor[4];
+        bs_gfxbuf_argb8888_to_floats(
+            color, &fcolor[0], &fcolor[1], &fcolor[2], &fcolor[3]);
+        wlr_scene_rect_set_color(rectangle_ptr->wlr_scene_rect_ptr, fcolor);
     }
 }
 
