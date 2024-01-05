@@ -99,6 +99,23 @@ void wlmtk_bordered_fini(wlmtk_bordered_t *bordered_ptr)
     memset(bordered_ptr, 0, sizeof(wlmtk_bordered_t));
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
+                              const wlmtk_margin_style_t *style_ptr)
+{
+    memcpy(&bordered_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
+
+    _wlmtk_bordered_container_update_layout(&bordered_ptr->super_container);
+    wlmtk_rectangle_set_color(
+        bordered_ptr->northern_border_rectangle_ptr, style_ptr->color);
+    wlmtk_rectangle_set_color(
+        bordered_ptr->eastern_border_rectangle_ptr, style_ptr->color);
+    wlmtk_rectangle_set_color(
+        bordered_ptr->southern_border_rectangle_ptr, style_ptr->color);
+    wlmtk_rectangle_set_color(
+        bordered_ptr->western_border_rectangle_ptr, style_ptr->color);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
