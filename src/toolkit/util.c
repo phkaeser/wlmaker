@@ -43,7 +43,9 @@ const bs_test_case_t wlmtk_util_test_cases[] = {
 
 /** Struct for testing listener code. */
 typedef struct {
+    /** Listener. */
     struct wl_listener        listener;
+    /** Data. */
     int                       data;
 } _wlmtk_util_listener;
 
