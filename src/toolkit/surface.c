@@ -137,6 +137,8 @@ void wlmtk_surface_commit_size(
     int width,
     int height)
 {
+    // TODO(kaeser@gubbe.ch): don't update layout if size didn't change.
+
     if (surface_ptr->committed_width != width ||
         surface_ptr->committed_height != height) {
         surface_ptr->committed_width = width;
