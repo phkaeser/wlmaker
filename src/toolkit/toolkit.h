@@ -47,6 +47,7 @@
 #include "titlebar.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
+#include "util.h"
 #include "window.h"
 #include "workspace.h"
 
