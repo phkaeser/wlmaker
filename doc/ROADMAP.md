@@ -70,6 +70,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
   * Hide window border when not having server-side decoration.
   * Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
+  * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
