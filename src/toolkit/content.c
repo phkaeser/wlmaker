@@ -68,6 +68,21 @@ void wlmtk_content_fini(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_content_vmt_t wlmtk_content_extend(
+    wlmtk_content_t *content_ptr,
+    const wlmtk_content_vmt_t *content_vmt_ptr)
+{
+    wlmtk_content_vmt_t orig_vmt = content_ptr->vmt;
+
+    if (NULL != content_vmt_ptr->request_fullscreen) {
+        content_ptr->vmt.request_fullscreen =
+            content_vmt_ptr->request_fullscreen;
+    }
+
+    return orig_vmt;
+}
+
+/* ------------------------------------------------------------------------- */
 uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,

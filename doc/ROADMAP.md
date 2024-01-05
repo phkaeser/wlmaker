@@ -88,7 +88,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Move and Resize, compliant with asynchronous ops.
   * [done] Maximize.
   * [done] Set title.
-  * fullscreen.
+  * [done] fullscreen.
   * minimize.
   * show window menu.
   * set_parent.

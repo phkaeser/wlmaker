@@ -108,6 +108,10 @@ static void surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated);
 
+static uint32_t content_request_fullscreen(
+    wlmtk_content_t *content_ptr,
+    bool fullscreen);
+
 /* == Data ================================================================= */
 
 /** Virtual methods for XDG toplevel surface, for the Element superclass. */
@@ -121,6 +125,11 @@ const wlmtk_surface_vmt_t     _wlmtk_xdg_toplevel_surface_vmt = {
     .request_close = surface_request_close,
     .request_size = surface_request_size,
     .set_activated = surface_set_activated,
+};
+
+/** Virtual methods for XDG toplevel surface, for the Content superclass. */
+const wlmtk_content_vmt_t     _wlmtk_xdg_toplevel_content_vmt = {
+    .request_fullscreen = content_request_fullscreen,
 };
 
 /* == Exported methods ===================================================== */
@@ -178,6 +187,9 @@ wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
     }
+    wlmtk_content_extend(
+            &xdg_tl_surface_ptr->super_content,
+            &_wlmtk_xdg_toplevel_content_vmt);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.destroy,
@@ -318,6 +330,18 @@ uint32_t surface_request_size(
 
     return wlr_xdg_toplevel_set_size(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
+}
+
+/* ------------------------------------------------------------------------- */
+uint32_t content_request_fullscreen(
+    wlmtk_content_t *content_ptr,
+    bool fullscreen)
+{
+    wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_surface_t, super_content);
+
+    return wlr_xdg_toplevel_set_fullscreen(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -474,12 +498,18 @@ void handle_surface_commit(
         listener_ptr, wlmtk_xdg_toplevel_surface_t, surface_commit_listener);
 
     if (NULL == xdg_tl_surface_ptr->wlr_xdg_surface_ptr) return;
+    BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_surface_ptr->role ==
+              WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
     wlmtk_content_commit_size(
         &xdg_tl_surface_ptr->super_content,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
+
+    wlmtk_window_commit_fullscreen(
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -500,6 +530,7 @@ void handle_toplevel_request_maximize(
     wlmtk_window_request_maximize(
         xdg_tl_surface_ptr->super_content.window_ptr,
         !wlmtk_window_maximized(xdg_tl_surface_ptr->super_content.window_ptr));
+    // FIXME: This should be done with a set_maximize async op.
 }
 
 /* ------------------------------------------------------------------------- */

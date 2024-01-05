@@ -23,6 +23,8 @@
 
 /** Forward declaration: Content state. */
 typedef struct _wlmtk_content_t wlmtk_content_t;
+/** Forward declaration: Content virtual method table. */
+typedef struct _wlmtk_content_vmt_t wlmtk_content_vmt_t;
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t
 ;/** Forward declaration: State of a toolkit's WLR surface. */
@@ -34,6 +36,24 @@ typedef struct _wlmtk_surface_t wlmtk_surface_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Virtual method table of @ref wlmtk_content_t. */
+struct _wlmtk_content_vmt_t {
+    /**
+     * Requests the content to be set to fullscreen mode.
+     *
+     * Some contents may adjust the decoration suitably. Once the content has
+     * changed to fullscreen mode (potentially an asynchronous operation),
+     * @ref wlmtk_window_commit_fullscreen ought to be called, if the content
+     * belongs to a window.
+     *
+     * @param content_ptr
+     * @param fullscreen
+     *
+     * @return XDG toplevel configuration serial.
+     */
+    uint32_t (*request_fullscreen)(wlmtk_content_t *content_ptr, bool fullscreen);
+};
+
 /** State of window content. */
 struct _wlmtk_content_t {
     /** Temporary: Identifier, to disambiguate from XDG nodes. */
@@ -41,6 +61,8 @@ struct _wlmtk_content_t {
 
     /** Super class of the content: A container, holding surface & popups. */
     wlmtk_container_t         super_container;
+    /** Virtual method table of the content. */
+    wlmtk_content_vmt_t       vmt;
 
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
@@ -77,11 +99,31 @@ bool wlmtk_content_init(
 void wlmtk_content_fini(
     wlmtk_content_t *content_ptr);
 
+/**
+ * Extends the content by specifying virtual methods.
+ *
+ * @param content_ptr
+ * @param content_vmt_ptr
+ *
+ * @return The original virtual method table.
+ */
+wlmtk_content_vmt_t wlmtk_content_extend(
+    wlmtk_content_t *content_ptr,
+    const wlmtk_content_vmt_t *content_vmt_ptr);
+
 /** Requests size: Forwards to @ref wlmtk_surface_request_size. */
 uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
+
+/** Requests fullscreen mode. */
+static inline uint32_t wlmtk_content_request_fullscreen(
+    wlmtk_content_t *content_ptr,
+    bool fullscreen) {
+    if (NULL == content_ptr->vmt.request_fullscreen) return 0;
+    return content_ptr->vmt.request_fullscreen(content_ptr, fullscreen);
+}
 
 /**
  * Sets the window for the content.

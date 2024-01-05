@@ -157,10 +157,23 @@ void toggle_fullscreen(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 {
     wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
         server_ptr);
-    wlmaker_view_t *view_ptr = wlmaker_workspace_get_activated_view(
+
+    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
         workspace_ptr);
-    if (NULL == view_ptr) return;  // No activated view, nothing to do.
-    wlmaker_view_set_fullscreen(view_ptr, !view_ptr->fullscreen);
+    if (NULL != wlmtk_workspace_ptr) {
+
+        wlmtk_window_t *window_ptr = wlmtk_workspace_get_activated_window(
+            wlmtk_workspace_ptr);
+        if (NULL == window_ptr) return;
+        wlmtk_window_request_fullscreen(
+            window_ptr, !wlmtk_window_is_fullscreen(window_ptr));
+
+    } else {
+        wlmaker_view_t *view_ptr = wlmaker_workspace_get_activated_view(
+            workspace_ptr);
+        if (NULL == view_ptr) return;  // No activated view, nothing to do.
+        wlmaker_view_set_fullscreen(view_ptr, !view_ptr->fullscreen);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

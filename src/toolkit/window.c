@@ -108,6 +108,16 @@ struct _wlmtk_window_t {
     struct wlr_box             organic_size;
     /** Whether the window has been requested as maximized. */
     bool                       maximized;
+    /** Whether the window has been requested as fullscreen. */
+    bool                       fullscreen;
+    /**
+     * Whether an "inorganic" sizing operation is in progress, and thus size
+     * changes should not be recorded in @ref wlmtk_window_t::organic_size.
+     *
+     * This is eg. between @ref wlmtk_window_request_fullscreen and
+     * @ref wlmtk_window_commit_fullscreen.
+     */
+    bool                       inorganic_sizing;
 
     /**
      * Stores whether the window is server-side decorated.
@@ -392,6 +402,7 @@ void wlmtk_window_request_maximize(
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     if (window_ptr->maximized == maximized) return;
 
+    window_ptr->inorganic_sizing = maximized;
     window_ptr->maximized = maximized;
 
     struct wlr_box box;
@@ -410,6 +421,71 @@ void wlmtk_window_request_maximize(
 bool wlmtk_window_maximized(wlmtk_window_t *window_ptr)
 {
     return window_ptr->maximized;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_fullscreen(
+    wlmtk_window_t *window_ptr,
+    bool fullscreen)
+{
+    struct wlr_box box;
+    uint32_t serial;
+    wlmtk_pending_update_t *pending_update_ptr;
+
+    // Must be mapped.x
+    BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
+
+    // FIXME: Oh gosh, this is ugly.
+    window_ptr->inorganic_sizing = fullscreen;
+    if (fullscreen) {
+        box = wlmtk_workspace_get_fullscreen_extents(
+            wlmtk_window_get_workspace(window_ptr));
+        serial = wlmtk_content_request_size(
+            window_ptr->content_ptr, box.width, box.height);
+        pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
+        pending_update_ptr->serial = serial;
+        pending_update_ptr->x = box.x;
+        pending_update_ptr->y = box.y;
+        pending_update_ptr->width = box.width;
+        pending_update_ptr->height = box.height;
+
+    } else {
+
+        wlmtk_window_set_server_side_decorated(window_ptr, true);
+        box = window_ptr->organic_size;
+        _wlmtk_window_request_position_and_size(
+            window_ptr, box.x, box.y, box.width, box.height);
+    }
+
+    serial = wlmtk_content_request_fullscreen(
+        window_ptr->content_ptr, fullscreen);
+    pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
+    pending_update_ptr->serial = serial;
+    pending_update_ptr->x = box.x;
+    pending_update_ptr->y = box.y;
+    pending_update_ptr->width = box.width;
+    pending_update_ptr->height = box.height;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_commit_fullscreen(
+    wlmtk_window_t *window_ptr,
+    bool fullscreen)
+{
+    // Guard clause: Nothing to do if we're already there.
+    if (window_ptr->fullscreen == fullscreen) return;
+
+    wlmtk_window_set_server_side_decorated(window_ptr, !fullscreen);
+    window_ptr->fullscreen = fullscreen;
+
+    wlmtk_workspace_window_to_fullscreen(
+        wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->fullscreen;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -504,7 +580,7 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 {
     bs_dllist_node_t *dlnode_ptr;
 
-    if (!window_ptr->maximized &&
+    if (!window_ptr->inorganic_sizing &&
         NULL == window_ptr->pending_updates.head_ptr) {
         wlmtk_window_get_size(window_ptr,
                               &window_ptr->organic_size.width,
@@ -518,20 +594,6 @@ void wlmtk_window_serial(wlmtk_window_t *window_ptr, uint32_t serial)
 
         int32_t delta = pending_update_ptr->serial - serial;
         if (0 < delta) break;
-
-        if (pending_update_ptr->serial == serial) {
-            if (NULL != window_ptr->content_ptr &&
-                       NULL != window_ptr->content_ptr->surface_ptr) {
-                if (window_ptr->content_ptr->surface_ptr->committed_width !=
-                    pending_update_ptr->width) {
-                    bs_log(BS_ERROR, "FIXME: width mismatch!");
-                }
-                if (window_ptr->content_ptr->surface_ptr->committed_height !=
-                    pending_update_ptr->height) {
-                    bs_log(BS_ERROR, "FIXME: height mismatch!");
-                }
-            }
-        }
 
         wlmtk_element_set_position(
             wlmtk_window_element(window_ptr),
@@ -691,7 +753,10 @@ bool _wlmtk_window_element_pointer_button(
     // We shouldn't receive buttons when not mapped.
     wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
-    wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
+
+    if (!window_ptr->fullscreen) {
+        wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
+    }
 
     return window_ptr->orig_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
@@ -791,8 +856,7 @@ void _wlmtk_window_request_position_and_size(
     height = BS_MAX(0, height);
     width = BS_MAX(0, width);
 
-    uint32_t serial;
-    serial = wlmtk_content_request_size(
+    uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
 
     wlmtk_pending_update_t *pending_update_ptr =

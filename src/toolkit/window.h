@@ -220,6 +220,50 @@ void wlmtk_window_request_size(
     int height);
 
 /**
+ * Requests the window to be made fullscreen (or stops so).
+ *
+ * Requires the window to be mapped (to a workspace). This may be implemented
+ * as an asynchronous operation. Once the window content is ready, it should
+ * call @ref wlmtk_window_commit_fullscreen to complete the operation.
+ *
+ * @param window_ptr
+ * @param fullscreen          Whether to enable fullscreen mode.
+ */
+void wlmtk_window_request_fullscreen(
+    wlmtk_window_t *window_ptr,
+    bool fullscreen);
+
+/**
+ * Commits the fullscreen mode for the window.
+ *
+ * This is the "commit" part of the potentially asynchronous operation. To be
+ * called by @ref wlmtk_content_t, after @ref wlmtk_content_request_fullscreen
+ * has completed by the client.
+ *
+ * The call is idempotent: Once the window is committed, further calls with
+ * the same `fullscreen` value will return straight away.
+ *
+ * @param window_ptr
+ * @param fullscreen
+ */
+void wlmtk_window_commit_fullscreen(
+    wlmtk_window_t *window_ptr,
+    bool fullscreen);
+
+/**
+ * Returns whether the window is currently in fullscreen mode.
+ *
+ * Will return the state after @ref wlmtk_window_commit_fullscreen has
+ * completed.
+ *
+ * @param window_ptr
+ *
+ * @return Whether it's in fullscreen mode or not.
+ */
+bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr);
+
+
+/**
  * Returns the current position and size of the window.
  *
  * @param window_ptr

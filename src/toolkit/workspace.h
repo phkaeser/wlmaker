@@ -78,6 +78,16 @@ struct wlr_box wlmtk_workspace_get_maximize_extents(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Returns the extents of the workspace available for fullscreen windows.
+ *
+ * @param workspace_ptr
+ *
+ * @return A `struct wlr_box` that lines out the available space and position.
+ */
+struct wlr_box wlmtk_workspace_get_fullscreen_extents(
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
  * Maps the window: Adds it to the workspace container and makes it visible.
  *
  * @param workspace_ptr
@@ -94,6 +104,20 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
+
+/**
+ * Promotes the window to the fullscreen layer (or back).
+ *
+ * To be called by @ref wlmtk_window_commit_fullscreen.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ * @param fullscreen
+ */
+void wlmtk_workspace_window_to_fullscreen(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr,
+    bool fullscreen);
 
 /**
  * Handles a motion event.
@@ -159,6 +183,10 @@ void wlmtk_workspace_begin_window_resize(
 void wlmtk_workspace_activate_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
+
+/** @return Pointer to the activated @ref wlmtk_window_t, if any. */
+wlmtk_window_t *wlmtk_workspace_get_activated_window(
+    wlmtk_workspace_t *workspace_ptr);
 
 /** Raises `window_ptr`: Will show it atop all other windows. */
 void wlmtk_workspace_raise_window(
