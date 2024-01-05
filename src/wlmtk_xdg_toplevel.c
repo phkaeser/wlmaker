@@ -50,8 +50,10 @@ typedef struct {
     /** Listener for the `commit` signal of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
 
-    /** Listener for `maximize` signal of `wlr_xdg_toplevel::events`. */
+    /** Listener for `request_maximize` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_maximize_listener;
+    /** Listener for `request_fullscreen` signal of `wlr_xdg_toplevel::events`. */
+    struct wl_listener        toplevel_request_fullscreen_listener;
     /** Listener for `request_move` signal of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_request_move_listener;
     /** Listener for `request_resize` signal of `wlr_xdg_toplevel::events`. */
@@ -82,6 +84,9 @@ static void handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_toplevel_request_maximize(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_toplevel_request_fullscreen(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_toplevel_request_move(
@@ -217,6 +222,10 @@ wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &xdg_tl_surface_ptr->toplevel_request_maximize_listener,
         handle_toplevel_request_maximize);
     wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->toplevel->events.request_fullscreen,
+        &xdg_tl_surface_ptr->toplevel_request_fullscreen_listener,
+        handle_toplevel_request_fullscreen);
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_move,
         &xdg_tl_surface_ptr->toplevel_request_move_listener,
         handle_toplevel_request_move);
@@ -243,6 +252,7 @@ void xdg_toplevel_surface_destroy(
         &xdg_tl_surface_ptr->toplevel_set_title_listener.link);
     wl_list_remove(&xdg_tl_surface_ptr->toplevel_request_resize_listener.link);
     wl_list_remove(&xdg_tl_surface_ptr->toplevel_request_move_listener.link);
+    wl_list_remove(&xdg_tl_surface_ptr->toplevel_request_fullscreen_listener.link);
     wl_list_remove(&xdg_tl_surface_ptr->toplevel_request_maximize_listener.link);
 
     wl_list_remove(&xdg_tl_surface_ptr->surface_commit_listener.link);
@@ -507,6 +517,8 @@ void handle_surface_commit(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 
+    bs_log(BS_WARNING, "FIXME: commit fs %d",
+           xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.fullscreen);
     wlmtk_window_commit_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.fullscreen);
@@ -530,7 +542,30 @@ void handle_toplevel_request_maximize(
     wlmtk_window_request_maximize(
         xdg_tl_surface_ptr->super_content.window_ptr,
         !wlmtk_window_maximized(xdg_tl_surface_ptr->super_content.window_ptr));
-    // FIXME: This should be done with a set_maximize async op.
+
+    // TODO(kaeser@gubbe.ch): Check is a wlr_xdg_surface_schedule_configure()
+    // is required here.
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `request_fullscreen` signal.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_toplevel_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmtk_xdg_toplevel_surface_t,
+        toplevel_request_maximize_listener);
+
+    bs_log(BS_WARNING, "Unimplemented: request fullscreen.");
+    wlr_xdg_surface_schedule_configure(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
 }
 
 /* ------------------------------------------------------------------------- */
