@@ -238,6 +238,12 @@ void wlmtk_titlebar_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_titlebar_is_activated(wlmtk_titlebar_t *titlebar_ptr)
+{
+    return titlebar_ptr->activated;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_titlebar_set_title(
     wlmtk_titlebar_t *titlebar_ptr,
     const char *title_ptr)

@@ -94,6 +94,9 @@ void wlmtk_titlebar_set_activated(
     wlmtk_titlebar_t *titlebar_ptr,
     bool activated);
 
+/** Returns whether the title bar is activated. */
+bool wlmtk_titlebar_is_activated(wlmtk_titlebar_t *titlebar_ptr);
+
 /**
  * Updates the title text of the titlebar.
  *
