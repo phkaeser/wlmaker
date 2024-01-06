@@ -71,6 +71,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Hide window border when not having server-side decoration.
   * Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
+  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel. 
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
@@ -170,6 +171,7 @@ Features for further versions, not ordered by priority nor timeline.
   * System Tray (potentially through a Dock App)
   * Icon Themes
   * Notifications (potentially through a Dock App)
+  * Fullscreen: Hide all other visuals when a window takes fullscreen.
 
 * Application launcher
   * Show icon from XDG desktop entry.
