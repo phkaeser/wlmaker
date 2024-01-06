@@ -102,14 +102,14 @@ struct _wlmtk_window_t {
     /** List of udpates currently available. */
     bs_dllist_t               available_updates;
     /** Pre-alloocated updates. */
-    wlmtk_pending_update_t     pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+    wlmtk_pending_update_t    pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
 
     /** Organic size of the window, ie. when not maximized. */
-    struct wlr_box             organic_size;
+    struct wlr_box            organic_size;
     /** Whether the window has been requested as maximized. */
-    bool                       maximized;
+    bool                      maximized;
     /** Whether the window has been requested as fullscreen. */
-    bool                       fullscreen;
+    bool                      fullscreen;
     /**
      * Whether an "inorganic" sizing operation is in progress, and thus size
      * changes should not be recorded in @ref wlmtk_window_t::organic_size.
@@ -117,14 +117,16 @@ struct _wlmtk_window_t {
      * This is eg. between @ref wlmtk_window_request_fullscreen and
      * @ref wlmtk_window_commit_fullscreen.
      */
-    bool                       inorganic_sizing;
+    bool                      inorganic_sizing;
 
     /**
      * Stores whether the window is server-side decorated.
      *
      * This is equivalent to (titlebar_ptr != NULL && resizebar_ptr != NULL).
      */
-    bool                       server_side_decorated;
+    bool                      server_side_decorated;
+    /** Stores whether the window is activated (keyboard focus). */
+    bool                      activated;
 };
 
 /** State of a fake window: Includes the public record and the window. */
@@ -308,6 +310,8 @@ void wlmtk_window_set_server_side_decorated(
             window_ptr->super_bordered.super_container.super_element.env_ptr,
             window_ptr, &titlebar_style);
         BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+        wlmtk_titlebar_set_activated(
+            window_ptr->titlebar_ptr, window_ptr->activated);
         wlmtk_element_set_visible(
             wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
         // Hm, if the content has a popup that extends over the titlebar area,
@@ -808,6 +812,7 @@ void _wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
+    window_ptr->activated = activated;
     wlmtk_content_set_activated(window_ptr->content_ptr, activated);
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
@@ -1325,7 +1330,14 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
+    wlmtk_window_set_server_side_decorated(window_ptr, true);
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        window_ptr,
+        wlmtk_workspace_get_activated_window(workspace_ptr));
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
@@ -1343,6 +1355,9 @@ void test_fullscreen(bs_test_t *test_ptr)
     // Request fullscreen. Does not take immediate effect.
     wlmtk_window_request_fullscreen(window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_titlebar_is_activated(window_ptr->titlebar_ptr));
 
     // Only after "commit", it will take effect.
     wlmtk_content_commit_size(&content,
@@ -1356,6 +1371,12 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        window_ptr,
+        wlmtk_workspace_get_activated_window(workspace_ptr));
 
     // Request to end fullscreen. Not taking immediate effect.
     wlmtk_window_request_fullscreen(window_ptr, false);
@@ -1373,6 +1394,15 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_titlebar_is_activated(window_ptr->titlebar_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        window_ptr,
+        wlmtk_workspace_get_activated_window(workspace_ptr));
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
@@ -1402,6 +1432,12 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_ASSERT(NULL != window_ptr);
     wlmtk_workspace_map_window(workspace_ptr, window_ptr);
 
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        window_ptr,
+        wlmtk_workspace_get_activated_window(workspace_ptr));
+
     // Request fullscreen. Does not take immediate effect.
     wlmtk_window_request_fullscreen(window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
@@ -1418,8 +1454,15 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_workspace_get_activated_window(workspace_ptr));
+
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
@@ -1428,7 +1471,6 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
-// FIXME: Test that the window remains activated.
 // FIXME: Test that fullscreen keeps window decoration as it should.
 
 /* ------------------------------------------------------------------------- */
