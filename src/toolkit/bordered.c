@@ -106,6 +106,10 @@ void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
     memcpy(&bordered_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
 
     _wlmtk_bordered_container_update_layout(&bordered_ptr->super_container);
+
+    // Guard clause. Actually, if *any* of the rectangles was not created.
+    if (NULL == bordered_ptr->western_border_rectangle_ptr) return;
+
     wlmtk_rectangle_set_color(
         bordered_ptr->northern_border_rectangle_ptr, style_ptr->color);
     wlmtk_rectangle_set_color(
@@ -133,12 +137,6 @@ void _wlmtk_bordered_container_update_layout(
     _wlmtk_bordered_set_positions(bordered_ptr);
 
     bordered_ptr->orig_super_container_vmt.update_layout(container_ptr);
-
-    // configure parent container.
-    if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
-            container_ptr->super_element.parent_container_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
