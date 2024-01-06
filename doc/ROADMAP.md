@@ -140,6 +140,10 @@ Support for visual effects to improve usability, but not for pure show.
 
 Features for further versions, not ordered by priority nor timeline.
 
+* Wayland protocol adherence.
+  * Support XDG `wm_capabilities` and advertise the compositor features.
+  * Fullscreen: Hide all other visuals when a window takes fullscreen.
+
 * XWayland support (X11 clients).
 
 * Dock Apps.
@@ -171,7 +175,6 @@ Features for further versions, not ordered by priority nor timeline.
   * System Tray (potentially through a Dock App)
   * Icon Themes
   * Notifications (potentially through a Dock App)
-  * Fullscreen: Hide all other visuals when a window takes fullscreen.
 
 * Application launcher
   * Show icon from XDG desktop entry.
