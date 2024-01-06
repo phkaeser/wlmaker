@@ -212,7 +212,7 @@ void wlmtk_window_request_size(
  * @param window_ptr
  * @param maximized
  */
-void wlmtk_window_request_maximize(
+void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized);
 
@@ -234,7 +234,7 @@ void wlmtk_window_commit_maximized(
     bool maximized);
 
 /** Returns whether the window is currently (requested to be) maximized. */
-bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
+bool wlmtk_window_is_maximized(wlmtk_window_t *window_ptr);
 
 /**
  * Requests the window to be made fullscreen (or stops so).
@@ -326,7 +326,7 @@ void wlmtk_window_request_position_and_size(
  * @ref wlmtk_window_t::organic_size will be updated, if there was no pending
  * update: Meaning that the commit originated not from an earlier
  * @ref wlmtk_window_request_position_and_size or @ref
- * wlmtk_window_request_maximize call.
+ * wlmtk_window_request_maximized call.
  *
  * @param window_ptr
  * @param serial

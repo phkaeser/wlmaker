@@ -399,7 +399,7 @@ void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_request_maximize(
+void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
@@ -408,22 +408,34 @@ void wlmtk_window_request_maximize(
     if (window_ptr->fullscreen) return;
 
     window_ptr->inorganic_sizing = maximized;
-    window_ptr->maximized = maximized;
 
     struct wlr_box box;
-    if (window_ptr->maximized) {
+    if (maximized) {
         box = wlmtk_workspace_get_maximize_extents(
             wlmtk_window_get_workspace(window_ptr));
     } else {
         box = window_ptr->organic_size;
     }
 
+    wlmtk_content_request_maximized(window_ptr->content_ptr, maximized);
+
     _wlmtk_window_request_position_and_size(
         window_ptr, box.x, box.y, box.width, box.height);
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window_maximized(wlmtk_window_t *window_ptr)
+void wlmtk_window_commit_maximized(
+    wlmtk_window_t *window_ptr,
+    bool maximized)
+{
+    // Guard clause: Nothing to do if already as committed.
+    if (window_ptr->maximized == maximized) return;
+
+    window_ptr->maximized = maximized;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_is_maximized(wlmtk_window_t *window_ptr)
 {
     return window_ptr->maximized;
 }
@@ -1246,7 +1258,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
 
     // Re-position the window.
     wlmtk_window_set_position(window_ptr, 50, 30);
@@ -1265,17 +1277,19 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Maximize.
-    wlmtk_window_request_maximize(window_ptr, true);
+    wlmtk_window_request_maximized(window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
     wlmtk_content_commit_size(&content,
                               fake_surface_ptr->serial,
                               fake_surface_ptr->requested_width,
                               fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(window_ptr, true);
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_maximized(window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(window_ptr));
 
     // A second commit: should not overwrite the organic dimension.
     wlmtk_content_commit_size(&content,
@@ -1284,17 +1298,19 @@ void test_maximize(bs_test_t *test_ptr)
                               fake_surface_ptr->requested_height);
 
     // Unmaximize. Restore earlier organic size and position.
-    wlmtk_window_request_maximize(window_ptr, false);
+    wlmtk_window_request_maximized(window_ptr, false);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(window_ptr));
     wlmtk_content_commit_size(&content,
                               fake_surface_ptr->serial,
                               fake_surface_ptr->requested_width,
                               fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(window_ptr, false);
     box = wlmtk_window_get_position_and_size(window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_maximized(window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
 
     // TODO(kaeser@gubbe.ch): Define what should happen when a maximized
     // window is moved. Should it lose maximization? Should it not move?

@@ -113,6 +113,9 @@ static void surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated);
 
+static uint32_t content_request_maximized(
+    wlmtk_content_t *content_ptr,
+    bool maximized);
 static uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen);
@@ -134,6 +137,7 @@ const wlmtk_surface_vmt_t     _wlmtk_xdg_toplevel_surface_vmt = {
 
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
 const wlmtk_content_vmt_t     _wlmtk_xdg_toplevel_content_vmt = {
+    .request_maximized = content_request_maximized,
     .request_fullscreen = content_request_fullscreen,
 };
 
@@ -343,6 +347,18 @@ uint32_t surface_request_size(
 }
 
 /* ------------------------------------------------------------------------- */
+uint32_t content_request_maximized(
+    wlmtk_content_t *content_ptr,
+    bool maximized)
+{
+    wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_xdg_toplevel_surface_t, super_content);
+
+    return wlr_xdg_toplevel_set_maximized(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, maximized);
+}
+
+/* ------------------------------------------------------------------------- */
 uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen)
@@ -517,6 +533,9 @@ void handle_surface_commit(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 
+    wlmtk_window_commit_maximized(
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.maximized);
     wlmtk_window_commit_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.fullscreen);
@@ -537,12 +556,15 @@ void handle_toplevel_request_maximize(
         listener_ptr,
         wlmtk_xdg_toplevel_surface_t,
         toplevel_request_maximize_listener);
-    wlmtk_window_request_maximize(
+    wlmtk_window_request_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        !wlmtk_window_maximized(xdg_tl_surface_ptr->super_content.window_ptr));
+        !wlmtk_window_is_maximized(
+            xdg_tl_surface_ptr->super_content.window_ptr));
 
     // TODO(kaeser@gubbe.ch): Check is a wlr_xdg_surface_schedule_configure()
     // is required here.
+    wlr_xdg_surface_schedule_configure(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
 }
 
 /* ------------------------------------------------------------------------- */
