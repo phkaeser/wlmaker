@@ -439,8 +439,11 @@ void wlmtk_window_request_fullscreen(
     // Must be mapped.x
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
 
-    // FIXME: Oh gosh, this is ugly.
+    // Will not line up another pending update.
+    wlmtk_content_request_fullscreen(window_ptr->content_ptr, fullscreen);
+
     window_ptr->inorganic_sizing = fullscreen;
+
     if (fullscreen) {
         box = wlmtk_workspace_get_fullscreen_extents(
             wlmtk_window_get_workspace(window_ptr));
@@ -448,8 +451,8 @@ void wlmtk_window_request_fullscreen(
             window_ptr->content_ptr, box.width, box.height);
         pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
         pending_update_ptr->serial = serial;
-        pending_update_ptr->x = box.x;  // FIXME - border_style.width;
-        pending_update_ptr->y = box.y;  // FIXME  - border_style.width;
+        pending_update_ptr->x = box.x;
+        pending_update_ptr->y = box.y;
         pending_update_ptr->width = box.width;
         pending_update_ptr->height = box.height;
 
@@ -462,14 +465,6 @@ void wlmtk_window_request_fullscreen(
             window_ptr, box.x, box.y, box.width, box.height);
     }
 
-    serial = wlmtk_content_request_fullscreen(
-        window_ptr->content_ptr, fullscreen);
-    pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
-    pending_update_ptr->serial = serial;
-    pending_update_ptr->x = box.x;
-    pending_update_ptr->y = box.y;
-    pending_update_ptr->width = box.width;
-    pending_update_ptr->height = box.height;
 }
 
 /* ------------------------------------------------------------------------- */
