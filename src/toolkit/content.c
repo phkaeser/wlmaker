@@ -74,6 +74,10 @@ wlmtk_content_vmt_t wlmtk_content_extend(
 {
     wlmtk_content_vmt_t orig_vmt = content_ptr->vmt;
 
+    if (NULL != content_vmt_ptr->request_maximized) {
+        content_ptr->vmt.request_maximized =
+            content_vmt_ptr->request_maximized;
+    }
     if (NULL != content_vmt_ptr->request_fullscreen) {
         content_ptr->vmt.request_fullscreen =
             content_vmt_ptr->request_fullscreen;

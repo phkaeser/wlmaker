@@ -142,26 +142,6 @@ void wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
 
 /**
- * Reuests the window to be maximized.
- *
- * Requires the window to be mapped (to a workspace). Will lookup the maximize
- * extents from the workspace, and request a corresponding updated position and
- * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
- *
- * This may be implemented as an asynchronous operation. Maximization will be
- * applied once the size change has been committed by the surface.
- *
- * @param window_ptr
- * @param maximized
- */
-void wlmtk_window_request_maximize(
-    wlmtk_window_t *window_ptr,
-    bool maximized);
-
-/** Returns whether the window is currently (requested to be) maximized. */
-bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
-
-/**
  * Requests a move for the window.
  *
  * Requires the window to be mapped (to a workspace), and forwards the call to
@@ -218,6 +198,43 @@ void wlmtk_window_request_size(
     wlmtk_window_t *window_ptr,
     int width,
     int height);
+
+/**
+ * Reuests the window to be maximized.
+ *
+ * Requires the window to be mapped (to a workspace). Will lookup the maximize
+ * extents from the workspace, and request a corresponding updated position and
+ * size for the window. @ref wlmtk_window_t::organic_size will not be updated.
+ *
+ * This may be implemented as an asynchronous operation. Maximization will be
+ * applied once the size change has been committed by the surface.
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window_request_maximize(
+    wlmtk_window_t *window_ptr,
+    bool maximized);
+
+/**
+ * Commits the `maximized` mode for the window.
+ *
+ * This is the "commit" part of the potentially asynchronous operation. To be
+ * called by @ref wlmtk_content_t, after @ref wlmtk_content_request_maximized
+ * has completed by the client.
+ *
+ * The call is idempotent: Once the window is committed, further calls with
+ * the same `maximized` value will return straight away.
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window_commit_maximized(
+    wlmtk_window_t *window_ptr,
+    bool maximized);
+
+/** Returns whether the window is currently (requested to be) maximized. */
+bool wlmtk_window_maximized(wlmtk_window_t *window_ptr);
 
 /**
  * Requests the window to be made fullscreen (or stops so).

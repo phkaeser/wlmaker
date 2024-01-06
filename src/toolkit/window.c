@@ -405,6 +405,7 @@ void wlmtk_window_request_maximize(
 {
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     if (window_ptr->maximized == maximized) return;
+    if (window_ptr->fullscreen) return;
 
     window_ptr->inorganic_sizing = maximized;
     window_ptr->maximized = maximized;

@@ -39,6 +39,21 @@ extern "C" {
 /** Virtual method table of @ref wlmtk_content_t. */
 struct _wlmtk_content_vmt_t {
     /**
+     * Requests the content to be set to maximized mode.
+     *
+     * Once the content has changed to `maximized` mode (potentially an
+     * asynchronous operation), @ref wlmtk_window_commit_maximized ought to be
+     * called, if the content belongs to a window.
+     *
+     * @param content_ptr
+     * @param maximized
+     *
+     * @return XDG toplevel configuration serial.
+     */
+    uint32_t (*request_maximized)(wlmtk_content_t *content_ptr,
+                                  bool maximized);
+
+    /**
      * Requests the content to be set to fullscreen mode.
      *
      * Some contents may adjust the decoration suitably. Once the content has
@@ -51,7 +66,8 @@ struct _wlmtk_content_vmt_t {
      *
      * @return XDG toplevel configuration serial.
      */
-    uint32_t (*request_fullscreen)(wlmtk_content_t *content_ptr, bool fullscreen);
+    uint32_t (*request_fullscreen)(wlmtk_content_t *content_ptr,
+                                   bool fullscreen);
 };
 
 /** State of window content. */
@@ -117,7 +133,15 @@ uint32_t wlmtk_content_request_size(
     int width,
     int height);
 
-/** Requests fullscreen mode. */
+/** Requests maximized. See @ref wlmtk_content_vmt_t::request_maximized. */
+static inline uint32_t wlmtk_content_request_maximized(
+    wlmtk_content_t *content_ptr,
+    bool maximized) {
+    if (NULL == content_ptr->vmt.request_maximized) return 0;
+    return content_ptr->vmt.request_maximized(content_ptr, maximized);
+}
+
+/** Requests fullscreen. See @ref wlmtk_content_vmt_t::request_fullscreen. */
 static inline uint32_t wlmtk_content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen) {
