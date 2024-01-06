@@ -279,9 +279,16 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     }
 
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
-    wlmtk_container_remove_element(
-        &workspace_ptr->window_container,
-        wlmtk_window_element(window_ptr));
+
+    if (wlmtk_window_is_fullscreen(window_ptr)) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->fullscreen_container,
+            wlmtk_window_element(window_ptr));
+    } else {
+        wlmtk_container_remove_element(
+            &workspace_ptr->window_container,
+            wlmtk_window_element(window_ptr));
+    }
     wlmtk_window_set_workspace(window_ptr, NULL);
 
     if (need_activation) {
@@ -303,6 +310,7 @@ void wlmtk_workspace_window_to_fullscreen(
     bool fullscreen)
 {
     BS_ASSERT(workspace_ptr == wlmtk_window_get_workspace(window_ptr));
+    BS_ASSERT(fullscreen == wlmtk_window_is_fullscreen(window_ptr));
 
     if (fullscreen) {
         BS_ASSERT(

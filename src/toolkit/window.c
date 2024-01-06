@@ -487,8 +487,8 @@ void wlmtk_window_commit_fullscreen(
 
     // FIXME: Actually we should only set decoration if this was requested.
     wlmtk_window_set_server_side_decorated(window_ptr, !fullscreen);
-    window_ptr->fullscreen = fullscreen;
 
+    window_ptr->fullscreen = fullscreen;
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
 }
@@ -1094,6 +1094,7 @@ static void test_set_activated(bs_test_t *test_ptr);
 static void test_server_side_decorated(bs_test_t *test_ptr);
 static void test_maximize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
+static void test_fullscreen_unmap(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
@@ -1104,6 +1105,7 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "set_server_side_decorated", test_server_side_decorated },
     { 1, "maximize", test_maximize },
     { 1, "fullscreen", test_fullscreen },
+    { 1, "fullscreen_unmap", test_fullscreen_unmap },
     { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
@@ -1381,7 +1383,51 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
-// FIXME: Test to unmap a fullscreened window.
+/* ------------------------------------------------------------------------- */
+/** Tests that unmapping a fullscreen window works. */
+void test_fullscreen_unmap(bs_test_t *test_ptr)
+{
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
+    struct wlr_box extents = { .width = 1024, .height = 768 }, box;
+    wlmtk_workspace_set_extents(workspace_ptr, &extents);
+    BS_ASSERT(NULL != workspace_ptr);
+
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
+    wlmtk_content_t content;
+    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    BS_ASSERT(NULL != window_ptr);
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+
+    // Request fullscreen. Does not take immediate effect.
+    wlmtk_window_request_fullscreen(window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
+
+    // Only after "commit", it will take effect.
+    wlmtk_content_commit_size(&content,
+                              fake_surface_ptr->serial,
+                              fake_surface_ptr->requested_width,
+                              fake_surface_ptr->requested_height);
+    wlmtk_window_commit_fullscreen(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
+    box = wlmtk_window_get_position_and_size(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_window_destroy(window_ptr);
+    wlmtk_content_fini(&content);
+    wlmtk_fake_surface_destroy(fake_surface_ptr);
+
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+}
+
 // FIXME: Test that the window remains activated.
 // FIXME: Test that fullscreen keeps window decoration as it should.
 
