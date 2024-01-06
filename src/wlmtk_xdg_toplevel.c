@@ -561,8 +561,9 @@ void handle_toplevel_request_maximize(
         !wlmtk_window_is_maximized(
             xdg_tl_surface_ptr->super_content.window_ptr));
 
-    // TODO(kaeser@gubbe.ch): Check is a wlr_xdg_surface_schedule_configure()
-    // is required here.
+    // Protocol expects an `ack_configure`. Depending on current state, that
+    // may not have been sent throught @ref wlmtk_window_request_maximized,
+    // hence adding an explicit `ack_configure` here.
     wlr_xdg_surface_schedule_configure(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
 }
@@ -583,7 +584,14 @@ void handle_toplevel_request_fullscreen(
         wlmtk_xdg_toplevel_surface_t,
         toplevel_request_maximize_listener);
 
-    bs_log(BS_WARNING, "Unimplemented: request fullscreen.");
+    wlmtk_window_request_fullscreen(
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        !wlmtk_window_is_fullscreen(
+            xdg_tl_surface_ptr->super_content.window_ptr));
+
+    // Protocol expects an `ack_configure`. Depending on current state, that
+    // may not have been sent throught @ref wlmtk_window_request_maximized,
+    // hence adding an explicit `ack_configure` here.
     wlr_xdg_surface_schedule_configure(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
 }
