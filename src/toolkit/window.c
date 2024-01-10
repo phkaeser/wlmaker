@@ -122,7 +122,10 @@ struct _wlmtk_window_t {
     /**
      * Stores whether the window is server-side decorated.
      *
-     * This is equivalent to (titlebar_ptr != NULL && resizebar_ptr != NULL).
+     * If the window is NOT fullscreen, then this is equivalent to
+     * (titlebar_ptr != NULL && resizebar_ptr != NULL). For a fullscreen
+     * window, titlebar and resizebar would be NULL, but the flag stores
+     * whether decoration should be enabled on organic/maximized modes.
      */
     bool                      server_side_decorated;
     /** Stores whether the window is activated (keyboard focus). */
@@ -169,6 +172,20 @@ static void _wlmtk_window_request_position_and_size(
     int y,
     int width,
     int height);
+
+static void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_request_position_and_size_decorated(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height,
+    bool include_titlebar,
+    bool include_resizebar);
 
 static wlmtk_pending_update_t *_wlmtk_window_prepare_update(
     wlmtk_window_t *window_ptr);
@@ -303,49 +320,9 @@ void wlmtk_window_set_server_side_decorated(
            window_ptr, decorated);
 
     if (window_ptr->server_side_decorated == decorated) return;
-
-    if (decorated) {
-        // Create decoration.
-        window_ptr->titlebar_ptr = wlmtk_titlebar_create(
-            window_ptr->super_bordered.super_container.super_element.env_ptr,
-            window_ptr, &titlebar_style);
-        BS_ASSERT(NULL != window_ptr->titlebar_ptr);
-        wlmtk_titlebar_set_activated(
-            window_ptr->titlebar_ptr, window_ptr->activated);
-        wlmtk_element_set_visible(
-            wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
-        // Hm, if the content has a popup that extends over the titlebar area,
-        // it'll be partially obscured. That will look odd... Well, let's
-        // address that problem once there's a situation.
-        wlmtk_box_add_element_front(
-            &window_ptr->box,
-            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
-
-        window_ptr->resizebar_ptr = wlmtk_resizebar_create(
-            window_ptr->super_bordered.super_container.super_element.env_ptr,
-            window_ptr, &resizebar_style);
-        BS_ASSERT(NULL != window_ptr->resizebar_ptr);
-        wlmtk_element_set_visible(
-            wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
-        wlmtk_box_add_element_back(
-            &window_ptr->box,
-            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-    } else {
-        // Remove & destroy the decoration.
-        wlmtk_box_remove_element(
-            &window_ptr->box,
-            wlmtk_titlebar_element(window_ptr->titlebar_ptr));
-        wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
-        window_ptr->titlebar_ptr = NULL;
-
-        wlmtk_box_remove_element(
-            &window_ptr->box,
-            wlmtk_resizebar_element(window_ptr->resizebar_ptr));
-        wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
-        window_ptr->resizebar_ptr = NULL;
-    }
-
     window_ptr->server_side_decorated = decorated;
+
+    _wlmtk_window_apply_decoration(window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -471,11 +448,11 @@ void wlmtk_window_request_fullscreen(
 
     } else {
 
-        // FIXME: Only set this if decoration was actually set!
-        wlmtk_window_set_server_side_decorated(window_ptr, true);
         box = window_ptr->organic_size;
-        _wlmtk_window_request_position_and_size(
-            window_ptr, box.x, box.y, box.width, box.height);
+        _wlmtk_window_request_position_and_size_decorated(
+            window_ptr, box.x, box.y, box.width, box.height,
+            window_ptr->server_side_decorated,
+            window_ptr->server_side_decorated);
     }
 
 }
@@ -497,10 +474,9 @@ void wlmtk_window_commit_fullscreen(
         wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
     }
 
-    // FIXME: Actually we should only set decoration if this was requested.
-    wlmtk_window_set_server_side_decorated(window_ptr, !fullscreen);
-
     window_ptr->fullscreen = fullscreen;
+    _wlmtk_window_apply_decoration(window_ptr);
+
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
 }
@@ -698,7 +674,7 @@ bool _wlmtk_window_init(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Uninitializes the winodw.
+ * Uninitializes the window.
  *
  * @param window_ptr
  */
@@ -868,11 +844,127 @@ void _wlmtk_window_request_position_and_size(
     int width,
     int height)
 {
+    _wlmtk_window_request_position_and_size_decorated(
+        window_ptr, x, y, width, height,
+        NULL != window_ptr->titlebar_ptr,
+        NULL != window_ptr->resizebar_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates the titlebar. Expects server_side_decorated to be set. */
+void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(window_ptr->server_side_decorated && !window_ptr->fullscreen);
+
+    // Guard clause: Don't add decoration.
+    if (NULL != window_ptr->titlebar_ptr) return;
+
+    // Create decoration.
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create(
+        window_ptr->super_bordered.super_container.super_element.env_ptr,
+        window_ptr, &titlebar_style);
+    BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+    wlmtk_titlebar_set_activated(
+        window_ptr->titlebar_ptr, window_ptr->activated);
+    wlmtk_element_set_visible(
+        wlmtk_titlebar_element(window_ptr->titlebar_ptr), true);
+    // Hm, if the content has a popup that extends over the titlebar area,
+    // it'll be partially obscured. That will look odd... Well, let's
+    // address that problem once there's a situation.
+    wlmtk_box_add_element_front(
+        &window_ptr->box,
+        wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates the resizebar. Expects server_side_decorated to be set. */
+void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(window_ptr->server_side_decorated && !window_ptr->fullscreen);
+
+    // Guard clause: Don't add decoration.
+    if (NULL != window_ptr->resizebar_ptr) return;
+
+    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+        window_ptr->super_bordered.super_container.super_element.env_ptr,
+        window_ptr, &resizebar_style);
+    BS_ASSERT(NULL != window_ptr->resizebar_ptr);
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
+    wlmtk_box_add_element_back(
+        &window_ptr->box,
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destroys the titlebar. */
+void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(!window_ptr->server_side_decorated || window_ptr->fullscreen);
+
+    if (NULL == window_ptr->titlebar_ptr) return;
+
+    wlmtk_box_remove_element(
+        &window_ptr->box,
+        wlmtk_titlebar_element(window_ptr->titlebar_ptr));
+    wlmtk_titlebar_destroy(window_ptr->titlebar_ptr);
+    window_ptr->titlebar_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destroys the resizebar. */
+void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
+{
+    BS_ASSERT(!window_ptr->server_side_decorated || window_ptr->fullscreen);
+
+    if (NULL == window_ptr->resizebar_ptr) return;
+
+    wlmtk_box_remove_element(
+        &window_ptr->box,
+        wlmtk_resizebar_element(window_ptr->resizebar_ptr));
+    wlmtk_resizebar_destroy(window_ptr->resizebar_ptr);
+    window_ptr->resizebar_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Applies window decoration depending on current state. */
+void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
+{
+    if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
+        _wlmtk_window_create_titlebar(window_ptr);
+        _wlmtk_window_create_resizebar(window_ptr);
+    } else {
+        _wlmtk_window_destroy_titlebar(window_ptr);
+        _wlmtk_window_destroy_resizebar(window_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Helper: Requests position and size, factoring in decoration.
+ *
+ * @param window_ptr
+ * @param x
+ * @param y
+ * @param width
+ * @param height
+ * @param include_titlebar
+ * @param include_resizebar
+ */
+void _wlmtk_window_request_position_and_size_decorated(
+    wlmtk_window_t *window_ptr,
+    int x,
+    int y,
+    int width,
+    int height,
+    bool include_titlebar,
+    bool include_resizebar)
+{
     // Correct for borders, margin and decoration.
-    if (NULL != window_ptr->titlebar_ptr) {
+    if (include_titlebar) {
         height -= titlebar_style.height + margin_style.width;
     }
-    if (NULL != window_ptr->resizebar_ptr) {
+    if (include_resizebar) {
         height -= resizebar_style.height + margin_style.width;
     }
     height -= 2 * border_style.width;
@@ -1206,25 +1298,74 @@ void test_set_activated(bs_test_t *test_ptr)
 /** Tests enabling and disabling server-side decoration. */
 void test_server_side_decorated(bs_test_t *test_ptr)
 {
+    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
+    BS_ASSERT(NULL != fake_parent_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
+    struct wlr_box extents = { .width = 1024, .height = 768 };
+    wlmtk_workspace_set_extents(workspace_ptr, &extents);
+    BS_ASSERT(NULL != workspace_ptr);
+
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
+    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
     wlmtk_window_set_server_side_decorated(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
+    // Maximize the window: We keep the decoration.
+    wlmtk_window_request_maximized(window_ptr, true);
+    wlmtk_content_commit_size(&content,
+                              fake_surface_ptr->serial,
+                              fake_surface_ptr->requested_width,
+                              fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
+    // Make the window fullscreen: Hide the decoration.
+    wlmtk_window_request_fullscreen(window_ptr, true);
+    wlmtk_content_commit_size(&content,
+                              fake_surface_ptr->serial,
+                              fake_surface_ptr->requested_width,
+                              fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(window_ptr, false);
+    wlmtk_window_commit_fullscreen(window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
+    // Back to organic size: Decoration is on.
+    wlmtk_window_request_fullscreen(window_ptr, false);
+    wlmtk_content_commit_size(&content,
+                              fake_surface_ptr->serial,
+                              fake_surface_ptr->requested_width,
+                              fake_surface_ptr->requested_height);
+    wlmtk_window_commit_fullscreen(window_ptr, false);
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
+    // Disable decoration.
     wlmtk_window_set_server_side_decorated(window_ptr, false);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1390,6 +1531,10 @@ void test_fullscreen(bs_test_t *test_ptr)
         window_ptr,
         wlmtk_workspace_get_activated_window(workspace_ptr));
 
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+
     // Request to end fullscreen. Not taking immediate effect.
     wlmtk_window_request_fullscreen(window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
@@ -1415,6 +1560,10 @@ void test_fullscreen(bs_test_t *test_ptr)
         test_ptr,
         window_ptr,
         wlmtk_workspace_get_activated_window(workspace_ptr));
+
+    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
     wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
