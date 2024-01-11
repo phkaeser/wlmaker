@@ -25,7 +25,8 @@
         update = rebase
 [submodule "dependencies/seatd"]
         path = dependencies/seatd
-        url = https://git.sr.ht/~kennylevinsen/seatd
+        # Main site at https://git.sr.ht/~kennylevinsen/seatd, but mirrored to github:
+        url = https://github.com/kennylevinsen/seatd.git
         branch = master
         update = rebase
 [submodule "dependencies/hwdata"]
