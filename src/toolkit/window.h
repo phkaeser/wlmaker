@@ -382,6 +382,8 @@ typedef struct {
 wlmtk_fake_window_t *wlmtk_fake_window_create(void);
 /** Dtor. */
 void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr);
+/** Calls commit_size with the fake surface's serial and dimensions. */
+void wlmtk_fake_window_commit_size(wlmtk_fake_window_t *fake_window_ptr);
 
 /** Unit tests for window. */
 extern const bs_test_case_t wlmtk_window_test_cases[];

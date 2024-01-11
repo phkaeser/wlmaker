@@ -963,10 +963,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_ASSERT(NULL != fw_ptr);
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 0, 0, 40, 20);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_workspace_motion(fws_ptr->workspace_ptr, 0, 0, 42);
 
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
@@ -987,10 +984,7 @@ void test_resize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 37, fw_ptr->fake_surface_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 16, fw_ptr->fake_surface_ptr->requested_height);
     // This updates for the given serial.
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_get_size(fw_ptr->window_ptr, &width, &height);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
@@ -1021,10 +1015,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
     wlmtk_surface_request_size(&fw1_ptr->fake_surface_ptr->surface, 100, 100);
-    wlmtk_content_commit_size(fw1_ptr->content_ptr,
-                              fw1_ptr->fake_surface_ptr->serial,
-                              fw1_ptr->fake_surface_ptr->requested_width,
-                              fw1_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw1_ptr);
     wlmtk_window_set_position(fw1_ptr->window_ptr, 0, 0);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
@@ -1040,10 +1031,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
     wlmtk_surface_request_size(&fw2_ptr->fake_surface_ptr->surface, 100, 100);
-    wlmtk_content_commit_size(fw2_ptr->content_ptr,
-                              fw2_ptr->fake_surface_ptr->serial,
-                              fw2_ptr->fake_surface_ptr->requested_width,
-                              fw2_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw2_ptr);
     wlmtk_window_set_position(fw2_ptr->window_ptr, 200, 0);
     BS_TEST_VERIFY_FALSE(
         test_ptr,

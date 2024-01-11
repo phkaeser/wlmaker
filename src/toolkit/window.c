@@ -1058,6 +1058,17 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Calls commit_size with the fake surface's serial and dimensions. */
+void wlmtk_fake_window_commit_size(wlmtk_fake_window_t *fake_window_ptr)
+{
+    wlmtk_content_commit_size(
+        fake_window_ptr->content_ptr,
+        fake_window_ptr->fake_surface_ptr->serial,
+        fake_window_ptr->fake_surface_ptr->requested_width,
+        fake_window_ptr->fake_surface_ptr->requested_height);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Fake implementation of @ref wlmtk_window_request_minimize. Records call. */
 void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr)
 {
@@ -1200,10 +1211,7 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 
     // Maximize the window: We keep the decoration.
     wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
@@ -1211,10 +1219,7 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 
     // Make the window fullscreen: Hide the decoration.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
@@ -1223,10 +1228,7 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 
     // Back to organic size: Decoration is on.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
@@ -1259,10 +1261,7 @@ void test_maximize(bs_test_t *test_ptr)
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
@@ -1289,10 +1288,7 @@ void test_maximize(bs_test_t *test_ptr)
     // Maximize.
     wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
@@ -1302,18 +1298,12 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
 
     // A second commit: should not overwrite the organic dimension.
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
 
     // Unmaximize. Restore earlier organic size and position.
     wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
@@ -1354,10 +1344,7 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
@@ -1373,10 +1360,7 @@ void test_fullscreen(bs_test_t *test_ptr)
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
 
     // Only after "commit", it will take effect.
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
@@ -1400,10 +1384,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
 
     // Takes effect after commit. We'll want the same position as before.
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
@@ -1455,10 +1436,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
 
     // Only after "commit", it will take effect.
-    wlmtk_content_commit_size(fw_ptr->content_ptr,
-                              fw_ptr->fake_surface_ptr->serial,
-                              fw_ptr->fake_surface_ptr->requested_width,
-                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
