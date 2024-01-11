@@ -1,7 +1,7 @@
 # wlmaker - Wayland Maker
 
 A [Wayland](https://wayland.freedesktop.org/) compositor inspired by 
-[Window Maker](https://www.windowmaker.org/). asdf
+[Window Maker](https://www.windowmaker.org/).
 
 Key features:
 
