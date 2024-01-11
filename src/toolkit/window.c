@@ -34,9 +34,6 @@
 struct  _wlmtk_window_vmt_t {
     /** Destructor. */
     void (*destroy)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_set_activated. */
-    void (*set_activated)(wlmtk_window_t *window_ptr,
-                          bool activated);
     /** Virtual method for @ref wlmtk_window_request_close. */
     void (*request_close)(wlmtk_window_t *window_ptr);
     /** Virtual method for @ref wlmtk_window_request_minimize. */
@@ -157,9 +154,6 @@ static bool _wlmtk_window_element_pointer_button(
 static void _wlmtk_window_container_update_layout(
     wlmtk_container_t *container_ptr);
 
-static void _wlmtk_window_set_activated(
-    wlmtk_window_t *window_ptr,
-    bool activated);
 static void _wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_move(wlmtk_window_t *window_ptr);
@@ -205,7 +199,6 @@ static const wlmtk_container_vmt_t window_container_vmt = {
 };
 /** Virtual method table for the window itself. */
 static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
-    .set_activated = _wlmtk_window_set_activated,
     .request_close = _wlmtk_window_request_close,
     .request_minimize = _wlmtk_window_request_minimize,
     .request_move = _wlmtk_window_request_move,
@@ -307,7 +300,17 @@ void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
-    window_ptr->vmt.set_activated(window_ptr, activated);
+    window_ptr->activated = activated;
+    wlmtk_content_set_activated(window_ptr->content_ptr, activated);
+    if (NULL != window_ptr->titlebar_ptr) {
+        wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_is_activated(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->activated;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -717,9 +720,6 @@ wlmtk_window_vmt_t _wlmtk_window_extend(
 {
     wlmtk_window_vmt_t orig_vmt = window_ptr->vmt;
 
-    if (NULL != window_vmt_ptr->set_activated) {
-        window_ptr->vmt.set_activated = window_vmt_ptr->set_activated;
-    }
     if (NULL != window_vmt_ptr->request_close) {
         window_ptr->vmt.request_close = window_vmt_ptr->request_close;
     }
@@ -787,19 +787,6 @@ void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
         if (NULL != window_ptr->resizebar_ptr) {
             wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
         }
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_set_activated. */
-void _wlmtk_window_set_activated(
-    wlmtk_window_t *window_ptr,
-    bool activated)
-{
-    window_ptr->activated = activated;
-    wlmtk_content_set_activated(window_ptr->content_ptr, activated);
-    if (NULL != window_ptr->titlebar_ptr) {
-        wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
     }
 }
 
@@ -1033,9 +1020,6 @@ void _wlmtk_window_release_update(
 
 /* == Implementation of the fake window ==================================== */
 
-static void _wlmtk_fake_window_set_activated(
-    wlmtk_window_t *window_ptr,
-    bool activated);
 static void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr);
@@ -1051,7 +1035,6 @@ static void _wlmtk_fake_window_request_position_and_size(
 
 /** Virtual method table for the fake window itself. */
 static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
-    .set_activated = _wlmtk_fake_window_set_activated,
     .request_close = _wlmtk_fake_window_request_close,
     .request_minimize = _wlmtk_fake_window_request_minimize,
     .request_move = _wlmtk_fake_window_request_move,
@@ -1120,17 +1103,6 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
     }
 
     free(fake_window_state_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of @ref wlmtk_window_set_activated. Records call. */
-void _wlmtk_fake_window_set_activated(
-    wlmtk_window_t *window_ptr,
-    bool activated)
-{
-    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_state_t, window);
-    fake_window_state_ptr->fake_window.activated = activated;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1570,47 +1542,42 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
     BS_ASSERT(NULL != fws_ptr);
 
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
-    BS_ASSERT(NULL != window_ptr);
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        window_ptr,
+        fw_ptr->window_ptr,
         wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     // Request fullscreen. Does not take immediate effect.
-    wlmtk_window_request_fullscreen(window_ptr, true);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
+    wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
 
     // Only after "commit", it will take effect.
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_fullscreen(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(window_ptr));
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
         wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
 
     wlmtk_fake_workspace_destroy(fws_ptr);
 }

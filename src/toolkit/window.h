@@ -95,6 +95,15 @@ void wlmtk_window_set_activated(
     bool activated);
 
 /**
+ * Returns whether the window is activated (has keyboard focus).
+ *
+ * @param window_ptr
+ *
+ * @return activation status.
+ */
+bool wlmtk_window_is_activated(wlmtk_window_t *window_ptr);
+
+/**
  * Sets whether to have server-side decorations for this window.
  *
  * @param window_ptr
@@ -359,8 +368,6 @@ typedef struct {
     /** Content, wraps the fake surface. */
     wlmtk_content_t           *content_ptr;
 
-    /** Argument to last @ref wlmtk_window_set_activated call. */
-    bool                      activated;
     /** Whether @ref wlmtk_window_request_close was called. */
     bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */

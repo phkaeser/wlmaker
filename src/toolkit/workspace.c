@@ -1044,11 +1044,15 @@ void test_activate(bs_test_t *test_ptr)
                               fw1_ptr->fake_surface_ptr->requested_width,
                               fw1_ptr->fake_surface_ptr->requested_height);
     wlmtk_window_set_position(fw1_ptr->window_ptr, 0, 0);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
 
     // Window 1 is mapped => it's activated.
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw1_ptr->window_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
 
     // Window 2: from (200, 0) to (300, 100).
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
@@ -1059,34 +1063,54 @@ void test_activate(bs_test_t *test_ptr)
                               fw2_ptr->fake_surface_ptr->requested_width,
                               fw2_ptr->fake_surface_ptr->requested_height);
     wlmtk_window_set_position(fw2_ptr->window_ptr, 200, 0);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw2_ptr->window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Pointer move, over window 1. Nothing happens: We have click-to-focus.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_motion(fws_ptr->workspace_ptr, 50, 50, 0));
-    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Click on window 1: Gets activated.
     struct wlr_pointer_button_event wlr_button_event = {
         .button = BTN_RIGHT, .state = WLR_BUTTON_PRESSED
     };
     wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_button_event);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw1_ptr->activated);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Unmap window 1. Now window 2 gets activated.
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw1_ptr->window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw1_ptr->activated);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Unmap the remaining window 2. Nothing is activated.
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw2_ptr->window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw2_ptr->activated);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     wlmtk_fake_window_destroy(fw2_ptr);
     wlmtk_fake_window_destroy(fw1_ptr);
