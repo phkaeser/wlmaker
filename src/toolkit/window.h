@@ -378,16 +378,6 @@ typedef struct {
     bool                      request_resize_called;
     /** Argument to last @ref wlmtk_window_request_resize call. */
     uint32_t                  request_resize_edges;
-    /** Whether @ref wlmtk_window_request_position_and_size was called. */
-    bool                      request_position_and_size_called;
-    /** Argument to last @ref wlmtk_window_request_size call. */
-    int                       x;
-    /** Argument to last @ref wlmtk_window_request_size call. */
-    int                       y;
-    /** Argument to last @ref wlmtk_window_request_size call. */
-    int                       width;
-    /** Argument to last @ref wlmtk_window_request_size call. */
-    int                       height;
 } wlmtk_fake_window_t;
 
 /** Ctor. */

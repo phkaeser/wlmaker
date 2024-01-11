@@ -43,9 +43,6 @@ struct  _wlmtk_window_vmt_t {
     /** Virtual method for @ref wlmtk_window_request_resize. */
     void (*request_resize)(wlmtk_window_t *window_ptr,
                            uint32_t edges);
-    /** Virtual method for @ref wlmtk_window_request_position_and_size. */
-    void (*request_position_and_size)(wlmtk_window_t *window_ptr,
-                                      int x, int y, int width, int height);
 };
 
 /** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
@@ -160,12 +157,6 @@ static void _wlmtk_window_request_move(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_resize(
     wlmtk_window_t *window_ptr,
     uint32_t edges);
-static void _wlmtk_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height);
 
 static void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr);
@@ -203,7 +194,6 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
     .request_minimize = _wlmtk_window_request_minimize,
     .request_move = _wlmtk_window_request_move,
     .request_resize = _wlmtk_window_request_resize,
-    .request_position_and_size = _wlmtk_window_request_position_and_size,
 };
 
 /** Style of the title bar. */
@@ -399,8 +389,10 @@ void wlmtk_window_request_maximized(
 
     wlmtk_content_request_maximized(window_ptr->content_ptr, maximized);
 
-    _wlmtk_window_request_position_and_size(
-        window_ptr, box.x, box.y, box.width, box.height);
+    _wlmtk_window_request_position_and_size_decorated(
+        window_ptr, box.x, box.y, box.width, box.height,
+        window_ptr->server_side_decorated,
+        window_ptr->server_side_decorated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -568,8 +560,10 @@ void wlmtk_window_request_position_and_size(
     int width,
     int height)
 {
-    window_ptr->vmt.request_position_and_size(
-        window_ptr, x, y, width, height);
+    _wlmtk_window_request_position_and_size_decorated(
+        window_ptr, x, y, width, height,
+        NULL != window_ptr->titlebar_ptr,
+        NULL != window_ptr->resizebar_ptr);
 
     window_ptr->organic_size.x = x;
     window_ptr->organic_size.y = y;
@@ -732,10 +726,6 @@ wlmtk_window_vmt_t _wlmtk_window_extend(
     if (NULL != window_vmt_ptr->request_resize) {
         window_ptr->vmt.request_resize = window_vmt_ptr->request_resize;
     }
-    if (NULL != window_vmt_ptr->request_position_and_size) {
-        window_ptr->vmt.request_position_and_size =
-            window_vmt_ptr->request_position_and_size;
-    }
 
     return orig_vmt;
 }
@@ -820,21 +810,6 @@ void _wlmtk_window_request_resize(wlmtk_window_t *window_ptr, uint32_t edges)
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     wlmtk_workspace_begin_window_resize(
         wlmtk_window_get_workspace(window_ptr), window_ptr, edges);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_request_position_and_size. */
-void _wlmtk_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height)
-{
-    _wlmtk_window_request_position_and_size_decorated(
-        window_ptr, x, y, width, height,
-        NULL != window_ptr->titlebar_ptr,
-        NULL != window_ptr->resizebar_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1026,12 +1001,6 @@ static void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_resize(
     wlmtk_window_t *window_ptr,
     uint32_t edges);
-static void _wlmtk_fake_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height);
 
 /** Virtual method table for the fake window itself. */
 static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
@@ -1039,7 +1008,6 @@ static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
     .request_minimize = _wlmtk_fake_window_request_minimize,
     .request_move = _wlmtk_fake_window_request_move,
     .request_resize = _wlmtk_fake_window_request_resize,
-    .request_position_and_size = _wlmtk_fake_window_request_position_and_size,
 
 };
 
@@ -1142,24 +1110,6 @@ void _wlmtk_fake_window_request_resize(
         window_ptr, wlmtk_fake_window_state_t, window);
     fake_window_state_ptr->fake_window.request_resize_called = true;
     fake_window_state_ptr->fake_window.request_resize_edges = edges;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of @ref wlmtk_window_request_position_and_size. */
-void _wlmtk_fake_window_request_position_and_size(
-    wlmtk_window_t *window_ptr,
-    int x,
-    int y,
-    int width,
-    int height)
-{
-    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_state_t, window);
-    fake_window_state_ptr->fake_window.request_position_and_size_called = true;
-    fake_window_state_ptr->fake_window.x = x;
-    fake_window_state_ptr->fake_window.y = y;
-    fake_window_state_ptr->fake_window.width = width;
-    fake_window_state_ptr->fake_window.height = height;
 }
 
 /* == Unit tests =========================================================== */
