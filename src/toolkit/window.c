@@ -1167,20 +1167,16 @@ void test_request_close(bs_test_t *test_ptr)
 /** Tests activation. */
 void test_set_activated(bs_test_t *test_ptr)
 {
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
 
-    wlmtk_window_set_activated(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
+    wlmtk_window_set_activated(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
 
-    wlmtk_window_set_activated(window_ptr, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
+    wlmtk_window_set_activated(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
 
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1189,66 +1185,61 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 {
     wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
     BS_ASSERT(NULL != fws_ptr);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
 
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
-
-    wlmtk_window_set_server_side_decorated(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     // Maximize the window: We keep the decoration.
-    wlmtk_window_request_maximized(window_ptr, true);
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_maximized(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+    wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     // Make the window fullscreen: Hide the decoration.
-    wlmtk_window_request_fullscreen(window_ptr, true);
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_maximized(window_ptr, false);
-    wlmtk_window_commit_fullscreen(window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+    wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
+    wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     // Back to organic size: Decoration is on.
-    wlmtk_window_request_fullscreen(window_ptr, false);
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_fullscreen(window_ptr, false);
-    BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+    wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     // Disable decoration.
-    wlmtk_window_set_server_side_decorated(window_ptr, false);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
+    wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
@@ -1260,89 +1251,84 @@ void test_maximize(bs_test_t *test_ptr)
 
     wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
     BS_ASSERT(NULL != fws_ptr);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
 
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
-    BS_ASSERT(NULL != window_ptr);
     // Window must be mapped to get maximized: Need workspace dimensions.
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
     // Set up initial organic size, and verify.
-    wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 20, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 10, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
 
     // Re-position the window.
-    wlmtk_window_set_position(window_ptr, 50, 30);
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_window_set_position(fw_ptr->window_ptr, 50, 30);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Trigger another serial update. Should not change position nor size.
-    wlmtk_window_serial(window_ptr, 1234);
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_window_serial(fw_ptr->window_ptr, 1234);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Maximize.
-    wlmtk_window_request_maximized(window_ptr, true);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_maximized(window_ptr, true);
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
 
     // A second commit: should not overwrite the organic dimension.
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
 
     // Unmaximize. Restore earlier organic size and position.
-    wlmtk_window_request_maximized(window_ptr, false);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(window_ptr));
-    wlmtk_content_commit_size(&content,
-                              fake_surface_ptr->serial,
-                              fake_surface_ptr->requested_width,
-                              fake_surface_ptr->requested_height);
-    wlmtk_window_commit_maximized(window_ptr, false);
-    box = wlmtk_window_get_position_and_size(window_ptr);
+    wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    wlmtk_content_commit_size(fw_ptr->content_ptr,
+                              fw_ptr->fake_surface_ptr->serial,
+                              fw_ptr->fake_surface_ptr->requested_width,
+                              fw_ptr->fake_surface_ptr->requested_height);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 30, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
 
     // TODO(kaeser@gubbe.ch): Define what should happen when a maximized
     // window is moved. Should it lose maximization? Should it not move?
     // Or just move on?
     // Window Maker keeps maximization, but it's ... odd.
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
