@@ -336,7 +336,7 @@ void test_button(bs_test_t *test_ptr)
     // Click: To be passed along, no change to visual.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        fake_window_ptr->request_close_called);
+        fake_window_ptr->fake_surface_ptr->request_close_called);
     button.type = WLMTK_BUTTON_CLICK;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -347,7 +347,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_focussed_released.png");
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        fake_window_ptr->request_close_called);
+        fake_window_ptr->fake_surface_ptr->request_close_called);
 
     // De-activate: Show as blurred.
     wlmtk_titlebar_button_set_activated(button_ptr, false);

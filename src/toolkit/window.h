@@ -368,8 +368,6 @@ typedef struct {
     /** Content, wraps the fake surface. */
     wlmtk_content_t           *content_ptr;
 
-    /** Whether @ref wlmtk_window_request_close was called. */
-    bool                      request_close_called;
     /** Whether @ref wlmtk_window_request_minimize was called. */
     bool                      request_minimize_called;
    /** Whether @ref wlmtk_window_request_move was called. */

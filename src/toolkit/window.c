@@ -34,8 +34,6 @@
 struct  _wlmtk_window_vmt_t {
     /** Destructor. */
     void (*destroy)(wlmtk_window_t *window_ptr);
-    /** Virtual method for @ref wlmtk_window_request_close. */
-    void (*request_close)(wlmtk_window_t *window_ptr);
     /** Virtual method for @ref wlmtk_window_request_minimize. */
     void (*request_minimize)(wlmtk_window_t *window_ptr);
     /** Virtual method for @ref wlmtk_window_request_move. */
@@ -151,7 +149,6 @@ static bool _wlmtk_window_element_pointer_button(
 static void _wlmtk_window_container_update_layout(
     wlmtk_container_t *container_ptr);
 
-static void _wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_move(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_request_resize(
@@ -190,7 +187,6 @@ static const wlmtk_container_vmt_t window_container_vmt = {
 };
 /** Virtual method table for the window itself. */
 static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
-    .request_close = _wlmtk_window_request_close,
     .request_minimize = _wlmtk_window_request_minimize,
     .request_move = _wlmtk_window_request_move,
     .request_resize = _wlmtk_window_request_resize,
@@ -359,7 +355,7 @@ const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_request_close(wlmtk_window_t *window_ptr)
 {
-    window_ptr->vmt.request_close(window_ptr);
+    wlmtk_content_request_close(window_ptr->content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -714,9 +710,6 @@ wlmtk_window_vmt_t _wlmtk_window_extend(
 {
     wlmtk_window_vmt_t orig_vmt = window_ptr->vmt;
 
-    if (NULL != window_vmt_ptr->request_close) {
-        window_ptr->vmt.request_close = window_vmt_ptr->request_close;
-    }
     if (NULL != window_vmt_ptr->request_minimize) {
         window_ptr->vmt.request_minimize = window_vmt_ptr->request_minimize;
     }
@@ -778,13 +771,6 @@ void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
             wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
         }
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Default implementation of @ref wlmtk_window_request_close. */
-void _wlmtk_window_request_close(wlmtk_window_t *window_ptr)
-{
-    wlmtk_content_request_close(window_ptr->content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -995,7 +981,6 @@ void _wlmtk_window_release_update(
 
 /* == Implementation of the fake window ==================================== */
 
-static void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_minimize(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_move(wlmtk_window_t *window_ptr);
 static void _wlmtk_fake_window_request_resize(
@@ -1004,7 +989,6 @@ static void _wlmtk_fake_window_request_resize(
 
 /** Virtual method table for the fake window itself. */
 static const wlmtk_window_vmt_t _wlmtk_fake_window_vmt = {
-    .request_close = _wlmtk_fake_window_request_close,
     .request_minimize = _wlmtk_fake_window_request_minimize,
     .request_move = _wlmtk_fake_window_request_move,
     .request_resize = _wlmtk_fake_window_request_resize,
@@ -1071,15 +1055,6 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
     }
 
     free(fake_window_state_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of @ref wlmtk_window_request_close. Records call. */
-void _wlmtk_fake_window_request_close(wlmtk_window_t *window_ptr)
-{
-    wlmtk_fake_window_state_t *fake_window_state_ptr = BS_CONTAINER_OF(
-        window_ptr, wlmtk_fake_window_state_t, window);
-    fake_window_state_ptr->fake_window.request_close_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1157,43 +1132,35 @@ void test_create_destroy(bs_test_t *test_ptr)
 /** Tests title. */
 void test_set_title(bs_test_t *test_ptr)
 {
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
 
-    wlmtk_window_set_title(window_ptr, "Title");
+    wlmtk_window_set_title(fw_ptr->window_ptr, "Title");
     BS_TEST_VERIFY_STREQ(
         test_ptr,
         "Title",
-        wlmtk_window_get_title(window_ptr));
+        wlmtk_window_get_title(fw_ptr->window_ptr));
 
-    wlmtk_window_set_title(window_ptr, NULL);
+    wlmtk_window_set_title(fw_ptr->window_ptr, NULL);
     BS_TEST_VERIFY_STRMATCH(
         test_ptr,
-        wlmtk_window_get_title(window_ptr),
+        wlmtk_window_get_title(fw_ptr->window_ptr),
         "Unnamed window .*");
 
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests activation. */
 void test_request_close(bs_test_t *test_ptr)
 {
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_ASSERT(NULL != fw_ptr);
 
-    wlmtk_window_request_close(window_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->request_close_called);
+    wlmtk_window_request_close(fw_ptr->window_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->request_close_called);
 
-    wlmtk_window_destroy(window_ptr);
-    wlmtk_content_fini(&content);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
