@@ -118,9 +118,9 @@ Support for visual effects to improve usability, but not for pure show.
   *  Configurable (in code).
 
 * Window actions, based on toolkit.
-  * Move (drag via title bar, or window-alt-click)
+  * Move ([done] drag via title bar, or [pending] window-alt-click)
   * [done] Resize windows, including a resize bar.
-  * Fullscreen windows.
+  * [done] Fullscreen windows.
   * [done] Maximize windows.
   * Minimize (*iconify*) windows.
   * Roll up (*shade*) windows.
@@ -164,6 +164,8 @@ Features for further versions, not ordered by priority nor timeline.
   * Determine how to detect client preferences.
   * Configurable and overridable (titlebar, resizebar, buttons, ...).
   * Scaling factor per application.
+  * Build and test a clear model for `organic`/`maximized`/`fullscreen` state
+    switches and precedence.
 
 * Application support.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).
