@@ -1298,20 +1298,15 @@ void test_set_activated(bs_test_t *test_ptr)
 /** Tests enabling and disabling server-side decoration. */
 void test_server_side_decorated(bs_test_t *test_ptr)
 {
-    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != fake_parent_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
-    struct wlr_box extents = { .width = 1024, .height = 768 };
-    wlmtk_workspace_set_extents(workspace_ptr, &extents);
-    BS_ASSERT(NULL != workspace_ptr);
+    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    BS_ASSERT(NULL != fws_ptr);
 
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
 
-    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
@@ -1360,25 +1355,22 @@ void test_server_side_decorated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
-    wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+
+    wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests maximizing and un-maximizing a window. */
 void test_maximize(bs_test_t *test_ptr)
 {
-    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != fake_parent_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
-    struct wlr_box extents = { .width = 1024, .height = 768 }, box;
-    wlmtk_workspace_set_extents(workspace_ptr, &extents);
-    BS_ASSERT(NULL != workspace_ptr);
+    struct wlr_box box;
+
+    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    BS_ASSERT(NULL != fws_ptr);
 
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
@@ -1386,7 +1378,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     // Window must be mapped to get maximized: Need workspace dimensions.
-    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
@@ -1458,25 +1450,21 @@ void test_maximize(bs_test_t *test_ptr)
     // Or just move on?
     // Window Maker keeps maximization, but it's ... odd.
 
-    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
-    wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+    wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests turning a window to fullscreen and back. */
 void test_fullscreen(bs_test_t *test_ptr)
 {
-    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != fake_parent_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
-    struct wlr_box extents = { .width = 1024, .height = 768 }, box;
-    wlmtk_workspace_set_extents(workspace_ptr, &extents);
-    BS_ASSERT(NULL != workspace_ptr);
+    struct wlr_box box;
+
+    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    BS_ASSERT(NULL != fws_ptr);
 
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
@@ -1484,13 +1472,13 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
     wlmtk_window_set_server_side_decorated(window_ptr, true);
-    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         window_ptr,
-        wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(window_ptr, 20, 10, 200, 100);
@@ -1529,7 +1517,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         window_ptr,
-        wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, window_ptr->titlebar_ptr);
@@ -1559,45 +1547,41 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         window_ptr,
-        wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     BS_TEST_VERIFY_TRUE(test_ptr, window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
 
-    wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+    wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests that unmapping a fullscreen window works. */
 void test_fullscreen_unmap(bs_test_t *test_ptr)
 {
-    wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != fake_parent_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
-    struct wlr_box extents = { .width = 1024, .height = 768 }, box;
-    wlmtk_workspace_set_extents(workspace_ptr, &extents);
-    BS_ASSERT(NULL != workspace_ptr);
+    struct wlr_box box;
+
+    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    BS_ASSERT(NULL != fws_ptr);
 
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_ASSERT(NULL != window_ptr);
-    wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, window_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         window_ptr,
-        wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     // Request fullscreen. Does not take immediate effect.
     wlmtk_window_request_fullscreen(window_ptr, true);
@@ -1617,19 +1601,18 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_surface_ptr->activated);
 
-    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_surface_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
-        wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fake_surface_ptr);
 
-    wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_container_destroy_fake_parent(fake_parent_ptr);
+    wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
 // FIXME: Test that fullscreen keeps window decoration as it should.

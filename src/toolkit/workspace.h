@@ -193,6 +193,19 @@ void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
 
+/** Fake workspace: A real workspace, but with a fake parent. For testing. */
+typedef struct {
+    /** The workspace. */
+    wlmtk_workspace_t         *workspace_ptr;
+    /** The (fake) parent container. */
+    wlmtk_container_t         *fake_parent_ptr;
+} wlmtk_fake_workspace_t;
+
+/** Creates a fake workspace with specified extents. */
+wlmtk_fake_workspace_t *wlmtk_fake_workspace_create(int width, int height);
+/** Destroys the fake workspace. */
+void wlmtk_fake_workspace_destroy(wlmtk_fake_workspace_t *fake_workspace_ptr);
+
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
 
