@@ -20,38 +20,28 @@
 #ifndef __XDG_TOPLEVEL_H__
 #define __XDG_TOPLEVEL_H__
 
-#include "xdg_shell.h"
+#include "server.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-/** Type of XDG toplevel surface state. */
-typedef struct _wlmaker_xdg_toplevel_t wlmaker_xdg_toplevel_t;
-
 /**
- * Creates a XDG toplevel state.
+ * Creates a toolkit window with the XDG surface as content.
  *
- * @param xdg_shell_ptr
  * @param wlr_xdg_surface_ptr
+ * @param server_ptr
  *
- * @return the XDG surface state or NULL on error.
+ * @return The window, or NULL on error.
  */
-wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
-    wlmaker_xdg_shell_t *xdg_shell_ptr,
-    struct wlr_xdg_surface *wlr_xdg_surface_ptr);
-
-/**
- * Destroys the XDG surface state.
- *
- * @param xdg_toplevel_ptr
- */
-void wlmaker_xdg_toplevel_destroy(wlmaker_xdg_toplevel_t *xdg_toplevel_ptr);
+wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    wlmaker_server_t *server_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
 #endif /* __XDG_TOPLEVEL_H__ */
-/* == End of xdg_toplevel.h ================================================= */
+/* == End of xdg_toplevel.h ================================================ */

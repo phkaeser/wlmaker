@@ -39,11 +39,11 @@ SET(SOURCES
   tile_container.c
   view.c
   wlmtk_xdg_popup.c
-  wlmtk_xdg_toplevel.c
   workspace.c
   xdg_decoration.c
   xdg_popup.c
   xdg_shell.c
+  xdg_toplevel.c
 )
 
 SET(HEADERS
@@ -71,11 +71,11 @@ SET(HEADERS
   tile.h
   view.h
   wlmtk_xdg_popup.h
-  wlmtk_xdg_toplevel.h
   workspace.h
   xdg_decoration.h
   xdg_popup.h
   xdg_shell.h
+  xdg_toplevel.h
 )
 
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})

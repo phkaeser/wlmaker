@@ -22,7 +22,7 @@
 
 #include "toolkit/toolkit.h"
 #include "view.h"
-#include "wlmtk_xdg_toplevel.h"
+#include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>
 #include <limits.h>
