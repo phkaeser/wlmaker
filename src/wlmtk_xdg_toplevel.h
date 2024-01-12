@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file xdg_toplevel.h
+ * @file wlmtk_xdg_toplevel.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -31,6 +31,7 @@ extern "C" {
  * Creates a toolkit window with the XDG surface as content.
  *
  * @param wlr_xdg_surface_ptr
+ * @param server_ptr
  *
  * @return The window, or NULL on error.
  */

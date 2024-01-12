@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file xdg_toplevel.c
+ * @file wlmtk_xdg_toplevel.c
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "xdg_toplevel.h"
+#include "xdg_shell.h"
 
 #include "wlmtk_xdg_popup.h"
 
@@ -188,6 +188,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
+/** Creates a @ref wlmtk_xdg_toplevel_surface_t. */
 wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr,
     wlmaker_server_t *server_ptr)
@@ -288,6 +289,7 @@ wlmtk_xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Destroys the @ref wlmtk_xdg_toplevel_surface_t. */
 void xdg_toplevel_surface_destroy(
     wlmtk_xdg_toplevel_surface_t *xdg_tl_surface_ptr)
 {
@@ -316,9 +318,9 @@ void xdg_toplevel_surface_destroy(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Destructor. Wraps to @ref wlmtk_xdg_toplevel_surface_destroy.
+ * Destructor. Wraps to @ref xdg_toplevel_surface_destroy.
  *
- * @param surface_ptr
+ * @param element_ptr
  */
 void surface_element_destroy(wlmtk_element_t *element_ptr)
 {
@@ -332,7 +334,7 @@ void surface_element_destroy(wlmtk_element_t *element_ptr)
 /**
  * Creates the wlroots scene graph API node, attached to `wlr_scene_tree_ptr`.
  *
- * @param surface_ptr
+ * @param element_ptr
  * @param wlr_scene_tree_ptr
  *
  * @return Scene graph API node that represents the surface.
@@ -390,6 +392,7 @@ uint32_t surface_request_size(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_maximized for XDG toplevel. */
 uint32_t content_request_maximized(
     wlmtk_content_t *content_ptr,
     bool maximized)
@@ -402,6 +405,7 @@ uint32_t content_request_maximized(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_fullscreen for XDG. */
 uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen)

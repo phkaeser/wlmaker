@@ -44,7 +44,6 @@ SET(SOURCES
   xdg_decoration.c
   xdg_popup.c
   xdg_shell.c
-  xdg_toplevel.c
 )
 
 SET(HEADERS
@@ -77,7 +76,6 @@ SET(HEADERS
   xdg_decoration.h
   xdg_popup.h
   xdg_shell.h
-  xdg_toplevel.h
 )
 
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})
