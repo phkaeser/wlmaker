@@ -71,7 +71,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Hide window border when not having server-side decoration.
   * Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
-  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel. 
+  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
@@ -90,12 +90,13 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Maximize.
   * [done] Set title.
   * [done] fullscreen.
-  * minimize.
+  * Minimize.
   * show window menu.
   * set_parent.
   * set app ID.
 
 * Support `layer_shell`, based on toolkit.
+  * XDG Popups.
 
 * Support window decoration protocol, based on toolkit.
   * [done] Style of title bar, iconify and close buttons similar to Window Maker.
@@ -105,17 +106,21 @@ Support for visual effects to improve usability, but not for pure show.
   * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
 
 * Dock, visible across workspaces, based on toolkit.
+  * Keep track of subprocesses and the corresponding windows.
   * Style similar to Window Maker.
   * With application launchers (hardcoded).
 
-*  Clip, based on toolkit.
-  *  Display the current workspace.
-  *  Buttons to switch between workspaces.
+* Clip, based on toolkit.
+  * Display the current workspace.
+  * Buttons to switch between workspaces.
 
-*  Application launchers, based on toolkit.
-  *  Display an icon.
-  *  Display application status (*starting*, *running*).
-  *  Configurable (in code).
+* Application launchers, based on toolkit.
+  * Display an icon.
+  * Display application status (*starting*, *running*).
+  * Configurable (in code).
+
+* Task List
+  * Handles windows, rather than views.
 
 * Window actions, based on toolkit.
   * Move ([done] drag via title bar, or [pending] window-alt-click)
