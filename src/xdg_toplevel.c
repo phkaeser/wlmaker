@@ -110,12 +110,6 @@ static void handle_toplevel_fullscreen(
 static void handle_toplevel_minimize(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_toplevel_move(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void handle_toplevel_resize(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void handle_toplevel_show_window_menu(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -206,14 +200,6 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
         &wlr_xdg_surface_ptr->toplevel->events.request_minimize,
         &xdg_toplevel_ptr->toplevel_request_minimize_listener,
         handle_toplevel_minimize);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_move,
-        &xdg_toplevel_ptr->toplevel_request_move_listener,
-        handle_toplevel_move);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_resize,
-        &xdg_toplevel_ptr->toplevel_request_resize_listener,
-        handle_toplevel_resize);
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_show_window_menu,
         &xdg_toplevel_ptr->toplevel_request_show_window_menu_listener,
@@ -573,47 +559,6 @@ void handle_toplevel_minimize(
     wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
         listener_ptr, xdg_toplevel_ptr, toplevel_request_minimize_listener);
     wlmaker_view_set_iconified(&xdg_toplevel_ptr->view, true);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `move` signal of the `struct wlr_xdg_toplevel`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_toplevel_move(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_move_listener);
-
-    wlmaker_cursor_begin_move(
-        xdg_toplevel_ptr->view.server_ptr->cursor_ptr,
-        &xdg_toplevel_ptr->view);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `resize` signal of the `struct wlr_xdg_toplevel`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_toplevel_resize(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_resize_listener);
-    struct wlr_xdg_toplevel_resize_event *wlr_xdg_toplevel_resize_event_ptr =
-        data_ptr;
-
-    wlmaker_cursor_begin_resize(
-        xdg_toplevel_ptr->view.server_ptr->cursor_ptr,
-        &xdg_toplevel_ptr->view,
-        wlr_xdg_toplevel_resize_event_ptr->edges);
 }
 
 /* ------------------------------------------------------------------------- */

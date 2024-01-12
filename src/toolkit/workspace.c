@@ -355,7 +355,7 @@ bool wlmtk_workspace_motion(
 /* ------------------------------------------------------------------------- */
 // TODO(kaeser@gubbe.ch): Improve this, has multiple bugs: It won't keep
 // different buttons apart, and there's currently no test associated.
-void wlmtk_workspace_button(
+bool wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
     const struct wlr_pointer_button_event *event_ptr)
 {
@@ -366,7 +366,7 @@ void wlmtk_workspace_button(
     event.time_msec = event_ptr->time_msec;
     if (WLR_BUTTON_PRESSED == event_ptr->state) {
         event.type = WLMTK_BUTTON_DOWN;
-        wlmtk_element_pointer_button(
+        return wlmtk_element_pointer_button(
             &workspace_ptr->super_container.super_element, &event);
 
     } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
@@ -374,14 +374,15 @@ void wlmtk_workspace_button(
         wlmtk_element_pointer_button(
             &workspace_ptr->super_container.super_element, &event);
         event.type = WLMTK_BUTTON_CLICK;
-        wlmtk_element_pointer_button(
+        return wlmtk_element_pointer_button(
             &workspace_ptr->super_container.super_element, &event);
 
-    } else {
-        bs_log(BS_WARNING,
-               "Workspace %p: Unhandled state 0x%x for button 0x%x",
-               workspace_ptr, event_ptr->state, event_ptr->button);
     }
+
+    bs_log(BS_WARNING,
+           "Workspace %p: Unhandled state 0x%x for button 0x%x",
+           workspace_ptr, event_ptr->state, event_ptr->button);
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */

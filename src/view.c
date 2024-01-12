@@ -705,8 +705,6 @@ void wlmaker_view_unmap(wlmaker_view_t *view_ptr)
     view_ptr->workspace_ptr = NULL;
     wlmaker_view_apply_decoration(view_ptr);
 
-    wlmaker_cursor_unmap_view(view_ptr->server_ptr->cursor_ptr, view_ptr);
-
     wl_signal_emit(&view_ptr->server_ptr->view_unmapped_event, view_ptr);
 }
 

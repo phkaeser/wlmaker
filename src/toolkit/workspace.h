@@ -152,8 +152,10 @@ bool wlmtk_workspace_motion(
  *
  * @param workspace_ptr
  * @param event_ptr
+ *
+ * @return Whether the button was consumed.
  */
-void wlmtk_workspace_button(
+bool wlmtk_workspace_button(
     wlmtk_workspace_t *workspace_ptr,
     const struct wlr_pointer_button_event *event_ptr);
 

@@ -228,11 +228,6 @@ void _resizebar_button(
     case WLR_BUTTON_PRESSED:
         if (wlmaker_interactive_contains(&resizebar_ptr->interactive, x, y)) {
             resizebar_ptr->pressed = true;
-
-            wlmaker_cursor_begin_resize(
-                resizebar_ptr->interactive.cursor_ptr,
-                resizebar_ptr->view_ptr,
-                resizebar_ptr->edges);
         }
         break;
 

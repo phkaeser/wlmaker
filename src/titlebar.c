@@ -223,9 +223,6 @@ void _titlebar_motion(
         (fabs(titlebar_ptr->clicked_x - x) > minimal_move ||
          fabs(titlebar_ptr->clicked_y - y) > minimal_move)) {
         titlebar_ptr->state = TITLEBAR_MOVING;
-        wlmaker_cursor_begin_move(
-            titlebar_ptr->interactive.cursor_ptr,
-            titlebar_ptr->view_ptr);
 
         wlr_cursor_set_xcursor(
             interactive_ptr->cursor_ptr->wlr_cursor_ptr,
