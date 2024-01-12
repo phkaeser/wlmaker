@@ -117,22 +117,10 @@ void handle_new_surface(struct wl_listener *listener_ptr,
 
     case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
 
-#if defined(ENABLE_TOOLKIT_PROTOTYPE)
-
         wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
             wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
         bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
                window_ptr, wlr_xdg_surface_ptr);
-
-#else  // defined(ENABLE_TOOLKIT_PROTOTYPE)
-
-        wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wlmaker_xdg_toplevel_create(
-            xdg_shell_ptr, wlr_xdg_surface_ptr);
-        bs_log(BS_INFO, "XDG shell: Surface %p created toplevel view %p",
-               wlr_xdg_surface_ptr, xdg_toplevel_ptr);
-
-#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
-
         break;
 
     default:

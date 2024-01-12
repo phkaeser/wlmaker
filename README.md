@@ -26,9 +26,10 @@ git submodule update --init --checkout --recursive --merge
  LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
  PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
  cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build &&
+ cd build &&
  LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
  PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
- cd build && make)
+ make)
 ```
 
 With the dependencies installed, proceed to configure wlmaker:
@@ -36,7 +37,7 @@ With the dependencies installed, proceed to configure wlmaker:
 ```bash
 LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
 PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
-cmake -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_TOOLKIT_PROTOTYPE=ON -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
+cmake -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
 ```
 
 ### To build and install

@@ -170,8 +170,6 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     workspace_ptr->injectable_view_set_active = wlmaker_view_set_active;
     wlmaker_workspace_arrange_views(workspace_ptr);
 
-#if defined(ENABLE_TOOLKIT_PROTOTYPE)
-    // Transitional -- enable for prototyping: Toolkit-based workspace.
     workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
         workspace_ptr->server_ptr->env_ptr, workspace_ptr->wlr_scene_tree_ptr);
     if (NULL == workspace_ptr->wlmtk_workspace_ptr) {
@@ -182,7 +180,6 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     wlr_output_layout_get_box(
         workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
     wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr, &extents);
-#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
 
     return workspace_ptr;
 }
@@ -438,13 +435,8 @@ void wlmaker_workspace_set_extents(
     wlmaker_workspace_t *workspace_ptr,
     const struct wlr_box *extents_ptr)
 {
-#if defined(ENABLE_TOOLKIT_PROTOTYPE)
     wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr,
                                 extents_ptr);
-#else
-    workspace_ptr = workspace_ptr;
-    extents_ptr = extents_ptr;
-#endif  // defined(ENABLE_TOOLKIT_PROTOTYPE)
 }
 
 /* ------------------------------------------------------------------------- */

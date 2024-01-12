@@ -857,7 +857,6 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @PROJECT_SOURCE_DIR@/src \
-                         @PROJECT_SOURCE_DIR@/src/decorations \
                          @PROJECT_SOURCE_DIR@/src/toolkit \
                          @PROJECT_SOURCE_DIR@/apps/ \
                          @PROJECT_SOURCE_DIR@/apps/libwlclient
