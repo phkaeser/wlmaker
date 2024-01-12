@@ -32,15 +32,14 @@ SET(SOURCES
   menu.c
   menu_item.c
   output.c
-  resizebar.c
   server.c
   subprocess_monitor.c
   task_list.c
   tile.c
   tile_container.c
-  titlebar.c
-  util.c
   view.c
+  wlmtk_xdg_popup.c
+  wlmtk_xdg_toplevel.c
   workspace.c
   xdg_decoration.c
   xdg_popup.c
@@ -66,15 +65,14 @@ SET(HEADERS
   menu.h
   menu_item.h
   output.h
-  resizebar.h
   server.h
   subprocess_monitor.h
   task_list.h
   tile_container.h
   tile.h
-  titlebar.h
-  util.h
   view.h
+  wlmtk_xdg_popup.h
+  wlmtk_xdg_toplevel.h
   workspace.h
   xdg_decoration.h
   xdg_popup.h
@@ -83,7 +81,7 @@ SET(HEADERS
 )
 
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})
-ADD_DEPENDENCIES(wlmaker protocol_headers decorations toolkit)
+ADD_DEPENDENCIES(wlmaker protocol_headers toolkit)
 
 TARGET_COMPILE_DEFINITIONS(
   wlmaker PRIVATE WLMAKER_ICON_DATA_DIR="${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/wlmaker")
@@ -110,7 +108,7 @@ TARGET_INCLUDE_DIRECTORIES(
 TARGET_LINK_LIBRARIES(
   wlmaker PRIVATE
   base
-  decorations
+  toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::LIBDRM
@@ -121,7 +119,7 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_EXECUTABLE(wlmaker_test wlmaker_test.c ${SOURCES} ${HEADERS})
-ADD_DEPENDENCIES(wlmaker_test protocol_headers decorations toolkit)
+ADD_DEPENDENCIES(wlmaker_test protocol_headers toolkit)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_test PRIVATE
   ${PROJECT_BINARY_DIR}/third_party/protocols
@@ -137,7 +135,7 @@ TARGET_INCLUDE_DIRECTORIES(
 TARGET_LINK_LIBRARIES(
   wlmaker_test PRIVATE
   base
-  decorations
+  toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::LIBDRM

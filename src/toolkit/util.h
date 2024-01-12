@@ -17,9 +17,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_UTIL_H__
-#define __WLMAKER_UTIL_H__
+#ifndef __WLMTK_UTIL_H__
+#define __WLMTK_UTIL_H__
 
+#include <libbase/libbase.h>
 #include <wayland-server-core.h>
 
 #ifdef __cplusplus
@@ -38,14 +39,17 @@ extern "C" {
  * @param listener_ptr
  * @param notifier_func
  */
-void wlm_util_connect_listener_signal(
+void wlmtk_util_connect_listener_signal(
     struct wl_signal *signal_ptr,
     struct wl_listener *listener_ptr,
     void (*notifier_func)(struct wl_listener *, void *));
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_util_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMAKER_UTIL_H__ */
+#endif /* __WLMTK_UTIL_H__ */
 /* == End of util.h ======================================================== */

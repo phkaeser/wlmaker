@@ -21,7 +21,7 @@
 #include "layer_shell.h"
 
 #include "layer_surface.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -69,11 +69,11 @@ wlmaker_layer_shell_t *wlmaker_layer_shell_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &layer_shell_ptr->wlr_layer_shell_v1_ptr->events.new_surface,
         &layer_shell_ptr->new_surface_listener,
         handle_new_surface);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &layer_shell_ptr->wlr_layer_shell_v1_ptr->events.destroy,
         &layer_shell_ptr->destroy_listener,
         handle_destroy);

@@ -23,7 +23,7 @@
 #include <libbase/libbase.h>
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_decoration_v1.h>
@@ -92,12 +92,12 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr->
         events.new_toplevel_decoration,
         &decoration_manager_ptr->new_toplevel_decoration_listener,
         handle_new_toplevel_decoration);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr->
         events.destroy,
         &decoration_manager_ptr->destroy_listener,
@@ -179,11 +179,11 @@ wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
     decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr =
         wlr_xdg_toplevel_decoration_v1_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->events.destroy,
         &decoration_ptr->destroy_listener,
         handle_decoration_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->events.request_mode,
         &decoration_ptr->request_mode_listener,
         handle_decoration_request_mode);
@@ -217,9 +217,9 @@ void handle_decoration_request_mode(
 {
     wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
         listener_ptr, decoration_ptr, request_mode_listener);
-    struct wlr_scene_tree *wlr_scene_tree_ptr = (struct wlr_scene_tree*)
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface->data;
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
+
+    wlmtk_content_t *content_ptr = (wlmtk_content_t*)
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
 
     enum wlr_xdg_toplevel_decoration_v1_mode mode =
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode;
@@ -253,19 +253,24 @@ void handle_decoration_request_mode(
     wlr_xdg_toplevel_decoration_v1_set_mode(
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
 
-    bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, view %p: "
-           "Current %d, pending %d, scheduled %d, requested %d. Set: %d",
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->surface,
-           view_ptr,
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->current.mode,
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->pending.mode,
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->scheduled_mode,
-           decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode,
-           mode);
+    if (NULL != content_ptr &&
+        content_ptr->identifier_ptr == wlmtk_content_identifier_ptr) {
 
-    wlmaker_view_set_server_side_decoration(
-        view_ptr,
-        mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE);
+        bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "
+               "content %p: Current %d, pending %d, scheduled %d, "
+               "requested %d. Set: %d",
+               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->surface,
+               content_ptr,
+               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->current.mode,
+               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->pending.mode,
+               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->scheduled_mode,
+               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode,
+               mode);
+
+        wlmtk_window_set_server_side_decorated(
+            content_ptr->window_ptr,
+            mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

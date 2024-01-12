@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file util.c
+ * @file xdg_toplevel.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -17,19 +17,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __WLMTK_XDG_TOPLEVEL_H__
+#define __WLMTK_XDG_TOPLEVEL_H__
 
-#include "util.h"
+#include "server.h"
+#include "toolkit/toolkit.h"
 
-/* == Exported methods ===================================================== */
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
-/* ------------------------------------------------------------------------- */
-void wlm_util_connect_listener_signal(
-    struct wl_signal *signal_ptr,
-    struct wl_listener *listener_ptr,
-    void (*notifier_func)(struct wl_listener *, void *))
-{
-    listener_ptr->notify = notifier_func;
-    wl_signal_add(signal_ptr, listener_ptr);
-}
+/**
+ * Creates a toolkit window with the XDG surface as content.
+ *
+ * @param wlr_xdg_surface_ptr
+ *
+ * @return The window, or NULL on error.
+ */
+wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    wlmaker_server_t *server_ptr);
 
-/* == End of util.c ======================================================== */
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
+
+#endif /* __WLMTK_XDG_TOPLEVEL_H__ */
+/* == End of xdg_toplevel.h ================================================ */

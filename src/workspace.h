@@ -50,6 +50,7 @@ enum _wlmaker_workspace_layer_t {
 #include "layer_surface.h"
 #include "server.h"
 #include "tile_container.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -187,6 +188,18 @@ void wlmaker_workspace_activate_previous_view(
  */
 const bs_dllist_t *wlmaker_workspace_get_views_dllist(
     wlmaker_workspace_t *workspace_ptr);
+
+/**
+ * Sets extents of the workspace.
+ *
+ * TODO(kaeser@gubbe.ch): Should re-trigger re-arranging.
+ *
+ * @param workspace_ptr
+ * @param extents_ptr
+ */
+void wlmaker_workspace_set_extents(
+    wlmaker_workspace_t *workspace_ptr,
+    const struct wlr_box *extents_ptr);
 
 /**
  * (Re)arranges the views in the workspace.
@@ -332,6 +345,9 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
 /** Prototype: Gets the tile container for the workspace. TODO: eliminate. */
 wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
     wlmaker_workspace_t *workspace_ptr);
+
+/** Transitional: Returns the @ref wlmtk_workspace_t. */
+wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr);
 
 /** Unit tests. */
 extern const bs_test_case_t wlmaker_workspace_test_cases[];

@@ -20,11 +20,13 @@
 
 #include "xdg_shell.h"
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "view.h"
+#include "wlmtk_xdg_toplevel.h"
 #include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>
+#include <limits.h>
 
 /* == Declarations ========================================================= */
 
@@ -52,11 +54,11 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_surface,
         &xdg_shell_ptr->new_surface_listener,
         handle_new_surface);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.destroy,
         &xdg_shell_ptr->destroy_listener,
         handle_destroy);
@@ -101,9 +103,8 @@ void handle_new_surface(struct wl_listener *listener_ptr,
                         __UNUSED__ void *data_ptr)
 {
     struct wlr_xdg_surface *wlr_xdg_surface_ptr;
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr;
-    wlmaker_xdg_shell_t *xdg_shell_ptr = wl_container_of(
-        listener_ptr, xdg_shell_ptr, new_surface_listener);
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_surface_listener);
     wlr_xdg_surface_ptr = data_ptr;
 
     switch (wlr_xdg_surface_ptr->role) {
@@ -115,10 +116,11 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         break;
 
     case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
-        xdg_toplevel_ptr = wlmaker_xdg_toplevel_create(
-            xdg_shell_ptr, wlr_xdg_surface_ptr);
-        bs_log(BS_INFO, "XDG shell: Surface %p created toplevel view %p",
-               wlr_xdg_surface_ptr, xdg_toplevel_ptr);
+
+        wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
+            wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
+        bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
+               window_ptr, wlr_xdg_surface_ptr);
         break;
 
     default:

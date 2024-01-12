@@ -21,8 +21,10 @@
 #include "xdg_toplevel.h"
 
 #include "iconified.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "xdg_popup.h"
+
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 
@@ -44,7 +46,6 @@ struct _wlmaker_xdg_toplevel_t {
 
     /** ID of the last 'set_size' call. */
     uint32_t                  pending_resize_serial;
-
 
     /** Listener for the `destroy` signal of the `wlr_xdg_surface`. */
     struct wl_listener        destroy_listener;
@@ -109,12 +110,6 @@ static void handle_toplevel_fullscreen(
 static void handle_toplevel_minimize(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_toplevel_move(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void handle_toplevel_resize(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void handle_toplevel_show_window_menu(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -147,6 +142,7 @@ static void wlmaker_xdg_toplevel_set_fullscreen(
     wlmaker_view_t *view_ptr,
     bool fullscreen);
 
+
 /* == Data ================================================================= */
 
 /** View implementor methods. */
@@ -170,61 +166,53 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
     if (NULL == xdg_toplevel_ptr) return NULL;
     xdg_toplevel_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.destroy,
         &xdg_toplevel_ptr->destroy_listener,
         handle_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.new_popup,
         &xdg_toplevel_ptr->new_popup_listener,
         handle_new_popup);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.map,
         &xdg_toplevel_ptr->surface_map_listener,
         handle_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.unmap,
         &xdg_toplevel_ptr->surface_unmap_listener,
         handle_unmap);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->surface->events.commit,
         &xdg_toplevel_ptr->surface_commit_listener,
         handle_surface_commit);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_maximize,
         &xdg_toplevel_ptr->toplevel_request_maximize_listener,
         handle_toplevel_maximize);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_fullscreen,
         &xdg_toplevel_ptr->toplevel_request_fullscreen_listener,
         handle_toplevel_fullscreen);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_minimize,
         &xdg_toplevel_ptr->toplevel_request_minimize_listener,
         handle_toplevel_minimize);
-    wlm_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_move,
-        &xdg_toplevel_ptr->toplevel_request_move_listener,
-        handle_toplevel_move);
-    wlm_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_resize,
-        &xdg_toplevel_ptr->toplevel_request_resize_listener,
-        handle_toplevel_resize);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_show_window_menu,
         &xdg_toplevel_ptr->toplevel_request_show_window_menu_listener,
         handle_toplevel_show_window_menu);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_parent,
         &xdg_toplevel_ptr->toplevel_set_parent_listener,
         handle_toplevel_set_parent);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_title,
         &xdg_toplevel_ptr->toplevel_set_title_listener,
         handle_toplevel_set_title);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.set_app_id,
         &xdg_toplevel_ptr->toplevel_set_app_id_listener,
         handle_toplevel_set_app_id);
@@ -250,7 +238,6 @@ wlmaker_xdg_toplevel_t *wlmaker_xdg_toplevel_create(
         xdg_toplevel_ptr->wlr_scene_tree_ptr;
 
     wlmaker_view_set_position(&xdg_toplevel_ptr->view, 32, 40);
-
     return xdg_toplevel_ptr;
 }
 
@@ -572,47 +559,6 @@ void handle_toplevel_minimize(
     wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
         listener_ptr, xdg_toplevel_ptr, toplevel_request_minimize_listener);
     wlmaker_view_set_iconified(&xdg_toplevel_ptr->view, true);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `move` signal of the `struct wlr_xdg_toplevel`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_toplevel_move(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_move_listener);
-
-    wlmaker_cursor_begin_move(
-        xdg_toplevel_ptr->view.server_ptr->cursor_ptr,
-        &xdg_toplevel_ptr->view);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `resize` signal of the `struct wlr_xdg_toplevel`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_toplevel_resize(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    wlmaker_xdg_toplevel_t *xdg_toplevel_ptr = wl_container_of(
-        listener_ptr, xdg_toplevel_ptr, toplevel_request_resize_listener);
-    struct wlr_xdg_toplevel_resize_event *wlr_xdg_toplevel_resize_event_ptr =
-        data_ptr;
-
-    wlmaker_cursor_begin_resize(
-        xdg_toplevel_ptr->view.server_ptr->cursor_ptr,
-        &xdg_toplevel_ptr->view,
-        wlr_xdg_toplevel_resize_event_ptr->edges);
 }
 
 /* ------------------------------------------------------------------------- */

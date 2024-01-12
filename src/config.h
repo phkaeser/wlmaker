@@ -38,9 +38,9 @@ typedef enum {
     WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT,
     /** Mode NONE will be set to SERVER; but other modes left unchanged. */
     WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER,
-    /** Will set all windows to CLIENT, no mather what they requested. */
+    /** Will set all windows to CLIENT, no matter what they requested. */
     WLMAKER_CONFIG_DECORATION_ENFORCE_CLIENT,
-    /** Will set all windows to SERVER, no mather what they requested. */
+    /** Will set all windows to SERVER, no matter what they requested. */
     WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER
 } wlmaker_config_decoration_t;
 
@@ -51,27 +51,15 @@ typedef struct {
     /** Width of the window margin, in pixels. */
     uint32_t                  window_margin_width;
 
-    /** Color of the title text when focussed. */
-    uint32_t                  titlebar_focussed_text_color;
-    /** Color of the title text when blurred. */
-    uint32_t                  titlebar_blurred_text_color;
-
-    /** Fill style of the title bar, when focussed. Including buttons. */
-    wlmaker_style_fill_t      titlebar_focussed_fill;
-    /** Fill style of the title bar, when blurred. Including buttons. */
-    wlmaker_style_fill_t      titlebar_blurred_fill;
-
-    /** Fill style of the resize bar. */
-    wlmaker_style_fill_t      resizebar_fill;
     /** Fill style of a tile. */
-    wlmaker_style_fill_t      tile_fill;
+    wlmtk_style_fill_t        tile_fill;
     /** File style of the title element of an iconified. */
-    wlmaker_style_fill_t      iconified_title_fill;
+    wlmtk_style_fill_t        iconified_title_fill;
     /** Color of the iconified's title. */
     uint32_t                  iconified_title_color;
 
     /** Fill style of the menu's background. */
-    wlmaker_style_fill_t      menu_fill;
+    wlmtk_style_fill_t        menu_fill;
     /** Color of the menu's margin and padding. */
     uint32_t                  menu_margin_color;
     /** Width of the menu's margin. */
@@ -80,16 +68,16 @@ typedef struct {
     uint32_t                  menu_padding_width;
 
     /** Fill style of a menu item when enabled. */
-    wlmaker_style_fill_t      menu_item_enabled_fill;
+    wlmtk_style_fill_t        menu_item_enabled_fill;
     /** Text color of menu item when enabled. */
     uint32_t                  menu_item_enabled_text_color;
     /** Fill style of a menu item when selected. */
-    wlmaker_style_fill_t      menu_item_selected_fill;
+    wlmtk_style_fill_t        menu_item_selected_fill;
     /** Text color of menu item when selected. */
     uint32_t                  menu_item_selected_text_color;
 
     /** Fill style of the task list. */
-    wlmaker_style_fill_t      task_list_fill;
+    wlmtk_style_fill_t        task_list_fill;
     /** Color of the text describing tasks in the task list. */
     uint32_t                  task_list_text_color;
 } wlmaker_config_theme_t;

@@ -49,6 +49,7 @@ PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
+OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 
 # Toplevel compile options, for GCC.
 IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -79,7 +80,6 @@ ADD_SUBDIRECTORY(icons)
 ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(src/decorations)
 ADD_SUBDIRECTORY(src/toolkit)
 
 # Adds submodules last, to permit checking on already-existing targets.

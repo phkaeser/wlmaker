@@ -23,7 +23,7 @@
 
 #include "output.h"
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -54,15 +54,15 @@ wlmaker_output_t *wlmaker_output_create(
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_ptr->server_ptr = server_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
         &output_ptr->output_destroy_listener,
         handle_output_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.frame,
         &output_ptr->output_frame_listener,
         handle_output_frame);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.request_state,
         &output_ptr->output_request_state_listener,
         handle_request_state);
@@ -140,7 +140,7 @@ void handle_output_frame(struct wl_listener *listener_ptr,
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_get_scene_output(
         output_ptr->wlr_scene_ptr,
         output_ptr->wlr_output_ptr);
-    wlr_scene_output_commit(wlr_scene_output_ptr);
+    wlr_scene_output_commit(wlr_scene_output_ptr, NULL);
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);

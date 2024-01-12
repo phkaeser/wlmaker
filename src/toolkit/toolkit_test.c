@@ -22,6 +22,23 @@
 
 /** Toolkit unit tests. */
 const bs_test_set_t toolkit_tests[] = {
+    { 1, "bordered", wlmtk_bordered_test_cases },
+    { 1, "box", wlmtk_box_test_cases },
+    { 1, "button", wlmtk_button_test_cases },
+    { 1, "container", wlmtk_container_test_cases },
+    { 1, "content", wlmtk_content_test_cases },
+    { 1, "element", wlmtk_element_test_cases },
+    { 1, "fsm", wlmtk_fsm_test_cases },
+    { 1, "surface", wlmtk_surface_test_cases },
+    { 1, "rectangle", wlmtk_rectangle_test_cases },
+    { 1, "resizebar", wlmtk_resizebar_test_cases },
+    { 1, "resizebar_area", wlmtk_resizebar_area_test_cases },
+    { 1, "titlebar", wlmtk_titlebar_test_cases },
+    { 1, "titlebar_button", wlmtk_titlebar_button_test_cases },
+    { 1, "titlebar_title", wlmtk_titlebar_title_test_cases },
+    { 1, "util", wlmtk_util_test_cases },
+    { 1, "window", wlmtk_window_test_cases },
+    { 1, "workspace", wlmtk_workspace_test_cases },
     { 1, "primitives", wlmaker_primitives_test_cases },
     { 0, NULL, NULL }
 };

@@ -65,6 +65,14 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.2
 
+* Issues to fix:
+  * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
+  * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+  * Hide window border when not having server-side decoration.
+  * Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
+  * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
+  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel. 
+
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
   * Surfaces will be shown in either tile container, clip or dock area,
@@ -76,9 +84,65 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Configurable keyboard map (in code or commandline arg)
 
+* Support `xdg_shell`, based on toolkit.
+  * [done] XDG Popups.
+  * [done] Move and Resize, compliant with asynchronous ops.
+  * [done] Maximize.
+  * [done] Set title.
+  * [done] fullscreen.
+  * minimize.
+  * show window menu.
+  * set_parent.
+  * set app ID.
+
+* Support `layer_shell`, based on toolkit.
+
+* Support window decoration protocol, based on toolkit.
+  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
+  * Window menu, with basic window actions (not required to adapt to state).
+
+* Multiple workspaces, based on toolkit.
+  * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+
+* Dock, visible across workspaces, based on toolkit.
+  * Style similar to Window Maker.
+  * With application launchers (hardcoded).
+
+*  Clip, based on toolkit.
+  *  Display the current workspace.
+  *  Buttons to switch between workspaces.
+
+*  Application launchers, based on toolkit.
+  *  Display an icon.
+  *  Display application status (*starting*, *running*).
+  *  Configurable (in code).
+
+* Window actions, based on toolkit.
+  * Move ([done] drag via title bar, or [pending] window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * Minimize (*iconify*) windows.
+  * Roll up (*shade*) windows.
+  * Raise window when activated.
+
+*  Visualization of iconified applications, based on toolkit.
+
+*  Task list (window-alt-esc), cycling through windows, based on toolkit.
+
+### Internals and code organization
+
+* [done] Design a toolkit and re-factor the codebase to make use of it.
+  * Ensure the main features (eg. all explicit actions and features above) are
+    tested.
+
 ## Pending
 
 Features for further versions, not ordered by priority nor timeline.
+
+* Wayland protocol adherence.
+  * Support XDG `wm_capabilities` and advertise the compositor features.
+  * Fullscreen: Hide all other visuals when a window takes fullscreen.
 
 * XWayland support (X11 clients).
 
@@ -100,6 +164,8 @@ Features for further versions, not ordered by priority nor timeline.
   * Determine how to detect client preferences.
   * Configurable and overridable (titlebar, resizebar, buttons, ...).
   * Scaling factor per application.
+  * Build and test a clear model for `organic`/`maximized`/`fullscreen` state
+    switches and precedence.
 
 * Application support.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).

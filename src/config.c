@@ -72,31 +72,17 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
     .window_margin_color = 0xff000000,  // Pich black, opaque.
     .window_margin_width = 1,
 
-    .titlebar_focussed_fill = {
-        .type = WLMAKER_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xff505a5e,.to = 0xff202a2e }}
-    },
-    .titlebar_focussed_text_color = 0xffffffff,
-    .titlebar_blurred_fill = {
-        .type = WLMAKER_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xffc2c0c5,.to = 0xff828085 }}
-    },
-    .titlebar_blurred_text_color = 0xff000000,
-    .resizebar_fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffc2c0c5 }}
-    },
     .tile_fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     },
     .iconified_title_fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xff404040 }}
     },
     .iconified_title_color = 0xffffffff,  // White.
     .menu_fill = {
-        .type = WLMAKER_STYLE_COLOR_HGRADIENT,
+        .type = WLMTK_STYLE_COLOR_HGRADIENT,
         .param = { .hgradient = { .from = 0xffc2c0c5, .to = 0xff828085 }}
     },
     .menu_margin_color = 0xff000000,  // Pitch black, opaque.
@@ -104,18 +90,18 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
     .menu_padding_width = 1,
 
     .menu_item_enabled_fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0x00000000 }}  // Transparent.
     },
     .menu_item_enabled_text_color = 0xff000000,  // Black, opaque.
     .menu_item_selected_fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xffffffff }}  // White, opaque..
     },
     .menu_item_selected_text_color = 0xff000000,  // Black, opaque.
 
     .task_list_fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param.solid.color = 0xc0202020  // Dark grey, partly transparent.
     },
     .task_list_text_color = 0xffffffff,

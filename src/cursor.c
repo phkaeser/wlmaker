@@ -21,13 +21,14 @@
 #include "cursor.h"
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #undef WLR_USE_UNSTABLE
 
@@ -106,29 +107,28 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
     //
     // https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
 
-    // TODO: Need a mode for 'normal', 'move', 'resize'.
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.motion,
         &cursor_ptr->motion_listener,
         handle_motion);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.motion_absolute,
         &cursor_ptr->motion_absolute_listener,
         handle_motion_absolute);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.button,
         &cursor_ptr->button_listener,
         handle_button);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.axis,
         &cursor_ptr->axis_listener,
         handle_axis);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->wlr_cursor_ptr->events.frame,
         &cursor_ptr->frame_listener,
         handle_frame);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &cursor_ptr->server_ptr->wlr_seat_ptr->events.request_set_cursor,
         &cursor_ptr->seat_request_set_cursor_listener,
         handle_seat_request_set_cursor);
@@ -161,71 +161,6 @@ void wlmaker_cursor_attach_input_device(
      wlr_cursor_attach_input_device(
          cursor_ptr->wlr_cursor_ptr,
          wlr_input_device_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_cursor_begin_move(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr)
-{
-    if (view_ptr != wlmaker_workspace_get_activated_view(
-            wlmaker_server_get_current_workspace(cursor_ptr->server_ptr))) {
-        bs_log(BS_WARNING, "Denying move request from non-activated view.");
-        return;
-    }
-
-    cursor_ptr->grabbed_view_ptr = view_ptr;
-    int x, y;
-    wlmaker_view_get_position(cursor_ptr->grabbed_view_ptr, &x, &y);
-    // TODO(kaeser@gubbe.ch): Inconsistent to have separate meaning of grab_x
-    // and grab_y for MOVE vs RESIZE. Should be cleaned up.
-    cursor_ptr->grab_x = cursor_ptr->wlr_cursor_ptr->x - x;
-    cursor_ptr->grab_y = cursor_ptr->wlr_cursor_ptr->y - y;
-    cursor_ptr->mode = WLMAKER_CURSOR_MOVE;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_cursor_begin_resize(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr,
-    uint32_t edges)
-{
-    if (view_ptr != wlmaker_workspace_get_activated_view(
-            wlmaker_server_get_current_workspace(cursor_ptr->server_ptr))) {
-        bs_log(BS_WARNING, "Denying resize request from non-activated view.");
-        return;
-    }
-
-    cursor_ptr->grabbed_view_ptr = view_ptr;
-    cursor_ptr->grab_x = cursor_ptr->wlr_cursor_ptr->x;
-    cursor_ptr->grab_y = cursor_ptr->wlr_cursor_ptr->y;
-    cursor_ptr->mode = WLMAKER_CURSOR_RESIZE;
-
-    uint32_t width, height;
-    wlmaker_view_get_size(view_ptr, &width, &height);
-    cursor_ptr->grabbed_geobox.width = width;
-    cursor_ptr->grabbed_geobox.height = height;
-    wlmaker_view_get_position(view_ptr,
-                              &cursor_ptr->grabbed_geobox.x,
-                              &cursor_ptr->grabbed_geobox.y);
-    cursor_ptr->resize_edges = edges;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_cursor_unmap_view(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr)
-{
-    if (cursor_ptr->grabbed_view_ptr == view_ptr) {
-        cursor_ptr->grabbed_view_ptr = NULL;
-        cursor_ptr->mode = WLMAKER_CURSOR_PASSTHROUGH;
-    }
-
-    if (cursor_ptr->under_cursor_view_ptr == view_ptr) {
-        // TODO(kaeser@gubbe.ch): Should eavluate which of the view is now
-        // below the cursor and update "pointer focus" accordingly.
-        update_under_cursor_view(cursor_ptr, NULL);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -305,37 +240,14 @@ void handle_button(struct wl_listener *listener_ptr,
         listener_ptr, cursor_ptr, button_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
-    struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-        cursor_ptr->server_ptr->wlr_seat_ptr);
-    if (NULL != wlr_keyboard_ptr) {
-        uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
-        if (wlmaker_config_window_drag_modifiers != 0 &&
-            wlmaker_config_window_drag_modifiers == modifiers &&
-            wlr_pointer_button_event_ptr->state == WLR_BUTTON_PRESSED) {
-            struct wlr_surface *wlr_surface_ptr;
-            double rel_x, rel_y;
-            wlmaker_view_t *view_ptr = wlmaker_view_at(
-                cursor_ptr->server_ptr,
-                cursor_ptr->wlr_cursor_ptr->x,
-                cursor_ptr->wlr_cursor_ptr->y,
-                &wlr_surface_ptr,
-                &rel_x,
-                &rel_y);
-            if (NULL != view_ptr) {
-                wlmaker_workspace_raise_view(
-                    wlmaker_server_get_current_workspace(
-                        cursor_ptr->server_ptr),
-                    view_ptr);
-                wlmaker_workspace_activate_view(
-                    wlmaker_server_get_current_workspace(
-                        cursor_ptr->server_ptr),
-                    view_ptr);
-                update_under_cursor_view(cursor_ptr, view_ptr);
-                wlmaker_cursor_begin_move(cursor_ptr, view_ptr);
-                return;
-            }
-        }
-    }
+    bool consumed = wlmtk_workspace_button(
+        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                    cursor_ptr->server_ptr)),
+        wlr_pointer_button_event_ptr);
+
+    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
+    // Remove it, once we're fully on toolkit.
+    if (consumed) return;
 
     // Notify the client with pointer focus that a button press has occurred.
     wlr_seat_pointer_notify_button(
@@ -365,7 +277,6 @@ void handle_button(struct wl_listener *listener_ptr,
 
     if (wlr_pointer_button_event_ptr->state == WLR_BUTTON_RELEASED) {
         wl_signal_emit(&cursor_ptr->button_release_event, data_ptr);
-        cursor_ptr->mode = WLMAKER_CURSOR_PASSTHROUGH;
     }
 }
 
@@ -473,93 +384,12 @@ void handle_seat_request_set_cursor(
  */
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
-    if (cursor_ptr->mode == WLMAKER_CURSOR_MOVE) {
-        wlmaker_view_set_position(
-            cursor_ptr->grabbed_view_ptr,
-            cursor_ptr->wlr_cursor_ptr->x - cursor_ptr->grab_x,
-            cursor_ptr->wlr_cursor_ptr->y - cursor_ptr->grab_y);
-        return;
-    } else if (cursor_ptr->mode == WLMAKER_CURSOR_RESIZE) {
-
-        // The geometry describes the overall shell geometry *relative* to the
-        // node position. This may eg. include client-side decoration, that
-        // may be placed in an extra surface above the nominal window (and
-        // node).
-        //
-        // Thus the position and dimensions of the visible area is given by
-        // the geobox position (relative to the node position) and with x height.
-
-        double x = cursor_ptr->wlr_cursor_ptr->x - cursor_ptr->grab_x;
-        double y = cursor_ptr->wlr_cursor_ptr->y - cursor_ptr->grab_y;
-
-        // Update new boundaries by the relative movement.
-        int top = cursor_ptr->grabbed_geobox.y;
-        int bottom = cursor_ptr->grabbed_geobox.y + cursor_ptr->grabbed_geobox.height;
-        if (cursor_ptr->resize_edges & WLR_EDGE_TOP) {
-            top += y;
-            if (top >= bottom) top = bottom - 1;
-        } else if (cursor_ptr->resize_edges & WLR_EDGE_BOTTOM) {
-            bottom += y;
-            if (bottom <= top) bottom = top + 1;
-        }
-
-        int left = cursor_ptr->grabbed_geobox.x;
-        int right = cursor_ptr->grabbed_geobox.x + cursor_ptr->grabbed_geobox.width;
-        if (cursor_ptr->resize_edges & WLR_EDGE_LEFT) {
-            left += x;
-            if (left >= right) left = right - 1 ;
-        } else if (cursor_ptr->resize_edges & WLR_EDGE_RIGHT) {
-            right += x;
-            if (right <= left) right = left + 1;
-        }
-
-        wlmaker_view_set_position(cursor_ptr->grabbed_view_ptr, left, top);
-        wlmaker_view_set_size(cursor_ptr->grabbed_view_ptr,
-                              right - left, bottom - top);
-        return;
-    }
-
-    double rel_x, rel_y;
-    struct wlr_surface *wlr_surface_ptr = NULL;
-    wlmaker_view_t *view_ptr = wlmaker_view_at(
-        cursor_ptr->server_ptr,
+    wlmtk_workspace_motion(
+        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                    cursor_ptr->server_ptr)),
         cursor_ptr->wlr_cursor_ptr->x,
         cursor_ptr->wlr_cursor_ptr->y,
-        &wlr_surface_ptr,
-        &rel_x,
-        &rel_y);
-    update_under_cursor_view(cursor_ptr, view_ptr);
-    if (NULL == view_ptr) {
-        wlr_xcursor_manager_set_cursor_image(
-            cursor_ptr->wlr_xcursor_manager_ptr,
-            "left_ptr",
-            cursor_ptr->wlr_cursor_ptr);
-    } else {
-        wlmaker_view_handle_motion(
-            view_ptr,
-            cursor_ptr->wlr_cursor_ptr->x,
-            cursor_ptr->wlr_cursor_ptr->y);
-    }
-
-    if (NULL == wlr_surface_ptr) {
-        // Clear pointer focus, so that future button events are no longer sent
-        // to the surface that had the focus.
-        wlr_seat_pointer_clear_focus(cursor_ptr->server_ptr->wlr_seat_ptr);
-
-    } else {
-        // The notify_enter() function gives the pointer focus to the specified
-        // surface. The seat will send future button events there.
-        wlr_seat_pointer_notify_enter(
-            cursor_ptr->server_ptr->wlr_seat_ptr,
-            wlr_surface_ptr,
-            rel_x,
-            rel_y);
-        wlr_seat_pointer_notify_motion(
-            cursor_ptr->server_ptr->wlr_seat_ptr,
-            time_msec,
-            rel_x,
-            rel_y);
-    }
+        time_msec);
 }
 
 /* ------------------------------------------------------------------------- */

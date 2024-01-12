@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PRIMITIVES_H__
-#define __PRIMITIVES_H__
+#ifndef __WLMTK_PRIMITIVES_H__
+#define __WLMTK_PRIMITIVES_H__
 
 #include <cairo.h>
 #include <libbase/libbase.h>
@@ -37,7 +37,7 @@ extern "C" {
  */
 void wlmaker_primitives_cairo_fill(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr);
+    const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Fills the cairo with the specified style at the specified rectangle.
@@ -55,7 +55,7 @@ void wlmaker_primitives_cairo_fill_at(
     int y,
     unsigned width,
     unsigned height,
-    const wlmaker_style_fill_t *fill_ptr);
+    const wlmtk_style_fill_t *fill_ptr);
 
 /**
  * Sets the bezel color.
@@ -146,5 +146,5 @@ extern const bs_test_case_t   wlmaker_primitives_test_cases[];
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __PRIMITIVES_H__ */
+#endif /* __WLMTK_PRIMITIVES_H__ */
 /* == End of primitives.h ================================================== */

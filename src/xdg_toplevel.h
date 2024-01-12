@@ -21,6 +21,7 @@
 #define __XDG_TOPLEVEL_H__
 
 #include "xdg_shell.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {

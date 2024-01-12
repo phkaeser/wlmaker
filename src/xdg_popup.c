@@ -22,7 +22,7 @@
 
 #include <libbase/libbase.h>
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 
@@ -58,11 +58,11 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     if (NULL == xdg_popup_ptr) return NULL;
     xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->events.destroy,
         &xdg_popup_ptr->destroy_listener,
         handle_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->events.new_popup,
         &xdg_popup_ptr->new_popup_listener,
         handle_new_popup);
