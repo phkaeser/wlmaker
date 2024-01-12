@@ -38,9 +38,9 @@ SET(SOURCES
   tile.c
   tile_container.c
   view.c
-  wlmtk_xdg_popup.c
   workspace.c
   xdg_decoration.c
+  xdg_popup.c
   xdg_shell.c
   xdg_toplevel.c
 )
@@ -69,9 +69,9 @@ SET(HEADERS
   tile_container.h
   tile.h
   view.h
-  wlmtk_xdg_popup.h
   workspace.h
   xdg_decoration.h
+  xdg_popup.h
   xdg_shell.h
   xdg_toplevel.h
 )

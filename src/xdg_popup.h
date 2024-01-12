@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file wlmtk_xdg_popup.h
+ * @file xdg_popup.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMTK_XDG_POPUP_H__
-#define __WLMTK_XDG_POPUP_H__
+#ifndef __XDG_POPUP_H__
+#define __XDG_POPUP_H__
 
 #include "toolkit/toolkit.h"
 
@@ -31,10 +31,10 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Forward declaration: State of the toolkit's XDG popup. */
-typedef struct _wlmtk_xdg_popup_t wlmtk_xdg_popup_t;
+typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 
 /** State of toolkit popup. */
-struct _wlmtk_xdg_popup_t {
+struct _wlmaker_xdg_popup_t {
     /** Super class: Content. */
     wlmtk_content_t           super_content;
 
@@ -57,7 +57,7 @@ struct _wlmtk_xdg_popup_t {
  * @param wlr_xdg_popup_ptr
  * @param env_ptr
  */
-wlmtk_xdg_popup_t *wlmtk_xdg_popup_create(
+wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
     wlmtk_env_t *env_ptr);
 
@@ -66,12 +66,12 @@ wlmtk_xdg_popup_t *wlmtk_xdg_popup_create(
  *
  * @param xdg_popup_ptr
  */
-void wlmtk_xdg_popup_destroy(
-    wlmtk_xdg_popup_t *xdg_popup_ptr);
+void wlmaker_xdg_popup_destroy(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMTK_XDG_POPUP_H__ */
-/* == End of wlmtk_xdg_popup.h ============================================= */
+#endif /* __XDG_POPUP_H__ */
+/* == End of xdg_popup.h =================================================== */
