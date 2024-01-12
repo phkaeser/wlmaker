@@ -22,7 +22,6 @@
 
 #include "toolkit/toolkit.h"
 #include "view.h"
-#include "xdg_popup.h"
 
 #include <libbase/libbase.h>
 
@@ -342,12 +341,9 @@ void handle_new_popup(
         listener_ptr, layer_surface_ptr, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
-        wlr_xdg_popup_ptr,
-        layer_surface_ptr->wlr_scene_layer_surface_v1_ptr->tree
-        //layer_surface_ptr->view.wlr_scene_tree_ptr
-        );
-    bs_log(BS_INFO, "Created popup %p.", xdg_popup_ptr);
+    // TODO(kaeser@gubbe.ch): Implement the popups for the WLR scene layer.
+    bs_log(BS_WARNING, "Unimplemented: New popup %p for layer surface %p",
+           wlr_xdg_popup_ptr, layer_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
