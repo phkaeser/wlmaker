@@ -20,25 +20,24 @@
 
 #include "xdg_popup.h"
 
-#include <libbase/libbase.h>
-
-#include "util.h"
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_scene.h>
+#undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
 
-/** State of the XDG popup handle. */
-struct _wlmaker_xdg_popup_t {
-    /** Links to the corresponding wlroots XDG popup. */
-    struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
-    /** Scene node of this popup surfaces (and it's sub-surfaces). */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
+static struct wlr_scene_node *_wlmaker_xdg_popup_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr);
 
-    /** Listener for the `destroy` signal of the `wlr_xdg_surface` (base). */
-    struct wl_listener        destroy_listener;
-    /** Listener for the `new_popup` signal of the `wlr_xdg_surface` (base). */
-    struct wl_listener        new_popup_listener;
+/** Virtual methods for XDG popup surface, for the Element superclass. */
+const wlmtk_element_vmt_t     _wlmaker_xdg_popup_surface_element_vmt = {
+    .create_scene_node = _wlmaker_xdg_popup_surface_element_create_scene_node,
 };
 
+static void handle_reposition(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -51,83 +50,139 @@ static void handle_new_popup(
 /* ------------------------------------------------------------------------- */
 wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    struct wlr_scene_tree *parent_wlr_scene_tree_ptr)
+    wlmtk_env_t *env_ptr)
 {
-    wlmaker_xdg_popup_t *xdg_popup_ptr = logged_calloc(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = logged_calloc(
         1, sizeof(wlmaker_xdg_popup_t));
-    if (NULL == xdg_popup_ptr) return NULL;
-    xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
+    if (NULL == wlmaker_xdg_popup_ptr) return NULL;
+    wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
 
-    wlm_util_connect_listener_signal(
-        &wlr_xdg_popup_ptr->base->events.destroy,
-        &xdg_popup_ptr->destroy_listener,
-        handle_destroy);
-    wlm_util_connect_listener_signal(
-        &wlr_xdg_popup_ptr->base->events.new_popup,
-        &xdg_popup_ptr->new_popup_listener,
-        handle_new_popup);
+    if (!wlmtk_surface_init(
+            &wlmaker_xdg_popup_ptr->surface,
+            wlr_xdg_popup_ptr->base->surface,
+            env_ptr)) {
+        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        &wlmaker_xdg_popup_ptr->surface.super_element,
+        &_wlmaker_xdg_popup_surface_element_vmt);
 
-    xdg_popup_ptr->wlr_scene_tree_ptr = wlr_scene_xdg_surface_create(
-        parent_wlr_scene_tree_ptr,
-        wlr_xdg_popup_ptr->base);
-    if (NULL == xdg_popup_ptr->wlr_scene_tree_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_xdg_surface_create().");
-        wlmaker_xdg_popup_destroy(xdg_popup_ptr);
+    if (!wlmtk_content_init(
+            &wlmaker_xdg_popup_ptr->super_content,
+            &wlmaker_xdg_popup_ptr->surface,
+            env_ptr)) {
+        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
 
-    bs_log(BS_INFO, "Created XDG popup %p, from surface %p (parent tree %p)",
-           xdg_popup_ptr, wlr_xdg_popup_ptr->base, wlr_xdg_popup_ptr->parent);
-    return xdg_popup_ptr;
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->events.reposition,
+        &wlmaker_xdg_popup_ptr->reposition_listener,
+        handle_reposition);
+
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->events.destroy,
+        &wlmaker_xdg_popup_ptr->destroy_listener,
+        handle_destroy);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->events.new_popup,
+        &wlmaker_xdg_popup_ptr->new_popup_listener,
+        handle_new_popup);
+
+    return wlmaker_xdg_popup_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *xdg_popup_ptr)
+void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 {
-    wl_list_remove(&xdg_popup_ptr->destroy_listener.link);
-    wl_list_remove(&xdg_popup_ptr->new_popup_listener.link);
-    free(xdg_popup_ptr);
+    wl_list_remove(&wlmaker_xdg_popup_ptr->new_popup_listener.link);
+    wl_list_remove(&wlmaker_xdg_popup_ptr->destroy_listener.link);
+    wl_list_remove(&wlmaker_xdg_popup_ptr->reposition_listener.link);
+
+    wlmtk_content_fini(&wlmaker_xdg_popup_ptr->super_content);
+    wlmtk_surface_fini(&wlmaker_xdg_popup_ptr->surface);
+    free(wlmaker_xdg_popup_ptr);
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/**
- * Handler for the `destroy` signal of the `wlr_xdg_surface` (base). Calls
- * into wlmaker_xdg_popup_destroy().
- *
- * @param listener_ptr
- * @param data_ptr
- */
+/** Implements @ref wlmtk_element_vmt_t::create_scene_node. Create node. */
+struct wlr_scene_node *_wlmaker_xdg_popup_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_xdg_popup_t, surface.super_element);
+
+    struct wlr_scene_tree *surface_wlr_scene_tree_ptr =
+        wlr_scene_xdg_surface_create(
+            wlr_scene_tree_ptr,
+            wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->base);
+    return &surface_wlr_scene_tree_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles repositioning. Yet unimplemented. */
+void handle_reposition(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, reposition_listener);
+
+    bs_log(BS_WARNING, "Unhandled: reposition on XDG popup %p",
+           wlmaker_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles popup destruction: Removes from parent content, and destroy. */
 void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_popup_t *xdg_popup_ptr = BS_CONTAINER_OF(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
-    wlmaker_xdg_popup_destroy(xdg_popup_ptr);
+
+    wlmtk_element_t *element_ptr = wlmtk_content_element(
+        &wlmaker_xdg_popup_ptr->super_content);
+    wlmtk_container_remove_element(
+        element_ptr->parent_container_ptr,
+        element_ptr);
+
+    wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Handler for the `new_popup` signal of the `wlr_xdg_surface` (base).
- *
- * @param listener_ptr
- * @param data_ptr
- */
+/** Handles further popups. Creates them and adds them to parent's content. */
 void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    // This popup is eg. invoked when opening a nested sub-menu on Google
-    // Chrome.
-    wlmaker_xdg_popup_t *xdg_popup_ptr = BS_CONTAINER_OF(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
     wlmaker_xdg_popup_t *new_xdg_popup_ptr = wlmaker_xdg_popup_create(
-        wlr_xdg_popup_ptr, xdg_popup_ptr->wlr_scene_tree_ptr);
-    bs_log(BS_INFO, "Created XDG popup %p.", new_xdg_popup_ptr);
+        wlr_xdg_popup_ptr,
+        wlmtk_content_element(&wlmaker_xdg_popup_ptr->super_content)->env_ptr);
+    if (NULL == new_xdg_popup_ptr) {
+        bs_log(BS_ERROR, "Failed xdg_popup_create(%p, %p)",
+               wlr_xdg_popup_ptr,
+               wlmtk_content_element(
+                   &wlmaker_xdg_popup_ptr->super_content)->env_ptr);
+        return;
+    }
+
+    wlmtk_element_set_visible(
+        wlmtk_content_element(&new_xdg_popup_ptr->super_content), true);
+    wlmtk_container_add_element(
+        &wlmaker_xdg_popup_ptr->super_content.super_container,
+        wlmtk_content_element(&new_xdg_popup_ptr->super_content));
+
+    bs_log(BS_INFO, "XDG popup %p: New popup %p",
+           wlmaker_xdg_popup_ptr, new_xdg_popup_ptr);
 }
 
-/* == End of xdg_popup.c ================================================== */
+/* == End of xdg_popup.c ==================================================== */

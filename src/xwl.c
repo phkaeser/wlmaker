@@ -65,7 +65,7 @@
 #include <wlr/xwayland.h>
 #undef WLR_USE_UNSTABLE
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 
 /* == Declarations ========================================================= */
@@ -294,11 +294,11 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xwl_ptr->wlr_xwayland_ptr->events.ready,
         &xwl_ptr->ready_listener,
         handle_ready);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xwl_ptr->wlr_xwayland_ptr->events.new_surface,
         &xwl_ptr->new_surface_listener,
         handle_new_surface);
@@ -340,15 +340,15 @@ struct wlr_scene_surface *wlmaker_scene_xwayland_surface_create(
     scene_xwayland_surface_ptr->wlr_xwayland_surface_ptr =
         wlr_xwayland_surface_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->surface->events.map,
         &scene_xwayland_surface_ptr->surface_map_listener,
         xwls_handle_surface_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->surface->events.unmap,
         &scene_xwayland_surface_ptr->surface_unmap_listener,
         xwls_handle_surface_unmap);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->surface->events.destroy,
         &scene_xwayland_surface_ptr->surface_destroy_listener,
         xwls_handle_surface_destroy);
@@ -556,36 +556,36 @@ wlmaker_xwl_surface_t *xwl_surface_create(
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xwl_surface_ptr->wlr_scene_tree_ptr->node.events.destroy,
         &xwl_surface_ptr->tree_destroy_listener,
         handle_tree_destroy);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
         &xwl_surface_ptr->destroy_listener,
         handle_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.request_configure,
         &xwl_surface_ptr->request_configure_listener,
         handle_request_configure);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.associate,
         &xwl_surface_ptr->associate_listener,
         handle_associate);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.dissociate,
         &xwl_surface_ptr->dissociate_listener,
         handle_dissociate);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_parent,
         &xwl_surface_ptr->set_parent_listener,
         handle_set_parent);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_decorations,
         &xwl_surface_ptr->set_decorations_listener,
         handle_set_decorations);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_geometry,
         &xwl_surface_ptr->set_geometry_listener,
         handle_set_geometry);
@@ -739,11 +739,11 @@ void handle_associate(
         BS_ABORT();
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->events.map,
         &xwl_surface_ptr->surface_map_listener,
         handle_surface_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->events.unmap,
         &xwl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
@@ -768,8 +768,7 @@ void handle_associate(
     if (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
         WLR_XWAYLAND_SURFACE_DECORATIONS_ALL &&
         !is_window_type(xwl_surface_ptr, borderless_window_types)) {
-        wlmaker_view_set_server_side_decoration(
-            &xwl_surface_ptr->view, true);
+        // FIXME : Set decoration for the window.
     }
 }
 
@@ -858,10 +857,7 @@ void handle_set_decorations(
            xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations);
     if (xwl_surface_ptr->view_initialized) {
         // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
-        wlmaker_view_set_server_side_decoration(
-            &xwl_surface_ptr->view,
-            (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
-             WLR_XWAYLAND_SURFACE_DECORATIONS_ALL));
+        // FIXME: Set decorations for the window.
     }
 }
 

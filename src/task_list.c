@@ -24,7 +24,7 @@
 #include "task_list.h"
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 #include <limits.h>
@@ -144,19 +144,19 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         task_list_ptr->wlr_scene_tree_ptr,
         NULL);  // send_close_callback.
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->task_list_enabled_event,
         &task_list_ptr->task_list_enabled_listener,
         handle_task_list_enabled);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->task_list_disabled_event,
         &task_list_ptr->task_list_disabled_listener,
         handle_task_list_disabled);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_mapped_event,
         &task_list_ptr->view_mapped_listener,
         handle_view_mapped);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->view_unmapped_event,
         &task_list_ptr->view_unmapped_listener,
         handle_view_unmapped);

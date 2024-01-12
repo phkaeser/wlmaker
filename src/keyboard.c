@@ -21,7 +21,7 @@
 #include "keyboard.h"
 
 #include "config.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "server.h"
 
 /* == Declarations ========================================================= */
@@ -79,11 +79,11 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         config_keyboard_repeat_rate,
         config_keyboard_repeat_delay);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &keyboard_ptr->wlr_keyboard_ptr->events.key,
         &keyboard_ptr->key_listener,
         handle_key);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &keyboard_ptr->wlr_keyboard_ptr->events.modifiers,
         &keyboard_ptr->modifiers_listener,
         handle_modifiers);

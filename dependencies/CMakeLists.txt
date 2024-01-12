@@ -34,6 +34,7 @@ ENDIF()
 
 # https://github.com/phkaeser/libbase
 # Initialize: git submodule update --init --recursive --merge
+# Checkout: git submodule update --checkout --recursive --merge
 # Update: git submodule update --remote --merge
 # Update: (cd libbase && git pull)
 # ADD_SUBDIRECTORY(libbase)

@@ -34,7 +34,7 @@
         Creates a new icon object associated with the given XDG toplevel.
       </description>
       <arg name="id" type="new_id" interface="zwlmaker_toplevel_icon_v1"/>
-      <arg name="toplevel" type="object" interface="xdg_toplevel"/>
+      <arg name="toplevel" type="object" interface="xdg_toplevel" allow-null="true"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 

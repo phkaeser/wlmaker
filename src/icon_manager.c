@@ -26,7 +26,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
 
 /* == Declarations ========================================================= */
@@ -274,8 +274,11 @@ void handle_get_toplevel_icon(
     wlmaker_icon_manager_t *icon_manager_ptr =
         icon_manager_from_resource(
             wl_icon_manager_resource_ptr);
-    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
-        wlr_xdg_toplevel_from_resource(wl_toplevel_resource_ptr);
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = NULL;
+    if (NULL != wl_toplevel_resource_ptr) {
+        wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_from_resource(
+            wl_toplevel_resource_ptr);
+    }
     struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(wl_surface_resource_ptr);
 
@@ -342,7 +345,7 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);

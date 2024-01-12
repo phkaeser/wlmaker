@@ -24,9 +24,7 @@
 #include "config.h"
 #include "decorations.h"
 #include "menu.h"
-#include "resizebar.h"
-#include "titlebar.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <wlr/util/edges.h>
 
@@ -50,8 +48,6 @@ static void window_menu_callback_shade(void *ud_ptr);
 static void window_menu_callback_move_to_workspace1(void *ud_ptr);
 static void window_menu_callback_move_to_workspace2(void *ud_ptr);
 static void window_menu_callback_close(void *ud_ptr);
-
-static void wlmaker_view_apply_decoration(wlmaker_view_t *view_ptr);
 
 /* == Data ================================================================= */
 
@@ -110,7 +106,7 @@ void wlmaker_view_init(
         wlmaker_interactive_node_destroy);
     BS_ASSERT(view_ptr->interactive_tree_ptr);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &view_ptr->server_ptr->cursor_ptr->button_release_event,
         &view_ptr->button_release_listener,
         handle_button_release);
@@ -152,11 +148,6 @@ void wlmaker_view_fini(wlmaker_view_t *view_ptr)
         // Will also destroy all interactives in the three.
         bs_avltree_destroy(view_ptr->interactive_tree_ptr);
         view_ptr->interactive_tree_ptr = NULL;
-    }
-
-    if (NULL != view_ptr->window_decorations_ptr) {
-        wlmaker_window_decorations_destroy(view_ptr->window_decorations_ptr);
-        view_ptr->window_decorations_ptr = NULL;
     }
 
     if (NULL != view_ptr->elements_wlr_scene_tree_ptr) {
@@ -275,8 +266,9 @@ wlmaker_view_t *wlmaker_view_at(
            NULL == wlr_scene_tree_ptr->node.data) {
         wlr_scene_tree_ptr = wlr_scene_tree_ptr->node.parent;
     }
-    return (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
+    if (NULL == wlr_scene_tree_ptr) return NULL;
 
+    return (wlmaker_view_t*)wlr_scene_tree_ptr->node.data;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -336,17 +328,6 @@ void wlmaker_view_handle_axis(
     if (NULL != view_ptr->impl_ptr->handle_axis) {
         view_ptr->impl_ptr->handle_axis(view_ptr, event_ptr);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_view_set_server_side_decoration(
-    wlmaker_view_t *view_ptr,
-    bool enabled)
-{
-    // Don't act if there's nothing to do...
-    if (view_ptr->server_side_decoration_enabled == enabled) return;
-    view_ptr->server_side_decoration_enabled = enabled;
-    wlmaker_view_apply_decoration(view_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -443,21 +424,10 @@ void wlmaker_view_cursor_leave(wlmaker_view_t *view_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_view_shade(wlmaker_view_t *view_ptr)
+void wlmaker_view_shade(__UNUSED__ wlmaker_view_t *view_ptr)
 {
-    if (!view_ptr->server_side_decorated) {
-        bs_log(BS_INFO, "Shade only available when server-side-decorated.");
-        return;
-    }
-    BS_ASSERT(NULL != view_ptr->view_wlr_scene_tree_ptr);
-
-    view_ptr->shaded ^= true;
-    wlr_scene_node_set_enabled(
-        &view_ptr->view_wlr_scene_tree_ptr->node, !view_ptr->shaded);
-   if (NULL != view_ptr->window_decorations_ptr) {
-        wlmaker_window_decorations_set_shade(
-            view_ptr->window_decorations_ptr, view_ptr->shaded);
-    }
+    bs_log(BS_INFO, "Shade only available when server-side-decorated.");
+    return;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -466,19 +436,6 @@ void wlmaker_view_get_size(wlmaker_view_t *view_ptr,
                            uint32_t *height_ptr)
 {
     view_ptr->impl_ptr->get_size(view_ptr, width_ptr, height_ptr);
-    if (view_ptr->server_side_decorated) {
-        if (NULL != view_ptr->window_decorations_ptr) {
-            uint32_t deco_width, deco_height;
-            wlmaker_window_decorations_get_added_size(
-                view_ptr->window_decorations_ptr, &deco_width, &deco_height);
-            if (NULL != width_ptr) {
-                *width_ptr += deco_width;
-            }
-            if (NULL != height_ptr) {
-                *height_ptr += deco_height;
-            }
-        }
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -487,21 +444,6 @@ void wlmaker_view_set_size(wlmaker_view_t *view_ptr, int width, int height)
     width = BS_MAX(1, width);
     height = BS_MAX(1, height);
 
-    if (view_ptr->server_side_decorated) {
-        BS_ASSERT(NULL != view_ptr->window_decorations_ptr);
-
-        uint32_t deco_width, deco_height;
-        wlmaker_window_decorations_get_added_size(
-            view_ptr->window_decorations_ptr, &deco_width, &deco_height);
-        width -= deco_width;
-        height -= deco_height;
-
-        width = BS_MAX(1, width);
-        height = BS_MAX(1, height);
-
-        wlmaker_window_decorations_set_inner_size(
-            view_ptr->window_decorations_ptr, width, height);
-    }
     view_ptr->impl_ptr->set_size(view_ptr, width, height);
 }
 
@@ -511,30 +453,12 @@ void wlmaker_view_get_position(wlmaker_view_t *view_ptr,
 {
     *x_ptr = view_ptr->elements_wlr_scene_tree_ptr->node.x;
     *y_ptr = view_ptr->elements_wlr_scene_tree_ptr->node.y;
-
-    if (NULL != view_ptr->window_decorations_ptr) {
-        int relx, rely;
-        wlmaker_window_decorations_relative_position(
-            view_ptr->window_decorations_ptr, &relx, &rely);
-        *x_ptr += relx;
-        *y_ptr += rely;
-    }
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_view_set_position(wlmaker_view_t *view_ptr,
                                int x, int y)
 {
-    if (NULL != view_ptr->window_decorations_ptr) {
-        // Adjust position by the top-left decoration elements, since the node
-        // position does not factor in these.
-        int relx, rely;
-        wlmaker_window_decorations_relative_position(
-            view_ptr->window_decorations_ptr, &relx, &rely);
-        x -= relx;
-        y -= rely;
-    }
-
     if (x != view_ptr->elements_wlr_scene_tree_ptr->node.x ||
         y != view_ptr->elements_wlr_scene_tree_ptr->node.y) {
         wlr_scene_node_set_position(
@@ -611,7 +535,6 @@ void wlmaker_view_set_fullscreen(wlmaker_view_t *view_ptr, bool fullscreen)
         wlmaker_workspace_demote_view_from_fullscreen(
             view_ptr->workspace_ptr, view_ptr);
     }
-    wlmaker_view_apply_decoration(view_ptr);
 
     wlmaker_view_set_position(view_ptr, new_box.x, new_box.y);
     wlmaker_view_set_size(view_ptr, new_box.width, new_box.height);
@@ -644,11 +567,6 @@ void wlmaker_view_set_title(wlmaker_view_t *view_ptr, const char *title_ptr)
     }
     if (NULL != title_ptr) {
         view_ptr->title_ptr = logged_strdup(title_ptr);
-    }
-
-    if (NULL != view_ptr->window_decorations_ptr) {
-        wlmaker_window_decorations_update_title(
-            view_ptr->window_decorations_ptr);
     }
 }
 
@@ -691,7 +609,6 @@ void wlmaker_view_map(wlmaker_view_t *view_ptr,
         view_ptr->workspace_ptr,
         view_ptr,
         layer);
-    wlmaker_view_apply_decoration(view_ptr);
 
     wl_signal_emit(&view_ptr->server_ptr->view_mapped_event, view_ptr);
 }
@@ -702,9 +619,6 @@ void wlmaker_view_unmap(wlmaker_view_t *view_ptr)
     BS_ASSERT(NULL != view_ptr->workspace_ptr);  // Should be mapped.
     wlmaker_workspace_remove_view(view_ptr->workspace_ptr, view_ptr);
     view_ptr->workspace_ptr = NULL;
-    wlmaker_view_apply_decoration(view_ptr);
-
-    wlmaker_cursor_unmap_view(view_ptr->server_ptr->cursor_ptr, view_ptr);
 
     wl_signal_emit(&view_ptr->server_ptr->view_unmapped_event, view_ptr);
 }
@@ -895,46 +809,6 @@ void window_menu_callback_close(void *ud_ptr)
 {
     wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
     view_ptr->send_close_callback(view_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Apply server-side decoration, if view is configured and in suitable state.
- *
- * Will set `wlmaker_view_t.server_side_decorated` suitably.
- *
- * @param view_ptr
- */
-void wlmaker_view_apply_decoration(wlmaker_view_t *view_ptr)
-{
-    // We won't have the view decorated if it's (1) disabled, (2) unmapped,
-    // or (3) currently in fullscreen mode.
-    if ((!view_ptr->server_side_decoration_enabled) ||
-        (NULL == view_ptr->workspace_ptr) ||
-        view_ptr->fullscreen) {
-
-        if (NULL != view_ptr->window_decorations_ptr) {
-            wlmaker_window_decorations_destroy(
-                view_ptr->window_decorations_ptr);
-            view_ptr->window_decorations_ptr = NULL;
-        }
-        view_ptr->server_side_decorated = false;
-
-        return;
-    }
-
-    // Store, then later: re-adjust position of the view.
-    int pos_x, pos_y;
-    wlmaker_view_get_position(view_ptr, &pos_x, &pos_y);
-
-    // Well: Decoration is enabled, we're mapped, and not in fullscreen. There
-    // should be decoration elements...
-    view_ptr->window_decorations_ptr = wlmaker_window_decorations_create(
-        view_ptr);
-    BS_ASSERT(NULL != view_ptr->window_decorations_ptr);
-    view_ptr->server_side_decorated = true;
-
-    wlmaker_view_set_position(view_ptr, pos_x, pos_y);
 }
 
 /* == End of view.c ======================================================== */

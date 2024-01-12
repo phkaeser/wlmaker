@@ -118,8 +118,8 @@ wlmaker_dockapp_iconified_t *wlmaker_dockapp_iconified_create(
         return NULL;
     }
 
-    const wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    const wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xff767686,.to = 0xff313541 }}
     };
     wlmaker_decorations_draw_tile(cairo_ptr, &fill, false);

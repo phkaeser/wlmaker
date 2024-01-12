@@ -27,7 +27,7 @@
 /* ------------------------------------------------------------------------- */
 void wlmaker_primitives_cairo_fill(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr)
+    const wlmtk_style_fill_t *fill_ptr)
 {
     cairo_surface_t *surface_ptr = cairo_get_target(cairo_ptr);
     uint32_t width = cairo_image_surface_get_width(surface_ptr);
@@ -42,18 +42,18 @@ void wlmaker_primitives_cairo_fill_at(
     int y,
     unsigned width,
     unsigned height,
-    const wlmaker_style_fill_t *fill_ptr)
+    const wlmtk_style_fill_t *fill_ptr)
 {
     cairo_pattern_t *cairo_pattern_ptr;
     float r, g, b, alpha;
     switch (fill_ptr->type) {
-    case WLMAKER_STYLE_COLOR_SOLID:
+    case WLMTK_STYLE_COLOR_SOLID:
         bs_gfxbuf_argb8888_to_floats(
             fill_ptr->param.solid.color, &r, &g, &b, &alpha);
         cairo_pattern_ptr = cairo_pattern_create_rgba(r, g, b, alpha);
         break;
 
-    case WLMAKER_STYLE_COLOR_HGRADIENT:
+    case WLMTK_STYLE_COLOR_HGRADIENT:
         cairo_pattern_ptr = cairo_pattern_create_linear(0, 0, width, 0);
         bs_gfxbuf_argb8888_to_floats(
             fill_ptr->param.hgradient.from, &r, &g, &b, &alpha);
@@ -65,7 +65,7 @@ void wlmaker_primitives_cairo_fill_at(
             cairo_pattern_ptr, 1, r, g, b, alpha);
         break;
 
-    case WLMAKER_STYLE_COLOR_DGRADIENT:
+    case WLMTK_STYLE_COLOR_DGRADIENT:
         cairo_pattern_ptr = cairo_pattern_create_linear(0, 0, width, height);
         bs_gfxbuf_argb8888_to_floats(
             fill_ptr->param.dgradient.from, &r, &g, &b, &alpha);
@@ -240,8 +240,8 @@ void test_fill(bs_test_t *test_ptr)
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
 
     // Solid fill.
-    wlmaker_style_fill_t fill_solid = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+    wlmtk_style_fill_t fill_solid = {
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xff4080c0} }
     };
     wlmaker_primitives_cairo_fill(cairo_ptr, &fill_solid);
@@ -249,8 +249,8 @@ void test_fill(bs_test_t *test_ptr)
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_solid.png");
 
     // Horizontal fill.
-    wlmaker_style_fill_t fill_hgradient = {
-        .type = WLMAKER_STYLE_COLOR_HGRADIENT,
+    wlmtk_style_fill_t fill_hgradient = {
+        .type = WLMTK_STYLE_COLOR_HGRADIENT,
         .param = { .hgradient = { .from = 0xff102040, .to = 0xff4080ff }}
     };
     wlmaker_primitives_cairo_fill(cairo_ptr, &fill_hgradient);
@@ -258,8 +258,8 @@ void test_fill(bs_test_t *test_ptr)
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_hgradient.png");
 
     // Diagonal fill.
-    wlmaker_style_fill_t fill_dgradient = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    wlmtk_style_fill_t fill_dgradient = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
     };
     wlmaker_primitives_cairo_fill(cairo_ptr, &fill_dgradient);

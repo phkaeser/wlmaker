@@ -20,9 +20,8 @@
 
 #include "layer_surface.h"
 
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "view.h"
-#include "xdg_popup.h"
 
 #include <libbase/libbase.h>
 
@@ -109,25 +108,25 @@ wlmaker_layer_surface_t *wlmaker_layer_surface_create(
         return NULL;
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->events.destroy,
         &layer_surface_ptr->destroy_listener,
         handle_destroy);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->events.new_popup,
         &layer_surface_ptr->new_popup_listener,
         handle_new_popup);
 
-        wlm_util_connect_listener_signal(
+        wlmtk_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->surface->events.map,
         &layer_surface_ptr->surface_map_listener,
         handle_map);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->surface->events.unmap,
         &layer_surface_ptr->surface_unmap_listener,
         handle_unmap);
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_layer_surface_v1_ptr->surface->events.commit,
         &layer_surface_ptr->surface_commit_listener,
         handle_surface_commit);
@@ -342,12 +341,9 @@ void handle_new_popup(
         listener_ptr, wlmaker_layer_surface_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
-        wlr_xdg_popup_ptr,
-        layer_surface_ptr->wlr_scene_layer_surface_v1_ptr->tree
-        //layer_surface_ptr->view.wlr_scene_tree_ptr
-        );
-    bs_log(BS_INFO, "Created popup %p.", xdg_popup_ptr);
+    // TODO(kaeser@gubbe.ch): Implement the popups for the WLR scene layer.
+    bs_log(BS_WARNING, "Unimplemented: New popup %p for layer surface %p",
+           wlr_xdg_popup_ptr, layer_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

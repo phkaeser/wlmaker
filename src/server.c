@@ -22,7 +22,7 @@
 
 #include "config.h"
 #include "output.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
 
@@ -83,6 +83,9 @@ static void handle_destroy_input_device(
 static void handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void set_extents(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static void arrange_views(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -141,11 +144,11 @@ wlmaker_server_t *wlmaker_server_create(void)
     }
 
     // Listen for new (or newly recognized) output and input devices.
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_backend_ptr->events.new_output,
         &server_ptr->backend_new_output_listener,
         handle_new_output);
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_backend_ptr->events.new_input,
         &server_ptr->backend_new_input_device_listener,
         handle_new_input_device);
@@ -181,7 +184,7 @@ wlmaker_server_t *wlmaker_server_create(void)
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_output_layout_ptr->events.change,
         &server_ptr->output_layout_change_listener,
         handle_output_layout_change);
@@ -193,8 +196,10 @@ wlmaker_server_t *wlmaker_server_create(void)
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    if (!wlr_scene_attach_output_layout(server_ptr->wlr_scene_ptr,
-                                        server_ptr->wlr_output_layout_ptr)) {
+    server_ptr->wlr_scene_output_layout_ptr = wlr_scene_attach_output_layout(
+        server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr);
+    if (NULL == server_ptr->wlr_scene_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -210,6 +215,15 @@ wlmaker_server_t *wlmaker_server_create(void)
     server_ptr->cursor_ptr = wlmaker_cursor_create(server_ptr);
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    server_ptr->env_ptr = wlmtk_env_create(
+        server_ptr->cursor_ptr->wlr_cursor_ptr,
+        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
+        server_ptr->wlr_seat_ptr);
+    if (NULL == server_ptr->env_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -371,6 +385,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         wlmaker_workspace_destroy(wlmaker_workspace_from_dlnode(dlnode_ptr));
     }
 
+    if (NULL != server_ptr->env_ptr) {
+        wlmtk_env_destroy(server_ptr->env_ptr);
+        server_ptr->env_ptr = NULL;
+    }
+
     if (NULL != server_ptr->cursor_ptr) {
         wlmaker_cursor_destroy(server_ptr->cursor_ptr);
         server_ptr->cursor_ptr = NULL;
@@ -413,8 +432,16 @@ void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
     // outputs from left-to-right in the order they appear. A sophisticated
     // compositor would let the user configure the arrangement of outputs in
     // the layout.
-    wlr_output_layout_add_auto(server_ptr->wlr_output_layout_ptr,
-                               output_ptr->wlr_output_ptr);
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        wlr_output_layout_add_auto(server_ptr->wlr_output_layout_ptr,
+                                   output_ptr->wlr_output_ptr);
+    struct wlr_scene_output *wlr_scene_output_ptr =
+        wlr_scene_output_create(server_ptr->wlr_scene_ptr,
+                                output_ptr->wlr_output_ptr);
+    wlr_scene_output_layout_add_output(
+        server_ptr->wlr_scene_output_layout_ptr,
+        wlr_output_layout_output_ptr,
+        wlr_scene_output_ptr);
     bs_dllist_push_back(&server_ptr->outputs, &output_ptr->node);
 }
 
@@ -565,7 +592,7 @@ bool register_input_device(wlmaker_server_t *server_ptr,
     input_device_ptr->wlr_input_device_ptr = wlr_input_device_ptr;
     input_device_ptr->handle_ptr = handle_ptr;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &wlr_input_device_ptr->events.destroy,
         &input_device_ptr->destroy_listener,
         handle_destroy_input_device);
@@ -714,7 +741,22 @@ void handle_output_layout_change(
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
 
+    bs_dllist_for_each(&server_ptr->workspaces, set_extents, &extents);
     bs_dllist_for_each(&server_ptr->workspaces, arrange_views, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for `bs_dllist_for_each` to set extents of the workspace.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr
+ */
+void set_extents(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    struct wlr_box *extents_ptr = ud_ptr;
+    wlmaker_workspace_set_extents(
+        wlmaker_workspace_from_dlnode(dlnode_ptr), extents_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

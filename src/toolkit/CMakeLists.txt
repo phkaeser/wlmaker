@@ -17,12 +17,53 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 SET(PUBLIC_HEADER_FILES
   gfxbuf.h
   primitives.h
-  style.h)
+  style.h
+  toolkit.h
+  util.h
+
+  bordered.h
+  box.h
+  buffer.h
+  button.h
+  container.h
+  content.h
+  element.h
+  env.h
+  fsm.h
+  input.h
+  surface.h
+  rectangle.h
+  resizebar.h
+  resizebar_area.h
+  titlebar.h
+  titlebar_button.h
+  titlebar_title.h
+  window.h
+  workspace.h)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
+  bordered.c
+  box.c
+  buffer.c
+  button.c
+  container.c
+  content.c
+  element.c
+  env.c
+  fsm.c
   gfxbuf.c
-  primitives.c)
+  primitives.c
+  surface.c
+  rectangle.c
+  resizebar.c
+  resizebar_area.c
+  titlebar.c
+  titlebar_button.c
+  titlebar_title.c
+  util.c
+  window.c
+  workspace.c)
 TARGET_INCLUDE_DIRECTORIES(
   toolkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..
@@ -49,6 +90,7 @@ TARGET_LINK_LIBRARIES(
   base
   PkgConfig::CAIRO
   PkgConfig::LIBDRM
+  PkgConfig::WAYLAND
   PkgConfig::WLROOTS
 )
 

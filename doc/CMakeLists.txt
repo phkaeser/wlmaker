@@ -17,6 +17,30 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 FIND_PACKAGE(Doxygen)
 IF(DOXYGEN_FOUND)
 
+  FIND_FILE(PLANTUML_JAR
+    NAMES plantuml.jar
+    HINTS ENV{PLANTUML_JAR_PATH}
+    PATHS
+    /usr/global/share/java/plantuml/
+    /usr/local/share/java/plantuml/
+    /usr/share/java/
+    /usr/local/share/java/
+    /usr/share/plantuml/)
+  IF(PLANTUML_JAR)
+    SET(DOXYGEN_PLANTUML_JAR_FILE ${PLANTUML_JAR})
+  ELSE()
+    SET(DOXYGEN_PLANTUML_JAR_FILE "")
+    MESSAGE(
+      NOTICE
+      "Did not find plantuml.jar -- Will not generate class diagrams.")
+  ENDIF(PLANTUML_JAR_FOUND)
+
+  IF(config_DOXYGEN_CRITICAL)
+    SET(DOXYGEN_WARN_AS_ERROR "YES")
+  ELSE(config_DOXYGEN_CRITICAL)
+    SET(DOXYGEN_WARN_AS_ERROR "NO")
+  ENDIF(config_DOXYGEN_CRITICAL)
+
   # set input and output files
   SET(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
   SET(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)

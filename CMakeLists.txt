@@ -42,6 +42,7 @@ PKG_CHECK_MODULES(
   wayland-client>=1.22.90
   wayland-protocols>=1.31
   wayland-server>=1.22.90)
+PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
 PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17)
 PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
@@ -49,6 +50,7 @@ PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
+OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 
 # Toplevel compile options, for GCC.
 IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -73,12 +75,12 @@ SET(CMAKE_C_STANDARD 11)
 
 LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
+ADD_SUBDIRECTORY(apps)
 ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(icons)
 ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(src/decorations)
 ADD_SUBDIRECTORY(src/toolkit)
 
 # Adds submodules last, to permit checking on already-existing targets.
