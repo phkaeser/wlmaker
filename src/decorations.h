@@ -40,32 +40,6 @@ extern const uint32_t         wlmaker_decorations_tile_size;
 extern const uint32_t         wlmaker_decorations_clip_button_size;
 
 /**
- * Creates a cairo image surface for the background of the title bar.
- *
- * @param width               Full with of the title bar. The width depends on
- *                            the window size; the height of the title bar is
- *                            hardcoded.
- * @param fill_ptr            Specification for the fill.
- *
- * @return a `cairo_surface_t` image target, filled as specificed.
- */
-cairo_surface_t *wlmaker_decorations_titlebar_create_background(
-    uint32_t width, const wlmtk_style_fill_t *fill_ptr);
-
-/**
- * Creates a cairo image surface for the background of the resize bar.
- *
- * @param width               Full with of the resize bar. The width depends on
- *                            the window size; the height of the reizse bar is
- *                            hardcoded.
- * @param fill_ptr            Specification for the fill.
- *
- * @return a `cairo_surface_t` image target, filled as specificed.
- */
-cairo_surface_t *wlmaker_decorations_resizebar_create_background(
-    uint32_t width, const wlmtk_style_fill_t *fill_ptr);
-
-/**
  * Draws a tile into the `cairo_t`.
  *
  * @param cairo_ptr

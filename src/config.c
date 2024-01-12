@@ -72,20 +72,6 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
     .window_margin_color = 0xff000000,  // Pich black, opaque.
     .window_margin_width = 1,
 
-    .titlebar_focussed_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xff505a5e,.to = 0xff202a2e }}
-    },
-    .titlebar_focussed_text_color = 0xffffffff,
-    .titlebar_blurred_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xffc2c0c5,.to = 0xff828085 }}
-    },
-    .titlebar_blurred_text_color = 0xff000000,
-    .resizebar_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffc2c0c5 }}
-    },
     .tile_fill = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}

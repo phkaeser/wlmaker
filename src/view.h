@@ -63,8 +63,6 @@ typedef struct _wlmaker_view_t wlmaker_view_t;
 #include "server.h"
 #include "workspace.h"
 
-#include "decorations/window_decorations.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -193,33 +191,6 @@ struct _wlmaker_view_t {
 
     /** Anchor of the view. */
     uint32_t                  anchor;
-
-    /**
-     * Whether this view is configured to have server-side decoration.
-     *
-     * This value conforms to the result of the protocol negotiation of the
-     * "XDG Decoration" extension. The decoration may be enabled, but
-     * currently not visible -- for example, if the view is not mapped, or
-     * if the view is in fullscreen mode.
-     *
-     * See @ref server_side_decorated.
-     */
-    bool                      server_side_decoration_enabled;
-    /**
-     * Whether this view is currently server-side decorated.
-     *
-     * Is true iff server-side decoration elements are currently visible.
-     * Implies that @ref server_side_decoration_enabled, that the view is
-     * currently mapped and not in fullscreen mode.
-     */
-    bool                      server_side_decorated;
-
-    /**
-     * All window decorations. Will be set only if decorations are enabled
-     * (@ref server_side_decoration_enabled), the view is mapped,
-     * and not currently in fullscreen mode.
-     */
-    wlmaker_window_decorations_t *window_decorations_ptr;
 
     /** Whether this view is currently active (focussed). */
     bool                      active;
@@ -406,19 +377,6 @@ void wlmaker_view_handle_axis(
     double x,
     double y,
     struct wlr_pointer_axis_event *event_ptr);
-
-/**
- * Enables, respectively disables server-side decoration for the view.
- *
- * If the view is already mapped, this will trigger creation of the decoration
- * elements. Otherwise, elements will be created when the view gets mapped.
- *
- * @param view_ptr
- * @param enabled
- */
-void wlmaker_view_set_server_side_decoration(
-    wlmaker_view_t *view_ptr,
-    bool enabled);
 
 /**
  * Shows the "window menu" for this view.

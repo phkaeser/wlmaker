@@ -51,18 +51,6 @@ typedef struct {
     /** Width of the window margin, in pixels. */
     uint32_t                  window_margin_width;
 
-    /** Color of the title text when focussed. */
-    uint32_t                  titlebar_focussed_text_color;
-    /** Color of the title text when blurred. */
-    uint32_t                  titlebar_blurred_text_color;
-
-    /** Fill style of the title bar, when focussed. Including buttons. */
-    wlmtk_style_fill_t        titlebar_focussed_fill;
-    /** Fill style of the title bar, when blurred. Including buttons. */
-    wlmtk_style_fill_t       titlebar_blurred_fill;
-
-    /** Fill style of the resize bar. */
-    wlmtk_style_fill_t        resizebar_fill;
     /** Fill style of a tile. */
     wlmtk_style_fill_t        tile_fill;
     /** File style of the title element of an iconified. */
