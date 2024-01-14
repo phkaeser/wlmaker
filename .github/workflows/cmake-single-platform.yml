@@ -9,10 +9,10 @@ on:
 
 env:
   # TODO: Move the PKG_CONFIG_PATH and LD_LIBRARY_PATH here.
-  INSTALL_PATH: "${HOME}/.local/lib"
-  INSTALL_LIB_PATH: "${INSTALL_PATH}/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  INSTALL_PKGCONFIG_PATH: "${INSTALL_LIBPATH}/pkgconfig/:${INSTALL_PATH}/share/pkgconfig/"
-  
+  INSTALL_PATH: "${HOME}/.local"
+  INSTALL_LIBRARY_PATH: "${{ env.INSTALL_PATH }}/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  INSTALL_PKGCONFIG_PATH: "${{ env.INSTALL_PATH }}/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${{ env.INSTALL_PATH }}/share/pkgconfig/"
+
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
@@ -58,10 +58,11 @@ jobs:
 
     - name: Configure and build git submodule dependencies.
       run: |
-        export PKG_CONFIG_PATH="${INSTALL_PKGCONFIG_PATH}"
-        (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build)
+        export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         echo "pkg: ${PKG_CONFIG_PATH}"
         echo "lib: ${LD_LIBRARY_PATH}"
+        (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build)
         cmake --build ${{github.workspace}}/dependencies/build
 
     - name: Configure wlmaker through CMake
