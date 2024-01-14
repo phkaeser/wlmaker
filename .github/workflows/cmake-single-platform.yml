@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ "main", "workflow" ]
 
-env:
+#env:
   # TODO: Move the PKG_CONFIG_PATH and LD_LIBRARY_PATH here.
   
 jobs:
