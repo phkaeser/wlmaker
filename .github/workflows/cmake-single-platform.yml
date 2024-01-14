@@ -79,6 +79,9 @@ jobs:
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         cmake --build ${{github.workspace}}/build
 
+    - name: Build documentation.
+      run: cmake --build ${{github.workspace}}/build --target doc
+
 #    - name: Run all tests
 #      working-directory: ${{github.workspace}}/build
 #      # Execute tests defined by the CMake configuration.
