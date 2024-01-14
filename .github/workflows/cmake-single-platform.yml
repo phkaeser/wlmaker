@@ -8,10 +8,8 @@ on:
     branches: [ "main", "workflow" ]
 
 env:
-  # TODO: Move the PKG_CONFIG_PATH and LD_LIBRARY_PATH here.
-  INSTALL_PATH: "${HOME}/.local"
-  INSTALL_LIBRARY_PATH: "${{ env.INSTALL_PATH }}/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  INSTALL_PKGCONFIG_PATH: "${{ env.INSTALL_PATH }}/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${{ env.INSTALL_PATH }}/share/pkgconfig/"
+  INSTALL_LIBRARY_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  INSTALL_PKGCONFIG_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
 
 jobs:
   build:
