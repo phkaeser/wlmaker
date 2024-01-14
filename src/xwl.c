@@ -826,6 +826,8 @@ void handle_set_parent(
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, set_parent_listener);
 
+    bs_log(BS_INFO, "Set parent for %p", xwl_surface_ptr);
+
     struct wlr_scene_tree *parent_wlr_scene_tree_ptr =
         get_parent_wlr_scene_tree_ptr(xwl_surface_ptr);
     if (parent_wlr_scene_tree_ptr ==
