@@ -2,9 +2,9 @@ name: Build for Linux
 
 on:
   push:
-    branches: [ "main", "workflow" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "workflow" ]
+    branches: [ "main" ]
 
 env:
   INSTALL_PATH: "${HOME}/.local"
