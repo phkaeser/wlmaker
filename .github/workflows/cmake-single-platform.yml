@@ -7,9 +7,9 @@ on:
   pull_request:
     branches: [ "main", "workflow" ]
 
-#env:
+env:
   # TODO: Move the PKG_CONFIG_PATH and LD_LIBRARY_PATH here.
-  PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+  PKG_CONFIG_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
   
 jobs:
   build:
