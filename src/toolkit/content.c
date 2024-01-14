@@ -42,15 +42,12 @@ bool wlmtk_content_init(
     if (!wlmtk_container_init(&content_ptr->super_container, env_ptr)) {
         return false;
     }
-
-    BS_ASSERT(NULL != surface_ptr);
-    wlmtk_container_add_element(
-        &content_ptr->super_container,
-        wlmtk_surface_element(surface_ptr));
-    content_ptr->surface_ptr = surface_ptr;
     content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
 
-    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+    if (NULL != surface_ptr) {
+        wlmtk_content_set_surface(content_ptr, surface_ptr);
+    }
+
     return true;
 }
 
@@ -65,6 +62,22 @@ void wlmtk_content_fini(
         content_ptr->surface_ptr = NULL;
     }
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_set_surface(
+    wlmtk_content_t *content_ptr,
+    wlmtk_surface_t *surface_ptr)
+{
+    BS_ASSERT(surface_ptr != NULL);
+    BS_ASSERT(content_ptr->surface_ptr == NULL);
+    content_ptr->surface_ptr = surface_ptr;
+
+    wlmtk_container_add_element(
+        &content_ptr->super_container,
+        wlmtk_surface_element(surface_ptr));
+    content_ptr->surface_ptr = surface_ptr;
+    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -92,12 +105,15 @@ uint32_t wlmtk_content_request_size(
     int width,
     int height)
 {
+    BS_ASSERT(NULL != content_ptr->surface_ptr);
+
     return wlmtk_surface_request_size(content_ptr->surface_ptr, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_content_request_close(wlmtk_content_t *content_ptr)
 {
+    BS_ASSERT(NULL != content_ptr->surface_ptr);
     wlmtk_surface_request_close(content_ptr->surface_ptr);
 }
 
@@ -106,6 +122,7 @@ void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated)
 {
+    BS_ASSERT(NULL != content_ptr->surface_ptr);
     wlmtk_surface_set_activated(content_ptr->surface_ptr, activated);
 }
 
@@ -115,6 +132,7 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr)
 {
+    BS_ASSERT(NULL != content_ptr->surface_ptr);
     wlmtk_surface_get_size(content_ptr->surface_ptr, width_ptr, height_ptr);
 }
 
@@ -125,6 +143,7 @@ void wlmtk_content_commit_size(
     int width,
     int height)
 {
+    BS_ASSERT(NULL != content_ptr->surface_ptr);
     wlmtk_surface_commit_size(content_ptr->surface_ptr, serial, width, height);
 
     if (NULL != content_ptr->window_ptr) {

@@ -116,6 +116,16 @@ void wlmtk_content_fini(
     wlmtk_content_t *content_ptr);
 
 /**
+ * Sets the content's surface.
+ *
+ * @param content_ptr
+ * @param surface_ptr
+ */
+void wlmtk_content_set_surface(
+    wlmtk_content_t *content_ptr,
+    wlmtk_surface_t *surface_ptr);
+
+/**
  * Extends the content by specifying virtual methods.
  *
  * @param content_ptr
