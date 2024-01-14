@@ -17,14 +17,44 @@ jobs:
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ubuntu-latest
-
+        
     steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y git \
+          cmake \
+          doxygen \
+          foot \
+          glslang-dev \
+          glslang-tools \
+          graphviz \
+          libcairo2-dev \
+          libgbm-dev \
+          libinput-dev \
+          libncurses-dev |
+          libudev-dev \
+          libvulkan-dev \
+          libxcb-composite0-dev \
+          libxcb-dri3-dev \
+          libxcb-ewmh-dev \
+          libxcb-icccm4-dev \
+          libxcb-present-dev \
+          libxcb-render-util0-dev \
+          libxcb-res0-dev \
+          libxcb-xinput-dev \
+          libxkbcommon-dev \
+          meson \
+          plantuml \
+          xmlto \
+          xsltproc \
+          wayland-protocols
+    
     - name: Checkout code
       uses: actions/checkout@v3
       with:
         submodules: recursive
 
-    - name: Configure and build dependencies.
+    - name: Configure and build git submodule dependencies.
       run: |
         export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
         (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build)
