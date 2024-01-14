@@ -31,7 +31,7 @@ jobs:
           libcairo2-dev \
           libgbm-dev \
           libinput-dev \
-          libncurses-dev |
+          libncurses-dev \
           libudev-dev \
           libvulkan-dev \
           libxcb-composite0-dev \
