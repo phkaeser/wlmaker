@@ -49,6 +49,8 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "xdg_shell.h"
 #include "workspace.h"
 
+#include "toolkit/toolkit.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -72,6 +74,8 @@ struct _wlmaker_server_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
+    /** The scene output layout. */
+    struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
     /**
      * Another scene graph, not connected to any output.
      *
@@ -116,6 +120,9 @@ struct _wlmaker_server_t {
     bs_dllist_t               outputs;
     /** The list of input devices. */
     bs_dllist_t               input_devices;
+
+    /** Toolkit environment. */
+    wlmtk_env_t               *env_ptr;
 
     /** The current workspace. */
     wlmaker_workspace_t       *current_workspace_ptr;

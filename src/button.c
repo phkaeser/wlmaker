@@ -25,7 +25,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
-#include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Definitions ========================================================== */
@@ -215,10 +215,10 @@ void _button_enter(wlmaker_interactive_t *interactive_ptr)
     wlmaker_button_t *button_ptr = button_from_interactive(interactive_ptr);
     if (button_ptr->activated) button_press(button_ptr, true);
 
-    wlr_xcursor_manager_set_cursor_image(
+    wlr_cursor_set_xcursor(
+        interactive_ptr->cursor_ptr->wlr_cursor_ptr,
         interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-        "left_ptr",
-        interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+        "left_ptr");
 }
 
 /* ------------------------------------------------------------------------- */

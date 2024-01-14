@@ -16,43 +16,58 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Handlers for creating XDG popup surfaces, children to a XDG shell toplevel
- * or a layer shell V1 surface.
  */
 #ifndef __XDG_POPUP_H__
 #define __XDG_POPUP_H__
 
+#include "toolkit/toolkit.h"
+
 #define WLR_USE_UNSTABLE
-#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
-
-/** Forward declaration of the XDG popup handle. */
-typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: State of the toolkit's XDG popup. */
+typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
+
+/** State of toolkit popup. */
+struct _wlmaker_xdg_popup_t {
+    /** Super class: Content. */
+    wlmtk_content_t           super_content;
+
+    /** Surface of the popup. */
+    wlmtk_surface_t           surface;
+    /** The WLR popup. */
+    struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
+
+    /** Listener for the `reposition` signal of `wlr_xdg_popup::events` */
+    struct wl_listener        reposition_listener;
+    /** Listener for the `destroy` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        destroy_listener;
+    /** Listener for the `new_popup` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        new_popup_listener;
+};
+
 /**
- * Creates an XDG popup. Both for XDG shell as also for layer shells.
+ * Creates a popup.
  *
  * @param wlr_xdg_popup_ptr
- * @param parent_wlr_scene_tree_ptr
- *
- * @return Handle for the XDG popup.
+ * @param env_ptr
  */
 wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    struct wlr_scene_tree *parent_wlr_scene_tree_ptr);
+    wlmtk_env_t *env_ptr);
 
 /**
- * Destroys the XDG popup.
+ * Destroys the popup.
  *
  * @param xdg_popup_ptr
  */
-void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *xdg_popup_ptr);
+void wlmaker_xdg_popup_destroy(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

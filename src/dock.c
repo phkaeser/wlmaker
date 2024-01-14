@@ -22,7 +22,7 @@
 
 #include "config.h"
 #include "dock_app.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 #include "view.h"
 
 /* == Declarations ========================================================= */
@@ -129,7 +129,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         }
     }
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->workspace_changed,
         &dock_ptr->workspace_changed_listener,
         handle_workspace_changed);

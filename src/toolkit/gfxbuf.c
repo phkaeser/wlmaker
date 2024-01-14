@@ -51,8 +51,6 @@ static bool wlmaker_gfxbuf_impl_begin_data_ptr_access(
 static void wlmaker_gfxbuf_impl_end_data_ptr_access(
     struct wlr_buffer *wlr_buffer_ptr);
 
-
-
 /** Implementation callbacks for wlroots' `struct wlr_buffer`. */
 static const struct wlr_buffer_impl wlmaker_gfxbuf_impl = {
     .destroy = wlmaker_gfxbuf_impl_destroy,
@@ -83,6 +81,14 @@ struct wlr_buffer *bs_gfxbuf_create_wlr_buffer(
     }
 
     return &gfxbuf_ptr->wlr_buffer;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlr_buffer_drop_nullify(struct wlr_buffer **wlr_buffer_ptr_ptr)
+{
+    if (NULL == *wlr_buffer_ptr_ptr) return;
+    wlr_buffer_drop(*wlr_buffer_ptr_ptr);
+    *wlr_buffer_ptr_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */

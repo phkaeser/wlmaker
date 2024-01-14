@@ -23,7 +23,7 @@
 #include "button.h"
 #include "config.h"
 #include "decorations.h"
-#include "util.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 
@@ -250,7 +250,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->view.anchor =
         WLMAKER_VIEW_ANCHOR_BOTTOM | WLMAKER_VIEW_ANCHOR_RIGHT;
 
-    wlm_util_connect_listener_signal(
+    wlmtk_util_connect_listener_signal(
         &server_ptr->workspace_changed,
         &clip_ptr->workspace_changed_listener,
         handle_workspace_changed);

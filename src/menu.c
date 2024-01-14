@@ -181,10 +181,10 @@ wlmaker_menu_t *menu_from_interactive(
 void _menu_enter(
     wlmaker_interactive_t *interactive_ptr)
 {
-    wlr_xcursor_manager_set_cursor_image(
+    wlr_cursor_set_xcursor(
+        interactive_ptr->cursor_ptr->wlr_cursor_ptr,
         interactive_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-        "left_ptr",
-        interactive_ptr->cursor_ptr->wlr_cursor_ptr);
+        "left_ptr");
 }
 
 /* ------------------------------------------------------------------------- */

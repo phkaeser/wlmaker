@@ -39,7 +39,7 @@ const uint32_t                wlmaker_decorations_clip_button_size = 22;
 static cairo_surface_t *create_background(
     unsigned width,
     unsigned height,
-    const wlmaker_style_fill_t *fill_ptr);
+    const wlmtk_style_fill_t *fill_ptr);
 
 /** Lookup paths for icons. */
 const char *lookup_paths[] = {
@@ -57,7 +57,7 @@ const char *lookup_paths[] = {
 /* ------------------------------------------------------------------------- */
 void wlmaker_decorations_draw_tile(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed)
 {
     wlmaker_primitives_cairo_fill(cairo_ptr, fill_ptr);
@@ -112,7 +112,7 @@ bool wlmaker_decorations_draw_tile_icon(
 /* ------------------------------------------------------------------------- */
 void wlmaker_decorations_draw_iconified(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     uint32_t font_color,
     const char *title_ptr)
 {
@@ -144,7 +144,7 @@ void wlmaker_decorations_draw_iconified(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_decorations_draw_clip(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed)
 {
     // For readability.
@@ -227,7 +227,7 @@ bool wlmaker_decorations_draw_clip(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_decorations_draw_clip_button_next(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed)
 {
     BS_ASSERT((int)wlmaker_decorations_clip_button_size ==
@@ -322,7 +322,7 @@ bool wlmaker_decorations_draw_clip_button_next(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_decorations_draw_clip_button_prev(
     cairo_t *cairo_ptr,
-    const wlmaker_style_fill_t *fill_ptr,
+    const wlmtk_style_fill_t *fill_ptr,
     bool pressed)
 {
     BS_ASSERT((int)wlmaker_decorations_clip_button_size ==
@@ -429,7 +429,7 @@ bool wlmaker_decorations_draw_clip_button_prev(
 static cairo_surface_t *create_background(
     unsigned width,
     unsigned height,
-    const wlmaker_style_fill_t *fill_ptr)
+    const wlmtk_style_fill_t *fill_ptr)
 {
     cairo_surface_t *surface_ptr = cairo_image_surface_create(
         CAIRO_FORMAT_ARGB32, width, height);
@@ -477,8 +477,8 @@ void test_tile(bs_test_t *test_ptr) {
     }
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, cairo_ptr);
-    wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     };
     wlmaker_decorations_draw_tile(cairo_ptr, &fill, false);
@@ -497,8 +497,8 @@ void test_iconified(bs_test_t *test_ptr) {
     }
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, cairo_ptr);
-    wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_SOLID,
+    wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_SOLID,
         .param = { .solid = { .color = 0xff808080 }}
     };
     wlmaker_decorations_draw_iconified(cairo_ptr, &fill, 0xffffffff, "Title");
@@ -516,8 +516,8 @@ void test_clip(bs_test_t *test_ptr) {
         return;
     }
    cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     };
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, cairo_ptr);
@@ -542,8 +542,8 @@ void test_clip_button_next(bs_test_t *test_ptr) {
         return;
     }
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     };
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, cairo_ptr);
@@ -570,8 +570,8 @@ void test_clip_button_prev(bs_test_t *test_ptr) {
         return;
     }
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    wlmaker_style_fill_t fill = {
-        .type = WLMAKER_STYLE_COLOR_DGRADIENT,
+    wlmtk_style_fill_t fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     };
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, cairo_ptr);

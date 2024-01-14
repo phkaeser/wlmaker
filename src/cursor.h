@@ -30,16 +30,6 @@ typedef struct _wlmaker_cursor_t wlmaker_cursor_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Mode of the cursor. */
-typedef enum {
-    /** Cursor movements are passed on to the client. */
-    WLMAKER_CURSOR_PASSTHROUGH,
-    /** View-move mode. Movements kept and used to propel the view. */
-    WLMAKER_CURSOR_MOVE,
-    /** Resize mode. Movements kept and used to resize the view. */
-    WLMAKER_CURSOR_RESIZE,
-} wlmaker_cursor_mode_t;
-
 /** State and tools for handling wlmaker cursors. */
 struct _wlmaker_cursor_t {
     /** Back-link to wlmaker_server_t. */
@@ -64,27 +54,8 @@ struct _wlmaker_cursor_t {
     /** Listener for the `request_set_cursor` event of `wlr_seat`. */
     struct wl_listener        seat_request_set_cursor_listener;
 
-    /** Mode that the cursor is in, eg. moving or resizing. */
-    wlmaker_cursor_mode_t     mode;
-    /** The currently grabbed view, when in "move" mode. */
-    wlmaker_view_t            *grabbed_view_ptr;
     /** The view that is currently active and under the cursor. */
     wlmaker_view_t            *under_cursor_view_ptr;
-    /**
-     * Horizontal position of when the move was activated, relative to the
-     * grabbed view.
-     */
-    double                    grab_x;
-    /**
-     * Vertical position of when the move was activated, relative to the
-     * grabbed view.
-     */
-    double                    grab_y;
-    /** Geometry at the time the move was initiated. */
-    struct wlr_box            grabbed_geobox;
-    /** Edges to resize along. */
-    uint32_t                  resize_edges;
-
 
     /** wlmaker internal: catch 'release' events of cursors. */
     struct wl_signal          button_release_event;
@@ -115,39 +86,6 @@ void wlmaker_cursor_destroy(wlmaker_cursor_t *cursor_ptr);
 void wlmaker_cursor_attach_input_device(
     wlmaker_cursor_t *cursor_ptr,
     struct wlr_input_device *wlr_input_device_ptr);
-
-/**
- * Begins a "move" interaction for the given view.
- *
- * @param cursor_ptr
- * @param view_ptr
- */
-void wlmaker_cursor_begin_move(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr);
-
-/**
- * Begins a "resize" interaction for the given view.
- *
- * @param cursor_ptr
- * @param view_ptr
- * @param edges
- */
-void wlmaker_cursor_begin_resize(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr,
-    uint32_t edges);
-
-/**
- * Reports |view_ptr| as unmapped. Removes it from the set of views that can
- * be called back, etc.
- *
- * @param cursor_ptr
- * @param view_ptr
- */
-void wlmaker_cursor_unmap_view(
-    wlmaker_cursor_t *cursor_ptr,
-    wlmaker_view_t *view_ptr);
 
 /**
  * Retrieves the current pointer's position into |*x_ptr|, |*y_ptr|.
