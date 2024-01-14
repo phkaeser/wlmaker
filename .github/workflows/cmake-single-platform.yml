@@ -9,6 +9,7 @@ on:
 
 #env:
   # TODO: Move the PKG_CONFIG_PATH and LD_LIBRARY_PATH here.
+  PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
   
 jobs:
   build:
@@ -55,21 +56,21 @@ jobs:
 
     - name: Configure and build git submodule dependencies.
       run: |
-        export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+        #export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
         (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build)
         cmake --build ${{github.workspace}}/dependencies/build
 
     - name: Configure wlmaker through CMake
       # Configure CMake in a 'build' subdirectory.
       run: |
-        export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+        #export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
         export LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
         cmake -B ${{github.workspace}}/build
 
     - name: Build wlmaker
       # Build your program with the given configuration
       run: |
-        export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+        #export PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
         export LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
         cmake --build ${{github.workspace}}/build
 
@@ -79,5 +80,6 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: |
         export LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-        ctest --test-dir ${{github.workspace}}/build
+        #ctest --test-dir ${{github.workspace}}/build
+        ${{github.workspace}}/build/src/toolkit/toolkit_test
 
