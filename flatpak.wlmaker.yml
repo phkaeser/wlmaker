@@ -1,0 +1,28 @@
+# flatpak.wlmaker.yml
+# Experimental flatpak mainfest. Does not build nor work (yet).
+
+# flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# flatpak install flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
+# flatpak-builder wlmaker-flatpak/ ./flatpak.wlmaker.yml 
+
+id: org.flatpak.Hello
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: wlmaker
+prepend-ld-library-path: "${HOME}/.local/lib/x86_64-linux-gnu"
+prepend-pkg-config-path: "${HOME}/.local/lib/x86_64-linux-gnu/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+modules:
+  - name: wlmaker
+    buildsystem: cmake
+    builddir: true
+    build-commands:
+      - install -D build/src/wlmaker /app/bin/wlmaker
+    sources:
+      - type: git
+        branch: main
+        path: ./
+
+
+# https://docs.flatpak.org/en/latest/flatpak-builder-command-reference.html
+# 
