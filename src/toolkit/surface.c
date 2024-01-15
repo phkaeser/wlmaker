@@ -54,6 +54,10 @@ static bool _wlmtk_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
+static void _wlmtk_surface_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 /** Method table for the element's virtual methods. */
@@ -84,12 +88,23 @@ bool wlmtk_surface_init(
         &surface_ptr->super_element, &surface_element_vmt);
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
+    if (NULL != surface_ptr->wlr_surface_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.commit,
+            &surface_ptr->surface_commit_listener,
+            _wlmtk_surface_handle_surface_commit);
+    }
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
 {
+    if (NULL != surface_ptr->wlr_surface_ptr) {
+        surface_ptr->wlr_surface_ptr = NULL;
+        wl_list_remove(&surface_ptr->surface_commit_listener.link);
+    }
+
     wlmtk_element_fini(&surface_ptr->super_element);
     memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
 }
@@ -346,6 +361,20 @@ bool _wlmtk_surface_element_pointer_button(
         return true;
     }
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for the `commit` signal of `wlr_surface`. */
+void _wlmtk_surface_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, surface_commit_listener);
+    wlmtk_surface_commit_size(
+        surface_ptr, 0,
+        surface_ptr->wlr_surface_ptr->current.width,
+        surface_ptr->wlr_surface_ptr->current.height);
 }
 
 /* == Fake surface methods ================================================= */

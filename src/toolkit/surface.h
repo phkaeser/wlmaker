@@ -63,6 +63,9 @@ struct _wlmtk_surface_t {
     int                       committed_width;
     /** Committed height of the surface, in pixels. */
     int                       committed_height;
+
+    /** Listener for the `events.commit` signal of `wlr_surface`. */
+    struct wl_listener        surface_commit_listener;
 };
 
 /**
@@ -128,7 +131,9 @@ void wlmtk_surface_get_size(
     int *height_ptr);
 
 /**
- * Commits the given dimensions for the surface. FIXME.
+ * Commits the given dimensions for the surface.
+ *
+ * FIXME: Should no longer be required externally.
  *
  * @param surface_ptr
  * @param serial
