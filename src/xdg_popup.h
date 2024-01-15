@@ -64,7 +64,7 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
 /**
  * Destroys the popup.
  *
- * @param xdg_popup_ptr
+ * @param wlmaker_xdg_popup_ptr
  */
 void wlmaker_xdg_popup_destroy(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
