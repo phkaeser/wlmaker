@@ -326,7 +326,7 @@ void wlmtk_window_request_position_and_size(
  * Updates the window state to what was requested at the `serial`.
  *
  * Used for example when resizing a window from the top or left edges. In that
- * case, @ref wlmtk_surface_request_size may be asynchronous and returns a
+ * case, @ref wlmtk_content_request_size may be asynchronous and returns a
  * serial. The surface is expected to call @ref wlmtk_window_serial with the
  * returned serial when the size is committed.
  * Only then, the corresponding positional update on the top/left edges are
@@ -365,9 +365,6 @@ typedef struct {
     wlmtk_window_t            *window_ptr;
     /** Fake surface, to manipulate the fake window's surface. */
     wlmtk_fake_surface_t      *fake_surface_ptr;
-    /** Content, wraps the fake surface. */
-    wlmtk_content_t           *content_ptr;
-
     /** Fake content, wraps the fake surface. */
     wlmtk_fake_content_t      *fake_content_ptr;
 

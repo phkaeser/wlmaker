@@ -978,12 +978,12 @@ void test_resize(bs_test_t *test_ptr)
     // Starts a resize for the window. Will resize & move it...
     wlmtk_workspace_begin_window_resize(
         fws_ptr->workspace_ptr, fw_ptr->window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
-    fw_ptr->fake_surface_ptr->serial = 1;  // The serial.
+    fw_ptr->fake_content_ptr->serial = 1;  // The serial.
     wlmtk_workspace_motion(fws_ptr->workspace_ptr, 1, 2, 43);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->y);
-    BS_TEST_VERIFY_EQ(test_ptr, 37, fw_ptr->fake_surface_ptr->requested_width);
-    BS_TEST_VERIFY_EQ(test_ptr, 16, fw_ptr->fake_surface_ptr->requested_height);
+    BS_TEST_VERIFY_EQ(test_ptr, 37, fw_ptr->fake_content_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, fw_ptr->fake_content_ptr->requested_height);
     // This updates for the given serial.
     wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_get_size(fw_ptr->window_ptr, &width, &height);
@@ -1015,7 +1015,7 @@ void test_activate(bs_test_t *test_ptr)
 
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
-    wlmtk_surface_request_size(&fw1_ptr->fake_surface_ptr->surface, 100, 100);
+    wlmtk_content_request_size(&fw1_ptr->fake_content_ptr->content, 100, 100);
     wlmtk_fake_window_commit_size(fw1_ptr);
     wlmtk_window_set_position(fw1_ptr->window_ptr, 0, 0);
     BS_TEST_VERIFY_FALSE(
@@ -1031,7 +1031,7 @@ void test_activate(bs_test_t *test_ptr)
     // Window 2: from (200, 0) to (300, 100).
     // Window 2 is mapped: Will get activated, and 1st one de-activated.
     wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
-    wlmtk_surface_request_size(&fw2_ptr->fake_surface_ptr->surface, 100, 100);
+    wlmtk_content_request_size(&fw2_ptr->fake_content_ptr->content, 100, 100);
     wlmtk_fake_window_commit_size(fw2_ptr);
     wlmtk_window_set_position(fw2_ptr->window_ptr, 200, 0);
     BS_TEST_VERIFY_FALSE(

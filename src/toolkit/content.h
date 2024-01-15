@@ -74,6 +74,23 @@ struct _wlmtk_content_vmt_t {
                                    bool fullscreen);
 
     /**
+     * Requests the content to change to the specified size.
+     *
+     * This may be implemented as an asynchronous implementation. Once the
+     * content has committed the adapted size, @ref wlmtk_content_commit_size
+     * should be called with the corresponding serial.
+     *
+     * @param content_ptr
+     * @param width
+     * @param height
+     *
+     * @return XDG toplevel configuration serial.
+     */
+    uint32_t (*request_size)(wlmtk_content_t *content_ptr,
+                             int width,
+                             int height);
+
+    /**
      * Requests the content to close.
      *
      * @param content_ptr
@@ -138,12 +155,6 @@ wlmtk_content_vmt_t wlmtk_content_extend(
     wlmtk_content_t *content_ptr,
     const wlmtk_content_vmt_t *content_vmt_ptr);
 
-/** Requests size: Forwards to @ref wlmtk_surface_request_size. */
-uint32_t wlmtk_content_request_size(
-    wlmtk_content_t *content_ptr,
-    int width,
-    int height);
-
 /** Requests maximized. See @ref wlmtk_content_vmt_t::request_maximized. */
 static inline uint32_t wlmtk_content_request_maximized(
     wlmtk_content_t *content_ptr,
@@ -158,6 +169,14 @@ static inline uint32_t wlmtk_content_request_fullscreen(
     bool fullscreen) {
     if (NULL == content_ptr->vmt.request_fullscreen) return 0;
     return content_ptr->vmt.request_fullscreen(content_ptr, fullscreen);
+}
+
+/** Requests new size. See @ref wlmtk_content_vmt_t::request_size. */
+static inline uint32_t wlmtk_content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height) {
+    return content_ptr->vmt.request_size(content_ptr, width, height);
 }
 
 /** Requests close. See @ref wlmtk_content_vmt_t::request_close. */
@@ -189,7 +208,7 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr);
 
-/** Commits size: Forwards to @ref wlmtk_surface_commit_size. */
+/** Commits size: Calls into @ref wlmtk_window_serial. */
 void wlmtk_content_commit_size(
     wlmtk_content_t *content_ptr,
     uint32_t serial,
@@ -209,6 +228,13 @@ struct _wlmtk_fake_content_t {
 
     /** Reports whether @ref wlmtk_content_request_close was called. */
     bool                      request_close_called;
+
+    /** Serial to return on next request_size call. */
+    uint32_t                  serial;
+    /** `width` argument eof last @ref wlmtk_content_request_size call. */
+    int                       requested_width;
+    /** `height` argument of last @ref wlmtk_content_request_size call. */
+    int                       requested_height;
 };
 
 /** Creates a fake content, for tests. */
@@ -216,6 +242,8 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(
     wlmtk_fake_surface_t *fake_surface_ptr);
 /** Destroys the fake content. */
 void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr);
+/** Commits the state of last @ref wlmtk_content_request_size call. */
+void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

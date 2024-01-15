@@ -123,10 +123,6 @@ static void surface_element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *surface_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static uint32_t surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height);
 static void surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated);
@@ -137,6 +133,10 @@ static uint32_t content_request_maximized(
 static uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen);
+static uint32_t content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height);
 static void content_request_close(
     wlmtk_content_t *content_ptr);
 
@@ -150,7 +150,6 @@ const wlmtk_element_vmt_t     _xdg_toplevel_element_vmt = {
 
 /** Virtual methods for XDG toplevel surface, for the Surface superclass. */
 const wlmtk_surface_vmt_t     _xdg_toplevel_surface_vmt = {
-    .request_size = surface_request_size,
     .set_activated = surface_set_activated,
 };
 
@@ -158,6 +157,7 @@ const wlmtk_surface_vmt_t     _xdg_toplevel_surface_vmt = {
 const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
     .request_maximized = content_request_maximized,
     .request_fullscreen = content_request_fullscreen,
+    .request_size = content_request_size,
     .request_close = content_request_close,
 };
 
@@ -355,28 +355,6 @@ struct wlr_scene_node *surface_element_create_scene_node(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Sets the dimensions of the element in pixels.
- *
- * @param surface_ptr
- * @param width               Width of surface.
- * @param height              Height of surface.
- *
- * @return The serial.
- */
-uint32_t surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, xdg_toplevel_surface_t, super_surface);
-
-    return wlr_xdg_toplevel_set_size(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_content_vmt_t::request_maximized for XDG toplevel. */
 uint32_t content_request_maximized(
     wlmtk_content_t *content_ptr,
@@ -400,6 +378,28 @@ uint32_t content_request_fullscreen(
 
     return wlr_xdg_toplevel_set_fullscreen(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, fullscreen);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Sets the dimensions of the element in pixels.
+ *
+ * @param content_ptr
+ * @param width               Width of content.
+ * @param height              Height of content.
+ *
+ * @return The serial.
+ */
+uint32_t content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height)
+{
+    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, xdg_toplevel_surface_t, super_content);
+
+    return wlr_xdg_toplevel_set_size(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
