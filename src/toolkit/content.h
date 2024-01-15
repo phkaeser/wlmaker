@@ -30,7 +30,11 @@ typedef struct _wlmtk_window_t wlmtk_window_t
 ;/** Forward declaration: State of a toolkit's WLR surface. */
 typedef struct _wlmtk_surface_t wlmtk_surface_t;
 
+/** Forward declaration: Fake content, for tests. */
+typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
+
 #include "container.h"
+#include "surface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +72,13 @@ struct _wlmtk_content_vmt_t {
      */
     uint32_t (*request_fullscreen)(wlmtk_content_t *content_ptr,
                                    bool fullscreen);
+
+    /**
+     * Requests the content to close.
+     *
+     * @param content_ptr
+     */
+    void (*request_close)(wlmtk_content_t *content_ptr);
 };
 
 /** State of window content. */
@@ -149,6 +160,12 @@ static inline uint32_t wlmtk_content_request_fullscreen(
     return content_ptr->vmt.request_fullscreen(content_ptr, fullscreen);
 }
 
+/** Requests close. See @ref wlmtk_content_vmt_t::request_close. */
+static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
+    if (NULL == content_ptr->vmt.request_close) return;
+    return content_ptr->vmt.request_close(content_ptr);
+}
+
 /**
  * Sets the window for the content.
  *
@@ -160,9 +177,6 @@ static inline uint32_t wlmtk_content_request_fullscreen(
 void wlmtk_content_set_window(
     wlmtk_content_t *content_ptr,
     wlmtk_window_t *window_ptr);
-
-/** Requests close: Forwards to @ref wlmtk_surface_request_close. */
-void wlmtk_content_request_close(wlmtk_content_t *content_ptr);
 
 /** Set activated: Forwards to @ref wlmtk_surface_set_activated. */
 void wlmtk_content_set_activated(
@@ -187,6 +201,21 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
 /** Content's unit tests. */
 extern const bs_test_case_t wlmtk_content_test_cases[];
+
+/** Fake content, useful for unit tests. */
+struct _wlmtk_fake_content_t {
+    /** Superclass: content. */
+    wlmtk_content_t           content;
+
+    /** Reports whether @ref wlmtk_content_request_close was called. */
+    bool                      request_close_called;
+};
+
+/** Creates a fake content, for tests. */
+wlmtk_fake_content_t *wlmtk_fake_content_create(
+    wlmtk_fake_surface_t *fake_surface_ptr);
+/** Destroys the fake content. */
+void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

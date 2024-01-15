@@ -46,8 +46,6 @@ struct _wlmtk_surface_vmt_t {
     uint32_t (*request_size)(wlmtk_surface_t *surface_ptr,
                              int width,
                              int height);
-    /** Abstract: Requests the surface to close. */
-    void (*request_close)(wlmtk_surface_t *surface_ptr);
     /** Abstract: Sets whether the surface is activated (keyboard focus). */
     void (*set_activated)(wlmtk_surface_t *surface_ptr, bool activated);
 };
@@ -130,12 +128,6 @@ static inline uint32_t wlmtk_surface_request_size(
     return surface_ptr->vmt.request_size(surface_ptr, width, height);
 }
 
-/** Wraps to @ref wlmtk_surface_vmt_t::request_close. */
-static inline void wlmtk_surface_request_close(wlmtk_surface_t *surface_ptr)
-{
-    surface_ptr->vmt.request_close(surface_ptr);
-}
-
 /** Wraps to @ref wlmtk_surface_vmt_t::set_activated. */
 static inline void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
@@ -185,8 +177,6 @@ struct _wlmtk_fake_surface_t {
     /** `height` argument of last @ref wlmtk_surface_request_size call. */
     int                       requested_height;
 
-    /** Whether @ref wlmtk_surface_request_close was called. */
-    bool                      request_close_called;
     /** Argument of last @ref wlmtk_surface_set_activated call. */
     bool                      activated;
 };

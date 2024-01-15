@@ -123,8 +123,6 @@ static void surface_element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *surface_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void surface_request_close(
-    wlmtk_surface_t *surface_ptr);
 static uint32_t surface_request_size(
     wlmtk_surface_t *surface_ptr,
     int width,
@@ -139,6 +137,8 @@ static uint32_t content_request_maximized(
 static uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen);
+static void content_request_close(
+    wlmtk_content_t *content_ptr);
 
 /* == Data ================================================================= */
 
@@ -150,7 +150,6 @@ const wlmtk_element_vmt_t     _xdg_toplevel_element_vmt = {
 
 /** Virtual methods for XDG toplevel surface, for the Surface superclass. */
 const wlmtk_surface_vmt_t     _xdg_toplevel_surface_vmt = {
-    .request_close = surface_request_close,
     .request_size = surface_request_size,
     .set_activated = surface_set_activated,
 };
@@ -159,6 +158,7 @@ const wlmtk_surface_vmt_t     _xdg_toplevel_surface_vmt = {
 const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
     .request_maximized = content_request_maximized,
     .request_fullscreen = content_request_fullscreen,
+    .request_close = content_request_close,
 };
 
 /* == Exported methods ===================================================== */
@@ -356,21 +356,6 @@ struct wlr_scene_node *surface_element_create_scene_node(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Requests the surface to close: Sends a 'close' message to the toplevel.
- *
- * @param surface_ptr
- */
-void surface_request_close(wlmtk_surface_t *surface_ptr)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, xdg_toplevel_surface_t, super_surface);
-
-    wlr_xdg_toplevel_send_close(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
  * Sets the dimensions of the element in pixels.
  *
  * @param surface_ptr
@@ -415,6 +400,21 @@ uint32_t content_request_fullscreen(
 
     return wlr_xdg_toplevel_set_fullscreen(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, fullscreen);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Requests the content to close: Sends a 'close' message to the toplevel.
+ *
+ * @param content_ptr
+ */
+void content_request_close(wlmtk_content_t *content_ptr)
+{
+    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, xdg_toplevel_surface_t, super_content);
+
+    wlr_xdg_toplevel_send_close(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel);
 }
 
 /* ------------------------------------------------------------------------- */

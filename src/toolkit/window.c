@@ -130,8 +130,6 @@ typedef struct {
     wlmtk_window_t            window;
     /** Fake window - public state. */
     wlmtk_fake_window_t       fake_window;
-    /** Fake content. */
-    wlmtk_content_t           content;
 } wlmtk_fake_window_state_t;
 
 static bool _wlmtk_window_init(
@@ -1009,16 +1007,19 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         return NULL;
     }
 
-    wlmtk_content_init(
-        &fake_window_state_ptr->content,
-        &fake_window_state_ptr->fake_window.fake_surface_ptr->surface,
-        NULL);
-    fake_window_state_ptr->fake_window.content_ptr = &fake_window_state_ptr->content;
+    fake_window_state_ptr->fake_window.fake_content_ptr = wlmtk_fake_content_create(
+        fake_window_state_ptr->fake_window.fake_surface_ptr);
+    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
+        return NULL;
+    }
+    fake_window_state_ptr->fake_window.content_ptr =
+        &fake_window_state_ptr->fake_window.fake_content_ptr->content;
 
     if (!_wlmtk_window_init(
             &fake_window_state_ptr->window,
             NULL,
-            wlmtk_content_element(&fake_window_state_ptr->content)
+            wlmtk_content_element(fake_window_state_ptr->fake_window.content_ptr)
             )) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
@@ -1026,10 +1027,10 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
     fake_window_state_ptr->fake_window.window_ptr =
         &fake_window_state_ptr->window;
     fake_window_state_ptr->fake_window.window_ptr->content_ptr =
-        &fake_window_state_ptr->content;
+        fake_window_state_ptr->fake_window.content_ptr;
 
     wlmtk_content_set_window(
-        &fake_window_state_ptr->content,
+        fake_window_state_ptr->fake_window.content_ptr,
         fake_window_state_ptr->fake_window.window_ptr);
 
     // Extend. We don't save the VMT, since it's for fake only.
@@ -1046,7 +1047,11 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 
     _wlmtk_window_fini(&fake_window_state_ptr->window);
 
-    wlmtk_content_fini(&fake_window_state_ptr->content);
+    if (NULL != fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_content_destroy(
+            fake_window_state_ptr->fake_window.fake_content_ptr);
+        fake_window_state_ptr->fake_window.fake_content_ptr = NULL;
+    }
 
     if (NULL != fake_window_state_ptr->fake_window.fake_surface_ptr) {
         wlmtk_fake_surface_destroy(
@@ -1169,7 +1174,9 @@ void test_request_close(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
 
     wlmtk_window_request_close(fw_ptr->window_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->request_close_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        fw_ptr->fake_content_ptr->request_close_called);
 
     wlmtk_fake_window_destroy(fw_ptr);
 }

@@ -104,9 +104,6 @@ wlmtk_surface_vmt_t wlmtk_surface_extend(
     if (NULL != surface_vmt_ptr->request_size) {
         surface_ptr->vmt.request_size = surface_vmt_ptr->request_size;
     }
-    if (NULL != surface_vmt_ptr->request_close) {
-        surface_ptr->vmt.request_close = surface_vmt_ptr->request_close;
-    }
     if (NULL != surface_vmt_ptr->set_activated) {
         surface_ptr->vmt.set_activated = surface_vmt_ptr->set_activated;
     }
@@ -384,8 +381,6 @@ static uint32_t _wlmtk_fake_surface_request_size(
     wlmtk_surface_t *surface_ptr,
     int width,
     int height);
-static void _wlmtk_fake_surface_request_close(
-    wlmtk_surface_t *surface_ptr);
 static void _wlmtk_fake_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated);
@@ -393,7 +388,6 @@ static void _wlmtk_fake_surface_set_activated(
 /** Virtual method table for the fake surface. */
 static const wlmtk_surface_vmt_t _wlmtk_fake_surface_vmt = {
     .request_size = _wlmtk_fake_surface_request_size,
-    .request_close = _wlmtk_fake_surface_request_close,
     .set_activated = _wlmtk_fake_surface_set_activated,
 };
 
@@ -516,15 +510,6 @@ uint32_t _wlmtk_fake_surface_request_size(
     fake_surface_ptr->requested_width = width;
     fake_surface_ptr->requested_height = height;
     return fake_surface_ptr->serial;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Records that @ref wlmtk_surface_request_close was called. */
-void _wlmtk_fake_surface_request_close(wlmtk_surface_t *surface_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, wlmtk_fake_surface_t, surface);
-    fake_surface_ptr->request_close_called = true;
 }
 
 /* ------------------------------------------------------------------------- */
