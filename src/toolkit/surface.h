@@ -141,6 +141,7 @@ static inline void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated)
 {
+    if (NULL == surface_ptr->vmt.set_activated) return;
     surface_ptr->vmt.set_activated(surface_ptr, activated);
 }
 
