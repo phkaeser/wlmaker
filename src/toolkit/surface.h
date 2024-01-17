@@ -35,6 +35,8 @@ typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 
 /** Forward declaration. */
 struct wlr_surface;
+/** Forward declaration. */
+struct wlr_scene_surface;
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +60,9 @@ struct _wlmtk_surface_t {
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
+
+    /** The scene API node displaying a surface and all it's sub-surfaces. */
+    struct wlr_scene_tree     *wlr_scene_tree_ptr;
 
     /** Committed width of the surface, in pixels. */
     int                       committed_width;

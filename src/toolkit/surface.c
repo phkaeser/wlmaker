@@ -32,6 +32,10 @@
 
 /* == Declarations ========================================================= */
 
+static void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr);
+static struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void _wlmtk_surface_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
@@ -62,6 +66,8 @@ static void _wlmtk_surface_handle_surface_commit(
 
 /** Method table for the element's virtual methods. */
 static const wlmtk_element_vmt_t surface_element_vmt = {
+    .destroy = _wlmtk_surface_element_destroy,
+    .create_scene_node = _wlmtk_surface_element_create_scene_node,
     .get_dimensions = _wlmtk_surface_element_get_dimensions,
     .get_pointer_area = _wlmtk_surface_element_get_pointer_area,
     .pointer_leave = _wlmtk_surface_element_pointer_leave,
@@ -161,6 +167,41 @@ void wlmtk_surface_commit_size(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy. Calls the dtor. */
+void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_surface_t, super_element);
+    // FIXME: wlmtk_surface_destroy(surface_ptr);
+    surface_ptr = surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::create_scene_node. Creates the node.
+ *
+ * @param element_ptr
+ * @param wlr_scene_tree_ptr
+ *
+ * @return The scene graph API node of the node displaying the surface and all
+ *     of it's sub-surfaces. Or NULL on error.
+ */
+struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_surface_t, super_element);
+    BS_ASSERT(NULL == surface_ptr->wlr_scene_tree_ptr);
+
+    surface_ptr->wlr_scene_tree_ptr = wlr_scene_subsurface_tree_create(
+        wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
+    if (NULL == surface_ptr->wlr_scene_tree_ptr) return NULL;
+
+    return &surface_ptr->wlr_scene_tree_ptr->node;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
