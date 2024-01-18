@@ -19,3 +19,5 @@ ADD_SUBDIRECTORY(primitives)
 ADD_EXECUTABLE(wlmclock wlmclock.c)
 TARGET_INCLUDE_DIRECTORIES(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(wlmclock libwlclient primitives m)
+
+INSTALL(TARGETS wlmclock DESTINATION bin)

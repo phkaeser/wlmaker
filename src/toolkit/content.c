@@ -95,35 +95,20 @@ wlmtk_content_vmt_t wlmtk_content_extend(
         content_ptr->vmt.request_fullscreen =
             content_vmt_ptr->request_fullscreen;
     }
+    if (NULL != content_vmt_ptr->request_size) {
+        content_ptr->vmt.request_size =
+            content_vmt_ptr->request_size;
+    }
+    if (NULL != content_vmt_ptr->request_close) {
+        content_ptr->vmt.request_close =
+            content_vmt_ptr->request_close;
+    }
+    if (NULL != content_vmt_ptr->set_activated) {
+        content_ptr->vmt.set_activated =
+            content_vmt_ptr->set_activated;
+    }
 
     return orig_vmt;
-}
-
-/* ------------------------------------------------------------------------- */
-uint32_t wlmtk_content_request_size(
-    wlmtk_content_t *content_ptr,
-    int width,
-    int height)
-{
-    BS_ASSERT(NULL != content_ptr->surface_ptr);
-
-    return wlmtk_surface_request_size(content_ptr->surface_ptr, width, height);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_content_request_close(wlmtk_content_t *content_ptr)
-{
-    BS_ASSERT(NULL != content_ptr->surface_ptr);
-    wlmtk_surface_request_close(content_ptr->surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_content_set_activated(
-    wlmtk_content_t *content_ptr,
-    bool activated)
-{
-    BS_ASSERT(NULL != content_ptr->surface_ptr);
-    wlmtk_surface_set_activated(content_ptr->surface_ptr, activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -140,12 +125,9 @@ void wlmtk_content_get_size(
 void wlmtk_content_commit_size(
     wlmtk_content_t *content_ptr,
     uint32_t serial,
-    int width,
-    int height)
+    __UNUSED__ int width,
+    __UNUSED__ int height)
 {
-    BS_ASSERT(NULL != content_ptr->surface_ptr);
-    wlmtk_surface_commit_size(content_ptr->surface_ptr, serial, width, height);
-
     if (NULL != content_ptr->window_ptr) {
         wlmtk_window_serial(content_ptr->window_ptr, serial);
     }
@@ -165,6 +147,101 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr)
     return &content_ptr->super_container.super_element;
 }
 
+/* == Fake content, for tests ============================================== */
+
+static void _wlmtk_fake_content_request_close(wlmtk_content_t *content_ptr);
+static uint32_t _wlmtk_fake_content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height);
+static void _wlmtk_fake_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated);
+
+/** Virtual method table for the fake content. */
+static wlmtk_content_vmt_t    _wlmtk_fake_content_vmt = {
+    .request_size = _wlmtk_fake_content_request_size,
+    .request_close = _wlmtk_fake_content_request_close,
+    .set_activated = _wlmtk_fake_content_set_activated,
+};
+
+/* ------------------------------------------------------------------------- */
+wlmtk_fake_content_t *wlmtk_fake_content_create(
+    wlmtk_fake_surface_t *fake_surface_ptr)
+{
+    wlmtk_fake_content_t *fake_content_ptr = logged_calloc(
+        1, sizeof(wlmtk_fake_content_t));
+    if (NULL == fake_content_ptr) return NULL;
+
+    if (!wlmtk_content_init(&fake_content_ptr->content,
+                            &fake_surface_ptr->surface,
+                            NULL)) {
+        wlmtk_fake_content_destroy(fake_content_ptr);
+        return NULL;
+    }
+    wlmtk_content_extend(&fake_content_ptr->content, &_wlmtk_fake_content_vmt);
+
+    return fake_content_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr)
+{
+    wlmtk_content_fini(&fake_content_ptr->content);
+    free(fake_content_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
+{
+    wlmtk_content_commit_size(
+        &fake_content_ptr->content,
+        fake_content_ptr->serial,
+        fake_content_ptr->requested_width,
+        fake_content_ptr->requested_height);
+
+    // FIXME: Replace this, the direct wlr_surface commit event will do that.
+    wlmtk_surface_commit_size(
+        fake_content_ptr->content.surface_ptr,
+        fake_content_ptr->serial,
+        fake_content_ptr->requested_width,
+        fake_content_ptr->requested_height);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test implementation of @ref wlmtk_content_vmt_t::request_size. */
+uint32_t _wlmtk_fake_content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->requested_width = width;
+    fake_content_ptr->requested_height = height;
+    return fake_content_ptr->serial;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test implementation of @ref wlmtk_content_vmt_t::request_close. */
+void _wlmtk_fake_content_request_close(wlmtk_content_t *content_ptr)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->request_close_called = true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test implementation of @ref wlmtk_content_vmt_t::set_activated. */
+void _wlmtk_fake_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->activated = activated;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
@@ -180,15 +257,15 @@ const bs_test_case_t wlmtk_content_test_cases[] = {
 /** Tests setup and teardown. */
 void test_init_fini(bs_test_t *test_ptr)
 {
-    wlmtk_content_t content;
     struct wlr_box box;
 
     wlmtk_fake_surface_t *fs_ptr = wlmtk_fake_surface_create();
+    BS_ASSERT(NULL != fs_ptr);
+    wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create(fs_ptr);
+    BS_ASSERT(NULL != fake_content_ptr);
 
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_content_init(&content, &fs_ptr->surface, NULL));
-    wlmtk_element_t *element_ptr = wlmtk_content_element(&content);
+    wlmtk_element_t *element_ptr = wlmtk_content_element(
+        &fake_content_ptr->content);
 
     // Initial size is zero.
     box = wlmtk_element_get_dimensions_box(element_ptr);
@@ -203,8 +280,8 @@ void test_init_fini(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
 
     // Request & commit a sensible size, verifies the content reports it.
-    wlmtk_surface_request_size(&fs_ptr->surface, 200, 100);
-    wlmtk_fake_surface_commit(fs_ptr);
+    wlmtk_content_request_size(&fake_content_ptr->content, 200, 100);
+    wlmtk_fake_content_commit(fake_content_ptr);
     box = wlmtk_element_get_dimensions_box(element_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
@@ -216,9 +293,8 @@ void test_init_fini(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
 
-    wlmtk_content_fini(&content);
+    wlmtk_fake_content_destroy(fake_content_ptr);
     wlmtk_fake_surface_destroy(fs_ptr);
-
 }
 
 /* == End of content.c ===================================================== */

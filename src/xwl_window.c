@@ -44,7 +44,7 @@ struct _wlmaker_xwl_window_t {
 
     /** Toolkit content state. */
     wlmtk_content_t           content;
-    wlmtk_surface_t           surface;
+    wlmtk_surface_t           *surface_ptr;
     wlmtk_window_t            *window_ptr;
 
     /** Listener for the `destroy` signal of `wlr_xwayland_surface`. */
@@ -85,17 +85,7 @@ static void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void surface_element_destroy(wlmtk_element_t *element_ptr);
-static struct wlr_scene_node *surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
-
 /* == Data ================================================================= */
-
-const wlmtk_element_vmt_t     _xwl_surface_element_vmt = {
-    .destroy = surface_element_destroy,
-    .create_scene_node = surface_element_create_scene_node,
-};
 
 /* == Exported methods ===================================================== */
 
@@ -238,19 +228,17 @@ void handle_associate(
         &xwl_window_ptr->surface_unmap_listener,
         handle_surface_unmap);
 
-    if (!wlmtk_surface_init(
-            &xwl_window_ptr->surface,
-            xwl_window_ptr->wlr_xwayland_surface_ptr->surface,
-            xwl_window_ptr->env_ptr)) {
+    BS_ASSERT(NULL == xwl_window_ptr->surface_ptr);
+    xwl_window_ptr->surface_ptr = wlmtk_surface_create(
+        xwl_window_ptr->wlr_xwayland_surface_ptr->surface,
+        xwl_window_ptr->env_ptr);
+    if (NULL == xwl_window_ptr->surface_ptr) {
         bs_log(BS_ERROR, "FIXME: Error.");
     }
-    wlmtk_element_extend(
-        &xwl_window_ptr->surface.super_element,
-        &_xwl_surface_element_vmt);
 
     wlmtk_content_set_surface(
         &xwl_window_ptr->content,
-        &xwl_window_ptr->surface);
+        xwl_window_ptr->surface_ptr);
     xwl_window_ptr->window_ptr = wlmtk_window_create(
         &xwl_window_ptr->content,
         xwl_window_ptr->env_ptr);
@@ -283,7 +271,10 @@ void handle_dissociate(
         xwl_window_ptr->window_ptr = NULL;
     }
 
-    wlmtk_surface_fini(&xwl_window_ptr->surface);
+    if (NULL != xwl_window_ptr->surface_ptr) {
+        wlmtk_surface_destroy(xwl_window_ptr->surface_ptr);
+        xwl_window_ptr->surface_ptr = NULL;
+    }
 
     bs_log(BS_INFO, "Dissociate %p from wlr_surface %p",
            xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
@@ -311,7 +302,7 @@ void handle_surface_commit(
            xwl_window_ptr->wlr_xwayland_surface_ptr->surface->pending.height);
 
     wlmtk_surface_commit_size(
-        &xwl_window_ptr->surface, 0,
+        xwl_window_ptr->surface_ptr, 0,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 }
@@ -352,26 +343,5 @@ void handle_surface_unmap(
            xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
 
 }
-
-void surface_element_destroy(wlmtk_element_t *element_ptr)
-{
-    element_ptr = element_ptr;
-}
-
-struct wlr_scene_node *surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_xwl_window_t, surface.super_element);
-
-
-    xwl_window_ptr->wlr_scene_surface_ptr = wlr_scene_surface_create(
-        wlr_scene_tree_ptr,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
-
-    return &xwl_window_ptr->wlr_scene_surface_ptr->buffer->node;
-}
-
 
 /* == End of xwl_window.c ================================================== */

@@ -98,8 +98,6 @@ TARGET_INCLUDE_DIRECTORIES(
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
-  ${LIBDRM_INCLUDE_DIRS}
-  ${PIXMAN_INCLUDE_DIRS}
   ${WAYLAND_INCLUDE_DIRS}
   ${WLROOTS_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
@@ -112,8 +110,6 @@ TARGET_LINK_LIBRARIES(
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
-  PkgConfig::LIBDRM
-  PkgConfig::PIXMAN
   PkgConfig::WAYLAND
   PkgConfig::WLROOTS
   PkgConfig::XCB
@@ -127,8 +123,6 @@ TARGET_INCLUDE_DIRECTORIES(
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
-  ${LIBDRM_INCLUDE_DIRS}
-  ${PIXMAN_INCLUDE_DIRS}
   ${WAYLAND_INCLUDE_DIRS}
   ${WLROOTS_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
@@ -141,8 +135,6 @@ TARGET_LINK_LIBRARIES(
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
-  PkgConfig::LIBDRM
-  PkgConfig::PIXMAN
   PkgConfig::WAYLAND
   PkgConfig::WLROOTS
   PkgConfig::XCB
