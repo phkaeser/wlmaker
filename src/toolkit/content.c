@@ -90,16 +90,12 @@ wlmtk_content_vmt_t wlmtk_content_extend(
         content_ptr->vmt.request_close =
             content_vmt_ptr->request_close;
     }
+    if (NULL != content_vmt_ptr->set_activated) {
+        content_ptr->vmt.set_activated =
+            content_vmt_ptr->set_activated;
+    }
 
     return orig_vmt;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_content_set_activated(
-    wlmtk_content_t *content_ptr,
-    bool activated)
-{
-    wlmtk_surface_set_activated(content_ptr->surface_ptr, activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -144,11 +140,15 @@ static uint32_t _wlmtk_fake_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
+static void _wlmtk_fake_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated);
 
 /** Virtual method table for the fake content. */
 static wlmtk_content_vmt_t    _wlmtk_fake_content_vmt = {
     .request_size = _wlmtk_fake_content_request_size,
     .request_close = _wlmtk_fake_content_request_close,
+    .set_activated = _wlmtk_fake_content_set_activated,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -215,6 +215,17 @@ void _wlmtk_fake_content_request_close(wlmtk_content_t *content_ptr)
     wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmtk_fake_content_t, content);
     fake_content_ptr->request_close_called = true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test implementation of @ref wlmtk_content_vmt_t::set_activated. */
+void _wlmtk_fake_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated)
+{
+    wlmtk_fake_content_t *fake_content_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmtk_fake_content_t, content);
+    fake_content_ptr->activated = activated;
 }
 
 /* == Local (static) methods =============================================== */

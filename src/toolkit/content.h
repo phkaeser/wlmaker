@@ -96,6 +96,14 @@ struct _wlmtk_content_vmt_t {
      * @param content_ptr
      */
     void (*request_close)(wlmtk_content_t *content_ptr);
+
+    /**
+     * Sets whether this content as activated (keyboard focus).
+     *
+     * @param content_ptr
+     * @param activated
+     */
+    void (*set_activated)(wlmtk_content_t *content_ptr, bool activated);
 };
 
 /** State of window content. */
@@ -185,6 +193,14 @@ static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
     return content_ptr->vmt.request_close(content_ptr);
 }
 
+/** Requests activation. See @ref wlmtk_content_vmt_t::set_activated. */
+static inline void wlmtk_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated) {
+    content_ptr->vmt.set_activated(content_ptr, activated);
+}
+
+
 /**
  * Sets the window for the content.
  *
@@ -196,11 +212,6 @@ static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
 void wlmtk_content_set_window(
     wlmtk_content_t *content_ptr,
     wlmtk_window_t *window_ptr);
-
-/** Set activated: Forwards to @ref wlmtk_surface_set_activated. */
-void wlmtk_content_set_activated(
-    wlmtk_content_t *content_ptr,
-    bool activated);
 
 /** Gets size: Forwards to @ref wlmtk_surface_get_size. */
 void wlmtk_content_get_size(
@@ -235,6 +246,8 @@ struct _wlmtk_fake_content_t {
     int                       requested_width;
     /** `height` argument of last @ref wlmtk_content_request_size call. */
     int                       requested_height;
+    /** Last call to @ref wlmtk_content_set_activated. */
+    bool                      activated;
 };
 
 /** Creates a fake content, for tests. */

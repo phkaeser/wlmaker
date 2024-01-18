@@ -42,21 +42,12 @@ struct wlr_scene_surface;
 extern "C" {
 #endif  // __cplusplus
 
-/** Virtual method table of the surface. */
-struct _wlmtk_surface_vmt_t {
-    /** Abstract: Sets whether the surface is activated (keyboard focus). */
-    void (*set_activated)(wlmtk_surface_t *surface_ptr, bool activated);
-};
-
 /** State of a `struct wlr_surface`, encapsuled for toolkit. */
 struct _wlmtk_surface_t {
     /** Super class of the surface: An element. */
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-
-    /** The surface's virtual method table. */
-    wlmtk_surface_vmt_t       vmt;
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
@@ -95,16 +86,25 @@ bool wlmtk_surface_init(
 void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
 
 /**
- * Extends the surface's virtual methods.
+ * Creates a toolkit surface from the `wlr_surface_ptr`.
+ *
+ * @param wlr_surface_ptr
+ * @param env_ptr
+ *
+ * @return A pointer to the @ref wlmtk_surface_t. Must be destroyed by calling
+ *     @ref wlmtk_surface_destroy.
+ */
+wlmtk_surface_t *wlmtk_surface_create(
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the toolkit surface.
  *
  * @param surface_ptr
- * @param surface_vmt_ptr
- *
- * @return The earlier virtual method table.
  */
-wlmtk_surface_vmt_t wlmtk_surface_extend(
-    wlmtk_surface_t *surface_ptr,
-    const wlmtk_surface_vmt_t *surface_vmt_ptr);
+void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr);
+
 
 /**
  * Returns a pointer to the surface's element superclass instance.
@@ -114,14 +114,6 @@ wlmtk_surface_vmt_t wlmtk_surface_extend(
  * @return Pointer to the corresponding @ref wlmtk_element_t.
  */
 wlmtk_element_t *wlmtk_surface_element(wlmtk_surface_t *surface_ptr);
-
-/** Wraps to @ref wlmtk_surface_vmt_t::set_activated. */
-static inline void wlmtk_surface_set_activated(
-    wlmtk_surface_t *surface_ptr,
-    bool activated)
-{
-    surface_ptr->vmt.set_activated(surface_ptr, activated);
-}
 
 /**
  * Returns committed size of the surface.
@@ -158,9 +150,6 @@ extern const bs_test_case_t wlmtk_surface_test_cases[];
 struct _wlmtk_fake_surface_t {
     /** Superclass: surface. */
     wlmtk_surface_t           surface;
-
-    /** Argument of last @ref wlmtk_surface_set_activated call. */
-    bool                      activated;
 };
 
 /** Ctor for the fake surface.*/

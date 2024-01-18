@@ -1184,10 +1184,10 @@ void test_set_activated(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
 
     wlmtk_window_set_activated(fw_ptr->window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_window_set_activated(fw_ptr->window_ptr, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_fake_window_destroy(fw_ptr);
 }
@@ -1338,7 +1338,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1371,7 +1371,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1395,7 +1395,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
@@ -1427,7 +1427,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1446,10 +1446,10 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
