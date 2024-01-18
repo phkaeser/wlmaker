@@ -27,9 +27,10 @@
 /** State of the content for an XDG toplevel surface. */
 typedef struct {
     /** Super class. */
-    wlmtk_surface_t           super_surface;
-    /** The... other super class. FIXME. */
     wlmtk_content_t           super_content;
+
+    /** The toplevel's surface. */
+    wlmtk_surface_t           *surface_ptr;
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
@@ -182,10 +183,10 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         1, sizeof(xdg_toplevel_surface_t));
     if (NULL == xdg_tl_surface_ptr) return NULL;
 
-    if (!wlmtk_surface_init(
-            &xdg_tl_surface_ptr->super_surface,
-            wlr_xdg_surface_ptr->surface,
-            server_ptr->env_ptr)) {
+    xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
+        wlr_xdg_surface_ptr->surface,
+        server_ptr->env_ptr);
+    if (NULL == xdg_tl_surface_ptr->surface_ptr) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
     }
@@ -194,7 +195,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 
     if (!wlmtk_content_init(
             &xdg_tl_surface_ptr->super_content,
-            &xdg_tl_surface_ptr->super_surface,
+            xdg_tl_surface_ptr->surface_ptr,
             server_ptr->env_ptr)) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
@@ -291,7 +292,10 @@ void xdg_toplevel_surface_destroy(
 
     wlmtk_content_fini(&xts_ptr->super_content);
 
-    wlmtk_surface_fini(&xts_ptr->super_surface);
+    if (NULL != xdg_tl_surface_ptr->surface_ptr) {
+        wlmtk_surface_destroy(xdg_tl_surface_ptr->surface_ptr);
+        xdg_tl_surface_ptr->surface_ptr = NULL;
+    }
     free(xts_ptr);
 }
 

@@ -39,7 +39,7 @@ struct _wlmaker_xdg_popup_t {
     wlmtk_content_t           super_content;
 
     /** Surface of the popup. */
-    wlmtk_surface_t           surface;
+    wlmtk_surface_t           *surface_ptr;
     /** The WLR popup. */
     struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
 

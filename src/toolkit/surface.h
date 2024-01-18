@@ -65,27 +65,6 @@ struct _wlmtk_surface_t {
 };
 
 /**
- * Initializes the surface.
- *
- * @param surface_ptr
- * @param wlr_surface_ptr
- * @param env_ptr
- *
- * @return true on success.
- */
-bool wlmtk_surface_init(
-    wlmtk_surface_t *surface_ptr,
-    struct wlr_surface *wlr_surface_ptr,
-    wlmtk_env_t *env_ptr);
-
-/**
- * Un-initializes the surface.
- *
- * @param surface_ptr
- */
-void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
-
-/**
  * Creates a toolkit surface from the `wlr_surface_ptr`.
  *
  * @param wlr_surface_ptr
