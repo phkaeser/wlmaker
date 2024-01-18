@@ -27,9 +27,10 @@
 /** State of the content for an XDG toplevel surface. */
 typedef struct {
     /** Super class. */
-    wlmtk_surface_t           super_surface;
-    /** The... other super class. FIXME. */
     wlmtk_content_t           super_content;
+
+    /** The toplevel's surface. */
+    wlmtk_surface_t           *surface_ptr;
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
@@ -119,46 +120,31 @@ static void handle_toplevel_set_app_id(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void surface_element_destroy(wlmtk_element_t *element_ptr);
-static struct wlr_scene_node *surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
-static void surface_request_close(
-    wlmtk_surface_t *surface_ptr);
-static uint32_t surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height);
-static void surface_set_activated(
-    wlmtk_surface_t *surface_ptr,
-    bool activated);
-
 static uint32_t content_request_maximized(
     wlmtk_content_t *content_ptr,
     bool maximized);
 static uint32_t content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen);
+static uint32_t content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height);
+static void content_request_close(
+    wlmtk_content_t *content_ptr);
+static void content_set_activated(
+    wlmtk_content_t *surface_ptr,
+    bool activated);
 
 /* == Data ================================================================= */
-
-/** Virtual methods for XDG toplevel surface, for the Element superclass. */
-const wlmtk_element_vmt_t     _xdg_toplevel_element_vmt = {
-    .destroy = surface_element_destroy,
-    .create_scene_node = surface_element_create_scene_node,
-};
-
-/** Virtual methods for XDG toplevel surface, for the Surface superclass. */
-const wlmtk_surface_vmt_t     _xdg_toplevel_surface_vmt = {
-    .request_close = surface_request_close,
-    .request_size = surface_request_size,
-    .set_activated = surface_set_activated,
-};
 
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
 const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
     .request_maximized = content_request_maximized,
     .request_fullscreen = content_request_fullscreen,
+    .request_size = content_request_size,
+    .request_close = content_request_close,
+    .set_activated = content_set_activated,
 };
 
 /* == Exported methods ===================================================== */
@@ -175,7 +161,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
         &surface_ptr->super_content, server_ptr->env_ptr);
     if (NULL == wlmtk_window_ptr) {
-        surface_element_destroy(&surface_ptr->super_surface.super_element);
+        xdg_toplevel_surface_destroy(surface_ptr);
         return NULL;
     }
 
@@ -197,25 +183,19 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         1, sizeof(xdg_toplevel_surface_t));
     if (NULL == xdg_tl_surface_ptr) return NULL;
 
-    if (!wlmtk_surface_init(
-            &xdg_tl_surface_ptr->super_surface,
-            wlr_xdg_surface_ptr->surface,
-            server_ptr->env_ptr)) {
+    xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
+        wlr_xdg_surface_ptr->surface,
+        server_ptr->env_ptr);
+    if (NULL == xdg_tl_surface_ptr->surface_ptr) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
     }
-    wlmtk_element_extend(
-        &xdg_tl_surface_ptr->super_surface.super_element,
-        &_xdg_toplevel_element_vmt);
-    wlmtk_surface_extend(
-        &xdg_tl_surface_ptr->super_surface,
-        &_xdg_toplevel_surface_vmt);
     xdg_tl_surface_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
     xdg_tl_surface_ptr->server_ptr = server_ptr;
 
     if (!wlmtk_content_init(
             &xdg_tl_surface_ptr->super_content,
-            &xdg_tl_surface_ptr->super_surface,
+            xdg_tl_surface_ptr->surface_ptr,
             server_ptr->env_ptr)) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
@@ -312,83 +292,11 @@ void xdg_toplevel_surface_destroy(
 
     wlmtk_content_fini(&xts_ptr->super_content);
 
-    wlmtk_surface_fini(&xts_ptr->super_surface);
+    if (NULL != xdg_tl_surface_ptr->surface_ptr) {
+        wlmtk_surface_destroy(xdg_tl_surface_ptr->surface_ptr);
+        xdg_tl_surface_ptr->surface_ptr = NULL;
+    }
     free(xts_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Destructor. Wraps to @ref xdg_toplevel_surface_destroy.
- *
- * @param element_ptr
- */
-void surface_element_destroy(wlmtk_element_t *element_ptr)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        element_ptr, xdg_toplevel_surface_t,
-        super_surface.super_element);
-    xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Creates the wlroots scene graph API node, attached to `wlr_scene_tree_ptr`.
- *
- * @param element_ptr
- * @param wlr_scene_tree_ptr
- *
- * @return Scene graph API node that represents the surface.
- */
-struct wlr_scene_node *surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        element_ptr, xdg_toplevel_surface_t,
-        super_surface.super_element);
-
-    struct wlr_scene_tree *surface_wlr_scene_tree_ptr =
-        wlr_scene_xdg_surface_create(
-            wlr_scene_tree_ptr,
-            xdg_tl_surface_ptr->wlr_xdg_surface_ptr);
-    return &surface_wlr_scene_tree_ptr->node;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Requests the surface to close: Sends a 'close' message to the toplevel.
- *
- * @param surface_ptr
- */
-void surface_request_close(wlmtk_surface_t *surface_ptr)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, xdg_toplevel_surface_t, super_surface);
-
-    wlr_xdg_toplevel_send_close(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Sets the dimensions of the element in pixels.
- *
- * @param surface_ptr
- * @param width               Width of surface.
- * @param height              Height of surface.
- *
- * @return The serial.
- */
-uint32_t surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, xdg_toplevel_surface_t, super_surface);
-
-    return wlr_xdg_toplevel_set_size(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -419,17 +327,54 @@ uint32_t content_request_fullscreen(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Sets the keyboard activation status for the surface.
+ * Sets the dimensions of the element in pixels.
  *
- * @param surface_ptr
+ * @param content_ptr
+ * @param width               Width of content.
+ * @param height              Height of content.
+ *
+ * @return The serial.
+ */
+uint32_t content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height)
+{
+    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, xdg_toplevel_surface_t, super_content);
+
+    return wlr_xdg_toplevel_set_size(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Requests the content to close: Sends a 'close' message to the toplevel.
+ *
+ * @param content_ptr
+ */
+void content_request_close(wlmtk_content_t *content_ptr)
+{
+    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
+        content_ptr, xdg_toplevel_surface_t, super_content);
+
+    wlr_xdg_toplevel_send_close(
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Sets the keyboard activation status for the content.
+ *
+ * @param content_ptr
  * @param activated
  */
-void surface_set_activated(
-    wlmtk_surface_t *surface_ptr,
+void content_set_activated(
+    wlmtk_content_t *content_ptr,
     bool activated)
 {
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, xdg_toplevel_surface_t, super_surface);
+        content_ptr, xdg_toplevel_surface_t, super_content);
     // Early return, if nothing to be done.
     if (xdg_tl_surface_ptr->activated == activated) return;
 

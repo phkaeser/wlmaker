@@ -32,6 +32,16 @@
 
 /* == Declarations ========================================================= */
 
+static bool _wlmtk_surface_init(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr);
+static void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
+
+static void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr);
+static struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr);
 static void _wlmtk_surface_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
@@ -54,10 +64,16 @@ static bool _wlmtk_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
+static void _wlmtk_surface_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 /** Method table for the element's virtual methods. */
 static const wlmtk_element_vmt_t surface_element_vmt = {
+    .destroy = _wlmtk_surface_element_destroy,
+    .create_scene_node = _wlmtk_surface_element_create_scene_node,
     .get_dimensions = _wlmtk_surface_element_get_dimensions,
     .get_pointer_area = _wlmtk_surface_element_get_pointer_area,
     .pointer_leave = _wlmtk_surface_element_pointer_leave,
@@ -68,50 +84,26 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_surface_init(
-    wlmtk_surface_t *surface_ptr,
+wlmtk_surface_t *wlmtk_surface_create(
     struct wlr_surface *wlr_surface_ptr,
     wlmtk_env_t *env_ptr)
 {
-    BS_ASSERT(NULL != surface_ptr);
-    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
+    wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
+    if (NULL == surface_ptr) return NULL;
 
-    if (!wlmtk_element_init(&surface_ptr->super_element, env_ptr)) {
-        wlmtk_surface_fini(surface_ptr);
-        return false;
+    if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr, env_ptr)) {
+        wlmtk_surface_destroy(surface_ptr);
+        return NULL;
     }
-    surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
-        &surface_ptr->super_element, &surface_element_vmt);
 
-    surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
-    return true;
+    return surface_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
+void wlmtk_surface_destroy(wlmtk_surface_t *surface_ptr)
 {
-    wlmtk_element_fini(&surface_ptr->super_element);
-    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_surface_vmt_t wlmtk_surface_extend(
-    wlmtk_surface_t *surface_ptr,
-    const wlmtk_surface_vmt_t *surface_vmt_ptr)
-{
-    wlmtk_surface_vmt_t orig_vmt = surface_ptr->vmt;
-
-    if (NULL != surface_vmt_ptr->request_size) {
-        surface_ptr->vmt.request_size = surface_vmt_ptr->request_size;
-    }
-    if (NULL != surface_vmt_ptr->request_close) {
-        surface_ptr->vmt.request_close = surface_vmt_ptr->request_close;
-    }
-    if (NULL != surface_vmt_ptr->set_activated) {
-        surface_ptr->vmt.set_activated = surface_vmt_ptr->set_activated;
-    }
-
-    return orig_vmt;
+    _wlmtk_surface_fini(surface_ptr);
+    free(surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -152,6 +144,92 @@ void wlmtk_surface_commit_size(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Initializes the surface.
+ *
+ * @param surface_ptr
+ * @param wlr_surface_ptr
+ * @param env_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmtk_surface_init(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr)
+{
+    BS_ASSERT(NULL != surface_ptr);
+    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
+
+    if (!wlmtk_element_init(&surface_ptr->super_element, env_ptr)) {
+        _wlmtk_surface_fini(surface_ptr);
+        return false;
+    }
+    surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &surface_ptr->super_element, &surface_element_vmt);
+
+    surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
+    if (NULL != surface_ptr->wlr_surface_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.commit,
+            &surface_ptr->surface_commit_listener,
+            _wlmtk_surface_handle_surface_commit);
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Un-initializes the surface.
+ *
+ * @param surface_ptr
+ */
+void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
+{
+    if (NULL != surface_ptr->wlr_surface_ptr) {
+        surface_ptr->wlr_surface_ptr = NULL;
+        wl_list_remove(&surface_ptr->surface_commit_listener.link);
+    }
+
+    wlmtk_element_fini(&surface_ptr->super_element);
+    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy. Calls the dtor. */
+void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_surface_t, super_element);
+    wlmtk_surface_destroy(surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::create_scene_node. Creates the node.
+ *
+ * @param element_ptr
+ * @param wlr_scene_tree_ptr
+ *
+ * @return The scene graph API node of the node displaying the surface and all
+ *     of it's sub-surfaces. Or NULL on error.
+ */
+struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_tree *wlr_scene_tree_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_surface_t, super_element);
+    BS_ASSERT(NULL == surface_ptr->wlr_scene_tree_ptr);
+
+    surface_ptr->wlr_scene_tree_ptr = wlr_scene_subsurface_tree_create(
+        wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
+    if (NULL == surface_ptr->wlr_scene_tree_ptr) return NULL;
+
+    return &surface_ptr->wlr_scene_tree_ptr->node;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -354,6 +432,20 @@ bool _wlmtk_surface_element_pointer_button(
     return false;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handler for the `commit` signal of `wlr_surface`. */
+void _wlmtk_surface_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, surface_commit_listener);
+    wlmtk_surface_commit_size(
+        surface_ptr, 0,
+        surface_ptr->wlr_surface_ptr->current.width,
+        surface_ptr->wlr_surface_ptr->current.height);
+}
+
 /* == Fake surface methods ================================================= */
 
 static void _wlmtk_fake_surface_element_destroy(
@@ -380,23 +472,6 @@ static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
     .pointer_leave = _wlmtk_fake_surface_element_pointer_leave,
 };
 
-static uint32_t _wlmtk_fake_surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height);
-static void _wlmtk_fake_surface_request_close(
-    wlmtk_surface_t *surface_ptr);
-static void _wlmtk_fake_surface_set_activated(
-    wlmtk_surface_t *surface_ptr,
-    bool activated);
-
-/** Virtual method table for the fake surface. */
-static const wlmtk_surface_vmt_t _wlmtk_fake_surface_vmt = {
-    .request_size = _wlmtk_fake_surface_request_size,
-    .request_close = _wlmtk_fake_surface_request_close,
-    .set_activated = _wlmtk_fake_surface_set_activated,
-};
-
 /* ------------------------------------------------------------------------- */
 wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
 {
@@ -404,8 +479,7 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
         1, sizeof(wlmtk_fake_surface_t));
     if (NULL == fake_surface_ptr) return NULL;
 
-    wlmtk_surface_init(&fake_surface_ptr->surface, NULL, NULL);
-    wlmtk_surface_extend(&fake_surface_ptr->surface, &_wlmtk_fake_surface_vmt);
+    _wlmtk_surface_init(&fake_surface_ptr->surface, NULL, NULL);
     wlmtk_element_extend(
         &fake_surface_ptr->surface.super_element,
         &_wlmtk_fake_surface_element_vmt);
@@ -415,32 +489,8 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr)
 {
-    wlmtk_surface_fini(&fake_surface_ptr->surface);
+    _wlmtk_surface_fini(&fake_surface_ptr->surface);
     free(fake_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_fake_surface_commit(wlmtk_fake_surface_t *fake_surface_ptr)
-{
-    wlmtk_surface_commit_size(
-        &fake_surface_ptr->surface,
-        fake_surface_ptr->serial,
-        fake_surface_ptr->requested_width,
-        fake_surface_ptr->requested_height);
-
-    if (NULL != fake_surface_ptr->surface.super_element.wlr_scene_node_ptr) {
-        struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-            fake_surface_ptr->surface.committed_width,
-            fake_surface_ptr->surface.committed_height);
-        BS_ASSERT(NULL != wlr_buffer_ptr);
-
-        struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_from_node(
-            fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
-        BS_ASSERT(NULL != wlr_scene_buffer_ptr);
-
-        wlr_scene_buffer_set_buffer(wlr_scene_buffer_ptr, wlr_buffer_ptr);
-        wlr_buffer_drop(wlr_buffer_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -504,65 +554,30 @@ void _wlmtk_fake_surface_element_pointer_leave(
     // Nothing to do.
 }
 
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of @ref wlmtk_surface_vmt_t::request_size. */
-uint32_t _wlmtk_fake_surface_request_size(
-    wlmtk_surface_t *surface_ptr,
-    int width,
-    int height)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, wlmtk_fake_surface_t, surface);
-    fake_surface_ptr->requested_width = width;
-    fake_surface_ptr->requested_height = height;
-    return fake_surface_ptr->serial;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Records that @ref wlmtk_surface_request_close was called. */
-void _wlmtk_fake_surface_request_close(wlmtk_surface_t *surface_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, wlmtk_fake_surface_t, surface);
-    fake_surface_ptr->request_close_called = true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Sets the surface's activated status. */
-void _wlmtk_fake_surface_set_activated(
-    wlmtk_surface_t *surface_ptr,
-    bool activated)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        surface_ptr, wlmtk_fake_surface_t, surface);
-    fake_surface_ptr->activated = activated;
-}
-
 /* == Unit tests =========================================================== */
 
-static void test_init_fini(bs_test_t *test_ptr);
+static void test_create_destroy(bs_test_t *test_ptr);
 static void test_fake_commit(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_surface_test_cases[] = {
-    { 1, "init_fini", test_init_fini },
+    { 1, "create_destroy", test_create_destroy },
     { 1, "fake_commit", test_fake_commit },
     { 0, NULL, NULL }
 };
 
 /* ------------------------------------------------------------------------- */
-/** Tests setup and teardown. */
-void test_init_fini(bs_test_t *test_ptr)
+/** Tests ctor and dtor. */
+void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_surface_t surface;
-
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_init(&surface, NULL, NULL));
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, surface_ptr);
 
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        &surface.super_element,
-        wlmtk_surface_element(&surface));
+        &surface_ptr->super_element,
+        wlmtk_surface_element(surface_ptr));
 
-    wlmtk_surface_fini(&surface);
+    wlmtk_surface_destroy(surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -572,18 +587,11 @@ void test_fake_commit(bs_test_t *test_ptr)
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     int w, h;
 
-    fake_surface_ptr->serial = 42;
-
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        42,
-        wlmtk_surface_request_size(&fake_surface_ptr->surface, 200, 100));
-
     wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
     BS_TEST_VERIFY_EQ(test_ptr, 0, w);
     BS_TEST_VERIFY_EQ(test_ptr, 0, h);
 
-    wlmtk_fake_surface_commit(fake_surface_ptr);
+    wlmtk_surface_commit_size(&fake_surface_ptr->surface, 42, 200, 100);
     wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
     BS_TEST_VERIFY_EQ(test_ptr, 200, w);
     BS_TEST_VERIFY_EQ(test_ptr, 100, h);
