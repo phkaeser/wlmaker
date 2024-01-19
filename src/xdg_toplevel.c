@@ -133,7 +133,7 @@ static uint32_t content_request_size(
 static void content_request_close(
     wlmtk_content_t *content_ptr);
 static void content_set_activated(
-    wlmtk_content_t *surface_ptr,
+    wlmtk_content_t *content_ptr,
     bool activated);
 
 /* == Data ================================================================= */
