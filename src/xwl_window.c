@@ -85,7 +85,21 @@ static void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static uint32_t _xwl_window_content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height);
+static void _xwl_window_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated);
+
 /* == Data ================================================================= */
+
+/** Virtual methods for XDG toplevel surface, for the Content superclass. */
+const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
+    .request_size = _xwl_window_content_request_size,
+    .set_activated = _xwl_window_content_set_activated,
+};
 
 /* == Exported methods ===================================================== */
 
@@ -342,6 +356,22 @@ void handle_surface_unmap(
     bs_log(BS_INFO, "XWL window %p unmap surface %p",
            xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
 
+}
+
+/* ------------------------------------------------------------------------- */
+uint32_t _xwl_window_content_request_size(
+    wlmtk_content_t *content_ptr,
+    int width,
+    int height)
+{
+}
+
+/* ------------------------------------------------------------------------- */
+void _xwl_window_content_set_activated(
+    wlmtk_content_t *surface_ptr,
+    bool activated)
+{
+    bs_log(BS_INFO, "FIXME:
 }
 
 /* == End of xwl_window.c ================================================== */
