@@ -36,16 +36,13 @@ struct _wlmaker_xwl_window_t {
     /** Corresponding wlroots XWayland surface. */
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr;
 
-    wlmtk_env_t               *env_ptr;
+    /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
-
-
-    struct wlr_scene_surface  *wlr_scene_surface_ptr;
+    /** wlmtk environment. */
+    wlmtk_env_t               *env_ptr;
 
     /** Toolkit content state. */
     wlmtk_content_t           content;
-    wlmtk_surface_t           *surface_ptr;
-    wlmtk_window_t            *window_ptr;
 
     /** Listener for the `destroy` signal of `wlr_xwayland_surface`. */
     struct wl_listener        destroy_listener;
@@ -56,9 +53,17 @@ struct _wlmaker_xwl_window_t {
     /** Listener for the `dissociate` signal of `wlr_xwayland_surface`. */
     struct wl_listener        dissociate_listener;
 
-    /** FIXME: listener for surface commit. */
+
+    /** The toolkit surface. Only available once 'associated'. */
+    wlmtk_surface_t           *surface_ptr;
+    /** The toolkit window. Only available once 'associated'. */
+    wlmtk_window_t            *window_ptr;
+
+    /** Listener for `surface_map` of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
+    /** Listener for `surface_map` of the `wlr_surface`. */
     struct wl_listener        surface_map_listener;
+    /** Listener for `surface_unmap` of the `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
 };
 
@@ -96,7 +101,7 @@ static void _xwl_window_content_set_activated(
 /* == Data ================================================================= */
 
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
-const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
+const wlmtk_content_vmt_t     _xwl_window_content_vmt = {
     .request_size = _xwl_window_content_request_size,
     .set_activated = _xwl_window_content_set_activated,
 };
@@ -121,6 +126,7 @@ wlmaker_xwl_window_t *wlmaker_xwl_window_create(
         wlmaker_xwl_window_destroy(xwl_window_ptr);
         return NULL;
     }
+    wlmtk_content_extend(&xwl_window_ptr->content, &_xwl_window_content_vmt);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
@@ -223,11 +229,8 @@ void handle_associate(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, associate_listener);
-    bs_log(BS_INFO, "Associate %p with wlr_surface %p",
+    bs_log(BS_INFO, "Associate XWL window %p with wlr_surface %p",
            xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
-
-    // Here: Create the surface using wlr_scene_surface_create on
-    // wlr_xwayland_surface_ptr->surface  (a wlr_surface)
 
     wlmtk_util_connect_listener_signal(
         &xwl_window_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
@@ -276,24 +279,23 @@ void handle_dissociate(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, dissociate_listener);
 
-    wl_list_remove(&xwl_window_ptr->surface_unmap_listener.link);
-    wl_list_remove(&xwl_window_ptr->surface_map_listener.link);
-    wl_list_remove(&xwl_window_ptr->surface_commit_listener.link);
-
     if (NULL != xwl_window_ptr->window_ptr) {
         wlmtk_window_destroy(xwl_window_ptr->window_ptr);
         xwl_window_ptr->window_ptr = NULL;
     }
 
+    wlmtk_content_set_surface(&xwl_window_ptr->content, NULL);
     if (NULL != xwl_window_ptr->surface_ptr) {
         wlmtk_surface_destroy(xwl_window_ptr->surface_ptr);
         xwl_window_ptr->surface_ptr = NULL;
     }
 
-    bs_log(BS_INFO, "Dissociate %p from wlr_surface %p",
-           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
+    wl_list_remove(&xwl_window_ptr->surface_unmap_listener.link);
+    wl_list_remove(&xwl_window_ptr->surface_map_listener.link);
+    wl_list_remove(&xwl_window_ptr->surface_commit_listener.link);
 
-    // Here: Destroy the actual surface.
+    bs_log(BS_INFO, "Dissociate XWL window %p from wlr_surface %p",
+           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -322,7 +324,7 @@ void handle_surface_commit(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Temporary: Surface map handler. */
+/** Surface map handler: also indicates the window can be mapped. */
 void handle_surface_map(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -330,22 +332,16 @@ void handle_surface_map(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, surface_map_listener);
 
-    bs_log(BS_INFO, "XWL window %p map surface %p",
-           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
-
     wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
         xwl_window_ptr->server_ptr);
-
     wlmtk_workspace_map_window(
         wlmaker_workspace_wlmtk(workspace_ptr),
         xwl_window_ptr->window_ptr);
-    wlmtk_window_set_server_side_decorated(xwl_window_ptr->window_ptr, true);
     wlmtk_window_set_position(xwl_window_ptr->window_ptr, 40, 30);
-    // FIXME
 }
 
 /* ------------------------------------------------------------------------- */
-/** Temporary: Surface unmap handler. */
+/** Surface unmap: indicates the window should be unmapped. */
 void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -353,25 +349,41 @@ void handle_surface_unmap(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, surface_unmap_listener);
 
-    bs_log(BS_INFO, "XWL window %p unmap surface %p",
-           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
-
+    wlmtk_workspace_unmap_window(
+        wlmtk_window_get_workspace(xwl_window_ptr->window_ptr),
+        xwl_window_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_size. */
 uint32_t _xwl_window_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height)
 {
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_xwl_window_t, content);
+    bs_log(BS_INFO, "XWL window %p request size %d x %d",
+           xwl_window_ptr, width, height);
+    wlr_xwayland_surface_configure(
+        xwl_window_ptr->wlr_xwayland_surface_ptr,
+        0, 0, width, height);
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::set_activated. */
 void _xwl_window_content_set_activated(
-    wlmtk_content_t *surface_ptr,
+    wlmtk_content_t *content_ptr,
     bool activated)
 {
-    bs_log(BS_INFO, "FIXME:
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_xwl_window_t, content);
+
+    bs_log(BS_INFO, "XWL window %p set activated %d",
+           xwl_window_ptr, activated);
+    wlr_xwayland_surface_activate(
+        xwl_window_ptr->wlr_xwayland_surface_ptr, activated);
 }
 
 /* == End of xwl_window.c ================================================== */
