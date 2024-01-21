@@ -69,15 +69,24 @@ void wlmtk_content_set_surface(
     wlmtk_content_t *content_ptr,
     wlmtk_surface_t *surface_ptr)
 {
-    BS_ASSERT(surface_ptr != NULL);
-    BS_ASSERT(content_ptr->surface_ptr == NULL);
-    content_ptr->surface_ptr = surface_ptr;
+    if (NULL == surface_ptr && NULL == content_ptr->surface_ptr) return;
 
-    wlmtk_container_add_element(
-        &content_ptr->super_container,
-        wlmtk_surface_element(surface_ptr));
-    content_ptr->surface_ptr = surface_ptr;
-    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+    if (NULL != content_ptr->surface_ptr) {
+        wlmtk_element_set_visible(
+            wlmtk_surface_element(content_ptr->surface_ptr), false);
+        wlmtk_container_remove_element(
+            &content_ptr->super_container,
+            wlmtk_surface_element(content_ptr->surface_ptr));
+        content_ptr->surface_ptr = NULL;
+    }
+
+    if (NULL != surface_ptr) {
+        wlmtk_container_add_element(
+            &content_ptr->super_container,
+            wlmtk_surface_element(surface_ptr));
+        content_ptr->surface_ptr = surface_ptr;
+        wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -247,9 +256,11 @@ void _wlmtk_fake_content_set_activated(
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
+static void test_set_clear_surface(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_content_test_cases[] = {
     { 1, "init_fini", test_init_fini },
+    { 1, "set_clear_surface", test_set_clear_surface },
     { 0, NULL, NULL }
 };
 
@@ -294,6 +305,27 @@ void test_init_fini(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
 
     wlmtk_fake_content_destroy(fake_content_ptr);
+    wlmtk_fake_surface_destroy(fs_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests setting and clearing the sruface. */
+void test_set_clear_surface(bs_test_t *test_ptr)
+{
+    wlmtk_fake_surface_t *fs_ptr = wlmtk_fake_surface_create();
+    BS_ASSERT(NULL != fs_ptr);
+
+    wlmtk_content_t content;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&content, NULL, NULL));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, content.surface_ptr);
+
+    wlmtk_content_set_surface(&content, &fs_ptr->surface);
+    BS_TEST_VERIFY_EQ(test_ptr, &fs_ptr->surface, content.surface_ptr);
+
+    wlmtk_content_set_surface(&content, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, content.surface_ptr);
+
+    wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fs_ptr);
 }
 
