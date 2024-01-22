@@ -381,28 +381,7 @@ void content_set_activated(
     wlr_xdg_toplevel_set_activated(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, activated);
 
-    struct wlr_seat *wlr_seat_ptr =
-        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr;
-    if (activated) {
-        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-            wlr_seat_ptr);
-        if (NULL != wlr_keyboard_ptr) {
-            wlr_seat_keyboard_notify_enter(
-                wlr_seat_ptr,
-                xdg_tl_surface_ptr->wlr_xdg_surface_ptr->surface,
-                wlr_keyboard_ptr->keycodes,
-                wlr_keyboard_ptr->num_keycodes,
-                &wlr_keyboard_ptr->modifiers);
-        }
-    } else {
-        BS_ASSERT(xdg_tl_surface_ptr->activated);
-        // FIXME: This clears pointer focus. But, this is keyboard focus?
-        if (wlr_seat_ptr->keyboard_state.focused_surface ==
-            xdg_tl_surface_ptr->wlr_xdg_surface_ptr->surface) {
-            wlr_seat_pointer_clear_focus(wlr_seat_ptr);
-        }
-    }
-
+    wlmtk_surface_set_activated(xdg_tl_surface_ptr->surface_ptr, activated);
     xdg_tl_surface_ptr->activated = activated;
 }
 

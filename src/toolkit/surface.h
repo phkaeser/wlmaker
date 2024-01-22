@@ -48,6 +48,8 @@ struct _wlmtk_surface_t {
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
+    /** Toolkit environment. See @ref wlmtk_surface_create. */
+    wlmtk_env_t               *env_ptr;
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
@@ -62,6 +64,9 @@ struct _wlmtk_surface_t {
 
     /** Listener for the `events.commit` signal of `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
+
+    /** Whether this surface is activated, ie. has keyboard focus. */
+    bool                      activated;
 };
 
 /**
@@ -121,6 +126,16 @@ void wlmtk_surface_commit_size(
     uint32_t serial,
     int width,
     int height);
+
+/**
+ * Activates the surface.
+ *
+ * @param surface_ptr
+ * @param activated
+ */
+void wlmtk_surface_set_activated(
+    wlmtk_surface_t *surface_ptr,
+    bool activated);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];
