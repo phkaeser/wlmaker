@@ -378,11 +378,11 @@ void content_set_activated(
     // Early return, if nothing to be done.
     if (xdg_tl_surface_ptr->activated == activated) return;
 
-    struct wlr_seat *wlr_seat_ptr =
-        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr;
     wlr_xdg_toplevel_set_activated(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, activated);
 
+    struct wlr_seat *wlr_seat_ptr =
+        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr;
     if (activated) {
         struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
             wlr_seat_ptr);
