@@ -94,6 +94,8 @@ static uint32_t _xwl_window_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height);
+static void _xwl_window_content_request_close(
+    wlmtk_content_t *content_ptr);
 static void _xwl_window_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated);
@@ -103,6 +105,7 @@ static void _xwl_window_content_set_activated(
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
 const wlmtk_content_vmt_t     _xwl_window_content_vmt = {
     .request_size = _xwl_window_content_request_size,
+    .request_close = _xwl_window_content_request_close,
     .set_activated = _xwl_window_content_set_activated,
 };
 
@@ -378,6 +381,16 @@ uint32_t _xwl_window_content_request_size(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_close. */
+static void _xwl_window_content_request_close(
+    wlmtk_content_t *content_ptr)
+{
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_xwl_window_t, content);
+    wlr_xwayland_surface_close(xwl_window_ptr->wlr_xwayland_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_content_vmt_t::set_activated. */
 void _xwl_window_content_set_activated(
     wlmtk_content_t *content_ptr,
@@ -386,8 +399,6 @@ void _xwl_window_content_set_activated(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_window_t, content);
 
-    bs_log(BS_INFO, "XWL window %p set activated %d",
-           xwl_window_ptr, activated);
     wlr_xwayland_surface_activate(
         xwl_window_ptr->wlr_xwayland_surface_ptr, activated);
     wlmtk_surface_set_activated(xwl_window_ptr->surface_ptr, activated);
