@@ -65,6 +65,9 @@ struct _wlmaker_xwl_window_t {
     struct wl_listener        surface_map_listener;
     /** Listener for `surface_unmap` of the `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
+
+    /** Whether this window is activated (has keyboard focus). */
+    bool                      activated;
 };
 
 static void handle_destroy(
@@ -379,11 +382,37 @@ void _xwl_window_content_set_activated(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_window_t, content);
+    // Early return, if nothing to be done.
+    if (xwl_window_ptr->activated == activated) return;
 
     bs_log(BS_INFO, "XWL window %p set activated %d",
            xwl_window_ptr, activated);
     wlr_xwayland_surface_activate(
         xwl_window_ptr->wlr_xwayland_surface_ptr, activated);
+
+    struct wlr_seat *wlr_seat_ptr =
+        xwl_window_ptr->server_ptr->wlr_seat_ptr;
+    if (activated) {
+        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+            wlr_seat_ptr);
+        if (NULL != wlr_keyboard_ptr) {
+            wlr_seat_keyboard_notify_enter(
+                wlr_seat_ptr,
+                xwl_window_ptr->wlr_xwayland_surface_ptr->surface,
+                wlr_keyboard_ptr->keycodes,
+                wlr_keyboard_ptr->num_keycodes,
+                &wlr_keyboard_ptr->modifiers);
+        }
+    } else {
+        BS_ASSERT(xwl_window_ptr->activated);
+        // FIXME: This clears pointer focus. But, this is keyboard focus?
+        if (wlr_seat_ptr->keyboard_state.focused_surface ==
+            xwl_window_ptr->wlr_xwayland_surface_ptr->surface) {
+            wlr_seat_pointer_clear_focus(wlr_seat_ptr);
+        }
+    }
+
+    xwl_window_ptr->activated = activated;
 }
 
 /* == End of xwl_window.c ================================================== */
