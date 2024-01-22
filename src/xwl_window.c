@@ -211,6 +211,12 @@ void handle_request_configure(
     // FIXME:
     // -> if we have content/surface: check what that means, with respect to
     //    the surface::commit handler.
+
+    // It appears this needs to be ACKed with a surface_configure.
+    wlr_xwayland_surface_configure(
+        xwl_window_ptr->wlr_xwayland_surface_ptr,
+        cfg_event_ptr->x, cfg_event_ptr->y,
+        cfg_event_ptr->width, cfg_event_ptr->height);
 }
 
 /* ------------------------------------------------------------------------- */
