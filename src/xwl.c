@@ -524,14 +524,14 @@ void handle_new_surface(struct wl_listener *listener_ptr,
                    xwl_ptr, wlr_xwayland_surface_ptr);
             return;
         }
-    }
-
-    wlmaker_xwl_window_t *xwl_window_ptr = wlmaker_xwl_window_create(
-        wlr_xwayland_surface_ptr,
-        xwl_ptr->server_ptr);
-    if (NULL == xwl_window_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_xwl_window_create(%p)",
-               wlr_xwayland_surface_ptr);
+    } else {
+        wlmaker_xwl_window_t *xwl_window_ptr = wlmaker_xwl_window_create(
+            wlr_xwayland_surface_ptr,
+            xwl_ptr->server_ptr);
+        if (NULL == xwl_window_ptr) {
+            bs_log(BS_ERROR, "Failed wlmaker_xwl_window_create(%p)",
+                   wlr_xwayland_surface_ptr);
+        }
     }
 }
 
