@@ -37,8 +37,6 @@ typedef struct {
 
     /** The corresponding wlroots XDG surface. */
     struct wlr_xdg_surface    *wlr_xdg_surface_ptr;
-    /** Whether this surface is currently activated. */
-    bool                      activated;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_surface::events`. */
     struct wl_listener        destroy_listener;
@@ -375,14 +373,11 @@ void content_set_activated(
 {
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         content_ptr, xdg_toplevel_surface_t, super_content);
-    // Early return, if nothing to be done.
-    if (xdg_tl_surface_ptr->activated == activated) return;
 
     wlr_xdg_toplevel_set_activated(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, activated);
 
     wlmtk_surface_set_activated(xdg_tl_surface_ptr->surface_ptr, activated);
-    xdg_tl_surface_ptr->activated = activated;
 }
 
 /* ------------------------------------------------------------------------- */
