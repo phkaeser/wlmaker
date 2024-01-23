@@ -41,3 +41,6 @@ ADD_LIBRARY(
   OBJECT
   wlr-layer-shell-unstable-v1-protocol.h
   xdg-shell-protocol.h)
+SET_TARGET_PROPERTIES(
+  protocol_headers PROPERTIES
+  LINKER_LANGUAGE C)
