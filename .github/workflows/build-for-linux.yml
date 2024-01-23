@@ -7,9 +7,9 @@ on:
     branches: [ "main", "workflow" ]
 
 env:
-  INSTALL_PATH: "${HOME}/.local"
-  INSTALL_LIBRARY_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  INSTALL_PKGCONFIG_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+  INSTALL_PATH: "${HOME}/wlmaker"
+  INSTALL_LIBRARY_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  INSTALL_PKGCONFIG_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/wlmaker/share/pkgconfig/"
 
 jobs:
   build:
@@ -77,6 +77,18 @@ jobs:
 
     - name: Build documentation.
       run: cmake --build ${{github.workspace}}/build --target doc
+
+    - name: Create the tarball.
+      run: |
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        cmake --install ${{github.workspace}}/build
+        cd "${{ env.INSTALL_PATH }}" && tar -zcvf wlmaker-head.tar.gz wlmaker
+
+    - name: Upload artifact.
+      uses: actions/upload-artifact@v2
+      with:
+        name: wlmaker
+        path: wlmaker-head.tar.gz
 
 #    - name: Run all tests
 #      working-directory: ${{github.workspace}}/build
