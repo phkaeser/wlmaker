@@ -33,7 +33,7 @@ IF(DOXYGEN_FOUND)
     MESSAGE(
       NOTICE
       "Did not find plantuml.jar -- Will not generate class diagrams.")
-  ENDIF(PLANTUML_JAR_FOUND)
+  ENDIF(PLANTUML_JAR)
 
   IF(config_DOXYGEN_CRITICAL)
     SET(DOXYGEN_WARN_AS_ERROR "YES")
