@@ -130,8 +130,6 @@ typedef struct {
     wlmtk_window_t            window;
     /** Fake window - public state. */
     wlmtk_fake_window_t       fake_window;
-    /** Fake content. */
-    wlmtk_content_t           content;
 } wlmtk_fake_window_state_t;
 
 static bool _wlmtk_window_init(
@@ -1009,16 +1007,18 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         return NULL;
     }
 
-    wlmtk_content_init(
-        &fake_window_state_ptr->content,
-        &fake_window_state_ptr->fake_window.fake_surface_ptr->surface,
-        NULL);
-    fake_window_state_ptr->fake_window.content_ptr = &fake_window_state_ptr->content;
+    fake_window_state_ptr->fake_window.fake_content_ptr = wlmtk_fake_content_create(
+        fake_window_state_ptr->fake_window.fake_surface_ptr);
+    if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
+        return NULL;
+    }
 
     if (!_wlmtk_window_init(
             &fake_window_state_ptr->window,
             NULL,
-            wlmtk_content_element(&fake_window_state_ptr->content)
+            wlmtk_content_element(
+                &fake_window_state_ptr->fake_window.fake_content_ptr->content)
             )) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
@@ -1026,10 +1026,10 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
     fake_window_state_ptr->fake_window.window_ptr =
         &fake_window_state_ptr->window;
     fake_window_state_ptr->fake_window.window_ptr->content_ptr =
-        &fake_window_state_ptr->content;
+        &fake_window_state_ptr->fake_window.fake_content_ptr->content;
 
     wlmtk_content_set_window(
-        &fake_window_state_ptr->content,
+        &fake_window_state_ptr->fake_window.fake_content_ptr->content,
         fake_window_state_ptr->fake_window.window_ptr);
 
     // Extend. We don't save the VMT, since it's for fake only.
@@ -1046,7 +1046,11 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 
     _wlmtk_window_fini(&fake_window_state_ptr->window);
 
-    wlmtk_content_fini(&fake_window_state_ptr->content);
+    if (NULL != fake_window_state_ptr->fake_window.fake_content_ptr) {
+        wlmtk_fake_content_destroy(
+            fake_window_state_ptr->fake_window.fake_content_ptr);
+        fake_window_state_ptr->fake_window.fake_content_ptr = NULL;
+    }
 
     if (NULL != fake_window_state_ptr->fake_window.fake_surface_ptr) {
         wlmtk_fake_surface_destroy(
@@ -1061,11 +1065,7 @@ void wlmtk_fake_window_destroy(wlmtk_fake_window_t *fake_window_ptr)
 /** Calls commit_size with the fake surface's serial and dimensions. */
 void wlmtk_fake_window_commit_size(wlmtk_fake_window_t *fake_window_ptr)
 {
-    wlmtk_content_commit_size(
-        fake_window_ptr->content_ptr,
-        fake_window_ptr->fake_surface_ptr->serial,
-        fake_window_ptr->fake_surface_ptr->requested_width,
-        fake_window_ptr->fake_surface_ptr->requested_height);
+    wlmtk_fake_content_commit(fake_window_ptr->fake_content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1169,7 +1169,9 @@ void test_request_close(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
 
     wlmtk_window_request_close(fw_ptr->window_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->request_close_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        fw_ptr->fake_content_ptr->request_close_called);
 
     wlmtk_fake_window_destroy(fw_ptr);
 }
@@ -1182,10 +1184,10 @@ void test_set_activated(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
 
     wlmtk_window_set_activated(fw_ptr->window_ptr, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_window_set_activated(fw_ptr->window_ptr, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_fake_window_destroy(fw_ptr);
 }
@@ -1336,7 +1338,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1369,7 +1371,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1393,7 +1395,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
@@ -1425,7 +1427,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
     wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
@@ -1444,10 +1446,10 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
-    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_surface_ptr->activated);
+    BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
@@ -1457,8 +1459,6 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 
     wlmtk_fake_workspace_destroy(fws_ptr);
 }
-
-// FIXME: Test that fullscreen keeps window decoration as it should.
 
 /* ------------------------------------------------------------------------- */
 /** Tests fake window ctor and dtor. */

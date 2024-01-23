@@ -26,15 +26,6 @@
 
 /* == Declarations ========================================================= */
 
-static struct wlr_scene_node *_wlmaker_xdg_popup_surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
-
-/** Virtual methods for XDG popup surface, for the Element superclass. */
-const wlmtk_element_vmt_t     _wlmaker_xdg_popup_surface_element_vmt = {
-    .create_scene_node = _wlmaker_xdg_popup_surface_element_create_scene_node,
-};
-
 static void handle_reposition(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -57,20 +48,16 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     if (NULL == wlmaker_xdg_popup_ptr) return NULL;
     wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
 
-    if (!wlmtk_surface_init(
-            &wlmaker_xdg_popup_ptr->surface,
-            wlr_xdg_popup_ptr->base->surface,
-            env_ptr)) {
+    wlmaker_xdg_popup_ptr->surface_ptr = wlmtk_surface_create(
+        wlr_xdg_popup_ptr->base->surface, env_ptr);
+    if (NULL == wlmaker_xdg_popup_ptr->surface_ptr) {
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
-    wlmtk_element_extend(
-        &wlmaker_xdg_popup_ptr->surface.super_element,
-        &_wlmaker_xdg_popup_surface_element_vmt);
 
     if (!wlmtk_content_init(
             &wlmaker_xdg_popup_ptr->super_content,
-            &wlmaker_xdg_popup_ptr->surface,
+            wlmaker_xdg_popup_ptr->surface_ptr,
             env_ptr)) {
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
@@ -101,27 +88,15 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
     wl_list_remove(&wlmaker_xdg_popup_ptr->reposition_listener.link);
 
     wlmtk_content_fini(&wlmaker_xdg_popup_ptr->super_content);
-    wlmtk_surface_fini(&wlmaker_xdg_popup_ptr->surface);
+
+    if (NULL != wlmaker_xdg_popup_ptr->surface_ptr) {
+        wlmtk_surface_destroy(wlmaker_xdg_popup_ptr->surface_ptr);
+        wlmaker_xdg_popup_ptr->surface_ptr = NULL;
+    }
     free(wlmaker_xdg_popup_ptr);
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::create_scene_node. Create node. */
-struct wlr_scene_node *_wlmaker_xdg_popup_surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_xdg_popup_t, surface.super_element);
-
-    struct wlr_scene_tree *surface_wlr_scene_tree_ptr =
-        wlr_scene_xdg_surface_create(
-            wlr_scene_tree_ptr,
-            wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->base);
-    return &surface_wlr_scene_tree_ptr->node;
-}
 
 /* ------------------------------------------------------------------------- */
 /** Handles repositioning. Yet unimplemented. */
