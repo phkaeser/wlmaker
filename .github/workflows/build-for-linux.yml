@@ -44,8 +44,7 @@ jobs:
           meson \
           plantuml \
           xmlto \
-          xsltproc \
-          wayland-protocols
+          xsltproc
     
     - name: Checkout code including submodule dependencies.
       uses: actions/checkout@v3
