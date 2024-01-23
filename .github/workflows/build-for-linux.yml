@@ -55,6 +55,7 @@ jobs:
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         echo "pkg: ${PKG_CONFIG_PATH}"
         echo "lib: ${LD_LIBRARY_PATH}"
         (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build)
@@ -65,6 +66,7 @@ jobs:
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         echo "pkg: ${PKG_CONFIG_PATH}"
         echo "lib: ${LD_LIBRARY_PATH}"
         cmake -B ${{github.workspace}}/build
@@ -73,6 +75,7 @@ jobs:
       # Build your program with the given configuration
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --build ${{github.workspace}}/build
 
     - name: Build documentation.
