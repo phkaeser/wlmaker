@@ -84,7 +84,8 @@ jobs:
     - name: Create the tarball.
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        cmake --install ${{github.workspace}}/build
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} --install ${{github.workspace}}/build
         cd "${{ env.INSTALL_PATH }}" && tar -zcvf wlmaker-head.tar.gz wlmaker
 
     - name: Upload artifact.
