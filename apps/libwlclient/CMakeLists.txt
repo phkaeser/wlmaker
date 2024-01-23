@@ -36,3 +36,9 @@ TARGET_LINK_LIBRARIES(
   libwlclient
   base
   PkgConfig::WAYLAND)
+INCLUDE(CheckSymbolExists)
+CHECK_SYMBOL_EXISTS(signalfd "sys/signalfd.h" HAVE_SIGNALFD)
+IF(NOT HAVE_SIGNALFD)
+  PKG_CHECK_MODULES(EPOLL REQUIRED IMPORTED_TARGET epoll-shim)
+  TARGET_LINK_LIBRARIES(libwlclient PkgConfig::EPOLL)
+ENDIF()
