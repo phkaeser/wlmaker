@@ -65,7 +65,7 @@ jobs:
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake -B ${{github.workspace}}/build
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B ${{github.workspace}}/build
 
     - name: Build wlmaker.
       # Build your program with the given configuration
