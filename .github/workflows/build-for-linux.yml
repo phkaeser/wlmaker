@@ -56,8 +56,6 @@ jobs:
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        echo "pkg: ${PKG_CONFIG_PATH}"
-        echo "lib: ${LD_LIBRARY_PATH}"
         (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build)
         cmake --build ${{github.workspace}}/dependencies/build
 
@@ -67,8 +65,6 @@ jobs:
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        echo "pkg: ${PKG_CONFIG_PATH}"
-        echo "lib: ${LD_LIBRARY_PATH}"
         cmake -B ${{github.workspace}}/build
 
     - name: Build wlmaker.
@@ -85,8 +81,8 @@ jobs:
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} --install ${{github.workspace}}/build
-        cd "${{ env.INSTALL_PATH }}" && tar -zcvf wlmaker-head.tar.gz wlmaker
+        cmake --install ${{github.workspace}}/build
+        cd "${HOME}" && tar -zcvf wlmaker-head.tar.gz wlmaker
 
     - name: Upload artifact.
       uses: actions/upload-artifact@v2
