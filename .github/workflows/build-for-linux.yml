@@ -82,13 +82,13 @@ jobs:
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --install ${{github.workspace}}/build
-        cd "${HOME}" && tar -zcvf wlmaker-head.tar.gz wlmaker
+        cd "${HOME}" && tar -zcvf ${{github.workspace}}/wlmaker-head.tar.gz wlmaker
 
     - name: Upload artifact.
       uses: actions/upload-artifact@v2
       with:
         name: wlmaker
-        path: wlmaker-head.tar.gz
+        path: ${{github.workspace}}/wlmaker-head.tar.gz
 
 #    - name: Run all tests
 #      working-directory: ${{github.workspace}}/build
