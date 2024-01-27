@@ -93,7 +93,7 @@ jobs:
       with:
         name: wlmaker-head
         # Note: Artefacts will be zipped.
-        path: wlmaker-head.tar.zip
+        path: wlmaker-head.tar
 
     - name: Run all tests
       run: |
