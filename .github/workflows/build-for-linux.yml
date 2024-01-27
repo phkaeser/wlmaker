@@ -85,6 +85,9 @@ jobs:
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --install build/
         tar -cvf wlmaker-head.tar wlmaker
+        echo "Packaging..."
+        cd ${HOME}
+        tar -cvf wlmaker-head.tar wlmaker
         echo "Packaged."
         zip wlmaker-head.tar.zip wlmaker-head.tar
 
