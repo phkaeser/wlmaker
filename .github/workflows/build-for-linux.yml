@@ -84,8 +84,7 @@ jobs:
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --install build/
-        tar -cvf wlmaker-head.tar wlmaker
-        echo "Packaging..."
+        echo "Packaging from ${HOME}..."
         cd ${HOME}
         tar -cvf wlmaker-head.tar wlmaker
         echo "Packaged."
