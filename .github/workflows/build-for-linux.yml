@@ -89,12 +89,14 @@ jobs:
         tar -cvf wlmaker-head.tar wlmaker
         echo "Packaged."
         zip wlmaker-head.tar.zip wlmaker-head.tar
+        ls -ld wlm*
 
     - name: Upload the tarball.
       uses: actions/upload-artifact@v2
       with:
-        name: wlmaker-head
-        path: wlmaker-head.tar.zip
+        name: wlmaker-head.tar.zip
+        path: ${HOME}/wlmaker-head.tar.zip
+        if-no-files-found: error
 
     - name: Run all tests
       run: |
