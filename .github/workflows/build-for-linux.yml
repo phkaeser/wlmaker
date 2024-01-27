@@ -84,16 +84,15 @@ jobs:
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --install build/
-        echo "Packaging: cd ${HOME} && tar -cvf ${HOME}/wlmaker-head.tar wlmaker"
-        cd "${HOME}" && tar -cvf "${HOME}/wlmaker-head.tar" wlmaker
+        tar -cvf wlmaker-head.tar wlmaker
         echo "Packaged."
+        zip wlmaker-head.tar.zip wlmaker-head.tar
 
     - name: Upload the tarball.
       uses: actions/upload-artifact@v2
       with:
         name: wlmaker-head
-        # Note: Artefacts will be zipped.
-        path: wlmaker-head.tar
+        path: wlmaker-head.tar.zip
 
     - name: Run all tests
       run: |
