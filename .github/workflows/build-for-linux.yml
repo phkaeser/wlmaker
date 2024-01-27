@@ -56,40 +56,40 @@ jobs:
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build)
-        cmake --build ${{github.workspace}}/dependencies/build
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} dependencies/ -B dependencies/build/
+        cmake --build dependencies/build
 
     - name: Configure wlmaker through CMake.
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B ${{github.workspace}}/build
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build/
 
     - name: Build wlmaker.
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake --build ${{github.workspace}}/build
+        cmake --build build/
 
     - name: Build documentation.
-      run: cmake --build ${{github.workspace}}/build --target doc
+      run: cmake --build build/ --target doc
 
 #    - name: Create a tarball.
 #      run: |
 #        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
 #        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-#        cmake --install ${{github.workspace}}/build
-#        cd "${HOME}" && tar -cvf ${{github.workspace}}/wlmaker-head.tar wlmaker
+#        cmake --install build/
+#        cd "${HOME}" && tar -cvf "${HOME}/wlmaker-head.tar" wlmaker
 #
 #    - name: Upload the tarball.
 #      uses: actions/upload-artifact@v2
 #      with:
 #        name: wlmaker-head
 #        # Note: Artefacts will be zipped.
-#        path: ${{github.workspace}}/wlmaker-head.tar
+#        path: "${HOME}/wlmaker-head.tar"
 
     - name: Run all tests
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        ctest --test-dir ${{github.workspace}}/build --build-run-dir ${{github.workspace}}/build -V
+        ctest --test-dir build/ --build-run-dir build/ -V
