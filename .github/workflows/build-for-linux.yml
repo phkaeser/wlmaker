@@ -15,11 +15,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    container:
+      image: debian:bookworm
+      
     steps:
     - name: Install package dependencies.
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git \
+        apt-get update
+        apt-get install -y git \
           cmake \
           doxygen \
           foot \
@@ -75,19 +78,19 @@ jobs:
     - name: Build documentation.
       run: cmake --build build/ --target doc
 
-#    - name: Create a tarball.
-#      run: |
-#        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-#        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-#        cmake --install build/
-#        cd "${HOME}" && tar -cvf "${HOME}/wlmaker-head.tar" wlmaker
-#
-#    - name: Upload the tarball.
-#      uses: actions/upload-artifact@v2
-#      with:
-#        name: wlmaker-head
-#        # Note: Artefacts will be zipped.
-#        path: "${HOME}/wlmaker-head.tar"
+    - name: Create a tarball.
+      run: |
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake --install build/
+        cd "${HOME}" && tar -cvf "${HOME}/wlmaker-head.tar" wlmaker
+
+    - name: Upload the tarball.
+      uses: actions/upload-artifact@v2
+      with:
+        name: wlmaker-head
+        # Note: Artefacts will be zipped.
+        path: "${HOME}/wlmaker-head.tar"
 
     - name: Run all tests
       run: |
