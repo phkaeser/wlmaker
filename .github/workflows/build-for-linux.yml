@@ -87,12 +87,12 @@ jobs:
         echo "Packaging from ${HOME}..."
         cd ${HOME}
         tar -cvf wlmaker-head.tar wlmaker
-        echo "Packaged."
-        zip wlmaker-head.tar.zip wlmaker-head.tar
+        echo "Packaged, to ${{ github.workspace}}."
+        zip ${{ github.workspace }}/wlmaker-head.tar.zip wlmaker-head.tar
         ls -ld wlm*
 
     - name: Upload the tarball.
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: wlmaker-head
         path: wlmaker-head.tar.zip
