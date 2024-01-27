@@ -88,14 +88,14 @@ jobs:
         cd ${HOME}
         tar -cvf wlmaker-head.tar wlmaker
         echo "Packaged, to ${{ github.workspace}}."
-        zip ${{ github.workspace }}/wlmaker-head.tar.zip wlmaker-head.tar
+        zip wlmaker-head.tar.zip wlmaker-head.tar
         ls -ld wlm*
 
     - name: Upload the tarball.
       uses: actions/upload-artifact@v4
       with:
         name: wlmaker-head
-        path: wlmaker-head.tar.zip
+        path: ${{ github.workspace }}/wlmaker-head.tar.zip
         if-no-files-found: error
 
     - name: Run all tests
