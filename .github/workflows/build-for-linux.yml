@@ -15,6 +15,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    container:
+      image: debian:bookworm
+      
     steps:
     - name: Install package dependencies.
       run: |
@@ -60,7 +63,6 @@ jobs:
         cmake --build ${{github.workspace}}/dependencies/build
 
     - name: Configure wlmaker through CMake.
-      # Configure CMake in a 'build' subdirectory.
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
@@ -68,7 +70,6 @@ jobs:
         cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B ${{github.workspace}}/build
 
     - name: Build wlmaker.
-      # Build your program with the given configuration
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
@@ -77,25 +78,21 @@ jobs:
     - name: Build documentation.
       run: cmake --build ${{github.workspace}}/build --target doc
 
-    - name: Create the tarball.
+    - name: Create a tarball.
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --install ${{github.workspace}}/build
-        cd "${HOME}" && tar -zcvf ${{github.workspace}}/wlmaker-head.tar.gz wlmaker
+        cd "${HOME}" && tar -cvf ${{github.workspace}}/wlmaker-head.tar wlmaker
 
-    - name: Upload artifact.
+    - name: Upload the tarball.
       uses: actions/upload-artifact@v2
       with:
-        name: wlmaker
-        path: ${{github.workspace}}/wlmaker-head.tar.gz
+        name: wlmaker-head
+        # Note: Artefacts will be zipped.
+        path: ${{github.workspace}}/wlmaker-head.tar
 
-#    - name: Run all tests
-#      working-directory: ${{github.workspace}}/build
-#      # Execute tests defined by the CMake configuration.
-#      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-#      run: |
-#        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-#        #ctest --test-dir ${{github.workspace}}/build
-#        ${{github.workspace}}/build/src/toolkit/toolkit_test
-
+    - name: Run all tests
+      run: |
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        ctest --test-dir ${{github.workspace}}/build --build-run-dir ${{github.workspace}}/build -V
