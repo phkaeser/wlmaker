@@ -2,9 +2,9 @@ name: Build for Linux
 
 on:
   push:
-    branches: [ "main", "workflow" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "workflow" ]
+    branches: [ "main" ]
 
 env:
   INSTALL_PATH: "${HOME}/wlmaker"
@@ -15,14 +15,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    container:
-      image: debian:bookworm
-      
     steps:
     - name: Install package dependencies.
       run: |
-        apt-get update
-        apt-get install -y git \
+        sudo apt-get update
+        sudo apt-get install -y git \
           cmake \
           doxygen \
           foot \
@@ -78,25 +75,6 @@ jobs:
 
     - name: Build documentation.
       run: cmake --build build/ --target doc
-
-    - name: Create a tarball.
-      run: |
-        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake --install build/
-        echo "Packaging from ${HOME}..."
-        cd ${HOME}
-        tar -cvf wlmaker-head.tar wlmaker
-        echo "Packaged, to ${{ github.workspace}}."
-        zip wlmaker-head.tar.zip wlmaker-head.tar
-        ls -ld wlm*
-
-    - name: Upload the tarball.
-      uses: actions/upload-artifact@v4
-      with:
-        name: wlmaker-head
-        path: ${{ github.workspace }}/wlmaker-head.tar.zip
-        if-no-files-found: error
 
     - name: Run all tests
       run: |
