@@ -232,6 +232,9 @@ Features for further versions, not ordered by priority nor timeline.
   * Move from cairo toy interface to using pango proper.
   * All text strings to be configurable and swappable.
 
+* Commandline flags to support:
+  * icon lookup paths beyond the hardcoded defaults.
+
 ## Visualization and effects
 
 * Animations
