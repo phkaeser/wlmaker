@@ -115,7 +115,7 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         // `wlr_scene_layer_surface` for popups of the WLR layer surface.
         break;
 
-    case WLR_XDG_SURFACE_ROLE_TOPLEVEL:
+    case WLR_XDG_SURFACE_ROLE_TOPLEVEL:;
 
         wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
             wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
