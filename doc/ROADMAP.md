@@ -263,6 +263,7 @@ Features for further versions, not ordered by priority nor timeline.
 * Build & compile off dependency versions found in recent distros (libwlroot, ...).
 * Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
 * Provide binary package of wlmaker.
+* Run github workflows to build with GCC and Clang, x86_64 and arm64, and Linux + *BSD.
 
 ## Non-Goals
 
