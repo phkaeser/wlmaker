@@ -64,6 +64,9 @@ static bool _wlmtk_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
+static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -257,6 +260,10 @@ struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
         wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
     if (NULL == surface_ptr->wlr_scene_tree_ptr) return NULL;
 
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_scene_tree_ptr->node.events.destroy,
+        &surface_ptr->wlr_scene_tree_node_destroy_listener,
+        _wlmtk_surface_handle_wlr_scene_tree_node_destroy);
     return &surface_ptr->wlr_scene_tree_ptr->node;
 }
 
@@ -459,6 +466,24 @@ bool _wlmtk_surface_element_pointer_button(
         return true;
     }
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `destroy` signal of `wlr_scene_tree_ptr->node`.
+ *
+ * We have this registered to clear out the extra pointer we're holding to
+ * @ref wlmtk_surface_t::wlr_scene_tree_ptr. @ref wlmtk_element_t has a
+ * separate destroy handler that will take care of actual cleanup.
+ * */
+void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, wlr_scene_tree_node_destroy_listener);
+    surface_ptr->wlr_scene_tree_ptr = NULL;
+    wl_list_remove(&surface_ptr->wlr_scene_tree_node_destroy_listener.link);
 }
 
 /* ------------------------------------------------------------------------- */

@@ -56,6 +56,8 @@ struct _wlmtk_surface_t {
 
     /** The scene API node displaying a surface and all it's sub-surfaces. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
+    /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
+    struct wl_listener        wlr_scene_tree_node_destroy_listener;
 
     /** Committed width of the surface, in pixels. */
     int                       committed_width;
