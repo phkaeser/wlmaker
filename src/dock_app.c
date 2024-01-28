@@ -294,7 +294,7 @@ void tile_callback(
         return;
     }
 
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr;
     subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
         dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
         subprocess_ptr,
@@ -309,7 +309,6 @@ void tile_callback(
     // error status and permitting to kill the subprocess.
     // Note: There may be more than 1 subprocess for the launcher (possibly
     // depending on configuration.
-    subprocess_handle_ptr = subprocess_handle_ptr;
 }
 
 /* ------------------------------------------------------------------------- */

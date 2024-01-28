@@ -231,11 +231,8 @@ void _menu_motion(
  *
  * @param interactive_ptr
  */
-void _menu_focus(wlmaker_interactive_t *interactive_ptr)
+void _menu_focus(    __UNUSED__ wlmaker_interactive_t *interactive_ptr)
 {
-    wlmaker_menu_t *menu_ptr = menu_from_interactive(interactive_ptr);
-
-    menu_ptr = menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -251,13 +248,11 @@ void _menu_focus(wlmaker_interactive_t *interactive_ptr)
  */
 void _menu_button(
     wlmaker_interactive_t *interactive_ptr,
-    double x, double y,
+    __UNUSED__ double x,
+    __UNUSED__ double y,
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr)
 {
     wlmaker_menu_t *menu_ptr = menu_from_interactive(interactive_ptr);
-
-    menu_ptr = menu_ptr;
-    x = x; y = y;
 
     if (wlr_pointer_button_event_ptr->button != BTN_RIGHT) return;
     switch (wlr_pointer_button_event_ptr->state) {

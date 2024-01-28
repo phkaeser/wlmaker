@@ -89,10 +89,9 @@ void wlmaker_menu_item_destroy(wlmaker_menu_item_t *menu_item_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_menu_item_get_desired_size(
-    const wlmaker_menu_item_t *menu_item_ptr,
+    __UNUSED__ const wlmaker_menu_item_t *menu_item_ptr,
     uint32_t *width_ptr, uint32_t *height_ptr)
 {
-    menu_item_ptr = menu_item_ptr;  // currently unused.
     if (NULL != width_ptr) *width_ptr = 256;
     if (NULL != height_ptr) *height_ptr = 22;
 }
