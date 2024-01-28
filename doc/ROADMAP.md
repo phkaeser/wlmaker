@@ -258,6 +258,12 @@ Features for further versions, not ordered by priority nor timeline.
 * Laptop battery status.
 * Julia set.
 
+## Build, compile, deployment
+
+* Build & compile off dependency versions found in recent distros (libwlroot, ...).
+* Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
+* Provide binary package of wlmaker.
+
 ## Non-Goals
 
 * Do not (re)create a GNUStep environment.
