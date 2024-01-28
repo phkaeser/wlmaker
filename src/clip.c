@@ -322,12 +322,10 @@ wlmaker_clip_t *clip_from_view(wlmaker_view_t *view_ptr)
  * @param width_ptr
  * @param height_ptr
  */
-void clip_get_size(wlmaker_view_t *view_ptr,
+void clip_get_size(__UNUSED__ wlmaker_view_t *view_ptr,
                    uint32_t *width_ptr,
                    uint32_t *height_ptr)
 {
-    wlmaker_clip_t *clip_ptr = clip_from_view(view_ptr);
-    clip_ptr = clip_ptr;  // unused.
     if (NULL != width_ptr) *width_ptr = 64;
     if (NULL != height_ptr) *height_ptr = 64;
 }
@@ -368,13 +366,12 @@ void draw_workspace(cairo_t *cairo_ptr, int num, const char *name_ptr)
  * @param interactive_ptr
  * @param data_ptr            points to the `wlmaker_clip_t`.
  */
-void callback_prev(wlmaker_interactive_t *interactive_ptr,
+void callback_prev(__UNUSED__ wlmaker_interactive_t *interactive_ptr,
                    void *data_ptr)
 {
     wlmaker_clip_t *clip_ptr = (wlmaker_clip_t*)data_ptr;
 
     wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
-    interactive_ptr = interactive_ptr;  // unused.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -384,13 +381,12 @@ void callback_prev(wlmaker_interactive_t *interactive_ptr,
  * @param interactive_ptr
  * @param data_ptr            points to the `wlmaker_clip_t`.
  */
-void callback_next(wlmaker_interactive_t *interactive_ptr,
+void callback_next(__UNUSED__ wlmaker_interactive_t *interactive_ptr,
                    void *data_ptr)
 {
     wlmaker_clip_t *clip_ptr = (wlmaker_clip_t*)data_ptr;
 
     wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
-    interactive_ptr = interactive_ptr;  // unused.
 }
 
 /* ------------------------------------------------------------------------- */

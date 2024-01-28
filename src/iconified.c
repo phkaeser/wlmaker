@@ -197,11 +197,10 @@ void wlmaker_dockapp_iconified_attach(
     wlmaker_dockapp_iconified_t *dai_ptr,
     struct wlr_surface *wlr_surface_ptr)
 {
-    struct wlr_scene_surface *wlr_scene_surface_ptr = wlr_scene_surface_create(
-        dai_ptr->wlr_scene_tree_ptr,
-        wlr_surface_ptr);
-
-    wlr_scene_surface_ptr = wlr_scene_surface_ptr;
+    __UNUSED__ struct wlr_scene_surface *wlr_scene_surface_ptr =
+        wlr_scene_surface_create(
+            dai_ptr->wlr_scene_tree_ptr,
+            wlr_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
