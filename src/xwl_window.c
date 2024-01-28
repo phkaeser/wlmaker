@@ -90,6 +90,9 @@ static void handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static uint32_t _xwl_window_content_request_maximized(
+    wlmtk_content_t *content_ptr,
+    bool maximized);
 static uint32_t _xwl_window_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
@@ -104,6 +107,7 @@ static void _xwl_window_content_set_activated(
 
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
 const wlmtk_content_vmt_t     _xwl_window_content_vmt = {
+    .request_maximized = _xwl_window_content_request_maximized,
     .request_size = _xwl_window_content_request_size,
     .request_close = _xwl_window_content_request_close,
     .set_activated = _xwl_window_content_set_activated,
@@ -184,6 +188,7 @@ void handle_destroy(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, destroy_listener);
+
     wlmaker_xwl_window_destroy(xwl_window_ptr);
 }
 
@@ -330,6 +335,11 @@ void handle_surface_commit(
         xwl_window_ptr->surface_ptr, 0,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
+    wlmtk_content_commit_size(
+        &xwl_window_ptr->content,
+        0,
+        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
+        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -361,6 +371,22 @@ void handle_surface_unmap(
     wlmtk_workspace_unmap_window(
         wlmtk_window_get_workspace(xwl_window_ptr->window_ptr),
         xwl_window_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_maximized. */
+uint32_t _xwl_window_content_request_maximized(
+    wlmtk_content_t *content_ptr,
+    bool maximized)
+{
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_xwl_window_t, content);
+
+    bs_log(BS_INFO, "XWL window %p request maximized %d",
+           xwl_window_ptr, maximized);
+
+    wlmtk_window_commit_maximized(xwl_window_ptr->window_ptr, maximized);
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
