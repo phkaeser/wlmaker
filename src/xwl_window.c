@@ -43,6 +43,8 @@ struct _wlmaker_xwl_window_t {
 
     /** Toolkit content state. */
     wlmtk_content_t           content;
+    /** A fake configure serial, tracked here. */
+    uint32_t                  serial;
 
     /** Listener for the `destroy` signal of `wlr_xwayland_surface`. */
     struct wl_listener        destroy_listener;
@@ -217,8 +219,6 @@ void handle_request_configure(
            cfg_event_ptr->x, cfg_event_ptr->y,
            cfg_event_ptr->width, cfg_event_ptr->height,
            cfg_event_ptr->mask);
-    bs_log(BS_INFO, "wlr_surface %p",
-           xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
 
     // FIXME:
     // -> if we have content/surface: check what that means, with respect to
@@ -325,23 +325,18 @@ void handle_surface_commit(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, surface_commit_listener);
 
-    bs_log(BS_INFO, "XWL window %p commit surface %p",
-           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface);
-
-    bs_log(BS_INFO, "current width x height: %d x %d",
+    bs_log(BS_DEBUG, "XWL window %p commit surface %p, current %d x %d",
+           xwl_window_ptr, xwl_window_ptr->wlr_xwayland_surface_ptr->surface,
            xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
            xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
-    bs_log(BS_INFO, "pending width x height: %d x %d",
-           xwl_window_ptr->wlr_xwayland_surface_ptr->surface->pending.width,
-           xwl_window_ptr->wlr_xwayland_surface_ptr->surface->pending.height);
 
     wlmtk_surface_commit_size(
-        xwl_window_ptr->surface_ptr, 0,
+        xwl_window_ptr->surface_ptr, xwl_window_ptr->serial,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
     wlmtk_content_commit_size(
         &xwl_window_ptr->content,
-        0,
+        xwl_window_ptr->serial,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 }
@@ -385,10 +380,6 @@ uint32_t _xwl_window_content_request_maximized(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_window_t, content);
-
-    bs_log(BS_INFO, "XWL window %p request maximized %d",
-           xwl_window_ptr, maximized);
-
     wlmtk_window_commit_maximized(xwl_window_ptr->window_ptr, maximized);
     return 0;
 }
@@ -401,10 +392,6 @@ uint32_t _xwl_window_content_request_fullscreen(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_window_t, content);
-
-    bs_log(BS_INFO, "XWL window %p request fullscreen %d",
-           xwl_window_ptr, fullscreen);
-
     wlmtk_window_commit_fullscreen(xwl_window_ptr->window_ptr, fullscreen);
     return 0;
 }
@@ -418,12 +405,10 @@ uint32_t _xwl_window_content_request_size(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_window_t, content);
-    bs_log(BS_INFO, "XWL window %p request size %d x %d",
-           xwl_window_ptr, width, height);
     wlr_xwayland_surface_configure(
         xwl_window_ptr->wlr_xwayland_surface_ptr,
         0, 0, width, height);
-    return 0;
+    return xwl_window_ptr->serial++;
 }
 
 /* ------------------------------------------------------------------------- */
