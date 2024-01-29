@@ -71,6 +71,11 @@ static void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmtk_surface_commit_size(
+    wlmtk_surface_t *surface_ptr,
+    int width,
+    int height);
+
 /* == Data ================================================================= */
 
 /** Method table for the element's virtual methods. */
@@ -473,9 +478,25 @@ void _wlmtk_surface_handle_surface_commit(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
+    _wlmtk_surface_commit_size(
+        surface_ptr,
+        surface_ptr->wlr_surface_ptr->current.width,
+        surface_ptr->wlr_surface_ptr->current.height);
+}
 
-    int width = surface_ptr->wlr_surface_ptr->current.width;
-    int height = surface_ptr->wlr_surface_ptr->current.height;
+/* ------------------------------------------------------------------------- */
+/**
+ * Surface commits a new size: Store the size, and update the parent's layout.
+ *
+ * @param surface_ptr
+ * @param width
+ * @param height
+ */
+void _wlmtk_surface_commit_size(
+    wlmtk_surface_t *surface_ptr,
+    int width,
+    int height)
+{
     if (surface_ptr->committed_width != width ||
         surface_ptr->committed_height != height) {
         surface_ptr->committed_width = width;
@@ -487,6 +508,7 @@ void _wlmtk_surface_handle_surface_commit(
             surface_ptr->super_element.parent_container_ptr);
     }
 }
+
 
 /* == Fake surface methods ================================================= */
 
@@ -534,18 +556,7 @@ void wlmtk_fake_surface_commit_size(
     int width,
     int height)
 {
-    // FIXME: Don't duplicate...
-    if (fake_surface_ptr->surface.committed_width != width ||
-        fake_surface_ptr->surface.committed_height != height) {
-        fake_surface_ptr->surface.committed_width = width;
-        fake_surface_ptr->surface.committed_height = height;
-    }
-
-    if (NULL != fake_surface_ptr->surface.super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
-            fake_surface_ptr->surface.super_element.parent_container_ptr);
-    }
-
+    _wlmtk_surface_commit_size(&fake_surface_ptr->surface, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
