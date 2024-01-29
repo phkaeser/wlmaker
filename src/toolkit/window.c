@@ -418,10 +418,10 @@ void wlmtk_window_request_fullscreen(
     // Must be mapped.x
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
 
+    window_ptr->inorganic_sizing = fullscreen;
+
     // Will not line up another pending update.
     wlmtk_content_request_fullscreen(window_ptr->content_ptr, fullscreen);
-
-    window_ptr->inorganic_sizing = fullscreen;
 
     if (fullscreen) {
         box = wlmtk_workspace_get_fullscreen_extents(
