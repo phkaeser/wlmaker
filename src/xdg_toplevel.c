@@ -496,11 +496,9 @@ void handle_surface_commit(
     BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_surface_ptr->role ==
               WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
-    wlmtk_content_commit_size(
+    wlmtk_content_commit_serial(
         &xdg_tl_surface_ptr->super_content,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial);
 
     wlmtk_window_commit_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,

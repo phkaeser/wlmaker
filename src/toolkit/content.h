@@ -77,7 +77,7 @@ struct _wlmtk_content_vmt_t {
      * Requests the content to change to the specified size.
      *
      * This may be implemented as an asynchronous implementation. Once the
-     * content has committed the adapted size, @ref wlmtk_content_commit_size
+     * content has committed the adapted size, @ref wlmtk_content_commit_serial
      * should be called with the corresponding serial.
      *
      * @param content_ptr
@@ -231,11 +231,9 @@ void wlmtk_content_get_size(
     int *height_ptr);
 
 /** Commits size: Calls into @ref wlmtk_window_serial. */
-void wlmtk_content_commit_size(
+void wlmtk_content_commit_serial(
     wlmtk_content_t *content_ptr,
-    uint32_t serial,
-    int width,
-    int height);
+    uint32_t serial);
 
 /** Returns the superclass' instance of @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);

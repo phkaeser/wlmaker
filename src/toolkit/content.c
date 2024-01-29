@@ -131,11 +131,9 @@ void wlmtk_content_get_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_content_commit_size(
+void wlmtk_content_commit_serial(
     wlmtk_content_t *content_ptr,
-    uint32_t serial,
-    __UNUSED__ int width,
-    __UNUSED__ int height)
+    uint32_t serial)
 {
     if (NULL != content_ptr->window_ptr) {
         wlmtk_window_serial(content_ptr->window_ptr, serial);
@@ -203,11 +201,9 @@ void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
 {
-    wlmtk_content_commit_size(
+    wlmtk_content_commit_serial(
         &fake_content_ptr->content,
-        fake_content_ptr->serial,
-        fake_content_ptr->requested_width,
-        fake_content_ptr->requested_height);
+        fake_content_ptr->serial);
 
     // FIXME: Replace this, the direct wlr_surface commit event will do that.
     wlmtk_surface_commit_size(

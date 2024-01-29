@@ -334,11 +334,9 @@ void handle_surface_commit(
         xwl_window_ptr->surface_ptr, xwl_window_ptr->serial,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
         xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
-    wlmtk_content_commit_size(
+    wlmtk_content_commit_serial(
         &xwl_window_ptr->content,
-        xwl_window_ptr->serial,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
+        xwl_window_ptr->serial);
 }
 
 /* ------------------------------------------------------------------------- */
