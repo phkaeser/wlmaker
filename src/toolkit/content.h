@@ -245,6 +245,8 @@ extern const bs_test_case_t wlmtk_content_test_cases[];
 struct _wlmtk_fake_content_t {
     /** Superclass: content. */
     wlmtk_content_t           content;
+    /** Fake surface, the argument to @ref wlmtk_fake_content_create. */
+    wlmtk_fake_surface_t      *fake_surface_ptr;
 
     /** Reports whether @ref wlmtk_content_request_close was called. */
     bool                      request_close_called;

@@ -317,7 +317,7 @@ void handle_dissociate(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Temporary: Surface commit handler. */
+/** Surface commit handler: Pass on the current serial. */
 void handle_surface_commit(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -330,10 +330,6 @@ void handle_surface_commit(
            xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
            xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 
-    wlmtk_surface_commit_size(
-        xwl_window_ptr->surface_ptr, xwl_window_ptr->serial,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.width,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->surface->current.height);
     wlmtk_content_commit_serial(
         &xwl_window_ptr->content,
         xwl_window_ptr->serial);

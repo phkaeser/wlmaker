@@ -114,22 +114,6 @@ void wlmtk_surface_get_size(
     int *height_ptr);
 
 /**
- * Commits the given dimensions for the surface.
- *
- * FIXME: Should no longer be required externally.
- *
- * @param surface_ptr
- * @param serial
- * @param width
- * @param height
- */
-void wlmtk_surface_commit_size(
-    wlmtk_surface_t *surface_ptr,
-    uint32_t serial,
-    int width,
-    int height);
-
-/**
  * Activates the surface.
  *
  * @param surface_ptr
@@ -150,6 +134,12 @@ struct _wlmtk_fake_surface_t {
 
 /** Ctor for the fake surface.*/
 wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
+
+/** Fakes a wlr_surface commit event. */
+void wlmtk_fake_surface_commit_size(
+    wlmtk_fake_surface_t *fake_surface_ptr,
+    int width,
+    int height);
 
 /** Dtor for the fake surface.*/
 void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr);

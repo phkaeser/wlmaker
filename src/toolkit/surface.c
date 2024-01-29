@@ -126,27 +126,6 @@ void wlmtk_surface_get_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_surface_commit_size(
-    wlmtk_surface_t *surface_ptr,
-    __UNUSED__ uint32_t serial,
-    int width,
-    int height)
-{
-    // TODO(kaeser@gubbe.ch): don't update layout if size didn't change.
-
-    if (surface_ptr->committed_width != width ||
-        surface_ptr->committed_height != height) {
-        surface_ptr->committed_width = width;
-        surface_ptr->committed_height = height;
-    }
-
-    if (NULL != surface_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
-            surface_ptr->super_element.parent_container_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated)
@@ -494,10 +473,19 @@ void _wlmtk_surface_handle_surface_commit(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
-    wlmtk_surface_commit_size(
-        surface_ptr, 0,
-        surface_ptr->wlr_surface_ptr->current.width,
-        surface_ptr->wlr_surface_ptr->current.height);
+
+    int width = surface_ptr->wlr_surface_ptr->current.width;
+    int height = surface_ptr->wlr_surface_ptr->current.height;
+    if (surface_ptr->committed_width != width ||
+        surface_ptr->committed_height != height) {
+        surface_ptr->committed_width = width;
+        surface_ptr->committed_height = height;
+    }
+
+    if (NULL != surface_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_update_layout(
+            surface_ptr->super_element.parent_container_ptr);
+    }
 }
 
 /* == Fake surface methods ================================================= */
@@ -538,6 +526,26 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
         &fake_surface_ptr->surface.super_element,
         &_wlmtk_fake_surface_element_vmt);
     return fake_surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_surface_commit_size(
+    wlmtk_fake_surface_t *fake_surface_ptr,
+    int width,
+    int height)
+{
+    // FIXME: Don't duplicate...
+    if (fake_surface_ptr->surface.committed_width != width ||
+        fake_surface_ptr->surface.committed_height != height) {
+        fake_surface_ptr->surface.committed_width = width;
+        fake_surface_ptr->surface.committed_height = height;
+    }
+
+    if (NULL != fake_surface_ptr->surface.super_element.parent_container_ptr) {
+        wlmtk_container_update_layout(
+            fake_surface_ptr->surface.super_element.parent_container_ptr);
+    }
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -645,7 +653,7 @@ void test_fake_commit(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, w);
     BS_TEST_VERIFY_EQ(test_ptr, 0, h);
 
-    wlmtk_surface_commit_size(&fake_surface_ptr->surface, 42, 200, 100);
+    wlmtk_fake_surface_commit_size(fake_surface_ptr, 200, 100);
     wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
     BS_TEST_VERIFY_EQ(test_ptr, 200, w);
     BS_TEST_VERIFY_EQ(test_ptr, 100, h);

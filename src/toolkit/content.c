@@ -179,6 +179,7 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(
     wlmtk_fake_content_t *fake_content_ptr = logged_calloc(
         1, sizeof(wlmtk_fake_content_t));
     if (NULL == fake_content_ptr) return NULL;
+    fake_content_ptr->fake_surface_ptr = fake_surface_ptr;
 
     if (!wlmtk_content_init(&fake_content_ptr->content,
                             &fake_surface_ptr->surface,
@@ -205,10 +206,8 @@ void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
         &fake_content_ptr->content,
         fake_content_ptr->serial);
 
-    // FIXME: Replace this, the direct wlr_surface commit event will do that.
-    wlmtk_surface_commit_size(
-        fake_content_ptr->content.surface_ptr,
-        fake_content_ptr->serial,
+    wlmtk_fake_surface_commit_size(
+        fake_content_ptr->fake_surface_ptr,
         fake_content_ptr->requested_width,
         fake_content_ptr->requested_height);
 }
