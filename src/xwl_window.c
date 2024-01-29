@@ -93,6 +93,9 @@ static void handle_surface_unmap(
 static uint32_t _xwl_window_content_request_maximized(
     wlmtk_content_t *content_ptr,
     bool maximized);
+static uint32_t _xwl_window_content_request_fullscreen(
+    wlmtk_content_t *content_ptr,
+    bool fullscreen);
 static uint32_t _xwl_window_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
@@ -108,6 +111,7 @@ static void _xwl_window_content_set_activated(
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
 const wlmtk_content_vmt_t     _xwl_window_content_vmt = {
     .request_maximized = _xwl_window_content_request_maximized,
+    .request_fullscreen = _xwl_window_content_request_fullscreen,
     .request_size = _xwl_window_content_request_size,
     .request_close = _xwl_window_content_request_close,
     .set_activated = _xwl_window_content_set_activated,
@@ -386,6 +390,22 @@ uint32_t _xwl_window_content_request_maximized(
            xwl_window_ptr, maximized);
 
     wlmtk_window_commit_maximized(xwl_window_ptr->window_ptr, maximized);
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_fullscreen. */
+uint32_t _xwl_window_content_request_fullscreen(
+    wlmtk_content_t *content_ptr,
+    bool fullscreen)
+{
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_xwl_window_t, content);
+
+    bs_log(BS_INFO, "XWL window %p request fullscreen %d",
+           xwl_window_ptr, fullscreen);
+
+    wlmtk_window_commit_fullscreen(xwl_window_ptr->window_ptr, fullscreen);
     return 0;
 }
 
