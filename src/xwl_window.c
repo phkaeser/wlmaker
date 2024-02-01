@@ -115,7 +115,7 @@ static void _xwl_window_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated);
 
-static void apply_decorations(wlmaker_xwl_window_t *xwl_window_ptr);
+static void _xwl_window_apply_decorations(wlmaker_xwl_window_t *xwl_window_ptr);
 
 /* == Data ================================================================= */
 
@@ -297,7 +297,7 @@ void handle_associate(
         bs_log(BS_ERROR, "FIXME: Error.");
     }
 
-    apply_decorations(xwl_window_ptr);
+    _xwl_window_apply_decorations(xwl_window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -346,7 +346,7 @@ void handle_set_decorations(
 {
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, set_decorations_listener);
-    apply_decorations(xwl_window_ptr);
+    _xwl_window_apply_decorations(xwl_window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -468,7 +468,7 @@ void _xwl_window_content_set_activated(
  *
  * @param xwl_window_ptr
  */
-void apply_decorations(wlmaker_xwl_window_t *xwl_window_ptr)
+void _xwl_window_apply_decorations(wlmaker_xwl_window_t *xwl_window_ptr)
 {
     static const xwl_atom_identifier_t borderless_window_types[] = {
         NET_WM_WINDOW_TYPE_TOOLTIP, XWL_MAX_ATOM_ID};
