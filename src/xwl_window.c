@@ -337,6 +337,9 @@ void _xwl_window_handle_dissociate(
 /**
  * Handler for the `set_decorations` event of `struct wlr_xwayland_surface`.
  *
+ * Applies server-side decoration, if the X11 window is supposed to have
+ * decorations.
+ *
  * @param listener_ptr
  * @param data_ptr
  */
