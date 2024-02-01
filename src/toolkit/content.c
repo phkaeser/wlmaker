@@ -126,8 +126,12 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    BS_ASSERT(NULL != content_ptr->surface_ptr);
-    wlmtk_surface_get_size(content_ptr->surface_ptr, width_ptr, height_ptr);
+    if (NULL == content_ptr->surface_ptr) {
+        if (NULL != width_ptr) *width_ptr = 0;
+        if (NULL != height_ptr) *height_ptr = 0;
+    } else {
+        wlmtk_surface_get_size(content_ptr->surface_ptr, width_ptr, height_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
