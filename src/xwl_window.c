@@ -73,29 +73,29 @@ struct _wlmaker_xwl_window_t {
     struct wl_listener        surface_unmap_listener;
 };
 
-static void handle_destroy(
+static void _xwl_window_handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_request_configure(
+static void _xwl_window_handle_request_configure(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_associate(
+static void _xwl_window_handle_associate(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_dissociate(
+static void _xwl_window_handle_dissociate(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_set_decorations(
+static void _xwl_window_handle_set_decorations(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void handle_surface_commit(
+static void _xwl_window_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_surface_map(
+static void _xwl_window_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_surface_unmap(
+static void _xwl_window_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -155,23 +155,23 @@ wlmaker_xwl_window_t *wlmaker_xwl_window_create(
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
         &xwl_window_ptr->destroy_listener,
-        handle_destroy);
+        _xwl_window_handle_destroy);
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.request_configure,
         &xwl_window_ptr->request_configure_listener,
-        handle_request_configure);
+        _xwl_window_handle_request_configure);
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.associate,
         &xwl_window_ptr->associate_listener,
-        handle_associate);
+        _xwl_window_handle_associate);
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.dissociate,
         &xwl_window_ptr->dissociate_listener,
-        handle_dissociate);
+        _xwl_window_handle_dissociate);
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_decorations,
         &xwl_window_ptr->set_decorations_listener,
-        handle_set_decorations);
+        _xwl_window_handle_set_decorations);
 
     bs_log(BS_INFO, "Created XWL window %p for wlr_xwayland_surface %p",
            xwl_window_ptr, wlr_xwayland_surface_ptr);
@@ -204,7 +204,7 @@ void wlmaker_xwl_window_destroy(wlmaker_xwl_window_t *xwl_window_ptr)
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_destroy(
+void _xwl_window_handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -221,7 +221,7 @@ void handle_destroy(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_request_configure(
+void _xwl_window_handle_request_configure(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
@@ -257,7 +257,7 @@ void handle_request_configure(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_associate(
+void _xwl_window_handle_associate(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -269,15 +269,15 @@ void handle_associate(
     wlmtk_util_connect_listener_signal(
         &xwl_window_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
         &xwl_window_ptr->surface_commit_listener,
-        handle_surface_commit);
+        _xwl_window_handle_surface_commit);
     wlmtk_util_connect_listener_signal(
         &xwl_window_ptr->wlr_xwayland_surface_ptr->surface->events.map,
         &xwl_window_ptr->surface_map_listener,
-        handle_surface_map);
+        _xwl_window_handle_surface_map);
     wlmtk_util_connect_listener_signal(
         &xwl_window_ptr->wlr_xwayland_surface_ptr->surface->events.unmap,
         &xwl_window_ptr->surface_unmap_listener,
-        handle_surface_unmap);
+        _xwl_window_handle_surface_unmap);
 
     BS_ASSERT(NULL == xwl_window_ptr->surface_ptr);
     xwl_window_ptr->surface_ptr = wlmtk_surface_create(
@@ -307,7 +307,7 @@ void handle_associate(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_dissociate(
+void _xwl_window_handle_dissociate(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -340,7 +340,7 @@ void handle_dissociate(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_set_decorations(
+void _xwl_window_handle_set_decorations(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -351,7 +351,7 @@ void handle_set_decorations(
 
 /* ------------------------------------------------------------------------- */
 /** Surface commit handler: Pass on the current serial. */
-void handle_surface_commit(
+void _xwl_window_handle_surface_commit(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -370,7 +370,7 @@ void handle_surface_commit(
 
 /* ------------------------------------------------------------------------- */
 /** Surface map handler: also indicates the window can be mapped. */
-void handle_surface_map(
+void _xwl_window_handle_surface_map(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -387,7 +387,7 @@ void handle_surface_map(
 
 /* ------------------------------------------------------------------------- */
 /** Surface unmap: indicates the window should be unmapped. */
-void handle_surface_unmap(
+void _xwl_window_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
