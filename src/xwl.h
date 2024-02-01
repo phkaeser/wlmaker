@@ -27,9 +27,30 @@ typedef struct _wlmaker_xwl_t wlmaker_xwl_t;
 
 #include "server.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/xwayland.h>
+#undef WLR_USE_UNSTABLE
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** XCB Atom identifiers. */
+typedef enum {
+    NET_WM_WINDOW_TYPE_NORMAL,
+    NET_WM_WINDOW_TYPE_DIALOG,
+    NET_WM_WINDOW_TYPE_UTILITY,
+    NET_WM_WINDOW_TYPE_TOOLBAR,
+    NET_WM_WINDOW_TYPE_SPLASH,
+    NET_WM_WINDOW_TYPE_MENU,
+    NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
+    NET_WM_WINDOW_TYPE_POPUP_MENU,
+    NET_WM_WINDOW_TYPE_TOOLTIP,
+    NET_WM_WINDOW_TYPE_NOTIFICATION,
+
+    // Sentinel element.
+    XWL_MAX_ATOM_ID
+} xwl_atom_identifier_t;
 
 /**
  * Creates the XWayland interface.
@@ -47,6 +68,21 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr);
  * @param xwl_ptr
  */
 void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr);
+
+/**
+ * Returns whether the XWayland surface has any of the window types.
+ *
+ * @param xwl_ptr
+ * @param wlr_xwayland_surface_ptr
+ * @param atom_identifiers    NULL-terminated set of window type we're looking
+ *                            for.
+ *
+ * @return Whether `atom_identifiers` is in any of the window types.
+ */
+bool xwl_is_window_type(
+    wlmaker_xwl_t *xwl_ptr,
+    struct wlr_xwayland_surface *wlr_xwayland_surface_ptr,
+    const xwl_atom_identifier_t *atom_identifiers);
 
 #ifdef __cplusplus
 }  // extern "C"

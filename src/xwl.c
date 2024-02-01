@@ -71,23 +71,6 @@
 
 /* == Declarations ========================================================= */
 
-/** XCB Atom identifieres. */
-typedef enum {
-    NET_WM_WINDOW_TYPE_NORMAL,
-    NET_WM_WINDOW_TYPE_DIALOG,
-    NET_WM_WINDOW_TYPE_UTILITY,
-    NET_WM_WINDOW_TYPE_TOOLBAR,
-    NET_WM_WINDOW_TYPE_SPLASH,
-    NET_WM_WINDOW_TYPE_MENU,
-    NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
-    NET_WM_WINDOW_TYPE_POPUP_MENU,
-    NET_WM_WINDOW_TYPE_TOOLTIP,
-    NET_WM_WINDOW_TYPE_NOTIFICATION,
-
-    // Sentinel element.
-    XWL_MAX_ATOM_ID
-} xwl_atom_identifier_t;
-
 /** XWayland interface state. */
 struct _wlmaker_xwl_t {
     /** Back-link to server. */
@@ -245,9 +228,6 @@ static void handle_surface_unmap(
 
 static struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
     wlmaker_xwl_surface_t *xwl_surface_ptr);
-static bool is_window_type(
-    wlmaker_xwl_surface_t *xwl_surface_ptr,
-    const xwl_atom_identifier_t *atom_identifiers);
 
 /* == Data ================================================================= */
 
@@ -316,6 +296,35 @@ void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr)
     }
 
     free(xwl_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns whether the XWayland surface has any of the window types.
+ *
+ * @param xwl_ptr
+ * @param wlr_xwayland_surface_ptr
+ * @param atom_identifiers    NULL-terminated set of window type we're looking
+ *                            for.
+ *
+ * @return Whether `atom_identifiers` is in any of the window types.
+ */
+bool xwl_is_window_type(
+    wlmaker_xwl_t *xwl_ptr,
+    struct wlr_xwayland_surface *wlr_xwayland_surface_ptr,
+    const xwl_atom_identifier_t *atom_identifiers)
+{
+    for (; *atom_identifiers < XWL_MAX_ATOM_ID; ++atom_identifiers) {
+        for (size_t i = 0;
+             i < wlr_xwayland_surface_ptr->window_type_len;
+             ++i) {
+            if (wlr_xwayland_surface_ptr->window_type[i] ==
+                xwl_ptr->xcb_atoms[*atom_identifiers]) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /* == Local (static) methods =============================================== */
@@ -527,6 +536,7 @@ void handle_new_surface(struct wl_listener *listener_ptr,
     } else {
         wlmaker_xwl_window_t *xwl_window_ptr = wlmaker_xwl_window_create(
             wlr_xwayland_surface_ptr,
+            xwl_ptr,
             xwl_ptr->server_ptr);
         if (NULL == xwl_window_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_xwl_window_create(%p)",
@@ -778,7 +788,10 @@ void handle_associate(
         NET_WM_WINDOW_TYPE_TOOLTIP, XWL_MAX_ATOM_ID};
     if (xwl_surface_ptr->wlr_xwayland_surface_ptr->decorations ==
         WLR_XWAYLAND_SURFACE_DECORATIONS_ALL &&
-        !is_window_type(xwl_surface_ptr, borderless_window_types)) {
+        !xwl_is_window_type(
+            xwl_surface_ptr->xwl_ptr,
+            xwl_surface_ptr->wlr_xwayland_surface_ptr,
+            borderless_window_types)) {
         // FIXME : Set decoration for the window.
     }
 }
@@ -1099,31 +1112,6 @@ struct wlr_scene_tree *get_parent_wlr_scene_tree_ptr(
     BS_ASSERT(xwl_surface_ptr->wlr_scene_tree_ptr != parent_wlr_scene_tree_ptr);
 
     return parent_wlr_scene_tree_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Returns whether the XWayland surface has any of the window types.
- *
- * @param xwl_surface_ptr
- * @param atom_identifiers    Set of window type we're looking for.
- *
- * @return Whether `atom_identifiers` is in any of the window types.
- */
-bool is_window_type(wlmaker_xwl_surface_t *xwl_surface_ptr,
-                    const xwl_atom_identifier_t *atom_identifiers)
-{
-    for (; *atom_identifiers < XWL_MAX_ATOM_ID; ++atom_identifiers) {
-        for (size_t i = 0;
-             i < xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type_len;
-             ++i) {
-            if (xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type[i] ==
-                xwl_surface_ptr->xwl_ptr->xcb_atoms[*atom_identifiers]) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 /* == End of xwl.c ========================================================= */

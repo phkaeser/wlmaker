@@ -21,6 +21,7 @@
 #define __XWL_WINDOW_H__
 
 #include "server.h"
+#include "xwl.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,12 +37,14 @@ typedef struct _wlmaker_xwl_window_t wlmaker_xwl_window_t;
  * Creates an XWayland window. Technically, window content.
  *
  * @param wlr_xwayland_surface_ptr
+ * @param xwl_ptr
  * @param server_ptr
  *
  * @return Pointer to a @ref wlmaker_xwl_window_t.
  */
 wlmaker_xwl_window_t *wlmaker_xwl_window_create(
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr,
+    wlmaker_xwl_t *xwl_ptr,
     wlmaker_server_t *server_ptr);
 
 /**
