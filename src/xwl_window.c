@@ -148,6 +148,7 @@ wlmaker_xwl_window_t *wlmaker_xwl_window_create(
         1, sizeof(wlmaker_xwl_window_t));
     if (NULL == xwl_window_ptr) return NULL;
     xwl_window_ptr->wlr_xwayland_surface_ptr = wlr_xwayland_surface_ptr;
+    wlr_xwayland_surface_ptr->data = xwl_window_ptr;
     xwl_window_ptr->server_ptr = server_ptr;
     xwl_window_ptr->xwl_ptr = xwl_ptr;
     xwl_window_ptr->env_ptr = server_ptr->env_ptr;
@@ -219,7 +220,9 @@ void wlmaker_xwl_window_destroy(wlmaker_xwl_window_t *xwl_window_ptr)
     }
 
     wlmtk_content_fini(&xwl_window_ptr->content);
-
+    if (NULL != xwl_window_ptr->wlr_xwayland_surface_ptr) {
+        xwl_window_ptr->wlr_xwayland_surface_ptr->data = NULL;
+    }
     free(xwl_window_ptr);
 }
 
