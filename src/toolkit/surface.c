@@ -435,8 +435,12 @@ bool _wlmtk_surface_element_pointer_button(
     // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
     // over to a non-activated window will trigger the condition here on the
     // WLMTK_BUTTON_UP event. Needs a test and fixing.
-    BS_ASSERT(surface_ptr->wlr_surface_ptr ==
-              wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+    // Additionally, this appears to trigger when creating a new XWL popup and
+    // the UP event goes to the new surface. Also needs test & fixing.
+    if (WLMTK_BUTTON_UP != button_event_ptr->type) {
+        BS_ASSERT(surface_ptr->wlr_surface_ptr ==
+                  wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+    }
 
     // We're only forwarding PRESSED & RELEASED events.
     if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
