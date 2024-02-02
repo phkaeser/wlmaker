@@ -67,7 +67,7 @@
 
 #include "toolkit/toolkit.h"
 
-#include "xwl_window.h"
+#include "xwl_content.h"
 
 /* == Declarations ========================================================= */
 
@@ -534,12 +534,12 @@ void handle_new_surface(struct wl_listener *listener_ptr,
             return;
         }
     } else {
-        wlmaker_xwl_window_t *xwl_window_ptr = wlmaker_xwl_window_create(
+        wlmaker_xwl_content_t *xwl_content_ptr = wlmaker_xwl_content_create(
             wlr_xwayland_surface_ptr,
             xwl_ptr,
             xwl_ptr->server_ptr);
-        if (NULL == xwl_window_ptr) {
-            bs_log(BS_ERROR, "Failed wlmaker_xwl_window_create(%p)",
+        if (NULL == xwl_content_ptr) {
+            bs_log(BS_ERROR, "Failed wlmaker_xwl_content_create(%p)",
                    wlr_xwayland_surface_ptr);
         }
     }
