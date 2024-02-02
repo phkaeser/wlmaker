@@ -35,6 +35,9 @@
 
 /** State of the XWayland window content. */
 struct _wlmaker_xwl_content_t {
+    /** Toolkit content state. */
+    wlmtk_content_t           content;
+
     /** Corresponding wlroots XWayland surface. */
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr;
 
@@ -45,8 +48,6 @@ struct _wlmaker_xwl_content_t {
     /** wlmtk environment. */
     wlmtk_env_t               *env_ptr;
 
-    /** Toolkit content state. */
-    wlmtk_content_t           content;
     /** A fake configure serial, tracked here. */
     uint32_t                  serial;
 
@@ -129,7 +130,7 @@ static void _xwl_content_apply_decorations(
 /* == Data ================================================================= */
 
 /** Virtual methods for XDG toplevel surface, for the Content superclass. */
-const wlmtk_content_vmt_t     _xwl_content_content_vmt = {
+static const wlmtk_content_vmt_t _xwl_content_content_vmt = {
     .request_maximized = _xwl_content_content_request_maximized,
     .request_fullscreen = _xwl_content_content_request_fullscreen,
     .request_size = _xwl_content_content_request_size,
@@ -204,10 +205,16 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
 {
     bs_log(BS_INFO, "Destroy XWL content %p", xwl_content_ptr);
 
+    if (NULL != wlmtk_content_get_parent_content(&xwl_content_ptr->content)) {
+        wlmtk_content_remove_popup(
+            wlmtk_content_get_parent_content(&xwl_content_ptr->content),
+            &xwl_content_ptr->content);
+    }
+
     wl_list_remove(&xwl_content_ptr->set_decorations_listener.link);
     wl_list_remove(&xwl_content_ptr->set_parent_listener.link);
     wl_list_remove(&xwl_content_ptr->set_title_listener.link);
-   wl_list_remove(&xwl_content_ptr->dissociate_listener.link);
+    wl_list_remove(&xwl_content_ptr->dissociate_listener.link);
     wl_list_remove(&xwl_content_ptr->associate_listener.link);
     wl_list_remove(&xwl_content_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_content_ptr->destroy_listener.link);
@@ -257,7 +264,6 @@ void _xwl_content_handle_destroy(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, destroy_listener);
-
     wlmaker_xwl_content_destroy(xwl_content_ptr);
 }
 
