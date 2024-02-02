@@ -238,6 +238,28 @@ void wlmtk_content_commit_serial(
 /** Returns the superclass' instance of @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
 
+/**
+ * Adds a popup to the content.
+ *
+ * @param content_ptr
+ * @param popup_content_ptr
+ */
+void wlmtk_content_add_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr);
+
+/**
+ * Removes a popup from the content.
+ *
+ * `popup_content_ptr` must have previously been added to `content_ptr`.
+ *
+ * @param content_ptr
+ * @param popup_content_ptr
+ */
+void wlmtk_content_remove_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr);
+
 /** Content's unit tests. */
 extern const bs_test_case_t wlmtk_content_test_cases[];
 

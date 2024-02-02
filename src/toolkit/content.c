@@ -158,6 +158,30 @@ wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr)
     return &content_ptr->super_container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_add_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr)
+{
+    BS_ASSERT(wlmtk_content_element(popup_content_ptr)->parent_container_ptr ==
+              NULL);
+    wlmtk_container_add_element(
+        &content_ptr->super_container,
+        wlmtk_content_element(popup_content_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_remove_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr)
+{
+    BS_ASSERT(wlmtk_content_element(popup_content_ptr)->parent_container_ptr ==
+              &content_ptr->super_container);
+    wlmtk_container_remove_element(
+        &content_ptr->super_container,
+        wlmtk_content_element(popup_content_ptr));
+}
+
 /* == Fake content, for tests ============================================== */
 
 static void _wlmtk_fake_content_request_close(wlmtk_content_t *content_ptr);
