@@ -123,10 +123,6 @@ struct _wlmtk_content_t {
      * respectively in @ref wlmtk_content_remove_popup.
      */
     wlmtk_content_t           *parent_content_ptr;
-
-    bs_dllist_t               popups;
-    bs_dllist_node_t          dlnode;
-
 };
 
 /**

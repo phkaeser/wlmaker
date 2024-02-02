@@ -163,8 +163,6 @@ void wlmtk_content_add_popup(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
     popup_content_ptr->parent_content_ptr = content_ptr;
-
-    bs_dllist_push_back(&content_ptr->popups, &popup_content_ptr->dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -179,8 +177,6 @@ void wlmtk_content_remove_popup(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
     popup_content_ptr->parent_content_ptr = NULL;
-
-    bs_dllist_remove(&content_ptr->popups, &popup_content_ptr->dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
