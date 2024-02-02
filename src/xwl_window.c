@@ -395,7 +395,29 @@ void _xwl_window_handle_set_parent(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, set_parent_listener);
 
+    BS_ASSERT(NULL != xwl_window_ptr->wlr_xwayland_surface_ptr->parent);
+
+    wlmaker_xwl_window_t *parent_xwl_window_ptr =
+        xwl_window_ptr->wlr_xwayland_surface_ptr->parent->data;
+    if (xwl_window_ptr->content.super_container.super_element.parent_container_ptr ==
+        &parent_xwl_window_ptr->content.super_container) {
+        bs_log(BS_ERROR, "FIXME: Parent already set, ignoring.");
+        return;
+    }
+
+    // If the window is ... mapped, we should unmap.
+    BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_window_ptr->window_ptr));
     bs_log(BS_ERROR, "FIXME: Set parent on %p", xwl_window_ptr);
+
+    // Wait: if this has a parent, it's a popup and NOT a window.
+    // But, it's an element of window_ptr.
+    wlmtk_container_remove_element(
+        xwl_window_ptr->content.super_container.super_element.parent_container_ptr,
+        wlmtk_content_element(&xwl_window_ptr->content));
+
+    wlmtk_container_add_element(
+        &parent_xwl_window_ptr->content.super_container,
+        wlmtk_content_element(&xwl_window_ptr->content));
 }
 
 /* ------------------------------------------------------------------------- */
