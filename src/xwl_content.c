@@ -324,6 +324,13 @@ void _xwl_content_handle_associate(
         &xwl_content_ptr->content,
         xwl_content_ptr->surface_ptr);
 
+    if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent) {
+        // FIXME: Well... yeah. In that case, we'll want to create a popup
+        // and add it to the parent. It may already have been added to the
+        // parent, though?
+        return;
+    }
+
     xwl_content_ptr->xwl_toplevel_ptr = wlmaker_xwl_toplevel_create(
         xwl_content_ptr,
         xwl_content_ptr->server_ptr,
@@ -417,11 +424,9 @@ void _xwl_content_handle_set_parent(
     //BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_content_ptr->window_ptr));
     bs_log(BS_ERROR, "FIXME: Set parent on %p", xwl_content_ptr);
 
-    // Wait: if this has a parent, it's a popup and NOT a window.
-    // But, it's an element of window_ptr.
-    wlmtk_container_remove_element(
-        xwl_content_ptr->content.super_container.super_element.parent_container_ptr,
-        wlmtk_content_element(&xwl_content_ptr->content));
+    BS_ASSERT(
+        NULL ==
+        xwl_content_ptr->content.super_container.super_element.parent_container_ptr);
 
     wlmtk_container_add_element(
         &parent_xwl_content_ptr->content.super_container,
