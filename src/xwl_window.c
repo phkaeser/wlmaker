@@ -58,10 +58,10 @@ struct _wlmaker_xwl_window_t {
     /** Listener for the `dissociate` signal of `wlr_xwayland_surface`. */
     struct wl_listener        dissociate_listener;
 
-    /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
-    struct wl_listener        set_decorations_listener;
     /** Listener for the `set_title` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_title_listener;
+    /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_decorations_listener;
 
     /** The toolkit surface. Only available once 'associated'. */
     wlmtk_surface_t           *surface_ptr;
@@ -90,10 +90,10 @@ static void _xwl_window_handle_dissociate(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void _xwl_window_handle_set_decorations(
+static void _xwl_window_handle_set_title(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void _xwl_window_handle_set_title(
+static void _xwl_window_handle_set_decorations(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -188,13 +188,13 @@ wlmaker_xwl_window_t *wlmaker_xwl_window_create(
         _xwl_window_handle_dissociate);
 
     wlmtk_util_connect_listener_signal(
-        &wlr_xwayland_surface_ptr->events.set_decorations,
-        &xwl_window_ptr->set_decorations_listener,
-        _xwl_window_handle_set_decorations);
-    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_title,
         &xwl_window_ptr->set_title_listener,
         _xwl_window_handle_set_title);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_decorations,
+        &xwl_window_ptr->set_decorations_listener,
+        _xwl_window_handle_set_decorations);
 
     bs_log(BS_INFO, "Created XWL window %p for wlr_xwayland_surface %p",
            xwl_window_ptr, wlr_xwayland_surface_ptr);
@@ -207,9 +207,9 @@ void wlmaker_xwl_window_destroy(wlmaker_xwl_window_t *xwl_window_ptr)
 {
     bs_log(BS_INFO, "Destroy XWL window %p", xwl_window_ptr);
 
-    wl_list_remove(&xwl_window_ptr->set_title_listener.link);
     wl_list_remove(&xwl_window_ptr->set_decorations_listener.link);
-    wl_list_remove(&xwl_window_ptr->dissociate_listener.link);
+     wl_list_remove(&xwl_window_ptr->set_title_listener.link);
+   wl_list_remove(&xwl_window_ptr->dissociate_listener.link);
     wl_list_remove(&xwl_window_ptr->associate_listener.link);
     wl_list_remove(&xwl_window_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_window_ptr->destroy_listener.link);
@@ -355,6 +355,24 @@ void _xwl_window_handle_dissociate(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Handler for the `set_title` event of `struct wlr_xwayland_surface`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _xwl_window_handle_set_title(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_window_t, set_title_listener);
+    wlmtk_window_set_title(
+        xwl_window_ptr->window_ptr,
+        xwl_window_ptr->wlr_xwayland_surface_ptr->title);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Handler for the `set_decorations` event of `struct wlr_xwayland_surface`.
  *
  * Applies server-side decoration, if the X11 window is supposed to have
@@ -370,24 +388,6 @@ void _xwl_window_handle_set_decorations(
     wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_window_t, set_decorations_listener);
     _xwl_window_apply_decorations(xwl_window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `set_title` event of `struct wlr_xwayland_surface`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _xwl_window_handle_set_title(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_xwl_window_t, set_title_listener);
-    wlmtk_window_set_title(
-        xwl_window_ptr->window_ptr,
-        xwl_window_ptr->wlr_xwayland_surface_ptr->title);
 }
 
 /* ------------------------------------------------------------------------- */
