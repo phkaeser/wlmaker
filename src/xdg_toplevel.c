@@ -425,9 +425,9 @@ void handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_content_element(&xdg_popup_ptr->super_content), true);
-    wlmtk_container_add_element(
-        &xdg_tl_surface_ptr->super_content.super_container,
-        wlmtk_content_element(&xdg_popup_ptr->super_content));
+    wlmtk_content_add_popup(
+        &xdg_tl_surface_ptr->super_content,
+        &xdg_popup_ptr->super_content);
 
     bs_log(BS_INFO, "XDG toplevel %p: New popup %p",
            xdg_tl_surface_ptr, xdg_popup_ptr);

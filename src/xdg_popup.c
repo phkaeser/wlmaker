@@ -120,11 +120,13 @@ void handle_destroy(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
 
-    wlmtk_element_t *element_ptr = wlmtk_content_element(
+    wlmtk_content_t *parent_content_ptr = wlmtk_content_get_parent_content(
         &wlmaker_xdg_popup_ptr->super_content);
-    wlmtk_container_remove_element(
-        element_ptr->parent_container_ptr,
-        element_ptr);
+    if (NULL != parent_content_ptr) {
+        wlmtk_content_remove_popup(
+            parent_content_ptr,
+            &wlmaker_xdg_popup_ptr->super_content);
+    }
 
     wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }
@@ -152,9 +154,9 @@ void handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_content_element(&new_xdg_popup_ptr->super_content), true);
-    wlmtk_container_add_element(
-        &wlmaker_xdg_popup_ptr->super_content.super_container,
-        wlmtk_content_element(&new_xdg_popup_ptr->super_content));
+    wlmtk_content_add_popup(
+        &wlmaker_xdg_popup_ptr->super_content,
+        &new_xdg_popup_ptr->super_content);
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, new_xdg_popup_ptr);
