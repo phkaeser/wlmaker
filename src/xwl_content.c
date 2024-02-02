@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 
+#include "xwl_toplevel.h"
 #include "toolkit/toolkit.h"
 
 #define WLR_USE_UNSTABLE
@@ -67,15 +68,12 @@ struct _wlmaker_xwl_content_t {
 
     /** The toolkit surface. Only available once 'associated'. */
     wlmtk_surface_t           *surface_ptr;
-    /** The toolkit window. Only available once 'associated'. */
-    wlmtk_window_t            *window_ptr;
 
-    /** Listener for `surface_map` of the `wlr_surface`. */
+    /** The XWayland toplevel window, in case this content has no parent. */
+    wlmaker_xwl_toplevel_t    *xwl_toplevel_ptr;
+
+    /** Listener for `surface_commit` of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
-    /** Listener for `surface_map` of the `wlr_surface`. */
-    struct wl_listener        surface_map_listener;
-    /** Listener for `surface_unmap` of the `wlr_surface`. */
-    struct wl_listener        surface_unmap_listener;
 };
 
 static void _xwl_content_handle_destroy(
@@ -103,12 +101,6 @@ static void _xwl_content_handle_set_decorations(
     void *data_ptr);
 
 static void _xwl_content_handle_surface_commit(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void _xwl_content_handle_surface_map(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void _xwl_content_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -155,9 +147,9 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
     if (NULL == xwl_content_ptr) return NULL;
     xwl_content_ptr->wlr_xwayland_surface_ptr = wlr_xwayland_surface_ptr;
     wlr_xwayland_surface_ptr->data = xwl_content_ptr;
-    xwl_content_ptr->server_ptr = server_ptr;
     xwl_content_ptr->xwl_ptr = xwl_ptr;
     xwl_content_ptr->env_ptr = server_ptr->env_ptr;
+    xwl_content_ptr->server_ptr = server_ptr;
 
     if (!wlmtk_content_init(&xwl_content_ptr->content,
                             NULL,
@@ -166,14 +158,6 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
         return NULL;
     }
     wlmtk_content_extend(&xwl_content_ptr->content, &_xwl_content_content_vmt);
-
-    xwl_content_ptr->window_ptr = wlmtk_window_create(
-        &xwl_content_ptr->content,
-        xwl_content_ptr->env_ptr);
-    if (NULL == xwl_content_ptr->window_ptr) {
-        wlmaker_xwl_content_destroy(xwl_content_ptr);
-        return NULL;
-    }
 
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
@@ -225,9 +209,9 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
     wl_list_remove(&xwl_content_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_content_ptr->destroy_listener.link);
 
-    if (NULL != xwl_content_ptr->window_ptr) {
-        wlmtk_window_destroy(xwl_content_ptr->window_ptr);
-        xwl_content_ptr->window_ptr = NULL;
+    if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
+        wlmaker_xwl_toplevel_destroy(xwl_content_ptr->xwl_toplevel_ptr);
+        xwl_content_ptr->xwl_toplevel_ptr = NULL;
     }
 
     wlmtk_content_fini(&xwl_content_ptr->content);
@@ -235,6 +219,20 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
         xwl_content_ptr->wlr_xwayland_surface_ptr->data = NULL;
     }
     free(xwl_content_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_content_t *wlmtk_content_from_xwl_content(
+    wlmaker_xwl_content_t *xwl_content_ptr)
+{
+    return &xwl_content_ptr->content;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_surface *wlr_surface_from_xwl_content(
+    wlmaker_xwl_content_t *xwl_content_ptr)
+{
+    return xwl_content_ptr->wlr_xwayland_surface_ptr->surface;
 }
 
 /* == Local (static) methods =============================================== */
@@ -312,26 +310,29 @@ void _xwl_content_handle_associate(
         &xwl_content_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
         &xwl_content_ptr->surface_commit_listener,
         _xwl_content_handle_surface_commit);
-    wlmtk_util_connect_listener_signal(
-        &xwl_content_ptr->wlr_xwayland_surface_ptr->surface->events.map,
-        &xwl_content_ptr->surface_map_listener,
-        _xwl_content_handle_surface_map);
-    wlmtk_util_connect_listener_signal(
-        &xwl_content_ptr->wlr_xwayland_surface_ptr->surface->events.unmap,
-        &xwl_content_ptr->surface_unmap_listener,
-        _xwl_content_handle_surface_unmap);
 
     BS_ASSERT(NULL == xwl_content_ptr->surface_ptr);
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
         xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
         xwl_content_ptr->env_ptr);
     if (NULL == xwl_content_ptr->surface_ptr) {
-        bs_log(BS_ERROR, "FIXME: Error.");
+        // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
+        bs_log(BS_FATAL, "Failed wlmtk_surface_create.");
+        return;
     }
-
     wlmtk_content_set_surface(
         &xwl_content_ptr->content,
         xwl_content_ptr->surface_ptr);
+
+    xwl_content_ptr->xwl_toplevel_ptr = wlmaker_xwl_toplevel_create(
+        xwl_content_ptr,
+        xwl_content_ptr->server_ptr,
+        xwl_content_ptr->env_ptr);
+    if (NULL == xwl_content_ptr->xwl_toplevel_ptr) {
+        // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
+        bs_log(BS_FATAL, "Failed wlmaker_xwl_toplevel_create.");
+        return;
+    }
 
     _xwl_content_apply_decorations(xwl_content_ptr);
 }
@@ -350,14 +351,17 @@ void _xwl_content_handle_dissociate(
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, dissociate_listener);
 
+    if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
+        wlmaker_xwl_toplevel_destroy(xwl_content_ptr->xwl_toplevel_ptr);
+        xwl_content_ptr->xwl_toplevel_ptr = NULL;
+    }
+
     wlmtk_content_set_surface(&xwl_content_ptr->content, NULL);
     if (NULL != xwl_content_ptr->surface_ptr) {
         wlmtk_surface_destroy(xwl_content_ptr->surface_ptr);
         xwl_content_ptr->surface_ptr = NULL;
     }
 
-    wl_list_remove(&xwl_content_ptr->surface_unmap_listener.link);
-    wl_list_remove(&xwl_content_ptr->surface_map_listener.link);
     wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
 
     bs_log(BS_INFO, "Dissociate XWL window %p from wlr_surface %p",
@@ -377,9 +381,12 @@ void _xwl_content_handle_set_title(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, set_title_listener);
-    wlmtk_window_set_title(
-        xwl_content_ptr->window_ptr,
-        xwl_content_ptr->wlr_xwayland_surface_ptr->title);
+
+    if (false) {
+        wlmtk_window_set_title(
+            NULL,  // FIXME; xwl_content_ptr->window_ptr,
+            xwl_content_ptr->wlr_xwayland_surface_ptr->title);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -407,7 +414,7 @@ void _xwl_content_handle_set_parent(
     }
 
     // If the window is ... mapped, we should unmap.
-    BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_content_ptr->window_ptr));
+    //BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_content_ptr->window_ptr));
     bs_log(BS_ERROR, "FIXME: Set parent on %p", xwl_content_ptr);
 
     // Wait: if this has a parent, it's a popup and NOT a window.
@@ -460,45 +467,19 @@ void _xwl_content_handle_surface_commit(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Surface map handler: also indicates the window can be mapped. */
-void _xwl_content_handle_surface_map(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_xwl_content_t, surface_map_listener);
-
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        xwl_content_ptr->server_ptr);
-    wlmtk_workspace_map_window(
-        wlmaker_workspace_wlmtk(workspace_ptr),
-        xwl_content_ptr->window_ptr);
-    wlmtk_window_set_position(xwl_content_ptr->window_ptr, 40, 30);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Surface unmap: indicates the window should be unmapped. */
-void _xwl_content_handle_surface_unmap(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_xwl_content_t, surface_unmap_listener);
-
-    wlmtk_workspace_unmap_window(
-        wlmtk_window_get_workspace(xwl_content_ptr->window_ptr),
-        xwl_content_ptr->window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_content_vmt_t::request_maximized. */
 uint32_t _xwl_content_content_request_maximized(
     wlmtk_content_t *content_ptr,
     bool maximized)
 {
-    wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
+    __UNUSED__ wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_content_t, content);
-    wlmtk_window_commit_maximized(xwl_content_ptr->window_ptr, maximized);
+
+    if (false) {
+        wlmtk_window_commit_maximized(
+            NULL,  // FIXME: xwl_content_ptr->window_ptr,
+            maximized);
+    }
     return 0;
 }
 
@@ -508,9 +489,14 @@ uint32_t _xwl_content_content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen)
 {
-    wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
+    __UNUSED__ wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_content_t, content);
-    wlmtk_window_commit_fullscreen(xwl_content_ptr->window_ptr, fullscreen);
+
+    if (false) {
+        wlmtk_window_commit_fullscreen(
+            NULL, // FIXME: xwl_content_ptr->window_ptr,
+            fullscreen);
+    }
     return 0;
 }
 
@@ -557,12 +543,16 @@ void _xwl_content_content_set_activated(
 /**
  * Sets whether this window should be server-side-decorated.
  *
+ * TODO(kaeser@gubbe.ch): Move this into xwl_toplevel.
+ *
  * @param xwl_content_ptr
  */
 void _xwl_content_apply_decorations(wlmaker_xwl_content_t *xwl_content_ptr)
 {
     static const xwl_atom_identifier_t borderless_window_types[] = {
         NET_WM_WINDOW_TYPE_TOOLTIP, XWL_MAX_ATOM_ID};
+
+    if (NULL == xwl_content_ptr->xwl_toplevel_ptr) return;
 
     // TODO(kaeser@gubbe.ch): Adapt whether NO_BORDER or NO_TITLE was set.
     if (xwl_content_ptr->wlr_xwayland_surface_ptr->decorations ==
@@ -571,11 +561,13 @@ void _xwl_content_apply_decorations(wlmaker_xwl_content_t *xwl_content_ptr)
             xwl_content_ptr->xwl_ptr,
             xwl_content_ptr->wlr_xwayland_surface_ptr,
             borderless_window_types)) {
-        wlmtk_window_set_server_side_decorated(
-            xwl_content_ptr->window_ptr, true);
+        wlmaker_xwl_toplevel_set_decorations(
+            xwl_content_ptr->xwl_toplevel_ptr,
+            true);
     } else {
-        wlmtk_window_set_server_side_decorated(
-            xwl_content_ptr->window_ptr, false);
+        wlmaker_xwl_toplevel_set_decorations(
+            xwl_content_ptr->xwl_toplevel_ptr,
+            false);
     }
 }
 
