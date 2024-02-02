@@ -60,6 +60,8 @@ struct _wlmaker_xwl_window_t {
 
     /** Listener for the `set_title` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_title_listener;
+    /** Listener for the `set_parent` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_parent_listener;
     /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_decorations_listener;
 
@@ -91,6 +93,9 @@ static void _xwl_window_handle_dissociate(
     void *data_ptr);
 
 static void _xwl_window_handle_set_title(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _xwl_window_handle_set_parent(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _xwl_window_handle_set_decorations(
@@ -192,6 +197,10 @@ wlmaker_xwl_window_t *wlmaker_xwl_window_create(
         &xwl_window_ptr->set_title_listener,
         _xwl_window_handle_set_title);
     wlmtk_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_parent,
+        &xwl_window_ptr->set_parent_listener,
+        _xwl_window_handle_set_parent);
+    wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.set_decorations,
         &xwl_window_ptr->set_decorations_listener,
         _xwl_window_handle_set_decorations);
@@ -208,7 +217,8 @@ void wlmaker_xwl_window_destroy(wlmaker_xwl_window_t *xwl_window_ptr)
     bs_log(BS_INFO, "Destroy XWL window %p", xwl_window_ptr);
 
     wl_list_remove(&xwl_window_ptr->set_decorations_listener.link);
-     wl_list_remove(&xwl_window_ptr->set_title_listener.link);
+    wl_list_remove(&xwl_window_ptr->set_parent_listener.link);
+    wl_list_remove(&xwl_window_ptr->set_title_listener.link);
    wl_list_remove(&xwl_window_ptr->dissociate_listener.link);
     wl_list_remove(&xwl_window_ptr->associate_listener.link);
     wl_list_remove(&xwl_window_ptr->request_configure_listener.link);
@@ -369,6 +379,23 @@ void _xwl_window_handle_set_title(
     wlmtk_window_set_title(
         xwl_window_ptr->window_ptr,
         xwl_window_ptr->wlr_xwayland_surface_ptr->title);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_parent` event of `struct wlr_xwayland_surface`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _xwl_window_handle_set_parent(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_window_t *xwl_window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_window_t, set_parent_listener);
+
+    bs_log(BS_ERROR, "FIXME: Set parent on %p", xwl_window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
