@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 
+#include "xwl_popup.h"
 #include "xwl_toplevel.h"
 #include "toolkit/toolkit.h"
 
@@ -71,6 +72,8 @@ struct _wlmaker_xwl_content_t {
 
     /** The XWayland toplevel window, in case this content has no parent. */
     wlmaker_xwl_toplevel_t    *xwl_toplevel_ptr;
+    /** The XWayland popup, in case this content has a parent. */
+    wlmaker_xwl_popup_t       *xwl_popup_ptr;
 
     /** Listener for `surface_commit` of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
@@ -213,6 +216,10 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
         wlmaker_xwl_toplevel_destroy(xwl_content_ptr->xwl_toplevel_ptr);
         xwl_content_ptr->xwl_toplevel_ptr = NULL;
     }
+    if (NULL != xwl_content_ptr->xwl_popup_ptr) {
+        wlmaker_xwl_popup_destroy(xwl_content_ptr->xwl_popup_ptr);
+        xwl_content_ptr->xwl_popup_ptr = NULL;
+    }
 
     wlmtk_content_fini(&xwl_content_ptr->content);
     if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr) {
@@ -325,6 +332,14 @@ void _xwl_content_handle_associate(
         xwl_content_ptr->surface_ptr);
 
     if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent) {
+        BS_ASSERT(NULL == xwl_content_ptr->xwl_popup_ptr);
+        xwl_content_ptr->xwl_popup_ptr = wlmaker_xwl_popup_create(
+            xwl_content_ptr);
+
+        wlmtk_element_set_visible(
+            wlmtk_content_element(wlmtk_content_from_xwl_content(xwl_content_ptr)),
+            true);
+
         // FIXME: Well... yeah. In that case, we'll want to create a popup
         // and add it to the parent. It may already have been added to the
         // parent, though?
@@ -361,6 +376,10 @@ void _xwl_content_handle_dissociate(
     if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
         wlmaker_xwl_toplevel_destroy(xwl_content_ptr->xwl_toplevel_ptr);
         xwl_content_ptr->xwl_toplevel_ptr = NULL;
+    }
+    if (NULL != xwl_content_ptr->xwl_popup_ptr) {
+        wlmaker_xwl_popup_destroy(xwl_content_ptr->xwl_popup_ptr);
+        xwl_content_ptr->xwl_popup_ptr = NULL;
     }
 
     wlmtk_content_set_surface(&xwl_content_ptr->content, NULL);
@@ -422,15 +441,12 @@ void _xwl_content_handle_set_parent(
 
     // If the window is ... mapped, we should unmap.
     //BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_content_ptr->window_ptr));
-    bs_log(BS_ERROR, "FIXME: Set parent on %p", xwl_content_ptr);
+    bs_log(BS_ERROR, "FIXME: Set XWL parent on %p to %p",
+           xwl_content_ptr, parent_xwl_content_ptr);
 
-    BS_ASSERT(
-        NULL ==
-        xwl_content_ptr->content.super_container.super_element.parent_container_ptr);
-
-    wlmtk_container_add_element(
-        &parent_xwl_content_ptr->content.super_container,
-        wlmtk_content_element(&xwl_content_ptr->content));
+    wlmtk_content_add_popup(
+        wlmtk_content_from_xwl_content(parent_xwl_content_ptr),
+        wlmtk_content_from_xwl_content(xwl_content_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
