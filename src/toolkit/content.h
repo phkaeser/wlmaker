@@ -108,9 +108,6 @@ struct _wlmtk_content_vmt_t {
 
 /** State of window content. */
 struct _wlmtk_content_t {
-    /** Temporary: Identifier, to disambiguate from XDG nodes. */
-    void                      *identifier_ptr;
-
     /** Super class of the content: A container, holding surface & popups. */
     wlmtk_container_t         super_container;
     /** Virtual method table of the content. */
@@ -126,14 +123,11 @@ struct _wlmtk_content_t {
      * respectively in @ref wlmtk_content_remove_popup.
      */
     wlmtk_content_t           *parent_content_ptr;
-};
 
-/**
- * Identifying pointer: Value unique to wlmtk_content.
- *
- * TODO(kaeser@gubbe.ch): Remove, once migrated to toolkit.
- */
-extern void *wlmtk_content_identifier_ptr;
+    bs_dllist_t               popups;
+    bs_dllist_node_t          dlnode;
+
+};
 
 /**
  * Initializes the content with the given surface.

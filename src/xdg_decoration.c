@@ -251,9 +251,7 @@ void handle_decoration_request_mode(
     wlr_xdg_toplevel_decoration_v1_set_mode(
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
 
-    if (NULL != content_ptr &&
-        content_ptr->identifier_ptr == wlmtk_content_identifier_ptr) {
-
+    if (NULL != content_ptr) {
         bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "
                "content %p: Current %d, pending %d, scheduled %d, "
                "requested %d. Set: %d",

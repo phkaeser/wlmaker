@@ -22,12 +22,6 @@
 
 #include "surface.h"
 
-/* == Declarations ========================================================= */
-
-/* == Data ================================================================= */
-
-void *wlmtk_content_identifier_ptr = wlmtk_content_init;
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -42,7 +36,6 @@ bool wlmtk_content_init(
     if (!wlmtk_container_init(&content_ptr->super_container, env_ptr)) {
         return false;
     }
-    content_ptr->identifier_ptr = wlmtk_content_identifier_ptr;
 
     if (NULL != surface_ptr) {
         wlmtk_content_set_surface(content_ptr, surface_ptr);
@@ -170,6 +163,8 @@ void wlmtk_content_add_popup(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
     popup_content_ptr->parent_content_ptr = content_ptr;
+
+    bs_dllist_push_back(&content_ptr->popups, &popup_content_ptr->dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -184,6 +179,8 @@ void wlmtk_content_remove_popup(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
     popup_content_ptr->parent_content_ptr = NULL;
+
+    bs_dllist_remove(&content_ptr->popups, &popup_content_ptr->dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
