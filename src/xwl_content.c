@@ -193,7 +193,7 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
         &xwl_content_ptr->set_decorations_listener,
         _xwl_content_handle_set_decorations);
 
-    bs_log(BS_INFO, "Created XWL window %p for wlr_xwayland_surface %p",
+    bs_log(BS_INFO, "Created XWL content %p for wlr_xwayland_surface %p",
            xwl_content_ptr, wlr_xwayland_surface_ptr);
 
     return xwl_content_ptr;
@@ -202,7 +202,7 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
 {
-    bs_log(BS_INFO, "Destroy XWL window %p", xwl_content_ptr);
+    bs_log(BS_INFO, "Destroy XWL content %p", xwl_content_ptr);
 
     wl_list_remove(&xwl_content_ptr->set_decorations_listener.link);
     wl_list_remove(&xwl_content_ptr->set_parent_listener.link);
@@ -310,7 +310,7 @@ void _xwl_content_handle_associate(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, associate_listener);
-    bs_log(BS_INFO, "Associate XWL window %p with wlr_surface %p",
+    bs_log(BS_INFO, "Associate XWL content %p with wlr_surface %p",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
 
     wlmtk_util_connect_listener_signal(
@@ -390,7 +390,7 @@ void _xwl_content_handle_dissociate(
 
     wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
 
-    bs_log(BS_INFO, "Dissociate XWL window %p from wlr_surface %p",
+    bs_log(BS_INFO, "Dissociate XWL content %p from wlr_surface %p",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
 }
 
@@ -428,25 +428,30 @@ void _xwl_content_handle_set_parent(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, set_parent_listener);
+    wlmtk_content_t *content_ptr = wlmtk_content_from_xwl_content(
+        xwl_content_ptr);
 
     BS_ASSERT(NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent);
-
     wlmaker_xwl_content_t *parent_xwl_content_ptr =
         xwl_content_ptr->wlr_xwayland_surface_ptr->parent->data;
-    if (xwl_content_ptr->content.super_container.super_element.parent_container_ptr ==
-        &parent_xwl_content_ptr->content.super_container) {
-        bs_log(BS_ERROR, "FIXME: Parent already set, ignoring.");
+    wlmtk_content_t *parent_content_ptr = wlmtk_content_from_xwl_content(
+        parent_xwl_content_ptr);
+
+    // The parent didn't change? Return right away.
+    if (parent_content_ptr == wlmtk_content_get_parent_content(content_ptr)) {
         return;
     }
 
-    // If the window is ... mapped, we should unmap.
-    //BS_ASSERT(NULL == wlmtk_window_get_workspace(xwl_content_ptr->window_ptr));
-    bs_log(BS_ERROR, "FIXME: Set XWL parent on %p to %p",
-           xwl_content_ptr, parent_xwl_content_ptr);
+    // There already is a parent, and it does change: Un-parent first.
+    if (NULL != wlmtk_content_get_parent_content(content_ptr)) {
+        wlmtk_content_remove_popup(
+            wlmtk_content_get_parent_content(content_ptr),
+            content_ptr);
+    }
 
-    wlmtk_content_add_popup(
-        wlmtk_content_from_xwl_content(parent_xwl_content_ptr),
-        wlmtk_content_from_xwl_content(xwl_content_ptr));
+    wlmtk_content_add_popup(parent_content_ptr, content_ptr);
+    bs_log(BS_INFO, "Set parent for XWL content %p to XWL content %p",
+           xwl_content_ptr, parent_xwl_content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -477,7 +482,7 @@ void _xwl_content_handle_surface_commit(
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, surface_commit_listener);
 
-    bs_log(BS_DEBUG, "XWL window %p commit surface %p, current %d x %d",
+    bs_log(BS_DEBUG, "XWL content %p commit surface %p, current %d x %d",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.width,
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.height);
