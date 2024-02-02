@@ -120,6 +120,12 @@ struct _wlmtk_content_t {
     wlmtk_surface_t           *surface_ptr;
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
+
+    /**
+     * The parent content, or NULL. Set in @ref wlmtk_content_add_popup,
+     * respectively in @ref wlmtk_content_remove_popup.
+     */
+    wlmtk_content_t           *parent_content_ptr;
 };
 
 /**
@@ -259,6 +265,10 @@ void wlmtk_content_add_popup(
 void wlmtk_content_remove_popup(
     wlmtk_content_t *content_ptr,
     wlmtk_content_t *popup_content_ptr);
+
+/** @return A pointer to the parent content, or NULL if none. */
+wlmtk_content_t *wlmtk_content_get_parent_content(
+    wlmtk_content_t *content_ptr);
 
 /** Content's unit tests. */
 extern const bs_test_case_t wlmtk_content_test_cases[];

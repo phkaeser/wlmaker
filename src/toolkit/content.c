@@ -165,9 +165,11 @@ void wlmtk_content_add_popup(
 {
     BS_ASSERT(wlmtk_content_element(popup_content_ptr)->parent_container_ptr ==
               NULL);
+    BS_ASSERT(NULL == popup_content_ptr->parent_content_ptr);
     wlmtk_container_add_element(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
+    popup_content_ptr->parent_content_ptr = content_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -177,9 +179,18 @@ void wlmtk_content_remove_popup(
 {
     BS_ASSERT(wlmtk_content_element(popup_content_ptr)->parent_container_ptr ==
               &content_ptr->super_container);
+    BS_ASSERT(content_ptr == popup_content_ptr->parent_content_ptr);
     wlmtk_container_remove_element(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
+    popup_content_ptr->parent_content_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_content_t *wlmtk_content_get_parent_content(
+    wlmtk_content_t *content_ptr)
+{
+    return content_ptr->parent_content_ptr;
 }
 
 /* == Fake content, for tests ============================================== */
@@ -280,10 +291,12 @@ void _wlmtk_fake_content_set_activated(
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_set_clear_surface(bs_test_t *test_ptr);
+static void test_add_remove_popup(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_content_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_clear_surface", test_set_clear_surface },
+    { 1, "add_remove_popup", test_add_remove_popup },
     { 0, NULL, NULL }
 };
 
@@ -350,6 +363,37 @@ void test_set_clear_surface(bs_test_t *test_ptr)
 
     wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fs_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests adding and removing popups. */
+void test_add_remove_popup(bs_test_t *test_ptr)
+{
+    wlmtk_content_t parent, popup;
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&parent, NULL, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&popup, NULL, NULL));
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_content_get_parent_content(&parent));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_content_get_parent_content(&popup));
+
+    wlmtk_content_add_popup(&parent, &popup);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &parent,
+        wlmtk_content_get_parent_content(&popup));
+
+    wlmtk_content_remove_popup(&parent, &popup);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_content_get_parent_content(&popup));
 }
 
 /* == End of content.c ===================================================== */
