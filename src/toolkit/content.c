@@ -48,6 +48,13 @@ bool wlmtk_content_init(
 void wlmtk_content_fini(
     wlmtk_content_t *content_ptr)
 {
+    bs_dllist_node_t *dlnode_ptr;
+    while (NULL != (dlnode_ptr = content_ptr->popups.head_ptr)) {
+        wlmtk_content_t *popup_content_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmtk_content_t, dlnode);
+        wlmtk_content_remove_popup(content_ptr, popup_content_ptr);
+    }
+
     if (NULL != content_ptr->surface_ptr) {
         wlmtk_container_remove_element(
             &content_ptr->super_container,
@@ -163,6 +170,10 @@ void wlmtk_content_add_popup(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));
     popup_content_ptr->parent_content_ptr = content_ptr;
+
+    bs_dllist_push_back(
+        &content_ptr->popups,
+        &popup_content_ptr->dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -173,6 +184,9 @@ void wlmtk_content_remove_popup(
     BS_ASSERT(wlmtk_content_element(popup_content_ptr)->parent_container_ptr ==
               &content_ptr->super_container);
     BS_ASSERT(content_ptr == popup_content_ptr->parent_content_ptr);
+    bs_dllist_remove(
+        &content_ptr->popups,
+        &popup_content_ptr->dlnode);
     wlmtk_container_remove_element(
         &content_ptr->super_container,
         wlmtk_content_element(popup_content_ptr));

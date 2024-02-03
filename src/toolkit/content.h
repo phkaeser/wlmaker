@@ -123,6 +123,11 @@ struct _wlmtk_content_t {
      * respectively in @ref wlmtk_content_remove_popup.
      */
     wlmtk_content_t           *parent_content_ptr;
+
+    /** Set of registered popup contents. See @ref wlmtk_content_add_popup. */
+    bs_dllist_t               popups;
+    /** Connects to the parent's @ref wlmtk_content_t::popups, if a popup. */
+    bs_dllist_node_t          dlnode;
 };
 
 /**
