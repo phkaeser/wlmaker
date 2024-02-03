@@ -219,7 +219,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
-    wlmtk_surface_connect_unmap_listener_signal(
+    wlmtk_surface_connect_commit_listener_signal(
         xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_commit_listener,
         handle_surface_commit);

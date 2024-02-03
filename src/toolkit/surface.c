@@ -182,6 +182,18 @@ void wlmtk_surface_connect_unmap_listener_signal(
         handler);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_commit_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.commit,
+        listener_ptr,
+        handler);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

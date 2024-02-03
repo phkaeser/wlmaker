@@ -319,11 +319,6 @@ void _xwl_content_handle_associate(
     bs_log(BS_INFO, "Associate XWL content %p with wlr_surface %p",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
 
-    wlmtk_util_connect_listener_signal(
-        &xwl_content_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
-        &xwl_content_ptr->surface_commit_listener,
-        _xwl_content_handle_surface_commit);
-
     BS_ASSERT(NULL == xwl_content_ptr->surface_ptr);
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
         xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
@@ -336,6 +331,10 @@ void _xwl_content_handle_associate(
     wlmtk_content_set_surface(
         &xwl_content_ptr->content,
         xwl_content_ptr->surface_ptr);
+    wlmtk_surface_connect_commit_listener_signal(
+        xwl_content_ptr->surface_ptr,
+        &xwl_content_ptr->surface_commit_listener,
+        _xwl_content_handle_surface_commit);
 
     if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent) {
         BS_ASSERT(NULL == xwl_content_ptr->xwl_popup_ptr);
@@ -388,13 +387,12 @@ void _xwl_content_handle_dissociate(
         xwl_content_ptr->xwl_popup_ptr = NULL;
     }
 
+    wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
     wlmtk_content_set_surface(&xwl_content_ptr->content, NULL);
     if (NULL != xwl_content_ptr->surface_ptr) {
         wlmtk_surface_destroy(xwl_content_ptr->surface_ptr);
         xwl_content_ptr->surface_ptr = NULL;
     }
-
-    wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
 
     bs_log(BS_INFO, "Dissociate XWL content %p from wlr_surface %p",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
