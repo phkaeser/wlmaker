@@ -210,16 +210,17 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &wlr_xdg_surface_ptr->events.new_popup,
         &xdg_tl_surface_ptr->new_popup_listener,
         handle_new_popup);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.map,
+
+    wlmtk_surface_connect_map_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_map_listener,
         handle_surface_map);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.unmap,
+    wlmtk_surface_connect_unmap_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.commit,
+    wlmtk_surface_connect_unmap_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_commit_listener,
         handle_surface_commit);
 

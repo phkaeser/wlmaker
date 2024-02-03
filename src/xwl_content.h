@@ -57,9 +57,8 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr);
 /** Gets the @ref wlmtk_content_t for the XWL content. */
 wlmtk_content_t *wlmtk_content_from_xwl_content(
     wlmaker_xwl_content_t *xwl_content_ptr);
-
-/** Gets the wlr_surface. Only valid if associated. */
-struct wlr_surface *wlr_surface_from_xwl_content(
+/** Gets the @ref wlmtk_surface_t. Only valid if associated. */
+wlmtk_surface_t *wlmtk_surface_from_xwl_content(
     wlmaker_xwl_content_t *xwl_content_ptr);
 
 #ifdef __cplusplus

@@ -30,9 +30,9 @@ struct _wlmaker_xwl_toplevel_t {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
 
-    /** Listener for `surface_map` of the `wlr_surface`. */
+    /** Listener for `map` event of the surface. */
     struct wl_listener        surface_map_listener;
-    /** Listener for `surface_unmap` of the `wlr_surface`. */
+    /** Listener for `unmap` event of the surface. */
     struct wl_listener        surface_unmap_listener;
 };
 
@@ -64,12 +64,12 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         return NULL;
     }
 
-    wlmtk_util_connect_listener_signal(
-        &wlr_surface_from_xwl_content(content_ptr)->events.map,
+    wlmtk_surface_connect_map_listener_signal(
+        wlmtk_surface_from_xwl_content(content_ptr),
         &xwl_toplevel_ptr->surface_map_listener,
         _xwl_toplevel_handle_surface_map);
-    wlmtk_util_connect_listener_signal(
-        &wlr_surface_from_xwl_content(content_ptr)->events.unmap,
+    wlmtk_surface_connect_unmap_listener_signal(
+        wlmtk_surface_from_xwl_content(content_ptr),
         &xwl_toplevel_ptr->surface_unmap_listener,
         _xwl_toplevel_handle_surface_unmap);
 

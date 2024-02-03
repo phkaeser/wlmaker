@@ -243,10 +243,10 @@ wlmtk_content_t *wlmtk_content_from_xwl_content(
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlr_surface *wlr_surface_from_xwl_content(
+wlmtk_surface_t *wlmtk_surface_from_xwl_content(
     wlmaker_xwl_content_t *xwl_content_ptr)
 {
-    return xwl_content_ptr->wlr_xwayland_surface_ptr->surface;
+    return xwl_content_ptr->surface_ptr;
 }
 
 /* == Local (static) methods =============================================== */
