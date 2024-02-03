@@ -158,6 +158,30 @@ void wlmtk_surface_set_activated(
     surface_ptr->activated = activated;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_map_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.map,
+        listener_ptr,
+        handler);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_unmap_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.unmap,
+        listener_ptr,
+        handler);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
