@@ -131,6 +131,8 @@ static void _xwl_content_content_set_activated(
 
 static void _xwl_content_apply_decorations(
     wlmaker_xwl_content_t *xwl_content_ptr);
+static void _xwl_content_adjust_absolute_pos(
+    wlmtk_content_t *content_ptr, int *x_ptr, int *y_ptr);
 
 /* == Data ================================================================= */
 
@@ -496,17 +498,6 @@ void _xwl_content_handle_set_decorations(
     _xwl_content_apply_decorations(xwl_content_ptr);
 }
 
-/** Computes the position relative to just the parent. */
-static void compute_pos(wlmtk_content_t *content_ptr, int *x_ptr, int *y_ptr)
-{
-    wlmtk_element_t *element_ptr = wlmtk_content_element(content_ptr);
-    if (NULL != content_ptr->parent_content_ptr) {
-        *x_ptr = *x_ptr - element_ptr->x;
-        *y_ptr = *y_ptr - element_ptr->y;
-        compute_pos(content_ptr->parent_content_ptr, x_ptr, y_ptr);
-    }
-}
-
 /* ------------------------------------------------------------------------- */
 /**
  * Handler for the `set_geometry` event of `struct wlr_xwayland_surface`.
@@ -530,9 +521,8 @@ void _xwl_content_handle_set_geometry(
     // subtract each parent popup's position.
     int x = xwl_content_ptr->wlr_xwayland_surface_ptr->x;
     int y = xwl_content_ptr->wlr_xwayland_surface_ptr->y;
-    if (NULL != xwl_content_ptr->content.parent_content_ptr) {
-        compute_pos(xwl_content_ptr->content.parent_content_ptr, &x, &y);
-    }
+    _xwl_content_adjust_absolute_pos(
+        xwl_content_ptr->content.parent_content_ptr, &x, &y);
 
     wlmtk_element_set_position(
         wlmtk_content_element(&xwl_content_ptr->content), x, y);
@@ -659,6 +649,28 @@ void _xwl_content_apply_decorations(wlmaker_xwl_content_t *xwl_content_ptr)
         wlmaker_xwl_toplevel_set_decorations(
             xwl_content_ptr->xwl_toplevel_ptr,
             false);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Adjusts the absolute position by subtracting each parent's position.
+ *
+ * @param content_ptr
+ * @param x_ptr
+ * @param y_ptr
+ */
+static void _xwl_content_adjust_absolute_pos(
+    wlmtk_content_t *content_ptr, int *x_ptr, int *y_ptr)
+{
+    if (NULL == content_ptr) return;
+
+    wlmtk_element_t *element_ptr = wlmtk_content_element(content_ptr);
+    if (NULL != content_ptr->parent_content_ptr) {
+        *x_ptr = *x_ptr - element_ptr->x;
+        *y_ptr = *y_ptr - element_ptr->y;
+        _xwl_content_adjust_absolute_pos(
+            content_ptr->parent_content_ptr, x_ptr, y_ptr);
     }
 }
 
