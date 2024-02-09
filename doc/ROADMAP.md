@@ -97,6 +97,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Maximize.
   * [done] Set title.
   * [done] fullscreen.
+  * [done] Fix positioning of popups.
   * Minimize.
   * show window menu.
   * set_parent.

@@ -49,6 +49,9 @@ struct _wlmaker_xdg_popup_t {
     struct wl_listener        destroy_listener;
     /** Listener for the `new_popup` signal of `wlr_xdg_surface::events`. */
     struct wl_listener        new_popup_listener;
+
+    /** Listener for the `map` signal of the `wlr_surface`. */
+    struct wl_listener        surface_map_listener;
 };
 
 /**

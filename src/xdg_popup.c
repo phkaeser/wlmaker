@@ -35,6 +35,9 @@ static void handle_destroy(
 static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_surface_map(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -76,6 +79,15 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         &wlr_xdg_popup_ptr->base->events.new_popup,
         &wlmaker_xdg_popup_ptr->new_popup_listener,
         handle_new_popup);
+
+    wlmtk_surface_connect_map_listener_signal(
+        wlmaker_xdg_popup_ptr->surface_ptr,
+        &wlmaker_xdg_popup_ptr->surface_map_listener,
+        handle_surface_map);
+
+    bs_log(BS_WARNING, "FIXME: Position is %d, %d",
+           wlr_xdg_popup_ptr->current.geometry.x,
+           wlr_xdg_popup_ptr->current.geometry.y);
 
     return wlmaker_xdg_popup_ptr;
 }
@@ -160,6 +172,29 @@ void handle_new_popup(
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, new_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `map` signal of the @ref wlmtk_surface_t.
+ *
+ * The only aspect to handle here is the positioning of the surface. Note:
+ * It might be recommendable to move this under a `configure` handler (?).
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_surface_map(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, surface_map_listener);
+
+    wlmtk_element_set_position(
+        wlmtk_content_element(&wlmaker_xdg_popup_ptr->super_content),
+        wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->current.geometry.x,
+        wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->current.geometry.y);
 }
 
 /* == End of xdg_popup.c ==================================================== */
