@@ -326,8 +326,15 @@ void _xwl_content_handle_associate(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, associate_listener);
-    bs_log(BS_INFO, "Associate XWL content %p with wlr_surface %p at %d, %d",
+    wlmaker_xwl_content_t *parent_xwl_content_ptr = NULL;
+    if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent) {
+        parent_xwl_content_ptr =
+            xwl_content_ptr->wlr_xwayland_surface_ptr->parent->data;
+    }
+    bs_log(BS_INFO,
+           "Associate XWL content %p with wlr_surface %p, parent %p at %d, %d",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
+           parent_xwl_content_ptr,
            xwl_content_ptr->wlr_xwayland_surface_ptr->x,
            xwl_content_ptr->wlr_xwayland_surface_ptr->y);
 
@@ -489,6 +496,17 @@ void _xwl_content_handle_set_decorations(
     _xwl_content_apply_decorations(xwl_content_ptr);
 }
 
+/** Computes the position relative to just the parent. */
+static void compute_pos(wlmtk_content_t *content_ptr, int *x_ptr, int *y_ptr)
+{
+    wlmtk_element_t *element_ptr = wlmtk_content_element(content_ptr);
+    if (NULL != content_ptr->parent_content_ptr) {
+        *x_ptr = *x_ptr - element_ptr->x;
+        *y_ptr = *y_ptr - element_ptr->y;
+        compute_pos(content_ptr->parent_content_ptr, x_ptr, y_ptr);
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 /**
  * Handler for the `set_geometry` event of `struct wlr_xwayland_surface`.
@@ -506,19 +524,18 @@ void _xwl_content_handle_set_geometry(
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, set_geometry_listener);
 
-    // FIXME: we'll have x, y, width and height holding current values.
-    bs_log(BS_WARNING, "FIXME: geo %d, %d for %d x %d",
-           xwl_content_ptr->wlr_xwayland_surface_ptr->x,
-           xwl_content_ptr->wlr_xwayland_surface_ptr->y,
-           xwl_content_ptr->wlr_xwayland_surface_ptr->width,
-           xwl_content_ptr->wlr_xwayland_surface_ptr->height);
+    // For XWayland, the surface's position is given relative to the "root"
+    // of the specified windows. For @ref wlmtk_element_t, the position is
+    // just relative to the pareent @ref wlmtk_container_t. So we need to
+    // subtract each parent popup's position.
+    int x = xwl_content_ptr->wlr_xwayland_surface_ptr->x;
+    int y = xwl_content_ptr->wlr_xwayland_surface_ptr->y;
+    if (NULL != xwl_content_ptr->content.parent_content_ptr) {
+        compute_pos(xwl_content_ptr->content.parent_content_ptr, &x, &y);
+    }
 
-    // Tricky: the position is in absolute terms to the "root" window, ie.
-    // to the window.
     wlmtk_element_set_position(
-        wlmtk_content_element(&xwl_content_ptr->content),
-        xwl_content_ptr->wlr_xwayland_surface_ptr->x,
-        xwl_content_ptr->wlr_xwayland_surface_ptr->y);
+        wlmtk_content_element(&xwl_content_ptr->content), x, y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -701,6 +718,41 @@ void test_nested(bs_test_t *test_ptr)
         test_ptr,
         bs_dllist_empty(&content0_ptr->content.popups));
 
+    surface1.x = 100;
+    surface1.y = 10;
+    wl_signal_emit_mutable(&surface1.events.set_geometry, NULL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 100,
+        wlmtk_content_element(&content1_ptr->content)->x);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 10,
+        wlmtk_content_element(&content1_ptr->content)->y);
+
+    struct wlr_xwayland_surface surface2;
+    fake_init_wlr_xwayland_surface(&surface2);
+    wlmaker_xwl_content_t *content2_ptr = wlmaker_xwl_content_create(
+        &surface2, NULL, &server);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bs_dllist_empty(&content1_ptr->content.popups));
+
+    surface2.parent = &surface1;
+    wl_signal_emit_mutable(&surface2.events.set_parent, NULL);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        bs_dllist_empty(&content1_ptr->content.popups));
+
+    surface2.x = 120;
+    surface2.y = 12;
+    wl_signal_emit_mutable(&surface2.events.set_geometry, NULL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 20,
+        wlmtk_content_element(&content2_ptr->content)->x);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 2,
+        wlmtk_content_element(&content2_ptr->content)->y);
+
+    wlmaker_xwl_content_destroy(content2_ptr);
     wlmaker_xwl_content_destroy(content1_ptr);
     wlmaker_xwl_content_destroy(content0_ptr);
 }
