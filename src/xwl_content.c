@@ -645,4 +645,80 @@ void _xwl_content_apply_decorations(wlmaker_xwl_content_t *xwl_content_ptr)
     }
 }
 
+/* == Unit Tests =========================================================== */
+
+static void test_create_destroy(bs_test_t *test_ptr);
+static void test_nested(bs_test_t *test_ptr);
+
+static void fake_init_wlr_xwayland_surface(
+    struct wlr_xwayland_surface* wlr_xwayland_surface_ptr);
+
+const bs_test_case_t wlmaker_xwl_content_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
+    { 1, "nested", test_nested },
+    { 0, NULL, NULL },
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests setup and teardown. */
+void test_create_destroy(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server;
+    memset(&server, 0, sizeof(wlmaker_server_t));
+    struct wlr_xwayland_surface wlr_xwayland_surface;
+    fake_init_wlr_xwayland_surface(&wlr_xwayland_surface);
+
+    wlmaker_xwl_content_t *xwl_content_ptr = wlmaker_xwl_content_create(
+        &wlr_xwayland_surface, NULL, &server);
+
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, xwl_content_ptr);
+    wlmaker_xwl_content_destroy(xwl_content_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests nesting of XWayland contents, ie. parenting. */
+void test_nested(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server;
+    memset(&server, 0, sizeof(wlmaker_server_t));
+
+    struct wlr_xwayland_surface surface0;
+    fake_init_wlr_xwayland_surface(&surface0);
+    wlmaker_xwl_content_t *content0_ptr = wlmaker_xwl_content_create(
+        &surface0, NULL, &server);
+
+    struct wlr_xwayland_surface surface1;
+    fake_init_wlr_xwayland_surface(&surface1);
+    wlmaker_xwl_content_t *content1_ptr = wlmaker_xwl_content_create(
+        &surface1, NULL, &server);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bs_dllist_empty(&content0_ptr->content.popups));
+
+    surface1.parent = &surface0;
+    wl_signal_emit_mutable(&surface1.events.set_parent, NULL);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        bs_dllist_empty(&content0_ptr->content.popups));
+
+    wlmaker_xwl_content_destroy(content1_ptr);
+    wlmaker_xwl_content_destroy(content0_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Fake-initializes the `wlr_xwayland_surface_ptr`. */
+void fake_init_wlr_xwayland_surface(
+    struct wlr_xwayland_surface* wlr_xwayland_surface_ptr)
+{
+    memset(wlr_xwayland_surface_ptr, 0, sizeof(struct wlr_xwayland_surface));
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.destroy);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.request_configure);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.associate);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.dissociate);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.set_title);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.set_parent);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.set_decorations);
+    wl_signal_init(&wlr_xwayland_surface_ptr->events.set_geometry);
+}
+
 /* == End of xwl_content.c ================================================= */

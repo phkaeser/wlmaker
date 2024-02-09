@@ -61,6 +61,9 @@ wlmtk_content_t *wlmtk_content_from_xwl_content(
 wlmtk_surface_t *wlmtk_surface_from_xwl_content(
     wlmaker_xwl_content_t *xwl_content_ptr);
 
+/** Unit tests for XWL content. */
+extern const bs_test_case_t wlmaker_xwl_content_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

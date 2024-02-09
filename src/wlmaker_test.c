@@ -22,12 +22,14 @@
 #include "menu.h"
 #include "menu_item.h"
 #include "workspace.h"
+#include "xwl_content.h"
 
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {
     { 1, "decorations", wlmaker_decorations_test_cases },
     { 1, "menu", wlmaker_menu_test_cases },
     { 1, "menu_item", wlmaker_menu_item_test_cases },
+    { 1, "xwl_content", wlmaker_xwl_content_test_cases },
     // Known to be broken, ignore for now. TODO(kaeser@gubbe.ch): Fix.
     { 0, "workspace", wlmaker_workspace_test_cases },
     { 0, NULL, NULL }
