@@ -282,7 +282,7 @@ void _xwl_content_handle_request_configure(
         listener_ptr, wlmaker_xwl_content_t, request_configure_listener);
     struct wlr_xwayland_surface_configure_event *cfg_event_ptr = data_ptr;
 
-    bs_log(BS_INFO, "Reqeust configure for %p: "
+    bs_log(BS_INFO, "Request configure for %p: "
            "%"PRId16" x %"PRId16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
            xwl_content_ptr,
            cfg_event_ptr->x, cfg_event_ptr->y,
