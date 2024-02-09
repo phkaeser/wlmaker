@@ -67,6 +67,8 @@ struct _wlmaker_xwl_content_t {
     struct wl_listener        set_parent_listener;
     /** Listener for the `set_decorations` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_decorations_listener;
+    /** Listener for the `set_geometry` signal of `wlr_xwayland_surface`. */
+    struct wl_listener        set_geometry_listener;
 
     /** The toolkit surface. Only available once 'associated'. */
     wlmtk_surface_t           *surface_ptr;
@@ -101,6 +103,9 @@ static void _xwl_content_handle_set_parent(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _xwl_content_handle_set_decorations(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _xwl_content_handle_set_geometry(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -193,6 +198,10 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
         &wlr_xwayland_surface_ptr->events.set_decorations,
         &xwl_content_ptr->set_decorations_listener,
         _xwl_content_handle_set_decorations);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xwayland_surface_ptr->events.set_geometry,
+        &xwl_content_ptr->set_geometry_listener,
+        _xwl_content_handle_set_geometry);
 
     bs_log(BS_INFO, "Created XWL content %p for wlr_xwayland_surface %p",
            xwl_content_ptr, wlr_xwayland_surface_ptr);
@@ -211,6 +220,7 @@ void wlmaker_xwl_content_destroy(wlmaker_xwl_content_t *xwl_content_ptr)
             &xwl_content_ptr->content);
     }
 
+    wl_list_remove(&xwl_content_ptr->set_geometry_listener.link);
     wl_list_remove(&xwl_content_ptr->set_decorations_listener.link);
     wl_list_remove(&xwl_content_ptr->set_parent_listener.link);
     wl_list_remove(&xwl_content_ptr->set_title_listener.link);
@@ -316,8 +326,10 @@ void _xwl_content_handle_associate(
 {
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, associate_listener);
-    bs_log(BS_INFO, "Associate XWL content %p with wlr_surface %p",
-           xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
+    bs_log(BS_INFO, "Associate XWL content %p with wlr_surface %p at %d, %d",
+           xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
+           xwl_content_ptr->wlr_xwayland_surface_ptr->x,
+           xwl_content_ptr->wlr_xwayland_surface_ptr->y);
 
     BS_ASSERT(NULL == xwl_content_ptr->surface_ptr);
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
@@ -475,6 +487,38 @@ void _xwl_content_handle_set_decorations(
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, set_decorations_listener);
     _xwl_content_apply_decorations(xwl_content_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `set_geometry` event of `struct wlr_xwayland_surface`.
+ *
+ * Called from wlroots/xwayland/xwm.c, whenever the geometry (position or
+ * dimensions) of the window (precisely: the xwayland_surface) changes.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _xwl_content_handle_set_geometry(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_content_t, set_geometry_listener);
+
+    // FIXME: we'll have x, y, width and height holding current values.
+    bs_log(BS_WARNING, "FIXME: geo %d, %d for %d x %d",
+           xwl_content_ptr->wlr_xwayland_surface_ptr->x,
+           xwl_content_ptr->wlr_xwayland_surface_ptr->y,
+           xwl_content_ptr->wlr_xwayland_surface_ptr->width,
+           xwl_content_ptr->wlr_xwayland_surface_ptr->height);
+
+    // Tricky: the position is in absolute terms to the "root" window, ie.
+    // to the window.
+    wlmtk_element_set_position(
+        wlmtk_content_element(&xwl_content_ptr->content),
+        xwl_content_ptr->wlr_xwayland_surface_ptr->x,
+        xwl_content_ptr->wlr_xwayland_surface_ptr->y);
 }
 
 /* ------------------------------------------------------------------------- */
