@@ -88,6 +88,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Ensure stacking order is respected and used.
     * Popups do not contribute to window extensions (no border hops)
     * Handling of modal windows: Should have decorations, stay on top.
+    * Cursor set appropriately.
 
 * Configurable keyboard map (in code or commandline arg)
 
@@ -99,16 +100,36 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] fullscreen.
   * [done] Fix positioning of popups.
   * Minimize.
-  * show window menu.
   * set_parent.
   * set app ID.
-
-* Support `layer_shell`, based on toolkit.
-  * XDG Popups.
+  * [regression, not supported] show window menu.
 
 * Support window decoration protocol, based on toolkit.
   * [done] Style of title bar, iconify and close buttons similar to Window Maker.
-  * Window menu, with basic window actions (not required to adapt to state).
+  * No border shown when windows are not decorated (eg. chrome, firefox)
+
+* Task List
+  * Listing windows, rather than views.
+
+* Window actions, based on toolkit.
+  * Move ([done] drag via title bar, or [pending] window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * Minimize (*iconify*) windows.
+  * Roll up (*shade*) windows.
+  * Raise window when activated.
+
+### Internals and code organization
+
+* [done] Design a toolkit and re-factor the codebase to make use of it.
+  * Ensure the main features (eg. all explicit actions and features above) are
+    tested.
+
+## Plan for 0.3
+
+* Support `layer_shell`, based on toolkit.
+  * XDG Popups.
 
 * Multiple workspaces, based on toolkit.
   * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
@@ -127,27 +148,13 @@ Support for visual effects to improve usability, but not for pure show.
   * Display application status (*starting*, *running*).
   * Configurable (in code).
 
-* Task List
-  * Handles windows, rather than views.
-
-* Window actions, based on toolkit.
-  * Move ([done] drag via title bar, or [pending] window-alt-click)
-  * [done] Resize windows, including a resize bar.
-  * [done] Fullscreen windows.
-  * [done] Maximize windows.
-  * Minimize (*iconify*) windows.
-  * Roll up (*shade*) windows.
-  * Raise window when activated.
+* Menu, based on toolkit
+  * Available as window menu in windows.
+  * Available as (hardcoded) application menu.
 
 *  Visualization of iconified applications, based on toolkit.
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
-
-### Internals and code organization
-
-* [done] Design a toolkit and re-factor the codebase to make use of it.
-  * Ensure the main features (eg. all explicit actions and features above) are
-    tested.
 
 ## Pending
 
@@ -182,6 +189,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Scaling factor per application.
   * Build and test a clear model for `organic`/`maximized`/`fullscreen` state
     switches and precedence.
+  * Window menu, adapting to state (eg. no "maximize" when maximized).
 
 * Application support.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).
