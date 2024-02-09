@@ -363,12 +363,18 @@ void _xwl_content_handle_associate(
             xwl_content_ptr);
 
         wlmtk_element_set_visible(
-            wlmtk_content_element(wlmtk_content_from_xwl_content(xwl_content_ptr)),
+            wlmtk_content_element(&xwl_content_ptr->content),
             true);
 
         // FIXME: Well... yeah. In that case, we'll want to create a popup
         // and add it to the parent. It may already have been added to the
         // parent, though?
+
+        // Ensure the popup is (or remains) on top.
+        wlmtk_container_raise_element_to_top(
+            wlmtk_content_element(
+                &xwl_content_ptr->content)->parent_container_ptr,
+            wlmtk_content_element(&xwl_content_ptr->content));
         return;
     }
 

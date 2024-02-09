@@ -85,9 +85,9 @@ Support for visual effects to improve usability, but not for pure show.
   * Enough functionality to support emacs in X11.
     * [done] Support for child surfaces.
     * [done] Positioning of popups
+    * [done] Ensure stacking order is respected and used.
     * Popups do not contribute to window extensions (no border hops)
     * Handling of modal windows: Should have decorations, stay on top.
-    * Ensure stacking order is respected and used.
 
 * Configurable keyboard map (in code or commandline arg)
 
