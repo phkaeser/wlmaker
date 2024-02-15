@@ -22,6 +22,22 @@
 
 #include "surface.h"
 
+/* == Declaratoins ========================================================= */
+
+static void _wlmtk_content_element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr);
+
+/* == Data ================================================================= */
+
+/** Virtual method table for the content's superclass @ref wlmtk_element_t. */
+static const wlmtk_element_vmt_t _wlmtk_content_element_vmt = {
+    .get_dimensions = _wlmtk_content_element_get_dimensions,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -36,6 +52,9 @@ bool wlmtk_content_init(
     if (!wlmtk_container_init(&content_ptr->super_container, env_ptr)) {
         return false;
     }
+    content_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &content_ptr->super_container.super_element,
+        &_wlmtk_content_element_vmt);
 
     if (NULL != surface_ptr) {
         wlmtk_content_set_surface(content_ptr, surface_ptr);
@@ -200,6 +219,35 @@ wlmtk_content_t *wlmtk_content_get_parent_content(
     return content_ptr->parent_content_ptr;
 }
 
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns the content's dimension: Considers only the surface, and leaves
+ * out pop-ups, in order to draw margins and decorations for just the main
+ * surface.
+ *
+ * @param element_ptr
+ * @param left_ptr
+ * @param top_ptr
+ * @param right_ptr
+ * @param bottom_ptr
+ */
+void _wlmtk_content_element_get_dimensions(
+    wlmtk_element_t *element_ptr,
+    int *left_ptr,
+    int *top_ptr,
+    int *right_ptr,
+    int *bottom_ptr)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_container.super_element);
+
+    wlmtk_element_get_dimensions(
+        wlmtk_surface_element(content_ptr->surface_ptr),
+        left_ptr, top_ptr, right_ptr, bottom_ptr);
+}
+
 /* == Fake content, for tests ============================================== */
 
 static void _wlmtk_fake_content_request_close(wlmtk_content_t *content_ptr);
@@ -292,8 +340,6 @@ void _wlmtk_fake_content_set_activated(
     fake_content_ptr->activated = activated;
 }
 
-/* == Local (static) methods =============================================== */
-
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -378,8 +424,20 @@ void test_add_remove_popup(bs_test_t *test_ptr)
 {
     wlmtk_content_t parent, popup;
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&parent, NULL, NULL));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&popup, NULL, NULL));
+    wlmtk_fake_surface_t *fs0_ptr = wlmtk_fake_surface_create();
+    wlmtk_fake_surface_commit_size(fs0_ptr, 100, 10);
+    wlmtk_fake_surface_t *fs1_ptr = wlmtk_fake_surface_create();
+    wlmtk_fake_surface_commit_size(fs1_ptr, 200, 20);
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_content_init(&parent, &fs0_ptr->surface, NULL));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_content_init(&popup, &fs1_ptr->surface, NULL));
+
+    wlmtk_element_set_visible(wlmtk_content_element(&parent), true);
+    wlmtk_element_set_visible(wlmtk_content_element(&popup), true);
 
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -390,11 +448,20 @@ void test_add_remove_popup(bs_test_t *test_ptr)
         NULL,
         wlmtk_content_get_parent_content(&popup));
 
+    struct wlr_box box;
+    box = wlmtk_element_get_dimensions_box(wlmtk_content_element(&parent));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.height);
+
     wlmtk_content_add_popup(&parent, &popup);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &parent,
         wlmtk_content_get_parent_content(&popup));
+
+    box = wlmtk_element_get_dimensions_box(wlmtk_content_element(&parent));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.height);
 
     wlmtk_content_remove_popup(&parent, &popup);
     BS_TEST_VERIFY_EQ(

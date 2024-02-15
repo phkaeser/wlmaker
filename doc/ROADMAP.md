@@ -86,7 +86,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Support for child surfaces.
     * [done] Positioning of popups
     * [done] Ensure stacking order is respected and used.
-    * Popups do not contribute to window extensions (no border hops)
+    * [done] Popups do not contribute to window extensions (no border hops)
     * Handling of modal windows: Should have decorations, stay on top.
     * Cursor set appropriately.
 

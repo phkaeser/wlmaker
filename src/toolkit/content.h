@@ -113,6 +113,9 @@ struct _wlmtk_content_t {
     /** Virtual method table of the content. */
     wlmtk_content_vmt_t       vmt;
 
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
     /** The window this content belongs to. Set when creating the window. */
