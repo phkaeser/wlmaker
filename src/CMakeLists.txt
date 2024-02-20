@@ -43,6 +43,7 @@ SET(SOURCES
   xdg_popup.c
   xdg_shell.c
   xdg_toplevel.c
+  x11_cursor.xpm
   xwl.c
   xwl_content.c
   xwl_popup.c

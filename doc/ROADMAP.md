@@ -87,8 +87,8 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Positioning of popups
     * [done] Ensure stacking order is respected and used.
     * [done] Popups do not contribute to window extensions (no border hops)
+    * [done] Cursor set appropriately.
     * Handling of modal windows: Should have decorations, stay on top.
-    * Cursor set appropriately.
 
 * Configurable keyboard map (in code or commandline arg)
 

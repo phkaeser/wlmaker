@@ -68,6 +68,7 @@
 #include "toolkit/toolkit.h"
 
 #include "xwl_content.h"
+#include "x11_cursor.xpm"
 
 /* == Declarations ========================================================= */
 
@@ -509,6 +510,18 @@ void handle_ready(struct wl_listener *listener_ptr,
     }
 
     xcb_disconnect(xcb_connection_ptr);
+
+    // Sets the default cursor to use for XWayland surfaces, unless overrideen.
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_xpm_create_from_data(x11_cursor_xpm);
+    if (NULL != gfxbuf_ptr) {
+        wlr_xwayland_set_cursor(
+            xwl_ptr->wlr_xwayland_ptr,
+            (uint8_t*)gfxbuf_ptr->data_ptr,
+            gfxbuf_ptr->pixels_per_line * sizeof(uint32_t),
+            gfxbuf_ptr->width, gfxbuf_ptr->height,
+            0, 0);
+        bs_gfxbuf_destroy(gfxbuf_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
