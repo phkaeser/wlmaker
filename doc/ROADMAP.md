@@ -88,7 +88,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Ensure stacking order is respected and used.
     * [done] Popups do not contribute to window extensions (no border hops)
     * [done] Cursor set appropriately.
-    * Set DISPLAY env variable appropriately.
+    * [done] Set DISPLAY env variable appropriately.
     * Handling of modal windows: Should have decorations, stay on top.
 
 * Configurable keyboard map (in code or commandline arg)
@@ -251,6 +251,10 @@ Features for further versions, not ordered by priority nor timeline.
 * Internationalization and solid font support
   * Move from cairo toy interface to using pango proper.
   * All text strings to be configurable and swappable.
+
+* Reduce Technical Debt
+  * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
+    creation, just after fork. These should not impact the parent process.
 
 ## Visualization and effects
 

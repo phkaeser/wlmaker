@@ -285,6 +285,9 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
         &xwl_ptr->new_surface_listener,
         handle_new_surface);
 
+    // TODO(kaeser@gubbe.ch): That's a bit ugly. We should only do a setenv
+    // as we create & fork the subprocesses. Needs infrastructure, though.
+    setenv("DISPLAY", xwl_ptr->wlr_xwayland_ptr->display_name, true);
     return xwl_ptr;
 }
 
