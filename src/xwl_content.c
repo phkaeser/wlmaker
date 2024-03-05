@@ -457,9 +457,9 @@ void _xwl_content_handle_set_title(
     wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_content_t, set_title_listener);
 
-    if (false) {
+    if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
         wlmtk_window_set_title(
-            NULL,  // FIXME; xwl_content_ptr->window_ptr,
+            wlmtk_window_from_xwl_toplevel(xwl_content_ptr->xwl_toplevel_ptr),
             xwl_content_ptr->wlr_xwayland_surface_ptr->title);
     }
 }
@@ -587,9 +587,9 @@ uint32_t _xwl_content_content_request_maximized(
     __UNUSED__ wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_content_t, content);
 
-    if (false) {
+    if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
         wlmtk_window_commit_maximized(
-            NULL,  // FIXME: xwl_content_ptr->window_ptr,
+            wlmtk_window_from_xwl_toplevel(xwl_content_ptr->xwl_toplevel_ptr),
             maximized);
     }
     return 0;
@@ -604,9 +604,9 @@ uint32_t _xwl_content_content_request_fullscreen(
     __UNUSED__ wlmaker_xwl_content_t *xwl_content_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_xwl_content_t, content);
 
-    if (false) {
+    if (NULL != xwl_content_ptr->xwl_toplevel_ptr) {
         wlmtk_window_commit_fullscreen(
-            NULL, // FIXME: xwl_content_ptr->window_ptr,
+            wlmtk_window_from_xwl_toplevel(xwl_content_ptr->xwl_toplevel_ptr),
             fullscreen);
     }
     return 0;
