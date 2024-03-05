@@ -84,6 +84,11 @@ bool xwl_is_window_type(
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr,
     const xwl_atom_identifier_t *atom_identifiers);
 
+/** Returns a human-readable name for the atom. */
+const char *xwl_atom_name(
+    wlmaker_xwl_t *xwl_ptr,
+    xcb_atom_t atom);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

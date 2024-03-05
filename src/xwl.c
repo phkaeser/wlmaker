@@ -331,6 +331,19 @@ bool xwl_is_window_type(
     return false;
 }
 
+/* ------------------------------------------------------------------------- */
+const char *xwl_atom_name(
+    wlmaker_xwl_t *xwl_ptr,
+    xcb_atom_t atom)
+{
+    for (size_t atom_idx = 0; atom_idx < XWL_MAX_ATOM_ID; ++atom_idx) {
+        if (xwl_ptr->xcb_atoms[atom_idx] == atom) {
+            return xwl_atom_name_map[atom_idx];
+        }
+    }
+    return NULL;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
