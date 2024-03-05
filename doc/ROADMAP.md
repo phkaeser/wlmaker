@@ -80,9 +80,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Demo DockApps included (digital clock)
   * Second Demo DockApp (julia set).
 
-* Initial XWayland support
+* [done] Initial XWayland support
   * [done] Cover enough functionality to support xterm
-  * Enough functionality to support emacs in X11.
+  * [done] Enough functionality to support emacs in X11.
     * [done] Support for child surfaces.
     * [done] Positioning of popups
     * [done] Ensure stacking order is respected and used.
