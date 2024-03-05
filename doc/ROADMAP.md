@@ -89,7 +89,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Popups do not contribute to window extensions (no border hops)
     * [done] Cursor set appropriately.
     * [done] Set DISPLAY env variable appropriately.
-    * Handling of modal windows: Should have decorations, stay on top.
+    * [done] Handling of modal windows: Should have decorations, stay on top.
 
 * Configurable keyboard map (in code or commandline arg)
 
@@ -101,7 +101,6 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] fullscreen.
   * [done] Fix positioning of popups.
   * Minimize.
-  * set_parent.
   * set app ID.
   * [regression, not supported] show window menu.
 
@@ -164,8 +163,10 @@ Features for further versions, not ordered by priority nor timeline.
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
+  * xdg_shell: set_parent, by child wlmtk_window_t.
 
 * XWayland support (X11 clients).
+  * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).

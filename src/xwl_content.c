@@ -339,6 +339,17 @@ void _xwl_content_handle_associate(
            parent_xwl_content_ptr,
            xwl_content_ptr->wlr_xwayland_surface_ptr->x,
            xwl_content_ptr->wlr_xwayland_surface_ptr->y);
+    for (size_t i = 0;
+         i < xwl_content_ptr->wlr_xwayland_surface_ptr->window_type_len;
+         ++i) {
+        const char *name_ptr = xwl_atom_name(
+            xwl_content_ptr->xwl_ptr,
+            xwl_content_ptr->wlr_xwayland_surface_ptr->window_type[i]);
+        if (NULL != name_ptr) {
+            bs_log(BS_INFO, "  XWL content %p has window type %s",
+                   xwl_content_ptr, name_ptr);
+        }
+    }
 
     BS_ASSERT(NULL == xwl_content_ptr->surface_ptr);
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
@@ -357,38 +368,45 @@ void _xwl_content_handle_associate(
         &xwl_content_ptr->surface_commit_listener,
         _xwl_content_handle_surface_commit);
 
-    if (NULL != xwl_content_ptr->wlr_xwayland_surface_ptr->parent) {
+    // Currently we treat parent-less windows AND modal windows as toplevel.
+    // Modal windows should actually be child wlmtk_window_t, but that isn't
+    // supported yet.
+    if (NULL == xwl_content_ptr->wlr_xwayland_surface_ptr->parent ||
+        xwl_content_ptr->wlr_xwayland_surface_ptr->modal) {
+
+        BS_ASSERT(NULL == xwl_content_ptr->xwl_toplevel_ptr);
+        xwl_content_ptr->xwl_toplevel_ptr = wlmaker_xwl_toplevel_create(
+            xwl_content_ptr,
+            xwl_content_ptr->server_ptr,
+            xwl_content_ptr->env_ptr);
+        if (NULL == xwl_content_ptr->xwl_toplevel_ptr) {
+            // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
+            bs_log(BS_FATAL, "Failed wlmaker_xwl_toplevel_create.");
+            return;
+        }
+        _xwl_content_apply_decorations(xwl_content_ptr);
+
+    } else {
+
         BS_ASSERT(NULL == xwl_content_ptr->xwl_popup_ptr);
         xwl_content_ptr->xwl_popup_ptr = wlmaker_xwl_popup_create(
             xwl_content_ptr);
-
+        if (NULL == xwl_content_ptr->xwl_popup_ptr) {
+            // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
+            bs_log(BS_FATAL, "Failed wlmaker_xwl_popup_create.");
+            return;
+        }
         wlmtk_element_set_visible(
             wlmtk_content_element(&xwl_content_ptr->content),
             true);
-
-        // FIXME: Well... yeah. In that case, we'll want to create a popup
-        // and add it to the parent. It may already have been added to the
-        // parent, though?
 
         // Ensure the popup is (or remains) on top.
         wlmtk_container_raise_element_to_top(
             wlmtk_content_element(
                 &xwl_content_ptr->content)->parent_container_ptr,
             wlmtk_content_element(&xwl_content_ptr->content));
-        return;
     }
 
-    xwl_content_ptr->xwl_toplevel_ptr = wlmaker_xwl_toplevel_create(
-        xwl_content_ptr,
-        xwl_content_ptr->server_ptr,
-        xwl_content_ptr->env_ptr);
-    if (NULL == xwl_content_ptr->xwl_toplevel_ptr) {
-        // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
-        bs_log(BS_FATAL, "Failed wlmaker_xwl_toplevel_create.");
-        return;
-    }
-
-    _xwl_content_apply_decorations(xwl_content_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -478,6 +496,13 @@ void _xwl_content_handle_set_parent(
         wlmtk_content_remove_popup(
             wlmtk_content_get_parent_content(content_ptr),
             content_ptr);
+    }
+
+    if (xwl_content_ptr->wlr_xwayland_surface_ptr->modal) {
+        // TODO(kaeser@gubbe.ch): We're currently treating modal windows as
+        // toplevel windows. They're not popups, for sure. To support this,
+        // we'll need wlmtk_window_t to support child wlmtk_window_t.
+        return;
     }
 
     wlmtk_content_add_popup(parent_content_ptr, content_ptr);
