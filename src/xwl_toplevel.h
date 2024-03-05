@@ -62,6 +62,10 @@ void wlmaker_xwl_toplevel_set_decorations(
     wlmaker_xwl_toplevel_t *xwl_toplevel_ptr,
     bool decorated);
 
+/** Accessor: Exposes @ref wlmtk_window_t. */
+wlmtk_window_t *wlmtk_window_from_xwl_toplevel(
+    wlmaker_xwl_toplevel_t *xwl_toplevel_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

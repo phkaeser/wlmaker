@@ -103,6 +103,13 @@ void wlmaker_xwl_toplevel_set_decorations(
         decorated);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_window_t *wlmtk_window_from_xwl_toplevel(
+    wlmaker_xwl_toplevel_t *xwl_toplevel_ptr)
+{
+    return xwl_toplevel_ptr->window_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
