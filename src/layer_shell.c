@@ -128,11 +128,10 @@ void handle_new_surface(
             layer_shell_ptr->server_ptr);
     }
 
-    wlmaker_layer_surface_t *layer_surface_ptr = wlmaker_layer_surface_create(
-        wlr_layer_surface_v1_ptr,
-        layer_shell_ptr->server_ptr);
-    // not used further.
-    layer_surface_ptr = layer_surface_ptr;
+    __UNUSED__ wlmaker_layer_surface_t *layer_surface_ptr =
+        wlmaker_layer_surface_create(
+            wlr_layer_surface_v1_ptr,
+            layer_shell_ptr->server_ptr);
 }
 
 /* == End of layer_shell.c ================================================= */

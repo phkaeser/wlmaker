@@ -43,6 +43,8 @@ static cairo_surface_t *create_background(
 
 /** Lookup paths for icons. */
 const char *lookup_paths[] = {
+    "/usr/share/icons/wlmaker",
+    "/usr/local/share/icons/wlmaker",
 #if defined(WLMAKER_SOURCE_DIR)
     WLMAKER_SOURCE_DIR "/icons",
 #endif  // WLMAKER_SOURCE_DIR
@@ -78,7 +80,11 @@ bool wlmaker_decorations_draw_tile_icon(
 
     char full_path[PATH_MAX];
     char *path_ptr = bs_file_lookup(icon_path_ptr, lookup_paths, 0, full_path);
-    if (NULL == path_ptr) return false;
+    if (NULL == path_ptr) {
+        bs_log(BS_ERROR, "Failed bs_file_lookup(%s, ...) in lookup_paths.",
+               icon_path_ptr);
+        return false;
+    }
 
     cairo_surface_t *icon_surface_ptr = cairo_image_surface_create_from_png(
         path_ptr);

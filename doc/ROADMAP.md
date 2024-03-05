@@ -253,6 +253,9 @@ Features for further versions, not ordered by priority nor timeline.
   * Move from cairo toy interface to using pango proper.
   * All text strings to be configurable and swappable.
 
+* Commandline flags to support:
+  * icon lookup paths beyond the hardcoded defaults.
+
 * Reduce Technical Debt
   * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
     creation, just after fork. These should not impact the parent process.
@@ -279,6 +282,13 @@ Features for further versions, not ordered by priority nor timeline.
 * Network monitor.
 * Laptop battery status.
 * Julia set.
+
+## Build, compile, deployment
+
+* Build & compile off dependency versions found in recent distros (libwlroot, ...).
+* Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
+* Provide binary package of wlmaker.
+* Run github workflows to build with GCC and Clang, x86_64 and arm64, and Linux + *BSD.
 
 ## Non-Goals
 

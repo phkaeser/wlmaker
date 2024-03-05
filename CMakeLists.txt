@@ -50,8 +50,8 @@ OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
 OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 
-# Toplevel compile options, for GCC.
-IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+# Toplevel compile options, for GCC and clang.
+IF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
   ADD_COMPILE_OPTIONS(-Wall -Wextra -Werror)
 
   IF(config_DEBUG)
@@ -68,7 +68,7 @@ IF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   # full path. This option resets it to a path relative to project source.
   ADD_COMPILE_OPTIONS(-fmacro-prefix-map=${PROJECT_SOURCE_DIR}=.)
 
-ENDIF(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+ENDIF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 SET(CMAKE_C_STANDARD 11)
 
 LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")

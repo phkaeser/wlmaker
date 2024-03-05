@@ -7,9 +7,9 @@ on:
     branches: [ "main" ]
 
 env:
-  INSTALL_PATH: "${HOME}/.local"
-  INSTALL_LIBRARY_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  INSTALL_PKGCONFIG_PATH: "${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/"
+  INSTALL_PATH: "${HOME}/wlmaker"
+  INSTALL_LIBRARY_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  INSTALL_PKGCONFIG_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/wlmaker/share/pkgconfig/"
 
 jobs:
   build:
@@ -18,6 +18,7 @@ jobs:
     steps:
     - name: Install package dependencies.
       run: |
+        sudo apt-get update
         sudo apt-get install -y git \
           cmake \
           doxygen \
@@ -40,11 +41,11 @@ jobs:
           libxcb-res0-dev \
           libxcb-xinput-dev \
           libxkbcommon-dev \
+          libxml2-dev \
           meson \
           plantuml \
           xmlto \
-          xsltproc \
-          wayland-protocols
+          xsltproc
     
     - name: Checkout code including submodule dependencies.
       uses: actions/checkout@v3
@@ -55,35 +56,27 @@ jobs:
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        echo "pkg: ${PKG_CONFIG_PATH}"
-        echo "lib: ${LD_LIBRARY_PATH}"
-        (cd ${{github.workspace}}/dependencies && cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build)
-        cmake --build ${{github.workspace}}/dependencies/build
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} dependencies/ -B dependencies/build/
+        cmake --build dependencies/build
 
     - name: Configure wlmaker through CMake.
-      # Configure CMake in a 'build' subdirectory.
       run: |
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        echo "pkg: ${PKG_CONFIG_PATH}"
-        echo "lib: ${LD_LIBRARY_PATH}"
-        cmake -B ${{github.workspace}}/build
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build/
 
     - name: Build wlmaker.
-      # Build your program with the given configuration
       run: |
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        cmake --build ${{github.workspace}}/build
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake --build build/
 
     - name: Build documentation.
-      run: cmake --build ${{github.workspace}}/build --target doc
+      run: cmake --build build/ --target doc
 
-#    - name: Run all tests
-#      working-directory: ${{github.workspace}}/build
-#      # Execute tests defined by the CMake configuration.
-#      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-#      run: |
-#        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-#        #ctest --test-dir ${{github.workspace}}/build
-#        ${{github.workspace}}/build/src/toolkit/toolkit_test
-
+    - name: Run all tests
+      run: |
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        ctest --test-dir build/ --build-run-dir build/ -V
