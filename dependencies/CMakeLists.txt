@@ -104,7 +104,7 @@ ExternalProject_Add(libdisplay_info
 ExternalProject_Add(wlroots
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wlroots"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 -Drenderers=gles2 -Dxwayland=enabled
+  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 -Dxwayland=enabled
   BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
   DEPENDS drm wayland pixman wayland_protocols seatd hwdata libdisplay_info
