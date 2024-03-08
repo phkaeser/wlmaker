@@ -42,6 +42,7 @@ jobs:
           libxcb-xinput-dev \
           libxkbcommon-dev \
           libxml2-dev \
+          libwayland-dev \
           meson \
           plantuml \
           xmlto \
