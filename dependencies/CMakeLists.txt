@@ -107,5 +107,5 @@ ExternalProject_Add(wlroots
   CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 -Dxwayland=enabled
   BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
-  DEPENDS drm wayland pixman wayland_protocols seatd hwdata libdisplay_info
+  DEPENDS drm pixman seatd hwdata libdisplay_info
 )
