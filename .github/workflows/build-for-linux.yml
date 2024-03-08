@@ -45,7 +45,8 @@ jobs:
           meson \
           plantuml \
           xmlto \
-          xsltproc
+          xsltproc \
+          xwayland
     
     - name: Checkout code including submodule dependencies.
       uses: actions/checkout@v3
