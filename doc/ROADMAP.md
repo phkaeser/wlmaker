@@ -105,9 +105,9 @@ Support for visual effects to improve usability, but not for pure show.
   * set app ID.
   * [regression, not supported] show window menu.
 
-* Support window decoration protocol, based on toolkit.
+* [done] Support window decoration protocol, based on toolkit.
   * [done] Style of title bar, iconify and close buttons similar to Window Maker.
-  * No border shown when windows are not decorated (eg. chrome, firefox)
+  * [done] No border shown when windows are not decorated (eg. chrome, firefox)
 
 * Task List
   * Listing windows, rather than views.
