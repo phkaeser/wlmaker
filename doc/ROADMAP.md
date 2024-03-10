@@ -74,12 +74,11 @@ Support for visual effects to improve usability, but not for pure show.
   * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
 
-* Experimental support for Dock Apps
+* [done] Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
   * [done] Surfaces will be shown in either tile container, clip or dock area,
     depending from where the app was started.
   * [done] Demo DockApps included (digital clock)
-  * Second Demo DockApp (julia set).
 
 * [done] Initial XWayland support
   * [done] Cover enough functionality to support xterm
@@ -129,6 +128,14 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.3
 
+* Screensaver support.
+  * Implement ext-session-lock-v1 protocol.
+  * Verify screen lock works with eg. swaylock.
+
+* Configuration file support
+  * Basic theme configuration (decoration style) loaded from configuration file.
+  * Workspaces and backgrounds .
+
 * Support `layer_shell`, based on toolkit.
   * XDG Popups.
 
@@ -149,10 +156,6 @@ Support for visual effects to improve usability, but not for pure show.
   * Display application status (*starting*, *running*).
   * Configurable (in code).
 
-* Menu, based on toolkit
-  * Available as window menu in windows.
-  * Available as (hardcoded) application menu.
-
 *  Visualization of iconified applications, based on toolkit.
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
@@ -168,6 +171,7 @@ Features for further versions, not ordered by priority nor timeline.
 
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
+  * Permit conditional compilation of XWayland support, and enabling/disabling via flag.
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).
@@ -175,6 +179,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Drag-and-drop between clip and dock.
   * Ideally: With a Wayland protocol that permits running the dock and clip as
     separate binary, independent of the compositor.
+  * Second Demo DockApp (julia set).
 
 * Visualization / icons for running apps.
   * Show in 'iconified' area.
@@ -226,12 +231,13 @@ Features for further versions, not ordered by priority nor timeline.
 
 * Configurable keyboard map.
 
-* Root menu.
-
-* Menu with submenus.
-
-* Window menu adapting to window state.
-  * Eg. "Maximize" shown when not maximized, otherwise: "restore".
+* Menu, based on toolkit
+  * Available as window menu in windows.
+  * Available as (hardcoded) application menu.
+  * Root menu.
+  * Menu with submenus.
+  * Window menu adapting to window state.
+    (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
 
 * Window placement
   * Automatic placement on a free spot.
