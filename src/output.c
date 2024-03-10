@@ -118,8 +118,8 @@ void wlmaker_output_destroy(wlmaker_output_t *output_ptr)
 void handle_output_destroy(struct wl_listener *listener_ptr,
                            __UNUSED__ void *data_ptr)
 {
-    wlmaker_output_t *output_ptr = wl_container_of(
-        listener_ptr, output_ptr, output_destroy_listener);
+    wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_output_t, output_destroy_listener);
     wlmaker_server_output_remove(output_ptr->server_ptr, output_ptr);
     wlmaker_output_destroy(output_ptr);
 }
@@ -134,8 +134,8 @@ void handle_output_destroy(struct wl_listener *listener_ptr,
 void handle_output_frame(struct wl_listener *listener_ptr,
                          __UNUSED__ void *data_ptr)
 {
-    wlmaker_output_t *output_ptr = wl_container_of(
-        listener_ptr, output_ptr, output_frame_listener);
+    wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_output_t, output_frame_listener);
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_get_scene_output(
         output_ptr->wlr_scene_ptr,

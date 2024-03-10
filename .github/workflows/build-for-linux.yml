@@ -32,6 +32,7 @@ jobs:
           libncurses-dev \
           libudev-dev \
           libvulkan-dev \
+          libwayland-dev \
           libxcb-composite0-dev \
           libxcb-dri3-dev \
           libxcb-ewmh-dev \
@@ -44,8 +45,10 @@ jobs:
           libxml2-dev \
           meson \
           plantuml \
+          wayland-protocols \
           xmlto \
-          xsltproc
+          xsltproc \
+          xwayland
     
     - name: Checkout code including submodule dependencies.
       uses: actions/checkout@v3

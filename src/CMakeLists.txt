@@ -43,6 +43,11 @@ SET(SOURCES
   xdg_popup.c
   xdg_shell.c
   xdg_toplevel.c
+  x11_cursor.xpm
+  xwl.c
+  xwl_content.c
+  xwl_popup.c
+  xwl_toplevel.c
 )
 
 SET(HEADERS
@@ -74,6 +79,10 @@ SET(HEADERS
   xdg_popup.h
   xdg_shell.h
   xdg_toplevel.h
+  xwl.h
+  xwl_content.h
+  xwl_popup.h
+  xwl_toplevel.h
 )
 
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})
@@ -96,6 +105,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${CAIRO_INCLUDE_DIRS}
   ${WAYLAND_INCLUDE_DIRS}
   ${WLROOTS_INCLUDE_DIRS}
+  ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
 )
 
@@ -107,6 +117,7 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::CAIRO
   PkgConfig::WAYLAND
   PkgConfig::WLROOTS
+  PkgConfig::XCB
   PkgConfig::XKBCOMMON
 )
 
@@ -119,6 +130,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${CAIRO_INCLUDE_DIRS}
   ${WAYLAND_INCLUDE_DIRS}
   ${WLROOTS_INCLUDE_DIRS}
+  ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
 )
 
@@ -130,6 +142,7 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::CAIRO
   PkgConfig::WAYLAND
   PkgConfig::WLROOTS
+  PkgConfig::XCB
   PkgConfig::XKBCOMMON
 )
 TARGET_COMPILE_DEFINITIONS(

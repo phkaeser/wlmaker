@@ -48,12 +48,16 @@ struct _wlmtk_surface_t {
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
+    /** Toolkit environment. See @ref wlmtk_surface_create. */
+    wlmtk_env_t               *env_ptr;
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
 
     /** The scene API node displaying a surface and all it's sub-surfaces. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
+    /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
+    struct wl_listener        wlr_scene_tree_node_destroy_listener;
 
     /** Committed width of the surface, in pixels. */
     int                       committed_width;
@@ -62,6 +66,9 @@ struct _wlmtk_surface_t {
 
     /** Listener for the `events.commit` signal of `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
+
+    /** Whether this surface is activated, ie. has keyboard focus. */
+    bool                      activated;
 };
 
 /**
@@ -107,20 +114,30 @@ void wlmtk_surface_get_size(
     int *height_ptr);
 
 /**
- * Commits the given dimensions for the surface.
- *
- * FIXME: Should no longer be required externally.
+ * Activates the surface.
  *
  * @param surface_ptr
- * @param serial
- * @param width
- * @param height
+ * @param activated
  */
-void wlmtk_surface_commit_size(
+void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
-    uint32_t serial,
-    int width,
-    int height);
+    bool activated);
+
+/** Connects a listener and handler to the `map` signal of `wlr_surface`. */
+void wlmtk_surface_connect_map_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler);
+/** Connects a listener and handler to the `unmap` signal of `wlr_surface`. */
+void wlmtk_surface_connect_unmap_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler);
+/** Connects a listener and handler to the `commit` signal of `wlr_surface`. */
+void wlmtk_surface_connect_commit_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];
@@ -133,6 +150,12 @@ struct _wlmtk_fake_surface_t {
 
 /** Ctor for the fake surface.*/
 wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
+
+/** Fakes a wlr_surface commit event. */
+void wlmtk_fake_surface_commit_size(
+    wlmtk_fake_surface_t *fake_surface_ptr,
+    int width,
+    int height);
 
 /** Dtor for the fake surface.*/
 void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr);

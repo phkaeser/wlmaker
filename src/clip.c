@@ -403,8 +403,8 @@ void handle_workspace_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_clip_t *clip_ptr = wl_container_of(
-        listener_ptr, clip_ptr, workspace_changed_listener);
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_clip_t, workspace_changed_listener);
     wlmaker_workspace_t *workspace_ptr = data_ptr;
 
     // TODO(kaeser@gubbe.ch): Should be part of that code cleanup...

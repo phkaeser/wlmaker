@@ -39,6 +39,8 @@ extern "C" {
  * @param listener_ptr
  * @param notifier_func
  */
+// TODO(kaeser@gubbe.ch): Either swap arguments (listener first) or rename,
+// eg. . wlm_util_connect_signal_to_listener(...).
 void wlmtk_util_connect_listener_signal(
     struct wl_signal *signal_ptr,
     struct wl_listener *listener_ptr,

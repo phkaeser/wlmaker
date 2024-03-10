@@ -102,8 +102,8 @@ void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_layer_shell_t *layer_shell_ptr = wl_container_of(
-        listener_ptr, layer_shell_ptr, destroy_listener);
+    wlmaker_layer_shell_t *layer_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_shell_t, destroy_listener);
 
     wlmaker_layer_shell_destroy(layer_shell_ptr);
 }
@@ -119,8 +119,8 @@ void handle_new_surface(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_layer_shell_t *layer_shell_ptr = wl_container_of(
-        listener_ptr, layer_shell_ptr, new_surface_listener);
+    wlmaker_layer_shell_t *layer_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_shell_t, new_surface_listener);
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr = data_ptr;
 
     if (NULL == wlr_layer_surface_v1_ptr->output) {

@@ -16,7 +16,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #include "xdg_shell.h"
 
@@ -85,8 +85,8 @@ void wlmaker_xdg_shell_destroy(wlmaker_xdg_shell_t *xdg_shell_ptr)
 void handle_destroy(struct wl_listener *listener_ptr,
                     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_shell_t *xdg_shell_ptr = wl_container_of(
-        listener_ptr, xdg_shell_ptr, destroy_listener);
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, destroy_listener);
 
     wlmaker_xdg_shell_destroy(xdg_shell_ptr);
 }
@@ -99,9 +99,10 @@ void handle_destroy(struct wl_listener *listener_ptr,
  * @param data_ptr
  */
 void handle_new_surface(struct wl_listener *listener_ptr,
-                        __UNUSED__ void *data_ptr)
+                        void *data_ptr)
 {
     struct wlr_xdg_surface *wlr_xdg_surface_ptr;
+
     wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_shell_t, new_surface_listener);
     wlr_xdg_surface_ptr = data_ptr;

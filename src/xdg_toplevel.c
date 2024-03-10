@@ -37,8 +37,6 @@ typedef struct {
 
     /** The corresponding wlroots XDG surface. */
     struct wlr_xdg_surface    *wlr_xdg_surface_ptr;
-    /** Whether this surface is currently activated. */
-    bool                      activated;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_surface::events`. */
     struct wl_listener        destroy_listener;
@@ -133,7 +131,7 @@ static uint32_t content_request_size(
 static void content_request_close(
     wlmtk_content_t *content_ptr);
 static void content_set_activated(
-    wlmtk_content_t *surface_ptr,
+    wlmtk_content_t *content_ptr,
     bool activated);
 
 /* == Data ================================================================= */
@@ -212,16 +210,17 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &wlr_xdg_surface_ptr->events.new_popup,
         &xdg_tl_surface_ptr->new_popup_listener,
         handle_new_popup);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.map,
+
+    wlmtk_surface_connect_map_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_map_listener,
         handle_surface_map);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.unmap,
+    wlmtk_surface_connect_unmap_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.commit,
+    wlmtk_surface_connect_commit_listener_signal(
+        xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_commit_listener,
         handle_surface_commit);
 
@@ -375,35 +374,11 @@ void content_set_activated(
 {
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         content_ptr, xdg_toplevel_surface_t, super_content);
-    // Early return, if nothing to be done.
-    if (xdg_tl_surface_ptr->activated == activated) return;
 
-    struct wlr_seat *wlr_seat_ptr =
-        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr;
     wlr_xdg_toplevel_set_activated(
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, activated);
 
-    if (activated) {
-        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-            wlr_seat_ptr);
-        if (NULL != wlr_keyboard_ptr) {
-            wlr_seat_keyboard_notify_enter(
-                wlr_seat_ptr,
-                xdg_tl_surface_ptr->wlr_xdg_surface_ptr->surface,
-                wlr_keyboard_ptr->keycodes,
-                wlr_keyboard_ptr->num_keycodes,
-                &wlr_keyboard_ptr->modifiers);
-        }
-    } else {
-        BS_ASSERT(xdg_tl_surface_ptr->activated);
-        // FIXME: This clears pointer focus. But, this is keyboard focus?
-        if (wlr_seat_ptr->keyboard_state.focused_surface ==
-            xdg_tl_surface_ptr->wlr_xdg_surface_ptr->surface) {
-            wlr_seat_pointer_clear_focus(wlr_seat_ptr);
-        }
-    }
-
-    xdg_tl_surface_ptr->activated = activated;
+    wlmtk_surface_set_activated(xdg_tl_surface_ptr->surface_ptr, activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -451,9 +426,9 @@ void handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_content_element(&xdg_popup_ptr->super_content), true);
-    wlmtk_container_add_element(
-        &xdg_tl_surface_ptr->super_content.super_container,
-        wlmtk_content_element(&xdg_popup_ptr->super_content));
+    wlmtk_content_add_popup(
+        &xdg_tl_surface_ptr->super_content,
+        &xdg_popup_ptr->super_content);
 
     bs_log(BS_INFO, "XDG toplevel %p: New popup %p",
            xdg_tl_surface_ptr, xdg_popup_ptr);
@@ -522,11 +497,9 @@ void handle_surface_commit(
     BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_surface_ptr->role ==
               WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
-    wlmtk_content_commit_size(
+    wlmtk_content_commit_serial(
         &xdg_tl_surface_ptr->super_content,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
+        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial);
 
     wlmtk_window_commit_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,

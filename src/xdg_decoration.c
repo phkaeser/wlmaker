@@ -129,11 +129,9 @@ void wlmaker_xdg_decoration_manager_destroy(
  * @param data_ptr            Points to `wlr_xdg_toplevel_decoration_v1`.
  */
 void handle_new_toplevel_decoration(
-    struct wl_listener *listener_ptr,
+    __UNUSED__ struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = wl_container_of(
-        listener_ptr, decoration_manager_ptr, new_toplevel_decoration_listener);
     struct wlr_xdg_toplevel_decoration_v1
         *wlr_xdg_toplevel_decoration_v1_ptr = data_ptr;
 
@@ -156,8 +154,8 @@ static void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = wl_container_of(
-        listener_ptr, decoration_manager_ptr, destroy_listener);
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_manager_t, destroy_listener);
 
     free(decoration_manager_ptr);
 }
@@ -253,9 +251,7 @@ void handle_decoration_request_mode(
     wlr_xdg_toplevel_decoration_v1_set_mode(
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
 
-    if (NULL != content_ptr &&
-        content_ptr->identifier_ptr == wlmtk_content_identifier_ptr) {
-
+    if (NULL != content_ptr) {
         bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "
                "content %p: Current %d, pending %d, scheduled %d, "
                "requested %d. Set: %d",
@@ -284,8 +280,8 @@ void handle_decoration_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
-        listener_ptr, decoration_ptr, destroy_listener);
+    wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_t, destroy_listener);
     wlmaker_xdg_decoration_destroy(decoration_ptr);
 }
 

@@ -77,7 +77,7 @@ struct _wlmtk_content_vmt_t {
      * Requests the content to change to the specified size.
      *
      * This may be implemented as an asynchronous implementation. Once the
-     * content has committed the adapted size, @ref wlmtk_content_commit_size
+     * content has committed the adapted size, @ref wlmtk_content_commit_serial
      * should be called with the corresponding serial.
      *
      * @param content_ptr
@@ -108,26 +108,30 @@ struct _wlmtk_content_vmt_t {
 
 /** State of window content. */
 struct _wlmtk_content_t {
-    /** Temporary: Identifier, to disambiguate from XDG nodes. */
-    void                      *identifier_ptr;
-
     /** Super class of the content: A container, holding surface & popups. */
     wlmtk_container_t         super_container;
     /** Virtual method table of the content. */
     wlmtk_content_vmt_t       vmt;
 
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
-};
 
-/**
- * Identifying pointer: Value unique to wlmtk_content.
- *
- * TODO(kaeser@gubbe.ch): Remove, once migrated to toolkit.
- */
-extern void *wlmtk_content_identifier_ptr;
+    /**
+     * The parent content, or NULL. Set in @ref wlmtk_content_add_popup,
+     * respectively in @ref wlmtk_content_remove_popup.
+     */
+    wlmtk_content_t           *parent_content_ptr;
+
+    /** Set of registered popup contents. See @ref wlmtk_content_add_popup. */
+    bs_dllist_t               popups;
+    /** Connects to the parent's @ref wlmtk_content_t::popups, if a popup. */
+    bs_dllist_node_t          dlnode;
+};
 
 /**
  * Initializes the content with the given surface.
@@ -150,6 +154,16 @@ bool wlmtk_content_init(
  */
 void wlmtk_content_fini(
     wlmtk_content_t *content_ptr);
+
+/**
+ * Sets or clears the content's surface.
+ *
+ * @param content_ptr
+ * @param surface_ptr         Surface to set for the content, or NULL.
+ */
+void wlmtk_content_set_surface(
+    wlmtk_content_t *content_ptr,
+    wlmtk_surface_t *surface_ptr);
 
 /**
  * Extends the content by specifying virtual methods.
@@ -197,6 +211,7 @@ static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
 static inline void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated) {
+    if (NULL == content_ptr->vmt.set_activated) return;
     content_ptr->vmt.set_activated(content_ptr, activated);
 }
 
@@ -220,14 +235,38 @@ void wlmtk_content_get_size(
     int *height_ptr);
 
 /** Commits size: Calls into @ref wlmtk_window_serial. */
-void wlmtk_content_commit_size(
+void wlmtk_content_commit_serial(
     wlmtk_content_t *content_ptr,
-    uint32_t serial,
-    int width,
-    int height);
+    uint32_t serial);
 
 /** Returns the superclass' instance of @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_content_element(wlmtk_content_t *content_ptr);
+
+/**
+ * Adds a popup to the content.
+ *
+ * @param content_ptr
+ * @param popup_content_ptr
+ */
+void wlmtk_content_add_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr);
+
+/**
+ * Removes a popup from the content.
+ *
+ * `popup_content_ptr` must have previously been added to `content_ptr`.
+ *
+ * @param content_ptr
+ * @param popup_content_ptr
+ */
+void wlmtk_content_remove_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_content_t *popup_content_ptr);
+
+/** @return A pointer to the parent content, or NULL if none. */
+wlmtk_content_t *wlmtk_content_get_parent_content(
+    wlmtk_content_t *content_ptr);
 
 /** Content's unit tests. */
 extern const bs_test_case_t wlmtk_content_test_cases[];
@@ -236,6 +275,8 @@ extern const bs_test_case_t wlmtk_content_test_cases[];
 struct _wlmtk_fake_content_t {
     /** Superclass: content. */
     wlmtk_content_t           content;
+    /** Fake surface, the argument to @ref wlmtk_fake_content_create. */
+    wlmtk_fake_surface_t      *fake_surface_ptr;
 
     /** Reports whether @ref wlmtk_content_request_close was called. */
     bool                      request_close_called;

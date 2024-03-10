@@ -318,6 +318,9 @@ void wlmtk_workspace_window_to_fullscreen(
                 &workspace_ptr->window_container.elements,
                 wlmtk_dlnode_from_element(wlmtk_window_element(window_ptr))));
 
+        // TODO(kaeser@gubbe.ch): Add a method to just reparent an element. The
+        // current implementation will destroy, then re-create each of the
+        // scene nodes.
         wlmtk_container_remove_element(
             &workspace_ptr->window_container,
             wlmtk_window_element(window_ptr));

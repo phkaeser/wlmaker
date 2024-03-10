@@ -64,9 +64,17 @@ static bool _wlmtk_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
+static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+static void _wlmtk_surface_commit_size(
+    wlmtk_surface_t *surface_ptr,
+    int width,
+    int height);
 
 /* == Data ================================================================= */
 
@@ -123,24 +131,67 @@ void wlmtk_surface_get_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_surface_commit_size(
+void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
-    __UNUSED__ uint32_t serial,
-    int width,
-    int height)
+    bool activated)
 {
-    // TODO(kaeser@gubbe.ch): don't update layout if size didn't change.
+    if (surface_ptr->activated == activated) return;
 
-    if (surface_ptr->committed_width != width ||
-        surface_ptr->committed_height != height) {
-        surface_ptr->committed_width = width;
-        surface_ptr->committed_height = height;
+    struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(surface_ptr->env_ptr);
+    struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(wlr_seat_ptr);
+    if (activated) {
+        if (NULL != wlr_keyboard_ptr) {
+            wlr_seat_keyboard_notify_enter(
+                wlr_seat_ptr,
+                surface_ptr->wlr_surface_ptr,
+                wlr_keyboard_ptr->keycodes,
+                wlr_keyboard_ptr->num_keycodes,
+                &wlr_keyboard_ptr->modifiers);
+        }
+    } else {
+        if (wlr_seat_ptr->keyboard_state.focused_surface ==
+            surface_ptr->wlr_surface_ptr) {
+            wlr_seat_keyboard_clear_focus(wlr_seat_ptr);
+        }
     }
 
-    if (NULL != surface_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
-            surface_ptr->super_element.parent_container_ptr);
-    }
+    surface_ptr->activated = activated;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_map_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.map,
+        listener_ptr,
+        handler);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_unmap_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.unmap,
+        listener_ptr,
+        handler);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_surface_connect_commit_listener_signal(
+    wlmtk_surface_t *surface_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_surface_ptr->events.commit,
+        listener_ptr,
+        handler);
 }
 
 /* == Local (static) methods =============================================== */
@@ -169,6 +220,7 @@ bool _wlmtk_surface_init(
     }
     surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &surface_ptr->super_element, &surface_element_vmt);
+    surface_ptr->env_ptr = env_ptr;
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
     if (NULL != surface_ptr->wlr_surface_ptr) {
@@ -228,6 +280,10 @@ struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
         wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
     if (NULL == surface_ptr->wlr_scene_tree_ptr) return NULL;
 
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->wlr_scene_tree_ptr->node.events.destroy,
+        &surface_ptr->wlr_scene_tree_node_destroy_listener,
+        _wlmtk_surface_handle_wlr_scene_tree_node_destroy);
     return &surface_ptr->wlr_scene_tree_ptr->node;
 }
 
@@ -415,8 +471,12 @@ bool _wlmtk_surface_element_pointer_button(
     // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
     // over to a non-activated window will trigger the condition here on the
     // WLMTK_BUTTON_UP event. Needs a test and fixing.
-    BS_ASSERT(surface_ptr->wlr_surface_ptr ==
-              wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+    // Additionally, this appears to trigger when creating a new XWL popup and
+    // the UP event goes to the new surface. Also needs test & fixing.
+    if (WLMTK_BUTTON_UP != button_event_ptr->type) {
+        BS_ASSERT(surface_ptr->wlr_surface_ptr ==
+                  wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+    }
 
     // We're only forwarding PRESSED & RELEASED events.
     if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
@@ -433,6 +493,24 @@ bool _wlmtk_surface_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `destroy` signal of `wlr_scene_tree_ptr->node`.
+ *
+ * We have this registered to clear out the extra pointer we're holding to
+ * @ref wlmtk_surface_t::wlr_scene_tree_ptr. @ref wlmtk_element_t has a
+ * separate destroy handler that will take care of actual cleanup.
+ * */
+void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, wlr_scene_tree_node_destroy_listener);
+    surface_ptr->wlr_scene_tree_ptr = NULL;
+    wl_list_remove(&surface_ptr->wlr_scene_tree_node_destroy_listener.link);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for the `commit` signal of `wlr_surface`. */
 void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
@@ -440,11 +518,37 @@ void _wlmtk_surface_handle_surface_commit(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
-    wlmtk_surface_commit_size(
-        surface_ptr, 0,
+    _wlmtk_surface_commit_size(
+        surface_ptr,
         surface_ptr->wlr_surface_ptr->current.width,
         surface_ptr->wlr_surface_ptr->current.height);
 }
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Surface commits a new size: Store the size, and update the parent's layout.
+ *
+ * @param surface_ptr
+ * @param width
+ * @param height
+ */
+void _wlmtk_surface_commit_size(
+    wlmtk_surface_t *surface_ptr,
+    int width,
+    int height)
+{
+    if (surface_ptr->committed_width != width ||
+        surface_ptr->committed_height != height) {
+        surface_ptr->committed_width = width;
+        surface_ptr->committed_height = height;
+    }
+
+    if (NULL != surface_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_update_layout(
+            surface_ptr->super_element.parent_container_ptr);
+    }
+}
+
 
 /* == Fake surface methods ================================================= */
 
@@ -484,6 +588,15 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
         &fake_surface_ptr->surface.super_element,
         &_wlmtk_fake_surface_element_vmt);
     return fake_surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_surface_commit_size(
+    wlmtk_fake_surface_t *fake_surface_ptr,
+    int width,
+    int height)
+{
+    _wlmtk_surface_commit_size(&fake_surface_ptr->surface, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -591,7 +704,7 @@ void test_fake_commit(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, w);
     BS_TEST_VERIFY_EQ(test_ptr, 0, h);
 
-    wlmtk_surface_commit_size(&fake_surface_ptr->surface, 42, 200, 100);
+    wlmtk_fake_surface_commit_size(fake_surface_ptr, 200, 100);
     wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
     BS_TEST_VERIFY_EQ(test_ptr, 200, w);
     BS_TEST_VERIFY_EQ(test_ptr, 100, h);

@@ -47,6 +47,7 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "icon_manager.h"
 #include "xdg_decoration.h"
 #include "xdg_shell.h"
+#include "xwl.h"
 #include "workspace.h"
 
 #include "toolkit/toolkit.h"
@@ -115,6 +116,8 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
+    /** XWayland interface. */
+    wlmaker_xwl_t             *xwl_ptr;
 
     /** The list of outputs. */
     bs_dllist_t               outputs;

@@ -253,8 +253,8 @@ void handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, destroy_listener);
+    wlmaker_layer_surface_t *layer_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_surface_t, destroy_listener);
 
     wlmaker_layer_surface_destroy(layer_surface_ptr);
 }
@@ -270,8 +270,8 @@ void handle_map(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, surface_map_listener);
+    wlmaker_layer_surface_t *layer_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_surface_t, surface_map_listener);
     wlmaker_workspace_layer_t layer;
 
     switch (layer_surface_ptr->wlr_layer_surface_v1_ptr->current.layer) {
@@ -315,8 +315,8 @@ void handle_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, surface_unmap_listener);
+    wlmaker_layer_surface_t *layer_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_surface_t, surface_unmap_listener);
 
     wlmaker_workspace_layer_surface_remove(
         layer_surface_ptr->view.workspace_ptr,
@@ -337,8 +337,8 @@ void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, new_popup_listener);
+    wlmaker_layer_surface_t *layer_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_surface_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
     // TODO(kaeser@gubbe.ch): Implement the popups for the WLR scene layer.
@@ -357,8 +357,8 @@ void handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_layer_surface_t *layer_surface_ptr = wl_container_of(
-        listener_ptr, layer_surface_ptr, surface_commit_listener);
+    wlmaker_layer_surface_t *layer_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_surface_t, surface_commit_listener);
     BS_ASSERT(layer_surface_ptr->wlr_layer_surface_v1_ptr->surface ==
               data_ptr);
 

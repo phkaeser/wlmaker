@@ -75,12 +75,21 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
-  * Surfaces will be shown in either tile container, clip or dock area,
+  * [done] Surfaces will be shown in either tile container, clip or dock area,
     depending from where the app was started.
-  * Two demo DockApps included (digital clock; julia set).
+  * [done] Demo DockApps included (digital clock)
+  * Second Demo DockApp (julia set).
 
-* Initial XWayland support
-  * Cover enough functionality to support xterm, emacs in X11.
+* [done] Initial XWayland support
+  * [done] Cover enough functionality to support xterm
+  * [done] Enough functionality to support emacs in X11.
+    * [done] Support for child surfaces.
+    * [done] Positioning of popups
+    * [done] Ensure stacking order is respected and used.
+    * [done] Popups do not contribute to window extensions (no border hops)
+    * [done] Cursor set appropriately.
+    * [done] Set DISPLAY env variable appropriately.
+    * [done] Handling of modal windows: Should have decorations, stay on top.
 
 * Configurable keyboard map (in code or commandline arg)
 
@@ -90,17 +99,37 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Maximize.
   * [done] Set title.
   * [done] fullscreen.
+  * [done] Fix positioning of popups.
   * Minimize.
-  * show window menu.
-  * set_parent.
   * set app ID.
-
-* Support `layer_shell`, based on toolkit.
-  * XDG Popups.
+  * [regression, not supported] show window menu.
 
 * Support window decoration protocol, based on toolkit.
   * [done] Style of title bar, iconify and close buttons similar to Window Maker.
-  * Window menu, with basic window actions (not required to adapt to state).
+  * No border shown when windows are not decorated (eg. chrome, firefox)
+
+* Task List
+  * Listing windows, rather than views.
+
+* Window actions, based on toolkit.
+  * Move ([done] drag via title bar, or [pending] window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * Minimize (*iconify*) windows.
+  * Roll up (*shade*) windows.
+  * Raise window when activated.
+
+### Internals and code organization
+
+* [done] Design a toolkit and re-factor the codebase to make use of it.
+  * Ensure the main features (eg. all explicit actions and features above) are
+    tested.
+
+## Plan for 0.3
+
+* Support `layer_shell`, based on toolkit.
+  * XDG Popups.
 
 * Multiple workspaces, based on toolkit.
   * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
@@ -119,27 +148,13 @@ Support for visual effects to improve usability, but not for pure show.
   * Display application status (*starting*, *running*).
   * Configurable (in code).
 
-* Task List
-  * Handles windows, rather than views.
-
-* Window actions, based on toolkit.
-  * Move ([done] drag via title bar, or [pending] window-alt-click)
-  * [done] Resize windows, including a resize bar.
-  * [done] Fullscreen windows.
-  * [done] Maximize windows.
-  * Minimize (*iconify*) windows.
-  * Roll up (*shade*) windows.
-  * Raise window when activated.
+* Menu, based on toolkit
+  * Available as window menu in windows.
+  * Available as (hardcoded) application menu.
 
 *  Visualization of iconified applications, based on toolkit.
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
-
-### Internals and code organization
-
-* [done] Design a toolkit and re-factor the codebase to make use of it.
-  * Ensure the main features (eg. all explicit actions and features above) are
-    tested.
 
 ## Pending
 
@@ -148,17 +163,22 @@ Features for further versions, not ordered by priority nor timeline.
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
+  * xdg_shell: set_parent, by child wlmtk_window_t.
 
 * XWayland support (X11 clients).
+  * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).
   * Configurable to show permanently also in clip.
   * Drag-and-drop between clip and dock.
+  * Ideally: With a Wayland protocol that permits running the dock and clip as
+    separate binary, independent of the compositor.
 
 * Visualization / icons for running apps.
   * Show in 'iconified' area.
   * Drag-and-drop into clip or dock area.
+  * Consider running this as task selector, as separate binary.
 
 * Support for dynamic output configurations.
   * Multiple monitors.
@@ -171,6 +191,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Scaling factor per application.
   * Build and test a clear model for `organic`/`maximized`/`fullscreen` state
     switches and precedence.
+  * Window menu, adapting to state (eg. no "maximize" when maximized).
 
 * Application support.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).
@@ -234,6 +255,10 @@ Features for further versions, not ordered by priority nor timeline.
 
 * Commandline flags to support:
   * icon lookup paths beyond the hardcoded defaults.
+
+* Reduce Technical Debt
+  * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
+    creation, just after fork. These should not impact the parent process.
 
 ## Visualization and effects
 
