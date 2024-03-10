@@ -918,8 +918,8 @@ void _wlmtk_window_request_position_and_size_decorated(
     if (include_resizebar) {
         height -= resizebar_style.height + margin_style.width;
     }
-    height -= 2 * border_style.width;
-    width -= 2 * border_style.width;
+    height -= 2 * window_ptr->super_bordered.style.width;
+    width -= 2 * window_ptr->super_bordered.style.width;
     height = BS_MAX(0, height);
     width = BS_MAX(0, width);
 
