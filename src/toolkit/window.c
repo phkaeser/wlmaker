@@ -454,17 +454,17 @@ void wlmtk_window_commit_fullscreen(
     // Guard clause: Nothing to do if we're already there.
     if (window_ptr->fullscreen == fullscreen) return;
 
+    window_ptr->fullscreen = fullscreen;
+    _wlmtk_window_apply_decoration(window_ptr);
+
     // TODO(kaeser@gubbe.ch): For whatever reason, the node isn't displayed
     // when we zero out the border with, or hide the border elements.
     // Figure out what causes that, then get rid of the border on fullscreen.
-    if (false) {
+    if (true) {
         wlmtk_margin_style_t bstyle = border_style;
-        if (fullscreen) bstyle.width = 0;
+        if (fullscreen) bstyle.width = 1;
         wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
     }
-
-    window_ptr->fullscreen = fullscreen;
-    _wlmtk_window_apply_decoration(window_ptr);
 
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
@@ -657,6 +657,7 @@ bool _wlmtk_window_init(
     window_ptr->element_ptr = element_ptr;
 
     wlmtk_window_set_title(window_ptr, NULL);
+    _wlmtk_window_apply_decoration(window_ptr);
 
     wlmtk_box_add_element_front(&window_ptr->box, element_ptr);
     wlmtk_element_set_visible(element_ptr, true);
@@ -876,13 +877,17 @@ void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
 /** Applies window decoration depending on current state. */
 void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 {
+    wlmtk_margin_style_t bstyle = border_style;
+
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
         _wlmtk_window_create_titlebar(window_ptr);
         _wlmtk_window_create_resizebar(window_ptr);
     } else {
+        bstyle.width = 0;
         _wlmtk_window_destroy_titlebar(window_ptr);
         _wlmtk_window_destroy_resizebar(window_ptr);
     }
+    wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
 }
 
 /* ------------------------------------------------------------------------- */
