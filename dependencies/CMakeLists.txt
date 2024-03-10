@@ -101,8 +101,6 @@ ExternalProject_Add(libdisplay_info
   DEPENDS hwdata
 )
 
-FILE(COPY xwayland.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/x86_64-linux-gnu/pkgconfig)
-
 ExternalProject_Add(wlroots
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wlroots"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
