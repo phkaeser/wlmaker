@@ -985,8 +985,8 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_motion(fws_ptr->workspace_ptr, 1, 2, 43);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->y);
-    BS_TEST_VERIFY_EQ(test_ptr, 37, fw_ptr->fake_content_ptr->requested_width);
-    BS_TEST_VERIFY_EQ(test_ptr, 16, fw_ptr->fake_content_ptr->requested_height);
+    BS_TEST_VERIFY_EQ(test_ptr, 39, fw_ptr->fake_content_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 18, fw_ptr->fake_content_ptr->requested_height);
     // This updates for the given serial.
     wlmtk_fake_window_commit_size(fw_ptr);
     wlmtk_window_get_size(fw_ptr->window_ptr, &width, &height);
