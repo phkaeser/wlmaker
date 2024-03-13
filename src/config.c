@@ -36,8 +36,17 @@ const int32_t config_keyboard_repeat_rate = 25;
 /** Repeat delay, in ms. */
 const int32_t config_keyboard_repeat_delay = 300;
 
+/** See man xkeyboard-config(7) for available options. */
+__UNUSED__ static const struct xkb_rule_names xkb_de = {
+    .rules = "evdev",
+    .model = "pc105",
+    .layout = "ch",
+    .variant = "de_nodeadkeys",
+    .options = ""
+};
+
 /** XKB Keymap to use. NULL identifies the default ('us'). */
-const struct xkb_rule_names *config_keyboard_rule_names = NULL;
+ const struct xkb_rule_names *config_keyboard_rule_names = NULL;
 
 /** Name of the xcursor theme. NULL picks the default. */
 const char *config_xcursor_theme_name = NULL;

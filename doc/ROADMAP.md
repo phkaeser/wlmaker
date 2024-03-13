@@ -91,7 +91,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Set DISPLAY env variable appropriately.
     * [done] Handling of modal windows: Should have decorations, stay on top.
 
-* Configurable keyboard map (in code or commandline arg)
+* [done] Configurable keyboard map (in code ~or commandline arg~)
 
 * Support `xdg_shell`, based on toolkit.
   * [done] XDG Popups.
