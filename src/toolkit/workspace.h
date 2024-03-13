@@ -106,6 +106,18 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
 
 /**
+ * Returns the `bs_dllist_t` of currently mapped windows.
+ *
+ * @param workspace_ptr
+ *
+ * @return A pointer to the list. Note that the list should not be manipulated
+ *     directly. It's contents can change on @ref wlmtk_workspace_map_window or
+ *     @ref wlmtk_workspace_unmap_window calls.
+ */
+bs_dllist_t *wlmtk_workspace_get_windows_dllist(
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
  * Promotes the window to the fullscreen layer (or back).
  *
  * To be called by @ref wlmtk_window_commit_fullscreen.

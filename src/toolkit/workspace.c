@@ -254,10 +254,14 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr)
 {
+    BS_ASSERT(NULL == wlmtk_window_get_workspace(window_ptr));
+
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), true);
     wlmtk_container_add_element(
         &workspace_ptr->window_container,
         wlmtk_window_element(window_ptr));
+    bs_dllist_push_front(&workspace_ptr->windows,
+                         wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, workspace_ptr);
 
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
@@ -292,6 +296,8 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
             &workspace_ptr->window_container,
             wlmtk_window_element(window_ptr));
     }
+    bs_dllist_remove(&workspace_ptr->windows,
+                     wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, NULL);
 
     if (need_activation) {
@@ -304,6 +310,13 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
             wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
         }
     }
+}
+
+/* ------------------------------------------------------------------------- */
+bs_dllist_t *wlmtk_workspace_get_windows_dllist(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    return &workspace_ptr->windows;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -344,6 +357,13 @@ void wlmtk_workspace_window_to_fullscreen(
             &workspace_ptr->window_container,
             wlmtk_window_element(window_ptr));
         wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
+
+        // The un-fullscreened window will come on top of the container. Also
+        // reflect that in @ref wlmtk_workspace_t::windows.
+        bs_dllist_remove(&workspace_ptr->windows,
+                         wlmtk_dlnode_from_window(window_ptr));
+        bs_dllist_push_front(&workspace_ptr->windows,
+                             wlmtk_dlnode_from_window(window_ptr));
     }
 }
 
@@ -442,6 +462,10 @@ void wlmtk_workspace_raise_window(
     wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(workspace_ptr == wlmtk_window_get_workspace(window_ptr));
+    bs_dllist_remove(&workspace_ptr->windows,
+                     wlmtk_dlnode_from_window(window_ptr));
+    bs_dllist_push_front(&workspace_ptr->windows,
+                         wlmtk_dlnode_from_window(window_ptr));
     wlmtk_container_raise_element_to_top(&workspace_ptr->window_container,
                                          wlmtk_window_element(window_ptr));
 }
@@ -793,7 +817,10 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_map_unmap(bs_test_t *test_ptr)
 {
     wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    bs_dllist_t *wdl_ptr = wlmtk_workspace_get_windows_dllist(
+        fws_ptr->workspace_ptr);
     BS_ASSERT(NULL != fws_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
 
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_ASSERT(NULL != fw_ptr);
@@ -809,6 +836,7 @@ void test_map_unmap(bs_test_t *test_ptr)
         NULL,
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(wdl_ptr));
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(
@@ -820,6 +848,7 @@ void test_map_unmap(bs_test_t *test_ptr)
         NULL,
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_fake_workspace_destroy(fws_ptr);
