@@ -86,12 +86,12 @@ static struct wlr_buffer *create_wlr_buffer(
 static void draw_into_cairo(
     cairo_t *cairo_ptr,
     wlmaker_workspace_t *workspace_ptr);
-static void draw_view_into_cairo(
+static void draw_window_into_cairo(
     cairo_t *cairo_ptr,
-    wlmaker_view_t *view_ptr,
+    wlmtk_window_t *window_ptr,
     bool active,
     int pos_y);
-static const char *view_name(wlmaker_view_t *view_ptr);
+static const char *window_name(wlmtk_window_t *window_ptr);
 
 static void handle_task_list_enabled(
     struct wl_listener *listener_ptr,
@@ -152,6 +152,8 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         &server_ptr->task_list_disabled_event,
         &task_list_ptr->task_list_disabled_listener,
         handle_task_list_disabled);
+
+    // FIXME -- Re-wire these.
     wlmtk_util_connect_listener_signal(
         &server_ptr->view_mapped_event,
         &task_list_ptr->view_mapped_listener,
@@ -218,12 +220,12 @@ void task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Creates a `struct wlr_buffer` with views of `workspace_ptr` drawn into.
+ * Creates a `struct wlr_buffer` with windows of `workspace_ptr` drawn into.
  *
  * @param workspace_ptr
  *
- * @return A pointer to the `struct wlr_buffer` with the list of views (tasks),
- *     or NULL on error.
+ * @return A pointer to the `struct wlr_buffer` with the list of windows
+ *     (tasks), or NULL on error.
  */
 struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
 {
@@ -257,63 +259,66 @@ void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
     // Not tied to a workspace? We're done, all set.
     if (NULL == workspace_ptr) return;
 
-    const bs_dllist_t *views_ptr = wlmaker_workspace_get_views_dllist(
+    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
         workspace_ptr);
-    // No views at all? Done here.
-    if (bs_dllist_empty(views_ptr)) return;
 
-    // Find node of the active view, for centering the task list.
-    bs_dllist_node_t *centered_dlnode_ptr = views_ptr->head_ptr;
-    bs_dllist_node_t *active_dlnode_ptr = views_ptr->head_ptr;
+    const bs_dllist_t *windows_ptr = wlmtk_workspace_get_windows_dllist(
+        wlmtk_workspace_ptr);
+    // No windows at all? Done here.
+    if (bs_dllist_empty(windows_ptr)) return;
+
+    // Find node of the active window, for centering the task list.
+    bs_dllist_node_t *centered_dlnode_ptr = windows_ptr->head_ptr;
+    bs_dllist_node_t *active_dlnode_ptr = windows_ptr->head_ptr;
     while (NULL != active_dlnode_ptr &&
-           wlmaker_workspace_get_activated_view(workspace_ptr) !=
-           wlmaker_view_from_dlnode(active_dlnode_ptr)) {
+           wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr) !=
+           wlmtk_window_from_dlnode(active_dlnode_ptr)) {
         active_dlnode_ptr = active_dlnode_ptr->next_ptr;
     }
     if (NULL != active_dlnode_ptr) centered_dlnode_ptr = active_dlnode_ptr;
 
     int pos_y = task_list_height / 2 + 10;
-    draw_view_into_cairo(
+    draw_window_into_cairo(
         cairo_ptr,
-        wlmaker_view_from_dlnode(centered_dlnode_ptr),
+        wlmtk_window_from_dlnode(centered_dlnode_ptr),
         centered_dlnode_ptr == active_dlnode_ptr,
         pos_y);
 
     bs_dllist_node_t *dlnode_ptr = centered_dlnode_ptr->prev_ptr;
-    for (int further_views = 1;
-         NULL != dlnode_ptr && further_views <= 3;
-         dlnode_ptr = dlnode_ptr->prev_ptr, ++further_views) {
-        draw_view_into_cairo(
+    for (int further_windows = 1;
+         NULL != dlnode_ptr && further_windows <= 3;
+         dlnode_ptr = dlnode_ptr->prev_ptr, ++further_windows) {
+        draw_window_into_cairo(
             cairo_ptr,
-            wlmaker_view_from_dlnode(dlnode_ptr),
+            wlmtk_window_from_dlnode(dlnode_ptr),
             false,
-            pos_y - further_views * 26);
+            pos_y - further_windows * 26);
     }
 
     dlnode_ptr = centered_dlnode_ptr->next_ptr;
-    for (int further_views = 1;
-         NULL != dlnode_ptr && further_views <= 3;
-         dlnode_ptr = dlnode_ptr->next_ptr, ++further_views) {
-        draw_view_into_cairo(
+    for (int further_windows = 1;
+         NULL != dlnode_ptr && further_windows <= 3;
+         dlnode_ptr = dlnode_ptr->next_ptr, ++further_windows) {
+        draw_window_into_cairo(
             cairo_ptr,
-            wlmaker_view_from_dlnode(dlnode_ptr),
+            wlmtk_window_from_dlnode(dlnode_ptr),
             false,
-            pos_y + further_views * 26);
+            pos_y + further_windows * 26);
     }
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Draws one view (task) into `cairo_ptr`.
+ * Draws one window (task) into `cairo_ptr`.
  *
  * @param cairo_ptr
- * @param view_ptr
- * @param active              Whether this view is currently active.
+ * @param window_ptr
+ * @param active              Whether this window is currently active.
  * @param pos_y               Y position within the `cairo_ptr`.
  */
-void draw_view_into_cairo(
+void draw_window_into_cairo(
     cairo_t *cairo_ptr,
-    wlmaker_view_t *view_ptr,
+    wlmtk_window_t *window_ptr,
     bool active,
     int pos_y)
 {
@@ -327,37 +332,32 @@ void draw_view_into_cairo(
         CAIRO_FONT_SLANT_NORMAL,
         active ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
     cairo_move_to(cairo_ptr, 10, pos_y);
-    cairo_show_text(cairo_ptr, view_name(view_ptr));
+    cairo_show_text(cairo_ptr, window_name(window_ptr));
  }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Constructs a comprehensive name for the view.
+ * Constructs a comprehensive name for the window.
  *
- * @param view_ptr
+ * @param window_ptr
  *
  * @return Pointer to the constructed name. This is a static buffer that does
  *     not require to be free'd, but will be re-used upon next call to
- *     view_name.
+ *     window_name.
  */
-const char *view_name(wlmaker_view_t *view_ptr)
+const char *window_name(wlmtk_window_t *window_ptr)
 {
     static char               name[256];
 
     size_t pos = 0;
-    const char *app_id_ptr = wlmaker_view_get_app_id(view_ptr);
-    if (NULL != app_id_ptr) {
-        pos = bs_strappendf(name, sizeof(name), pos, "%s", app_id_ptr);
-    }
 
-    const char *title_ptr = wlmaker_view_get_title(view_ptr);
+    const char *title_ptr = wlmtk_window_get_title(window_ptr);
     if (NULL != title_ptr) {
-        if (NULL != app_id_ptr) {
-            pos = bs_strappendf(name, sizeof(name), pos, ": ");
-        }
         pos = bs_strappendf(name, sizeof(name), pos, "%s", title_ptr);
     }
 
+#if 0
+    // FIXME -- Add reference to client.
     const wlmaker_client_t *client_ptr = wlmaker_view_get_client(view_ptr);
     if (NULL != client_ptr && 0 != client_ptr->pid) {
         if (0 < pos) pos = bs_strappendf(name, sizeof(name), pos, " ");
@@ -374,9 +374,10 @@ const char *view_name(wlmaker_view_t *view_ptr)
         }
         pos = bs_strappendf(name, sizeof(name), pos, "]");
     }
+#endif
 
     if (0 < pos) pos = bs_strappendf(name, sizeof(name), pos, " ");
-    pos = bs_strappendf(name, sizeof(name), pos, "(%p)", view_ptr);
+    pos = bs_strappendf(name, sizeof(name), pos, "(%p)", window_ptr);
     return &name[0];
 }
 
