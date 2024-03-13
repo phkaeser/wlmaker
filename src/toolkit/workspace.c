@@ -45,6 +45,9 @@ struct _wlmtk_workspace_t {
     /** Container that holds the fullscreen elements. Should have only one. */
     wlmtk_container_t         fullscreen_container;
 
+    /** List of toplevel windows. Via @ref wlmtk_window_t::dlnode. */
+    bs_dllist_t               windows;
+
     /** The activated window. */
     wlmtk_window_t            *activated_window_ptr;
 

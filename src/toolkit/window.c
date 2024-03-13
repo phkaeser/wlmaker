@@ -78,6 +78,8 @@ struct _wlmtk_window_t {
     wlmtk_element_t           *element_ptr;
     /** Points to the workspace, if mapped. */
     wlmtk_workspace_t         *workspace_ptr;
+    /** Element in @ref wlmtk_workspace_t::windows, when mapped. */
+    bs_dllist_node_t          dlnode;
 
     /** Content of the window. */
     wlmtk_content_t           *content_ptr;
@@ -277,6 +279,18 @@ wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
     BS_ASSERT(_wlmtk_window_container_update_layout ==
               window_ptr->super_bordered.super_container.vmt.update_layout);
     return window_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr)
+{
+    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_window_t, dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr)
+{
+    return &window_ptr->dlnode;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1138,6 +1152,10 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
+
+    bs_dllist_node_t *dln_ptr = wlmtk_dlnode_from_window(window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, dln_ptr, &window_ptr->dlnode);
+    BS_TEST_VERIFY_EQ(test_ptr, window_ptr, wlmtk_window_from_dlnode(dln_ptr));
 
     wlmtk_window_destroy(window_ptr);
     wlmtk_content_fini(&content);

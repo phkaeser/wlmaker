@@ -81,6 +81,11 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
  */
 wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr);
 
+/** Returns @ref wlmtk_window_t for the `dlnode_ptr`. */
+wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+/** Accessor: Returns pointer to @ref wlmtk_window_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr);
+
 /**
  * Sets the window as activated, depending on the argument's value.
  *
