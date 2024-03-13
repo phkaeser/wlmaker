@@ -69,6 +69,19 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         xkb_context_ptr,
         config_keyboard_rule_names,
         XKB_KEYMAP_COMPILE_NO_FLAGS);
+    if (NULL == xkb_keymap_ptr) {
+        bs_log(BS_ERROR, "Failed xkb_keymap_new_from_names(%p, { .rules = %s, "
+               ".model = %s, .layout = %s, variant = %s, .options = %s }, "
+               "XKB_KEYMAP_COMPILE_NO_NO_FLAGS)",
+               xkb_context_ptr,
+               config_keyboard_rule_names->rules,
+               config_keyboard_rule_names->model,
+               config_keyboard_rule_names->layout,
+               config_keyboard_rule_names->variant,
+               config_keyboard_rule_names->options);
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
     wlr_keyboard_set_keymap(keyboard_ptr->wlr_keyboard_ptr, xkb_keymap_ptr);
     xkb_keymap_unref(xkb_keymap_ptr);
     xkb_context_unref(xkb_context_ptr);
