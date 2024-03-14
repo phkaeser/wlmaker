@@ -621,6 +621,15 @@ wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr)
     return window_ptr->workspace_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
+    wlmtk_window_t *window_ptr)
+{
+    if (NULL == window_ptr->content_ptr) return NULL;
+    return &window_ptr->content_ptr->client;
+}
+
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
