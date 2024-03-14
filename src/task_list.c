@@ -54,10 +54,10 @@ struct _wlmaker_task_list_t {
     /** Listener for the `task_list_disabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_disabled_listener;
 
-    /** Listener for the `view_mapped_event` signal by `wlmaker_server_t`. */
-    struct wl_listener        view_mapped_listener;
-    /** Listener for the `view_unmapped_event` signal by `wlmaker_server_t`. */
-    struct wl_listener        view_unmapped_listener;
+    /** Listener for the `window_mapped_event` signal by `wlmaker_server_t`. */
+    struct wl_listener        window_mapped_listener;
+    /** Listener for the `window_unmapped_event` signal by `wlmaker_server_t`. */
+    struct wl_listener        window_unmapped_listener;
 
     /** Whether the task list is currently enabled (mapped). */
     bool                      enabled;
@@ -99,10 +99,10 @@ static void handle_task_list_enabled(
 static void handle_task_list_disabled(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_view_mapped(
+static void handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_view_unmapped(
+static void handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -153,15 +153,14 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         &task_list_ptr->task_list_disabled_listener,
         handle_task_list_disabled);
 
-    // FIXME -- Re-wire these.
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_mapped_event,
-        &task_list_ptr->view_mapped_listener,
-        handle_view_mapped);
+        &server_ptr->window_mapped_event,
+        &task_list_ptr->window_mapped_listener,
+        handle_window_mapped);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_unmapped_event,
-        &task_list_ptr->view_unmapped_listener,
-        handle_view_unmapped);
+        &server_ptr->window_unmapped_event,
+        &task_list_ptr->window_unmapped_listener,
+        handle_window_unmapped);
 
     return task_list_ptr;
 }
@@ -169,8 +168,8 @@ wlmaker_task_list_t *wlmaker_task_list_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 {
-    wl_list_remove(&task_list_ptr->view_unmapped_listener.link);
-    wl_list_remove(&task_list_ptr->view_mapped_listener.link);
+    wl_list_remove(&task_list_ptr->window_unmapped_listener.link);
+    wl_list_remove(&task_list_ptr->window_mapped_listener.link);
     wl_list_remove(&task_list_ptr->task_list_disabled_listener.link);
     wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
 
@@ -439,17 +438,17 @@ void handle_task_list_disabled(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for the `view_mapped_listener`: Refreshes the list (if enabled).
+ * Handler for the `window_mapped_listener`: Refreshes the list (if enabled).
  *
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_view_mapped(
+void handle_window_mapped(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_task_list_t, view_mapped_listener);
+        listener_ptr, wlmaker_task_list_t, window_mapped_listener);
     if (task_list_ptr->enabled) {
         task_list_refresh(task_list_ptr);
     }
@@ -457,17 +456,17 @@ void handle_view_mapped(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for the `view_unmapped_listener`: Refreshes the list (if enabled).
+ * Handler for the `window_unmapped_listener`: Refreshes the list (if enabled).
  *
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_view_unmapped(
+void handle_window_unmapped(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_task_list_t, view_unmapped_listener);
+        listener_ptr, wlmaker_task_list_t, window_unmapped_listener);
     if (task_list_ptr->enabled) {
         task_list_refresh(task_list_ptr);
     }
