@@ -59,6 +59,20 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Sets signals for window events.
+ *
+ * TODO(kaeser@gubbe.ch): Remove this, once migrated to an event registry.
+ *
+ * @param workspace_ptr
+ * @param mapped_event_ptr
+ * @param unmapped_event_ptr
+ */
+void wlmtk_workspace_set_signals(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wl_signal *mapped_event_ptr,
+    struct wl_signal *unmapped_event_ptr);
+
+/**
  * Sets (or updates) the extents of the workspace.
  *
  * @param workspace_ptr
@@ -213,6 +227,19 @@ typedef struct {
     wlmtk_workspace_t         *workspace_ptr;
     /** The (fake) parent container. */
     wlmtk_container_t         *fake_parent_ptr;
+    /** Signal for when a window is mapped. */
+    struct wl_signal          window_mapped_event;
+    /** Signal for when a window is unmapped. */
+    struct wl_signal          window_unmapped_event;
+
+    /** Listener for when the window is mapped. */
+    struct wl_listener        window_mapped_listener;
+    /** Listener for when the window is unmapped. */
+    struct wl_listener        window_unmapped_listener;
+    /** Reports whether window_mapped_listener was invoked. */
+    bool                      window_mapped_listener_invoked;
+    /** Reports whether window_unmapped_listener was invoked. */
+    bool                      window_unmapped_listener_invoked;
 } wlmtk_fake_workspace_t;
 
 /** Creates a fake workspace with specified extents. */

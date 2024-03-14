@@ -76,6 +76,11 @@ struct _wlmtk_workspace_t {
     int                       x2;
     /** Bottom right Y coordinate of workspace. */
     int                       y2;
+
+    /** Points to signal that triggers when a window is mapped. */
+    struct wl_signal          *window_mapped_event_ptr;
+    /** Points to signal that triggers when a window is unmapped. */
+    struct wl_signal          *window_unmapped_event_ptr;
 };
 
 static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
@@ -195,6 +200,16 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_set_signals(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wl_signal *mapped_event_ptr,
+    struct wl_signal *unmapped_event_ptr)
+{
+    workspace_ptr->window_mapped_event_ptr = mapped_event_ptr;
+    workspace_ptr->window_unmapped_event_ptr = unmapped_event_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
     if (NULL != workspace_ptr->fullscreen_container.super_element.parent_container_ptr) {
@@ -265,6 +280,10 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_set_workspace(window_ptr, workspace_ptr);
 
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
+
+    if (NULL != workspace_ptr->window_mapped_event_ptr) {
+        wl_signal_emit(workspace_ptr->window_mapped_event_ptr, window_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -299,6 +318,9 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     bs_dllist_remove(&workspace_ptr->windows,
                      wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, NULL);
+    if (NULL != workspace_ptr->window_unmapped_event_ptr) {
+        wl_signal_emit(workspace_ptr->window_unmapped_event_ptr, window_ptr);
+    }
 
     if (need_activation) {
         // FIXME: What about raising?
@@ -472,6 +494,13 @@ void wlmtk_workspace_raise_window(
 
 /* == Fake workspace methods, useful for tests ============================= */
 
+static void wlmtk_fake_workspace_handle_window_mapped(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr);
+static void wlmtk_fake_workspace_handle_window_unmapped(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr);
+
 /* ------------------------------------------------------------------------- */
 wlmtk_fake_workspace_t *wlmtk_fake_workspace_create(int width, int height)
 {
@@ -494,12 +523,31 @@ wlmtk_fake_workspace_t *wlmtk_fake_workspace_create(int width, int height)
     struct wlr_box extents = { .width = width, .height = height };
     wlmtk_workspace_set_extents(fw_ptr->workspace_ptr, &extents);
 
+    wl_signal_init(&fw_ptr->window_mapped_event);
+    wl_signal_init(&fw_ptr->window_unmapped_event);
+    wlmtk_workspace_set_signals(
+        fw_ptr->workspace_ptr,
+        &fw_ptr->window_mapped_event,
+        &fw_ptr->window_unmapped_event);
+
+    wlmtk_util_connect_listener_signal(
+        &fw_ptr->window_mapped_event,
+        &fw_ptr->window_mapped_listener,
+        wlmtk_fake_workspace_handle_window_mapped);
+    wlmtk_util_connect_listener_signal(
+        &fw_ptr->window_unmapped_event,
+        &fw_ptr->window_unmapped_listener,
+        wlmtk_fake_workspace_handle_window_unmapped);
+
     return fw_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_workspace_destroy(wlmtk_fake_workspace_t *fw_ptr)
 {
+    wl_list_remove(&fw_ptr->window_unmapped_listener.link);
+    wl_list_remove(&fw_ptr->window_mapped_listener.link);
+
     if (NULL != fw_ptr->workspace_ptr) {
         wlmtk_workspace_destroy(fw_ptr->workspace_ptr);
         fw_ptr->workspace_ptr = NULL;
@@ -511,6 +559,28 @@ void wlmtk_fake_workspace_destroy(wlmtk_fake_workspace_t *fw_ptr)
     }
 
     free(fw_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for the fake workspace's "window mapped" signal. */
+void wlmtk_fake_workspace_handle_window_mapped(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_fake_workspace_t *fw_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_fake_workspace_t, window_mapped_listener);
+    fw_ptr->window_mapped_listener_invoked = true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for the fake workspace's "window unmapped" signal. */
+void wlmtk_fake_workspace_handle_window_unmapped(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_fake_workspace_t *fw_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_fake_workspace_t, window_unmapped_listener);
+    fw_ptr->window_unmapped_listener_invoked = true;
 }
 
 /* == Local (static) methods =============================================== */
@@ -837,6 +907,7 @@ void test_map_unmap(bs_test_t *test_ptr)
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(wdl_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, fws_ptr->window_mapped_listener_invoked);
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(
@@ -849,6 +920,7 @@ void test_map_unmap(bs_test_t *test_ptr)
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, fws_ptr->window_unmapped_listener_invoked);
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_fake_workspace_destroy(fws_ptr);
