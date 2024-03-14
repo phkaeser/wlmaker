@@ -162,6 +162,7 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 
             if (((modifiers & WLR_MODIFIER_ALT) == WLR_MODIFIER_ALT) &&
                 (key_syms[i] == XKB_KEY_Escape)) {
+                // FIXME: Re-wire these on wlmtk_workspace and window.
                 if ((modifiers & WLR_MODIFIER_SHIFT) == WLR_MODIFIER_SHIFT) {
                     wlmaker_workspace_activate_previous_view(
                         wlmaker_server_get_current_workspace(
