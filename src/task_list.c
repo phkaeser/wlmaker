@@ -356,17 +356,15 @@ const char *window_name(wlmtk_window_t *window_ptr)
         pos = bs_strappendf(name, sizeof(name), pos, "%s", title_ptr);
     }
 
-#if 0
-    // FIXME -- Add reference to client.
-    const wlmaker_client_t *client_ptr = wlmaker_view_get_client(view_ptr);
+    const wlmtk_util_client_t *client_ptr = wlmtk_window_get_client_ptr(
+        window_ptr);
     if (NULL != client_ptr && 0 != client_ptr->pid) {
         if (0 < pos) pos = bs_strappendf(name, sizeof(name), pos, " ");
         pos = bs_strappendf(name, sizeof(name), pos, "[%"PRIdMAX,
                             (intmax_t)client_ptr->pid);
-
         char fname[PATH_MAX], cmdline[PATH_MAX];
         snprintf(fname, sizeof(fname), "/proc/%"PRIdMAX"/cmdline",
-                 (intmax_t)wlmaker_view_get_client(view_ptr)->pid);
+                 (intmax_t)client_ptr->pid);
         ssize_t read_bytes = bs_file_read_buffer(
             fname, cmdline, sizeof(cmdline));
         if (0 < read_bytes) {
@@ -374,7 +372,6 @@ const char *window_name(wlmtk_window_t *window_ptr)
         }
         pos = bs_strappendf(name, sizeof(name), pos, "]");
     }
-#endif
 
     if (0 < pos) pos = bs_strappendf(name, sizeof(name), pos, " ");
     pos = bs_strappendf(name, sizeof(name), pos, "(%p)", window_ptr);
