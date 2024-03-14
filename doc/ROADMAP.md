@@ -108,8 +108,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Style of title bar, iconify and close buttons similar to Window Maker.
   * [done] No border shown when windows are not decorated (eg. chrome, firefox)
 
-* Task List
-  * Listing windows, rather than views.
+* [done] Task List
+  * [done] Listing windows, rather than views.
 
 * Window actions, based on toolkit.
   * Move ([done] drag via title bar, or [pending] window-alt-click)
@@ -119,6 +119,8 @@ Support for visual effects to improve usability, but not for pure show.
   * Minimize (*iconify*) windows.
   * Roll up (*shade*) windows.
   * Raise window when activated.
+
+* App Launcher: Update status for wlmtk_window_t, instead of wlmaker_view_t.
 
 ### Internals and code organization
 
@@ -172,6 +174,7 @@ Features for further versions, not ordered by priority nor timeline.
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
   * Permit conditional compilation of XWayland support, and enabling/disabling via flag.
+  * Permit identifying the real X client, not the XWayland connection.
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).
