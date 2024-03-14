@@ -216,6 +216,28 @@ void wlmtk_workspace_activate_window(
 wlmtk_window_t *wlmtk_workspace_get_activated_window(
     wlmtk_workspace_t *workspace_ptr);
 
+/**
+ * Activates the @ref wlmtk_window_t *before* the currently activated one.
+ *
+ * Intended to permit cycling through tasks. Will activate the window, but not
+ * raise it. See @ref wlmtk_workspace_activate_next_window.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_activate_previous_window(
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Activates the @ref wlmtk_window_t *after* the currently activated one.
+ *
+ * Intended to permit cycling through tasks. Will activate the window, but not
+ * raise it. See @ref wlmtk_workspace_activate_previous_window.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_activate_next_window(
+    wlmtk_workspace_t *workspace_ptr);
+
 /** Raises `window_ptr`: Will show it atop all other windows. */
 void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,

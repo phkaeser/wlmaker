@@ -479,6 +479,46 @@ wlmtk_window_t *wlmtk_workspace_get_activated_window(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_activate_previous_window(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    bs_dllist_node_t *dlnode_ptr = NULL;
+    if (NULL != workspace_ptr->activated_window_ptr) {
+        dlnode_ptr = wlmtk_dlnode_from_window(
+            workspace_ptr->activated_window_ptr);
+        dlnode_ptr = dlnode_ptr->prev_ptr;
+    }
+    if (NULL == dlnode_ptr) {
+        dlnode_ptr = workspace_ptr->windows.tail_ptr;
+    }
+
+    if (NULL == dlnode_ptr) return;
+
+    wlmtk_workspace_activate_window(
+        workspace_ptr, wlmtk_window_from_dlnode(dlnode_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_activate_next_window(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    bs_dllist_node_t *dlnode_ptr = NULL;
+    if (NULL != workspace_ptr->activated_window_ptr) {
+        dlnode_ptr = wlmtk_dlnode_from_window(
+            workspace_ptr->activated_window_ptr);
+        dlnode_ptr = dlnode_ptr->next_ptr;
+    }
+    if (NULL == dlnode_ptr) {
+        dlnode_ptr = workspace_ptr->windows.head_ptr;
+    }
+
+    if (NULL == dlnode_ptr) return;
+
+    wlmtk_workspace_activate_window(
+        workspace_ptr, wlmtk_window_from_dlnode(dlnode_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr)
@@ -1194,5 +1234,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_fake_workspace_destroy(fws_ptr);
 }
+
+// FIXME: Add tests for wlmtk_workspace_activate_previous_window and _next.
 
 /* == End of workspace.c =================================================== */
