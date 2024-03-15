@@ -94,8 +94,6 @@ void wlmtk_content_set_surface(
 {
     if (NULL == surface_ptr && NULL == content_ptr->surface_ptr) return;
 
-    memset(&content_ptr->client, 0, sizeof(wlmtk_util_client_t));
-
     if (NULL != content_ptr->surface_ptr) {
         wlmtk_element_set_visible(
             wlmtk_surface_element(content_ptr->surface_ptr), false);
@@ -112,13 +110,6 @@ void wlmtk_content_set_surface(
         content_ptr->surface_ptr = surface_ptr;
         wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
 
-        if (NULL != surface_ptr->wlr_surface_ptr) {
-            wl_client_get_credentials(
-                surface_ptr->wlr_surface_ptr->resource->client,
-                &content_ptr->client.pid,
-                &content_ptr->client.uid,
-                &content_ptr->client.gid);
-        }
     }
 }
 

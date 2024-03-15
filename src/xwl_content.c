@@ -367,6 +367,9 @@ void _xwl_content_handle_associate(
         xwl_content_ptr->surface_ptr,
         &xwl_content_ptr->surface_commit_listener,
         _xwl_content_handle_surface_commit);
+    memset(&xwl_content_ptr->content, 0, sizeof(wlmtk_util_client_t));
+    xwl_content_ptr->content.client.pid =
+        xwl_content_ptr->wlr_xwayland_surface_ptr->pid;
 
     // Currently we treat parent-less windows AND modal windows as toplevel.
     // Modal windows should actually be child wlmtk_window_t, but that isn't

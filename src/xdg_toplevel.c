@@ -202,6 +202,14 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
             &xdg_tl_surface_ptr->super_content,
             &_xdg_toplevel_content_vmt);
 
+    memset(&xdg_tl_surface_ptr->super_content.client, 0,
+           sizeof(wlmtk_util_client_t));
+    wl_client_get_credentials(
+        xdg_tl_surface_ptr->surface_ptr->wlr_surface_ptr->resource->client,
+        &xdg_tl_surface_ptr->super_content.client.pid,
+        &xdg_tl_surface_ptr->super_content.client.uid,
+        &xdg_tl_surface_ptr->super_content.client.gid);
+
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->events.destroy,
         &xdg_tl_surface_ptr->destroy_listener,
