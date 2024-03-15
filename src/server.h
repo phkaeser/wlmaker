@@ -169,6 +169,10 @@ struct _wlmaker_server_t {
 
     // TODO(kaeser@gubbe.ch): Move these events into a 'registry' struct, so
     // it can be more easily shared throughout the code.
+    /** Signal: Triggered whenever a window is created. */
+    struct wl_signal          window_created_event;
+    /** Signal: Triggered whenever a window is destroyed. */
+    struct wl_signal          window_destroyed_event;
     /**
      * Signal: Triggered whenever a window is mapped.
      *

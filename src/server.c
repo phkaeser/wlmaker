@@ -111,6 +111,8 @@ wlmaker_server_t *wlmaker_server_create(void)
     wl_signal_init(&server_ptr->view_unmapped_event);
     wl_signal_init(&server_ptr->view_destroyed_event);
 
+    wl_signal_init(&server_ptr->window_created_event);
+    wl_signal_init(&server_ptr->window_destroyed_event);
     wl_signal_init(&server_ptr->window_mapped_event);
     wl_signal_init(&server_ptr->window_unmapped_event);
 
