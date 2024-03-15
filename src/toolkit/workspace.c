@@ -873,6 +873,7 @@ static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
 static void test_resize(bs_test_t *test_ptr);
 static void test_activate(bs_test_t *test_ptr);
+static void test_activate_cycling(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -882,6 +883,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "unmap_during_move", test_unmap_during_move },
     { 1, "resize", test_resize },
     { 1, "activate", test_activate },
+    { 1, "activate_cycling", test_activate_cycling },
     { 0, NULL, NULL }
 };
 
@@ -1235,6 +1237,104 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_fake_workspace_destroy(fws_ptr);
 }
 
-// FIXME: Add tests for wlmtk_workspace_activate_previous_window and _next.
+/* ------------------------------------------------------------------------- */
+/** Tests cycling through windows. */
+void test_activate_cycling(bs_test_t *test_ptr)
+{
+    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
+    BS_ASSERT(NULL != fws_ptr);
+    bs_dllist_t *windows_ptr = wlmtk_workspace_get_windows_dllist(
+        fws_ptr->workspace_ptr);
+
+    // Window 1 gets mapped: Activated and on top.
+    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw1_ptr->window_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw1_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // Window 2 gets mapped: Activated and on top.
+    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw2_ptr->window_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw2_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // Window 3 gets mapped: Activated and on top.
+    wlmtk_fake_window_t *fw3_ptr = wlmtk_fake_window_create();
+    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw3_ptr->window_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw3_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw3_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // From mapping sequence: We have 3 -> 2 -> 1. Cycling brings us to
+    // window 2, but must not change the top window.
+    wlmtk_workspace_activate_next_window(fws_ptr->workspace_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw3_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // One more cycle: 1.
+    wlmtk_workspace_activate_next_window(fws_ptr->workspace_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw3_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // One more cycle: Back at 3.
+    wlmtk_workspace_activate_next_window(fws_ptr->workspace_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw3_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw3_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // Cycle backward: Gets us to 1.
+    wlmtk_workspace_activate_previous_window(fws_ptr->workspace_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw3_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    // Raise: Must come to top.
+    wlmtk_workspace_raise_window(fws_ptr->workspace_ptr,
+                                 fw1_ptr->window_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlmtk_dlnode_from_window(fw1_ptr->window_ptr),
+        windows_ptr->head_ptr);
+
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw3_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw2_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw1_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw3_ptr);
+    wlmtk_fake_window_destroy(fw2_ptr);
+    wlmtk_fake_window_destroy(fw1_ptr);
+    wlmtk_fake_workspace_destroy(fws_ptr);
+}
 
 /* == End of workspace.c =================================================== */
