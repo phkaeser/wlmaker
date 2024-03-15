@@ -473,6 +473,11 @@ void test_add_remove_popup(bs_test_t *test_ptr)
         test_ptr,
         NULL,
         wlmtk_content_get_parent_content(&popup));
+
+    wlmtk_content_fini(&popup);
+    wlmtk_content_fini(&parent);
+    wlmtk_fake_surface_destroy(fs1_ptr);
+    wlmtk_fake_surface_destroy(fs0_ptr);
 }
 
 /* == End of content.c ===================================================== */
