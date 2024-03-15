@@ -38,10 +38,10 @@ struct _wlmaker_dock_app_t {
     /** Configuration of the app. */
     const wlmaker_dock_app_config_t *config_ptr;
 
-    /** Views that are running from subprocesses of this App (launcher). */
-    bs_ptr_set_t              *created_views_ptr;
-    /** Views that are mapped from subprocesses of this App (launcher). */
-    bs_ptr_set_t              *mapped_views_ptr;
+    /** Windows that are running from subprocesses of this App (launcher). */
+    bs_ptr_set_t              *created_windows_ptr;
+    /** Windows that are mapped from subprocesses of this App (launcher). */
+    bs_ptr_set_t              *mapped_windows_ptr;
 
     /** Tile interactive. */
     wlmaker_interactive_t     *tile_interactive_ptr;
@@ -59,22 +59,22 @@ static void handle_terminated(
     int state,
     int code);
 
-static void handle_view_created(
+static void handle_window_created(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr);
-static void handle_view_mapped(
+    wlmtk_window_t *window_ptr);
+static void handle_window_mapped(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr);
-static void handle_view_unmapped(
+    wlmtk_window_t *window_ptr);
+static void handle_window_unmapped(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr);
-static void handle_view_destroyed(
+    wlmtk_window_t *window_ptr);
+static void handle_window_destroyed(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr);
+    wlmtk_window_t *window_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -91,13 +91,13 @@ wlmaker_dock_app_t *wlmaker_dock_app_create(
     dock_app_ptr->config_ptr = dock_app_config_ptr;
     dock_app_ptr->view_ptr = view_ptr;
 
-    dock_app_ptr->created_views_ptr = bs_ptr_set_create();
-    if (NULL == dock_app_ptr->created_views_ptr) {
+    dock_app_ptr->created_windows_ptr = bs_ptr_set_create();
+    if (NULL == dock_app_ptr->created_windows_ptr) {
         wlmaker_dock_app_destroy(dock_app_ptr);
         return NULL;
     }
-    dock_app_ptr->mapped_views_ptr = bs_ptr_set_create();
-    if (NULL == dock_app_ptr->mapped_views_ptr) {
+    dock_app_ptr->mapped_windows_ptr = bs_ptr_set_create();
+    if (NULL == dock_app_ptr->mapped_windows_ptr) {
         wlmaker_dock_app_destroy(dock_app_ptr);
         return NULL;
     }
@@ -171,13 +171,13 @@ void wlmaker_dock_app_destroy(wlmaker_dock_app_t *dock_app_ptr)
         dock_app_ptr->tile_wlr_buffer_ptr = NULL;
     }
 
-    if (NULL != dock_app_ptr->mapped_views_ptr) {
-        bs_ptr_set_destroy(dock_app_ptr->mapped_views_ptr);
-        dock_app_ptr->mapped_views_ptr = NULL;
+    if (NULL != dock_app_ptr->mapped_windows_ptr) {
+        bs_ptr_set_destroy(dock_app_ptr->mapped_windows_ptr);
+        dock_app_ptr->mapped_windows_ptr = NULL;
     }
-    if (NULL != dock_app_ptr->created_views_ptr) {
-        bs_ptr_set_destroy(dock_app_ptr->created_views_ptr);
-        dock_app_ptr->created_views_ptr = NULL;
+    if (NULL != dock_app_ptr->created_windows_ptr) {
+        bs_ptr_set_destroy(dock_app_ptr->created_windows_ptr);
+        dock_app_ptr->created_windows_ptr = NULL;
     }
     free(dock_app_ptr);
 }
@@ -207,9 +207,9 @@ bs_dllist_node_t *wlmaker_dlnode_from_dock_app(
 void redraw_tile(wlmaker_dock_app_t *dock_app_ptr)
 {
     const char *status_ptr = NULL;
-    if (!bs_ptr_set_empty(dock_app_ptr->mapped_views_ptr)) {
+    if (!bs_ptr_set_empty(dock_app_ptr->mapped_windows_ptr)) {
         status_ptr = "Running";
-    } else if (!bs_ptr_set_empty(dock_app_ptr->created_views_ptr)) {
+    } else if (!bs_ptr_set_empty(dock_app_ptr->created_windows_ptr)) {
         status_ptr = "Started";
     }
 
@@ -300,10 +300,10 @@ void tile_callback(
         subprocess_ptr,
         handle_terminated,
         dock_app_ptr,
-        handle_view_created,
-        handle_view_mapped,
-        handle_view_unmapped,
-        handle_view_destroyed);
+        handle_window_created,
+        handle_window_mapped,
+        handle_window_unmapped,
+        handle_window_destroyed);
 
     // TODO(kaeser@gubbe.ch): Store the handle, as this is useful for showing
     // error status and permitting to kill the subprocess.
@@ -353,98 +353,98 @@ void handle_terminated(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Callback for then a view from the launched subprocess is created.
+ * Callback for then a window from the launched subprocess is created.
  *
- * Registers the view as "created", and will then redraw the launcher tile
+ * Registers the windows as "created", and will then redraw the launcher tile
  * to reflect potential status changes.
  *
  * @param userdata_ptr        Points to the @ref wlmaker_dock_app_t.
  * @param subprocess_handle_ptr
- * @param view_ptr
+ * @param window_ptr
  */
-void handle_view_created(
+void handle_window_created(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr)
+    wlmtk_window_t *window_ptr)
 {
     wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
 
-    bool rv = bs_ptr_set_insert(dock_app_ptr->created_views_ptr, view_ptr);
-    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", view_ptr);
+    bool rv = bs_ptr_set_insert(dock_app_ptr->created_windows_ptr, window_ptr);
+    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
     redraw_tile(dock_app_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Callback for then a view from the launched subprocess is mapped.
+ * Callback for then a window from the launched subprocess is mapped.
  *
- * Registers the view as "mapped", and will then redraw the launcher tile
+ * Registers the window as "mapped", and will then redraw the launcher tile
  * to reflect potential status changes.
  *
  * @param userdata_ptr        Points to the @ref wlmaker_dock_app_t.
  * @param subprocess_handle_ptr
- * @param view_ptr
+ * @param window_ptr
  */
-void handle_view_mapped(
+void handle_window_mapped(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr)
+    wlmtk_window_t *window_ptr)
 {
     wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
 
     // TODO(kaeser@gubbe.ch): Appears we do encounter this scenario. File this
     // as a bug and fix it.
-    // BS_ASSERT(bs_ptr_set_contains(dock_app_ptr->created_views_ptr, view_ptr));
+    // BS_ASSERT(bs_ptr_set_contains(dock_app_ptr->created_windows_ptr, window_ptr));
 
-    bool rv = bs_ptr_set_insert(dock_app_ptr->mapped_views_ptr, view_ptr);
-    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", view_ptr);
-
-    redraw_tile(dock_app_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for then a view from the launched subprocess is unmapped.
- *
- * Removes the view from the set of "mapped" views, , and will then redraw the
- * launcher tile to reflect potential status changes.
- *
- * @param userdata_ptr        Points to the @ref wlmaker_dock_app_t.
- * @param subprocess_handle_ptr
- * @param view_ptr
- */
-void handle_view_unmapped(
-    void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr)
-{
-    wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
-
-    bs_ptr_set_erase(dock_app_ptr->mapped_views_ptr, view_ptr);
+    bool rv = bs_ptr_set_insert(dock_app_ptr->mapped_windows_ptr, window_ptr);
+    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
     redraw_tile(dock_app_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Callback for then a view from the launched subprocess is destroyed.
+ * Callback for then a window from the launched subprocess is unmapped.
  *
- * Removes the view from the set of "created" views, , and will then redraw the
- * launcher tile to reflect potential status changes.
+ * Removes the window from the set of "mapped" windows, and will then redraw
+ * the launcher tile to reflect potential status changes.
  *
  * @param userdata_ptr        Points to the @ref wlmaker_dock_app_t.
  * @param subprocess_handle_ptr
- * @param view_ptr
+ * @param window_ptr
  */
-void handle_view_destroyed(
+void handle_window_unmapped(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr)
+    wlmtk_window_t *window_ptr)
 {
     wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
 
-    bs_ptr_set_erase(dock_app_ptr->created_views_ptr, view_ptr);
+    bs_ptr_set_erase(dock_app_ptr->mapped_windows_ptr, window_ptr);
+
+    redraw_tile(dock_app_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for then a window from the launched subprocess is destroyed.
+ *
+ * Removes the window from the set of "created" windows, and will then redraw
+ * the launcher tile to reflect potential status changes.
+ *
+ * @param userdata_ptr        Points to the @ref wlmaker_dock_app_t.
+ * @param subprocess_handle_ptr
+ * @param window_ptr
+ */
+void handle_window_destroyed(
+    void *userdata_ptr,
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
+
+    bs_ptr_set_erase(dock_app_ptr->created_windows_ptr, window_ptr);
 
     redraw_tile(dock_app_ptr);
 }
