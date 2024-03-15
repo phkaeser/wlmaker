@@ -75,6 +75,11 @@ wlmaker_dock_app_config_t app_configs[] = {
         .cmdline_ptr = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox",
         .icon_path_ptr = "firefox-48x48.png"
     }, {
+        // FIXME: Remove before merge.
+        .app_id_ptr = "xterm",
+        .cmdline_ptr = "/usr/bin/xterm",
+        .icon_path_ptr = "terminal-48x48.png"
+    }, {
         .app_id_ptr = NULL,  // Sentinel.
         .cmdline_ptr = NULL,
         .icon_path_ptr = NULL

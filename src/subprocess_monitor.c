@@ -76,6 +76,12 @@ struct _wlmaker_subprocess_handle_t {
     wlmaker_subprocess_window_callback_t window_unmapped_callback;
     /** Callback: Window was destroyed from this subprocess. */
     wlmaker_subprocess_window_callback_t window_destroyed_callback;
+
+    /** Windows associated with this subprocess. */
+    bs_ptr_set_t              *created_windows_ptr;
+    /** Mapped windows associated with this subprocess. */
+    bs_ptr_set_t              *mapped_windows_ptr;
+
 };
 
 static void wlmaker_subprocess_handle_destroy(
@@ -193,6 +199,17 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     subprocess_handle_ptr->window_destroyed_callback =
         window_destroyed_callback;
 
+    subprocess_handle_ptr->created_windows_ptr = bs_ptr_set_create();
+    if (NULL == subprocess_handle_ptr->created_windows_ptr) {
+        wlmaker_subprocess_handle_destroy(subprocess_handle_ptr);
+        return NULL;
+    }
+    subprocess_handle_ptr->mapped_windows_ptr = bs_ptr_set_create();
+    if (NULL == subprocess_handle_ptr->mapped_windows_ptr) {
+        wlmaker_subprocess_handle_destroy(subprocess_handle_ptr);
+        return NULL;
+    }
+
     bs_dllist_push_back(&monitor_ptr->subprocesses,
                         &subprocess_handle_ptr->dlnode);
 
@@ -255,6 +272,15 @@ void wlmaker_subprocess_handle_destroy(
     }
     bs_log(BS_DEBUG, "Terminated subprocess %p. Status %d, signal %d.",
            sp_handle_ptr->subprocess_ptr, exit_status, signal_number);
+
+    if (NULL != sp_handle_ptr->created_windows_ptr) {
+        bs_ptr_set_destroy(sp_handle_ptr->created_windows_ptr);
+        sp_handle_ptr->created_windows_ptr = NULL;
+    }
+    if (NULL != sp_handle_ptr->mapped_windows_ptr) {
+        bs_ptr_set_destroy(sp_handle_ptr->mapped_windows_ptr);
+        sp_handle_ptr->mapped_windows_ptr = NULL;
+    }
 
     if (NULL != sp_handle_ptr->terminated_callback) {
         sp_handle_ptr->terminated_callback(
@@ -488,6 +514,8 @@ void handle_window_unmapped(
 
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
         subprocess_handle_from_window(monitor_ptr, window_ptr);
+    bs_log(BS_ERROR, "FIXME: Subprocess %p for window %p",
+           subprocess_handle_ptr, window_ptr);
     if (NULL != subprocess_handle_ptr &&
         NULL != subprocess_handle_ptr->window_unmapped_callback) {
         subprocess_handle_ptr->window_unmapped_callback(
@@ -516,6 +544,8 @@ void handle_window_destroyed(
 
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
         subprocess_handle_from_window(monitor_ptr, window_ptr);
+    bs_log(BS_ERROR, "FIXME: Subprocess %p for window %p",
+           subprocess_handle_ptr, window_ptr);
     if (NULL != subprocess_handle_ptr &&
         NULL != subprocess_handle_ptr->window_destroyed_callback) {
         subprocess_handle_ptr->window_destroyed_callback(
