@@ -181,6 +181,11 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
         workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
     wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr, &extents);
 
+    // Pushes the 'overlay' layer on top of the toolkit workspace.
+    wlr_scene_node_raise_to_top(
+        &workspace_ptr->layers[WLMAKER_WORKSPACE_LAYER_OVERLAY].wlr_scene_tree_ptr->node);
+
+
     wlmtk_workspace_set_signals(
         workspace_ptr->wlmtk_workspace_ptr,
         &workspace_ptr->server_ptr->window_mapped_event,
