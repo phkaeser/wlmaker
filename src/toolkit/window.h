@@ -32,6 +32,7 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
+#include "util.h"
 #include "workspace.h"
 
 #ifdef __cplusplus
@@ -80,6 +81,11 @@ wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
  *     the ancestor.
  */
 wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr);
+
+/** Returns @ref wlmtk_window_t for the `dlnode_ptr`. */
+wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+/** Accessor: Returns pointer to @ref wlmtk_window_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr);
 
 /**
  * Sets the window as activated, depending on the argument's value.
@@ -356,6 +362,10 @@ void wlmtk_window_set_workspace(
 
 /** @return The value of @ref wlmtk_window_t::workspace_ptr. */
 wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr);
+
+/** @return Pointer to @ref wlmtk_content_t::client for `content_ptr`. */
+const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
+    wlmtk_window_t *window_ptr);
 
 /* ------------------------------------------------------------------------- */
 

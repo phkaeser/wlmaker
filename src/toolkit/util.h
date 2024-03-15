@@ -27,6 +27,16 @@
 extern "C" {
 #endif  // __cplusplus
 
+/** Information regarding a client. Drawn from `struct wl_client`. */
+typedef struct {
+    /** Process ID. */
+    pid_t                     pid;
+    /** User ID. */
+    uid_t                     uid;
+    /** Group ID. */
+    gid_t                     gid;
+} wlmtk_util_client_t;
+
 /**
  * Sets |notifier_func| as the notifier for |listener_ptr|, and registers it
  * with |signal_ptr|.

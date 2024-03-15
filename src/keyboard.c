@@ -140,10 +140,11 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
             &keyboard_ptr->server_ptr->task_list_disabled_event, NULL);
         wlmaker_workspace_t *workspace_ptr =
             wlmaker_server_get_current_workspace(keyboard_ptr->server_ptr);
-        wlmaker_view_t *view_ptr =
-            wlmaker_workspace_get_activated_view(workspace_ptr);
-        if (NULL != view_ptr) {
-            wlmaker_workspace_raise_view(workspace_ptr, view_ptr);
+        wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+        wlmtk_window_t *window_ptr =
+            wlmtk_workspace_get_activated_window(wlmtk_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
         }
     }
 
@@ -163,14 +164,16 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
             if (((modifiers & WLR_MODIFIER_ALT) == WLR_MODIFIER_ALT) &&
                 (key_syms[i] == XKB_KEY_Escape)) {
                 if ((modifiers & WLR_MODIFIER_SHIFT) == WLR_MODIFIER_SHIFT) {
-                    wlmaker_workspace_activate_previous_view(
-                        wlmaker_server_get_current_workspace(
-                            keyboard_ptr->server_ptr));
+                    wlmtk_workspace_activate_previous_window(
+                        wlmaker_workspace_wlmtk(
+                            wlmaker_server_get_current_workspace(
+                                keyboard_ptr->server_ptr)));
                 } else {
-                    wlmaker_workspace_activate_next_view(
-                        wlmaker_server_get_current_workspace(
-                            keyboard_ptr->server_ptr));
-                }
+                    wlmtk_workspace_activate_next_window(
+                        wlmaker_workspace_wlmtk(
+                            wlmaker_server_get_current_workspace(
+                                keyboard_ptr->server_ptr)));
+                    }
                 keyboard_ptr->task_switch_mode_enabled = true;
                 wl_signal_emit(
                     &keyboard_ptr->server_ptr->task_list_enabled_event, NULL);
@@ -220,10 +223,11 @@ void handle_modifiers(struct wl_listener *listener_ptr,
             &keyboard_ptr->server_ptr->task_list_disabled_event, NULL);
         wlmaker_workspace_t *workspace_ptr =
             wlmaker_server_get_current_workspace(keyboard_ptr->server_ptr);
-        wlmaker_view_t *view_ptr =
-            wlmaker_workspace_get_activated_view(workspace_ptr);
-        if (NULL != view_ptr) {
-            wlmaker_workspace_raise_view(workspace_ptr, view_ptr);
+        wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+        wlmtk_window_t *window_ptr =
+            wlmtk_workspace_get_activated_window(wlmtk_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
         }
     }
 

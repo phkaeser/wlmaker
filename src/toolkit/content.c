@@ -22,7 +22,11 @@
 
 #include "surface.h"
 
-/* == Declaratoins ========================================================= */
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
+#undef WLR_USE_UNSTABLE
+
+/* == Declarations ========================================================= */
 
 static void _wlmtk_content_element_get_dimensions(
     wlmtk_element_t *element_ptr,
@@ -105,6 +109,7 @@ void wlmtk_content_set_surface(
             wlmtk_surface_element(surface_ptr));
         content_ptr->surface_ptr = surface_ptr;
         wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+
     }
 }
 
@@ -398,7 +403,7 @@ void test_init_fini(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests setting and clearing the sruface. */
+/** Tests setting and clearing the surface. */
 void test_set_clear_surface(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fs_ptr = wlmtk_fake_surface_create();
@@ -468,6 +473,11 @@ void test_add_remove_popup(bs_test_t *test_ptr)
         test_ptr,
         NULL,
         wlmtk_content_get_parent_content(&popup));
+
+    wlmtk_content_fini(&popup);
+    wlmtk_content_fini(&parent);
+    wlmtk_fake_surface_destroy(fs1_ptr);
+    wlmtk_fake_surface_destroy(fs0_ptr);
 }
 
 /* == End of content.c ===================================================== */

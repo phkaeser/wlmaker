@@ -35,6 +35,7 @@ typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
 #include "container.h"
 #include "surface.h"
+#include "util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,6 +121,9 @@ struct _wlmtk_content_t {
     wlmtk_surface_t           *surface_ptr;
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
+
+    /** The client connected to the @ref wlmtk_content_t::surface_ptr. */
+    wlmtk_util_client_t       client;
 
     /**
      * The parent content, or NULL. Set in @ref wlmtk_content_add_popup,

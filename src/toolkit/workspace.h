@@ -59,6 +59,20 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Sets signals for window events.
+ *
+ * TODO(kaeser@gubbe.ch): Remove this, once migrated to an event registry.
+ *
+ * @param workspace_ptr
+ * @param mapped_event_ptr
+ * @param unmapped_event_ptr
+ */
+void wlmtk_workspace_set_signals(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wl_signal *mapped_event_ptr,
+    struct wl_signal *unmapped_event_ptr);
+
+/**
  * Sets (or updates) the extents of the workspace.
  *
  * @param workspace_ptr
@@ -104,6 +118,18 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
+
+/**
+ * Returns the `bs_dllist_t` of currently mapped windows.
+ *
+ * @param workspace_ptr
+ *
+ * @return A pointer to the list. Note that the list should not be manipulated
+ *     directly. It's contents can change on @ref wlmtk_workspace_map_window or
+ *     @ref wlmtk_workspace_unmap_window calls.
+ */
+bs_dllist_t *wlmtk_workspace_get_windows_dllist(
+    wlmtk_workspace_t *workspace_ptr);
 
 /**
  * Promotes the window to the fullscreen layer (or back).
@@ -190,6 +216,28 @@ void wlmtk_workspace_activate_window(
 wlmtk_window_t *wlmtk_workspace_get_activated_window(
     wlmtk_workspace_t *workspace_ptr);
 
+/**
+ * Activates the @ref wlmtk_window_t *before* the currently activated one.
+ *
+ * Intended to permit cycling through tasks. Will activate the window, but not
+ * raise it. See @ref wlmtk_workspace_activate_next_window.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_activate_previous_window(
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Activates the @ref wlmtk_window_t *after* the currently activated one.
+ *
+ * Intended to permit cycling through tasks. Will activate the window, but not
+ * raise it. See @ref wlmtk_workspace_activate_previous_window.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_activate_next_window(
+    wlmtk_workspace_t *workspace_ptr);
+
 /** Raises `window_ptr`: Will show it atop all other windows. */
 void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
@@ -201,6 +249,19 @@ typedef struct {
     wlmtk_workspace_t         *workspace_ptr;
     /** The (fake) parent container. */
     wlmtk_container_t         *fake_parent_ptr;
+    /** Signal for when a window is mapped. */
+    struct wl_signal          window_mapped_event;
+    /** Signal for when a window is unmapped. */
+    struct wl_signal          window_unmapped_event;
+
+    /** Listener for when the window is mapped. */
+    struct wl_listener        window_mapped_listener;
+    /** Listener for when the window is unmapped. */
+    struct wl_listener        window_unmapped_listener;
+    /** Reports whether window_mapped_listener was invoked. */
+    bool                      window_mapped_listener_invoked;
+    /** Reports whether window_unmapped_listener was invoked. */
+    bool                      window_unmapped_listener_invoked;
 } wlmtk_fake_workspace_t;
 
 /** Creates a fake workspace with specified extents. */

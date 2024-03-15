@@ -166,6 +166,21 @@ struct _wlmaker_server_t {
     struct wl_signal          view_unmapped_event;
     /** Signal: Triggered whenever a view is destroyed. */
     struct wl_signal          view_destroyed_event;
+
+    // TODO(kaeser@gubbe.ch): Move these events into a 'registry' struct, so
+    // it can be more easily shared throughout the code.
+    /**
+     * Signal: Triggered whenever a window is mapped.
+     *
+     * The signal is raised right after the window was mapped.
+     */
+    struct wl_signal          window_mapped_event;
+    /**
+     * Signal: Triggered whenever a window is unmapped.
+     *
+     * The signal is raised right after the window was unmapped.
+     */
+    struct wl_signal          window_unmapped_event;
 };
 
 /** Callback for key binding. */
