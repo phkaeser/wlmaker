@@ -50,6 +50,9 @@ static bool _wlmtk_container_element_pointer_motion(
 static bool _wlmtk_container_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_container_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 static void _wlmtk_container_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 
@@ -70,6 +73,7 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .get_pointer_area = _wlmtk_container_element_get_pointer_area,
     .pointer_motion = _wlmtk_container_element_pointer_motion,
     .pointer_button = _wlmtk_container_element_pointer_button,
+    .pointer_axis = _wlmtk_container_element_pointer_axis,
     .pointer_enter = _wlmtk_container_element_pointer_enter,
 };
 
@@ -515,6 +519,30 @@ bool _wlmtk_container_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's axis method: Handles axis events, by
+ * forwarding it to the element having pointer focus.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return true if the axis event was handled.
+ */
+bool _wlmtk_container_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+
+    if (NULL == container_ptr->pointer_focus_element_ptr) return false;
+
+    return wlmtk_element_pointer_axis(
+        container_ptr->pointer_focus_element_ptr,
+        wlr_pointer_axis_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for when the pointer enters the area. Nothing for container. */
 void _wlmtk_container_element_pointer_enter(
     __UNUSED__ wlmtk_element_t *element_ptr)
@@ -697,6 +725,7 @@ static void test_pointer_focus(bs_test_t *test_ptr);
 static void test_pointer_focus_move(bs_test_t *test_ptr);
 static void test_pointer_focus_layered(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
+static void test_pointer_axis(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -708,6 +737,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "pointer_focus_move", test_pointer_focus_move },
     { 1, "pointer_focus_layered", test_pointer_focus_layered },
     { 1, "pointer_button", test_pointer_button },
+    { 1, "pointer_axis", test_pointer_axis },
     { 0, NULL, NULL }
 };
 
@@ -1431,5 +1461,56 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_container_fini(&container);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Tests that axis events are forwarded to element with pointer focus. */
+void test_pointer_axis(bs_test_t *test_ptr)
+{
+    struct wlr_pointer_axis_event event = {};
+    wlmtk_container_t container;
+    BS_ASSERT(wlmtk_container_init(&container, NULL));
+
+    wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&elem1_ptr->element, true);
+    elem1_ptr->dimensions.width = 1;
+    elem1_ptr->dimensions.height = 1;
+    wlmtk_container_add_element(&container, &elem1_ptr->element);
+
+    wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
+    wlmtk_element_set_position(&elem2_ptr->element, 10, 10);
+    wlmtk_element_set_visible(&elem2_ptr->element, true);
+    wlmtk_container_add_element_atop(&container, NULL, &elem2_ptr->element);
+
+    // Pointer on elem1, axis goes there.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(&container.super_element, &event));
+    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_axis_called);
+    elem1_ptr->pointer_axis_called = false;
+    BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_axis_called);
+
+    // Pointer on elem2, axis goes there.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&container.super_element, 10, 10, 7));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(&container.super_element, &event));
+    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_axis_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_axis_called);
+
+    wlmtk_container_remove_element(&container, &elem1_ptr->element);
+    wlmtk_container_remove_element(&container, &elem2_ptr->element);
+    wlmtk_element_destroy(&elem2_ptr->element);
+    wlmtk_element_destroy(&elem1_ptr->element);
+
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_axis(&container.super_element, &event));
+
+    wlmtk_container_fini(&container);
+}
 
 /* == End of container.c =================================================== */
