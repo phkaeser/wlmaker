@@ -507,7 +507,6 @@ bool _wlmtk_container_element_pointer_button(
         return accepted;
     }
 
-
     if (NULL == container_ptr->pointer_focus_element_ptr) return false;
 
     return wlmtk_element_pointer_button(
