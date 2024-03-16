@@ -49,6 +49,9 @@ static void _wlmtk_titlebar_title_element_destroy(
 static bool _wlmtk_titlebar_title_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_titlebar_title_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
 static void title_set_activated(
     wlmtk_titlebar_title_t *titlebar_title_ptr,
@@ -67,6 +70,7 @@ struct wlr_buffer *title_create_buffer(
 static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
     .destroy = _wlmtk_titlebar_title_element_destroy,
     .pointer_button = _wlmtk_titlebar_title_element_pointer_button,
+    .pointer_axis = _wlmtk_titlebar_title_element_pointer_axis,
 };
 
 /* == Exported methods ===================================================== */
@@ -191,7 +195,40 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     }
 
     return true;
+}
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles pointer axis events: Scroll wheel up will shade, down will unshade.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event
+ *
+ * @return true, if the axis event was consumed. That is the case if it's
+ *     source is a scroll wheel, and the orientation is vertical.
+ */
+bool _wlmtk_titlebar_title_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
+
+    // Only consider vertical wheel moves.
+    if (WLR_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
+        WLR_AXIS_ORIENTATION_VERTICAL !=
+        wlr_pointer_axis_event_ptr->orientation) {
+        return false;
+    }
+
+    if (wlr_pointer_axis_event_ptr->delta > 0) {
+        bs_log(BS_WARNING, "FIXME: %p Unimplemented - unshade.",
+               titlebar_title_ptr);
+    } else if (wlr_pointer_axis_event_ptr->delta < 0) {
+        bs_log(BS_WARNING, "FIXME: %p Unimplemented - shade.",
+               titlebar_title_ptr);
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
