@@ -63,6 +63,8 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
         return NULL;
     }
+    wl_signal_emit(&server_ptr->window_created_event,
+                   xwl_toplevel_ptr->window_ptr);
 
     wlmtk_surface_connect_map_listener_signal(
         wlmtk_surface_from_xwl_content(content_ptr),
@@ -81,6 +83,9 @@ void wlmaker_xwl_toplevel_destroy(
     wlmaker_xwl_toplevel_t *xwl_toplevel_ptr)
 {
     if (NULL != xwl_toplevel_ptr->window_ptr) {
+        wl_signal_emit(&xwl_toplevel_ptr->server_ptr->window_destroyed_event,
+                       xwl_toplevel_ptr->window_ptr);
+
         BS_ASSERT(NULL ==
                   wlmtk_window_get_workspace(xwl_toplevel_ptr->window_ptr));
         wlmtk_window_destroy(xwl_toplevel_ptr->window_ptr);

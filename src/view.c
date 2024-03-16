@@ -118,8 +118,6 @@ void wlmaker_view_init(
             &view_ptr->client.uid,
             &view_ptr->client.gid);
     }
-
-    wl_signal_emit(&server_ptr->view_created_event, view_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -129,8 +127,6 @@ void wlmaker_view_fini(wlmaker_view_t *view_ptr)
     if (NULL != view_ptr->workspace_ptr) {
         wlmaker_view_unmap(view_ptr);
     }
-
-    wl_signal_emit(&view_ptr->server_ptr->view_destroyed_event, view_ptr);
 
     wl_list_remove(&view_ptr->button_release_listener.link);
 
@@ -609,8 +605,6 @@ void wlmaker_view_map(wlmaker_view_t *view_ptr,
         view_ptr->workspace_ptr,
         view_ptr,
         layer);
-
-    wl_signal_emit(&view_ptr->server_ptr->view_mapped_event, view_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -619,8 +613,6 @@ void wlmaker_view_unmap(wlmaker_view_t *view_ptr)
     BS_ASSERT(NULL != view_ptr->workspace_ptr);  // Should be mapped.
     wlmaker_workspace_remove_view(view_ptr->workspace_ptr, view_ptr);
     view_ptr->workspace_ptr = NULL;
-
-    wl_signal_emit(&view_ptr->server_ptr->view_unmapped_event, view_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

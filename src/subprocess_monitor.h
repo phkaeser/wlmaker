@@ -28,7 +28,8 @@ typedef struct _wlmaker_subprocess_monitor_t wlmaker_subprocess_monitor_t;
 typedef struct _wlmaker_subprocess_handle_t wlmaker_subprocess_handle_t;
 
 #include "server.h"
-#include "view.h"
+
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,16 +50,16 @@ typedef void (*wlmaker_subprocess_terminated_callback_t)(
     int code);
 
 /**
- * Callback for when view events happened for the subprocess.
+ * Callback for when window events happened for the subprocess.
  *
  * @param userdata_ptr
  * @param subprocess_handle_ptr
- * @param view_ptr
+ * @param window_ptr
  */
-typedef void (*wlmaker_subprocess_view_callback_t)(
+typedef void (*wlmaker_subprocess_window_callback_t)(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmaker_view_t *view_ptr);
+    wlmtk_window_t *window_ptr);
 
 /**
  * Creates the subprocess monitor
@@ -89,10 +90,10 @@ void wlmaker_subprocess_monitor_destroy(
  * @param subprocess_ptr
  * @param terminated_callback
  * @param userdata_ptr
- * @param view_created_callback
- * @param view_mapped_callback
- * @param view_unmapped_callback
- * @param view_destroyed_callback
+ * @param window_created_callback
+ * @param window_mapped_callback
+ * @param window_unmapped_callback
+ * @param window_destroyed_callback
  *
  * @return A pointer to the created subprocess handle or NULL on error.
  */
@@ -101,10 +102,10 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     bs_subprocess_t *subprocess_ptr,
     wlmaker_subprocess_terminated_callback_t terminated_callback,
     void *userdata_ptr,
-    wlmaker_subprocess_view_callback_t view_created_callback,
-    wlmaker_subprocess_view_callback_t view_mapped_callback,
-    wlmaker_subprocess_view_callback_t view_unmapped_callback,
-    wlmaker_subprocess_view_callback_t view_destroyed_callback);
+    wlmaker_subprocess_window_callback_t window_created_callback,
+    wlmaker_subprocess_window_callback_t window_mapped_callback,
+    wlmaker_subprocess_window_callback_t window_unmapped_callback,
+    wlmaker_subprocess_window_callback_t window_destroyed_callback);
 
 /**
  * Releases the reference held on `subprocess_handle_ptr`. Once the subprocess

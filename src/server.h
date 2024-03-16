@@ -150,25 +150,12 @@ struct _wlmaker_server_t {
     /** Subprocess monitoring. */
     wlmaker_subprocess_monitor_t *monitor_ptr;
 
-    /** Signal: Triggered whenever a view is created. */
-    struct wl_signal          view_created_event;
-    /**
-     * Signal: Triggered whenever a view is mapped.
-     *
-     * The signal is raised right after the view was mapped.
-     */
-    struct wl_signal          view_mapped_event;
-    /**
-     * Signal: Triggered whenever a view is unmapped.
-     *
-     * The signal is raised right after the view was unmapped.
-     */
-    struct wl_signal          view_unmapped_event;
-    /** Signal: Triggered whenever a view is destroyed. */
-    struct wl_signal          view_destroyed_event;
-
     // TODO(kaeser@gubbe.ch): Move these events into a 'registry' struct, so
     // it can be more easily shared throughout the code.
+    /** Signal: Triggered whenever a window is created. */
+    struct wl_signal          window_created_event;
+    /** Signal: Triggered whenever a window is destroyed. */
+    struct wl_signal          window_destroyed_event;
     /**
      * Signal: Triggered whenever a window is mapped.
      *

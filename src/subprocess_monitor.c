@@ -34,17 +34,19 @@ struct _wlmaker_subprocess_monitor_t {
     /** Event source used for monitoring SIGCHLD. */
     struct wl_event_source    *sigchld_event_source_ptr;
 
-    /** Listener: Receives a signal whenever a view is created. */
-    struct wl_listener        view_created_listener;
-    /** Listener: Receives a signal whenever a view is mapped. */
-    struct wl_listener        view_mapped_listener;
-    /** Listener: Receives a signal whenever a view is unmapped. */
-    struct wl_listener        view_unmapped_listener;
-    /** Listener: Receives a signal whenever a view is destroyed. */
-    struct wl_listener        view_destroyed_listener;
+    /** Listener: Receives a signal whenever a window is created. */
+    struct wl_listener        window_created_listener;
+    /** Listener: Receives a signal whenever a window is mapped. */
+    struct wl_listener        window_mapped_listener;
+    /** Listener: Receives a signal whenever a window is unmapped. */
+    struct wl_listener        window_unmapped_listener;
+    /** Listener: Receives a signal whenever a window is destroyed. */
+    struct wl_listener        window_destroyed_listener;
 
     /** Monitored subprocesses. */
     bs_dllist_t               subprocesses;
+    /** Windows for monitored subprocesses. */
+    bs_avltree_t              *window_tree_ptr;
 };
 
 /** A subprocess. */
@@ -67,17 +69,38 @@ struct _wlmaker_subprocess_handle_t {
     wlmaker_subprocess_terminated_callback_t terminated_callback;
     /** Argument to all the callbacks. */
     void                      *userdata_ptr;
+    /** Subprocess's windows. @ref wlmaker_subprocess_window_t::dlnode. */
+    bs_dllist_t               windows;
 
-    /** Callback: A view was created from this subprocess. */
-    wlmaker_subprocess_view_callback_t view_created_callback;
-    /** Callback: View was mapped from this subprocess. */
-    wlmaker_subprocess_view_callback_t view_mapped_callback;
-    /** Callback: View was unmapped from this subprocess. */
-    wlmaker_subprocess_view_callback_t view_unmapped_callback;
-    /** Callback: View was destroyed from this subprocess. */
-    wlmaker_subprocess_view_callback_t view_destroyed_callback;
+    /** Callback: A window was created from this subprocess. */
+    wlmaker_subprocess_window_callback_t window_created_callback;
+    /** Callback: Window was mapped from this subprocess. */
+    wlmaker_subprocess_window_callback_t window_mapped_callback;
+    /** Callback: Window was unmapped from this subprocess. */
+    wlmaker_subprocess_window_callback_t window_unmapped_callback;
+    /** Callback: Window was destroyed from this subprocess. */
+    wlmaker_subprocess_window_callback_t window_destroyed_callback;
 };
 
+/** Registry entry for @ref wlmtk_window_t and subprocesses. */
+typedef struct {
+    /** See @ref wlmaker_subprocess_monitor_t::window_tree_ptr. */
+    bs_avltree_node_t         avlnode;
+    /** The window registered here. Also the tree lookup key. */
+    wlmtk_window_t            *window_ptr;
+
+    /** See @ref wlmaker_subprocess_handle_t::windows. */
+    bs_dllist_node_t          dlnode;
+    /** The subprocess that the window is mapped to, or NULL. */
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+
+    /** Whether the window was reported as mapped. */
+    bool                      mapped;
+} wlmaker_subprocess_window_t;
+
+static wlmaker_subprocess_handle_t *wlmaker_subprocess_handle_create(
+    bs_subprocess_t *subprocess_ptr,
+    struct wl_event_loop *wl_event_loop_ptr);
 static void wlmaker_subprocess_handle_destroy(
     wlmaker_subprocess_handle_t *sp_handle_ptr);
 static int handle_read_stdout(int fd, uint32_t mask, void *data_ptr);
@@ -92,22 +115,34 @@ static int process_fd(
 
 static int handle_sigchld(int signum, void *data_ptr);
 
-static void handle_view_created(
+static void handle_window_created(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_view_mapped(
+static void handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_view_unmapped(
+static void handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_view_destroyed(
+static void handle_window_destroyed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static wlmaker_subprocess_handle_t *subprocess_handle_from_view(
+static wlmaker_subprocess_handle_t *subprocess_handle_from_window(
     wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmaker_view_t *view_ptr);
+    wlmtk_window_t *window_ptr);
+
+static wlmaker_subprocess_window_t *wlmaker_subprocess_window_create(
+    wlmtk_window_t *window_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr);
+static void wlmaker_subprocess_window_destroy(
+    wlmaker_subprocess_window_t *ws_window_ptr);
+
+static int wlmaker_subprocess_window_node_cmp(
+    const bs_avltree_node_t *node_ptr,
+    const void *key_ptr);
+static void wlmaker_subprocess_window_node_destroy(
+    bs_avltree_node_t *node_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -118,6 +153,17 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
     wlmaker_subprocess_monitor_t *monitor_ptr = logged_calloc(
         1, sizeof(wlmaker_subprocess_monitor_t));
     if (NULL == monitor_ptr) return NULL;
+
+    monitor_ptr->window_tree_ptr = bs_avltree_create(
+        wlmaker_subprocess_window_node_cmp,
+        wlmaker_subprocess_window_node_destroy);
+    if (NULL == monitor_ptr->window_tree_ptr) {
+        bs_log(BS_ERROR, "Failed bs_avltree_create(%p, %p)",
+               wlmaker_subprocess_window_node_cmp,
+               wlmaker_subprocess_window_node_destroy);
+        wlmaker_subprocess_monitor_destroy(monitor_ptr);
+        return NULL;
+    }
 
     monitor_ptr->wl_event_loop_ptr = wl_display_get_event_loop(
         server_ptr->wl_display_ptr);
@@ -134,21 +180,21 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
         monitor_ptr);
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_created_event,
-        &monitor_ptr->view_created_listener,
-        handle_view_created);
+        &server_ptr->window_created_event,
+        &monitor_ptr->window_created_listener,
+        handle_window_created);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_mapped_event,
-        &monitor_ptr->view_mapped_listener,
-        handle_view_mapped);
+        &server_ptr->window_mapped_event,
+        &monitor_ptr->window_mapped_listener,
+        handle_window_mapped);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_unmapped_event,
-        &monitor_ptr->view_unmapped_listener,
-        handle_view_unmapped);
+        &server_ptr->window_unmapped_event,
+        &monitor_ptr->window_unmapped_listener,
+        handle_window_unmapped);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->view_destroyed_event,
-        &monitor_ptr->view_destroyed_listener,
-        handle_view_destroyed);
+        &server_ptr->window_destroyed_event,
+        &monitor_ptr->window_destroyed_listener,
+        handle_window_destroyed);
 
     return monitor_ptr;
 }
@@ -157,14 +203,19 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
 void wlmaker_subprocess_monitor_destroy(
     wlmaker_subprocess_monitor_t *monitor_ptr)
 {
-    wl_list_remove(&monitor_ptr->view_destroyed_listener.link);
-    wl_list_remove(&monitor_ptr->view_unmapped_listener.link);
-    wl_list_remove(&monitor_ptr->view_mapped_listener.link);
-    wl_list_remove(&monitor_ptr->view_created_listener.link);
+    wl_list_remove(&monitor_ptr->window_destroyed_listener.link);
+    wl_list_remove(&monitor_ptr->window_unmapped_listener.link);
+    wl_list_remove(&monitor_ptr->window_mapped_listener.link);
+    wl_list_remove(&monitor_ptr->window_created_listener.link);
 
     if (NULL != monitor_ptr->sigchld_event_source_ptr) {
         wl_event_source_remove(monitor_ptr->sigchld_event_source_ptr);
         monitor_ptr->sigchld_event_source_ptr = NULL;
+    }
+
+    if (NULL != monitor_ptr->window_tree_ptr) {
+        bs_avltree_destroy(monitor_ptr->window_tree_ptr);
+        monitor_ptr->window_tree_ptr = NULL;
     }
 
     monitor_ptr->wl_event_loop_ptr = NULL;
@@ -177,42 +228,25 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     bs_subprocess_t *subprocess_ptr,
     wlmaker_subprocess_terminated_callback_t terminated_callback,
     void *userdata_ptr,
-    wlmaker_subprocess_view_callback_t view_created_callback,
-    wlmaker_subprocess_view_callback_t view_mapped_callback,
-    wlmaker_subprocess_view_callback_t view_unmapped_callback,
-    wlmaker_subprocess_view_callback_t view_destroyed_callback)
+    wlmaker_subprocess_window_callback_t window_created_callback,
+    wlmaker_subprocess_window_callback_t window_mapped_callback,
+    wlmaker_subprocess_window_callback_t window_unmapped_callback,
+    wlmaker_subprocess_window_callback_t window_destroyed_callback)
 {
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr = logged_calloc(
-        1, sizeof(wlmaker_subprocess_handle_t));
-    subprocess_handle_ptr->subprocess_ptr = subprocess_ptr;
-    subprocess_handle_ptr->terminated_callback = terminated_callback;
-    subprocess_handle_ptr->userdata_ptr = userdata_ptr;
-    subprocess_handle_ptr->view_created_callback = view_created_callback;
-    subprocess_handle_ptr->view_mapped_callback = view_mapped_callback;
-    subprocess_handle_ptr->view_unmapped_callback = view_unmapped_callback;
-    subprocess_handle_ptr->view_destroyed_callback = view_destroyed_callback;
-
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr =
+        wlmaker_subprocess_handle_create(
+            subprocess_ptr, monitor_ptr->wl_event_loop_ptr);
+    if (NULL == subprocess_handle_ptr) return NULL;
     bs_dllist_push_back(&monitor_ptr->subprocesses,
                         &subprocess_handle_ptr->dlnode);
 
-    bs_subprocess_get_fds(
-        subprocess_ptr,
-        NULL,  // no interest in stdin.
-        &subprocess_handle_ptr->stdout_read_fd,
-        &subprocess_handle_ptr->stderr_read_fd);
-
-    subprocess_handle_ptr->stdout_wl_event_source_ptr = wl_event_loop_add_fd(
-        monitor_ptr->wl_event_loop_ptr,
-        subprocess_handle_ptr->stdout_read_fd,
-        WL_EVENT_READABLE,
-        handle_read_stdout,
-        subprocess_handle_ptr);
-    subprocess_handle_ptr->stderr_wl_event_source_ptr = wl_event_loop_add_fd(
-        monitor_ptr->wl_event_loop_ptr,
-        subprocess_handle_ptr->stderr_read_fd,
-        WL_EVENT_READABLE,
-        handle_read_stderr,
-        subprocess_handle_ptr);
+    subprocess_handle_ptr->terminated_callback = terminated_callback;
+    subprocess_handle_ptr->userdata_ptr = userdata_ptr;
+    subprocess_handle_ptr->window_created_callback = window_created_callback;
+    subprocess_handle_ptr->window_mapped_callback = window_mapped_callback;
+    subprocess_handle_ptr->window_unmapped_callback = window_unmapped_callback;
+    subprocess_handle_ptr->window_destroyed_callback =
+        window_destroyed_callback;
 
     return subprocess_handle_ptr;
 }
@@ -222,6 +256,31 @@ void wlmaker_subprocess_monitor_cede(
     __UNUSED__ wlmaker_subprocess_monitor_t *monitor_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr)
 {
+    bs_dllist_node_t *dlnode_ptr;
+    while (NULL != (dlnode_ptr = bs_dllist_pop_front(
+                        &subprocess_handle_ptr->windows))) {
+        wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_subprocess_window_t, dlnode);
+        BS_ASSERT(ws_window_ptr->subprocess_handle_ptr ==
+                  subprocess_handle_ptr) ;
+
+        if (NULL != subprocess_handle_ptr->window_unmapped_callback) {
+            subprocess_handle_ptr->window_unmapped_callback(
+                subprocess_handle_ptr->userdata_ptr,
+                subprocess_handle_ptr,
+                ws_window_ptr->window_ptr);
+            ws_window_ptr->mapped = false;
+        }
+        if (NULL != subprocess_handle_ptr->window_destroyed_callback) {
+            subprocess_handle_ptr->window_destroyed_callback(
+                subprocess_handle_ptr->userdata_ptr,
+                subprocess_handle_ptr,
+                ws_window_ptr->window_ptr);
+        }
+
+        ws_window_ptr->subprocess_handle_ptr = NULL;
+    }
+
     subprocess_handle_ptr->terminated_callback = NULL;
 }
 
@@ -233,6 +292,47 @@ bs_subprocess_t *wlmaker_subprocess_from_subprocess_handle(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a @ref wlmaker_subprocess_handle_t and connects to subprocess_ptr.
+ *
+ * @param subprocess_ptr
+ * @param wl_event_loop_ptr
+ *
+ * @return The subprocess handle or NULL on error.
+ */
+wlmaker_subprocess_handle_t *wlmaker_subprocess_handle_create(
+    bs_subprocess_t *subprocess_ptr,
+    struct wl_event_loop *wl_event_loop_ptr)
+{
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr = logged_calloc(
+        1, sizeof(wlmaker_subprocess_handle_t));
+    if (NULL == subprocess_handle_ptr) return NULL;
+
+    subprocess_handle_ptr->subprocess_ptr = subprocess_ptr;
+
+    bs_subprocess_get_fds(
+        subprocess_ptr,
+        NULL,  // no interest in stdin.
+        &subprocess_handle_ptr->stdout_read_fd,
+        &subprocess_handle_ptr->stderr_read_fd);
+
+    subprocess_handle_ptr->stdout_wl_event_source_ptr = wl_event_loop_add_fd(
+        wl_event_loop_ptr,
+        subprocess_handle_ptr->stdout_read_fd,
+        WL_EVENT_READABLE,
+        handle_read_stdout,
+        subprocess_handle_ptr);
+    subprocess_handle_ptr->stderr_wl_event_source_ptr = wl_event_loop_add_fd(
+        wl_event_loop_ptr,
+        subprocess_handle_ptr->stderr_read_fd,
+        WL_EVENT_READABLE,
+        handle_read_stderr,
+        subprocess_handle_ptr);
+
+    return subprocess_handle_ptr;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -415,133 +515,152 @@ int handle_sigchld(__UNUSED__ int signum, void *data_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handles view creation: Will see if there's a subprocess mapping to the
+ * Handles window creation: Will see if there's a subprocess mapping to the
  * corresponding client's PID, and call the "created" callback, if registered.
  *
- * Note: A client may have an arbitrary number of views created.
+ * Note: A client may have an arbitrary number of windows created.
  *
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_view_created(
+void handle_window_created(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_subprocess_monitor_t, view_created_listener);
-    wlmaker_view_t *view_ptr = data_ptr;
+        listener_ptr, wlmaker_subprocess_monitor_t, window_created_listener);
+    wlmtk_window_t *window_ptr = data_ptr;
 
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
-        subprocess_handle_from_view(monitor_ptr, view_ptr);
-    if (NULL != subprocess_handle_ptr &&
-        NULL != subprocess_handle_ptr->view_created_callback) {
-        subprocess_handle_ptr->view_created_callback(
-            subprocess_handle_ptr->userdata_ptr,
-            subprocess_handle_ptr,
-            view_ptr);
-    }
+        subprocess_handle_from_window(monitor_ptr, window_ptr);
+    if (NULL == subprocess_handle_ptr) return;
+
+    wlmaker_subprocess_window_t *ws_window_ptr =
+        wlmaker_subprocess_window_create(window_ptr, subprocess_handle_ptr);
+    if (NULL == ws_window_ptr) return;
+
+    bs_avltree_insert(
+        monitor_ptr->window_tree_ptr,
+        ws_window_ptr->window_ptr,
+        &ws_window_ptr->avlnode,
+        true);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handles view mapping: Will see if there's a subprocess mapping to the
- * corresponding client's PID, and call the "mapped" callback, if registered.
+ * Handles window mapping: Will see if there's a window and corresponding
+ * subprocess, and calls the "mapped" callback, if registered.
  *
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_view_mapped(
+void handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_subprocess_monitor_t, view_mapped_listener);
-    wlmaker_view_t *view_ptr = data_ptr;
+        listener_ptr, wlmaker_subprocess_monitor_t, window_mapped_listener);
+    wlmtk_window_t *window_ptr = data_ptr;
 
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
+        monitor_ptr->window_tree_ptr, window_ptr);
+    if (NULL == avlnode_ptr) return;
+
+    wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmaker_subprocess_window_t, avlnode);
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
-        subprocess_handle_from_view(monitor_ptr, view_ptr);
-    if (NULL != subprocess_handle_ptr &&
-        NULL != subprocess_handle_ptr->view_mapped_callback) {
-        subprocess_handle_ptr->view_mapped_callback(
+        ws_window_ptr->subprocess_handle_ptr;
+    if (NULL == subprocess_handle_ptr) return;
+
+    if (NULL != subprocess_handle_ptr->window_mapped_callback) {
+        subprocess_handle_ptr->window_mapped_callback(
             subprocess_handle_ptr->userdata_ptr,
             subprocess_handle_ptr,
-            view_ptr);
+            ws_window_ptr->window_ptr);
     }
+    ws_window_ptr->mapped = true;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handles view unmapping: Will see if there's a subprocess mapping to the
- * corresponding client's PID, and call the "unmapped" callback, if registered.
+ * Handles window unmapping: Will see if there's a window and corresponding
+ * subprocess, and calls the "unmapped" callback, if registered.
  *
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_view_unmapped(
+void handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_subprocess_monitor_t, view_unmapped_listener);
-    wlmaker_view_t *view_ptr = data_ptr;
+        listener_ptr, wlmaker_subprocess_monitor_t, window_unmapped_listener);
+    wlmtk_window_t *window_ptr = data_ptr;
 
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
+        monitor_ptr->window_tree_ptr, window_ptr);
+    if (NULL == avlnode_ptr) return;
+
+    wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmaker_subprocess_window_t, avlnode);
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
-        subprocess_handle_from_view(monitor_ptr, view_ptr);
-    if (NULL != subprocess_handle_ptr &&
-        NULL != subprocess_handle_ptr->view_unmapped_callback) {
-        subprocess_handle_ptr->view_unmapped_callback(
+        ws_window_ptr->subprocess_handle_ptr;
+    if (NULL == subprocess_handle_ptr) return;
+
+    if (NULL != subprocess_handle_ptr->window_unmapped_callback) {
+        subprocess_handle_ptr->window_unmapped_callback(
             subprocess_handle_ptr->userdata_ptr,
             subprocess_handle_ptr,
-            view_ptr);
+            ws_window_ptr->window_ptr);
     }
+    ws_window_ptr->mapped = false;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handles view unmapping: Will see if there's a subprocess mapping to the
- * corresponding client's PID, and call the "destroyed" callback, if
- * registered.
+ * Handles window destruction: Will retrieve the wlmaker_subprocess_window_t
+ * structure for tracking windows for subprocesses, call the respective
+ * callbacks and destroy the associated window tracking structure.
  *
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_view_destroyed(
+void handle_window_destroyed(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_subprocess_monitor_t, view_destroyed_listener);
-    wlmaker_view_t *view_ptr = data_ptr;
+        listener_ptr, wlmaker_subprocess_monitor_t, window_destroyed_listener);
+    wlmtk_window_t *window_ptr = data_ptr;
 
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr =
-        subprocess_handle_from_view(monitor_ptr, view_ptr);
-    if (NULL != subprocess_handle_ptr &&
-        NULL != subprocess_handle_ptr->view_destroyed_callback) {
-        subprocess_handle_ptr->view_destroyed_callback(
-            subprocess_handle_ptr->userdata_ptr,
-            subprocess_handle_ptr,
-            view_ptr);
-    }
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
+        monitor_ptr->window_tree_ptr, window_ptr);
+    if (NULL == avlnode_ptr) return;
+
+    wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmaker_subprocess_window_t, avlnode);
+    wlmaker_subprocess_window_destroy(ws_window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Returns the subprocess matching the view's client, if any.
+ * Returns the subprocess matching the window's client, if any.
  *
  * Practically, there should only ever be one subprocess matching, since the
  * PID of a subprocess is supposed to be unique.
  *
  * @param monitor_ptr
- * @param view_ptr
+ * @param window_ptr
  *
- * @return A pointer to the subprocess handle corresponding to the view's
+ * @return A pointer to the subprocess handle corresponding to the window's
  *     client, or NULL if not found.
  */
-wlmaker_subprocess_handle_t *subprocess_handle_from_view(
+wlmaker_subprocess_handle_t *subprocess_handle_from_window(
     wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmaker_view_t *view_ptr)
+    wlmtk_window_t *window_ptr)
 {
-    const wlmaker_client_t *client_ptr = wlmaker_view_get_client(view_ptr);
+    const wlmtk_util_client_t *client_ptr = wlmtk_window_get_client_ptr(
+        window_ptr);
     // TODO(kaeser@gubbe.ch): Should be a O(1) or O(log(n)) structure.
     for (bs_dllist_node_t *dlnode_ptr = monitor_ptr->subprocesses.head_ptr;
          NULL != dlnode_ptr;
@@ -555,6 +674,108 @@ wlmaker_subprocess_handle_t *subprocess_handle_from_view(
     }
 
     return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a structure to track windows for subprocesses.
+ *
+ * Also calls the `window_created_callback`, if given.
+ *
+ * @param window_ptr
+ * @param subprocess_handle_ptr
+ *
+ * @return A pointer to @ref wlmaker_subprocess_window_t or NULL on error.
+ */
+wlmaker_subprocess_window_t *wlmaker_subprocess_window_create(
+    wlmtk_window_t *window_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr)
+{
+    // Guard clause: No need for window handle, if no window nor process.
+    if (NULL == window_ptr || NULL == subprocess_handle_ptr) return NULL;
+
+    wlmaker_subprocess_window_t *ws_window_ptr = logged_calloc(
+        1, sizeof(wlmaker_subprocess_window_t));
+    if (NULL == ws_window_ptr) return NULL;
+    ws_window_ptr->window_ptr = window_ptr;
+    ws_window_ptr->subprocess_handle_ptr = subprocess_handle_ptr;
+
+    if (NULL != subprocess_handle_ptr->window_created_callback) {
+        subprocess_handle_ptr->window_created_callback(
+            subprocess_handle_ptr->userdata_ptr,
+            subprocess_handle_ptr,
+            ws_window_ptr->window_ptr);
+    }
+
+    bs_dllist_push_back(&subprocess_handle_ptr->windows,
+                        &ws_window_ptr->dlnode);
+    return ws_window_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Destroys the structure for tracking windows for subprocesses.
+ *
+ * Calls the `window_destroyed_callback`, if given.
+ *
+ * @param ws_window_ptr
+ */
+void wlmaker_subprocess_window_destroy(
+    wlmaker_subprocess_window_t *ws_window_ptr)
+{
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr =
+        ws_window_ptr->subprocess_handle_ptr;
+    if (ws_window_ptr->mapped &&
+        NULL != subprocess_handle_ptr &&
+        NULL != subprocess_handle_ptr->window_unmapped_callback) {
+        subprocess_handle_ptr->window_unmapped_callback(
+            subprocess_handle_ptr->userdata_ptr,
+            subprocess_handle_ptr,
+            ws_window_ptr->window_ptr);
+        ws_window_ptr->mapped = false;
+    }
+
+    if (NULL != subprocess_handle_ptr &&
+        NULL != subprocess_handle_ptr->window_destroyed_callback) {
+        subprocess_handle_ptr->window_destroyed_callback(
+            subprocess_handle_ptr->userdata_ptr,
+            subprocess_handle_ptr,
+            ws_window_ptr->window_ptr);
+    }
+
+    if (NULL != ws_window_ptr->subprocess_handle_ptr) {
+        bs_dllist_remove(
+            &ws_window_ptr->subprocess_handle_ptr->windows,
+            &ws_window_ptr->dlnode);
+        ws_window_ptr->subprocess_handle_ptr = NULL;
+    }
+    free(ws_window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Comparator for window registry tree nodes. */
+int wlmaker_subprocess_window_node_cmp(const bs_avltree_node_t *node_ptr,
+                                       const void *key_ptr)
+{
+    wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+        node_ptr, wlmaker_subprocess_window_t, avlnode);
+    void *node_key_ptr = ws_window_ptr->window_ptr;
+    if (node_key_ptr < key_ptr) {
+        return -1;
+    } else if (node_key_ptr > key_ptr) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destructor for window registry tree nodes. */
+void wlmaker_subprocess_window_node_destroy(bs_avltree_node_t *node_ptr)
+{
+    wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
+        node_ptr, wlmaker_subprocess_window_t, avlnode);
+    wlmaker_subprocess_window_destroy(ws_window_ptr);
 }
 
 /* == End of subprocess_monitor.c ========================================== */
