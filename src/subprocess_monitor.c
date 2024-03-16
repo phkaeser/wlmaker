@@ -759,14 +759,7 @@ int wlmaker_subprocess_window_node_cmp(const bs_avltree_node_t *node_ptr,
 {
     wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
         node_ptr, wlmaker_subprocess_window_t, avlnode);
-    void *node_key_ptr = ws_window_ptr->window_ptr;
-    if (node_key_ptr < key_ptr) {
-        return -1;
-    } else if (node_key_ptr > key_ptr) {
-        return -1;
-    } else {
-        return 0;
-    }
+    return bs_avltree_cmp_ptr(ws_window_ptr->window_ptr, key_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
