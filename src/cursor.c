@@ -293,6 +293,14 @@ void handle_axis(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, axis_listener);
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr = data_ptr;
 
+    bool consumed = wlmtk_workspace_axis(
+        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                    cursor_ptr->server_ptr)),
+        wlr_pointer_axis_event_ptr);
+    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
+    // Remove it, once we're fully on toolkit.
+    if (consumed) return;
+
     /* Notify the client with pointer focus of the axis event. */
     wlr_seat_pointer_notify_axis(
         cursor_ptr->server_ptr->wlr_seat_ptr,
