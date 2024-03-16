@@ -120,7 +120,8 @@ Support for visual effects to improve usability, but not for pure show.
   * Roll up (*shade*) windows.
   * Raise window when activated.
 
-* App Launcher: Update status for wlmtk_window_t, instead of wlmaker_view_t.
+* [done] App Launcher: Update status for wlmtk_window_t, instead of
+  wlmaker_view_t.
 
 ### Internals and code organization
 

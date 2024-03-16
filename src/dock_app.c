@@ -338,8 +338,6 @@ void handle_terminated(
         code = signal_number;
     }
 
-
-
     bs_log(BS_INFO, format_ptr,
            dock_app_ptr->config_ptr->app_id_ptr,
            dock_app_ptr,
@@ -372,8 +370,6 @@ void handle_window_created(
     bool rv = bs_ptr_set_insert(dock_app_ptr->created_windows_ptr, window_ptr);
     if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
-    bs_log(BS_WARNING, "FIXME: Created %p", window_ptr);
-
     redraw_tile(dock_app_ptr);
 }
 
@@ -402,8 +398,6 @@ void handle_window_mapped(
     bool rv = bs_ptr_set_insert(dock_app_ptr->mapped_windows_ptr, window_ptr);
     if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
-    bs_log(BS_WARNING, "FIXME: Mapped %p", window_ptr);
-
     redraw_tile(dock_app_ptr);
 }
 
@@ -427,8 +421,6 @@ void handle_window_unmapped(
 
     bs_ptr_set_erase(dock_app_ptr->mapped_windows_ptr, window_ptr);
 
-    bs_log(BS_WARNING, "FIXME: Unmapped %p", window_ptr);
-
     redraw_tile(dock_app_ptr);
 }
 
@@ -451,8 +443,6 @@ void handle_window_destroyed(
     wlmaker_dock_app_t *dock_app_ptr = userdata_ptr;
 
     bs_ptr_set_erase(dock_app_ptr->created_windows_ptr, window_ptr);
-
-    bs_log(BS_WARNING, "FIXME: Destroyed %p", window_ptr);
 
     redraw_tile(dock_app_ptr);
 }
