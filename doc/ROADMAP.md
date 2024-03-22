@@ -117,7 +117,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Fullscreen windows.
   * [done] Maximize windows.
   * Minimize (*iconify*) windows.
-  * Roll up (*shade*) windows.
+  * [done] Roll up (*shade*) windows.
   * Raise window when activated.
 
 * [done] App Launcher: Update status for wlmtk_window_t, instead of
@@ -224,6 +224,7 @@ Features for further versions, not ordered by priority nor timeline.
 * Window actions
   * Send to another workspace, using menu or key combinations.
   * Configurable key combinations for basic actions (minimize, ...).
+  * Window *shade* triggered by double-click, and animated.
 
 * Configuration file, for:
   * Application launchers of the dock.
