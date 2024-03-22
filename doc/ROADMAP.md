@@ -111,8 +111,8 @@ Support for visual effects to improve usability, but not for pure show.
 * [done] Task List
   * [done] Listing windows, rather than views.
 
-* Window actions, based on toolkit.
-  * Move ([done] drag via title bar, or [pending] window-alt-click)
+* [done] Window actions, based on toolkit.
+  * [done] Move ([done] drag via title bar, or [done] window-alt-click)
   * [done] Resize windows, including a resize bar.
   * [done] Fullscreen windows.
   * [done] Maximize windows.
