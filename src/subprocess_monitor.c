@@ -103,28 +103,30 @@ static wlmaker_subprocess_handle_t *wlmaker_subprocess_handle_create(
     struct wl_event_loop *wl_event_loop_ptr);
 static void wlmaker_subprocess_handle_destroy(
     wlmaker_subprocess_handle_t *sp_handle_ptr);
-static int handle_read_stdout(int fd, uint32_t mask, void *data_ptr);
-static int handle_read_stderr(int fd, uint32_t mask, void *data_ptr);
+static int _wlmaker_subprocess_monitor_handle_read_stdout(
+    int fd, uint32_t mask, void *data_ptr);
+static int _wlmaker_subprocess_monitor_handle_read_stderr(
+    int fd, uint32_t mask, void *data_ptr);
 
-static int process_fd(
+static int _wlmaker_subprocess_monitor_process_fd(
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
     struct wl_event_source **wl_event_source_ptr_ptr,
     int fd,
     uint32_t mask,
     const char *fd_name_ptr);
 
-static int handle_sigchld(int signum, void *data_ptr);
+static int _wlmaker_subprocess_monitor_handle_sigchld(int signum, void *data_ptr);
 
-static void handle_window_created(
+static void _wlmaker_subprocess_monitor_handle_window_created(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_window_mapped(
+static void _wlmaker_subprocess_monitor_handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_window_unmapped(
+static void _wlmaker_subprocess_monitor_handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_window_destroyed(
+static void _wlmaker_subprocess_monitor_handle_window_destroyed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -176,25 +178,25 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
     monitor_ptr->sigchld_event_source_ptr = wl_event_loop_add_signal(
         monitor_ptr->wl_event_loop_ptr,
         SIGCHLD,
-        handle_sigchld,
+        _wlmaker_subprocess_monitor_handle_sigchld,
         monitor_ptr);
 
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_created_event,
         &monitor_ptr->window_created_listener,
-        handle_window_created);
+        _wlmaker_subprocess_monitor_handle_window_created);
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_mapped_event,
         &monitor_ptr->window_mapped_listener,
-        handle_window_mapped);
+        _wlmaker_subprocess_monitor_handle_window_mapped);
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_unmapped_event,
         &monitor_ptr->window_unmapped_listener,
-        handle_window_unmapped);
+        _wlmaker_subprocess_monitor_handle_window_unmapped);
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_destroyed_event,
         &monitor_ptr->window_destroyed_listener,
-        handle_window_destroyed);
+        _wlmaker_subprocess_monitor_handle_window_destroyed);
 
     return monitor_ptr;
 }
@@ -322,13 +324,13 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_handle_create(
         wl_event_loop_ptr,
         subprocess_handle_ptr->stdout_read_fd,
         WL_EVENT_READABLE,
-        handle_read_stdout,
+        _wlmaker_subprocess_monitor_handle_read_stdout,
         subprocess_handle_ptr);
     subprocess_handle_ptr->stderr_wl_event_source_ptr = wl_event_loop_add_fd(
         wl_event_loop_ptr,
         subprocess_handle_ptr->stderr_read_fd,
         WL_EVENT_READABLE,
-        handle_read_stderr,
+        _wlmaker_subprocess_monitor_handle_read_stderr,
         subprocess_handle_ptr);
 
     return subprocess_handle_ptr;
@@ -392,11 +394,12 @@ void wlmaker_subprocess_handle_destroy(
  *
  * @return 0.
  */
-int handle_read_stdout(int fd, uint32_t mask, void *data_ptr)
+int _wlmaker_subprocess_monitor_handle_read_stdout(
+    int fd, uint32_t mask, void *data_ptr)
 {
     wlmaker_subprocess_handle_t *subprocess_handle_ptr = data_ptr;
     BS_ASSERT(fd == subprocess_handle_ptr->stdout_read_fd);
-    return process_fd(
+    return _wlmaker_subprocess_monitor_process_fd(
         subprocess_handle_ptr,
         &subprocess_handle_ptr->stdout_wl_event_source_ptr,
         subprocess_handle_ptr->stdout_read_fd,
@@ -416,11 +419,12 @@ int handle_read_stdout(int fd, uint32_t mask, void *data_ptr)
  *
  * @return 0.
  */
-int handle_read_stderr(int fd, uint32_t mask, void *data_ptr)
+int _wlmaker_subprocess_monitor_handle_read_stderr(
+    int fd, uint32_t mask, void *data_ptr)
 {
     wlmaker_subprocess_handle_t *subprocess_handle_ptr = data_ptr;
     BS_ASSERT(fd == subprocess_handle_ptr->stderr_read_fd);
-    return process_fd(
+    return _wlmaker_subprocess_monitor_process_fd(
         subprocess_handle_ptr,
         &subprocess_handle_ptr->stderr_wl_event_source_ptr,
         subprocess_handle_ptr->stderr_read_fd,
@@ -440,7 +444,7 @@ int handle_read_stderr(int fd, uint32_t mask, void *data_ptr)
  *
  * @return 0.
  */
-int process_fd(
+int _wlmaker_subprocess_monitor_process_fd(
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
     struct wl_event_source **wl_event_source_ptr_ptr,
     int fd,
@@ -490,7 +494,8 @@ int process_fd(
  *
  * @param data_ptr            Points to @ref wlmaker_subprocess_monitor_t.
  */
-int handle_sigchld(__UNUSED__ int signum, void *data_ptr)
+int _wlmaker_subprocess_monitor_handle_sigchld(
+    __UNUSED__ int signum, void *data_ptr)
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = data_ptr;
 
@@ -523,7 +528,7 @@ int handle_sigchld(__UNUSED__ int signum, void *data_ptr)
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_window_created(
+void _wlmaker_subprocess_monitor_handle_window_created(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
@@ -554,7 +559,7 @@ void handle_window_created(
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_window_mapped(
+void _wlmaker_subprocess_monitor_handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
@@ -589,7 +594,7 @@ void handle_window_mapped(
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_window_unmapped(
+void _wlmaker_subprocess_monitor_handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
@@ -625,7 +630,7 @@ void handle_window_unmapped(
  * @param listener_ptr
  * @param data_ptr            Points to a @ref wlmaker_subprocess_monitor_t.
  */
-void handle_window_destroyed(
+void _wlmaker_subprocess_monitor_handle_window_destroyed(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
@@ -759,14 +764,7 @@ int wlmaker_subprocess_window_node_cmp(const bs_avltree_node_t *node_ptr,
 {
     wlmaker_subprocess_window_t *ws_window_ptr = BS_CONTAINER_OF(
         node_ptr, wlmaker_subprocess_window_t, avlnode);
-    void *node_key_ptr = ws_window_ptr->window_ptr;
-    if (node_key_ptr < key_ptr) {
-        return -1;
-    } else if (node_key_ptr > key_ptr) {
-        return -1;
-    } else {
-        return 0;
-    }
+    return bs_avltree_cmp_ptr(ws_window_ptr->window_ptr, key_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

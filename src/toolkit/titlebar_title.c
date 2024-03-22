@@ -49,6 +49,9 @@ static void _wlmtk_titlebar_title_element_destroy(
 static bool _wlmtk_titlebar_title_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_titlebar_title_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
 static void title_set_activated(
     wlmtk_titlebar_title_t *titlebar_title_ptr,
@@ -67,6 +70,7 @@ struct wlr_buffer *title_create_buffer(
 static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
     .destroy = _wlmtk_titlebar_title_element_destroy,
     .pointer_button = _wlmtk_titlebar_title_element_pointer_button,
+    .pointer_axis = _wlmtk_titlebar_title_element_pointer_axis,
 };
 
 /* == Exported methods ===================================================== */
@@ -191,7 +195,38 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     }
 
     return true;
+}
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles pointer axis events: Scroll wheel up will shade, down will unshade.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return true, if the axis event was consumed. That is the case if it's
+ *     source is a scroll wheel, and the orientation is vertical.
+ */
+bool _wlmtk_titlebar_title_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
+
+    // Only consider vertical wheel moves.
+    if (WLR_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
+        WLR_AXIS_ORIENTATION_VERTICAL !=
+        wlr_pointer_axis_event_ptr->orientation) {
+        return false;
+    }
+
+    if (wlr_pointer_axis_event_ptr->delta > 0) {
+        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, false);
+    } else if (wlr_pointer_axis_event_ptr->delta < 0) {
+        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, true);
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -262,9 +297,11 @@ struct wlr_buffer *title_create_buffer(
 /* == Unit tests =========================================================== */
 
 static void test_title(bs_test_t *test_ptr);
+static void test_shade(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_titlebar_title_test_cases[] = {
     { 1, "title", test_title },
+    { 1, "shade", test_shade },
     { 0, NULL, NULL }
 };
 
@@ -341,6 +378,59 @@ void test_title(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fake_window_ptr);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that axis actions trigger 'shade'. */
+void test_shade(bs_test_t *test_ptr)
+{
+    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_titlebar_title_t *titlebar_title_ptr = wlmtk_titlebar_title_create(
+        NULL, fake_window_ptr->window_ptr);
+    wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
+        titlebar_title_ptr);
+
+    // Initial state: Not shaded.
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
+
+    struct wlr_pointer_axis_event axis_event = {
+        .source = WLR_AXIS_SOURCE_WHEEL,
+        .orientation = WLR_AXIS_ORIENTATION_VERTICAL,
+        .delta = -0.01
+    };
+
+    // Initial state: Not server-side-decorated, won't shade.
+    wlmtk_element_pointer_axis(element_ptr, &axis_event);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
+
+    // Decorate. Now it shall shade.
+    wlmtk_window_set_server_side_decorated(fake_window_ptr->window_ptr, true);
+    wlmtk_element_pointer_axis(element_ptr, &axis_event);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
+
+    // Scroll the other way: Unshade.
+    axis_event.delta = 0.01;
+    wlmtk_element_pointer_axis(element_ptr, &axis_event);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
+
+    // Axis from another source: Ignored.
+    axis_event.source = WLR_AXIS_SOURCE_FINGER;
+    axis_event.delta = -0.01;
+    wlmtk_element_pointer_axis(element_ptr, &axis_event);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
+
+    wlmtk_titlebar_title_destroy(titlebar_title_ptr);
+    wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
 /* == End of titlebar_title.c ============================================== */

@@ -113,6 +113,9 @@ struct _wlmtk_window_t {
      */
     bool                      inorganic_sizing;
 
+    /** Whether the window is currently shaded. */
+    bool                      shaded;
+
     /**
      * Stores whether the window is server-side decorated.
      *
@@ -381,6 +384,8 @@ void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
+    if (window_ptr->shaded) return;
+
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     if (window_ptr->maximized == maximized) return;
     if (window_ptr->fullscreen) return;
@@ -429,7 +434,9 @@ void wlmtk_window_request_fullscreen(
     uint32_t serial;
     wlmtk_pending_update_t *pending_update_ptr;
 
-    // Must be mapped.x
+    if (window_ptr->shaded) return;
+
+    // Must be mapped.
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
 
     window_ptr->inorganic_sizing = fullscreen;
@@ -488,6 +495,29 @@ void wlmtk_window_commit_fullscreen(
 bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr)
 {
     return window_ptr->fullscreen;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
+{
+    if (window_ptr->fullscreen ||
+        !window_ptr->server_side_decorated ||
+        window_ptr->shaded == shaded) return;
+
+    wlmtk_element_set_visible(
+        wlmtk_content_element(window_ptr->content_ptr), !shaded);
+    if (NULL != window_ptr->resizebar_ptr) {
+        wlmtk_element_set_visible(
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr), !shaded);
+    }
+
+    window_ptr->shaded = shaded;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->shaded;
 }
 
 /* ------------------------------------------------------------------------- */

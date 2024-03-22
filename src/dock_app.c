@@ -42,6 +42,8 @@ struct _wlmaker_dock_app_t {
     bs_ptr_set_t              *created_windows_ptr;
     /** Windows that are mapped from subprocesses of this App (launcher). */
     bs_ptr_set_t              *mapped_windows_ptr;
+    /** Subprocesses that were created from this App. */
+    bs_ptr_set_t              *subprocesses_ptr;
 
     /** Tile interactive. */
     wlmaker_interactive_t     *tile_interactive_ptr;
@@ -101,6 +103,11 @@ wlmaker_dock_app_t *wlmaker_dock_app_create(
         wlmaker_dock_app_destroy(dock_app_ptr);
         return NULL;
     }
+    dock_app_ptr->subprocesses_ptr = bs_ptr_set_create();
+    if (NULL == dock_app_ptr->subprocesses_ptr) {
+        wlmaker_dock_app_destroy(dock_app_ptr);
+        return NULL;
+    }
 
     dock_app_ptr->tile_wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(64, 64);
     if (NULL == dock_app_ptr->tile_wlr_buffer_ptr) {
@@ -156,6 +163,20 @@ wlmaker_dock_app_t *wlmaker_dock_app_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_dock_app_destroy(wlmaker_dock_app_t *dock_app_ptr)
 {
+    if (NULL != dock_app_ptr->subprocesses_ptr) {
+        wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+        while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
+                            dock_app_ptr->subprocesses_ptr))) {
+            wlmaker_subprocess_monitor_cede(
+                dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
+                subprocess_handle_ptr);
+            bs_ptr_set_erase(dock_app_ptr->subprocesses_ptr,
+                             subprocess_handle_ptr);
+        }
+        bs_ptr_set_destroy(dock_app_ptr->subprocesses_ptr);
+        dock_app_ptr->subprocesses_ptr = NULL;
+    }
+
     if (NULL != dock_app_ptr->tile_interactive_ptr) {
         // Attempt to remove the node from the tree. OK if it's not found.
         bs_avltree_delete(
@@ -294,7 +315,7 @@ void tile_callback(
         return;
     }
 
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr;
     subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
         dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
         subprocess_ptr,
@@ -305,10 +326,16 @@ void tile_callback(
         handle_window_unmapped,
         handle_window_destroyed);
 
-    // TODO(kaeser@gubbe.ch): Store the handle, as this is useful for showing
-    // error status and permitting to kill the subprocess.
-    // Note: There may be more than 1 subprocess for the launcher (possibly
-    // depending on configuration.
+    if (!bs_ptr_set_insert(dock_app_ptr->subprocesses_ptr,
+                           subprocess_handle_ptr)) {
+        bs_log(BS_WARNING, "Dock App %p: Failed bs_ptr_set_insert(%p, %p). "
+               "Will not show status of subprocess in App.",
+               dock_app_ptr, dock_app_ptr->subprocesses_ptr,
+               subprocess_handle_ptr);
+        wlmaker_subprocess_monitor_cede(
+            dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
+            subprocess_handle_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -347,6 +374,8 @@ void handle_terminated(
     wlmaker_subprocess_monitor_cede(
         dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
         subprocess_handle_ptr);
+    bs_ptr_set_erase(dock_app_ptr->subprocesses_ptr,
+                     subprocess_handle_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
