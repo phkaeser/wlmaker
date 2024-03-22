@@ -518,6 +518,11 @@ void _wlmtk_surface_handle_surface_commit(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
+
+    bs_log(BS_ERROR, "FIXEM: wlr surface commit %d, %d",
+           surface_ptr->wlr_surface_ptr->current.width,
+           surface_ptr->wlr_surface_ptr->current.height);
+
     _wlmtk_surface_commit_size(
         surface_ptr,
         surface_ptr->wlr_surface_ptr->current.width,

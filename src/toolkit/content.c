@@ -150,12 +150,8 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    if (NULL == content_ptr->surface_ptr) {
-        if (NULL != width_ptr) *width_ptr = 0;
-        if (NULL != height_ptr) *height_ptr = 0;
-    } else {
-        wlmtk_surface_get_size(content_ptr->surface_ptr, width_ptr, height_ptr);
-    }
+    if (NULL != width_ptr) *width_ptr = content_ptr->committed_width;
+    if (NULL != height_ptr) *height_ptr = content_ptr->committed_height;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -163,6 +159,19 @@ void wlmtk_content_commit_serial(
     wlmtk_content_t *content_ptr,
     uint32_t serial)
 {
+    if (NULL != content_ptr->window_ptr) {
+        wlmtk_window_serial(content_ptr->window_ptr, serial);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_commit_size_and_serial(
+    wlmtk_content_t *content_ptr,
+    int width, int height,
+    uint32_t serial)
+{
+    content_ptr->committed_width = width;
+    content_ptr->committed_height = height;
     if (NULL != content_ptr->window_ptr) {
         wlmtk_window_serial(content_ptr->window_ptr, serial);
     }

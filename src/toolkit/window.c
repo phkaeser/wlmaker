@@ -520,6 +520,8 @@ void wlmtk_window_get_size(
     // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
     wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
 
+    bs_log(BS_ERROR, "FIXME: got content size %d, %d", *width_ptr, *height_ptr);
+
     if (NULL != window_ptr->titlebar_ptr) {
         *height_ptr += titlebar_style.height + margin_style.width;
     }
@@ -529,6 +531,8 @@ void wlmtk_window_get_size(
     *height_ptr += 2 * window_ptr->super_bordered.style.width;
 
     *width_ptr += 2 * window_ptr->super_bordered.style.width;
+
+    bs_log(BS_ERROR, "FIXME: updated size %d, %d", *width_ptr, *height_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -568,6 +572,9 @@ void wlmtk_window_request_position_and_size(
     int width,
     int height)
 {
+    bs_log(BS_ERROR, "FIXME: Request position %d, %d and size %d, %d",
+           x, y, width, height);
+
     _wlmtk_window_request_position_and_size_decorated(
         window_ptr, x, y, width, height,
         NULL != window_ptr->titlebar_ptr,

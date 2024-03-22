@@ -811,6 +811,12 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
         &workspace_ptr->initial_width,
         &workspace_ptr->initial_height);
 
+    bs_log(BS_ERROR, "FIXME - got initial %d, %d size %d x %d",
+           workspace_ptr->initial_x,
+           workspace_ptr->initial_y,
+           workspace_ptr->initial_width,
+           workspace_ptr->initial_height);
+
     return true;
 }
 
