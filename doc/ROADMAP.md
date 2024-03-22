@@ -71,6 +71,11 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Hide window border when not having server-side decoration.
   * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * Fix issue with Chrome: Resizing appears to pick up a too-large window size, leading to jumpy resize.
+    This happens only when not using "system title bar and borders". The issue is that wlr_surface commit
+    size is 32x32 pixels larger than the xdg_toplevel_surface_t commit size. The issue is that
+    wlr_xdg_toplevel_set_size works on the wlr_xdg_toplevel_surface_t, but get_isze obtains
+    the size from wlmtk_content_get_size.
+    This is also observed for Firefox.
   * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
 
