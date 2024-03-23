@@ -793,12 +793,15 @@ bool _wlmtk_window_element_pointer_button(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
     // Permit drag-move with the (hardcoded) modifier.
+    // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
+    // events, with corresponding modifiers. Do so, once added to toolkit.
     if (NULL != window_ptr->env_ptr) {
         struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
             wlmtk_env_wlr_seat(window_ptr->env_ptr));
         uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
-        if (modifiers == (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) &&
-            button_event_ptr->type == WLMTK_BUTTON_DOWN) {
+        if (BTN_LEFT == button_event_ptr->button &&
+            WLMTK_BUTTON_DOWN == button_event_ptr->type &&
+            (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) == modifiers) {
             wlmtk_window_request_move(window_ptr);
             return true;
         }
