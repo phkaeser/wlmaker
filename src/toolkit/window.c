@@ -25,6 +25,11 @@
 
 #include "wlr/util/box.h"
 
+/// Include unstable interfaces of wlroots.
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_seat.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 /** Maximum number of pending state updates. */
@@ -78,6 +83,8 @@ struct _wlmtk_window_t {
     wlmtk_element_t           *element_ptr;
     /** Points to the workspace, if mapped. */
     wlmtk_workspace_t         *workspace_ptr;
+    /** Environment, the argument passet to @ref wlmtk_window_create. */
+    wlmtk_env_t               *env_ptr;
     /** Element in @ref wlmtk_workspace_t::windows, when mapped. */
     bs_dllist_node_t          dlnode;
 
@@ -679,6 +686,7 @@ bool _wlmtk_window_init(
 {
     BS_ASSERT(NULL != window_ptr);
     memcpy(&window_ptr->vmt, &_wlmtk_window_vmt, sizeof(wlmtk_window_vmt_t));
+    window_ptr->env_ptr = env_ptr;
 
     for (size_t i = 0; i < WLMTK_WINDOW_MAX_PENDING; ++i) {
         bs_dllist_push_back(&window_ptr->available_updates,
@@ -783,6 +791,18 @@ bool _wlmtk_window_element_pointer_button(
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
+
+    // Permit drag-move with the (hardcoded) modifier.
+    if (NULL != window_ptr->env_ptr) {
+        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+            wlmtk_env_wlr_seat(window_ptr->env_ptr));
+        uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
+        if (modifiers == (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) &&
+            button_event_ptr->type == WLMTK_BUTTON_DOWN) {
+            wlmtk_window_request_move(window_ptr);
+            return true;
+        }
+    }
 
     // We shouldn't receive buttons when not mapped.
     wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
