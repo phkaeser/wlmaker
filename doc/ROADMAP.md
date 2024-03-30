@@ -67,7 +67,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Issues to fix:
   * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
-  * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+  * [done] Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
   * [done] Hide window border when not having server-side decoration.
   * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * Fix issue with Chrome: Resizing appears to pick up a too-large window size, leading to jumpy resize.
