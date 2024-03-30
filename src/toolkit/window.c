@@ -326,13 +326,8 @@ void wlmtk_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated)
 {
-    // TODO(kaeser@gubbe.ch): Implement.
-    bs_log(BS_INFO, "Set server side decoration for window %p: %d",
-           window_ptr, decorated);
-
     if (window_ptr->server_side_decorated == decorated) return;
     window_ptr->server_side_decorated = decorated;
-
     _wlmtk_window_apply_decoration(window_ptr);
 }
 
@@ -554,7 +549,6 @@ void wlmtk_window_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
     wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
 
     if (NULL != window_ptr->titlebar_ptr) {
@@ -574,7 +568,6 @@ void wlmtk_window_request_size(
     int width,
     int height)
 {
-    // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
     wlmtk_content_request_size(window_ptr->content_ptr, width, height);
 
     // TODO(kaeser@gubbe.ch): For client surface (eg. a wlr_surface), setting
