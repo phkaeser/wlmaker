@@ -230,7 +230,6 @@ wlmtk_content_t *wlmtk_content_get_parent_content(
  * Returns the content's dimension: Considers only the surface, and leaves
  * out pop-ups, in order to draw margins and decorations for just the main
  * surface.
- * FIXME -- to be removed.
  *
  * @param element_ptr
  * @param left_ptr
