@@ -515,7 +515,7 @@ void handle_surface_commit(
            xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
            xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 
-    wlmtk_content_commit_size_and_serial(
+    wlmtk_content_commit(
         &xdg_tl_surface_ptr->super_content,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
         xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height,

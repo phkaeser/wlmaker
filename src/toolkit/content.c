@@ -155,17 +155,7 @@ void wlmtk_content_get_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_content_commit_serial(
-    wlmtk_content_t *content_ptr,
-    uint32_t serial)
-{
-    if (NULL != content_ptr->window_ptr) {
-        wlmtk_window_serial(content_ptr->window_ptr, serial);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_content_commit_size_and_serial(
+void wlmtk_content_commit(
     wlmtk_content_t *content_ptr,
     int width, int height,
     uint32_t serial)
@@ -240,6 +230,7 @@ wlmtk_content_t *wlmtk_content_get_parent_content(
  * Returns the content's dimension: Considers only the surface, and leaves
  * out pop-ups, in order to draw margins and decorations for just the main
  * surface.
+ * FIXME -- to be removed.
  *
  * @param element_ptr
  * @param left_ptr
@@ -310,8 +301,10 @@ void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
 {
-    wlmtk_content_commit_serial(
+    wlmtk_content_commit(
         &fake_content_ptr->content,
+        fake_content_ptr->requested_width,
+        fake_content_ptr->requested_height,
         fake_content_ptr->serial);
 
     wlmtk_fake_surface_commit_size(

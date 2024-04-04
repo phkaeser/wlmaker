@@ -576,8 +576,10 @@ void _xwl_content_handle_surface_commit(
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.width,
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 
-    wlmtk_content_commit_serial(
+    wlmtk_content_commit(
         &xwl_content_ptr->content,
+        xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.width,
+        xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.height,
         xwl_content_ptr->serial);
 }
 
