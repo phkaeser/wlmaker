@@ -186,6 +186,18 @@ bool wlmtk_workspace_button(
     const struct wlr_pointer_button_event *event_ptr);
 
 /**
+ * Handles an axis event.
+ *
+ * @param workspace_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return Whether the axis event was consumed.
+ */
+bool wlmtk_workspace_axis(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
+
+/**
  * Initiates a 'move' for the window.
  *
  * @param workspace_ptr

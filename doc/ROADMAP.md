@@ -67,7 +67,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Issues to fix:
   * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
-  * Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+  * [done] Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
   * [done] Hide window border when not having server-side decoration.
   * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * Fix issue with Chrome: Resizing appears to pick up a too-large window size, leading to jumpy resize.
@@ -116,14 +116,13 @@ Support for visual effects to improve usability, but not for pure show.
 * [done] Task List
   * [done] Listing windows, rather than views.
 
-* Window actions, based on toolkit.
-  * Move ([done] drag via title bar, or [pending] window-alt-click)
+* [done] Window actions, based on toolkit.
+  * [done] Move ([done] drag via title bar, or [done] window-alt-click)
   * [done] Resize windows, including a resize bar.
   * [done] Fullscreen windows.
   * [done] Maximize windows.
-  * Minimize (*iconify*) windows.
-  * Roll up (*shade*) windows.
-  * Raise window when activated.
+  * [done] Roll up (*shade*) windows.
+  * [done] Raise window when activated.
 
 * [done] App Launcher: Update status for wlmtk_window_t, instead of
   wlmaker_view_t.
@@ -164,8 +163,6 @@ Support for visual effects to improve usability, but not for pure show.
   * Display application status (*starting*, *running*).
   * Configurable (in code).
 
-*  Visualization of iconified applications, based on toolkit.
-
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
 
 ## Pending
@@ -191,6 +188,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Second Demo DockApp (julia set).
 
 * Visualization / icons for running apps.
+  * Re-build this unsing wlmtk.
   * Show in 'iconified' area.
   * Drag-and-drop into clip or dock area.
   * Consider running this as task selector, as separate binary.
@@ -229,6 +227,8 @@ Features for further versions, not ordered by priority nor timeline.
 * Window actions
   * Send to another workspace, using menu or key combinations.
   * Configurable key combinations for basic actions (minimize, ...).
+  * Window *shade* triggered by double-click, and animated.
+  * Minimize (*iconify*) windows, using wlmtk.
 
 * Configuration file, for:
   * Application launchers of the dock.

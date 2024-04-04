@@ -294,6 +294,23 @@ void wlmtk_window_commit_fullscreen(
  */
 bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr);
 
+/**
+ * Requests the window to be "shaded", ie. rolled-up to just the title bar.
+ *
+ * This is supported only for server-side decorated windows.
+ * @param window_ptr
+ * @param shaded
+ */
+void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded);
+
+/**
+ * Returns whether the window is currently "shaded".
+ *
+ * @param window_ptr
+ *
+ * @return true if shaded.
+ */
+bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr);
 
 /**
  * Returns the current position and size of the window.

@@ -43,6 +43,9 @@ static bool _wlmtk_element_pointer_motion(
 static bool _wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_element_pointer_axis(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 static void _wlmtk_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_element_pointer_leave(
@@ -59,6 +62,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .get_pointer_area = _wlmtk_element_get_pointer_area,
     .pointer_motion = _wlmtk_element_pointer_motion,
     .pointer_button = _wlmtk_element_pointer_button,
+    .pointer_axis = _wlmtk_element_pointer_axis,
     .pointer_enter = _wlmtk_element_pointer_enter,
     .pointer_leave = _wlmtk_element_pointer_leave,
 };
@@ -106,6 +110,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->pointer_button) {
         element_ptr->vmt.pointer_button = element_vmt_ptr->pointer_button;
+    }
+    if (NULL != element_vmt_ptr->pointer_axis) {
+        element_ptr->vmt.pointer_axis = element_vmt_ptr->pointer_axis;
     }
     if (NULL != element_vmt_ptr->pointer_enter) {
         element_ptr->vmt.pointer_enter = element_vmt_ptr->pointer_enter;
@@ -314,6 +321,15 @@ bool _wlmtk_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Does nothing, returns false. */
+bool _wlmtk_element_pointer_axis(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for when the pointer enters the area. Sets default cursor. */
 void _wlmtk_element_pointer_enter(wlmtk_element_t *element_ptr)
 {
@@ -373,6 +389,9 @@ static bool fake_pointer_motion(
 static bool fake_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool fake_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 static void fake_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void fake_pointer_leave(
@@ -386,6 +405,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .get_pointer_area = fake_get_pointer_area,
     .pointer_motion = fake_pointer_motion,
     .pointer_button = fake_pointer_button,
+    .pointer_axis = fake_pointer_axis,
     .pointer_enter = fake_pointer_enter,
     .pointer_leave = fake_pointer_leave,
 };
@@ -501,6 +521,23 @@ bool fake_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles 'axis' events for the fake element. */
+bool fake_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+
+    fake_element_ptr->pointer_axis_called = true;
+    memcpy(
+        &fake_element_ptr->wlr_pointer_axis_event,
+        wlr_pointer_axis_event_ptr,
+        sizeof(struct wlr_pointer_axis_event));
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles 'enter' events for the fake element. */
 void fake_pointer_enter(
     wlmtk_element_t *element_ptr)
@@ -531,6 +568,7 @@ static void test_get_dimensions(bs_test_t *test_ptr);
 static void test_get_pointer_area(bs_test_t *test_ptr);
 static void test_pointer_motion_leave(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
+static void test_pointer_axis(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -540,6 +578,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "get_pointer_area", test_get_pointer_area },
     { 1, "pointer_motion_leave", test_pointer_motion_leave },
     { 1, "pointer_button", test_pointer_button },
+    { 1, "pointer_axis", test_pointer_axis },
     { 0, NULL, NULL }
 };
 
@@ -752,6 +791,22 @@ void test_pointer_button(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_button(&fake_element_ptr->element, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_button_called);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises "pointer_axis" method. */
+void test_pointer_axis(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != fake_element_ptr);
+
+    struct wlr_pointer_axis_event event = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(&fake_element_ptr->element, &event));
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_axis_called);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }

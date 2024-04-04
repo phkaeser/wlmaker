@@ -63,6 +63,9 @@ static bool _wlmtk_surface_element_pointer_motion(
 static bool _wlmtk_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_surface_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
 static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -87,6 +90,7 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
     .pointer_leave = _wlmtk_surface_element_pointer_leave,
     .pointer_motion = _wlmtk_surface_element_pointer_motion,
     .pointer_button = _wlmtk_surface_element_pointer_button,
+    .pointer_axis = _wlmtk_surface_element_pointer_axis,
 };
 
 /* == Exported methods ===================================================== */
@@ -490,6 +494,41 @@ bool _wlmtk_surface_element_pointer_button(
         return true;
     }
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Passes pointer axis events further to the focused surface, if any.
+ *
+ * The actual passing is handled by `wlr_seat`. Here we just verify that the
+ * currently-focused surface (or sub-surface) is part of this surface.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return Whether the axis event was consumed.
+ */
+bool _wlmtk_surface_element_pointer_axis(
+        wlmtk_element_t *element_ptr,
+        struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_surface_t, super_element);
+
+    // Complain if the surface isn't part of our responsibility.
+    struct wlr_surface *focused_wlr_surface_ptr =
+        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr
+            )->pointer_state.focused_surface;
+    if (NULL == focused_wlr_surface_ptr) return false;
+
+    wlr_seat_pointer_notify_axis(
+        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
+        wlr_pointer_axis_event_ptr->time_msec,
+        wlr_pointer_axis_event_ptr->orientation,
+        wlr_pointer_axis_event_ptr->delta,
+        wlr_pointer_axis_event_ptr->delta_discrete,
+        wlr_pointer_axis_event_ptr->source);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */

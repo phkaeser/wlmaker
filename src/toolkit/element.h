@@ -33,9 +33,15 @@ typedef struct _wlmtk_element_vmt_t wlmtk_element_vmt_t;
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
 struct wlr_scene_tree;
+/** Forward declaration: Axis event. */
+struct wlr_pointer_axis_event;
 
 #include "env.h"
 #include "input.h"
+
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_pointer.h>
+#undef WLR_USE_UNSTABLE
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,6 +107,18 @@ struct _wlmtk_element_vmt_t {
      */
     bool (*pointer_button)(wlmtk_element_t *element_ptr,
                            const wlmtk_button_event_t *button_event_ptr);
+
+    /**
+     * Indicates a pointer axis event.
+     *
+     * @param element_ptr
+     * @param wlr_pointer_axis_event_ptr
+     *
+     * @return true If the axis event was consumed.
+     */
+    bool (*pointer_axis)(
+        wlmtk_element_t *element_ptr,
+        struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
     /**
      * Indicates the pointer has entered the element's area.
@@ -375,6 +393,15 @@ static inline bool wlmtk_element_pointer_button(
     return element_ptr->vmt.pointer_button(element_ptr, button_event_ptr);
 }
 
+/** Calls @ref wlmtk_element_vmt_t::pointer_axis. */
+static inline bool wlmtk_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    return element_ptr->vmt.pointer_axis(
+        element_ptr, wlr_pointer_axis_event_ptr);
+}
+
 /**
  * Virtual method: Calls the dtor of the element's implementation.
  *
@@ -408,8 +435,12 @@ typedef struct {
     bool                      pointer_leave_called;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_button() was called. */
     bool                      pointer_button_called;
-    /** Last button event reveiced. */
+    /** Last button event received. */
     wlmtk_button_event_t      pointer_button_event;
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_axis() was called. */
+    bool                      pointer_axis_called;
+    /** Last axis event received. */
+    struct wlr_pointer_axis_event wlr_pointer_axis_event;
 } wlmtk_fake_element_t;
 
 /**

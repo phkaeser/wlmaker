@@ -434,6 +434,16 @@ bool wlmtk_workspace_button(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_workspace_axis(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    return wlmtk_element_pointer_axis(
+        &workspace_ptr->super_container.super_element,
+        wlr_pointer_axis_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_begin_window_move(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr)

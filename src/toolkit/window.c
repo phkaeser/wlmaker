@@ -25,6 +25,11 @@
 
 #include "wlr/util/box.h"
 
+/// Include unstable interfaces of wlroots.
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_seat.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 /** Maximum number of pending state updates. */
@@ -78,6 +83,8 @@ struct _wlmtk_window_t {
     wlmtk_element_t           *element_ptr;
     /** Points to the workspace, if mapped. */
     wlmtk_workspace_t         *workspace_ptr;
+    /** Environment, the argument passet to @ref wlmtk_window_create. */
+    wlmtk_env_t               *env_ptr;
     /** Element in @ref wlmtk_workspace_t::windows, when mapped. */
     bs_dllist_node_t          dlnode;
 
@@ -112,6 +119,9 @@ struct _wlmtk_window_t {
      * @ref wlmtk_window_commit_fullscreen.
      */
     bool                      inorganic_sizing;
+
+    /** Whether the window is currently shaded. */
+    bool                      shaded;
 
     /**
      * Stores whether the window is server-side decorated.
@@ -316,13 +326,8 @@ void wlmtk_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated)
 {
-    // TODO(kaeser@gubbe.ch): Implement.
-    bs_log(BS_INFO, "Set server side decoration for window %p: %d",
-           window_ptr, decorated);
-
     if (window_ptr->server_side_decorated == decorated) return;
     window_ptr->server_side_decorated = decorated;
-
     _wlmtk_window_apply_decoration(window_ptr);
 }
 
@@ -381,6 +386,8 @@ void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
+    if (window_ptr->shaded) return;
+
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
     if (window_ptr->maximized == maximized) return;
     if (window_ptr->fullscreen) return;
@@ -429,7 +436,9 @@ void wlmtk_window_request_fullscreen(
     uint32_t serial;
     wlmtk_pending_update_t *pending_update_ptr;
 
-    // Must be mapped.x
+    if (window_ptr->shaded) return;
+
+    // Must be mapped.
     BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
 
     window_ptr->inorganic_sizing = fullscreen;
@@ -491,6 +500,29 @@ bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
+{
+    if (window_ptr->fullscreen ||
+        !window_ptr->server_side_decorated ||
+        window_ptr->shaded == shaded) return;
+
+    wlmtk_element_set_visible(
+        wlmtk_content_element(window_ptr->content_ptr), !shaded);
+    if (NULL != window_ptr->resizebar_ptr) {
+        wlmtk_element_set_visible(
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr), !shaded);
+    }
+
+    window_ptr->shaded = shaded;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->shaded;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
     window_ptr->vmt.request_move(window_ptr);
@@ -517,7 +549,6 @@ void wlmtk_window_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    // TODO(kaeser@gubbe.ch): Add decoration, if server-side-decorated.
     wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
 
     bs_log(BS_ERROR, "FIXME: got content size %d, %d", *width_ptr, *height_ptr);
@@ -541,7 +572,6 @@ void wlmtk_window_request_size(
     int width,
     int height)
 {
-    // TODO(kaeser@gubbe.ch): Adjust for decoration size, if server-side.
     wlmtk_content_request_size(window_ptr->content_ptr, width, height);
 
     // TODO(kaeser@gubbe.ch): For client surface (eg. a wlr_surface), setting
@@ -656,6 +686,7 @@ bool _wlmtk_window_init(
 {
     BS_ASSERT(NULL != window_ptr);
     memcpy(&window_ptr->vmt, &_wlmtk_window_vmt, sizeof(wlmtk_window_vmt_t));
+    window_ptr->env_ptr = env_ptr;
 
     for (size_t i = 0; i < WLMTK_WINDOW_MAX_PENDING; ++i) {
         bs_dllist_push_back(&window_ptr->available_updates,
@@ -760,6 +791,21 @@ bool _wlmtk_window_element_pointer_button(
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
+
+    // Permit drag-move with the (hardcoded) modifier.
+    // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
+    // events, with corresponding modifiers. Do so, once added to toolkit.
+    if (NULL != window_ptr->env_ptr) {
+        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+            wlmtk_env_wlr_seat(window_ptr->env_ptr));
+        uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
+        if (BTN_LEFT == button_event_ptr->button &&
+            WLMTK_BUTTON_DOWN == button_event_ptr->type &&
+            (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) == modifiers) {
+            wlmtk_window_request_move(window_ptr);
+            return true;
+        }
+    }
 
     // We shouldn't receive buttons when not mapped.
     wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
