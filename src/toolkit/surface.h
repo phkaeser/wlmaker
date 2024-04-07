@@ -133,11 +133,6 @@ void wlmtk_surface_connect_unmap_listener_signal(
     wlmtk_surface_t *surface_ptr,
     struct wl_listener *listener_ptr,
     wl_notify_func_t handler);
-/** Connects a listener and handler to the `commit` signal of `wlr_surface`. */
-void wlmtk_surface_connect_commit_listener_signal(
-    wlmtk_surface_t *surface_ptr,
-    struct wl_listener *listener_ptr,
-    wl_notify_func_t handler);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];

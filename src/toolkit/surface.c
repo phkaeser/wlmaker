@@ -186,18 +186,6 @@ void wlmtk_surface_connect_unmap_listener_signal(
         handler);
 }
 
-/* ------------------------------------------------------------------------- */
-void wlmtk_surface_connect_commit_listener_signal(
-    wlmtk_surface_t *surface_ptr,
-    struct wl_listener *listener_ptr,
-    wl_notify_func_t handler)
-{
-    wlmtk_util_connect_listener_signal(
-        &surface_ptr->wlr_surface_ptr->events.commit,
-        listener_ptr,
-        handler);
-}
-
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -557,10 +545,6 @@ void _wlmtk_surface_handle_surface_commit(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
-
-    bs_log(BS_ERROR, "FIXEM: wlr surface commit %d, %d",
-           surface_ptr->wlr_surface_ptr->current.width,
-           surface_ptr->wlr_surface_ptr->current.height);
 
     _wlmtk_surface_commit_size(
         surface_ptr,

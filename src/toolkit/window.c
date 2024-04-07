@@ -177,7 +177,8 @@ static void _wlmtk_window_request_position_and_size_decorated(
     int width,
     int height,
     bool include_titlebar,
-    bool include_resizebar);
+    bool include_resizebar,
+    bool include_extra);
 
 static wlmtk_pending_update_t *_wlmtk_window_prepare_update(
     wlmtk_window_t *window_ptr);
@@ -407,7 +408,8 @@ void wlmtk_window_request_maximized(
     _wlmtk_window_request_position_and_size_decorated(
         window_ptr, box.x, box.y, box.width, box.height,
         window_ptr->server_side_decorated,
-        window_ptr->server_side_decorated);
+        window_ptr->server_side_decorated,
+        !maximized);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -464,7 +466,8 @@ void wlmtk_window_request_fullscreen(
         _wlmtk_window_request_position_and_size_decorated(
             window_ptr, box.x, box.y, box.width, box.height,
             window_ptr->server_side_decorated,
-            window_ptr->server_side_decorated);
+            window_ptr->server_side_decorated,
+            true);
     }
 
 }
@@ -549,9 +552,10 @@ void wlmtk_window_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    wlmtk_content_get_size(window_ptr->content_ptr, width_ptr, height_ptr);
-
-    bs_log(BS_ERROR, "FIXME: got content size %d, %d", *width_ptr, *height_ptr);
+    struct wlr_box dimensions = wlmtk_element_get_dimensions_box(
+        wlmtk_content_element(window_ptr->content_ptr));
+    *width_ptr = dimensions.width;
+    *height_ptr = dimensions.height;
 
     if (NULL != window_ptr->titlebar_ptr) {
         *height_ptr += titlebar_style.height + margin_style.width;
@@ -562,24 +566,6 @@ void wlmtk_window_get_size(
     *height_ptr += 2 * window_ptr->super_bordered.style.width;
 
     *width_ptr += 2 * window_ptr->super_bordered.style.width;
-
-    bs_log(BS_ERROR, "FIXME: updated size %d, %d", *width_ptr, *height_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_window_request_size(
-    wlmtk_window_t *window_ptr,
-    int width,
-    int height)
-{
-    wlmtk_content_request_size(window_ptr->content_ptr, width, height);
-
-    // TODO(kaeser@gubbe.ch): For client surface (eg. a wlr_surface), setting
-    // the size is an asynchronous operation and should be handled as such.
-    // Meaning: In example of resizing at the top-left corner, we'll want to
-    // request the surface to adjust size, but wait with adjusting the
-    // surface position until the size adjustment is applied. This implies we
-    // may need to combine the request_size and set_position methods for window.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -602,13 +588,11 @@ void wlmtk_window_request_position_and_size(
     int width,
     int height)
 {
-    bs_log(BS_ERROR, "FIXME: Request position %d, %d and size %d, %d",
-           x, y, width, height);
-
     _wlmtk_window_request_position_and_size_decorated(
         window_ptr, x, y, width, height,
         NULL != window_ptr->titlebar_ptr,
-        NULL != window_ptr->resizebar_ptr);
+        NULL != window_ptr->resizebar_ptr,
+        true);
 
     window_ptr->organic_size.x = x;
     window_ptr->organic_size.y = y;
@@ -977,6 +961,7 @@ void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
  * @param height
  * @param include_titlebar
  * @param include_resizebar
+ * @param include_extra
  */
 void _wlmtk_window_request_position_and_size_decorated(
     wlmtk_window_t *window_ptr,
@@ -985,7 +970,8 @@ void _wlmtk_window_request_position_and_size_decorated(
     int width,
     int height,
     bool include_titlebar,
-    bool include_resizebar)
+    bool include_resizebar,
+    bool include_extra)
 {
     // Correct for borders, margin and decoration.
     if (include_titlebar) {
@@ -998,6 +984,17 @@ void _wlmtk_window_request_position_and_size_decorated(
     width -= 2 * window_ptr->super_bordered.style.width;
     height = BS_MAX(0, height);
     width = BS_MAX(0, width);
+
+    // Account for potential extra size beyond the content: For example, by
+    // sub-surfaces that clients use for borders or resizse-areas.
+    if (include_extra) {
+        struct wlr_box dimensions = wlmtk_element_get_dimensions_box(
+            wlmtk_content_element(window_ptr->content_ptr));
+        int w, h;
+        wlmtk_content_get_size(window_ptr->content_ptr, &w, &h);
+        width += w - dimensions.width;
+        height += h - dimensions.height;
+    }
 
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);

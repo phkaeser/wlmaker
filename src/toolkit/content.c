@@ -157,7 +157,8 @@ void wlmtk_content_get_size(
 /* ------------------------------------------------------------------------- */
 void wlmtk_content_commit(
     wlmtk_content_t *content_ptr,
-    int width, int height,
+    int width,
+    int height,
     uint32_t serial)
 {
     content_ptr->committed_width = width;

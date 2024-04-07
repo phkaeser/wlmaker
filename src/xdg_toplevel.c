@@ -182,6 +182,13 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         1, sizeof(xdg_toplevel_surface_t));
     if (NULL == xdg_tl_surface_ptr) return NULL;
 
+    // Note: Content needs the committed size before the surface triggers a
+    // layout update. This is... hacky.
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_surface_ptr->surface->events.commit,
+        &xdg_tl_surface_ptr->surface_commit_listener,
+        handle_surface_commit);
+
     xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
         wlr_xdg_surface_ptr->surface,
         server_ptr->env_ptr);
@@ -228,10 +235,6 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         xdg_tl_surface_ptr->surface_ptr,
         &xdg_tl_surface_ptr->surface_unmap_listener,
         handle_surface_unmap);
-    wlmtk_surface_connect_commit_listener_signal(
-        xdg_tl_surface_ptr->surface_ptr,
-        &xdg_tl_surface_ptr->surface_commit_listener,
-        handle_surface_commit);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_surface_ptr->toplevel->events.request_maximize,
@@ -292,7 +295,6 @@ void xdg_toplevel_surface_destroy(
     wl_list_remove(&xts_ptr->toplevel_request_maximize_listener.link);
     wl_list_remove(&xts_ptr->toplevel_request_minimize_listener.link);
 
-    wl_list_remove(&xts_ptr->surface_commit_listener.link);
     wl_list_remove(&xts_ptr->surface_map_listener.link);
     wl_list_remove(&xts_ptr->surface_unmap_listener.link);
     wl_list_remove(&xts_ptr->new_popup_listener.link);
@@ -304,6 +306,7 @@ void xdg_toplevel_surface_destroy(
         wlmtk_surface_destroy(xdg_tl_surface_ptr->surface_ptr);
         xdg_tl_surface_ptr->surface_ptr = NULL;
     }
+    wl_list_remove(&xts_ptr->surface_commit_listener.link);
     free(xts_ptr);
 }
 
@@ -508,12 +511,6 @@ void handle_surface_commit(
     if (NULL == xdg_tl_surface_ptr->wlr_xdg_surface_ptr) return;
     BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_surface_ptr->role ==
               WLR_XDG_SURFACE_ROLE_TOPLEVEL);
-
-    bs_log(BS_ERROR, "FIXME: Commit current %d, %d - %d x %d",
-           xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.x,
-           xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.y,
-           xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
-           xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
 
     wlmtk_content_commit(
         &xdg_tl_surface_ptr->super_content,
