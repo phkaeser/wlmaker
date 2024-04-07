@@ -19,6 +19,7 @@ Wayland Maker is in early development stage. Highlights for current version (0.2
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
 * Appearance, workspaces, dock, keyboard: All hardcoded.
+* A prototype DockApp (`apps/wlmclock`).
 
 For further details, see the [roadmap](doc/ROADMAP.md).
 
