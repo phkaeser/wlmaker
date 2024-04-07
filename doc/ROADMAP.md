@@ -65,14 +65,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.2
 
-* Issues to fix:
+* [done] Issues to fix:
   * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
   * [done] Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
   * [done] Hide window border when not having server-side decoration.
   * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
   * [done] Fix resize issue with Chrome & Firefox: The content size and actual window size can differ, which led to jumpy resizes as get_size and request_size operations did not base on the same.
-  * Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
-  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
+  * [not reproducible] Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
 
 * [done] Experimental support for Dock Apps
   * [done] Experimental wayland protocol for Apps to declare icon surfaces.
@@ -100,8 +99,6 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Set title.
   * [done] fullscreen.
   * [done] Fix positioning of popups.
-  * Minimize.
-  * set app ID.
   * [regression, not supported] show window menu.
 
 * [done] Support window decoration protocol, based on toolkit.
@@ -129,6 +126,10 @@ Support for visual effects to improve usability, but not for pure show.
     tested.
 
 ## Plan for 0.3
+
+* Bugfixes
+  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
+
 
 * Screensaver support.
   * Implement ext-session-lock-v1 protocol.
@@ -224,6 +225,8 @@ Features for further versions, not ordered by priority nor timeline.
   * Configurable key combinations for basic actions (minimize, ...).
   * Window *shade* triggered by double-click, and animated.
   * Minimize (*iconify*) windows, using wlmtk.
+  * Window menu.
+  * Application ID (from XDG shell and/or X11).
 
 * Configuration file, for:
   * Application launchers of the dock.
