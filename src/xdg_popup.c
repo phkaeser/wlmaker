@@ -85,10 +85,6 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         &wlmaker_xdg_popup_ptr->surface_map_listener,
         handle_surface_map);
 
-    bs_log(BS_WARNING, "FIXME: Position is %d, %d",
-           wlr_xdg_popup_ptr->current.geometry.x,
-           wlr_xdg_popup_ptr->current.geometry.y);
-
     return wlmaker_xdg_popup_ptr;
 }
 

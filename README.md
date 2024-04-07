@@ -11,8 +11,17 @@ Key features:
 * Easy to use, lightweight, low gimmicks and fast.
 * Dock and clip, to be extended for dockable apps.
 
-Wayland Maker is in early development stage. See the [roadmap](doc/ROADMAP.md) 
-for existing and planned features.
+### Current status
+
+Wayland Maker is in early development stage. Highlights for current version (0.2):
+
+* Appearance matches Window Maker: Decorations, dock, clip.
+* Support for Wayland XDG shell (mostly complete. Bug reports welcome).
+* Initial support for X11 applications (positioning and specific modes are missing).
+* Appearance, workspaces, dock, keyboard: All hardcoded.
+* A prototype DockApp (`apps/wlmclock`).
+
+For further details, see the [roadmap](doc/ROADMAP.md).
 
 ### To configure
 

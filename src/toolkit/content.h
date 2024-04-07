@@ -78,8 +78,8 @@ struct _wlmtk_content_vmt_t {
      * Requests the content to change to the specified size.
      *
      * This may be implemented as an asynchronous implementation. Once the
-     * content has committed the adapted size, @ref wlmtk_content_commit_serial
-     * should be called with the corresponding serial.
+     * content has committed the adapted size, @ref wlmtk_content_commit should
+     * be called with the corresponding serial.
      *
      * @param content_ptr
      * @param width
@@ -130,6 +130,11 @@ struct _wlmtk_content_t {
      * respectively in @ref wlmtk_content_remove_popup.
      */
     wlmtk_content_t           *parent_content_ptr;
+
+    /** Committed width of the content. See @ref wlmtk_content_commit. */
+    int                       committed_width;
+    /** Committed height of the content. See @ref wlmtk_content_commit. */
+    int                       committed_height;
 
     /** Set of registered popup contents. See @ref wlmtk_content_add_popup. */
     bs_dllist_t               popups;
@@ -238,9 +243,11 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr);
 
-/** Commits size: Calls into @ref wlmtk_window_serial. */
-void wlmtk_content_commit_serial(
+/** Commits size and serial: Calls into @ref wlmtk_window_serial. */
+void wlmtk_content_commit(
     wlmtk_content_t *content_ptr,
+    int width,
+    int height,
     uint32_t serial);
 
 /** Returns the superclass' instance of @ref wlmtk_element_t. */

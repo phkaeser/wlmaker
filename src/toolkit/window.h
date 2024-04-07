@@ -201,20 +201,6 @@ void wlmtk_window_get_size(
     int *height_ptr);
 
 /**
- * Requests a new size for the window, including potential decorations.
- *
- * This may be implemented as an asynchronous operation.
- *
- * @param window_ptr
- * @param width
- * @param height
- */
-void wlmtk_window_request_size(
-    wlmtk_window_t *window_ptr,
-    int width,
-    int height);
-
-/**
  * Reuests the window to be maximized.
  *
  * Requires the window to be mapped (to a workspace). Will lookup the maximize

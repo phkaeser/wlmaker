@@ -352,6 +352,14 @@ void _xwl_content_handle_associate(
     }
 
     BS_ASSERT(NULL == xwl_content_ptr->surface_ptr);
+
+    // Note: Content needs the committed size before the surface triggers a
+    // layout update. This is... hacky.
+    wlmtk_util_connect_listener_signal(
+        &xwl_content_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
+        &xwl_content_ptr->surface_commit_listener,
+        _xwl_content_handle_surface_commit);
+
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
         xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
         xwl_content_ptr->env_ptr);
@@ -363,10 +371,6 @@ void _xwl_content_handle_associate(
     wlmtk_content_set_surface(
         &xwl_content_ptr->content,
         xwl_content_ptr->surface_ptr);
-    wlmtk_surface_connect_commit_listener_signal(
-        xwl_content_ptr->surface_ptr,
-        &xwl_content_ptr->surface_commit_listener,
-        _xwl_content_handle_surface_commit);
     memset(&xwl_content_ptr->content, 0, sizeof(wlmtk_util_client_t));
     xwl_content_ptr->content.client.pid =
         xwl_content_ptr->wlr_xwayland_surface_ptr->pid;
@@ -435,12 +439,12 @@ void _xwl_content_handle_dissociate(
         xwl_content_ptr->xwl_popup_ptr = NULL;
     }
 
-    wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
     wlmtk_content_set_surface(&xwl_content_ptr->content, NULL);
     if (NULL != xwl_content_ptr->surface_ptr) {
         wlmtk_surface_destroy(xwl_content_ptr->surface_ptr);
         xwl_content_ptr->surface_ptr = NULL;
     }
+    wl_list_remove(&xwl_content_ptr->surface_commit_listener.link);
 
     bs_log(BS_INFO, "Dissociate XWL content %p from wlr_surface %p",
            xwl_content_ptr, xwl_content_ptr->wlr_xwayland_surface_ptr->surface);
@@ -576,8 +580,10 @@ void _xwl_content_handle_surface_commit(
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.width,
            xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 
-    wlmtk_content_commit_serial(
+    wlmtk_content_commit(
         &xwl_content_ptr->content,
+        xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.width,
+        xwl_content_ptr->wlr_xwayland_surface_ptr->surface->current.height,
         xwl_content_ptr->serial);
 }
 

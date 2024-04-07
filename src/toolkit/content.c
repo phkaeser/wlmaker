@@ -150,19 +150,19 @@ void wlmtk_content_get_size(
     int *width_ptr,
     int *height_ptr)
 {
-    if (NULL == content_ptr->surface_ptr) {
-        if (NULL != width_ptr) *width_ptr = 0;
-        if (NULL != height_ptr) *height_ptr = 0;
-    } else {
-        wlmtk_surface_get_size(content_ptr->surface_ptr, width_ptr, height_ptr);
-    }
+    if (NULL != width_ptr) *width_ptr = content_ptr->committed_width;
+    if (NULL != height_ptr) *height_ptr = content_ptr->committed_height;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_content_commit_serial(
+void wlmtk_content_commit(
     wlmtk_content_t *content_ptr,
+    int width,
+    int height,
     uint32_t serial)
 {
+    content_ptr->committed_width = width;
+    content_ptr->committed_height = height;
     if (NULL != content_ptr->window_ptr) {
         wlmtk_window_serial(content_ptr->window_ptr, serial);
     }
@@ -301,8 +301,10 @@ void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
 {
-    wlmtk_content_commit_serial(
+    wlmtk_content_commit(
         &fake_content_ptr->content,
+        fake_content_ptr->requested_width,
+        fake_content_ptr->requested_height,
         fake_content_ptr->serial);
 
     wlmtk_fake_surface_commit_size(
