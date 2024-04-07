@@ -486,7 +486,7 @@ void wlmtk_window_commit_fullscreen(
     // TODO(kaeser@gubbe.ch): For whatever reason, the node isn't displayed
     // when we zero out the border with, or hide the border elements.
     // Figure out what causes that, then get rid of the border on fullscreen.
-    if (true) {
+    if (true && fullscreen) {
         wlmtk_margin_style_t bstyle = border_style;
         if (fullscreen) bstyle.width = 1;
         wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
