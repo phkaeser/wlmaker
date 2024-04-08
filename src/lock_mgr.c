@@ -92,10 +92,6 @@ void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr)
 
 /* == Local (static) methods =============================================== */
 
-    /** Listener for the `new_lock` signal of `wlr_session_lock_manager_v1`. */
-    struct wl_listener        new_lock_listener;
-    /** Listener for the `destroy` signal of `wlr_session_lock_manager_v1`. */
-
 /* ------------------------------------------------------------------------- */
 /**
  * Handler for the `new_lock` signal of `wlr_session_lock_manager_v1`: creates
