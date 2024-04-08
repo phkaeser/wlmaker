@@ -26,7 +26,7 @@
 extern "C" {
 #endif  // __cplusplus
 
-/** State of a session lock manager. */
+/** Forward declaration: State of the session lock manager. */
 typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
 
 /**
