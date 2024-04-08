@@ -123,6 +123,17 @@ wlmaker_server_t *wlmaker_server_create(void)
     if (NULL == server_ptr->wl_socket_name_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_add_socket_auto()");
         wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // Session lock manager.
+    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->lock_mgr_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
+               server_ptr->wl_display_ptr);
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
     }
 
     // Configure the seat, which is the potential set of input devices operated
@@ -408,6 +419,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->lock_mgr_ptr) {
+        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
+        server_ptr->lock_mgr_ptr = NULL;
     }
 
     while (NULL != server_ptr->key_bindings.head_ptr) {

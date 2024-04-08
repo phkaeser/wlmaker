@@ -42,6 +42,7 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "output.h"
 #include "keyboard.h"
 #include "layer_shell.h"
+#include "lock_mgr.h"
 #include "view.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
@@ -62,6 +63,9 @@ struct _wlmaker_server_t {
     struct wl_display         *wl_display_ptr;
     /** Name of the socket for clients to connect. */
     const char                *wl_socket_name_ptr;
+
+    /** Session lock manager. */
+    wlmaker_lock_mgr_t        *lock_mgr_ptr;
 
     /** wlroots allocator. */
     struct wlr_allocator      *wlr_allocator_ptr;

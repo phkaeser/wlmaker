@@ -29,6 +29,7 @@ SET(SOURCES
   keyboard.c
   layer_shell.c
   layer_surface.c
+  lock_mgr.c
   menu.c
   menu_item.c
   output.c
@@ -65,6 +66,7 @@ SET(HEADERS
   keyboard.h
   layer_shell.h
   layer_surface.h
+  lock_mgr.h
   menu.h
   menu_item.h
   output.h
