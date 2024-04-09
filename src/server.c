@@ -126,16 +126,6 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
-    // Session lock manager.
-    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(
-        server_ptr->wl_display_ptr);
-    if (NULL == server_ptr->lock_mgr_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
-               server_ptr->wl_display_ptr);
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // Configure the seat, which is the potential set of input devices operated
     // by one user at a computer's "seat".
     server_ptr->wlr_seat_ptr = wlr_seat_create(
@@ -235,6 +225,15 @@ wlmaker_server_t *wlmaker_server_create(void)
         server_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
         server_ptr->wlr_seat_ptr);
     if (NULL == server_ptr->env_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // Session lock manager.
+    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
+    if (NULL == server_ptr->lock_mgr_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
+               server_ptr->wl_display_ptr);
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }

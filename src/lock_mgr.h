@@ -20,24 +20,24 @@
 #ifndef __LOCK_MGR_H__
 #define __LOCK_MGR_H__
 
-#include <wayland-server.h>
+/** Forward declaration: State of the session lock manager. */
+typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
+
+#include "server.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration: State of the session lock manager. */
-typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
-
 /**
  * Creates the session lock manager.
  *
- * @param wl_display_ptr
+ * @param server_ptr
  *
  * @return The session lock manager handler or NULL on error.
  */
 wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
-    struct wl_display *wl_display_ptr);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the session lock manager.
