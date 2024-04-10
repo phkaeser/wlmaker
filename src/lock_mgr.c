@@ -337,7 +337,7 @@ void _wlmaker_lock_handle_new_surface(
     wlmaker_lock_surface_t *lock_surface_ptr = _wlmaker_lock_surface_create(
         wlr_session_lock_surface_v1_ptr,
         lock_ptr->lock_mgr_ptr->server_ptr);
-    if (NULL =!= lock_surface_ptr) {
+    if (NULL == lock_surface_ptr) {
         wl_resource_post_error(
             wlr_session_lock_surface_v1_ptr->resource,
             WL_DISPLAY_ERROR_NO_MEMORY,
