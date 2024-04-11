@@ -130,10 +130,10 @@ Support for visual effects to improve usability, but not for pure show.
 * Bugfixes
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
 
-
 * Screensaver support.
   * Implement ext-session-lock-v1 protocol.
   * Verify screen lock works with eg. swaylock.
+  * Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
 
 * Configuration file support
   * Basic theme configuration (decoration style) loaded from configuration file.
