@@ -105,6 +105,15 @@ void handle_quit(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Invokes a locking program. */
+void lock(__UNUSED__ wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
+{
+    if (0 == fork()) {
+        execl("/usr/bin/swaylock", "/usr/bin/swaylock", (void *)NULL);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 /** Creates a new terminal. */
 void new_terminal(__UNUSED__ wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 {
@@ -230,6 +239,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
         XKB_KEY_Q,
         WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO,
         handle_quit,
+        NULL);
+    wlmaker_server_bind_key(
+        server_ptr,
+        XKB_KEY_L,
+        WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO,
+        lock,
         NULL);
     wlmaker_server_bind_key(
         server_ptr,
