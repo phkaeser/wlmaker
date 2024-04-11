@@ -229,15 +229,6 @@ wlmaker_server_t *wlmaker_server_create(void)
         return NULL;
     }
 
-    // Session lock manager.
-    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
-    if (NULL == server_ptr->lock_mgr_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
-               server_ptr->wl_display_ptr);
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // TODO(kaeser@gubbe.ch): Create the workspaces depending on configuration.
     int workspace_idx = 0;
     const wlmaker_config_workspace_t *workspace_config_ptr;
@@ -271,6 +262,15 @@ wlmaker_server_t *wlmaker_server_create(void)
     server_ptr->current_workspace_ptr = wlmaker_workspace_from_dlnode(
         server_ptr->workspaces.head_ptr);
     BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
+
+    // Session lock manager.
+    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
+    if (NULL == server_ptr->lock_mgr_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
+               server_ptr->wl_display_ptr);
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
 
     // The below helpers all setup a listener |display_destroy| for freeing the
     // assets held via the respective create() calls. Hence no need to call a

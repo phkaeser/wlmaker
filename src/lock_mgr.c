@@ -59,6 +59,8 @@ struct _wlmaker_lock_t {
 
     /** List of surfaces, via @ref wlmaker_lock_surface_t::dlnode. */
     bs_dllist_t               lock_surfaces;
+    /** Container holding the lock surfaces. */
+    wlmtk_container_t         container;
 
     /** Listener for the `new_surface` signal of `wlr_session_lock_v1`. */
     struct wl_listener        new_surface_listener;
@@ -194,6 +196,15 @@ wlmaker_lock_t *_wlmaker_lock_create(
     lock_ptr->wlr_session_lock_v1_ptr = wlr_session_lock_v1_ptr;
     lock_ptr->lock_mgr_ptr = lock_mgr_ptr;
 
+    if (!wlmtk_container_init_attached(
+            &lock_ptr->container,
+            lock_mgr_ptr->server_ptr->env_ptr,
+            &lock_mgr_ptr->server_ptr->wlr_scene_ptr->tree)) {
+        wlmaker_lock_mgr_destroy(lock_mgr_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(&lock_ptr->container.super_element, true);
+
     wlmtk_util_connect_listener_signal(
         &lock_ptr->wlr_session_lock_v1_ptr->events.new_surface,
         &lock_ptr->new_surface_listener,
@@ -230,6 +241,8 @@ void _wlmaker_lock_destroy(wlmaker_lock_t *lock_ptr)
     wl_list_remove(&lock_ptr->unlock_listener.link);
     wl_list_remove(&lock_ptr->new_surface_listener.link);
 
+    wlmtk_container_fini(&lock_ptr->container);
+
     free(lock_ptr);
 }
 
@@ -265,11 +278,19 @@ void _wlmaker_lock_report_surface_locked(
     }
 
     bs_dllist_push_back(&lock_ptr->lock_surfaces, &lock_surface_ptr->dlnode);
+    wlmtk_container_add_element(
+        &lock_ptr->container,
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr), true);
 
     // If not all outputs are covered: No lock yet.
     if (bs_dllist_size(&lock_ptr->lock_surfaces) <
         bs_dllist_size(&lock_ptr->lock_mgr_ptr->server_ptr->outputs)) return;
 
+    wlmaker_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
+        lock_ptr->lock_surfaces.head_ptr, wlmaker_lock_surface_t, dlnode);
+    wlmtk_surface_set_activated(first_surface_ptr->wlmtk_surface_ptr, true);
     bs_log(BS_INFO, "FIXME: Lock %p", lock_ptr);
 
     wlr_session_lock_v1_send_locked(lock_ptr->wlr_session_lock_v1_ptr);
@@ -350,6 +371,9 @@ void _wlmaker_lock_surface_destroy(
                            &lock_surface_ptr->dlnode)) {
         bs_dllist_remove(&lock_surface_ptr->lock_ptr->lock_surfaces,
                          &lock_surface_ptr->dlnode);
+        wlmtk_container_remove_element(
+            &lock_surface_ptr->lock_ptr->container,
+            wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr));
     }
 
     wl_list_remove(&lock_surface_ptr->surface_commit_listener.link);
@@ -452,6 +476,9 @@ void _wlmaker_lock_handle_unlock(
     wlmaker_lock_t *lock_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_lock_t, unlock_listener);
 
+    wlmaker_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
+        lock_ptr->lock_surfaces.head_ptr, wlmaker_lock_surface_t, dlnode);
+    wlmtk_surface_set_activated(first_surface_ptr->wlmtk_surface_ptr, true);
     bs_log(BS_INFO, "FIXME: Unlock %p", lock_ptr);
 }
 
