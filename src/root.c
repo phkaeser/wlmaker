@@ -30,6 +30,12 @@
 struct _wlmaker_root_t {
     /** The root's container: Holds workspaces and the curtain. */
     wlmtk_container_t         container;
+
+    /** Whether the root is currently locked. */
+    bool                      locked;
+    /** Reference to the lock, see @ref wlmaker_root_lock. */
+    wlmaker_lock_t            *lock_ptr;
+
 };
 
 /* == Exported methods ===================================================== */
@@ -60,6 +66,65 @@ void wlmaker_root_destroy(wlmaker_root_t *root_ptr)
     wlmtk_container_fini(&root_ptr->container);
 
     free(root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_root_lock(
+    wlmaker_root_t *root_ptr,
+    wlmaker_lock_t *lock_ptr)
+{
+    if (root_ptr->locked) {
+        bs_log(BS_WARNING, "Root already locked by %p", root_ptr->lock_ptr);
+        return false;
+    }
+
+    wlmtk_container_add_element(
+        &root_ptr->container,
+        wlmaker_lock_element(lock_ptr));
+    root_ptr->lock_ptr = lock_ptr;
+
+    root_ptr->locked = true;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_root_unlock(
+    wlmaker_root_t *root_ptr,
+    wlmaker_lock_t *lock_ptr)
+{
+    // Guard clause: Not locked => nothing to do.
+    if (!root_ptr->locked) return false;
+    if (lock_ptr != root_ptr->lock_ptr) {
+        bs_log(BS_ERROR, "Lock held by %p, but attempted to unlock by %p",
+               root_ptr->lock_ptr, lock_ptr);
+        return false;
+    }
+
+    wlmaker_root_lock_unreference(root_ptr, lock_ptr);
+    root_ptr->locked = false;
+    return true;
+
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_root_lock_unreference(
+    wlmaker_root_t *root_ptr,
+    wlmaker_lock_t *lock_ptr)
+{
+    if (lock_ptr != root_ptr->lock_ptr) return;
+
+    wlmtk_container_remove_element(
+        &root_ptr->container,
+        wlmaker_lock_element(root_ptr->lock_ptr));
+    root_ptr->lock_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_root_set_lock_surface(
+    __UNUSED__ wlmaker_root_t *root_ptr,
+    wlmtk_surface_t *surface_ptr)
+{
+    wlmtk_surface_set_activated(surface_ptr, true);
 }
 
 /* == Local (static) methods =============================================== */
