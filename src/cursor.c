@@ -239,7 +239,16 @@ void handle_button(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, button_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
-    bool consumed = wlmtk_workspace_button(
+    bool consumed;
+    wlmtk_button_event_t event = {};
+    event.button = wlr_pointer_button_event_ptr->button;
+    event.time_msec = wlr_pointer_button_event_ptr->time_msec;
+    consumed = wlmtk_element_pointer_button(
+        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        &event);
+    if (consumed) return;
+
+    consumed = wlmtk_workspace_button(
         wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
                                     cursor_ptr->server_ptr)),
         wlr_pointer_button_event_ptr);
@@ -293,7 +302,13 @@ void handle_axis(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, axis_listener);
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr = data_ptr;
 
-    bool consumed = wlmtk_workspace_axis(
+    bool consumed;
+    consumed = wlmtk_element_pointer_axis(
+        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        wlr_pointer_axis_event_ptr);
+    if (consumed) return;
+
+    consumed = wlmtk_workspace_axis(
         wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
                                     cursor_ptr->server_ptr)),
         wlr_pointer_axis_event_ptr);

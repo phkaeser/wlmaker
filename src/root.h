@@ -115,6 +115,9 @@ void wlmaker_root_set_lock_surface(
     wlmaker_root_t *root_ptr,
     wlmtk_surface_t *surface_ptr);
 
+/** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
+wlmtk_element_t *wlmaker_root_element(wlmaker_root_t *root_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

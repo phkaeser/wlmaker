@@ -30,6 +30,8 @@
 struct _wlmaker_root_t {
     /** The root's container: Holds workspaces and the curtain. */
     wlmtk_container_t         container;
+    /** Overwritten virtual method table before extending ig. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Back-link to the output layer provided to the ctor. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
@@ -41,6 +43,24 @@ struct _wlmaker_root_t {
 
     /** Curtain element: Permit dimming or hiding everything. */
     wlmtk_rectangle_t         *curtain_rectangle_ptr;
+};
+
+static bool _wlmaker_root_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec);
+static bool _wlmaker_root_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmaker_root_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
+
+/** Virtual method table for the container's super class: Element. */
+static const wlmtk_element_vmt_t _wlmaker_root_element_vmt = {
+    .pointer_motion = _wlmaker_root_element_pointer_motion,
+    .pointer_button = _wlmaker_root_element_pointer_button,
+    .pointer_axis = _wlmaker_root_element_pointer_axis,
 };
 
 /* == Exported methods ===================================================== */
@@ -63,6 +83,9 @@ wlmaker_root_t *wlmaker_root_create(
         return NULL;
     }
     wlmtk_element_set_visible(&root_ptr->container.super_element, true);
+    root_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &root_ptr->container.super_element,
+        &_wlmaker_root_element_vmt);
 
     struct wlr_box extents;
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
@@ -168,6 +191,99 @@ void wlmaker_root_set_lock_surface(
     wlmtk_surface_set_activated(surface_ptr, true);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmaker_root_element(wlmaker_root_t *root_ptr)
+{
+    return &root_ptr->container.super_element;
+}
+
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_motion. Handle pointer moves.
+ *
+ * When locked, the root container will forward the events strictly only to
+ * the lock container.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return Whether the move was accepted.
+ */
+bool _wlmaker_root_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
+{
+    wlmaker_root_t *root_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_root_t, container.super_element);
+
+    if (!root_ptr->locked) {
+        return root_ptr->orig_super_element_vmt.pointer_motion(
+            element_ptr, x, y, time_msec);
+    } else {
+        // FIXME: Pass the motion to the lock container (only).
+        return false;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_button. Handle button events.
+ *
+ * When locked, the root container will forward the events strictly only to
+ * the lock container.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return true if the button was handled.
+ */
+bool _wlmaker_root_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmaker_root_t *root_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_root_t, container.super_element);
+
+    if (!root_ptr->locked) {
+        return root_ptr->orig_super_element_vmt.pointer_button(
+            element_ptr, button_event_ptr);
+    } else {
+        // FIXME: Pass the button to the lock container (only).
+        return true;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_axis. Handle axis events.
+ *
+ * When locked, the root container will forward the events strictly only to
+ * the lock container.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return true if the axis event was handled.
+ */
+bool _wlmaker_root_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmaker_root_t *root_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_root_t, container.super_element);
+
+    if (!root_ptr->locked) {
+        return root_ptr->orig_super_element_vmt.pointer_axis(
+            element_ptr, wlr_pointer_axis_event_ptr);
+    } else {
+        // FIXME: pass to the lock container (only).
+        return true;
+    }
+}
 
 /* == End of root.c ======================================================== */
