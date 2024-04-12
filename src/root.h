@@ -38,12 +38,14 @@ extern "C" {
  * Creates the root element.
  *
  * @param wlr_scene_ptr
+ * @param wlr_output_layout_ptr
  * @param env_ptr
  *
  * @return Handle of the root element or NULL on error.
  */
 wlmaker_root_t *wlmaker_root_create(
     struct wlr_scene *wlr_scene_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

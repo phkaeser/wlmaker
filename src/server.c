@@ -266,6 +266,7 @@ wlmaker_server_t *wlmaker_server_create(void)
     // Root element.
     server_ptr->root_ptr = wlmaker_root_create(
         server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
