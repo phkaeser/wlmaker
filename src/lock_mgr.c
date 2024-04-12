@@ -340,6 +340,13 @@ wlmaker_lock_surface_t *_wlmaker_lock_surface_create(
     wlmaker_lock_t *lock_ptr,
     wlmaker_server_t *server_ptr)
 {
+    // Guard clause: We expect the output to be set.
+    if (NULL == wlr_session_lock_surface_v1_ptr->output) {
+        bs_log(BS_ERROR, "Session lock surface %p does not have an output!",
+               wlr_session_lock_surface_v1_ptr);
+        return NULL;
+    }
+
     wlmaker_lock_surface_t *lock_surface_ptr = logged_calloc(
         1, sizeof(wlmaker_lock_surface_t));
     if (NULL == lock_surface_ptr) return NULL;
@@ -368,10 +375,10 @@ wlmaker_lock_surface_t *_wlmaker_lock_surface_create(
         &lock_surface_ptr->surface_commit_listener,
         _wlmaker_lock_surface_handle_surface_commit);
 
-
     lock_surface_ptr->configure_serial = wlr_session_lock_surface_v1_configure(
         lock_surface_ptr->wlr_session_lock_surface_v1_ptr,
-        640, 480);
+        wlr_session_lock_surface_v1_ptr->output->width,
+        wlr_session_lock_surface_v1_ptr->output->height);
 
     return lock_surface_ptr;
 }
