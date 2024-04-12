@@ -263,6 +263,15 @@ wlmaker_server_t *wlmaker_server_create(void)
         server_ptr->workspaces.head_ptr);
     BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
 
+    // Root element.
+    server_ptr->root_ptr = wlmaker_root_create(
+        server_ptr->wlr_scene_ptr,
+        server_ptr->env_ptr);
+    if (NULL == server_ptr->root_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     // Session lock manager.
     server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
     if (NULL == server_ptr->lock_mgr_ptr) {
@@ -387,6 +396,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy_clients(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->root_ptr) {
+        wlmaker_root_destroy(server_ptr->root_ptr);
+        server_ptr->root_ptr = NULL;
     }
 
     bs_dllist_node_t *dlnode_ptr;

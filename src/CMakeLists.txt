@@ -33,6 +33,7 @@ SET(SOURCES
   menu.c
   menu_item.c
   output.c
+  root.c
   server.c
   subprocess_monitor.c
   task_list.c
@@ -70,6 +71,7 @@ SET(HEADERS
   menu.h
   menu_item.h
   output.h
+  root.h
   server.h
   subprocess_monitor.h
   task_list.h
