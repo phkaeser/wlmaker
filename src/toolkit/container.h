@@ -78,6 +78,8 @@ struct _wlmtk_container_t {
     wlmtk_element_t           *pointer_focus_element_ptr;
     /** Stores the element which received WLMTK_BUTTON_DOWN for BTN_LEFT. */
     wlmtk_element_t           *left_button_element_ptr;
+    /** Stores the element with current keyboard focus. May be NULL. */
+    wlmtk_element_t           *keyboard_focus_element_ptr;
 };
 
 /**
@@ -184,6 +186,18 @@ void wlmtk_container_raise_element_to_top(
  * @param container_ptr
  */
 void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
+
+/**
+ * Updates the container's keyboard focus to be at `element_ptr`.
+ *
+ * @param container_ptr
+ * @param element_ptr         The element that will get keyboard focus. Must
+ *                            be contained in @ref wlmtk_container_t::elements.
+ *                            A value of NULL clears the focus.
+ */
+void wlmtk_container_update_keyboard_focus(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr);
 
 /**
  * Updates the layout of the container.
