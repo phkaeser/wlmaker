@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <wayland-server.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include "wlr/util/box.h"
 
@@ -35,6 +36,8 @@ typedef struct _wlmtk_container_t wlmtk_container_t;
 struct wlr_scene_tree;
 /** Forward declaration: Axis event. */
 struct wlr_pointer_axis_event;
+/** Forward declaration: Wlroots keyboard event. */
+struct wlr_keyboard_key_event;
 
 #include "env.h"
 #include "input.h"
@@ -137,6 +140,24 @@ struct _wlmtk_element_vmt_t {
      * @param element_ptr
      */
     void (*pointer_leave)(wlmtk_element_t *element_ptr);
+
+    /**
+     * Handler for keyboard events.
+     *
+     * @param element_ptr
+     * @param wlr_keyboard_key_event_ptr
+     * @param key_syms
+     * @param key_syms_count
+     * @param modifiers
+     *
+     * @return true if the key was handled.
+     */
+    bool (*keyboard_event)(
+        wlmtk_element_t *element_ptr,
+        struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+        const xkb_keysym_t *key_syms,
+        size_t key_syms_count,
+        uint32_t modifiers);
 };
 
 /** State of an element. */
@@ -402,6 +423,19 @@ static inline bool wlmtk_element_pointer_axis(
         element_ptr, wlr_pointer_axis_event_ptr);
 }
 
+/** Calls @ref wlmtk_element_vmt_t::keyboard_event. */
+static inline bool wlmtk_element_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    const xkb_keysym_t *key_syms,
+    size_t key_syms_count,
+    uint32_t modifiers)
+{
+    return element_ptr->vmt.keyboard_event(
+        element_ptr, wlr_keyboard_key_event_ptr,
+        key_syms, key_syms_count, modifiers);
+}
+
 /**
  * Virtual method: Calls the dtor of the element's implementation.
  *
@@ -439,6 +473,9 @@ typedef struct {
     wlmtk_button_event_t      pointer_button_event;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_axis() was called. */
     bool                      pointer_axis_called;
+    /** Indicates that @ref wlmtk_element_vmt_t::keyboard_event() was called. */
+    bool                      keyboard_event_called;
+
     /** Last axis event received. */
     struct wlr_pointer_axis_event wlr_pointer_axis_event;
 } wlmtk_fake_element_t;
