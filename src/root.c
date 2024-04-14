@@ -55,12 +55,19 @@ static bool _wlmaker_root_element_pointer_button(
 static bool _wlmaker_root_element_pointer_axis(
     wlmtk_element_t *element_ptr,
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
+static bool _wlmaker_root_element_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    const xkb_keysym_t *key_syms,
+    size_t key_syms_count,
+    uint32_t modifiers);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmaker_root_element_vmt = {
     .pointer_motion = _wlmaker_root_element_pointer_motion,
     .pointer_button = _wlmaker_root_element_pointer_button,
     .pointer_axis = _wlmaker_root_element_pointer_axis,
+    .keyboard_event = _wlmaker_root_element_keyboard_event,
 };
 
 /* == Exported methods ===================================================== */
@@ -284,6 +291,48 @@ bool _wlmaker_root_element_pointer_axis(
         // FIXME: pass to the lock container (only).
         return true;
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::keyboard_event. Handle keyboard events.
+ *
+ * When locked, the root container will forward the events strictly only to
+ * the lock container.
+ *
+ * @param element_ptr
+ * @param wlr_keyboard_key_event_ptr
+ * @param key_syms
+ * @param key_syms_count
+ * @param modifiers
+ *
+ * @return true if the axis event was handled.
+ */
+bool _wlmaker_root_element_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    const xkb_keysym_t *key_syms,
+    size_t key_syms_count,
+    uint32_t modifiers)
+{
+    wlmaker_root_t *root_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_root_t, container.super_element);
+
+    if (!root_ptr->locked) {
+        return root_ptr->orig_super_element_vmt.keyboard_event(
+            element_ptr,
+            wlr_keyboard_key_event_ptr,
+            key_syms, key_syms_count, modifiers);
+    } else if (NULL != root_ptr->lock_ptr) {
+        return wlmtk_element_keyboard_event(
+            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlr_keyboard_key_event_ptr,
+            key_syms, key_syms_count, modifiers);
+    }
+
+    // Fall-through: Too bad -- the screen is locked, but the lock element
+    // disappeared (crashed?). No more handling of keys here...
+    return false;
 }
 
 /* == End of root.c ======================================================== */

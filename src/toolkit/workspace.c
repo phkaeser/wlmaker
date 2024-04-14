@@ -542,6 +542,12 @@ void wlmtk_workspace_raise_window(
                                          wlmtk_window_element(window_ptr));
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr)
+{
+    return &workspace_ptr->super_container.super_element;
+}
+
 /* == Fake workspace methods, useful for tests ============================= */
 
 static void wlmtk_fake_workspace_handle_window_mapped(

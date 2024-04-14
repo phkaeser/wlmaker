@@ -236,9 +236,13 @@ void wlmtk_container_remove_element(
     if (container_ptr->left_button_element_ptr == element_ptr) {
         container_ptr->left_button_element_ptr = NULL;
     }
+    if (container_ptr->keyboard_focus_element_ptr == element_ptr) {
+        wlmtk_container_update_keyboard_focus(container_ptr, NULL);
+    }
 
     wlmtk_container_update_layout(container_ptr);
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
+    BS_ASSERT(element_ptr != container_ptr->keyboard_focus_element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

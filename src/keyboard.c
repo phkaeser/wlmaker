@@ -148,7 +148,6 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
         }
     }
 
-
     // For key presses: Pass them on to the server, for potential key bindings.
     bool processed = false;
     if (WL_KEYBOARD_KEY_STATE_PRESSED == wlr_keyboard_key_event_ptr->state) {
@@ -187,17 +186,24 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
         }
     }
 
-    // Pass along any non-processed key to our clients...
-    if (!processed) {
-        wlr_seat_set_keyboard(
-            keyboard_ptr->wlr_seat_ptr,
-            keyboard_ptr->wlr_keyboard_ptr);
-        wlr_seat_keyboard_notify_key(
-            keyboard_ptr->wlr_seat_ptr,
-            wlr_keyboard_key_event_ptr->time_msec,
-            wlr_keyboard_key_event_ptr->keycode,
-            wlr_keyboard_key_event_ptr->state);
-    }
+    if (processed) return;
+
+    processed = wlmtk_element_keyboard_event(
+        wlmaker_root_element(keyboard_ptr->server_ptr->root_ptr),
+        wlr_keyboard_key_event_ptr,
+        NULL,
+        0,
+        modifiers);
+    if (processed) return;
+
+    processed = wlmtk_element_keyboard_event(
+        wlmtk_workspace_element(
+            wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
+                                        keyboard_ptr->server_ptr))),
+        wlr_keyboard_key_event_ptr,
+        NULL,
+        0,
+        modifiers);
 }
 
 /* ------------------------------------------------------------------------- */
