@@ -229,12 +229,18 @@ bool _wlmaker_root_element_pointer_motion(
         element_ptr, wlmaker_root_t, container.super_element);
 
     if (!root_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
         return root_ptr->orig_super_element_vmt.pointer_motion(
             element_ptr, x, y, time_msec);
-    } else {
-        // FIXME: Pass the motion to the lock container (only).
-        return false;
+    } else if (NULL != root_ptr->lock_ptr) {
+        return wlmtk_element_pointer_motion(
+            wlmaker_lock_element(root_ptr->lock_ptr),
+            x, y, time_msec);
     }
+
+    // Fall-through.
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -257,12 +263,18 @@ bool _wlmaker_root_element_pointer_button(
         element_ptr, wlmaker_root_t, container.super_element);
 
     if (!root_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
         return root_ptr->orig_super_element_vmt.pointer_button(
             element_ptr, button_event_ptr);
-    } else {
-        // FIXME: Pass the button to the lock container (only).
-        return true;
+    } else if (NULL != root_ptr->lock_ptr) {
+        return wlmtk_element_pointer_button(
+            wlmaker_lock_element(root_ptr->lock_ptr),
+            button_event_ptr);
     }
+
+    // Fall-through.
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -285,12 +297,18 @@ bool _wlmaker_root_element_pointer_axis(
         element_ptr, wlmaker_root_t, container.super_element);
 
     if (!root_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
         return root_ptr->orig_super_element_vmt.pointer_axis(
             element_ptr, wlr_pointer_axis_event_ptr);
-    } else {
-        // FIXME: pass to the lock container (only).
-        return true;
+    } else if (NULL != root_ptr->lock_ptr) {
+        return wlmtk_element_pointer_axis(
+            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlr_pointer_axis_event_ptr);
     }
+
+    // Fall-through.
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -319,6 +337,8 @@ bool _wlmaker_root_element_keyboard_event(
         element_ptr, wlmaker_root_t, container.super_element);
 
     if (!root_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
         return root_ptr->orig_super_element_vmt.keyboard_event(
             element_ptr,
             wlr_keyboard_key_event_ptr,
