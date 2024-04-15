@@ -43,6 +43,9 @@ struct _wlmaker_root_t {
 
     /** Curtain element: Permit dimming or hiding everything. */
     wlmtk_rectangle_t         *curtain_rectangle_ptr;
+
+    /** Triggers whenever @ref wlmaker_root_unlock succeeds. */
+    struct wl_signal          unlock_event;
 };
 
 static bool _wlmaker_root_element_pointer_motion(
@@ -106,6 +109,7 @@ wlmaker_root_t *wlmaker_root_create(
         &root_ptr->container,
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
 
+    wl_signal_init(&root_ptr->unlock_event);
     return root_ptr;
 }
 
@@ -173,6 +177,7 @@ bool wlmaker_root_unlock(
     wlmtk_element_set_visible(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         false);
+    wl_signal_emit(&root_ptr->unlock_event, NULL);
     return true;
 }
 
@@ -195,6 +200,16 @@ void wlmaker_root_set_lock_surface(
     wlmtk_surface_t *surface_ptr)
 {
     wlmtk_surface_set_activated(surface_ptr, true);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_root_connect_unlock_signal(
+    wlmaker_root_t *root_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler)
+{
+    wlmtk_util_connect_listener_signal(
+        &root_ptr->unlock_event, listener_ptr, handler);
 }
 
 /* ------------------------------------------------------------------------- */

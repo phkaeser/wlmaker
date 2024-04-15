@@ -115,6 +115,12 @@ void wlmaker_root_set_lock_surface(
     wlmaker_root_t *root_ptr,
     wlmtk_surface_t *surface_ptr);
 
+/** Connects a listener and handler to @ref wlmaker_root_t::unlock_event. */
+void wlmaker_root_connect_unlock_signal(
+    wlmaker_root_t *root_ptr,
+    struct wl_listener *listener_ptr,
+    wl_notify_func_t handler);
+
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmaker_root_element(wlmaker_root_t *root_ptr);
 

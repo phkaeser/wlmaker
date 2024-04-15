@@ -34,10 +34,14 @@ struct _wlmaker_idle_monitor_t {
     /** The timer's event source. */
     struct wl_event_source    *timer_event_source_ptr;
 
-    // FIXME: When "unlock" happens: re-arm the timer.
+    /** Listener for @ref wlmaker_root_t::unlock_event. */
+    struct wl_listener        unlock_listener;
 };
 
 static int _wlmaker_idle_monitor_timer(void *data_ptr);
+static void _wlmaker_idle_monitor_handle_unlock(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -48,7 +52,7 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
     wlmaker_idle_monitor_t *idle_monitor_ptr = logged_calloc(
         1, sizeof(wlmaker_idle_monitor_t));
     if (NULL == idle_monitor_ptr) return NULL;
-    idle_monitor_ptr->server_ptr = server_ptr;  // FIXME: needed?
+    idle_monitor_ptr->server_ptr = server_ptr;
     idle_monitor_ptr->wl_event_loop_ptr = wl_display_get_event_loop(
         server_ptr->wl_display_ptr);
 
@@ -80,6 +84,8 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr)
 {
+    wl_list_remove(&idle_monitor_ptr->unlock_listener.link);
+
     if (NULL != idle_monitor_ptr->timer_event_source_ptr) {
         wl_event_source_remove(idle_monitor_ptr->timer_event_source_ptr);
         idle_monitor_ptr->timer_event_source_ptr = NULL;
@@ -113,10 +119,37 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
 {
     wlmaker_idle_monitor_t *idle_monitor_ptr = data_ptr;
 
-    // FIXME: Issue a lock.
-    bs_log(BS_ERROR, "FIXME: Timer at %p", idle_monitor_ptr);
-
+    pid_t rv = fork();
+    if (-1 == rv) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed fork()");
+        return 0;
+    } else if (0 == rv) {
+        execl("/usr/bin/swaylock", "/usr/bin/swaylock", (void *)NULL);
+    } else {
+        wlmaker_root_connect_unlock_signal(
+            idle_monitor_ptr->server_ptr->root_ptr,
+            &idle_monitor_ptr->unlock_listener,
+            _wlmaker_idle_monitor_handle_unlock);
+    }
     return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for @ref wlmaker_root_t::unlock_event. Re-arms the timer.
+ *
+ * @param listener_ptr
+ * @param data_ptr            unused.
+ */
+void _wlmaker_idle_monitor_handle_unlock(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_idle_monitor_t *idle_monitor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_idle_monitor_t, unlock_listener);
+
+    wl_list_remove(&idle_monitor_ptr->unlock_listener.link);
+    wlmaker_idle_monitor_reset(idle_monitor_ptr);
 }
 
 /* == End of idle.c ======================================================== */
