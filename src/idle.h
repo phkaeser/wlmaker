@@ -46,6 +46,13 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
  */
 void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr);
 
+/**
+ * Resets the idle monitor: For example, when a key is pressed.
+ *
+ * @param idle_monitor_ptr
+ */
+void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
