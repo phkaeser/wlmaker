@@ -119,6 +119,8 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
 {
     wlmaker_idle_monitor_t *idle_monitor_ptr = data_ptr;
 
+    // TODO(kaeser@gubbe.ch): We should better handle this via a subprocess.
+    // And maybe keep monitoring the outcome?
     pid_t rv = fork();
     if (-1 == rv) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed fork()");
