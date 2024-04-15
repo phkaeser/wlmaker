@@ -255,6 +255,9 @@ void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
 
+/** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
+wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);
+
 /** Fake workspace: A real workspace, but with a fake parent. For testing. */
 typedef struct {
     /** The workspace. */

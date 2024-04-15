@@ -23,6 +23,13 @@ Wayland Maker is in early development stage. Highlights for current version (0.2
 
 For further details, see the [roadmap](doc/ROADMAP.md).
 
+Protocol support:
+
+* `xdg-decoration-unstable-v1`: Implemented & tested.
+* `ext-session-lock-v1`: Implemented & tested.
+* `xdg-shell`: Largely implemented & tested.
+* `idle-inhibit-unstable-v1`: Implemented, untested.
+
 ### To configure
 
 Some of Wayland Maker's core dependencies are also in development and are a

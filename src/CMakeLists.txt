@@ -25,13 +25,16 @@ SET(SOURCES
   dock.c
   icon_manager.c
   iconified.c
+  idle.c
   interactive.c
   keyboard.c
   layer_shell.c
   layer_surface.c
+  lock_mgr.c
   menu.c
   menu_item.c
   output.c
+  root.c
   server.c
   subprocess_monitor.c
   task_list.c
@@ -61,13 +64,16 @@ SET(HEADERS
   dock.h
   icon_manager.h
   iconified.h
+  idle.h
   interactive.h
   keyboard.h
   layer_shell.h
   layer_surface.h
+  lock_mgr.h
   menu.h
   menu_item.h
   output.h
+  root.h
   server.h
   subprocess_monitor.h
   task_list.h

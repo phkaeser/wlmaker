@@ -130,10 +130,10 @@ Support for visual effects to improve usability, but not for pure show.
 * Bugfixes
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
 
-
-* Screensaver support.
-  * Implement ext-session-lock-v1 protocol.
-  * Verify screen lock works with eg. swaylock.
+* [done] Screensaver support.
+  * [done] Implement ext-session-lock-v1 protocol.
+  * [done] Verify screen lock works with eg. swaylock.
+  * [done] Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
 
 * Configuration file support
   * Basic theme configuration (decoration style) loaded from configuration file.
@@ -168,7 +168,11 @@ Features for further versions, not ordered by priority nor timeline.
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
-  * xdg_shell: set_parent, by child wlmtk_window_t.
+  * `xdg-shell`: set_parent, by child wlmtk_window_t.
+  * Test `idle-inhibit-unstable-v1`. Didn't have a tool when adding.xs
+  * Add `ext-idle-notify-v1` support.
+  * Add `xdg-activation-v1` support.
+  * Add `wlr-foreign-toplevel-management-unstable-v1` support.
 
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.

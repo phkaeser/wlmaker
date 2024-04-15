@@ -24,6 +24,7 @@
 #include "util.h"
 
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
@@ -50,6 +51,12 @@ static void _wlmtk_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_element_pointer_leave(
     wlmtk_element_t *element_ptr);
+static bool _wlmtk_element_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    const xkb_keysym_t *key_syms,
+    size_t key_syms_count,
+    uint32_t modifiers);
 
 static void handle_wlr_scene_node_destroy(
     struct wl_listener *listener_ptr,
@@ -65,6 +72,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .pointer_axis = _wlmtk_element_pointer_axis,
     .pointer_enter = _wlmtk_element_pointer_enter,
     .pointer_leave = _wlmtk_element_pointer_leave,
+    .keyboard_event = _wlmtk_element_keyboard_event,
 };
 
 /* == Exported methods ===================================================== */
@@ -119,6 +127,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->pointer_leave) {
         element_ptr->vmt.pointer_leave = element_vmt_ptr->pointer_leave;
+    }
+    if (NULL != element_vmt_ptr->keyboard_event) {
+        element_ptr->vmt.keyboard_event = element_vmt_ptr->keyboard_event;
     }
 
     return orig_vmt;
@@ -347,6 +358,18 @@ void _wlmtk_element_pointer_leave(__UNUSED__ wlmtk_element_t *element_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handler for keyboard events. By default: Nothing is handled. */
+bool _wlmtk_element_keyboard_event(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    __UNUSED__ const xkb_keysym_t *key_syms,
+    __UNUSED__ size_t key_syms_count,
+    __UNUSED__ uint32_t modifiers)
+{
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Handles the 'destroy' callback of the wlr_scene_node.
  *
@@ -396,6 +419,12 @@ static void fake_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void fake_pointer_leave(
     wlmtk_element_t *element_ptr);
+static bool fake_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    const xkb_keysym_t *key_syms,
+    size_t key_syms_count,
+    uint32_t modifiers);
 
 /** Virtual method table for the fake element. */
 static const wlmtk_element_vmt_t fake_element_vmt = {
@@ -408,6 +437,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .pointer_axis = fake_pointer_axis,
     .pointer_enter = fake_pointer_enter,
     .pointer_leave = fake_pointer_leave,
+    .keyboard_event = fake_keyboard_event,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -559,6 +589,21 @@ void fake_pointer_leave(
     fake_element_ptr->pointer_leave_called = true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles 'keyboard_event' events for the fake element. */
+bool fake_keyboard_event(
+    wlmtk_element_t *element_ptr,
+    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
+    __UNUSED__ const xkb_keysym_t *key_syms,
+    __UNUSED__ size_t key_syms_count,
+    __UNUSED__ uint32_t modifiers)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->keyboard_event_called = true;
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -569,6 +614,7 @@ static void test_get_pointer_area(bs_test_t *test_ptr);
 static void test_pointer_motion_leave(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
+static void test_keyboard_event(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -579,6 +625,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "pointer_motion_leave", test_pointer_motion_leave },
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_axis", test_pointer_axis },
+    { 1, "keyboard_event", test_keyboard_event },
     { 0, NULL, NULL }
 };
 
@@ -807,6 +854,23 @@ void test_pointer_axis(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_axis(&fake_element_ptr->element, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_axis_called);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises "keyboard_event" method. */
+void test_keyboard_event(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_ASSERT(NULL != fake_element_ptr);
+
+    struct wlr_keyboard_key_event event = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_event(
+            &fake_element_ptr->element, &event, NULL, 0, 0));
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->keyboard_event_called);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }

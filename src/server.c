@@ -123,6 +123,7 @@ wlmaker_server_t *wlmaker_server_create(void)
     if (NULL == server_ptr->wl_socket_name_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_add_socket_auto()");
         wlmaker_server_destroy(server_ptr);
+        return NULL;
     }
 
     // Configure the seat, which is the potential set of input devices operated
@@ -262,6 +263,31 @@ wlmaker_server_t *wlmaker_server_create(void)
         server_ptr->workspaces.head_ptr);
     BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
 
+    // Root element.
+    server_ptr->root_ptr = wlmaker_root_create(
+        server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->env_ptr);
+    if (NULL == server_ptr->root_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // Session lock manager.
+    server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
+    if (NULL == server_ptr->lock_mgr_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)", server_ptr);
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // Idle monitor.
+    server_ptr->idle_monitor_ptr = wlmaker_idle_monitor_create(server_ptr);
+    if (NULL == server_ptr->idle_monitor_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_idle_monitor_create(%p)", server_ptr);
+        return NULL;
+    }
+
     // The below helpers all setup a listener |display_destroy| for freeing the
     // assets held via the respective create() calls. Hence no need to call a
     // clean-up method from our end.
@@ -379,6 +405,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->wl_display_ptr = NULL;
     }
 
+    if (NULL != server_ptr->root_ptr) {
+        wlmaker_root_destroy(server_ptr->root_ptr);
+        server_ptr->root_ptr = NULL;
+    }
+
     bs_dllist_node_t *dlnode_ptr;
     while (NULL != (dlnode_ptr = server_ptr->workspaces.head_ptr)) {
         bs_dllist_remove(&server_ptr->workspaces, dlnode_ptr);
@@ -408,6 +439,16 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->idle_monitor_ptr) {
+        wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
+        server_ptr->idle_monitor_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->lock_mgr_ptr) {
+        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
+        server_ptr->lock_mgr_ptr = NULL;
     }
 
     while (NULL != server_ptr->key_bindings.head_ptr) {

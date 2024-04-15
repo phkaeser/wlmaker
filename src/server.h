@@ -39,9 +39,12 @@
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
 #include "cursor.h"
+#include "idle.h"
 #include "output.h"
 #include "keyboard.h"
 #include "layer_shell.h"
+#include "lock_mgr.h"
+#include "root.h"
 #include "view.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
@@ -62,6 +65,11 @@ struct _wlmaker_server_t {
     struct wl_display         *wl_display_ptr;
     /** Name of the socket for clients to connect. */
     const char                *wl_socket_name_ptr;
+
+    /** Session lock manager. */
+    wlmaker_lock_mgr_t        *lock_mgr_ptr;
+    /** Idle monitor. */
+    wlmaker_idle_monitor_t    *idle_monitor_ptr;
 
     /** wlroots allocator. */
     struct wlr_allocator      *wlr_allocator_ptr;
@@ -127,6 +135,8 @@ struct _wlmaker_server_t {
     /** Toolkit environment. */
     wlmtk_env_t               *env_ptr;
 
+    /** The root element. */
+    wlmaker_root_t            *root_ptr;
     /** The current workspace. */
     wlmaker_workspace_t       *current_workspace_ptr;
     /** List of all workspaces. */

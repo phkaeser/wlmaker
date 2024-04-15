@@ -188,6 +188,8 @@ void handle_motion(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, motion_listener);
     struct wlr_pointer_motion_event *wlr_pointer_motion_event_ptr = data_ptr;
 
+    wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
+
     wlr_cursor_move(
         cursor_ptr->wlr_cursor_ptr,
         &wlr_pointer_motion_event_ptr->pointer->base,
@@ -214,6 +216,8 @@ void handle_motion_absolute(struct wl_listener *listener_ptr,
     struct wlr_pointer_motion_absolute_event
         *wlr_pointer_motion_absolute_event_ptr = data_ptr;
 
+    wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
+
     wlr_cursor_warp_absolute(
         cursor_ptr->wlr_cursor_ptr,
         &wlr_pointer_motion_absolute_event_ptr->pointer->base,
@@ -239,7 +243,18 @@ void handle_button(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, button_listener);
     struct wlr_pointer_button_event *wlr_pointer_button_event_ptr = data_ptr;
 
-    bool consumed = wlmtk_workspace_button(
+    wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
+
+    bool consumed;
+    wlmtk_button_event_t event = {};
+    event.button = wlr_pointer_button_event_ptr->button;
+    event.time_msec = wlr_pointer_button_event_ptr->time_msec;
+    consumed = wlmtk_element_pointer_button(
+        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        &event);
+    if (consumed) return;
+
+    consumed = wlmtk_workspace_button(
         wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
                                     cursor_ptr->server_ptr)),
         wlr_pointer_button_event_ptr);
@@ -293,7 +308,15 @@ void handle_axis(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_cursor_t, axis_listener);
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr = data_ptr;
 
-    bool consumed = wlmtk_workspace_axis(
+    wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
+
+    bool consumed;
+    consumed = wlmtk_element_pointer_axis(
+        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        wlr_pointer_axis_event_ptr);
+    if (consumed) return;
+
+    consumed = wlmtk_workspace_axis(
         wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
                                     cursor_ptr->server_ptr)),
         wlr_pointer_axis_event_ptr);
