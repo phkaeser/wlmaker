@@ -174,7 +174,6 @@ bool wlmaker_root_unlock(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         false);
     return true;
-
 }
 
 /* ------------------------------------------------------------------------- */
