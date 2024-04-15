@@ -34,7 +34,7 @@
 const int32_t config_keyboard_repeat_rate = 25;
 
 /** Repeat delay, in ms. */
-const int32_t config_keyboard_repeat_delay = 300;
+const int32_t config_keyboard_repeat_delay = 300000;
 
 /** See man xkeyboard-config(7) for available options. */
 __UNUSED__ static const struct xkb_rule_names xkb_de = {
