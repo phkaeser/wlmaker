@@ -276,9 +276,15 @@ wlmaker_server_t *wlmaker_server_create(void)
     // Session lock manager.
     server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
     if (NULL == server_ptr->lock_mgr_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)",
-               server_ptr->wl_display_ptr);
+        bs_log(BS_ERROR, "Failed wlmaker_lock_mgr_create(%p)", server_ptr);
         wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // Idle monitor.
+    server_ptr->idle_monitor_ptr = wlmaker_idle_monitor_create(server_ptr);
+    if (NULL == server_ptr->idle_monitor_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_idle_monitor_create(%p)", server_ptr);
         return NULL;
     }
 
@@ -433,6 +439,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->idle_monitor_ptr) {
+        wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
+        server_ptr->idle_monitor_ptr = NULL;
     }
 
     if (NULL != server_ptr->lock_mgr_ptr) {

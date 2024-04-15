@@ -39,6 +39,7 @@
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
 #include "cursor.h"
+#include "idle.h"
 #include "output.h"
 #include "keyboard.h"
 #include "layer_shell.h"
@@ -67,6 +68,8 @@ struct _wlmaker_server_t {
 
     /** Session lock manager. */
     wlmaker_lock_mgr_t        *lock_mgr_ptr;
+    /** Idle monitor. */
+    wlmaker_idle_monitor_t    *idle_monitor_ptr;
 
     /** wlroots allocator. */
     struct wlr_allocator      *wlr_allocator_ptr;

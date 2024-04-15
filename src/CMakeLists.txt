@@ -25,6 +25,7 @@ SET(SOURCES
   dock.c
   icon_manager.c
   iconified.c
+  idle.c
   interactive.c
   keyboard.c
   layer_shell.c
@@ -63,6 +64,7 @@ SET(HEADERS
   dock.h
   icon_manager.h
   iconified.h
+  idle.h
   interactive.h
   keyboard.h
   layer_shell.h
