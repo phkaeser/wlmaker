@@ -55,7 +55,7 @@ const char *config_xcursor_theme_name = NULL;
 const uint32_t config_xcursor_theme_size = 24;
 
 /** Delay in milliseconds until the idle monitor invokes a lock. */
-const int config_idle_lock_msec = 1000;
+const int config_idle_lock_msec = 300000;
 
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
