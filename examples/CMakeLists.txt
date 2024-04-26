@@ -41,6 +41,9 @@ INCLUDE(ExternalProject)
 # libgtk-3-dev
 # libgirepository1.0-dev
 # valac
+#
+# Hm. Could also have installed gtk-layer-shell-examples ?
+# Also, there is https://github.com/wmww/gtk4-layer-shell.
 ExternalProject_Add(gtk_layer_shell
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gtk-layer-shell"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
