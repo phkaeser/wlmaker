@@ -56,6 +56,16 @@ void wlmtk_util_connect_listener_signal(
     struct wl_listener *listener_ptr,
     void (*notifier_func)(struct wl_listener *, void *));
 
+/**
+ * Disconnects a listener from the signal.
+ *
+ * Does that in a safe way: Will only disconnect, if the `link` is set.
+ *
+ * @param listener_ptr
+ */
+void wlmtk_util_disconnect_listener(
+    struct wl_listener *listener_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_util_test_cases[];
 
