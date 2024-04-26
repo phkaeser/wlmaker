@@ -20,6 +20,8 @@
 
 #include "layer.h"
 
+#include "container.h"
+
 /* == Declarations ========================================================= */
 
 /** State of a layer. */
@@ -54,9 +56,9 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_container_t *wlmtk_layer_container(wlmtk_layer_t *layer_ptr)
+wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr)
 {
-    return &layer_ptr->super_container;
+    return &layer_ptr->super_container.super_element;
 }
 
 /* == Local (static) methods =============================================== */
