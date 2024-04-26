@@ -28,6 +28,7 @@ SET(SOURCES
   idle.c
   interactive.c
   keyboard.c
+  layer_panel.c
   layer_shell.c
   layer_surface.c
   lock_mgr.c
@@ -67,6 +68,7 @@ SET(HEADERS
   idle.h
   interactive.h
   keyboard.h
+  layer_panel.h
   layer_shell.h
   layer_surface.h
   lock_mgr.h
