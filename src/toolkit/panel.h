@@ -75,6 +75,9 @@ wlmtk_element_t *wlmtk_panel_element(wlmtk_panel_t *panel_ptr);
 void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
                            wlmtk_layer_t *layer_ptr);
 
+/** @return the wlmtk_layer_t this panel belongs to. Or NULL, if unmapped. */
+wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

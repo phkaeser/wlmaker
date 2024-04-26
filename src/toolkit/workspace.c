@@ -427,6 +427,45 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_map_panel(wlmtk_workspace_t *workspace_ptr,
+                               wlmtk_panel_t *panel_ptr,
+                               wlmtk_workspace_layer_t layer)
+{
+    wlmtk_layer_t *layer_ptr = NULL;
+    switch (layer) {
+    case WLMTK_WORKSPACE_LAYER_BACKGROUND:
+        layer_ptr = workspace_ptr->background_layer_ptr;
+        break;
+    case WLMTK_WORKSPACE_LAYER_BOTTOM:
+        layer_ptr = workspace_ptr->bottom_layer_ptr;
+        break;
+    case WLMTK_WORKSPACE_LAYER_TOP:
+        layer_ptr = workspace_ptr->top_layer_ptr;
+        break;
+    case WLMTK_WORKSPACE_LAYER_OVERLAY:
+        layer_ptr = workspace_ptr->overlay_layer_ptr;
+        break;
+    default:
+        break;
+    }
+
+    if (NULL == layer_ptr) {
+        bs_log(BS_FATAL, "Invalid layer %d", layer);
+        abort();
+    }
+
+    wlmtk_layer_add_panel(layer_ptr, panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_unmap_panel(__UNUSED__ wlmtk_workspace_t *workspace_ptr,
+                                 wlmtk_panel_t *panel_ptr)
+{
+    BS_ASSERT(NULL != wlmtk_panel_get_layer(panel_ptr));
+    wlmtk_layer_remove_panel(wlmtk_panel_get_layer(panel_ptr), panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 bs_dllist_t *wlmtk_workspace_get_windows_dllist(
     wlmtk_workspace_t *workspace_ptr)
 {

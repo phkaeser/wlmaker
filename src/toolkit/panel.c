@@ -59,6 +59,12 @@ void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
     panel_ptr->layer_ptr = layer_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr)
+{
+    return panel_ptr->layer_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == End of panel.c ======================================================= */

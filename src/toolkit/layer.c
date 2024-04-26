@@ -65,6 +65,7 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr)
 void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
                            wlmtk_panel_t *panel_ptr)
 {
+    BS_ASSERT(NULL == wlmtk_panel_get_layer(panel_ptr));
     wlmtk_container_add_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
@@ -75,6 +76,7 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
 void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
                               wlmtk_panel_t *panel_ptr)
 {
+    BS_ASSERT(layer_ptr == wlmtk_panel_get_layer(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, NULL);
     wlmtk_container_remove_element(
         &layer_ptr->super_container,
@@ -103,10 +105,10 @@ void test_add_remove(bs_test_t *test_ptr)
     BS_ASSERT(wlmtk_panel_init(&panel, NULL));
 
     wlmtk_layer_add_panel(layer_ptr, &panel);
-    BS_TEST_VERIFY_EQ(test_ptr, layer_ptr, panel.layer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, layer_ptr, wlmtk_panel_get_layer(&panel));
 
     wlmtk_layer_remove_panel(layer_ptr, &panel);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, panel.layer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_panel_get_layer(&panel));
 
     wlmtk_panel_fini(&panel);
     wlmtk_layer_destroy(layer_ptr);
