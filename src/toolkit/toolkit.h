@@ -40,6 +40,7 @@
 #include "env.h"
 #include "fsm.h"
 #include "input.h"
+#include "panel.h"
 #include "surface.h"
 #include "rectangle.h"
 #include "resizebar.h"
