@@ -24,6 +24,7 @@
 
 /* == Exported methods ===================================================== */
 
+/* ------------------------------------------------------------------------- */
 bool wlmtk_panel_init(wlmtk_panel_t *panel_ptr,
                       wlmtk_env_t *env_ptr)
 {
@@ -36,9 +37,26 @@ bool wlmtk_panel_init(wlmtk_panel_t *panel_ptr,
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
 void wlmtk_panel_fini(wlmtk_panel_t *panel_ptr)
 {
     panel_ptr = panel_ptr;  // Unused.
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_panel_element(wlmtk_panel_t *panel_ptr)
+{
+    return &panel_ptr->super_container.super_element;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
+                           wlmtk_layer_t *layer_ptr)
+{
+    // Guard condition: Permit setting layer only if none set. And clearing
+    // only if one is set.
+    BS_ASSERT((NULL == layer_ptr) != (NULL == panel_ptr->layer_ptr));
+    panel_ptr->layer_ptr = layer_ptr;
 }
 
 /* == Local (static) methods =============================================== */

@@ -22,10 +22,11 @@
 
 #include <libbase/libbase.h>
 
-#include "container.h"
-
 /** Forward declaration: An element of a layer, we call it: Panel. */
 typedef struct _wlmtk_panel_t wlmtk_panel_t;
+
+#include "container.h"
+#include "layer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,9 @@ struct _wlmtk_panel_t {
     wlmtk_container_t         super_container;
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
+
+    /** The layer that this panel belongs to. NULL if none. */
+    wlmtk_layer_t             *layer_ptr;
 };
 
 /**
@@ -56,6 +60,20 @@ bool wlmtk_panel_init(wlmtk_panel_t *panel_ptr,
  * @param panel_ptr
  */
 void wlmtk_panel_fini(wlmtk_panel_t *panel_ptr);
+
+/** @return pointer to the super @ref wlmtk_element_t of the panel. */
+wlmtk_element_t *wlmtk_panel_element(wlmtk_panel_t *panel_ptr);
+
+/**
+ * Sets the layer for the `panel_ptr`.
+ *
+ * @protected This method must only be called from @ref wlmtk_layer_t.
+ *
+ * @param panel_ptr
+ * @param layer_ptr
+ */
+void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
+                           wlmtk_layer_t *layer_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

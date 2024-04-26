@@ -50,6 +50,24 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr);
 /** @return Pointer to super @ref wlmtk_element_t of the layer. */
 wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
 
+/**
+ * Adds the panel to the layer.
+ *
+ * @param layer_ptr
+ * @param panel_ptr
+ */
+void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
+                           wlmtk_panel_t *panel_ptr);
+
+/**
+ * Removes the panel from the layer.
+ *
+ * @param layer_ptr
+ * @param panel_ptr
+ */
+void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
+                              wlmtk_panel_t *panel_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

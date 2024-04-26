@@ -61,6 +61,26 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr)
     return &layer_ptr->super_container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
+                           wlmtk_panel_t *panel_ptr)
+{
+    wlmtk_container_add_element(
+        &layer_ptr->super_container,
+        wlmtk_panel_element(panel_ptr));
+    wlmtk_panel_set_layer(panel_ptr, layer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
+                              wlmtk_panel_t *panel_ptr)
+{
+    wlmtk_panel_set_layer(panel_ptr, NULL);
+    wlmtk_container_remove_element(
+        &layer_ptr->super_container,
+        wlmtk_panel_element(panel_ptr));
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == End of layer.c ======================================================= */
