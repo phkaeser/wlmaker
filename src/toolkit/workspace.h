@@ -24,6 +24,7 @@
 typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 #include "container.h"
+#include "panel.h"
 #include "window.h"
 
 #ifdef __cplusplus
@@ -34,6 +35,18 @@ extern "C" {
 struct wlr_pointer_button_event;
 /** Forward declaration. */
 struct wlr_box;
+
+/**
+ * Indicates which layer the view shall be rendered in.
+ *
+ * TODO(kaeser@gubbe.ch): Should use zwlr_layer_shell_v1_layer directly.
+ */
+typedef enum {
+    WLMTK_WORKSPACE_LAYER_BACKGROUND = 0,
+    WLMTK_WORKSPACE_LAYER_BOTTOM = 1,
+    WLMTK_WORKSPACE_LAYER_TOP = 3,
+    WLMTK_WORKSPACE_LAYER_OVERLAY = 4,
+} wlmtk_workspace_layer_t;
 
 /**
  * Creates a workspace.
@@ -118,6 +131,26 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
+
+/**
+ * Maps the `panel_ptr` onto `layer`.
+ *
+ * @param workspace_ptr
+ * @param panel_ptr
+ * @param layer
+ */
+void wlmtk_workspace_map_panel(wlmtk_workspace_t *workspace_ptr,
+                               wlmtk_panel_t *panel_ptr,
+                               wlmtk_workspace_layer_t layer);
+
+/**
+ * Unmaps the `panel_ptr`.
+ *
+ * @param workspace_ptr
+ * @param panel_ptr
+ */
+void wlmtk_workspace_unmap_panel(wlmtk_workspace_t *workspace_ptr,
+                                 wlmtk_panel_t *panel_ptr);
 
 /**
  * Returns the `bs_dllist_t` of currently mapped windows.

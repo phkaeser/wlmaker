@@ -32,6 +32,7 @@ SET(PUBLIC_HEADER_FILES
   fsm.h
   input.h
   layer.h
+  panel.h
   surface.h
   rectangle.h
   resizebar.h
@@ -55,6 +56,7 @@ TARGET_SOURCES(toolkit PRIVATE
   fsm.c
   gfxbuf.c
   layer.c
+  panel.c
   primitives.c
   surface.c
   rectangle.c

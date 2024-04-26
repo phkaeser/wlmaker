@@ -21,6 +21,7 @@
 #include "workspace.h"
 
 #include "fsm.h"
+#include "layer.h"
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_pointer.h>
@@ -81,6 +82,15 @@ struct _wlmtk_workspace_t {
     struct wl_signal          *window_mapped_event_ptr;
     /** Points to signal that triggers when a window is unmapped. */
     struct wl_signal          *window_unmapped_event_ptr;
+
+    /** Background layer. */
+    wlmtk_layer_t             *background_layer_ptr;
+    /** Bottom layer. */
+    wlmtk_layer_t             *bottom_layer_ptr;
+    /** Top layer. */
+    wlmtk_layer_t             *top_layer_ptr;
+    /** Overlay layer. */
+    wlmtk_layer_t             *overlay_layer_ptr;
 };
 
 static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
@@ -195,6 +205,59 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container,
         &workspace_ptr->fullscreen_container.super_element);
 
+    workspace_ptr->background_layer_ptr = wlmtk_layer_create(env_ptr);
+    if (NULL == workspace_ptr->background_layer_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_layer_element(workspace_ptr->background_layer_ptr),
+        true);
+    wlmtk_container_add_element_atop(
+        &workspace_ptr->super_container,
+        NULL,
+        wlmtk_layer_element(workspace_ptr->background_layer_ptr));
+
+    workspace_ptr->bottom_layer_ptr = wlmtk_layer_create(env_ptr);
+    if (NULL == workspace_ptr->bottom_layer_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_layer_element(workspace_ptr->bottom_layer_ptr),
+        true);
+    wlmtk_container_add_element_atop(
+        &workspace_ptr->super_container,
+        wlmtk_layer_element(workspace_ptr->background_layer_ptr),
+        wlmtk_layer_element(workspace_ptr->bottom_layer_ptr));
+
+    workspace_ptr->top_layer_ptr = wlmtk_layer_create(env_ptr);
+    if (NULL == workspace_ptr->top_layer_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_layer_element(workspace_ptr->top_layer_ptr),
+        true);
+    wlmtk_container_add_element_atop(
+        &workspace_ptr->super_container,
+        &workspace_ptr->window_container.super_element,
+        wlmtk_layer_element(workspace_ptr->top_layer_ptr));
+
+    workspace_ptr->overlay_layer_ptr = wlmtk_layer_create(env_ptr);
+    if (NULL == workspace_ptr->overlay_layer_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_layer_element(workspace_ptr->overlay_layer_ptr),
+        true);
+    wlmtk_container_add_element_atop(
+        &workspace_ptr->super_container,
+        wlmtk_layer_element(workspace_ptr->top_layer_ptr),
+        wlmtk_layer_element(workspace_ptr->overlay_layer_ptr));
+
+
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
 }
@@ -212,6 +275,35 @@ void wlmtk_workspace_set_signals(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
+    if (NULL != workspace_ptr->overlay_layer_ptr) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->super_container,
+            wlmtk_layer_element(workspace_ptr->overlay_layer_ptr));
+        wlmtk_layer_destroy(workspace_ptr->overlay_layer_ptr);
+        workspace_ptr->overlay_layer_ptr = NULL;
+    }
+    if (NULL != workspace_ptr->top_layer_ptr) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->super_container,
+            wlmtk_layer_element(workspace_ptr->top_layer_ptr));
+        wlmtk_layer_destroy(workspace_ptr->top_layer_ptr);
+        workspace_ptr->top_layer_ptr = NULL;
+    }
+    if (NULL != workspace_ptr->bottom_layer_ptr) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->super_container,
+            wlmtk_layer_element(workspace_ptr->bottom_layer_ptr));
+        wlmtk_layer_destroy(workspace_ptr->bottom_layer_ptr);
+        workspace_ptr->bottom_layer_ptr = NULL;
+    }
+    if (NULL != workspace_ptr->background_layer_ptr) {
+        wlmtk_container_remove_element(
+            &workspace_ptr->super_container,
+            wlmtk_layer_element(workspace_ptr->background_layer_ptr));
+        wlmtk_layer_destroy(workspace_ptr->background_layer_ptr);
+        workspace_ptr->background_layer_ptr = NULL;
+    }
+
     if (NULL != workspace_ptr->fullscreen_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &workspace_ptr->super_container,

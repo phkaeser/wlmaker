@@ -26,7 +26,7 @@
 
 /** State of a layer. */
 struct _wlmtk_layer_t {
-    /** Super class of the box. */
+    /** Super class of the layer. */
     wlmtk_container_t         super_container;
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;

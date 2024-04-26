@@ -25,6 +25,7 @@ typedef struct _wlmtk_layer_t wlmtk_layer_t;
 
 #include "element.h"
 #include "env.h"
+#include "panel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,7 @@ wlmtk_layer_t *wlmtk_layer_create(wlmtk_env_t *env_ptr);
  */
 void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr);
 
-/** @return Pointer to @ref wlmtk_layer_t::super_container::super_element. */
+/** @return Pointer to super @ref wlmtk_element_t of the layer. */
 wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
 
 #ifdef __cplusplus
