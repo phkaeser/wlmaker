@@ -83,4 +83,33 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
 
 /* == Local (static) methods =============================================== */
 
+/* == Unit tests =========================================================== */
+
+static void test_add_remove(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_layer_test_cases[] = {
+    { 1, "add_remove", test_add_remove },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Exercises the panel add & remove methods. */
+void test_add_remove(bs_test_t *test_ptr)
+{
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
+    BS_ASSERT(NULL != layer_ptr);
+
+    wlmtk_panel_t panel;
+    BS_ASSERT(wlmtk_panel_init(&panel, NULL));
+
+    wlmtk_layer_add_panel(layer_ptr, &panel);
+    BS_TEST_VERIFY_EQ(test_ptr, layer_ptr, panel.layer_ptr);
+
+    wlmtk_layer_remove_panel(layer_ptr, &panel);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, panel.layer_ptr);
+
+    wlmtk_panel_fini(&panel);
+    wlmtk_layer_destroy(layer_ptr);
+}
+
 /* == End of layer.c ======================================================= */

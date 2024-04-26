@@ -29,6 +29,7 @@ const bs_test_set_t toolkit_tests[] = {
     { 1, "content", wlmtk_content_test_cases },
     { 1, "element", wlmtk_element_test_cases },
     { 1, "fsm", wlmtk_fsm_test_cases },
+    { 1, "layesr", wlmtk_layer_test_cases },
     { 1, "surface", wlmtk_surface_test_cases },
     { 1, "rectangle", wlmtk_rectangle_test_cases },
     { 1, "resizebar", wlmtk_resizebar_test_cases },

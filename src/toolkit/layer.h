@@ -68,6 +68,9 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
 void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
                               wlmtk_panel_t *panel_ptr);
 
+/** Layer unit test. */
+extern const bs_test_case_t wlmtk_layer_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
