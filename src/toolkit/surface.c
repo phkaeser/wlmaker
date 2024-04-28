@@ -181,6 +181,7 @@ void wlmtk_surface_connect_map_listener_signal(
     struct wl_listener *listener_ptr,
     wl_notify_func_t handler)
 {
+    if (NULL == surface_ptr->wlr_surface_ptr) return;
     wlmtk_util_connect_listener_signal(
         &surface_ptr->wlr_surface_ptr->events.map,
         listener_ptr,
@@ -193,6 +194,7 @@ void wlmtk_surface_connect_unmap_listener_signal(
     struct wl_listener *listener_ptr,
     wl_notify_func_t handler)
 {
+    if (NULL == surface_ptr->wlr_surface_ptr) return;
     wlmtk_util_connect_listener_signal(
         &surface_ptr->wlr_surface_ptr->events.unmap,
         listener_ptr,
@@ -677,6 +679,16 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
         &fake_surface_ptr->surface.super_element,
         &_wlmtk_fake_surface_element_vmt);
     return fake_surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_surface_t *wlmtk_fake_surface_create_inject(
+    __UNUSED__ struct wlr_surface *wlr_surface_ptr,
+    __UNUSED__ wlmtk_env_t *env_ptr)
+{
+    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
+    if (NULL == fake_surface_ptr) return NULL;
+    return &fake_surface_ptr->surface;
 }
 
 /* ------------------------------------------------------------------------- */
