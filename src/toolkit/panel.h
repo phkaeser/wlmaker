@@ -78,6 +78,9 @@ void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
 /** @return the wlmtk_layer_t this panel belongs to. Or NULL, if unmapped. */
 wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr);
 
+/** Unit test cases of panel. */
+extern const bs_test_case_t wlmtk_panel_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -67,4 +67,8 @@ wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr)
 
 /* == Local (static) methods =============================================== */
 
+const bs_test_case_t          wlmtk_panel_test_cases[] = {
+    { 0, NULL, NULL }
+};
+
 /* == End of panel.c ======================================================= */
