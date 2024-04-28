@@ -41,18 +41,24 @@ struct _wlmaker_layer_panel_t {
 
     /** Listener for the `destroy` signal raised by `wlr_layer_surface_v1`. */
     struct wl_listener        destroy_listener;
+    /** Listener for `new_popup` signal raised by `wlr_layer_surface_v1`. */
+    struct wl_listener        new_popup_listener;
 };
 
 static void _wlmaker_layer_panel_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr);
 
-static void _wlmaker_layer_panel_handle_destroy(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void _wlmaker_layer_panel_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_layer_panel_handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void _wlmaker_layer_panel_handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_layer_panel_handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -100,6 +106,10 @@ wlmaker_layer_panel_t *wlmaker_layer_panel_create(
         &wlr_layer_surface_v1_ptr->events.destroy,
         &layer_panel_ptr->destroy_listener,
         _wlmaker_layer_panel_handle_destroy);
+    wlmtk_util_connect_listener_signal(
+        &wlr_layer_surface_v1_ptr->events.new_popup,
+        &layer_panel_ptr->new_popup_listener,
+        _wlmaker_layer_panel_handle_new_popup);
 
     // FIXME: Should actually compute the available size based on the layer's
     // current population of panels. Which layer, though?
@@ -146,24 +156,6 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 
     wlmtk_panel_fini(&layer_panel_ptr->super_panel);
     free(layer_panel_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `destroy` signal of the `wlr_layer_surface_v1`: Destroys
- * the panel.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _wlmaker_layer_panel_handle_destroy(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_layer_panel_t, destroy_listener);
-
-    _wlmaker_layer_panel_destroy(layer_panel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -232,6 +224,44 @@ void _wlmaker_layer_panel_handle_surface_unmap(
     if (NULL == layer_ptr) return;
 
     wlmtk_layer_remove_panel(layer_ptr, &layer_panel_ptr->super_panel);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `destroy` signal of the `wlr_layer_surface_v1`: Destroys
+ * the panel.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_layer_panel_handle_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_panel_t, destroy_listener);
+
+    _wlmaker_layer_panel_destroy(layer_panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `new_popup` signal of the `wlr_layer_surface_v1`: Creates
+ * a new popup for this panel.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to the new `struct wlr_xdg_popup`.
+ */
+void _wlmaker_layer_panel_handle_new_popup(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_panel_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    bs_log(BS_WARNING, "FIXME: Unimplemented new_popup %p for panel %p",
+           wlr_xdg_popup_ptr, layer_panel_ptr);
 }
 
 /* == End of layer_panel.c ================================================== */
