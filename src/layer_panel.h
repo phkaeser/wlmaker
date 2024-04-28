@@ -44,6 +44,9 @@ wlmaker_layer_panel_t *wlmaker_layer_panel_create(
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr,
     wlmaker_server_t *server_ptr);
 
+/** Unit test cases of layer panel. */
+extern const bs_test_case_t wlmaker_layer_panel_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
