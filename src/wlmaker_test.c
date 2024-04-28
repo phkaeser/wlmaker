@@ -19,6 +19,7 @@
  */
 
 #include "decorations.h"
+#include "layer_panel.h"
 #include "menu.h"
 #include "menu_item.h"
 #include "workspace.h"
@@ -27,6 +28,7 @@
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {
     { 1, "decorations", wlmaker_decorations_test_cases },
+    { 1, "layer_panel", wlmaker_layer_panel_test_cases },
     { 1, "menu", wlmaker_menu_test_cases },
     { 1, "menu_item", wlmaker_menu_item_test_cases },
     { 1, "xwl_content", wlmaker_xwl_content_test_cases },
