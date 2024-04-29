@@ -427,9 +427,9 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_map_panel(wlmtk_workspace_t *workspace_ptr,
-                               wlmtk_panel_t *panel_ptr,
-                               wlmtk_workspace_layer_t layer)
+wlmtk_layer_t *wlmtk_workspace_get_layer(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_workspace_layer_t layer)
 {
     wlmtk_layer_t *layer_ptr = NULL;
     switch (layer) {
@@ -449,23 +449,9 @@ void wlmtk_workspace_map_panel(wlmtk_workspace_t *workspace_ptr,
         break;
     }
 
-    if (NULL == layer_ptr) {
-        bs_log(BS_FATAL, "Invalid layer %d", layer);
-        abort();
-    }
-
-    wlmtk_element_set_visible(wlmtk_panel_element(panel_ptr), true);
-    wlmtk_layer_add_panel(layer_ptr, panel_ptr);
+    return layer_ptr;
 }
 
-/* ------------------------------------------------------------------------- */
-void wlmtk_workspace_unmap_panel(__UNUSED__ wlmtk_workspace_t *workspace_ptr,
-                                 wlmtk_panel_t *panel_ptr)
-{
-    BS_ASSERT(NULL != wlmtk_panel_get_layer(panel_ptr));
-    wlmtk_element_set_visible(wlmtk_panel_element(panel_ptr), false);
-    wlmtk_layer_remove_panel(wlmtk_panel_get_layer(panel_ptr), panel_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 bs_dllist_t *wlmtk_workspace_get_windows_dllist(

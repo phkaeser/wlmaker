@@ -225,10 +225,14 @@ void _wlmaker_layer_panel_handle_surface_map(
         layer_panel_ptr->server_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
         workspace_ptr);
-    wlmtk_workspace_map_panel(
-        wlmtk_workspace_ptr,
-        &layer_panel_ptr->super_panel,
-        layer);
+
+    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+        wlmtk_workspace_ptr, layer);
+    BS_ASSERT(NULL != layer_ptr);
+
+    wlmtk_element_set_visible(
+        wlmtk_panel_element(&layer_panel_ptr->super_panel), true);
+    wlmtk_layer_add_panel(layer_ptr, &layer_panel_ptr->super_panel);
 }
 
 /* ------------------------------------------------------------------------- */

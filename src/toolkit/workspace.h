@@ -133,24 +133,17 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
 
 /**
- * Maps the `panel_ptr` onto `layer`.
+ * Returns pointer to the @ref wlmtk_layer_t handle serving `layer`.
  *
  * @param workspace_ptr
- * @param panel_ptr
  * @param layer
- */
-void wlmtk_workspace_map_panel(wlmtk_workspace_t *workspace_ptr,
-                               wlmtk_panel_t *panel_ptr,
-                               wlmtk_workspace_layer_t layer);
-
-/**
- * Unmaps the `panel_ptr`.
  *
- * @param workspace_ptr
- * @param panel_ptr
+ * @return Pointer to the layer state.
  */
-void wlmtk_workspace_unmap_panel(wlmtk_workspace_t *workspace_ptr,
-                                 wlmtk_panel_t *panel_ptr);
+wlmtk_layer_t *wlmtk_workspace_get_layer(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_workspace_layer_t layer);
+
 
 /**
  * Returns the `bs_dllist_t` of currently mapped windows.
