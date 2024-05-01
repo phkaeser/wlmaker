@@ -164,6 +164,17 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         &layer_panel_ptr->new_popup_listener,
         _wlmaker_layer_panel_handle_new_popup);
 
+    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE !=
+        wlr_layer_surface_v1_ptr->pending.keyboard_interactive) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_IMPLEMENTATION,
+            "Unsupported setting for keyboard interactivity: %d",
+            wlr_layer_surface_v1_ptr->pending.keyboard_interactive);
+        _wlmaker_layer_panel_destroy(layer_panel_ptr);
+        return NULL;
+    }
+
     wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
         layer_panel_ptr->server_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
@@ -178,17 +189,6 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
             WL_DISPLAY_ERROR_INVALID_METHOD,
             "Invalid zwlr_layer value: %d",
             layer_panel_ptr->wlr_layer_surface_v1_ptr->current.layer);
-        _wlmaker_layer_panel_destroy(layer_panel_ptr);
-        return NULL;
-    }
-
-    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE !=
-        wlr_layer_surface_v1_ptr->pending.keyboard_interactive) {
-        wl_resource_post_error(
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
-            WL_DISPLAY_ERROR_IMPLEMENTATION,
-            "Unsupported setting for keyboard interactivity: %d",
-            wlr_layer_surface_v1_ptr->pending.keyboard_interactive);
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
         return NULL;
     }
