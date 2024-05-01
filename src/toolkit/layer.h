@@ -81,6 +81,9 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
 void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
                                wlmtk_workspace_t *workspace_ptr);
 
+void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
+
+
 /** Layer unit test. */
 extern const bs_test_case_t wlmtk_layer_test_cases[];
 

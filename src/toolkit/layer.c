@@ -42,8 +42,6 @@ struct _wlmtk_layer_t {
     bs_dllist_t               panels;
 };
 
-static void _wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -85,7 +83,7 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
     bs_dllist_push_back(
         &layer_ptr->panels,
         wlmtk_dlnode_from_panel(panel_ptr));
-    _wlmtk_layer_reconfigure(layer_ptr);
+    wlmtk_layer_reconfigure(layer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -100,7 +98,7 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
     wlmtk_container_remove_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
-    _wlmtk_layer_reconfigure(layer_ptr);
+    wlmtk_layer_reconfigure(layer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -123,7 +121,7 @@ void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
  *
  * @param layer_ptr
  */
-void _wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
+void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
 {
     struct wlr_box extents = wlmtk_workspace_get_fullscreen_extents(
         layer_ptr->workspace_ptr);

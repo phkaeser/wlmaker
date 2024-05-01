@@ -161,14 +161,16 @@ static inline uint32_t wlmtk_panel_request_size(
 }
 
 /**
- * Commits serial
+ * Reports a commit for the given serial, and updates positioning.
  *
  * @param panel_ptr
  * @param serial
+ * @param positioning_ptr
  */
 void wlmtk_panel_commit(
     wlmtk_panel_t *panel_ptr,
-    uint32_t serial);
+    uint32_t serial,
+    const wlmtk_panel_positioning_t *positioning_ptr);
 
 /**
  * Computes the requested dimension for the panel.

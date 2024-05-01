@@ -101,9 +101,21 @@ wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_panel_commit(
     __UNUSED__ wlmtk_panel_t *panel_ptr,
-    __UNUSED__ uint32_t serial)
+    __UNUSED__ uint32_t serial,
+    const wlmtk_panel_positioning_t *positioning_ptr)
 {
-    // FIXME: Implement.
+    // Guard clause: No updates, nothing more to do.
+    if (0 == memcmp(
+            &panel_ptr->positioning,
+            positioning_ptr,
+            sizeof(wlmtk_panel_positioning_t))) return;
+
+    panel_ptr->positioning = *positioning_ptr;
+
+    // FIXME: Should do this via container update layout?
+    if (NULL != panel_ptr->layer_ptr) {
+        wlmtk_layer_reconfigure(panel_ptr->layer_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

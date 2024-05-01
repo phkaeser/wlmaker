@@ -57,6 +57,9 @@ static wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
 static void _wlmaker_layer_panel_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr);
 
+static bool _wlmaker_layer_panel_apply_keyboard(
+    wlmaker_layer_panel_t *layer_panel_ptr,
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity);
 static bool _wlmaker_layer_panel_apply_layer(
     wlmaker_layer_panel_t *layer_panel_ptr,
     enum zwlr_layer_shell_v1_layer zwlr_layer);
@@ -177,18 +180,10 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         &layer_panel_ptr->new_popup_listener,
         _wlmaker_layer_panel_handle_new_popup);
 
-    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE !=
-        wlr_layer_surface_v1_ptr->pending.keyboard_interactive) {
-        wl_resource_post_error(
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
-            WL_DISPLAY_ERROR_IMPLEMENTATION,
-            "Unsupported setting for keyboard interactivity: %d",
-            wlr_layer_surface_v1_ptr->pending.keyboard_interactive);
-        _wlmaker_layer_panel_destroy(layer_panel_ptr);
-        return NULL;
-    }
-
-    if (!_wlmaker_layer_panel_apply_layer(
+    if (!_wlmaker_layer_panel_apply_keyboard(
+            layer_panel_ptr,
+            wlr_layer_surface_v1_ptr->pending.keyboard_interactive) ||
+        !_wlmaker_layer_panel_apply_layer(
             layer_panel_ptr,
             layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.layer)) {
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
@@ -264,6 +259,23 @@ wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Applies the requested keyboard setting. Currently warns on non-zero. */
+bool _wlmaker_layer_panel_apply_keyboard(
+    wlmaker_layer_panel_t *layer_panel_ptr,
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity)
+{
+    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE != interactivity) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_IMPLEMENTATION,
+            "Unsupported setting for keyboard interactivity: %d",
+            interactivity);
+        return false;
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Updates the layer this panel is part of. Posts an error if invalid. */
 bool _wlmaker_layer_panel_apply_layer(
     wlmaker_layer_panel_t *layer_panel_ptr,
@@ -316,7 +328,6 @@ bool _wlmaker_layer_panel_apply_layer(
     return true;
 }
 
-
 /* ------------------------------------------------------------------------- */
 /** Updates `positioning_ptr` from the given surface state. */
 void _wlmaker_layer_panel_set_positioning(
@@ -366,15 +377,23 @@ void _wlmaker_layer_panel_handle_surface_commit(
     wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_layer_panel_t, surface_commit_listener);
 
-    wlmtk_panel_positioning_t pos;
-    _wlmaker_layer_panel_set_positioning(
-        &pos, &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending);
-    // FIXME: call into panel.
+    struct wlr_layer_surface_v1_state *state_ptr =
+        &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending;
 
-    // Update layer, if needed. Ignore return values here.
+    wlmtk_panel_positioning_t pos;
+    _wlmaker_layer_panel_set_positioning(&pos, state_ptr);
+    wlmtk_panel_commit(
+        &layer_panel_ptr->super_panel,
+        state_ptr->configure_serial,
+        &pos);
+
+    // Updates keyboard and layer values. Ignore failures here.
+    _wlmaker_layer_panel_apply_keyboard(
+        layer_panel_ptr,
+        state_ptr->keyboard_interactive);
     _wlmaker_layer_panel_apply_layer(
         layer_panel_ptr,
-        layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.layer);
+        state_ptr->layer);
 }
 
 /* ------------------------------------------------------------------------- */
