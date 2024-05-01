@@ -172,7 +172,11 @@ void test_add_remove(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fake_workspace_ptr);
     wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
 
-    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(0, 100, 50);
+    wlmtk_panel_positioning_t pos = {
+        .desired_width = 100,
+        .desired_height = 50
+    };
+    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(&pos);
     BS_ASSERT(NULL != fake_panel_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, fake_panel_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 0, fake_panel_ptr->requested_height);

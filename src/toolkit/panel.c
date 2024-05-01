@@ -27,14 +27,17 @@
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_panel_init(wlmtk_panel_t *panel_ptr,
-                      wlmtk_env_t *env_ptr)
+bool wlmtk_panel_init(
+    wlmtk_panel_t *panel_ptr,
+    const wlmtk_panel_positioning_t *positioning_ptr,
+    wlmtk_env_t *env_ptr)
 {
     memset(panel_ptr, 0, sizeof(wlmtk_panel_t));
     if (!wlmtk_container_init(&panel_ptr->super_container, env_ptr)) {
         wlmtk_panel_fini(panel_ptr);
         return false;
     }
+    panel_ptr->positioning = *positioning_ptr;
 
     return true;
 }
@@ -111,15 +114,15 @@ struct wlr_box wlmtk_panel_compute_dimensions(
 {
     // Copied for readability.
     struct wlr_box max_dims = *full_area_ptr;
-    uint32_t anchor = panel_ptr->anchor;
-    int margin_left = panel_ptr->margin_left;
-    int margin_right = panel_ptr->margin_right;
-    int margin_top = panel_ptr->margin_top;
-    int margin_bottom = panel_ptr->margin_bottom;
+    uint32_t anchor = panel_ptr->positioning.anchor;
+    int margin_left = panel_ptr->positioning.margin_left;
+    int margin_right = panel_ptr->positioning.margin_right;
+    int margin_top = panel_ptr->positioning.margin_top;
+    int margin_bottom = panel_ptr->positioning.margin_bottom;
 
     struct wlr_box dims = {
-        .width = panel_ptr->width,
-        .height = panel_ptr->height
+        .width = panel_ptr->positioning.desired_width,
+        .height = panel_ptr->positioning.desired_height
     };
 
     // Set horizontal position and width.
@@ -176,21 +179,17 @@ static const wlmtk_panel_vmt_t _wlmtk_fake_panel_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_fake_panel_t *wlmtk_fake_panel_create(
-    uint32_t anchor, int width, int height)
+    const wlmtk_panel_positioning_t *positioning_ptr)
 {
     wlmtk_fake_panel_t *fake_panel_ptr = logged_calloc(
         1, sizeof(wlmtk_fake_panel_t));
     if (NULL == fake_panel_ptr) return NULL;
 
-    if (!wlmtk_panel_init(&fake_panel_ptr->panel, NULL)) {
+    if (!wlmtk_panel_init(&fake_panel_ptr->panel, positioning_ptr, NULL)) {
         wlmtk_fake_panel_destroy(fake_panel_ptr);
         return NULL;
     }
     wlmtk_panel_extend(&fake_panel_ptr->panel, &_wlmtk_fake_panel_vmt);
-
-    fake_panel_ptr->panel.anchor = anchor;
-    fake_panel_ptr->panel.width = width;
-    fake_panel_ptr->panel.height = height;
 
     return fake_panel_ptr;
 }
@@ -233,8 +232,9 @@ const bs_test_case_t          wlmtk_panel_test_cases[] = {
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_panel_t p;
+    wlmtk_panel_positioning_t pos = {};
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_panel_init(&p, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_panel_init(&p, &pos, NULL));
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_panel(&p);
     BS_TEST_VERIFY_EQ(test_ptr, &p.dlnode, dlnode_ptr);
@@ -247,61 +247,65 @@ void test_init_fini(bs_test_t *test_ptr)
 /** Verifies wlmtk_panel_compute_dimensions. */
 void test_compute_dimensions(bs_test_t *test_ptr)
 {
-    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(0, 100, 50);
+    wlmtk_panel_positioning_t pos = {
+        .desired_width = 100,
+        .desired_height = 50
+    };
+    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(&pos);
     wlmtk_panel_t *p_ptr = &fake_panel_ptr->panel;
 
     struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100};
     struct wlr_box usable = {};
     struct wlr_box dims;
 
-    p_ptr->margin_left = 10;
-    p_ptr->margin_right = 20;
-    p_ptr->margin_top = 8;
-    p_ptr->margin_bottom = 4;
+    p_ptr->positioning.margin_left = 10;
+    p_ptr->positioning.margin_right = 20;
+    p_ptr->positioning.margin_top = 8;
+    p_ptr->positioning.margin_bottom = 4;
 
-    p_ptr->anchor = 0;
+    p_ptr->positioning.anchor = 0;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_LEFT;
+    p_ptr->positioning.anchor = WLR_EDGE_LEFT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 10, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_RIGHT;
+    p_ptr->positioning.anchor = WLR_EDGE_RIGHT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 80, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_LEFT | WLR_EDGE_RIGHT;
+    p_ptr->positioning.anchor = WLR_EDGE_LEFT | WLR_EDGE_RIGHT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_TOP;
+    p_ptr->positioning.anchor = WLR_EDGE_TOP;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 8, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_BOTTOM;
+    p_ptr->positioning.anchor = WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 46, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
-    p_ptr->anchor = WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
+    p_ptr->positioning.anchor = WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);

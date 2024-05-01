@@ -26,6 +26,8 @@
 typedef struct _wlmtk_panel_t wlmtk_panel_t;
 /** Forward declaration: The panel's virtual method table. */
 typedef struct _wlmtk_panel_vmt_t wlmtk_panel_vmt_t;
+/** Forward declaration: The panel's positioning parameters. */
+typedef struct _wlmtk_panel_positioning_t wlmtk_panel_positioning_t;
 
 #include "container.h"
 #include "layer.h"
@@ -54,6 +56,25 @@ struct _wlmtk_panel_vmt_t {
                              int size);
 };
 
+/** The panel's positioning parameters. */
+struct _wlmtk_panel_positioning_t {
+    /** Desired width of the panel. */
+    int                       desired_width;
+    /** Desired height of the panel. */
+    int                       desired_height;
+    /** Edges the panel is anchored to. See `enum wlr_edges`. */
+    uint32_t                  anchor;
+
+    /** Margin on the left of the panel. */
+    int                       margin_left;
+    /** Margin on the right of the panel. */
+    int                       margin_right;
+    /** Margin on the top of the panel. */
+    int                       margin_top;
+    /** Margin on the bottom of the panel. */
+    int                       margin_bottom;
+};
+
 /** State of the panel. */
 struct _wlmtk_panel_t {
     /** Super class of the panel. */
@@ -69,33 +90,23 @@ struct _wlmtk_panel_t {
     /** Node of @ref wlmtk_layer_t::panels. */
     bs_dllist_node_t          dlnode;
 
-    /** Width of the panel. */
-    int                       width;
-    /** Height of the panel. */
-    int                       height;
-    /** Edges the panel is anchored to. See `enum wlr_edges`. */
-    uint32_t                  anchor;
-
-    /** Margin on the left of the panel. */
-    int                       margin_left;
-    /** Margin on the right of the panel. */
-    int                       margin_right;
-    /** Margin on the top of the panel. */
-    int                       margin_top;
-    /** Margin on the bottom of the panel. */
-    int                       margin_bottom;
+    /** Positioning parameters. */
+    wlmtk_panel_positioning_t positioning;
 };
 
 /**
  * Initializes the panel.
  *
  * @param panel_ptr
+ * @param positioning_ptr
  * @param env_ptr
  *
  * @return true on success.
  */
-bool wlmtk_panel_init(wlmtk_panel_t *panel_ptr,
-                      wlmtk_env_t *env_ptr);
+bool wlmtk_panel_init(
+    wlmtk_panel_t *panel_ptr,
+    const wlmtk_panel_positioning_t *positioning_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Un-initializes the panel.
@@ -193,7 +204,7 @@ struct _wlmtk_fake_panel_t {
 };
 /** Creates a fake panel, for tests. */
 wlmtk_fake_panel_t *wlmtk_fake_panel_create(
-    uint32_t anchor, int width, int height);
+    const wlmtk_panel_positioning_t *positioning_ptr);
 /** Destroys the fake panel. */
 void wlmtk_fake_panel_destroy(wlmtk_fake_panel_t *fake_panel_ptr);
 

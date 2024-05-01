@@ -56,6 +56,9 @@ static void _wlmaker_layer_panel_destroy(
 
 static wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
     enum zwlr_layer_shell_v1_layer zwlr_layer);
+static void _wlmaker_layer_panel_set_positioning(
+    wlmtk_panel_positioning_t *positioning_ptr,
+    const struct wlr_layer_surface_v1_state *state_ptr);
 
 static uint32_t _wlmaker_layer_panel_request_size(
     wlmtk_panel_t *panel_ptr,
@@ -119,8 +122,11 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
     layer_panel_ptr->wlr_layer_surface_v1_ptr = wlr_layer_surface_v1_ptr;
     layer_panel_ptr->server_ptr = server_ptr;
 
-    if (!wlmtk_panel_init(&layer_panel_ptr->super_panel,
-                          server_ptr->env_ptr)) {
+    wlmtk_panel_positioning_t pos;
+    _wlmaker_layer_panel_set_positioning(
+        &pos, &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending);
+    if (!wlmtk_panel_init(
+            &layer_panel_ptr->super_panel, &pos, server_ptr->env_ptr)) {
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
         return NULL;
     }
@@ -176,12 +182,16 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         return NULL;
     }
 
-    // FIXME: Add protocol verification: if width == 0, then anchor must be set.
-    // FIXME: This is ugly. Need to encapsulate the parameters, and translate
-    // them here.
-    layer_panel_ptr->super_panel.anchor = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.anchor;
-    layer_panel_ptr->super_panel.width = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.desired_width;
-    layer_panel_ptr->super_panel.height = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.desired_height;
+    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE !=
+        wlr_layer_surface_v1_ptr->pending.keyboard_interactive) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_IMPLEMENTATION,
+            "Unsupported setting for keyboard interactivity: %d",
+            wlr_layer_surface_v1_ptr->pending.keyboard_interactive);
+        _wlmaker_layer_panel_destroy(layer_panel_ptr);
+        return NULL;
+    }
 
     wlmtk_layer_add_panel(layer_ptr, &layer_panel_ptr->super_panel);
 
@@ -225,7 +235,7 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** @return The layer number, translated from protocol to internal value. */
+/** @return Layer number, translated from protocol value. -1 on error. */
 wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
     enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
@@ -244,10 +254,29 @@ wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
         layer = WLMTK_WORKSPACE_LAYER_OVERLAY;
         break;
     default:
-        layer = WLMTK_WORKSPACE_LAYER_INVALID;
+        layer = -1;
         break;
     }
     return layer;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Updates `positioning_ptr` from the given surface state. */
+void _wlmaker_layer_panel_set_positioning(
+    wlmtk_panel_positioning_t *positioning_ptr,
+    const struct wlr_layer_surface_v1_state *state_ptr)
+{
+    positioning_ptr->anchor = state_ptr->anchor;
+
+    positioning_ptr->desired_width = state_ptr->desired_width;
+    positioning_ptr->desired_height = state_ptr->desired_height;
+
+    positioning_ptr->margin_left = state_ptr->margin.left;
+    positioning_ptr->margin_top = state_ptr->margin.top;
+    positioning_ptr->margin_right = state_ptr->margin.right;
+    positioning_ptr->margin_bottom = state_ptr->margin.bottom;
+
+    // FIXME: Copy and implement  'exclusive_zone'
 }
 
 /* ------------------------------------------------------------------------- */
@@ -263,6 +292,8 @@ uint32_t _wlmaker_layer_panel_request_size(
     return wlr_layer_surface_v1_configure(
         layer_panel_ptr->wlr_layer_surface_v1_ptr, width, height);
 }
+
+// FIXME: Add 'commit' handler, and update state when required.
 
 /* ------------------------------------------------------------------------- */
 /**
