@@ -276,7 +276,7 @@ void _wlmaker_layer_panel_set_positioning(
     positioning_ptr->margin_right = state_ptr->margin.right;
     positioning_ptr->margin_bottom = state_ptr->margin.bottom;
 
-    // FIXME: Copy and implement  'exclusive_zone'
+    positioning_ptr->exlusive_zone = state_ptr->exclusive_zone;
 }
 
 /* ------------------------------------------------------------------------- */
