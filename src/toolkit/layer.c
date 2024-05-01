@@ -22,6 +22,10 @@
 
 #include "container.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_output_layout.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 /** State of a layer. */
@@ -30,7 +34,15 @@ struct _wlmtk_layer_t {
     wlmtk_container_t         super_container;
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
+
+    /** Workspace that the layer belongs to. */
+    wlmtk_workspace_t         *workspace_ptr;
+
+    /** Panels, holds nodes at @ref wlmtk_panel_t::dlnode. */
+    bs_dllist_t               panels;
 };
+
+static void _wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -70,6 +82,10 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, layer_ptr);
+    bs_dllist_push_back(
+        &layer_ptr->panels,
+        wlmtk_dlnode_from_panel(panel_ptr));
+    _wlmtk_layer_reconfigure(layer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -77,13 +93,64 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
                               wlmtk_panel_t *panel_ptr)
 {
     BS_ASSERT(layer_ptr == wlmtk_panel_get_layer(panel_ptr));
+    bs_dllist_remove(
+        &layer_ptr->panels,
+        wlmtk_dlnode_from_panel(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, NULL);
     wlmtk_container_remove_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
+    _wlmtk_layer_reconfigure(layer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
+                               wlmtk_workspace_t *workspace_ptr)
+{
+    layer_ptr->workspace_ptr = workspace_ptr;
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Calls @ref wlmtk_panel_compute_dimensions for each contained panel.
+ *
+ * The Wayland protocol spells it is 'undefined' how panels (layer shells)
+ * are stacked and configured within a layer. For wlmaker, we'll configure
+ * the panels in sequence as they were added (found in the container, back
+ * to front).
+ *
+ * @param layer_ptr
+ */
+void _wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
+{
+    struct wlr_box extents = wlmtk_workspace_get_fullscreen_extents(
+        layer_ptr->workspace_ptr);
+    struct wlr_box usable_area = extents;
+
+
+    for (bs_dllist_node_t *dlnode_ptr = layer_ptr->panels.head_ptr;
+         dlnode_ptr != NULL;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
+
+        // FIXME: Don't update usable_area if not visible.
+
+        struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
+            panel_ptr, &extents, &usable_area);
+
+        wlmtk_panel_request_size(
+            panel_ptr,
+            panel_dimensions.width,
+            panel_dimensions.height);
+
+        wlmtk_element_set_position(
+            wlmtk_panel_element(panel_ptr),
+            panel_dimensions.x,
+            panel_dimensions.y);
+    }
+}
 
 /* == Unit tests =========================================================== */
 
@@ -100,17 +167,35 @@ void test_add_remove(bs_test_t *test_ptr)
 {
     wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
     BS_ASSERT(NULL != layer_ptr);
+    wlmtk_fake_workspace_t *fake_workspace_ptr = wlmtk_fake_workspace_create(
+        1024, 768);
+    BS_ASSERT(NULL != fake_workspace_ptr);
+    wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
 
-    wlmtk_panel_t panel;
-    BS_ASSERT(wlmtk_panel_init(&panel, NULL));
+    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(0, 100, 50);
+    BS_ASSERT(NULL != fake_panel_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, fake_panel_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, fake_panel_ptr->requested_height);
 
-    wlmtk_layer_add_panel(layer_ptr, &panel);
-    BS_TEST_VERIFY_EQ(test_ptr, layer_ptr, wlmtk_panel_get_layer(&panel));
+    // Adds the panel. Triggers a 'compute_dimensions' call and then calls
+    // into wlmtk_panel_request_size.
+    wlmtk_layer_add_panel(layer_ptr, &fake_panel_ptr->panel);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, layer_ptr,
+        wlmtk_panel_get_layer(&fake_panel_ptr->panel));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, fake_panel_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, fake_panel_ptr->requested_height);
 
-    wlmtk_layer_remove_panel(layer_ptr, &panel);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_panel_get_layer(&panel));
+    wlmtk_layer_remove_panel(layer_ptr, &fake_panel_ptr->panel);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_panel_get_layer(&fake_panel_ptr->panel));
 
-    wlmtk_panel_fini(&panel);
+    wlmtk_fake_panel_destroy(fake_panel_ptr);
+
+    wlmtk_layer_set_workspace(layer_ptr, NULL);
+    wlmtk_fake_workspace_destroy(fake_workspace_ptr);
     wlmtk_layer_destroy(layer_ptr);
 }
 

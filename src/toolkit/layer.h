@@ -26,6 +26,7 @@ typedef struct _wlmtk_layer_t wlmtk_layer_t;
 #include "element.h"
 #include "env.h"
 #include "panel.h"
+#include "workspace.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +52,8 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr);
 wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
 
 /**
- * Adds the panel to the layer.
+ * Adds the panel to the layer. This will trigger an update to the layer's
+ * layout, and a call to request_size of each panel.
  *
  * @param layer_ptr
  * @param panel_ptr
@@ -67,6 +69,17 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
  */
 void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
                               wlmtk_panel_t *panel_ptr);
+
+/**
+ * Sets the parent workspace for the layer.
+ *
+ * Should only be called from @ref wlmtk_workspace_t methods.
+ *
+ * @param layer_ptr
+ * @param workspace_ptr       NULL to clear the workspace reference.
+ */
+void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
+                               wlmtk_workspace_t *workspace_ptr);
 
 /** Layer unit test. */
 extern const bs_test_case_t wlmtk_layer_test_cases[];

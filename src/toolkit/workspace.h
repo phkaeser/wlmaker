@@ -39,7 +39,8 @@ struct wlr_box;
 /**
  * Indicates which layer the view shall be rendered in.
  *
- * TODO(kaeser@gubbe.ch): Should use zwlr_layer_shell_v1_layer directly.
+ * See `enum layer` at:
+ * https://wayland.app/protocols/wlr-layer-shell-unstable-v1.
  */
 typedef enum {
     WLMTK_WORKSPACE_LAYER_BACKGROUND = 0,

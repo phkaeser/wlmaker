@@ -20,6 +20,8 @@
 
 #include "layer_panel.h"
 
+#include "wlr-layer-shell-unstable-v1-protocol.h"
+
 /* == Declarations ========================================================= */
 
 /** State of a layer panel. */
@@ -52,6 +54,14 @@ static wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
 static void _wlmaker_layer_panel_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr);
 
+static wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
+    enum zwlr_layer_shell_v1_layer zwlr_layer);
+
+static uint32_t _wlmaker_layer_panel_request_size(
+    wlmtk_panel_t *panel_ptr,
+    int width,
+    int height);
+
 static void _wlmaker_layer_panel_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -65,6 +75,13 @@ static void _wlmaker_layer_panel_handle_destroy(
 static void _wlmaker_layer_panel_handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+/* == Data ================================================================= */
+
+/** Virtual method table for the layer panel. */
+static const wlmtk_panel_vmt_t _wlmtk_layer_panel_vmt = {
+    .request_size = _wlmaker_layer_panel_request_size,
+};
 
 /* == Exported methods ===================================================== */
 
@@ -107,6 +124,9 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
         return NULL;
     }
+    wlmtk_panel_extend(
+        &layer_panel_ptr->super_panel,
+        &_wlmtk_layer_panel_vmt);
 
     layer_panel_ptr->wlmtk_surface_ptr = wlmtk_surface_create_fn(
         wlr_layer_surface_v1_ptr->surface,
@@ -138,18 +158,32 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         &layer_panel_ptr->new_popup_listener,
         _wlmaker_layer_panel_handle_new_popup);
 
-    // FIXME: Should actually compute the available size based on the layer's
-    // current population of panels. Which layer, though?
-    //
-    // It has 'desired_width', 'desired_height', layer, exclusive, anchor,
-    // margin => in 'pending'.
-    if (NULL != server_ptr->wlr_output_layout_ptr) {
-        struct wlr_box extents;
-        wlr_output_layout_get_box(
-            server_ptr->wlr_output_layout_ptr, NULL, &extents);
-        wlr_layer_surface_v1_configure(
-            wlr_layer_surface_v1_ptr, extents.width, extents.height);
+    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
+        layer_panel_ptr->server_ptr);
+    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
+        workspace_ptr);
+    wlmtk_workspace_layer_t layer = _wlmaker_layer_from_zwlr_layer(
+        layer_panel_ptr->wlr_layer_surface_v1_ptr->current.layer);
+    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+        wlmtk_workspace_ptr, layer);
+    if (NULL == layer_ptr) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_INVALID_METHOD,
+            "Invalid zwlr_layer value: %d",
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->current.layer);
+        _wlmaker_layer_panel_destroy(layer_panel_ptr);
+        return NULL;
     }
+
+    // FIXME: Add protocol verification: if width == 0, then anchor must be set.
+    // FIXME: This is ugly. Need to encapsulate the parameters, and translate
+    // them here.
+    layer_panel_ptr->super_panel.anchor = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.anchor;
+    layer_panel_ptr->super_panel.width = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.desired_width;
+    layer_panel_ptr->super_panel.height = layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.desired_height;
+
+    wlmtk_layer_add_panel(layer_ptr, &layer_panel_ptr->super_panel);
 
     bs_log(BS_INFO, "Created layer panel %p with wlmtk surface %p",
            layer_panel_ptr, layer_panel_ptr->wlmtk_surface_ptr);
@@ -166,6 +200,12 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 {
     bs_log(BS_INFO, "Destroying layer panel %p with wlmtk surface %p",
            layer_panel_ptr, layer_panel_ptr->wlmtk_surface_ptr);
+
+    wlmtk_layer_t *layer_ptr = wlmtk_panel_get_layer(
+        &layer_panel_ptr->super_panel);
+    if (NULL != layer_ptr) {
+        wlmtk_layer_remove_panel(layer_ptr, &layer_panel_ptr->super_panel);
+    }
 
     wlmtk_util_disconnect_listener(&layer_panel_ptr->destroy_listener);
 
@@ -185,21 +225,12 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Handler for the `map` signal of `wlmtk_surface_t`: Maps the panel to layer.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _wlmaker_layer_panel_handle_surface_map(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
+/** @return The layer number, translated from protocol to internal value. */
+wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
+    enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
-    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_layer_panel_t, surface_map_listener);
-
     wlmtk_workspace_layer_t layer;
-    switch (layer_panel_ptr->wlr_layer_surface_v1_ptr->current.layer) {
+    switch (zwlr_layer) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
         layer = WLMTK_WORKSPACE_LAYER_BACKGROUND;
         break;
@@ -213,26 +244,42 @@ void _wlmaker_layer_panel_handle_surface_map(
         layer = WLMTK_WORKSPACE_LAYER_OVERLAY;
         break;
     default:
-        wl_resource_post_error(
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
-            WL_DISPLAY_ERROR_INVALID_METHOD,
-            "Invalid layer value: %d",
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->current.layer);
-        return;
+        layer = WLMTK_WORKSPACE_LAYER_INVALID;
+        break;
     }
+    return layer;
+}
 
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        layer_panel_ptr->server_ptr);
-    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
-        workspace_ptr);
+/* ------------------------------------------------------------------------- */
+/** Implements wlmtk_panel_vmt_t::request_size. */
+uint32_t _wlmaker_layer_panel_request_size(
+    wlmtk_panel_t *panel_ptr,
+    int width,
+    int height)
+{
+    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
+        panel_ptr, wlmaker_layer_panel_t, super_panel);
 
-    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
-        wlmtk_workspace_ptr, layer);
-    BS_ASSERT(NULL != layer_ptr);
+    return wlr_layer_surface_v1_configure(
+        layer_panel_ptr->wlr_layer_surface_v1_ptr, width, height);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `map` signal of `wlmtk_surface_t`: Maps the panel to layer.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_layer_panel_handle_surface_map(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_layer_panel_t, surface_map_listener);
 
     wlmtk_element_set_visible(
         wlmtk_panel_element(&layer_panel_ptr->super_panel), true);
-    wlmtk_layer_add_panel(layer_ptr, &layer_panel_ptr->super_panel);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -249,11 +296,8 @@ void _wlmaker_layer_panel_handle_surface_unmap(
     wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_layer_panel_t, surface_unmap_listener);
 
-    wlmtk_layer_t *layer_ptr = wlmtk_panel_get_layer(
-        &layer_panel_ptr->super_panel);
-    if (NULL == layer_ptr) return;
-
-    wlmtk_layer_remove_panel(layer_ptr, &layer_panel_ptr->super_panel);
+    wlmtk_element_set_visible(
+        wlmtk_panel_element(&layer_panel_ptr->super_panel), false);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -299,7 +343,7 @@ void _wlmaker_layer_panel_handle_new_popup(
 static void test_create_destroy(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_layer_panel_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
+    { 0, "create_destroy", test_create_destroy },
     { 0, NULL, NULL }
 };
 

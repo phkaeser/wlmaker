@@ -217,6 +217,9 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container,
         NULL,
         wlmtk_layer_element(workspace_ptr->background_layer_ptr));
+    wlmtk_layer_set_workspace(
+        workspace_ptr->background_layer_ptr,
+        workspace_ptr);
 
     workspace_ptr->bottom_layer_ptr = wlmtk_layer_create(env_ptr);
     if (NULL == workspace_ptr->bottom_layer_ptr) {
@@ -230,6 +233,7 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container,
         wlmtk_layer_element(workspace_ptr->background_layer_ptr),
         wlmtk_layer_element(workspace_ptr->bottom_layer_ptr));
+    wlmtk_layer_set_workspace(workspace_ptr->bottom_layer_ptr, workspace_ptr);
 
     workspace_ptr->top_layer_ptr = wlmtk_layer_create(env_ptr);
     if (NULL == workspace_ptr->top_layer_ptr) {
@@ -243,6 +247,7 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container,
         &workspace_ptr->window_container.super_element,
         wlmtk_layer_element(workspace_ptr->top_layer_ptr));
+    wlmtk_layer_set_workspace(workspace_ptr->top_layer_ptr, workspace_ptr);
 
     workspace_ptr->overlay_layer_ptr = wlmtk_layer_create(env_ptr);
     if (NULL == workspace_ptr->overlay_layer_ptr) {
@@ -256,7 +261,7 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         &workspace_ptr->super_container,
         wlmtk_layer_element(workspace_ptr->top_layer_ptr),
         wlmtk_layer_element(workspace_ptr->overlay_layer_ptr));
-
+    wlmtk_layer_set_workspace(workspace_ptr->overlay_layer_ptr, workspace_ptr);
 
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
     return workspace_ptr;
@@ -276,6 +281,7 @@ void wlmtk_workspace_set_signals(
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
     if (NULL != workspace_ptr->overlay_layer_ptr) {
+        wlmtk_layer_set_workspace(workspace_ptr->overlay_layer_ptr, NULL);
         wlmtk_container_remove_element(
             &workspace_ptr->super_container,
             wlmtk_layer_element(workspace_ptr->overlay_layer_ptr));
@@ -283,6 +289,7 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
         workspace_ptr->overlay_layer_ptr = NULL;
     }
     if (NULL != workspace_ptr->top_layer_ptr) {
+        wlmtk_layer_set_workspace(workspace_ptr->top_layer_ptr, NULL);
         wlmtk_container_remove_element(
             &workspace_ptr->super_container,
             wlmtk_layer_element(workspace_ptr->top_layer_ptr));
@@ -290,6 +297,7 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
         workspace_ptr->top_layer_ptr = NULL;
     }
     if (NULL != workspace_ptr->bottom_layer_ptr) {
+        wlmtk_layer_set_workspace(workspace_ptr->bottom_layer_ptr, NULL);
         wlmtk_container_remove_element(
             &workspace_ptr->super_container,
             wlmtk_layer_element(workspace_ptr->bottom_layer_ptr));
@@ -297,6 +305,7 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
         workspace_ptr->bottom_layer_ptr = NULL;
     }
     if (NULL != workspace_ptr->background_layer_ptr) {
+        wlmtk_layer_set_workspace(workspace_ptr->background_layer_ptr, NULL);
         wlmtk_container_remove_element(
             &workspace_ptr->super_container,
             wlmtk_layer_element(workspace_ptr->background_layer_ptr));

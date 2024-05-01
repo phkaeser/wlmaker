@@ -33,12 +33,16 @@ extern "C" {
 struct wlr_layer_surface_v1;
 
 /**
- * Creates a layer panel from the given layer surface.
+ * Creates a layer panel for the given layer surface.
+ *
+ * A layer panel is the implementation of a WLroots layer shell surface.
  *
  * @param wlr_layer_surface_v1_ptr
  * @param server_ptr
  *
- * @return The handler for the layer surface or NULL on error.
+ * @return The handler for the layer surface or NULL on error. The associated
+ *     resources will be destroyed once `wlr_layer_surface_v1_ptr` is
+ *     destroyed.
  */
 wlmaker_layer_panel_t *wlmaker_layer_panel_create(
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr,
