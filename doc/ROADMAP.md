@@ -173,6 +173,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Add `ext-idle-notify-v1` support.
   * Add `xdg-activation-v1` support.
   * Add `wlr-foreign-toplevel-management-unstable-v1` support.
+  * Support `keyboard_interactivity` for `wlr-layer-shell-unstable-v1`.
 
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
