@@ -71,6 +71,18 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
                               wlmtk_panel_t *panel_ptr);
 
 /**
+ * Calls @ref wlmtk_panel_compute_dimensions for each contained panel.
+ *
+ * The Wayland protocol spells it is 'undefined' how panels (layer shells)
+ * are stacked and configured within a layer. For wlmaker, we'll configure
+ * the panels in sequence as they were added (found in the container, back
+ * to front).
+ *
+ * @param layer_ptr
+ */
+void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
+
+/**
  * Sets the parent workspace for the layer.
  *
  * Should only be called from @ref wlmtk_workspace_t methods.
@@ -80,8 +92,6 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
  */
 void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
                                wlmtk_workspace_t *workspace_ptr);
-
-void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
 
 
 /** Layer unit test. */

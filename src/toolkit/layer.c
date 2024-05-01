@@ -102,25 +102,6 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
-                               wlmtk_workspace_t *workspace_ptr)
-{
-    layer_ptr->workspace_ptr = workspace_ptr;
-}
-
-/* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Calls @ref wlmtk_panel_compute_dimensions for each contained panel.
- *
- * The Wayland protocol spells it is 'undefined' how panels (layer shells)
- * are stacked and configured within a layer. For wlmaker, we'll configure
- * the panels in sequence as they were added (found in the container, back
- * to front).
- *
- * @param layer_ptr
- */
 void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
 {
     struct wlr_box extents = wlmtk_workspace_get_fullscreen_extents(
@@ -133,7 +114,7 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
 
-        // FIXME: Don't update usable_area if not visible.
+        // FIXME: Add tests & don't update usable_area if not visible.
 
         struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
             panel_ptr, &extents, &usable_area);
@@ -149,6 +130,15 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
             panel_dimensions.y);
     }
 }
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
+                               wlmtk_workspace_t *workspace_ptr)
+{
+    layer_ptr->workspace_ptr = workspace_ptr;
+}
+
+/* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
 
