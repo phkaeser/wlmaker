@@ -24,6 +24,8 @@
 typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"
+#include "env.h"
+#include "surface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,22 +35,30 @@ extern "C" {
  * State of a popup.
  *
  * A popup contains a @ref wlmtk_surface_t, and may contain further popups.
- * These further popups will be shown above the principal surface, in order
+ * These further popups will be stacked above the principal surface, in order
  * of them being added.
  */
 struct _wlmtk_popup_t {
     /** Super class of the panel. */
     wlmtk_container_t         super_container;
+
+    /** The contained surface. */
+    wlmtk_surface_t           *surface_ptr;
 };
 
 /**
  * Initializes the popup.
  *
  * @param popup_ptr
+ * @param env_ptr
+ * @param surface_ptr
  *
  * @return true on success.
  */
-bool wlmtk_popup_init(wlmtk_popup_t *popup_ptr);
+bool wlmtk_popup_init(
+    wlmtk_popup_t *popup_ptr,
+    wlmtk_env_t *env_ptr,
+    wlmtk_surface_t *surface_ptr);
 
 /**
  * Un-initializes the popup.

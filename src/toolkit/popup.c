@@ -25,16 +25,36 @@
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_popup_init(wlmtk_popup_t *popup_ptr)
+bool wlmtk_popup_init(
+    wlmtk_popup_t *popup_ptr,
+    wlmtk_env_t *env_ptr,
+    wlmtk_surface_t *surface_ptr)
 {
     memset(popup_ptr, 0, sizeof(wlmtk_popup_t));
+    if (!wlmtk_container_init(&popup_ptr->super_container, env_ptr)) {
+        return false;
+    }
+
+    wlmtk_container_add_element(
+        &popup_ptr->super_container,
+        wlmtk_surface_element(surface_ptr));
+    popup_ptr->surface_ptr = surface_ptr;
+    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+
+
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_popup_fini(__UNUSED__ wlmtk_popup_t *popup_ptr)
+void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
 {
-
+    if (NULL != popup_ptr->surface_ptr) {
+        wlmtk_container_remove_element(
+            &popup_ptr->super_container,
+            wlmtk_surface_element(popup_ptr->surface_ptr));
+        popup_ptr->surface_ptr = NULL;
+    }
+    wlmtk_container_fini(&popup_ptr->super_container);
 }
 
 /* == Local (static) methods =============================================== */
