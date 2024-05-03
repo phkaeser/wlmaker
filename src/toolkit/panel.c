@@ -128,12 +128,17 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     struct wlr_box *usable_area_ptr)
 {
     // Copied for readability.
-    struct wlr_box max_dims = *full_area_ptr;
     uint32_t anchor = panel_ptr->positioning.anchor;
     int margin_left = panel_ptr->positioning.margin_left;
     int margin_right = panel_ptr->positioning.margin_right;
     int margin_top = panel_ptr->positioning.margin_top;
     int margin_bottom = panel_ptr->positioning.margin_bottom;
+
+    // Negative 'exclusive_zone' values mean to ignore other panels.
+    struct wlr_box max_dims = *usable_area_ptr;
+    if (0 > panel_ptr->positioning.exclusive_zone) {
+        max_dims = *full_area_ptr;
+    }
 
     struct wlr_box dims = {
         .width = panel_ptr->positioning.desired_width,
@@ -176,7 +181,21 @@ struct wlr_box wlmtk_panel_compute_dimensions(
         dims.y = max_dims.y + max_dims.height / 2 - dims.height / 2;
     }
 
-    *usable_area_ptr = *full_area_ptr;
+    // Update the usable area, if there is an exclusive zone.
+    int excl = panel_ptr->positioning.exclusive_zone;
+    if (0 < excl) {
+        if (anchor & WLR_EDGE_LEFT) {
+            usable_area_ptr->x += excl;
+            usable_area_ptr->width -= excl;
+        }
+        if (anchor & WLR_EDGE_TOP) {
+            usable_area_ptr->y += excl;
+            usable_area_ptr->height -= excl;
+        }
+        if (anchor & WLR_EDGE_RIGHT) usable_area_ptr->width -= excl;
+        if (anchor & WLR_EDGE_BOTTOM) usable_area_ptr->height -= excl;
+    }
+
     return dims;
 }
 
@@ -235,10 +254,12 @@ uint32_t _wlmtk_fake_panel_request_size(
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_compute_dimensions(bs_test_t *test_ptr);
+static void test_compute_dimensions_exclusive(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmtk_panel_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "compute_dimensions", test_compute_dimensions },
+    { 1, "compute_dimensions_exclusive", test_compute_dimensions_exclusive },
     { 0, NULL, NULL }
 };
 
@@ -266,7 +287,8 @@ void test_compute_dimensions(bs_test_t *test_ptr)
         .desired_width = 100,
         .desired_height = 50
     };
-    wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(&pos);
+    wlmtk_fake_panel_t *fake_panel_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_fake_panel_create(&pos));
     wlmtk_panel_t *p_ptr = &fake_panel_ptr->panel;
 
     struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100 };
@@ -343,6 +365,70 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 8, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 170, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 88, dims.height);
+
+    wlmtk_fake_panel_destroy(fake_panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies dimension computation with an exclusive_zone. */
+void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
+{
+    wlmtk_panel_positioning_t pos = {
+        .exclusive_zone = 16,
+        .anchor = (WLR_EDGE_LEFT | WLR_EDGE_RIGHT |
+                   WLR_EDGE_TOP | WLR_EDGE_BOTTOM),
+        .margin_left = 40,
+        .margin_right = 30,
+        .margin_top = 20,
+        .margin_bottom = 10
+    };
+
+    wlmtk_fake_panel_t *fake_panel_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_fake_panel_create(&pos));
+    wlmtk_panel_t *p_ptr = &fake_panel_ptr->panel;
+
+    struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100 };
+    struct wlr_box usable = { .x = 1, .y = 2, .width = 195, .height = 90 };
+    struct wlr_box dims;
+
+    // Use full extents on negative exclusive_zone value.
+    p_ptr->positioning.exclusive_zone = -1;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    BS_TEST_VERIFY_EQ(test_ptr, 40, dims.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, dims.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 130, dims.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 70, dims.height);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+
+    // Respect the usable area, for non-negative exclusive zone.
+    p_ptr->positioning.exclusive_zone = 0;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    BS_TEST_VERIFY_EQ(test_ptr, 41, dims.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 22, dims.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 125, dims.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+
+    // Respect the usable area, for non-negative exclusive zone.
+    p_ptr->positioning.exclusive_zone = 7;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    BS_TEST_VERIFY_EQ(test_ptr, 41, dims.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 22, dims.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 125, dims.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 8, usable.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 9, usable.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 181, usable.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 76, usable.height);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
