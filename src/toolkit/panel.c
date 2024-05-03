@@ -269,8 +269,8 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     wlmtk_fake_panel_t *fake_panel_ptr = wlmtk_fake_panel_create(&pos);
     wlmtk_panel_t *p_ptr = &fake_panel_ptr->panel;
 
-    struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100};
-    struct wlr_box usable = {};
+    struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100 };
+    struct wlr_box usable = extents;
     struct wlr_box dims;
 
     p_ptr->positioning.margin_left = 10;
@@ -278,6 +278,7 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     p_ptr->positioning.margin_top = 8;
     p_ptr->positioning.margin_bottom = 4;
 
+    // Not anchored: Keep proposed dimensions.
     p_ptr->positioning.anchor = 0;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
@@ -285,6 +286,7 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
+    // Anchored left or right: Respect margin.
     p_ptr->positioning.anchor = WLR_EDGE_LEFT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 10, dims.x);
@@ -299,6 +301,7 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
+    // Anchored left & right: Centered, and keep proposed dimensions.
     p_ptr->positioning.anchor = WLR_EDGE_LEFT | WLR_EDGE_RIGHT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
@@ -306,6 +309,7 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
+    // Anchored top or bottom: Respect margin.
     p_ptr->positioning.anchor = WLR_EDGE_TOP;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
@@ -320,12 +324,25 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
 
+    // Anchored top and bottom: Centered.
     p_ptr->positioning.anchor = WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
     BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+
+    // Anchored all around, and no size proposed: Use full extents,
+    // while respecting margins.
+    p_ptr->positioning.anchor =
+        WLR_EDGE_LEFT | WLR_EDGE_RIGHT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
+    p_ptr->positioning.desired_height = 0;
+    p_ptr->positioning.desired_width = 0;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, dims.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 8, dims.y);
+    BS_TEST_VERIFY_EQ(test_ptr, 170, dims.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 88, dims.height);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
