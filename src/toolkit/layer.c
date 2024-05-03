@@ -22,6 +22,8 @@
 
 #include "container.h"
 
+#include <wlr/util/edges.h>
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #undef WLR_USE_UNSTABLE
@@ -108,7 +110,6 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
         layer_ptr->workspace_ptr);
     struct wlr_box usable_area = extents;
 
-
     for (bs_dllist_node_t *dlnode_ptr = layer_ptr->panels.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
@@ -143,9 +144,11 @@ void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
 /* == Unit tests =========================================================== */
 
 static void test_add_remove(bs_test_t *test_ptr);
+static void test_layout(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_layer_test_cases[] = {
     { 1, "add_remove", test_add_remove },
+    { 1, "layout", test_layout },
     { 0, NULL, NULL }
 };
 
@@ -183,6 +186,51 @@ void test_add_remove(bs_test_t *test_ptr)
         wlmtk_panel_get_layer(&fake_panel_ptr->panel));
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
+
+    wlmtk_layer_set_workspace(layer_ptr, NULL);
+    wlmtk_fake_workspace_destroy(fake_workspace_ptr);
+    wlmtk_layer_destroy(layer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests panel layout with multiple panels. */
+void test_layout(bs_test_t *test_ptr)
+{
+    wlmtk_layer_t *layer_ptr = BS_ASSERT_NOTNULL(wlmtk_layer_create(NULL));
+    wlmtk_fake_workspace_t *fake_workspace_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_fake_workspace_create(1024, 768));
+    wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
+
+    wlmtk_panel_positioning_t pos = {
+        .desired_width = 100,
+        .desired_height = 50,
+        .exclusive_zone = 40,
+        .anchor = WLR_EDGE_LEFT
+    };
+    wlmtk_fake_panel_t *fp1_ptr = wlmtk_fake_panel_create(&pos);
+    BS_ASSERT_NOTNULL(fp1_ptr);
+
+    wlmtk_layer_add_panel(layer_ptr, &fp1_ptr->panel);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp1_ptr->panel)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 359, wlmtk_panel_element(&fp1_ptr->panel)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, fp1_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, fp1_ptr->requested_height);
+
+    pos.anchor = WLR_EDGE_LEFT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
+    pos.desired_height = 0;
+    wlmtk_fake_panel_t *fp2_ptr = wlmtk_fake_panel_create(&pos);
+    BS_ASSERT_NOTNULL(fp2_ptr);
+    wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel);
+    BS_TEST_VERIFY_EQ(test_ptr, 40, wlmtk_panel_element(&fp2_ptr->panel)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp2_ptr->panel)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, fp2_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, fp2_ptr->requested_height);
+
+    wlmtk_layer_remove_panel(layer_ptr, &fp2_ptr->panel);
+    wlmtk_fake_panel_destroy(fp2_ptr);
+
+    wlmtk_layer_remove_panel(layer_ptr, &fp1_ptr->panel);
+    wlmtk_fake_panel_destroy(fp1_ptr);
 
     wlmtk_layer_set_workspace(layer_ptr, NULL);
     wlmtk_fake_workspace_destroy(fake_workspace_ptr);
