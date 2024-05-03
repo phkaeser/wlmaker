@@ -75,7 +75,7 @@ struct _wlmtk_panel_positioning_t {
     int                       margin_bottom;
 
     /** Size of the exclusive zone, in pixels. -1 to request all. */
-    int                       exlusive_zone;
+    int                       exclusive_zone;
 };
 
 /** State of the panel. */
