@@ -38,6 +38,9 @@ struct _wlmaker_xdg_popup_t {
     /** Super class: Content. */
     wlmtk_content_t           super_content;
 
+    /** FIXME: Super class: popup. */
+    wlmtk_popup_t             super_popup;
+
     /** Surface of the popup. */
     wlmtk_surface_t           *surface_ptr;
     /** The WLR popup. */
@@ -71,6 +74,17 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
  */
 void wlmaker_xdg_popup_destroy(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
+
+/**
+ * Creates a popup.
+ *
+ * FIXME: Replace the other ctor.
+ *
+ * @return Popup handle or NULL on error.
+ */
+wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr,
+    wlmtk_env_t *env_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -89,11 +89,42 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr,
+    wlmtk_env_t *env_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = logged_calloc(
+        1, sizeof(wlmaker_xdg_popup_t));
+    if (NULL == wlmaker_xdg_popup_ptr) return NULL;
+    wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
+
+    wlmaker_xdg_popup_ptr->surface_ptr = wlmtk_surface_create(
+        wlr_xdg_popup_ptr->base->surface, env_ptr);
+    if (NULL == wlmaker_xdg_popup_ptr->surface_ptr) {
+        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
+        return NULL;
+    }
+
+    if (!wlmtk_popup_init(
+            &wlmaker_xdg_popup_ptr->super_popup,
+            env_ptr,
+            wlmaker_xdg_popup_ptr->surface_ptr)) {
+        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
+        return NULL;
+    }
+
+    return wlmaker_xdg_popup_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 {
-    wl_list_remove(&wlmaker_xdg_popup_ptr->new_popup_listener.link);
-    wl_list_remove(&wlmaker_xdg_popup_ptr->destroy_listener.link);
-    wl_list_remove(&wlmaker_xdg_popup_ptr->reposition_listener.link);
+    wlmtk_util_disconnect_listener(
+        &wlmaker_xdg_popup_ptr->new_popup_listener);
+    wlmtk_util_disconnect_listener(
+        &wlmaker_xdg_popup_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &wlmaker_xdg_popup_ptr->reposition_listener);
 
     wlmtk_content_fini(&wlmaker_xdg_popup_ptr->super_content);
 
