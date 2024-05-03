@@ -115,16 +115,18 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
 
-        // FIXME: Add tests & don't update usable_area if not visible.
-
+        struct wlr_box new_usable_area = usable_area;
         struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
-            panel_ptr, &extents, &usable_area);
+            panel_ptr, &extents, &new_usable_area);
+
+        if (wlmtk_panel_element(panel_ptr)->visible) {
+            usable_area = new_usable_area;
+        }
 
         wlmtk_panel_request_size(
             panel_ptr,
             panel_dimensions.width,
             panel_dimensions.height);
-
         wlmtk_element_set_position(
             wlmtk_panel_element(panel_ptr),
             panel_dimensions.x,
@@ -201,6 +203,7 @@ void test_layout(bs_test_t *test_ptr)
         wlmtk_fake_workspace_create(1024, 768));
     wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
 
+    // Adds a left-bounded panel with an exclusive zone.
     wlmtk_panel_positioning_t pos = {
         .desired_width = 100,
         .desired_height = 50,
@@ -209,6 +212,7 @@ void test_layout(bs_test_t *test_ptr)
     };
     wlmtk_fake_panel_t *fp1_ptr = wlmtk_fake_panel_create(&pos);
     BS_ASSERT_NOTNULL(fp1_ptr);
+    wlmtk_element_set_visible(wlmtk_panel_element(&fp1_ptr->panel), true);
 
     wlmtk_layer_add_panel(layer_ptr, &fp1_ptr->panel);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp1_ptr->panel)->x);
@@ -216,15 +220,31 @@ void test_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp1_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, fp1_ptr->requested_height);
 
+    // Next panel is to respect the exclusive zone. It is invisible => later
+    // panels won't shift, but it still will be positioned.
     pos.anchor = WLR_EDGE_LEFT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
     pos.desired_height = 0;
     wlmtk_fake_panel_t *fp2_ptr = wlmtk_fake_panel_create(&pos);
+    wlmtk_element_set_visible(wlmtk_panel_element(&fp2_ptr->panel), false);
     BS_ASSERT_NOTNULL(fp2_ptr);
     wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel);
     BS_TEST_VERIFY_EQ(test_ptr, 40, wlmtk_panel_element(&fp2_ptr->panel)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp2_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp2_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, fp2_ptr->requested_height);
+
+    // Next panel: Same size and position, since the former is invisible.
+    wlmtk_fake_panel_t *fp3_ptr = wlmtk_fake_panel_create(&pos);
+    wlmtk_element_set_visible(wlmtk_panel_element(&fp3_ptr->panel), true);
+    BS_ASSERT_NOTNULL(fp3_ptr);
+    wlmtk_layer_add_panel(layer_ptr, &fp3_ptr->panel);
+    BS_TEST_VERIFY_EQ(test_ptr, 40, wlmtk_panel_element(&fp3_ptr->panel)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp3_ptr->panel)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, fp3_ptr->requested_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, fp3_ptr->requested_height);
+
+    wlmtk_layer_remove_panel(layer_ptr, &fp3_ptr->panel);
+    wlmtk_fake_panel_destroy(fp3_ptr);
 
     wlmtk_layer_remove_panel(layer_ptr, &fp2_ptr->panel);
     wlmtk_fake_panel_destroy(fp2_ptr);
