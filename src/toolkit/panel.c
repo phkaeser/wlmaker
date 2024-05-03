@@ -19,6 +19,7 @@
  */
 
 #include "panel.h"
+#include "test.h"
 
 #include <wlr/util/edges.h>
 
@@ -402,57 +403,29 @@ void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
     // Use full extents on negative exclusive_zone value.
     p_ptr->positioning.exclusive_zone = -1;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 40, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 20, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 130, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 70, dims.height);
-
-    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 40, 20, 130, 70, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 90, usable);
 
     // Respect the usable area, for non-negative exclusive zone.
     p_ptr->positioning.exclusive_zone = 0;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 22, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 125, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
-
-    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 125, 60, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 90, usable);
 
     // Respect the usable area, for non-negative exclusive zone. Do not
     // update the usable zone, since anchored not appropriately.
     p_ptr->positioning.exclusive_zone = 7;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 22, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 125, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
-
-    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 125, 60, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 90, usable);
 
     // Respect usable zone, and update, since anchored left and full-height.
     p_ptr->positioning.desired_width = 20;
     p_ptr->positioning.exclusive_zone = 7;
     p_ptr->positioning.anchor = WLR_EDGE_LEFT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 22, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 20, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
-
-    BS_TEST_VERIFY_EQ(test_ptr, 48, usable.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 148, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 20, 60, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 48, 2, 148, 90, usable);
 
     // Check for usable zone at the bottom.
     usable.x = 1; usable.y = 2; usable.width = 195; usable.height = 90;
@@ -461,15 +434,8 @@ void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
     p_ptr->positioning.exclusive_zone = 7;
     p_ptr->positioning.anchor = WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 48, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 62, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 20, dims.height);
-
-    BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 73, usable.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 48, 62, 100, 20, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 73, usable);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
