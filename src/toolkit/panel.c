@@ -312,56 +312,35 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     // Not anchored: Keep proposed dimensions.
     p_ptr->positioning.anchor = 0;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 50, 25, 100, 50, dims);
 
     // Anchored left or right: Respect margin.
     p_ptr->positioning.anchor = WLR_EDGE_LEFT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 10, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 10, 25, 100, 50, dims);
 
     p_ptr->positioning.anchor = WLR_EDGE_RIGHT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 80, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 80, 25, 100, 50, dims);
 
     // Anchored left & right: Centered, and keep proposed dimensions.
     p_ptr->positioning.anchor = WLR_EDGE_LEFT | WLR_EDGE_RIGHT;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 50, 25, 100, 50, dims);
 
     // Anchored top or bottom: Respect margin.
     p_ptr->positioning.anchor = WLR_EDGE_TOP;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 8, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 50, 8, 100, 50, dims);
 
     p_ptr->positioning.anchor = WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 46, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 50, 46, 100, 50, dims);
 
     // Anchored top and bottom: Centered.
     p_ptr->positioning.anchor = WLR_EDGE_TOP | WLR_EDGE_BOTTOM;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 25, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 50, 25, 100, 50, dims);
 
     // Anchored all around, and no size proposed: Use full extents,
     // while respecting margins.
@@ -370,10 +349,7 @@ void test_compute_dimensions(bs_test_t *test_ptr)
     p_ptr->positioning.desired_height = 0;
     p_ptr->positioning.desired_width = 0;
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
-    BS_TEST_VERIFY_EQ(test_ptr, 10, dims.x);
-    BS_TEST_VERIFY_EQ(test_ptr, 8, dims.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 170, dims.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 88, dims.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 10, 8, 170, 88, dims);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
