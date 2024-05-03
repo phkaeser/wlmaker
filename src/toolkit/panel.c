@@ -182,24 +182,25 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     }
 
     // Update the usable area, if there is an exclusive zone.
-    if (0 < panel_ptr->positioning.exclusive_zone) {
+    int exclusive_zone = panel_ptr->positioning.exclusive_zone;
+    if (0 < exclusive_zone) {
         if (anchor == WLR_EDGE_LEFT ||
             anchor == (WLR_EDGE_LEFT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
-            usable_area_ptr->x += panel_ptr->positioning.exclusive_zone;
-            usable_area_ptr->width -= panel_ptr->positioning.exclusive_zone;
+            usable_area_ptr->x += exclusive_zone + margin_left;
+            usable_area_ptr->width -= exclusive_zone + margin_left;
         }
         if (anchor == WLR_EDGE_RIGHT ||
             anchor == (WLR_EDGE_RIGHT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
-            usable_area_ptr->width -= panel_ptr->positioning.exclusive_zone;
+            usable_area_ptr->width -= exclusive_zone + margin_right;
         }
         if (anchor == WLR_EDGE_TOP ||
             anchor == (WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-            usable_area_ptr->y += panel_ptr->positioning.exclusive_zone;
-            usable_area_ptr->height -= panel_ptr->positioning.exclusive_zone;
+            usable_area_ptr->y += exclusive_zone + margin_top;
+            usable_area_ptr->height -= exclusive_zone + margin_top;
         }
         if (anchor == WLR_EDGE_BOTTOM ||
             anchor == (WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-            usable_area_ptr->height -= panel_ptr->positioning.exclusive_zone;
+            usable_area_ptr->height -= exclusive_zone + margin_bottom;
         }
     }
 
@@ -448,9 +449,9 @@ void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 20, dims.width);
     BS_TEST_VERIFY_EQ(test_ptr, 60, dims.height);
 
-    BS_TEST_VERIFY_EQ(test_ptr, 8, usable.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 48, usable.x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 188, usable.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 148, usable.width);
     BS_TEST_VERIFY_EQ(test_ptr, 90, usable.height);
 
     // Check for usable zone at the bottom.
@@ -468,7 +469,7 @@ void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, usable.x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, usable.y);
     BS_TEST_VERIFY_EQ(test_ptr, 195, usable.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 83, usable.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 73, usable.height);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
