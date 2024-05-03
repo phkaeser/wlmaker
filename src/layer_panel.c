@@ -22,6 +22,8 @@
 
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+#include "xdg_popup.h"
+
 /* == Declarations ========================================================= */
 
 /** State of a layer panel. */
@@ -465,6 +467,23 @@ void _wlmaker_layer_panel_handle_new_popup(
     wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_layer_panel_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    wlmaker_xdg_popup_t *popup_ptr = wlmaker_xdg_popup2_create(
+        wlr_xdg_popup_ptr,
+        layer_panel_ptr->server_ptr->env_ptr);
+    if (NULL == popup_ptr) {
+        wl_resource_post_error(
+            wlr_xdg_popup_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmtk_xdg_popup2_create.");
+        return;
+    }
+
+    wlmtk_container_add_element(
+        &layer_panel_ptr->super_panel.super_container,
+        wlmtk_popup_element(&popup_ptr->super_popup));
+    wlmtk_element_set_visible(
+        wlmtk_popup_element(&popup_ptr->super_popup), true);
 
     bs_log(BS_WARNING, "FIXME: Unimplemented new_popup %p for panel %p",
            wlr_xdg_popup_ptr, layer_panel_ptr);
