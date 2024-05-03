@@ -332,6 +332,7 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+// TODO(kaeser@gubbe.ch): Add test to verify layers are reconfigured.
 void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
                                  const struct wlr_box *extents_ptr)
 {
@@ -339,6 +340,19 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
     workspace_ptr->y1 = extents_ptr->y;
     workspace_ptr->x2 = extents_ptr->x + extents_ptr->width;
     workspace_ptr->y2 = extents_ptr->y + extents_ptr->height;
+
+    if (NULL != workspace_ptr->background_layer_ptr) {
+        wlmtk_layer_reconfigure(workspace_ptr->background_layer_ptr);
+    }
+    if (NULL != workspace_ptr->bottom_layer_ptr) {
+        wlmtk_layer_reconfigure(workspace_ptr->bottom_layer_ptr);
+    }
+    if (NULL != workspace_ptr->top_layer_ptr) {
+        wlmtk_layer_reconfigure(workspace_ptr->top_layer_ptr);
+    }
+    if (NULL != workspace_ptr->overlay_layer_ptr) {
+        wlmtk_layer_reconfigure(workspace_ptr->overlay_layer_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
