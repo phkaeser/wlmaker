@@ -67,6 +67,9 @@ bool wlmtk_popup_init(
  */
 void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr);
 
+/** Returns the base @ref wlmtk_elemnt_t. */
+wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

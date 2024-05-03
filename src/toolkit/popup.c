@@ -57,6 +57,12 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
     wlmtk_container_fini(&popup_ptr->super_container);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
+{
+    return &popup_ptr->super_container.super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == End of popup.c ======================================================= */
