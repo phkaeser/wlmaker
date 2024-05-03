@@ -41,6 +41,7 @@
 #include "fsm.h"
 #include "input.h"
 #include "panel.h"
+#include "popup.h"
 #include "surface.h"
 #include "rectangle.h"
 #include "resizebar.h"
