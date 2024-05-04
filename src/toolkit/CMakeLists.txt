@@ -29,6 +29,7 @@ SET(PUBLIC_HEADER_FILES
   layer.h
   panel.h
   popup.h
+  pupbase.h
   primitives.h
   rectangle.h
   resizebar.h
@@ -59,6 +60,7 @@ TARGET_SOURCES(toolkit PRIVATE
   layer.c
   panel.c
   popup.c
+  pubase.c
   primitives.c
   rectangle.c
   resizebar.c
