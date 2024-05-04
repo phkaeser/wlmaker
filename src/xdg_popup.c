@@ -32,6 +32,9 @@ static void handle_reposition(
 static void handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_destroy2(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -113,6 +116,11 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
         return NULL;
     }
 
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->events.destroy,
+        &wlmaker_xdg_popup_ptr->destroy_listener,
+        handle_destroy2);
+
     return wlmaker_xdg_popup_ptr;
 }
 
@@ -127,6 +135,8 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
         &wlmaker_xdg_popup_ptr->reposition_listener);
 
     wlmtk_content_fini(&wlmaker_xdg_popup_ptr->super_content);
+
+    wlmtk_popup_fini(&wlmaker_xdg_popup_ptr->super_popup);
 
     if (NULL != wlmaker_xdg_popup_ptr->surface_ptr) {
         wlmtk_surface_destroy(wlmaker_xdg_popup_ptr->surface_ptr);
@@ -165,6 +175,27 @@ void handle_destroy(
         wlmtk_content_remove_popup(
             parent_content_ptr,
             &wlmaker_xdg_popup_ptr->super_content);
+    }
+
+    wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles popup destruction: Removes from parent content, and destroy. */
+void handle_destroy2(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
+
+    // FIXME: This is ugly.
+    wlmtk_container_t *parent_container_ptr = wlmtk_popup_element(
+        &wlmaker_xdg_popup_ptr->super_popup)->parent_container_ptr;
+    if (NULL != parent_container_ptr) {
+        wlmtk_container_remove_element(
+            parent_container_ptr,
+            wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup));
     }
 
     wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
