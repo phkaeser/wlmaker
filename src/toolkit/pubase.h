@@ -74,7 +74,7 @@ void wlmtk_pubase_add_popup(wlmtk_pubase_t *pubase_ptr,
 void wlmtk_pubase_remove_popup(wlmtk_pubase_t *pubase_ptr,
                                wlmtk_popup_t *popup_ptr);
 
-/** Returns the base @ref wlmkt_element_t for `pubase_ptr`. */
+/** Returns the base @ref wlmtk_element_t for `pubase_ptr`. */
 wlmtk_element_t *wlmtk_pubase_element(wlmtk_pubase_t *pubase_ptr);
 
 #ifdef __cplusplus
