@@ -59,6 +59,12 @@ void wlmtk_pubase_remove_popup(wlmtk_pubase_t *pubase_ptr,
     wlmtk_popup_set_pubase(popup_ptr, NULL);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_pubase_element(wlmtk_pubase_t *pubase_ptr)
+{
+    return &pubase_ptr->super_container.super_element;
+}
+
 /* == Exported methods ===================================================== */
 
 /* == Local (static) methods =============================================== */
