@@ -38,6 +38,9 @@ static void handle_destroy2(
 static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_new_popup2(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -115,11 +118,30 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
+    wlmtk_element_set_position(
+        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        wlr_xdg_popup_ptr->scheduled.geometry.x,
+        wlr_xdg_popup_ptr->scheduled.geometry.y);
+
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->events.reposition,
+        &wlmaker_xdg_popup_ptr->reposition_listener,
+        handle_reposition);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->events.destroy,
         &wlmaker_xdg_popup_ptr->destroy_listener,
         handle_destroy2);
+
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->events.new_popup,
+        &wlmaker_xdg_popup_ptr->new_popup_listener,
+        handle_new_popup2);
+
+    wlmtk_surface_connect_map_listener_signal(
+        wlmaker_xdg_popup_ptr->surface_ptr,
+        &wlmaker_xdg_popup_ptr->surface_map_listener,
+        handle_surface_map);
 
     return wlmaker_xdg_popup_ptr;
 }
@@ -230,6 +252,36 @@ void handle_new_popup(
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, new_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles further popups. Creates them and adds them to parent's content. */
+void handle_new_popup2(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    wlmaker_xdg_popup_t *new_popup_ptr = wlmaker_xdg_popup2_create(
+        wlr_xdg_popup_ptr,
+        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup)->env_ptr);
+    if (NULL == new_popup_ptr) {
+        wl_resource_post_error(
+            wlr_xdg_popup_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmtk_xdg_popup2_create.");
+        return;
+    }
+
+    wlmtk_element_set_visible(
+        wlmtk_popup_element(&new_popup_ptr->super_popup), true);
+    // FIXME: Add to popup.
+
+
+    bs_log(BS_INFO, "XDG popup %p: New popup %p",
+           wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
