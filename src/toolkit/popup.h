@@ -25,6 +25,7 @@ typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"
 #include "env.h"
+#include "pubase.h"
 #include "surface.h"
 
 #ifdef __cplusplus
@@ -44,6 +45,8 @@ struct _wlmtk_popup_t {
 
     /** The contained surface. */
     wlmtk_surface_t           *surface_ptr;
+
+    wlmtk_pubase_t            pubase;
 };
 
 /**
