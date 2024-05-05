@@ -211,15 +211,6 @@ void handle_destroy2(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
 
-    // FIXME: This is ugly.
-    wlmtk_container_t *parent_container_ptr = wlmtk_popup_element(
-        &wlmaker_xdg_popup_ptr->super_popup)->parent_container_ptr;
-    if (NULL != parent_container_ptr) {
-        wlmtk_container_remove_element(
-            parent_container_ptr,
-            wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup));
-    }
-
     wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }
 
@@ -277,8 +268,9 @@ void handle_new_popup2(
 
     wlmtk_element_set_visible(
         wlmtk_popup_element(&new_popup_ptr->super_popup), true);
-    // FIXME: Add to popup.
-
+    wlmtk_pubase_add_popup(
+        &wlmaker_xdg_popup_ptr->super_popup.pubase,
+        &new_popup_ptr->super_popup);
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
