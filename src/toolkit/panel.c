@@ -40,13 +40,28 @@ bool wlmtk_panel_init(
     }
     panel_ptr->positioning = *positioning_ptr;
 
+    if (!wlmtk_pubase_init(&panel_ptr->pubase, env_ptr)) {
+        wlmtk_panel_fini(panel_ptr);
+        return false;
+    }
+    wlmtk_container_add_element(
+        &panel_ptr->super_container,
+        wlmtk_pubase_element(&panel_ptr->pubase));
+    wlmtk_element_set_visible(wlmtk_pubase_element(&panel_ptr->pubase), true);
+
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_panel_fini(wlmtk_panel_t *panel_ptr)
 {
-    panel_ptr = panel_ptr;  // Unused.
+    if (wlmtk_pubase_element(&panel_ptr->pubase)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+        &panel_ptr->super_container,
+        wlmtk_pubase_element(&panel_ptr->pubase));
+    }
+    wlmtk_pubase_fini(&panel_ptr->pubase);
+    wlmtk_container_fini(&panel_ptr->super_container);
 }
 
 /* ------------------------------------------------------------------------- */
