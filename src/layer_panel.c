@@ -479,11 +479,11 @@ void _wlmaker_layer_panel_handle_new_popup(
         return;
     }
 
+    wlmtk_element_set_visible(
+        wlmtk_popup_element(&popup_ptr->super_popup), true);
     wlmtk_container_add_element(
         &layer_panel_ptr->super_panel.super_container,
         wlmtk_popup_element(&popup_ptr->super_popup));
-    wlmtk_element_set_visible(
-        wlmtk_popup_element(&popup_ptr->super_popup), true);
 
     bs_log(BS_WARNING, "FIXME: Unimplemented new_popup %p for panel %p",
            wlr_xdg_popup_ptr, layer_panel_ptr);
