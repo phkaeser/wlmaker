@@ -153,8 +153,9 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
+    wlmtk_container_add_element_atop(
         &layer_panel_ptr->super_panel.super_container,
+        NULL,
         wlmtk_surface_element(layer_panel_ptr->wlmtk_surface_ptr));
     wlmtk_element_set_visible(
         wlmtk_surface_element(layer_panel_ptr->wlmtk_surface_ptr), true);
@@ -481,9 +482,9 @@ void _wlmaker_layer_panel_handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_popup_element(&popup_ptr->super_popup), true);
-    wlmtk_container_add_element(
-        &layer_panel_ptr->super_panel.super_container,
-        wlmtk_popup_element(&popup_ptr->super_popup));
+    wlmtk_pubase_add_popup(
+        &layer_panel_ptr->super_panel.pubase,
+        &popup_ptr->super_popup);
 
     bs_log(BS_WARNING, "FIXME: Unimplemented new_popup %p for panel %p",
            wlr_xdg_popup_ptr, layer_panel_ptr);
