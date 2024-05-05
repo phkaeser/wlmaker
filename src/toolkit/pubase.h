@@ -26,17 +26,18 @@ typedef struct _wlmtk_pubase_t wlmtk_pubase_t;
 
 #include "container.h"
 #include "env.h"
-#include "popup.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
 
 /** State of the popup base. */
 struct _wlmtk_pubase_t {
     /** Super class of the popup base: Container, holding popups. */
     wlmtk_container_t         super_container;
 };
+
+#include "popup.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 /**
  * Initialize the popup base.

@@ -22,6 +22,43 @@
 
 /* == Declarations ========================================================= */
 
+/* ------------------------------------------------------------------------- */
+bool wlmtk_pubase_init(wlmtk_pubase_t *pubase_ptr, wlmtk_env_t *env_ptr)
+{
+    memset(pubase_ptr, 0, sizeof(wlmtk_pubase_t));
+    if (!wlmtk_container_init(&pubase_ptr->super_container, env_ptr)) {
+        return false;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_pubase_fini(wlmtk_pubase_t *pubase_ptr)
+{
+    wlmtk_container_fini(&pubase_ptr->super_container);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_pubase_add_popup(wlmtk_pubase_t *pubase_ptr,
+                            wlmtk_popup_t *popup_ptr)
+{
+    wlmtk_container_add_element(
+        &pubase_ptr->super_container,
+        wlmtk_popup_element(popup_ptr));
+    wlmtk_popup_set_pubase(popup_ptr, pubase_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_pubase_remove_popup(wlmtk_pubase_t *pubase_ptr,
+                               wlmtk_popup_t *popup_ptr)
+{
+    wlmtk_container_remove_element(
+        &pubase_ptr->super_container,
+        wlmtk_popup_element(popup_ptr));
+    wlmtk_popup_set_pubase(popup_ptr, NULL);
+}
+
 /* == Exported methods ===================================================== */
 
 /* == Local (static) methods =============================================== */

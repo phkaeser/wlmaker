@@ -29,7 +29,7 @@ SET(PUBLIC_HEADER_FILES
   layer.h
   panel.h
   popup.h
-  pupbase.h
+  pubase.h
   primitives.h
   rectangle.h
   resizebar.h

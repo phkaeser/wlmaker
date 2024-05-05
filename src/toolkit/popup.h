@@ -43,10 +43,15 @@ struct _wlmtk_popup_t {
     /** Super class of the panel. */
     wlmtk_container_t         super_container;
 
+    /** And the popup base. Popups can contain child popups. */
+    wlmtk_pubase_t            pubase;
+
     /** The contained surface. */
     wlmtk_surface_t           *surface_ptr;
 
-    wlmtk_pubase_t            pubase;
+    /** The parent popup base. */
+    wlmtk_pubase_t            *parent_pubase_ptr;
+
 };
 
 /**
@@ -69,6 +74,15 @@ bool wlmtk_popup_init(
  * @param popup_ptr
  */
 void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr);
+
+/**
+ * Sets the popup base for `popup_ptr`.
+ *
+ * @param popup_ptr
+ * @param pubase_ptr
+ */
+void wlmtk_popup_set_pubase(wlmtk_popup_t *popup_ptr,
+                            wlmtk_pubase_t *pubase_ptr);
 
 /** Returns the base @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr);

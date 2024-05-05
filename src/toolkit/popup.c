@@ -58,6 +58,15 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_popup_set_pubase(wlmtk_popup_t *popup_ptr,
+                            wlmtk_pubase_t *pubase_ptr)
+{
+    BS_ASSERT((NULL == popup_ptr->parent_pubase_ptr) ||
+              (NULL == pubase_ptr));
+    popup_ptr->parent_pubase_ptr = pubase_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
 {
     return &popup_ptr->super_container.super_element;
