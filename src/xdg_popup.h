@@ -68,14 +68,6 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     wlmtk_env_t *env_ptr);
 
 /**
- * Destroys the popup.
- *
- * @param wlmaker_xdg_popup_ptr
- */
-void wlmaker_xdg_popup_destroy(
-    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
-
-/**
  * Creates a popup.
  *
  * FIXME: Replace the other ctor.
@@ -85,6 +77,14 @@ void wlmaker_xdg_popup_destroy(
 wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
     wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the popup.
+ *
+ * @param wlmaker_xdg_popup_ptr
+ */
+void wlmaker_xdg_popup_destroy(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
