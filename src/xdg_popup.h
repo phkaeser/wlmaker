@@ -35,10 +35,7 @@ typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 
 /** State of toolkit popup. */
 struct _wlmaker_xdg_popup_t {
-    /** Super class: Content. */
-    wlmtk_content_t           super_content;
-
-    /** FIXME: Super class: popup. */
+    /** Super class: popup. */
     wlmtk_popup_t             super_popup;
 
     /** Surface of the popup. */
@@ -60,11 +57,9 @@ struct _wlmaker_xdg_popup_t {
 /**
  * Creates a popup.
  *
- * FIXME: Replace the other ctor.
- *
  * @return Popup handle or NULL on error.
  */
-wlmaker_xdg_popup_t *wlmaker_xdg_popup2_create(
+wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
     wlmtk_env_t *env_ptr);
 

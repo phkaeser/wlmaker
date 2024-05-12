@@ -469,7 +469,7 @@ void _wlmaker_layer_panel_handle_new_popup(
         listener_ptr, wlmaker_layer_panel_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    wlmaker_xdg_popup_t *popup_ptr = wlmaker_xdg_popup2_create(
+    wlmaker_xdg_popup_t *popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
         layer_panel_ptr->server_ptr->env_ptr);
     if (NULL == popup_ptr) {

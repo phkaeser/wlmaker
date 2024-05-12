@@ -431,7 +431,7 @@ void handle_new_popup(
         listener_ptr, xdg_toplevel_surface_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup2_create(
+    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
         xdg_tl_surface_ptr->server_ptr->env_ptr);
     if (NULL == xdg_popup_ptr) {
