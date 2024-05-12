@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __TEST_H__
-#define __TEST_H__
+#ifndef __WLMTK_TEST_H__
+#define __WLMTK_TEST_H__
 
 #include <libbase/libbase.h>
 
@@ -45,5 +45,5 @@ extern "C" {
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __TEST_H__ */
+#endif /* __WLMTK_TEST_H__ */
 /* == End of test.h ================================================== */

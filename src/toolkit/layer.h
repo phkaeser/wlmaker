@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LAYER_H__
-#define __LAYER_H__
+#ifndef __WLMTK_LAYER_H__
+#define __WLMTK_LAYER_H__
 
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
@@ -101,5 +101,5 @@ extern const bs_test_case_t wlmtk_layer_test_cases[];
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __LAYER_H__ */
+#endif /* __WLMTK_LAYER_H__ */
 /* == End of layer.h ======================================================= */

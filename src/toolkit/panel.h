@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __PANEL_H__
-#define __PANEL_H__
+#ifndef __WLMTK_PANEL_H__
+#define __WLMTK_PANEL_H__
 
 #include <libbase/libbase.h>
 
@@ -222,5 +222,5 @@ void wlmtk_fake_panel_destroy(wlmtk_fake_panel_t *fake_panel_ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __PANEL_H__ */
+#endif /* __WLMTK_PANEL_H__ */
 /* == End of panel.h ======================================================= */
