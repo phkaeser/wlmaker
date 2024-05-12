@@ -485,9 +485,6 @@ void _wlmaker_layer_panel_handle_new_popup(
     wlmtk_pubase_add_popup(
         &layer_panel_ptr->super_panel.pubase,
         &popup_ptr->super_popup);
-
-    bs_log(BS_WARNING, "FIXME: Unimplemented new_popup %p for panel %p",
-           wlr_xdg_popup_ptr, layer_panel_ptr);
 }
 
 /* == Unit tests =========================================================== */
