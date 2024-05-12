@@ -90,9 +90,9 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
     }
 
     if (wlmtk_pubase_element(&popup_ptr->pubase)->parent_container_ptr) {
-    wlmtk_container_remove_element(
-        &popup_ptr->super_container,
-        wlmtk_pubase_element(&popup_ptr->pubase));
+        wlmtk_container_remove_element(
+            &popup_ptr->super_container,
+            wlmtk_pubase_element(&popup_ptr->pubase));
     }
     wlmtk_pubase_fini(&popup_ptr->pubase);
 
@@ -112,6 +112,18 @@ void wlmtk_popup_set_pubase(wlmtk_popup_t *popup_ptr,
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
 {
     return &popup_ptr->super_container.super_element;
+}
+
+/* ------------------------------------------------------------------------- */
+bs_dllist_node_t *wlmtk_dlnode_from_popup(wlmtk_popup_t *popup_ptr)
+{
+    return &popup_ptr->dlnode;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_popup_t *wlmtk_popup_from_dlnode(bs_dllist_node_t *dlnode_ptr)
+{
+    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_popup_t, dlnode);
 }
 
 /* == Local (static) methods =============================================== */

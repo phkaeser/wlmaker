@@ -31,6 +31,9 @@ typedef struct _wlmtk_pubase_t wlmtk_pubase_t;
 struct _wlmtk_pubase_t {
     /** Super class of the popup base: Container, holding popups. */
     wlmtk_container_t         super_container;
+
+    /** List of all the contained popups, @ref wlmtk_popup_t::dlnode. */
+    bs_dllist_t               popups;
 };
 
 #include "popup.h"

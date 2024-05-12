@@ -36,6 +36,12 @@ bool wlmtk_pubase_init(wlmtk_pubase_t *pubase_ptr, wlmtk_env_t *env_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_pubase_fini(wlmtk_pubase_t *pubase_ptr)
 {
+    bs_dllist_node_t *dlnode_ptr;
+    while (NULL != (dlnode_ptr = pubase_ptr->popups.head_ptr)) {
+        wlmtk_popup_t *popup_ptr = wlmtk_popup_from_dlnode(dlnode_ptr);
+        wlmtk_pubase_remove_popup(pubase_ptr, popup_ptr);
+    }
+
     wlmtk_container_fini(&pubase_ptr->super_container);
 }
 
@@ -47,12 +53,19 @@ void wlmtk_pubase_add_popup(wlmtk_pubase_t *pubase_ptr,
         &pubase_ptr->super_container,
         wlmtk_popup_element(popup_ptr));
     wlmtk_popup_set_pubase(popup_ptr, pubase_ptr);
+
+    bs_dllist_push_back(
+        &pubase_ptr->popups,
+        wlmtk_dlnode_from_popup(popup_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_pubase_remove_popup(wlmtk_pubase_t *pubase_ptr,
                                wlmtk_popup_t *popup_ptr)
 {
+    bs_dllist_remove(
+        &pubase_ptr->popups,
+        wlmtk_dlnode_from_popup(popup_ptr));
     wlmtk_container_remove_element(
         &pubase_ptr->super_container,
         wlmtk_popup_element(popup_ptr));

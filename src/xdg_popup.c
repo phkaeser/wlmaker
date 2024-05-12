@@ -71,12 +71,10 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         &wlr_xdg_popup_ptr->events.reposition,
         &wlmaker_xdg_popup_ptr->reposition_listener,
         handle_reposition);
-
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->events.destroy,
         &wlmaker_xdg_popup_ptr->destroy_listener,
         handle_destroy);
-
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->events.new_popup,
         &wlmaker_xdg_popup_ptr->new_popup_listener,
