@@ -60,16 +60,6 @@ struct _wlmaker_xdg_popup_t {
 /**
  * Creates a popup.
  *
- * @param wlr_xdg_popup_ptr
- * @param env_ptr
- */
-wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
-    struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    wlmtk_env_t *env_ptr);
-
-/**
- * Creates a popup.
- *
  * FIXME: Replace the other ctor.
  *
  * @return Popup handle or NULL on error.
