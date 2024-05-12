@@ -52,6 +52,10 @@ struct _wlmtk_popup_t {
     /** The parent popup base. */
     wlmtk_pubase_t            *parent_pubase_ptr;
 
+    /** Listener for the `map` signal of `wlr_surface`. */
+    struct wl_listener        surface_map_listener;
+    /** Listener for the `map` signal of `wlr_surface`. */
+    struct wl_listener        surface_unmap_listener;
 };
 
 /**
