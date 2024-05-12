@@ -34,6 +34,7 @@ typedef struct _wlmtk_surface_t wlmtk_surface_t;
 typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
 #include "container.h"
+#include "pubase.h"
 #include "surface.h"
 #include "util.h"
 
@@ -116,6 +117,10 @@ struct _wlmtk_content_t {
 
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
+
+    /** And the popup base. Contents can contain popups. */
+    // TODO(kaeser@gubbe.ch): Re-think whether this better be part of window?
+    wlmtk_pubase_t            pubase;
 
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
@@ -274,6 +279,28 @@ void wlmtk_content_add_popup(
 void wlmtk_content_remove_popup(
     wlmtk_content_t *content_ptr,
     wlmtk_content_t *popup_content_ptr);
+
+/**
+ * Adds a popup to the content.
+ *
+ * @param content_ptr
+ * @param popup_ptr
+ */
+void wlmtk_content_add_wlmtk_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_popup_t *popup_ptr);
+
+/**
+ * Removes a popup from the content.
+ *
+ * `popup_ptr` must have previously been added to `content_ptr`.
+ *
+ * @param content_ptr
+ * @param popup_ptr
+ */
+void wlmtk_content_remove_wlmtk_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_popup_t *popup_ptr);
 
 /** @return A pointer to the parent content, or NULL if none. */
 wlmtk_content_t *wlmtk_content_get_parent_content(

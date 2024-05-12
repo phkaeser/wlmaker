@@ -64,6 +64,17 @@ bool wlmtk_content_init(
         wlmtk_content_set_surface(content_ptr, surface_ptr);
     }
 
+    if (!wlmtk_pubase_init(&content_ptr->pubase, env_ptr)) {
+        wlmtk_content_fini(content_ptr);
+        return false;
+    }
+    wlmtk_container_add_element(
+        &content_ptr->super_container,
+        wlmtk_pubase_element(&content_ptr->pubase));
+    wlmtk_element_set_visible(
+        wlmtk_pubase_element(&content_ptr->pubase),
+        true);
+
     return true;
 }
 
@@ -77,6 +88,13 @@ void wlmtk_content_fini(
             dlnode_ptr, wlmtk_content_t, dlnode);
         wlmtk_content_remove_popup(content_ptr, popup_content_ptr);
     }
+
+    if (wlmtk_pubase_element(&content_ptr->pubase)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &content_ptr->super_container,
+            wlmtk_pubase_element(&content_ptr->pubase));
+    }
+    wlmtk_pubase_fini(&content_ptr->pubase);
 
     if (NULL != content_ptr->surface_ptr) {
         wlmtk_container_remove_element(
@@ -218,6 +236,22 @@ void wlmtk_content_remove_popup(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_content_add_wlmtk_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_popup_t *popup_ptr)
+{
+    wlmtk_pubase_add_popup(&content_ptr->pubase, popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_remove_wlmtk_popup(
+    wlmtk_content_t *content_ptr,
+    wlmtk_popup_t *popup_ptr)
+{
+    wlmtk_pubase_remove_popup(&content_ptr->pubase, popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_content_t *wlmtk_content_get_parent_content(
     wlmtk_content_t *content_ptr)
 {
@@ -352,11 +386,13 @@ void _wlmtk_fake_content_set_activated(
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_set_clear_surface(bs_test_t *test_ptr);
 static void test_add_remove_popup(bs_test_t *test_ptr);
+static void test_add_remove_wlmtk_popup(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_content_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_clear_surface", test_set_clear_surface },
     { 1, "add_remove_popup", test_add_remove_popup },
+    { 1, "add_remove_wlmtk_popup", test_add_remove_wlmtk_popup },
     { 0, NULL, NULL }
 };
 
@@ -478,6 +514,53 @@ void test_add_remove_popup(bs_test_t *test_ptr)
 
     wlmtk_content_fini(&popup);
     wlmtk_content_fini(&parent);
+    wlmtk_fake_surface_destroy(fs1_ptr);
+    wlmtk_fake_surface_destroy(fs0_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests adding and removing popups. */
+void test_add_remove_wlmtk_popup(bs_test_t *test_ptr)
+{
+    wlmtk_content_t content;
+    wlmtk_popup_t popup;
+
+    wlmtk_fake_surface_t *fs0_ptr = wlmtk_fake_surface_create();
+    wlmtk_fake_surface_commit_size(fs0_ptr, 100, 10);
+    wlmtk_fake_surface_t *fs1_ptr = wlmtk_fake_surface_create();
+    wlmtk_fake_surface_commit_size(fs1_ptr, 200, 20);
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_content_init(&content, &fs0_ptr->surface, NULL));
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_popup_init(&popup, NULL, &fs1_ptr->surface));
+
+    wlmtk_element_set_visible(wlmtk_content_element(&content), true);
+    wlmtk_element_set_visible(wlmtk_popup_element(&popup), true);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        wlmtk_content_get_parent_content(&content));
+
+    struct wlr_box box;
+    box = wlmtk_element_get_dimensions_box(wlmtk_content_element(&content));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.height);
+
+    wlmtk_content_add_wlmtk_popup(&content, &popup);
+
+    box = wlmtk_element_get_dimensions_box(wlmtk_content_element(&content));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, box.height);
+
+    wlmtk_content_remove_wlmtk_popup(&content, &popup);
+
+    wlmtk_popup_fini(&popup);
+    wlmtk_content_fini(&content);
     wlmtk_fake_surface_destroy(fs1_ptr);
     wlmtk_fake_surface_destroy(fs0_ptr);
 }
