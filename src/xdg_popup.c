@@ -107,7 +107,7 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Handles repositioning. Yet unimplemented. */
+/** Handles repositioning. */
 void handle_reposition(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -115,8 +115,10 @@ void handle_reposition(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, reposition_listener);
 
-    bs_log(BS_WARNING, "Unhandled: reposition on XDG popup %p",
-           wlmaker_xdg_popup_ptr);
+    wlmtk_element_set_position(
+        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->scheduled.geometry.x,
+        wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->scheduled.geometry.y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -127,8 +129,6 @@ void handle_destroy(
 {
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_popup_t, destroy_listener);
-
-    // FIXME: remove from parent?
 
     wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }

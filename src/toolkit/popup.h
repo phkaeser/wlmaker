@@ -73,7 +73,7 @@ bool wlmtk_popup_init(
     wlmtk_surface_t *surface_ptr);
 
 /**
- * Un-initializes the popup.
+ * Un-initializes the popup. Will remove it from the parent pubase.
  *
  * @param popup_ptr
  */
