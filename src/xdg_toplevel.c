@@ -431,19 +431,22 @@ void handle_new_popup(
         listener_ptr, xdg_toplevel_surface_t, new_popup_listener);
     struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
-        wlr_xdg_popup_ptr, xdg_tl_surface_ptr->server_ptr->env_ptr);
+    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup2_create(
+        wlr_xdg_popup_ptr,
+        xdg_tl_surface_ptr->server_ptr->env_ptr);
     if (NULL == xdg_popup_ptr) {
-        bs_log(BS_ERROR, "Failed wlmtk_xdg_popup_create(%p, %p)",
-               wlr_xdg_popup_ptr, xdg_tl_surface_ptr->server_ptr->env_ptr);
+        wl_resource_post_error(
+            wlr_xdg_popup_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmtk_xdg_popup2_create.");
         return;
     }
 
     wlmtk_element_set_visible(
-        wlmtk_content_element(&xdg_popup_ptr->super_content), true);
-    wlmtk_content_add_popup(
+        wlmtk_popup_element(&xdg_popup_ptr->super_popup), true);
+    wlmtk_content_add_wlmtk_popup(
         &xdg_tl_surface_ptr->super_content,
-        &xdg_popup_ptr->super_content);
+        &xdg_popup_ptr->super_popup);
 
     bs_log(BS_INFO, "XDG toplevel %p: New popup %p",
            xdg_tl_surface_ptr, xdg_popup_ptr);
