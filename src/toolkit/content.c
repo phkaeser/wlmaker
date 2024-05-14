@@ -64,15 +64,15 @@ bool wlmtk_content_init(
         wlmtk_content_set_surface(content_ptr, surface_ptr);
     }
 
-    if (!wlmtk_pubase_init(&content_ptr->pubase, env_ptr)) {
+    if (!wlmtk_container_init(&content_ptr->popup_container, env_ptr)) {
         wlmtk_content_fini(content_ptr);
         return false;
     }
     wlmtk_container_add_element(
         &content_ptr->super_container,
-        wlmtk_pubase_element(&content_ptr->pubase));
+        &content_ptr->popup_container.super_element);
     wlmtk_element_set_visible(
-        wlmtk_pubase_element(&content_ptr->pubase),
+        &content_ptr->popup_container.super_element,
         true);
 
     return true;
@@ -89,12 +89,12 @@ void wlmtk_content_fini(
         wlmtk_content_remove_popup(content_ptr, popup_content_ptr);
     }
 
-    if (wlmtk_pubase_element(&content_ptr->pubase)->parent_container_ptr) {
+    if (content_ptr->popup_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &content_ptr->super_container,
-            wlmtk_pubase_element(&content_ptr->pubase));
+            &content_ptr->popup_container.super_element);
     }
-    wlmtk_pubase_fini(&content_ptr->pubase);
+    wlmtk_container_fini(&content_ptr->popup_container);
 
     if (NULL != content_ptr->surface_ptr) {
         wlmtk_container_remove_element(
@@ -240,7 +240,9 @@ void wlmtk_content_add_wlmtk_popup(
     wlmtk_content_t *content_ptr,
     wlmtk_popup_t *popup_ptr)
 {
-    wlmtk_pubase_add_popup(&content_ptr->pubase, popup_ptr);
+    wlmtk_container_add_element(
+        &content_ptr->popup_container,
+        wlmtk_popup_element(popup_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -248,7 +250,9 @@ void wlmtk_content_remove_wlmtk_popup(
     wlmtk_content_t *content_ptr,
     wlmtk_popup_t *popup_ptr)
 {
-    wlmtk_pubase_remove_popup(&content_ptr->pubase, popup_ptr);
+    wlmtk_container_remove_element(
+        &content_ptr->popup_container,
+        wlmtk_popup_element(popup_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

@@ -42,14 +42,14 @@ bool wlmtk_popup_init(
         return false;
     }
 
-    if (!wlmtk_pubase_init(&popup_ptr->pubase, env_ptr)) {
+    if (!wlmtk_container_init(&popup_ptr->popup_container, env_ptr)) {
         wlmtk_popup_fini(popup_ptr);
         return false;
     }
     wlmtk_container_add_element(
         &popup_ptr->super_container,
-        wlmtk_pubase_element(&popup_ptr->pubase));
-    wlmtk_element_set_visible(wlmtk_pubase_element(&popup_ptr->pubase), true);
+        &popup_ptr->popup_container.super_element);
+    wlmtk_element_set_visible(&popup_ptr->popup_container.super_element, true);
 
     if (NULL != surface_ptr) {
         wlmtk_container_add_element(
@@ -73,10 +73,10 @@ bool wlmtk_popup_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
 {
-    if (NULL != popup_ptr->parent_pubase_ptr) {
-        wlmtk_pubase_remove_popup(
-            popup_ptr->parent_pubase_ptr,
-            popup_ptr);
+    if (NULL != wlmtk_popup_element(popup_ptr)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            wlmtk_popup_element(popup_ptr)->parent_container_ptr,
+            wlmtk_popup_element(popup_ptr));
     }
 
     if (NULL != popup_ptr->surface_ptr) {
@@ -89,41 +89,20 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
         popup_ptr->surface_ptr = NULL;
     }
 
-    if (wlmtk_pubase_element(&popup_ptr->pubase)->parent_container_ptr) {
+    if (popup_ptr->popup_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &popup_ptr->super_container,
-            wlmtk_pubase_element(&popup_ptr->pubase));
+            &popup_ptr->popup_container.super_element);
     }
-    wlmtk_pubase_fini(&popup_ptr->pubase);
+    wlmtk_container_fini(&popup_ptr->popup_container);
 
     wlmtk_container_fini(&popup_ptr->super_container);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_popup_set_pubase(wlmtk_popup_t *popup_ptr,
-                            wlmtk_pubase_t *pubase_ptr)
-{
-    BS_ASSERT((NULL == popup_ptr->parent_pubase_ptr) ||
-              (NULL == pubase_ptr));
-    popup_ptr->parent_pubase_ptr = pubase_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
 {
     return &popup_ptr->super_container.super_element;
-}
-
-/* ------------------------------------------------------------------------- */
-bs_dllist_node_t *wlmtk_dlnode_from_popup(wlmtk_popup_t *popup_ptr)
-{
-    return &popup_ptr->dlnode;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_popup_t *wlmtk_popup_from_dlnode(bs_dllist_node_t *dlnode_ptr)
-{
-    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_popup_t, dlnode);
 }
 
 /* == Local (static) methods =============================================== */

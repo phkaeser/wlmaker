@@ -482,9 +482,9 @@ void _wlmaker_layer_panel_handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_popup_element(&popup_ptr->super_popup), true);
-    wlmtk_pubase_add_popup(
-        &layer_panel_ptr->super_panel.pubase,
-        &popup_ptr->super_popup);
+    wlmtk_container_add_element(
+        &layer_panel_ptr->super_panel.popup_container,
+        wlmtk_popup_element(&popup_ptr->super_popup));
 }
 
 /* == Unit tests =========================================================== */

@@ -25,7 +25,6 @@ typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"
 #include "env.h"
-#include "pubase.h"
 #include "surface.h"
 
 #ifdef __cplusplus
@@ -43,22 +42,16 @@ struct _wlmtk_popup_t {
     /** Super class of the panel. */
     wlmtk_container_t         super_container;
 
-    /** And the popup base. Popups can contain child popups. */
-    wlmtk_pubase_t            pubase;
+    /** And the popup container. Popups can contain child popups. */
+    wlmtk_container_t         popup_container;
 
     /** The contained surface. */
     wlmtk_surface_t           *surface_ptr;
-
-    /** The parent popup base. */
-    wlmtk_pubase_t            *parent_pubase_ptr;
 
     /** Listener for the `map` signal of `wlr_surface`. */
     struct wl_listener        surface_map_listener;
     /** Listener for the `map` signal of `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
-
-    /** Node element of @ref wlmtk_pubase_t::popups. */
-    bs_dllist_node_t          dlnode;
 };
 
 /**
@@ -76,28 +69,14 @@ bool wlmtk_popup_init(
     wlmtk_surface_t *surface_ptr);
 
 /**
- * Un-initializes the popup. Will remove it from the parent pubase.
+ * Un-initializes the popup. Will remove it from the parent container.
  *
  * @param popup_ptr
  */
 void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr);
 
-/**
- * Sets the popup base for `popup_ptr`.
- *
- * @param popup_ptr
- * @param pubase_ptr
- */
-void wlmtk_popup_set_pubase(wlmtk_popup_t *popup_ptr,
-                            wlmtk_pubase_t *pubase_ptr);
-
 /** Returns the base @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr);
-
-/** Gets the pointer to @ref wlmtk_popup_t::dlnode. */
-bs_dllist_node_t *wlmtk_dlnode_from_popup(wlmtk_popup_t *popup_ptr);
-/** Gets the @ref wlmtk_popup_t from the @ref wlmtk_popup_t::dlnode. */
-wlmtk_popup_t *wlmtk_popup_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

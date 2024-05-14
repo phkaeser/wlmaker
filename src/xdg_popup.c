@@ -36,6 +36,16 @@ static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmaker_xdg_popup_element_destroy(
+    wlmtk_element_t *element_ptr);
+
+/* == Data ================================================================= */
+
+/** Virtual method table of the parent's @ref wlmtk_element_t. */
+static const wlmtk_element_vmt_t _wlmaker_xdg_popup_element_vmt = {
+    .destroy = _wlmaker_xdg_popup_element_destroy
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -62,6 +72,9 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        &_wlmaker_xdg_popup_element_vmt);
     wlmtk_element_set_position(
         wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
         wlr_xdg_popup_ptr->scheduled.geometry.x,
@@ -154,12 +167,28 @@ void handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_popup_element(&new_popup_ptr->super_popup), true);
-    wlmtk_pubase_add_popup(
-        &wlmaker_xdg_popup_ptr->super_popup.pubase,
-        &new_popup_ptr->super_popup);
+    wlmtk_container_add_element(
+        &wlmaker_xdg_popup_ptr->super_popup.popup_container,
+        wlmtk_popup_element(&new_popup_ptr->super_popup));
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of @ref wlmtk_element_vmt_t::destroy. Virtual dtor.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_xdg_popup_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_xdg_popup_t,
+        super_popup.super_container.super_element);
+
+    wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }
 
 /* == End of xdg_popup.c ==================================================== */

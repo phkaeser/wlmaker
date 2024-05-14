@@ -40,14 +40,14 @@ bool wlmtk_panel_init(
     }
     panel_ptr->positioning = *positioning_ptr;
 
-    if (!wlmtk_pubase_init(&panel_ptr->pubase, env_ptr)) {
+    if (!wlmtk_container_init(&panel_ptr->popup_container, env_ptr)) {
         wlmtk_panel_fini(panel_ptr);
         return false;
     }
     wlmtk_container_add_element(
         &panel_ptr->super_container,
-        wlmtk_pubase_element(&panel_ptr->pubase));
-    wlmtk_element_set_visible(wlmtk_pubase_element(&panel_ptr->pubase), true);
+        &panel_ptr->popup_container.super_element);
+    wlmtk_element_set_visible(&panel_ptr->popup_container.super_element, true);
 
     return true;
 }
@@ -55,12 +55,12 @@ bool wlmtk_panel_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_panel_fini(wlmtk_panel_t *panel_ptr)
 {
-    if (wlmtk_pubase_element(&panel_ptr->pubase)->parent_container_ptr) {
+    if (panel_ptr->popup_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
-        &panel_ptr->super_container,
-        wlmtk_pubase_element(&panel_ptr->pubase));
+            &panel_ptr->super_container,
+            &panel_ptr->popup_container.super_element);
     }
-    wlmtk_pubase_fini(&panel_ptr->pubase);
+    wlmtk_container_fini(&panel_ptr->popup_container);
     wlmtk_container_fini(&panel_ptr->super_container);
 }
 

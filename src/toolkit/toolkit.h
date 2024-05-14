@@ -42,7 +42,6 @@
 #include "input.h"
 #include "panel.h"
 #include "popup.h"
-#include "pubase.h"
 #include "rectangle.h"
 #include "resizebar.h"
 #include "resizebar_area.h"

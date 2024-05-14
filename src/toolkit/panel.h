@@ -31,7 +31,6 @@ typedef struct _wlmtk_panel_positioning_t wlmtk_panel_positioning_t;
 
 #include "container.h"
 #include "layer.h"
-#include "pubase.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,8 +88,8 @@ struct _wlmtk_panel_t {
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
 
-    /** Popup base. Panels may contain popups. */
-    wlmtk_pubase_t            pubase;
+    /** Popup container. Panels may contain popups. */
+    wlmtk_container_t         popup_container;
 
     /** The layer that this panel belongs to. NULL if none. */
     wlmtk_layer_t             *layer_ptr;

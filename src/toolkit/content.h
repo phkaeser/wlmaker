@@ -34,7 +34,7 @@ typedef struct _wlmtk_surface_t wlmtk_surface_t;
 typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
 #include "container.h"
-#include "pubase.h"
+#include "popup.h"
 #include "surface.h"
 #include "util.h"
 
@@ -118,9 +118,9 @@ struct _wlmtk_content_t {
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
 
-    /** And the popup base. Contents can contain popups. */
+    /** And the popup container. Contents can contain popups. */
     // TODO(kaeser@gubbe.ch): Re-think whether this better be part of window?
-    wlmtk_pubase_t            pubase;
+    wlmtk_container_t         popup_container;
 
     /** The principal surface of the content. */
     wlmtk_surface_t           *surface_ptr;
