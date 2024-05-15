@@ -139,8 +139,8 @@ Support for visual effects to improve usability, but not for pure show.
   * Basic theme configuration (decoration style) loaded from configuration file.
   * Workspaces and backgrounds .
 
-* Support `layer_shell`, based on toolkit.
-  * XDG Popups.
+* [done] Support `layer_shell`, based on toolkit.
+  * [done] XDG Popups.
 
 * Multiple workspaces, based on toolkit.
   * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
