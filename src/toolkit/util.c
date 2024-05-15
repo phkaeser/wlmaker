@@ -32,6 +32,16 @@ void wlmtk_util_connect_listener_signal(
     wl_signal_add(signal_ptr, listener_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_disconnect_listener(
+    struct wl_listener *listener_ptr)
+{
+    // Guard clause: No disconnect if it hadn't been connected.
+    if (NULL == listener_ptr || NULL == listener_ptr->link.prev) return;
+
+    wl_list_remove(&listener_ptr->link);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_listener(bs_test_t *test_ptr);
@@ -62,18 +72,27 @@ static void test_listener(bs_test_t *test_ptr)
     int i = 0;
 
     wl_signal_init(&signal);
+
+    // First test: disconnect must not crash.
+    wlmtk_util_disconnect_listener(&l1.listener);
+
+    // Second test: Connect, and verify signal is emitted and handled.
     wlmtk_util_connect_listener_signal(
         &signal, &l1.listener, _wlmtk_util_listener_handler);
-
     BS_TEST_VERIFY_EQ(test_ptr, 0, l1.data);
     wl_signal_emit(&signal, &i);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l1.data);
 
+    // Third test: One more listener, and verify both handlers aacted.
     wlmtk_util_connect_listener_signal(
         &signal, &l2.listener, _wlmtk_util_listener_handler);
     wl_signal_emit(&signal, &i);
     BS_TEST_VERIFY_EQ(test_ptr, 2, l1.data);
     BS_TEST_VERIFY_EQ(test_ptr, 3, l2.data);
+
+    // Cleanup.
+    wlmtk_util_disconnect_listener(&l2.listener);
+    wlmtk_util_disconnect_listener(&l1.listener);
 }
 
 /** Test handler for the listener. */

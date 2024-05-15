@@ -76,7 +76,7 @@ end note
 
 class Workspace {
   Container super_container
-  Container layers[]
+  Layer layers[]
 
   Container *create()
   void destroy()
@@ -87,8 +87,8 @@ class Workspace {
   activate_window(Window*)
   begin_window_move(Window*)
 
-  map_layer_element(LayerElement *, layer)
-  unmap_layer_element(LayerElement *, layer)
+  map_panel(Panel *, layer)
+  unmap_panel(Panel *)
 }
 Container *-- Workspace
 
@@ -164,16 +164,22 @@ note right of Content
   thus may be an element.
 end note
 
-class LayerElement {
-  Element parent
-
-  {abstract}#configure()
-  }
-Element <|-- LayerElement
-
-class LayerShell {
+class Layer {
+  Container super_container
+  
+  
+  add_panel()
+  remove_panel()
 }
-LayerElement <|-- LayerShell
+Container <|-- Layer
+
+class Panel {
+  Element super_element
+
+  {abstract}configure()
+  #set_layer(Layer *)
+}
+Element <|-- Panel
 
 class XdgToplevelSurface {
 }
@@ -243,6 +249,10 @@ class Cursor {
   attach_input_device(struct wlr_input_device*)
   set_image(const char *
 }
+
+class LayerShell {
+}
+Panel *-- LayerShell
 ```
 
 ### Pending work

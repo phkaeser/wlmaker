@@ -71,6 +71,11 @@ struct _wlmtk_surface_t {
     bool                      activated;
 };
 
+/** Type of the surface ctor, for injection. @see wlmtk_surface_create. */
+typedef wlmtk_surface_t *(*wlmtk_surface_create_t)(
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr);
+
 /**
  * Creates a toolkit surface from the `wlr_surface_ptr`.
  *
@@ -145,6 +150,11 @@ struct _wlmtk_fake_surface_t {
 
 /** Ctor for the fake surface.*/
 wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
+
+/** Injectable ctor for the fake surface. */
+wlmtk_surface_t *wlmtk_fake_surface_create_inject(
+    struct wlr_surface *wlr_surface_ptr,
+    wlmtk_env_t *env_ptr);
 
 /** Fakes a wlr_surface commit event. */
 void wlmtk_fake_surface_commit_size(

@@ -15,12 +15,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 SET(PUBLIC_HEADER_FILES
-  gfxbuf.h
-  primitives.h
-  style.h
-  toolkit.h
-  util.h
-
   bordered.h
   box.h
   buffer.h
@@ -30,16 +24,25 @@ SET(PUBLIC_HEADER_FILES
   element.h
   env.h
   fsm.h
+  gfxbuf.h
   input.h
-  surface.h
+  layer.h
+  panel.h
+  popup.h
+  primitives.h
   rectangle.h
   resizebar.h
   resizebar_area.h
+  style.h
+  surface.h
   titlebar.h
   titlebar_button.h
   titlebar_title.h
+  toolkit.h
+  util.h
   window.h
-  workspace.h)
+  workspace.h
+)
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
@@ -53,17 +56,21 @@ TARGET_SOURCES(toolkit PRIVATE
   env.c
   fsm.c
   gfxbuf.c
+  layer.c
+  panel.c
+  popup.c
   primitives.c
-  surface.c
   rectangle.c
   resizebar.c
   resizebar_area.c
+  surface.c
   titlebar.c
   titlebar_button.c
   titlebar_title.c
   util.c
   window.c
-  workspace.c)
+  workspace.c
+)
 TARGET_INCLUDE_DIRECTORIES(
   toolkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..

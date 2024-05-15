@@ -45,3 +45,6 @@
         url = https://gitlab.freedesktop.org/wlroots/wlroots.git
         branch = master
         update = rebase
+[submodule "examples/gtk-layer-shell"]
+	path = examples/gtk-layer-shell
+	url = https://github.com/wmww/gtk-layer-shell.git
