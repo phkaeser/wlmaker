@@ -20,10 +20,13 @@
  * limitations under the License.
  */
 
+/* == Prologue ============================================================= */
 %{
 #include "parser.h"
 #include "scanner.h"
 %}
+
+/* == Bison declarations =================================================== */
 
 %locations
 %define parse.error verbose
@@ -33,18 +36,7 @@
 
 %lex-param { yyscan_t scanner }
 
-%{
-/* == Prologue ============================================================= */
-#include <libbase/libbase.h>
-%}
-/* == Bison declarations =================================================== */
-
 %code provides {
-
-#include <libbase/libbase.h>
-
-    //extern int yylex(YYSTYPE* yylval_param, YYLTYPE *loc_ptr, yyscan_t scanner);
-
     void yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr);
 }
 
@@ -63,6 +55,9 @@ start:          TK_LPAREN TK_RPAREN
                 ;
 
 %%
+/* == Epilogue ============================================================= */
+
+#include <libbase/libbase.h>
 
 void yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr) {
     bs_log(BS_ERROR, "Parse error: %s, %p, %p", msg_ptr, loc_ptr, scanner);
