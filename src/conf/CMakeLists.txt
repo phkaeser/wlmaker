@@ -13,3 +13,16 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+
+FIND_PACKAGE(FLEX 2.6 REQUIRED)
+
+
+SET(LEXER_OUT scanner.c)
+
+FLEX_TARGET(SCANNER scanner.l scanner.c DEFINES_FILE scanner.h)
+
+
+
+ADD_EXECUTABLE(conf_test conf_test.c scanner.c)
+TARGET_LINK_LIBRARIES(conf_test base)
+ADD_TEST(NAME conf_test COMMAND conf_test)

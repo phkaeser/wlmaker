@@ -22,8 +22,10 @@ jobs:
       run: |
         apt-get update
         apt-get install -y git \
+          bison \
           cmake \
           doxygen \
+          flex \
           foot \
           glslang-dev \
           glslang-tools \
