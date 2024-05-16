@@ -15,14 +15,27 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 FIND_PACKAGE(FLEX 2.6 REQUIRED)
+FLEX_TARGET(
+  scanner
+  scanner.l
+  ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+  DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/scanner.h)
+
+FIND_PACKAGE(BISON 3.0 REQUIRED)
+BISON_TARGET(
+  parser
+  parser.y
+  ${CMAKE_CURRENT_BINARY_DIR}/parser.c
+  DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser.h)
+
+ADD_FLEX_BISON_DEPENDENCY(scanner parser)
 
 
-SET(LEXER_OUT scanner.c)
-
-FLEX_TARGET(SCANNER scanner.l scanner.c DEFINES_FILE scanner.h)
-
-
-
-ADD_EXECUTABLE(conf_test conf_test.c scanner.c)
+ADD_EXECUTABLE(
+  conf_test
+  conf_test.c
+  ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+  ${CMAKE_CURRENT_BINARY_DIR}/parser.c)
 TARGET_LINK_LIBRARIES(conf_test base)
+TARGET_INCLUDE_DIRECTORIES(conf_test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/)
 ADD_TEST(NAME conf_test COMMAND conf_test)

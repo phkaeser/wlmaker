@@ -22,9 +22,21 @@
 
 #include <libbase/libbase.h>
 
+#include "parser.h"
+#include "scanner.h"
+
 /** Main program, runs the unit tests. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 {
+    yyscan_t scanner;
+    yylex_init(&scanner);
+
+    YY_BUFFER_STATE buf_state;
+    buf_state = yy_scan_string("()asdf{}", scanner);
+    yyparse(scanner);
+    yy_delete_buffer(buf_state, scanner);
+
+    yylex_destroy(scanner);
     return EXIT_SUCCESS;
 }
 

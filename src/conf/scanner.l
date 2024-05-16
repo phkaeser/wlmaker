@@ -2,6 +2,8 @@
 /**
  * @file scanner.l
  *
+ * See https://westes.github.io/flex/manual/.
+ *
  * @copyright
  * Copyright 2024 Google LLC
  *
@@ -18,19 +20,36 @@
  * limitations under the License.
  */
 
+%{
+    #include "parser.h"
+%}
 
 /* == Definitions section ===================================================*/
-%option nounput
-%option noinput
-%option noyywrap
 
-PAR_OPEN            "("
-PAR_CLOSE           ")"
-BRACE_OPEN          "{"
-BRACE_CLOSE         "}"
+%option batch
+%option bison-bridge
+%option bison-locations
+%option never-interactive
+%option noinput
+%option nounput
+%option noyywrap
+%option reentrant
+%option yylineno
+
+delim               [[:blank:]\r\n]
 
 /* == Rules section ======================================================== */
 %%
+
+{delim}*            { /* whitespace */ }
+
+"("                 { return TK_LPAREN; }
+")"                 { return TK_RPAREN; }
+"{"                 { return TK_LBRACE; }
+"}"                 { return TK_RBRACE; }
+","                 { return TK_COMMA; }
+"="                 { return TK_EQUAL; }
+";"                 { return TK_SEMICOLON; }
 
 %%
 /* == User code section ==================================================== */
