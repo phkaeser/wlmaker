@@ -46,6 +46,8 @@ delim               [[:blank:]\r\n]
 
 {delim}*            { /* whitespace */ }
 
+"//".*\n            { /* comment. */ }
+
 [a-zA-A0-9_.$]+     { yylval->string = logged_strdup(yytext);
                       return TK_STRING; }
 "("                 { return TK_LPAREN; }
