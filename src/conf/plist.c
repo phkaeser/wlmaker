@@ -47,14 +47,43 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
     return ctx.top_object_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
+{
+    wlmcfg_parser_context_t ctx = {};
+
+    FILE *file_ptr = fopen(fname_ptr, "r");
+    if (NULL == file_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed fopen(%s, 'r')", fname_ptr);
+        return NULL;
+    }
+
+    yyscan_t scanner;
+    yylex_init(&scanner);
+
+    YY_BUFFER_STATE buf_state;
+    buf_state = yy_create_buffer(file_ptr, YY_BUF_SIZE, scanner);
+    yy_switch_to_buffer(buf_state, scanner);
+    int rv = yyparse(scanner, &ctx);
+    yy_delete_buffer(buf_state, scanner);
+
+    yylex_destroy(scanner);
+    fclose(file_ptr);
+
+    if (0 != rv) return NULL;
+    return ctx.top_object_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
 
 static void test_from_string(bs_test_t *test_ptr);
+static void test_from_file(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_plist_test_cases[] = {
     { 1, "from_string", test_from_string },
+    { 1, "from_file", test_from_file },
     { 0, NULL, NULL }
 };
 
@@ -68,7 +97,25 @@ void test_from_string(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_STREQ(
         test_ptr,
-        "value", wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
+        "value",
+        wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
+
+    wlmcfg_object_destroy(object_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests plist object creation from string. */
+void test_from_file(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *object_ptr;
+
+    object_ptr = wlmcfg_create_object_from_plist_file(
+        bs_test_resolve_path("conf/string.plist"));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "file_value",
+        wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
 
     wlmcfg_object_destroy(object_ptr);
 }
