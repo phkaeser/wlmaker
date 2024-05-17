@@ -82,12 +82,15 @@ object:         string |
 string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
     free($1);
-    ctx_ptr->top_object_ptr = wlmcfg_object_from_string(string_ptr);
+    bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
+                      wlmcfg_object_from_string(string_ptr));
                 }
                 ;
 
 dict:           TK_LBRACE {
     ctx_ptr->top_dict_ptr = wlmcfg_dict_create();
+    bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
+                      wlmcfg_object_from_dict(ctx_ptr->top_dict_ptr));
                 } kv_list TK_RBRACE
                 ;
 
@@ -96,7 +99,8 @@ kv_list:        kv_list TK_SEMICOLON kv |
                 ;
 
 kv:             TK_STRING TK_EQUAL object {
-    wlmcfg_dict_add(ctx_ptr->top_dict_ptr, $1, ctx_ptr->top_object_ptr);
+    wlmcfg_dict_add(ctx_ptr->top_dict_ptr, $1,
+                    bs_ptr_stack_pop(ctx_ptr->object_stack_ptr));
     free($1);
                 }
                 ;

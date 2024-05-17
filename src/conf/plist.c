@@ -31,27 +31,28 @@
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
 {
-    wlmcfg_parser_context_t ctx = {};
-
     yyscan_t scanner;
     yylex_init(&scanner);
 
     YY_BUFFER_STATE buf_state;
     buf_state = yy_scan_string(buf_ptr, scanner);
+    wlmcfg_parser_context_t ctx = {};
+    ctx.object_stack_ptr = bs_ptr_stack_create();
     int rv = yyparse(scanner, &ctx);
+
+    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx.object_stack_ptr);
+    bs_ptr_stack_destroy(ctx.object_stack_ptr);
     yy_delete_buffer(buf_state, scanner);
 
     yylex_destroy(scanner);
 
     if (0 != rv) return NULL;
-    return ctx.top_object_ptr;
+    return object_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
 {
-    wlmcfg_parser_context_t ctx = {};
-
     FILE *file_ptr = fopen(fname_ptr, "r");
     if (NULL == file_ptr) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed fopen(%s, 'r')", fname_ptr);
@@ -64,14 +65,19 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
     YY_BUFFER_STATE buf_state;
     buf_state = yy_create_buffer(file_ptr, YY_BUF_SIZE, scanner);
     yy_switch_to_buffer(buf_state, scanner);
+
+    wlmcfg_parser_context_t ctx = {};
+    ctx.object_stack_ptr = bs_ptr_stack_create();
     int rv = yyparse(scanner, &ctx);
+    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx.object_stack_ptr);
+    bs_ptr_stack_destroy(ctx.object_stack_ptr);
     yy_delete_buffer(buf_state, scanner);
 
     yylex_destroy(scanner);
     fclose(file_ptr);
 
     if (0 != rv) return NULL;
-    return ctx.top_object_ptr;
+    return object_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -101,8 +107,18 @@ void test_from_string(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
     wlmcfg_object_destroy(object_ptr);
 
-    object_ptr = wlmcfg_create_object_from_plist_string("{key=value}");
+    object_ptr = wlmcfg_create_object_from_plist_string("{key=dict_value}");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "dict_value",
+        wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr,
+                                                                      "key"))));
+    wlmcfg_object_destroy(object_ptr);
+
+    // FIXME: Add test with duplicate keys.
 }
 
 /* ------------------------------------------------------------------------- */
