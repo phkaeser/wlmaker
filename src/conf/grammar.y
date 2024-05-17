@@ -24,20 +24,36 @@
 %{
 #include "grammar.h"
 #include "analyzer.h"
+
+#include <libbase/libbase.h>
+
+#include "model.h"
 %}
 
 /* == Bison declarations =================================================== */
+
+%union{
+    char *string;
+}
 
 %locations
 %define parse.error verbose
 
 %define api.pure full
-%parse-param { void* scanner }
+%parse-param { void* scanner } { wlmcfg_parser_context_t *ctx_ptr }
 
 %lex-param { yyscan_t scanner }
 
+%code requires {
+#include "parser.h"
+}
+
 %code provides {
-    int yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr);
+    extern int yyerror(
+        YYLTYPE *loc_ptr,
+        void* scanner,
+        wlmcfg_parser_context_t *ctx_ptr,
+        const char* msg_ptr);
 }
 
 %token TK_LPAREN
@@ -47,11 +63,23 @@
 %token TK_COMMA
 %token TK_EQUAL
 %token TK_SEMICOLON
+%token  <string> TK_STRING
 
 %%
 /* == Grammar rules ======================================================== */
 
-start:          TK_LPAREN TK_RPAREN
+start:          object
+                ;
+
+object:         string |
+                TK_LPAREN TK_RPAREN |
+                TK_LBRACE TK_RBRACE
+                ;
+
+string:         TK_STRING {
+    wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
+    ctx_ptr->top_object_ptr = wlmcfg_object_from_string(string_ptr);
+ }
                 ;
 
 %%
@@ -59,7 +87,12 @@ start:          TK_LPAREN TK_RPAREN
 
 #include <libbase/libbase.h>
 
-int yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr) {
+int yyerror(
+    YYLTYPE *loc_ptr,
+    void* scanner,
+    __UNUSED__ wlmcfg_parser_context_t *ctx_ptr,
+    const char* msg_ptr)
+{
     bs_log(BS_ERROR, "Parse error: %s, %p, %p", msg_ptr, loc_ptr, scanner);
     return -1;
 }

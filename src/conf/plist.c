@@ -22,6 +22,7 @@
 
 #include "grammar.h"
 #include "analyzer.h"
+#include "parser.h"
 
 /* == Declarations ========================================================= */
 
@@ -30,18 +31,20 @@
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
 {
+    wlmcfg_parser_context_t ctx = {};
+
     yyscan_t scanner;
     yylex_init(&scanner);
 
     YY_BUFFER_STATE buf_state;
     buf_state = yy_scan_string(buf_ptr, scanner);
-    int rv = yyparse(scanner);
+    int rv = yyparse(scanner, &ctx);
     yy_delete_buffer(buf_state, scanner);
 
     yylex_destroy(scanner);
 
     if (0 != rv) return NULL;
-    return NULL;
+    return ctx.top_object_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -61,8 +64,12 @@ void test_from_string(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *object_ptr;
 
-    object_ptr = wlmcfg_create_object_from_plist_string("string");
+    object_ptr = wlmcfg_create_object_from_plist_string("value");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "value", wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
+
     wlmcfg_object_destroy(object_ptr);
 }
 

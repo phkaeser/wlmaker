@@ -80,6 +80,12 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr)
+{
+    return string_ptr->value_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr)
 {
     return &string_ptr->super_object;

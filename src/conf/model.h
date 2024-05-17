@@ -52,6 +52,15 @@ void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
  */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
 
+/**
+ * Returns the value of the string.
+ *
+ * @param string_ptr
+ *
+ * @return Pointer to the string's value.
+ */
+const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr);
+
 /** Gets the superclass @ref wlmcfg_object_t from the string. */
 wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
 /** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
