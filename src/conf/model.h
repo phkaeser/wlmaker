@@ -20,6 +20,8 @@
 #ifndef __WLMCFG_MODEL_H__
 #define __WLMCFG_MODEL_H__
 
+#include <libbase/libbase.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -45,6 +47,8 @@ void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
  */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
 
+/** Unit tests for the config data model. */
+extern const bs_test_case_t wlmcfg_model_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

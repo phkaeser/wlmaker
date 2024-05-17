@@ -127,4 +127,26 @@ void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr)
     _wlmcfg_string_destroy(string_ptr);
 }
 
+/* == Unit tests =========================================================== */
+
+static void test_string(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmcfg_model_test_cases[] = {
+    { 1, "string", test_string },
+    { 0, NULL, NULL }
+};
+
+
+/* ------------------------------------------------------------------------- */
+/** Tests the wlmcfg_string_t methods. */
+void test_string(bs_test_t *test_ptr)
+{
+    wlmcfg_string_t *string_ptr;
+
+    string_ptr = wlmcfg_string_create("a test");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, string_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "a test", string_ptr->value_ptr);
+    _wlmcfg_string_destroy(string_ptr);
+}
+
 /* == End of model.c ======================================================= */
