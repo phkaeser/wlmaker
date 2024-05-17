@@ -80,7 +80,7 @@ object:         string |
 string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
     ctx_ptr->top_object_ptr = wlmcfg_object_from_string(string_ptr);
- }
+                }
                 ;
 
 %%
