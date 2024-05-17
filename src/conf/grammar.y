@@ -100,9 +100,15 @@ kv_list:        kv_list TK_SEMICOLON kv |
 
 kv:             TK_STRING TK_EQUAL object {
     wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx_ptr->object_stack_ptr);
-    wlmcfg_dict_add(ctx_ptr->top_dict_ptr, $1, object_ptr);
+    bool rv = wlmcfg_dict_add(ctx_ptr->top_dict_ptr, $1, object_ptr);
+    if (!rv) {
+        // TODO(kaeser@gubbe.ch): Keep this as error in context.
+        bs_log(BS_WARNING, "Failed wlmcfg_dict_add(%p, %s, %p)",
+               ctx_ptr->top_dict_ptr, $1, object_ptr);
+    }
     wlmcfg_object_destroy(object_ptr);
     free($1);
+    if (!rv) return -1;
                 }
                 ;
 

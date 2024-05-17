@@ -46,7 +46,10 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
 
     yylex_destroy(scanner);
 
-    if (0 != rv) return NULL;
+    if (0 != rv) {
+        if (NULL != object_ptr) wlmcfg_object_destroy(object_ptr);
+        return NULL;
+    }
     return object_ptr;
 }
 
@@ -76,7 +79,10 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
     yylex_destroy(scanner);
     fclose(file_ptr);
 
-    if (0 != rv) return NULL;
+    if (0 != rv) {
+        if (NULL != object_ptr) wlmcfg_object_destroy(object_ptr);
+        return NULL;
+    }
     return object_ptr;
 }
 
@@ -97,7 +103,7 @@ const bs_test_case_t wlmcfg_plist_test_cases[] = {
 /** Tests plist object creation from string. */
 void test_from_string(bs_test_t *test_ptr)
 {
-    wlmcfg_object_t *object_ptr;
+    wlmcfg_object_t *object_ptr, *v_ptr;
 
     object_ptr = wlmcfg_create_object_from_plist_string("value");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
@@ -107,18 +113,26 @@ void test_from_string(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
     wlmcfg_object_destroy(object_ptr);
 
-    object_ptr = wlmcfg_create_object_from_plist_string("{key=dict_value}");
+    object_ptr = wlmcfg_create_object_from_plist_string(
+        "{key1=dict_value1;key2=dict_value2}");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    v_ptr = wlmcfg_dict_get(dict_ptr, "key1");
     BS_TEST_VERIFY_STREQ(
         test_ptr,
-        "dict_value",
-        wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr,
-                                                                      "key"))));
+        "dict_value1",
+        wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
+    v_ptr = wlmcfg_dict_get(dict_ptr, "key2");
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "dict_value2",
+        wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
     wlmcfg_object_destroy(object_ptr);
 
-    // FIXME: Add test with duplicate keys.
+    object_ptr = wlmcfg_create_object_from_plist_string(
+        "{key1=dict_value1;key1=dict_value2}");
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
