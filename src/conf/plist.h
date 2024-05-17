@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file conf_test.c
+ * @file plist.h
  *
  * @copyright
  * Copyright 2024 Google LLC
@@ -17,32 +17,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <stdlib.h>
+#ifndef __WLMCFG_PLIST_H__
+#define __WLMCFG_PLIST_H__
 
 #include <libbase/libbase.h>
 
-#include "plist.h"
+#include "model.h"
 
-/** Conf module unit tests. */
-const bs_test_set_t conf_tests[] = {
-    { 1, "plist", wlmcfg_plist_test_cases },
-    { 0, NULL, NULL },
-};
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
-#if !defined(TEST_DATA_DIR)
-/** Directory root for looking up test data. See `bs_test_resolve_path`. */
-#define TEST_DATA_DIR "./"
-#endif  // TEST_DATA_DIR
+wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr);
 
-/** Main program, runs the unit tests. */
-int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
-{
-    const bs_test_param_t params = {
-        .test_data_dir_ptr   = TEST_DATA_DIR
-    };
-    return bs_test(conf_tests, argc, argv, &params);
+wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr);
 
-}
+/** Unit tests for the plist parser. */
+extern const bs_test_case_t wlmcfg_plist_test_cases[];
 
-/* == End of conf_test.c =================================================== */
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
+
+#endif /* __WLMCFG_PLIST_H__ */
+/* == End of plist.h ======================================================= */
