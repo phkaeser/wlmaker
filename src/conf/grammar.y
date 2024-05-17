@@ -67,6 +67,7 @@
 
 %%
 /* == Grammar rules ======================================================== */
+/* See https://code.google.com/archive/p/networkpx/wikis/PlistSpec.wiki. */
 
 start:          object
                 ;
