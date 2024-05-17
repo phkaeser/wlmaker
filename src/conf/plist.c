@@ -26,6 +26,9 @@
 
 /* == Declarations ========================================================= */
 
+static wlmcfg_object_t *_wlmcfg_create_object_from_plist_scanner(
+    yyscan_t scanner);
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -36,21 +39,14 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
 
     YY_BUFFER_STATE buf_state;
     buf_state = yy_scan_string(buf_ptr, scanner);
-    wlmcfg_parser_context_t ctx = {};
-    ctx.object_stack_ptr = bs_ptr_stack_create();
-    int rv = yyparse(scanner, &ctx);
+    yy_switch_to_buffer(buf_state, scanner);
 
-    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx.object_stack_ptr);
-    bs_ptr_stack_destroy(ctx.object_stack_ptr);
+    wlmcfg_object_t *obj = _wlmcfg_create_object_from_plist_scanner(scanner);
+
     yy_delete_buffer(buf_state, scanner);
-
     yylex_destroy(scanner);
 
-    if (0 != rv) {
-        if (NULL != object_ptr) wlmcfg_object_destroy(object_ptr);
-        return NULL;
-    }
-    return object_ptr;
+    return obj;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -69,24 +65,32 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
     buf_state = yy_create_buffer(file_ptr, YY_BUF_SIZE, scanner);
     yy_switch_to_buffer(buf_state, scanner);
 
+    wlmcfg_object_t *obj = _wlmcfg_create_object_from_plist_scanner(scanner);
+    yy_delete_buffer(buf_state, scanner);
+    yylex_destroy(scanner);
+    fclose(file_ptr);
+
+    return obj;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Does a parser run, from the initialized scanner. */
+wlmcfg_object_t *_wlmcfg_create_object_from_plist_scanner(yyscan_t scanner)
+{
     wlmcfg_parser_context_t ctx = {};
     ctx.object_stack_ptr = bs_ptr_stack_create();
     int rv = yyparse(scanner, &ctx);
     wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx.object_stack_ptr);
     bs_ptr_stack_destroy(ctx.object_stack_ptr);
-    yy_delete_buffer(buf_state, scanner);
-
-    yylex_destroy(scanner);
-    fclose(file_ptr);
 
     if (0 != rv) {
-        if (NULL != object_ptr) wlmcfg_object_destroy(object_ptr);
-        return NULL;
+        wlmcfg_object_destroy(object_ptr);
+        object_ptr = NULL;
     }
     return object_ptr;
 }
-
-/* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
 
