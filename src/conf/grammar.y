@@ -86,7 +86,9 @@ string:         TK_STRING {
                 }
                 ;
 
-dict:           TK_LBRACE kv_list TK_RBRACE
+dict:           TK_LBRACE {
+    ctx_ptr->top_dict_ptr = wlmcfg_dict_create();
+                } kv_list TK_RBRACE
                 ;
 
 kv_list:        kv_list TK_SEMICOLON kv |
@@ -94,9 +96,8 @@ kv_list:        kv_list TK_SEMICOLON kv |
                 ;
 
 kv:             TK_STRING TK_EQUAL object {
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(
-        ctx_ptr->top_object_ptr);
-    bs_log(BS_ERROR, "FIXME: %s, %s", $1, wlmcfg_string_value(string_ptr));
+    wlmcfg_dict_add(ctx_ptr->top_dict_ptr, $1, ctx_ptr->top_object_ptr);
+    free($1);
                 }
                 ;
 

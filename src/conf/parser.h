@@ -30,6 +30,9 @@ extern "C" {
 typedef struct {
     /** Top-level object. */
     wlmcfg_object_t           *top_object_ptr;
+
+    /** Top-level dict. */
+    wlmcfg_dict_t             *top_dict_ptr;
 } wlmcfg_parser_context_t;
 
 #ifdef __cplusplus
