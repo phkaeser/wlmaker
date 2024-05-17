@@ -28,11 +28,11 @@ extern "C" {
 
 /** Context for parser, to be used in the grammar file. */
 typedef struct {
-    /** Top-level dict. */
-    wlmcfg_dict_t             *top_dict_ptr;
-
     /** Stack of objects, used throughout parsing. */
     bs_ptr_stack_t            *object_stack_ptr;
+
+    /** Stack of dicts. */
+    bs_ptr_stack_t            *dict_stack_ptr;
 } wlmcfg_parser_context_t;
 
 #ifdef __cplusplus
