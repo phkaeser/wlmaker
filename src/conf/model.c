@@ -28,6 +28,8 @@
 struct _wlmcfg_object_t {
     /** Type of this object. */
     wlmcfg_type_t type;
+    /** References held to this object. */
+    int references;
     /** Abstract virtual method: Destroys the object. */
     void (*destroy_fn)(wlmcfg_object_t *object_ptr);
 };
@@ -84,9 +86,21 @@ static void _wlmcfg_dict_item_node_destroy(
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_object_dup(wlmcfg_object_t *object_ptr)
+{
+    ++object_ptr->references;
+    return object_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr)
 {
     if (NULL == object_ptr) return;
+
+    // Check references. Warn on potential double-free.
+    BS_ASSERT(0 < object_ptr->references);
+    if (0 < --object_ptr->references) return;
+
     object_ptr->destroy_fn(object_ptr);
 }
 
@@ -219,6 +233,7 @@ bool _wlmcfg_object_init(
     BS_ASSERT(NULL != destroy_fn);
     object_ptr->type = type;
     object_ptr->destroy_fn = destroy_fn;
+    object_ptr->references = 1;
     return true;
 }
 
@@ -275,7 +290,7 @@ void _wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Ctor: Creates a dict item. Copies the key, but not the object. */
+/** Ctor: Creates a dict item. Copies the key, and duplicates the object. */
 wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
     const char *key_ptr,
     wlmcfg_object_t *object_ptr)
@@ -290,7 +305,11 @@ wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
         return NULL;
     }
 
-    item_ptr->value_object_ptr = object_ptr;
+    item_ptr->value_object_ptr = wlmcfg_object_dup(object_ptr);
+    if (NULL == item_ptr->value_object_ptr) {
+        _wlmcfg_dict_item_destroy(item_ptr);
+        return NULL;
+    }
     return item_ptr;
 }
 
@@ -298,6 +317,10 @@ wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
 /** Dtor: Destroys the dict item. */
 void _wlmcfg_dict_item_destroy(wlmcfg_dict_item_t *item_ptr)
 {
+    if (NULL != item_ptr->value_object_ptr) {
+        wlmcfg_object_destroy(item_ptr->value_object_ptr);
+        item_ptr->value_object_ptr = NULL;
+    }
     if (NULL != item_ptr->key_ptr) {
         free(item_ptr->key_ptr);
         item_ptr->key_ptr = NULL;
@@ -366,6 +389,7 @@ void test_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_dict_add(dict_ptr, "key0", obj0_ptr));
+    wlmcfg_object_destroy(obj0_ptr);
 
     wlmcfg_object_t *obj1_ptr = BS_ASSERT_NOTNULL(
         wlmcfg_object_from_string(wlmcfg_string_create("val1")));
@@ -375,6 +399,7 @@ void test_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_dict_add(dict_ptr, "key1", obj1_ptr));
+    wlmcfg_object_destroy(obj1_ptr);
 
     BS_TEST_VERIFY_STREQ(
         test_ptr,

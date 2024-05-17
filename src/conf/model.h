@@ -40,7 +40,20 @@ typedef enum {
 } wlmcfg_type_t;
 
 /**
+ * Duplicates the object. Technically, just increases the reference count.
+ *
+ * @param object_ptr
+ *
+ * @return The "duplicated" object. The caller should not assume that the
+ *     return value is still object_ptr.
+ */
+wlmcfg_object_t *wlmcfg_object_dup(wlmcfg_object_t *object_ptr);
+
+/**
  * Destroys the object. Calls into the virtual dtor of the implementation.
+ *
+ * Technically, decreases the reference count and destroys only if there is
+ * no further reference held.
  *
  * @param object_ptr
  */
@@ -84,7 +97,8 @@ wlmcfg_dict_t *wlmcfg_dict_create(void);
  *
  * @param dict_ptr
  * @param key_ptr
- * @param object_ptr
+ * @param object_ptr          The object to add. It will be duplicated by
+ *                            calling @ref wlmcfg_object_dup.
  *
  * @return true on success. Adding the object can fail if the key already
  *     exists, or if memory could not get allocated.
