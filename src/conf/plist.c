@@ -27,25 +27,43 @@
 
 /* == Exported methods ===================================================== */
 
-#if 0
+/* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr)
+{
     yyscan_t scanner;
     yylex_init(&scanner);
 
     YY_BUFFER_STATE buf_state;
-    buf_state = yy_scan_string("(){}", scanner);
-    yyparse(scanner);
+    buf_state = yy_scan_string(buf_ptr, scanner);
+    int rv = yyparse(scanner);
     yy_delete_buffer(buf_state, scanner);
 
     yylex_destroy(scanner);
-    return EXIT_SUCCESS;
-#endif
+
+    if (0 != rv) return NULL;
+    return NULL;
+}
 
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
 
+static void test_from_string(bs_test_t *test_ptr);
+
 const bs_test_case_t wlmcfg_plist_test_cases[] = {
+    { 1, "from_string", test_from_string },
     { 0, NULL, NULL }
 };
+
+/* ------------------------------------------------------------------------- */
+/** Tests plist object creation from string. */
+void test_from_string(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *object_ptr;
+
+    object_ptr = wlmcfg_create_object_from_plist_string("string");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_object_destroy(object_ptr);
+}
 
 /* == End of plist.c ======================================================= */

@@ -24,11 +24,25 @@
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: Base object type. */
 typedef struct _wlmcfg_object_t wlmcfg_object_t;
+/** Forward declaration: A string. */
 typedef struct _wlmcfg_string_t wlmcfg_string_t;
 
+/**
+ * Destroys the object. Calls into the virtual dtor of the implementation.
+ *
+ * @param object_ptr
+ */
 void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
 
+/**
+ * Creates a string object.
+ *
+ * @param value_ptr
+ *
+ * @return The string object, or NULL on error.
+ */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
 
 

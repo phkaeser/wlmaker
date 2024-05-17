@@ -28,8 +28,22 @@
 extern "C" {
 #endif  // __cplusplus
 
+/**
+ * Parses the plist string `buf_ptr` and returns the de-serialized object.
+ *
+ * @param buf_ptr
+ *
+ * @return The de-serialized object, or NULL on error.
+ */
 wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr);
 
+/**
+ * Parses the file `fname_ptr` and returns the de-serialized object.
+ *
+ * @param fname_ptr
+ *
+ * @return The de-serialized object, or NULL on error.
+ */
 wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr);
 
 /** Unit tests for the plist parser. */
