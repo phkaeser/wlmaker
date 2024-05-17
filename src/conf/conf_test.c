@@ -32,7 +32,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     yylex_init(&scanner);
 
     YY_BUFFER_STATE buf_state;
-    buf_state = yy_scan_string("()asdf{}", scanner);
+    buf_state = yy_scan_string("(){}", scanner);
     yyparse(scanner);
     yy_delete_buffer(buf_state, scanner);
 

@@ -37,7 +37,7 @@
 %lex-param { yyscan_t scanner }
 
 %code provides {
-    void yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr);
+    int yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr);
 }
 
 %token TK_LPAREN
@@ -59,8 +59,9 @@ start:          TK_LPAREN TK_RPAREN
 
 #include <libbase/libbase.h>
 
-void yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr) {
+int yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr) {
     bs_log(BS_ERROR, "Parse error: %s, %p, %p", msg_ptr, loc_ptr, scanner);
+    return -1;
 }
 
 /* == End of parser.y ====================================================== */

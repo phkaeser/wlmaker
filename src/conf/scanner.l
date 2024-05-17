@@ -21,7 +21,9 @@
  */
 
 %{
-    #include "parser.h"
+#include <libbase/libbase.h>
+
+#include "parser.h"
 %}
 
 /* == Definitions section ===================================================*/
@@ -30,6 +32,7 @@
 %option bison-bridge
 %option bison-locations
 %option never-interactive
+%option nodefault
 %option noinput
 %option nounput
 %option noyywrap
@@ -50,6 +53,8 @@ delim               [[:blank:]\r\n]
 ","                 { return TK_COMMA; }
 "="                 { return TK_EQUAL; }
 ";"                 { return TK_SEMICOLON; }
+
+.                   { bs_log(BS_ERROR, "Unexpected character '%s'.", yytext); }
 
 %%
 /* == User code section ==================================================== */
