@@ -30,10 +30,13 @@ extern "C" {
 typedef struct _wlmcfg_object_t wlmcfg_object_t;
 /** Forward declaration: A string. */
 typedef struct _wlmcfg_string_t wlmcfg_string_t;
+/** Forward declaration: A dict (key/value store for objects). */
+typedef struct _wlmcfg_dict_t wlmcfg_dict_t;
 
 /** Type of the object. */
 typedef enum {
     WLMCFG_STRING,
+    WLMCFG_DICT
 } wlmcfg_type_t;
 
 /**
@@ -43,6 +46,7 @@ typedef enum {
  */
 void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
 
+/* -- String methods ------------------------------------------------------- */
 /**
  * Creates a string object.
  *
@@ -65,6 +69,40 @@ const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr);
 wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
 /** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
 wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
+
+/* -- Dict methods --------------------------------------------------------- */
+
+/**
+ * Creates a dict object.
+ *
+ * @return The dict object, or NULL on error.
+ */
+wlmcfg_dict_t *wlmcfg_dict_create(void);
+
+/**
+ * Adds an object to the dict.
+ *
+ * @param dict_ptr
+ * @param key_ptr
+ * @param object_ptr
+ *
+ * @return true on success. Adding the object can fail if the key already
+ *     exists, or if memory could not get allocated.
+ */
+bool wlmcfg_dict_add(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr,
+    wlmcfg_object_t *object_ptr);
+
+/** @return the given object from the dict. */
+wlmcfg_object_t *wlmcfg_dict_get(
+    wlmcfg_dict_t *dict_ptr,
+     const char *key_ptr);
+
+/** Gets the superclass @ref wlmcfg_object_t from the dict. */
+wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr);
+/** Gets the @ref wlmcfg_dict_t for `object_ptr`. NULL if not a dict. */
+wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
 
 /** Unit tests for the config data model. */
 extern const bs_test_case_t wlmcfg_model_test_cases[];
