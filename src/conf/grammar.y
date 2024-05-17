@@ -65,6 +65,8 @@
 %token TK_SEMICOLON
 %token  <string> TK_STRING
 
+%destructor { free($$); } <string>
+
 %%
 /* == Grammar rules ======================================================== */
 /* See https://code.google.com/archive/p/networkpx/wikis/PlistSpec.wiki. */
@@ -73,13 +75,28 @@ start:          object
                 ;
 
 object:         string |
-                TK_LPAREN TK_RPAREN |
-                TK_LBRACE TK_RBRACE
+                dict |
+                TK_LPAREN TK_RPAREN
                 ;
 
 string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
+    free($1);
     ctx_ptr->top_object_ptr = wlmcfg_object_from_string(string_ptr);
+                }
+                ;
+
+dict:           TK_LBRACE kv_list TK_RBRACE
+                ;
+
+kv_list:        kv_list TK_SEMICOLON kv |
+                kv
+                ;
+
+kv:             TK_STRING TK_EQUAL object {
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(
+        ctx_ptr->top_object_ptr);
+    bs_log(BS_ERROR, "FIXME: %s, %s", $1, wlmcfg_string_value(string_ptr));
                 }
                 ;
 

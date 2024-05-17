@@ -99,8 +99,10 @@ void test_from_string(bs_test_t *test_ptr)
         test_ptr,
         "value",
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
-
     wlmcfg_object_destroy(object_ptr);
+
+    object_ptr = wlmcfg_create_object_from_plist_string("{key=value}");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

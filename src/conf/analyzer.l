@@ -46,7 +46,8 @@ delim               [[:blank:]\r\n]
 
 {delim}*            { /* whitespace */ }
 
-[a-zA-A0-9_.$]+     { yylval->string = yytext; return TK_STRING; }
+[a-zA-A0-9_.$]+     { yylval->string = logged_strdup(yytext);
+                      return TK_STRING; }
 "("                 { return TK_LPAREN; }
 ")"                 { return TK_RPAREN; }
 "{"                 { return TK_LBRACE; }
