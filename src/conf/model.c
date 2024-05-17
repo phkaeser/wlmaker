@@ -75,6 +75,19 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
     return string_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr)
+{
+    return &string_ptr->super_object;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr)
+{
+    // FIXME: Check type.
+    return BS_CONTAINER_OF(object_ptr, wlmcfg_string_t, super_object);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -122,8 +135,8 @@ void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr)
  */
 void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr)
 {
-    wlmcfg_string_t *string_ptr = BS_CONTAINER_OF(
-        object_ptr, wlmcfg_string_t, super_object);
+    wlmcfg_string_t *string_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_string_from_object(object_ptr));
     _wlmcfg_string_destroy(string_ptr);
 }
 
@@ -146,7 +159,14 @@ void test_string(bs_test_t *test_ptr)
     string_ptr = wlmcfg_string_create("a test");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, string_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "a test", string_ptr->value_ptr);
-    _wlmcfg_string_destroy(string_ptr);
+
+    wlmcfg_object_t *object_ptr = wlmcfg_object_from_string(string_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        string_ptr,
+        wlmcfg_string_from_object(object_ptr));
+
+    wlmcfg_object_destroy(object_ptr);
 }
 
 /* == End of model.c ======================================================= */

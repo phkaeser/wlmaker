@@ -47,6 +47,11 @@ void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
  */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
 
+/** Gets the superclass @ref wlmcfg_object_t from the string. */
+wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
+/** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
+wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
+
 /** Unit tests for the config data model. */
 extern const bs_test_case_t wlmcfg_model_test_cases[];
 
