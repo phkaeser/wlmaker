@@ -26,6 +26,8 @@
 
 /** Base type of a config object. */
 struct _wlmcfg_object_t {
+    /** Type of this object. */
+    wlmcfg_type_t type;
     /** Abstract virtual method: Destroys the object. */
     void (*destroy_fn)(wlmcfg_object_t *object_ptr);
 };
@@ -40,6 +42,7 @@ struct _wlmcfg_string_t {
 
 static bool _wlmcfg_object_init(
     wlmcfg_object_t *object_ptr,
+    wlmcfg_type_t type,
     void (*destroy_fn)(wlmcfg_object_t *object_ptr));
 static void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr);
 static void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr);
@@ -61,6 +64,7 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
     if (NULL == string_ptr) return NULL;
 
     if (!_wlmcfg_object_init(&string_ptr->super_object,
+                             WLMCFG_STRING,
                              _wlmcfg_string_object_destroy)) {
         _wlmcfg_string_destroy(string_ptr);
         return NULL;
@@ -84,7 +88,7 @@ wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr)
 /* ------------------------------------------------------------------------- */
 wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr)
 {
-    // FIXME: Check type.
+    if (WLMCFG_STRING != object_ptr->type) return NULL;
     return BS_CONTAINER_OF(object_ptr, wlmcfg_string_t, super_object);
 }
 
@@ -95,15 +99,19 @@ wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr)
  * Initializes the object base class.
  *
  * @param object_ptr
+ * @param type
  * @param destroy_fn
  *
  * @return true on success.
  */
-bool _wlmcfg_object_init(wlmcfg_object_t *object_ptr,
-                         void (*destroy_fn)(wlmcfg_object_t *object_ptr))
+bool _wlmcfg_object_init(
+    wlmcfg_object_t *object_ptr,
+    wlmcfg_type_t type,
+    void (*destroy_fn)(wlmcfg_object_t *object_ptr))
 {
     BS_ASSERT(NULL != object_ptr);
     BS_ASSERT(NULL != destroy_fn);
+    object_ptr->type = type;
     object_ptr->destroy_fn = destroy_fn;
     return true;
 }

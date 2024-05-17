@@ -31,6 +31,11 @@ typedef struct _wlmcfg_object_t wlmcfg_object_t;
 /** Forward declaration: A string. */
 typedef struct _wlmcfg_string_t wlmcfg_string_t;
 
+/** Type of the object. */
+typedef enum {
+    WLMCFG_STRING,
+} wlmcfg_type_t;
+
 /**
  * Destroys the object. Calls into the virtual dtor of the implementation.
  *
