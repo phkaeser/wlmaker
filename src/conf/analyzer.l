@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file scanner.l
+ * @file analyzer.l
  *
  * See https://westes.github.io/flex/manual/.
  *
@@ -23,7 +23,7 @@
 %{
 #include <libbase/libbase.h>
 
-#include "parser.h"
+#include "grammar.h"
 %}
 
 /* == Definitions section ===================================================*/
@@ -58,3 +58,6 @@ delim               [[:blank:]\r\n]
 
 %%
 /* == User code section ==================================================== */
+
+
+/* == End of analyzer.l ==================================================== */

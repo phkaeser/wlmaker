@@ -22,8 +22,8 @@
 
 #include <libbase/libbase.h>
 
-#include "parser.h"
-#include "scanner.h"
+#include "grammar.h"
+#include "analyzer.h"
 
 /** Main program, runs the unit tests. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)

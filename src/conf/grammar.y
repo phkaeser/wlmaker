@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file parser.y
+ * @file grammar.y
  *
  * See https://www.gnu.org/software/bison/manual/bison.html.
  *
@@ -22,8 +22,8 @@
 
 /* == Prologue ============================================================= */
 %{
-#include "parser.h"
-#include "scanner.h"
+#include "grammar.h"
+#include "analyzer.h"
 %}
 
 /* == Bison declarations =================================================== */
@@ -64,4 +64,4 @@ int yyerror(YYLTYPE *loc_ptr, void* scanner, const char* msg_ptr) {
     return -1;
 }
 
-/* == End of parser.y ====================================================== */
+/* == End of grammar.y ===================================================== */
