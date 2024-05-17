@@ -152,7 +152,13 @@ void test_from_file(bs_test_t *test_ptr)
         test_ptr,
         "file_value",
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
+    wlmcfg_object_destroy(object_ptr);
 
+    object_ptr = wlmcfg_create_object_from_plist_file(
+        bs_test_resolve_path("conf/dict.plist"));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_object_destroy(object_ptr);
 }
 
