@@ -24,6 +24,16 @@
 #include <libbase/libbase.h>
 
 #include "grammar.h"
+
+/** Permits location tracking, for positioned error reports. */
+#define YY_USER_ACTION					\
+do {							\
+    yylloc->first_line = yylloc->last_line = yylineno;  \
+    yylloc->first_column = yycolumn - 1;                \
+    yylloc->last_column = yycolumn + yyleng - 1;        \
+    yycolumn += yyleng;                                 \
+} while (0);
+
 %}
 
 /* == Definitions section ===================================================*/
@@ -39,14 +49,14 @@
 %option reentrant
 %option yylineno
 
-delim               [[:blank:]\r\n]
+ws                  [[:blank:]\r\n]
 
 /* == Rules section ======================================================== */
 %%
 
-{delim}*            { /* whitespace */ }
+{ws}+               { /* whitespace */ }
 
-"//".*\n            { /* comment. */ }
+"//".*$             { /* comment. */ }
 
 [a-zA-A0-9_.$]+     { yylval->string = logged_strdup(yytext);
                       return TK_STRING; }
