@@ -1,8 +1,9 @@
 // comment.
 {
-  key0 = value0; // comment.
+  key0 = "value0"; // comment.
   // more comment.
   subdict = {  // comment.
     key1 = value1  // comment.
   }  // comment.
 }
+//more.

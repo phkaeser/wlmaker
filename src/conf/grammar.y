@@ -64,6 +64,7 @@
 %token TK_EQUAL
 %token TK_SEMICOLON
 %token  <string> TK_STRING
+%token  <string> TK_QUOTED_STRING
 
 %destructor { free($$); } <string>
 
@@ -81,6 +82,15 @@ object:         string |
 
 string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
+    free($1);
+    bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
+                      wlmcfg_object_from_string(string_ptr));
+                } |
+                TK_QUOTED_STRING {
+    size_t len = strlen($1);
+    BS_ASSERT(2 <= len);  // It is supposed to be quoted.
+    $1[len - 1] = '\0';
+    wlmcfg_string_t *string_ptr = wlmcfg_string_create($1 + 1);
     free($1);
     bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
                       wlmcfg_object_from_string(string_ptr));

@@ -58,6 +58,8 @@ ws                  [[:blank:]\r\n]
 
 "//".*              { /* comment. */ }
 
+\"[^\"]*\"          { yylval->string = logged_strdup(yytext);
+                      return TK_QUOTED_STRING; }
 [a-zA-A0-9_.$]+     { yylval->string = logged_strdup(yytext);
                       return TK_STRING; }
 "("                 { return TK_LPAREN; }

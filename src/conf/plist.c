@@ -145,7 +145,7 @@ void test_from_string(bs_test_t *test_ptr)
 /** Tests plist object creation from string. */
 void test_from_file(bs_test_t *test_ptr)
 {
-    wlmcfg_object_t *object_ptr;
+    wlmcfg_object_t *object_ptr, *v_ptr;
 
     object_ptr = wlmcfg_create_object_from_plist_file(
         bs_test_resolve_path("conf/string.plist"));
@@ -161,6 +161,14 @@ void test_from_file(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+
+    v_ptr = BS_ASSERT_NOTNULL(wlmcfg_dict_get(dict_ptr, "key0"));
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "value0",
+        wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
+
+
     wlmcfg_object_destroy(object_ptr);
 }
 
