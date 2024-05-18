@@ -80,10 +80,10 @@ wlmcfg_object_t *wlmcfg_create_object_from_plist_file(const char *fname_ptr)
 wlmcfg_object_t *_wlmcfg_create_object_from_plist_scanner(yyscan_t scanner)
 {
     wlmcfg_parser_context_t ctx = {};
-    ctx.object_stack_ptr = bs_ptr_stack_create();
+    if (!bs_ptr_stack_init(&ctx.object_stack)) return NULL;
     int rv = yyparse(scanner, &ctx);
-    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx.object_stack_ptr);
-    bs_ptr_stack_destroy(ctx.object_stack_ptr);
+    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(&ctx.object_stack);
+    bs_ptr_stack_fini(&ctx.object_stack);
 
     if (0 != rv) {
         wlmcfg_object_destroy(object_ptr);

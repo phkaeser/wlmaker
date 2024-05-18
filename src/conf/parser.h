@@ -29,7 +29,7 @@ extern "C" {
 /** Context for parser, to be used in the grammar file. */
 typedef struct {
     /** Stack of objects, used throughout parsing. */
-    bs_ptr_stack_t            *object_stack_ptr;
+    bs_ptr_stack_t            object_stack;
 } wlmcfg_parser_context_t;
 
 #ifdef __cplusplus

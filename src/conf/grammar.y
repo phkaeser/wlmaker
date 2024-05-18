@@ -83,7 +83,7 @@ object:         string |
 string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
     free($1);
-    bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
+    bs_ptr_stack_push(&ctx_ptr->object_stack,
                       wlmcfg_object_from_string(string_ptr));
                 } |
                 TK_QUOTED_STRING {
@@ -92,7 +92,7 @@ string:         TK_STRING {
     $1[len - 1] = '\0';
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1 + 1);
     free($1);
-    bs_ptr_stack_push(ctx_ptr->object_stack_ptr,
+    bs_ptr_stack_push(&ctx_ptr->object_stack,
                       wlmcfg_object_from_string(string_ptr));
                 }
                 ;
@@ -100,7 +100,7 @@ string:         TK_STRING {
 dict:           TK_LBRACE {
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_create();
     bs_ptr_stack_push(
-        ctx_ptr->object_stack_ptr,
+        &ctx_ptr->object_stack,
         wlmcfg_object_from_dict(dict_ptr));
                 } kv_list TK_RBRACE
                 ;
@@ -111,8 +111,8 @@ kv_list:        kv_list TK_SEMICOLON kv |
 
 kv:             TK_STRING TK_EQUAL object {
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-        bs_ptr_stack_peek(ctx_ptr->object_stack_ptr, 1));
-    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx_ptr->object_stack_ptr);
+        bs_ptr_stack_peek(&ctx_ptr->object_stack, 1));
+    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(&ctx_ptr->object_stack);
     bool rv = wlmcfg_dict_add(dict_ptr, $1, object_ptr);
     if (!rv) {
         // TODO(kaeser@gubbe.ch): Keep this as error in context.
