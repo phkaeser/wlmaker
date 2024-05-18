@@ -56,7 +56,7 @@ ws                  [[:blank:]\r\n]
 
 {ws}+               { /* whitespace */ }
 
-"//".*$             { /* comment. */ }
+"//".*              { /* comment. */ }
 
 [a-zA-A0-9_.$]+     { yylval->string = logged_strdup(yytext);
                       return TK_STRING; }
