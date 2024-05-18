@@ -102,10 +102,7 @@ dict:           TK_LBRACE {
     bs_ptr_stack_push(
         ctx_ptr->object_stack_ptr,
         wlmcfg_object_from_dict(dict_ptr));
-    bs_ptr_stack_push(ctx_ptr->dict_stack_ptr, dict_ptr);
-                } kv_list TK_RBRACE {
-    bs_ptr_stack_pop(ctx_ptr->dict_stack_ptr);
-                }
+                } kv_list TK_RBRACE
                 ;
 
 kv_list:        kv_list TK_SEMICOLON kv |
@@ -113,10 +110,8 @@ kv_list:        kv_list TK_SEMICOLON kv |
                 ;
 
 kv:             TK_STRING TK_EQUAL object {
-    // TODO(kaeser@gubbe.ch): should use bs_ptr_stack_top() or peek().
-    wlmcfg_dict_t *dict_ptr = ctx_ptr->dict_stack_ptr->data_ptr[
-        ctx_ptr->dict_stack_ptr->pos - 1];
-
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        bs_ptr_stack_peek(ctx_ptr->object_stack_ptr, 1));
     wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(ctx_ptr->object_stack_ptr);
     bool rv = wlmcfg_dict_add(dict_ptr, $1, object_ptr);
     if (!rv) {

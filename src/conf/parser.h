@@ -30,9 +30,6 @@ extern "C" {
 typedef struct {
     /** Stack of objects, used throughout parsing. */
     bs_ptr_stack_t            *object_stack_ptr;
-
-    /** Stack of dicts. */
-    bs_ptr_stack_t            *dict_stack_ptr;
 } wlmcfg_parser_context_t;
 
 #ifdef __cplusplus
