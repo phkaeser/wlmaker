@@ -72,14 +72,10 @@ static bool _wlmcfg_object_init(
     wlmcfg_object_t *object_ptr,
     wlmcfg_type_t type,
     void (*destroy_fn)(wlmcfg_object_t *object_ptr));
-static void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr);
+
 static void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr);
-
 static void _wlmcfg_dict_object_destroy(wlmcfg_object_t *object_ptr);
-static void _wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr);
-
 static void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr);
-static void _wlmcfg_array_destroy(wlmcfg_array_t *array_ptr);
 
 static wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
     const char *key_ptr,
@@ -124,13 +120,13 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
     if (!_wlmcfg_object_init(&string_ptr->super_object,
                              WLMCFG_STRING,
                              _wlmcfg_string_object_destroy)) {
-        _wlmcfg_string_destroy(string_ptr);
+        free(string_ptr);
         return NULL;
     }
 
     string_ptr->value_ptr = logged_strdup(value_ptr);
     if (NULL == string_ptr->value_ptr) {
-        _wlmcfg_string_destroy(string_ptr);
+        _wlmcfg_string_object_destroy(wlmcfg_object_from_string(string_ptr));
         return NULL;
     }
 
@@ -165,7 +161,7 @@ wlmcfg_dict_t *wlmcfg_dict_create(void)
     if (!_wlmcfg_object_init(&dict_ptr->super_object,
                              WLMCFG_DICT,
                              _wlmcfg_dict_object_destroy)) {
-        _wlmcfg_dict_destroy(dict_ptr);
+        free(dict_ptr);
         return NULL;
     }
 
@@ -173,7 +169,7 @@ wlmcfg_dict_t *wlmcfg_dict_create(void)
         _wlmcfg_dict_item_node_cmp,
         _wlmcfg_dict_item_node_destroy);
     if (NULL == dict_ptr->tree_ptr) {
-        _wlmcfg_dict_destroy(dict_ptr);
+        _wlmcfg_dict_object_destroy(wlmcfg_object_from_dict(dict_ptr));
         return NULL;
     }
 
@@ -234,12 +230,12 @@ wlmcfg_array_t *wlmcfg_array_create(void)
     if (!_wlmcfg_object_init(&array_ptr->super_object,
                              WLMCFG_ARRAY,
                              _wlmcfg_array_object_destroy)) {
-        _wlmcfg_array_destroy(array_ptr);
+        free(array_ptr);
         return NULL;
     }
 
     if (!bs_ptr_vector_init(&array_ptr->object_vector)) {
-        _wlmcfg_array_destroy(array_ptr);
+        _wlmcfg_array_object_destroy(wlmcfg_object_from_array(array_ptr));
         return NULL;
     }
     return array_ptr;
@@ -303,13 +299,14 @@ bool _wlmcfg_object_init(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Dtor for the string object.
+ * Implementation of @ref wlmcfg_object_t::destroy_fn. Destroys the string.
  *
- * @param string_ptr
+ * @param object_ptr
  */
-void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr)
+void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr)
 {
-    if (NULL == string_ptr) return;
+    wlmcfg_string_t *string_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_string_from_object(object_ptr));
 
     if (NULL != string_ptr->value_ptr) {
         free(string_ptr->value_ptr);
@@ -321,31 +318,16 @@ void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implements the string's "object" superclass virtual dtor. Calls into
- * @ref _wlmcfg_string_destroy.
+ * Implementation of @ref wlmcfg_object_t::destroy_fn. Destroys the dict,
+ * including all contained elements.
  *
  * @param object_ptr
  */
-void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr)
-{
-    wlmcfg_string_t *string_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_string_from_object(object_ptr));
-    _wlmcfg_string_destroy(string_ptr);
-}
-
-/* == Dict methods ========================================================= */
-
-/* ------------------------------------------------------------------------- */
-/** Implementation of the superclass' virtual dtor: Calls into dtor. */
 void _wlmcfg_dict_object_destroy(wlmcfg_object_t *object_ptr)
 {
-    _wlmcfg_dict_destroy(wlmcfg_dict_from_object(object_ptr));
-}
+    wlmcfg_dict_t *dict_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_dict_from_object(object_ptr));
 
-/* ------------------------------------------------------------------------- */
-/** Dtor: Destroys the dict and all still-contained items. */
-void _wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr)
-{
     if (NULL != dict_ptr->tree_ptr) {
         bs_avltree_destroy(dict_ptr->tree_ptr);
         dict_ptr->tree_ptr = NULL;
@@ -412,16 +394,17 @@ void _wlmcfg_dict_item_node_destroy(bs_avltree_node_t *node_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Implementation of the virtual dtor. */
-static void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr)
+/**
+ * Implementation of @ref wlmcfg_object_t::destroy_fn. Destroys the array,
+ * including all contained elements.
+ *
+ * @param object_ptr
+ */
+void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr)
 {
-    _wlmcfg_array_destroy(wlmcfg_array_from_object(object_ptr));
-}
+    wlmcfg_array_t *array_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_array_from_object(object_ptr));
 
-/* ------------------------------------------------------------------------- */
-/** Destructor for the array: Destroys all remaining elements and the array. */
-static void _wlmcfg_array_destroy(wlmcfg_array_t *array_ptr)
-{
     while (0 < bs_ptr_vector_size(&array_ptr->object_vector)) {
         wlmcfg_object_t *object_ptr = bs_ptr_vector_at(
             &array_ptr->object_vector,
