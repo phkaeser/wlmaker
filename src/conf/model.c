@@ -44,7 +44,7 @@ struct _wlmcfg_string_t {
 
 /** Config object: A dict. */
 struct _wlmcfg_dict_t {
-    /** The string's superclass: An object. */
+    /** The dict's superclass: An object. */
     wlmcfg_object_t           super_object;
     /** Implemented as a tree. Benefit: Keeps sorting order. */
     bs_avltree_t              *tree_ptr;
@@ -60,6 +60,14 @@ typedef struct {
     wlmcfg_object_t           *value_object_ptr;
 } wlmcfg_dict_item_t;
 
+/** Array object. A vector of pointers to the objects. */
+struct _wlmcfg_array_t {
+    /** The array's superclass: An object. */
+    wlmcfg_object_t           super_object;
+    /** Vector holding pointers to each object. */
+    bs_ptr_vector_t           object_vector;
+};
+
 static bool _wlmcfg_object_init(
     wlmcfg_object_t *object_ptr,
     wlmcfg_type_t type,
@@ -67,9 +75,11 @@ static bool _wlmcfg_object_init(
 static void _wlmcfg_string_destroy(wlmcfg_string_t *string_ptr);
 static void _wlmcfg_string_object_destroy(wlmcfg_object_t *object_ptr);
 
-
 static void _wlmcfg_dict_object_destroy(wlmcfg_object_t *object_ptr);
 static void _wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr);
+
+static void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr);
+static void _wlmcfg_array_destroy(wlmcfg_array_t *array_ptr);
 
 static wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
     const char *key_ptr,
@@ -212,6 +222,60 @@ wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr)
     return BS_CONTAINER_OF(object_ptr, wlmcfg_dict_t, super_object);
 }
 
+
+/* == Array methods ======================================================== */
+
+/* ------------------------------------------------------------------------- */
+wlmcfg_array_t *wlmcfg_array_create(void)
+{
+    wlmcfg_array_t *array_ptr = logged_calloc(1, sizeof(wlmcfg_array_t));
+    if (NULL == array_ptr) return NULL;
+
+    if (!_wlmcfg_object_init(&array_ptr->super_object,
+                             WLMCFG_ARRAY,
+                             _wlmcfg_array_object_destroy)) {
+        _wlmcfg_array_destroy(array_ptr);
+        return NULL;
+    }
+
+    if (!bs_ptr_vector_init(&array_ptr->object_vector)) {
+        _wlmcfg_array_destroy(array_ptr);
+        return NULL;
+    }
+    return array_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmcfg_array_push_back(
+    wlmcfg_array_t *array_ptr,
+    wlmcfg_object_t *object_ptr)
+{
+    wlmcfg_object_t *new_object_ptr = wlmcfg_object_dup(object_ptr);
+    if (NULL == new_object_ptr) return false;
+
+    return bs_ptr_vector_push_back(&array_ptr->object_vector, new_object_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_array_at(
+    wlmcfg_array_t *array_ptr,
+    size_t index)
+{
+    return bs_ptr_vector_at(&array_ptr->object_vector, index);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmcfg_object_from_array(wlmcfg_array_t *array_ptr)
+{
+    return &array_ptr->super_object;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmcfg_array_t *wlmcfg_array_from_object(wlmcfg_object_t *object_ptr)
+{
+    return BS_CONTAINER_OF(object_ptr, wlmcfg_array_t, super_object);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -347,14 +411,42 @@ void _wlmcfg_dict_item_node_destroy(bs_avltree_node_t *node_ptr)
     _wlmcfg_dict_item_destroy(item_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Implementation of the virtual dtor. */
+static void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr)
+{
+    _wlmcfg_array_destroy(wlmcfg_array_from_object(object_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destructor for the array: Destroys all remaining elements and the array. */
+static void _wlmcfg_array_destroy(wlmcfg_array_t *array_ptr)
+{
+    while (0 < bs_ptr_vector_size(&array_ptr->object_vector)) {
+        wlmcfg_object_t *object_ptr = bs_ptr_vector_at(
+            &array_ptr->object_vector,
+            bs_ptr_vector_size(&array_ptr->object_vector) - 1);
+        bs_ptr_vector_erase(
+            &array_ptr->object_vector,
+            bs_ptr_vector_size(&array_ptr->object_vector) - 1);
+        wlmcfg_object_destroy(object_ptr);
+    }
+
+    bs_ptr_vector_fini(&array_ptr->object_vector);
+
+    free(array_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_string(bs_test_t *test_ptr);
 static void test_dict(bs_test_t *test_ptr);
+static void test_array(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_model_test_cases[] = {
     { 1, "string", test_string },
     { 1, "dict", test_dict },
+    { 1, "array", test_array },
     { 0, NULL, NULL }
 };
 
@@ -413,6 +505,32 @@ void test_dict(bs_test_t *test_ptr)
                                 wlmcfg_dict_get(dict_ptr, "key1"))));
 
     wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests the wlmcfg_array_t methods. */
+void test_array(bs_test_t *test_ptr)
+{
+    wlmcfg_array_t *array_ptr = wlmcfg_array_create();
+
+    wlmcfg_object_t *obj0_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_object_from_string(wlmcfg_string_create("val0")));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_array_push_back(array_ptr, obj0_ptr));
+    wlmcfg_object_destroy(obj0_ptr);
+
+    wlmcfg_object_t *obj1_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_object_from_string(wlmcfg_string_create("val1")));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_array_push_back(array_ptr, obj1_ptr));
+    wlmcfg_object_destroy(obj1_ptr);
+
+    BS_TEST_VERIFY_EQ(test_ptr, obj0_ptr, wlmcfg_array_at(array_ptr, 0));
+    BS_TEST_VERIFY_EQ(test_ptr, obj1_ptr, wlmcfg_array_at(array_ptr, 1));
+
+    wlmcfg_object_destroy(wlmcfg_object_from_array(array_ptr));
 }
 
 /* == End of model.c ======================================================= */
