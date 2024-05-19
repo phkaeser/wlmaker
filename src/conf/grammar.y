@@ -63,8 +63,8 @@
 %token TK_COMMA
 %token TK_EQUAL
 %token TK_SEMICOLON
-%token  <string> TK_STRING
-%token  <string> TK_QUOTED_STRING
+%token <string> TK_STRING
+%token <string> TK_QUOTED_STRING
 
 %destructor { free($$); } <string>
 
