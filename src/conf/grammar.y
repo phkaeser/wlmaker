@@ -125,10 +125,28 @@ kv:             TK_STRING TK_EQUAL object {
                 }
                 ;
 
-array:          TK_LPAREN element_list TK_RPAREN;
+array:          TK_LPAREN {
+    wlmcfg_array_t *array_ptr = wlmcfg_array_create();
+    bs_ptr_stack_push(
+        &ctx_ptr->object_stack,
+        wlmcfg_object_from_array(array_ptr));
+                } element_list TK_RPAREN;
 
-element_list:   object |
-                element_list TK_COMMA object;
+element_list:   element |
+                element_list TK_COMMA element;
+
+element:        object {
+    wlmcfg_array_t *array_ptr = wlmcfg_array_from_object(
+        bs_ptr_stack_peek(&ctx_ptr->object_stack, 1));
+    wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(&ctx_ptr->object_stack);
+    bool rv = wlmcfg_array_push_back(array_ptr, object_ptr);
+    if (!rv) {
+        // TODO(kaeser@gubbe.ch): Keep this as error in context.
+        bs_log(BS_WARNING, "Failed wlmcfg_array_push_back(%p, %p)",
+               array_ptr, object_ptr);
+    }
+    wlmcfg_object_destroy(object_ptr);
+                };
 
 %%
 /* == Epilogue ============================================================= */

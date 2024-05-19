@@ -135,6 +135,22 @@ void test_from_string(bs_test_t *test_ptr)
     wlmcfg_object_destroy(object_ptr);
 
     object_ptr = wlmcfg_create_object_from_plist_string(
+        "(elem0,elem1)");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_array_t *array_ptr = wlmcfg_array_from_object(object_ptr);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "elem0",
+        wlmcfg_string_value(wlmcfg_string_from_object(
+                                wlmcfg_array_at(array_ptr, 0))));
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "elem1",
+        wlmcfg_string_value(wlmcfg_string_from_object(
+                                wlmcfg_array_at(array_ptr, 1))));
+    wlmcfg_object_destroy(object_ptr);
+
+    object_ptr = wlmcfg_create_object_from_plist_string(
         "{key1=dict_value1;key1=dict_value2}");
     BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
 }
