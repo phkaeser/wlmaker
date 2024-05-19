@@ -159,7 +159,9 @@ int yyerror(
     __UNUSED__ wlmcfg_parser_context_t *ctx_ptr,
     const char* msg_ptr)
 {
-    bs_log(BS_ERROR, "Parse error: %s, %p, %p", msg_ptr, loc_ptr, scanner);
+    bs_log(BS_ERROR, "Parse error at %d,%d: %s, %p, %p",
+           loc_ptr->first_line, loc_ptr->first_column,
+           msg_ptr, loc_ptr, scanner);
     return -1;
 }
 
