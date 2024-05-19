@@ -109,6 +109,7 @@ void test_from_string(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *object_ptr, *v_ptr;
 
+    // A string.
     object_ptr = wlmcfg_create_object_from_plist_string("value");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_STREQ(
@@ -117,6 +118,7 @@ void test_from_string(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
     wlmcfg_object_destroy(object_ptr);
 
+    // A dict.
     object_ptr = wlmcfg_create_object_from_plist_string(
         "{key1=dict_value1;key2=dict_value2}");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
@@ -134,6 +136,12 @@ void test_from_string(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
     wlmcfg_object_destroy(object_ptr);
 
+    // A dict with a duplicate key. Will return NULL, no need to destroy.
+    object_ptr = wlmcfg_create_object_from_plist_string(
+        "{key1=dict_value1;key1=dict_value2}");
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
+
+    // An array.
     object_ptr = wlmcfg_create_object_from_plist_string(
         "(elem0,elem1)");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
@@ -150,9 +158,6 @@ void test_from_string(bs_test_t *test_ptr)
                                 wlmcfg_array_at(array_ptr, 1))));
     wlmcfg_object_destroy(object_ptr);
 
-    object_ptr = wlmcfg_create_object_from_plist_string(
-        "{key1=dict_value1;key1=dict_value2}");
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -182,6 +187,13 @@ void test_from_file(bs_test_t *test_ptr)
         "value0",
         wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
 
+    wlmcfg_object_destroy(object_ptr);
+
+    object_ptr = wlmcfg_create_object_from_plist_file(
+        bs_test_resolve_path("conf/array.plist"));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_array_t *array_ptr = wlmcfg_array_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr);
 
     wlmcfg_object_destroy(object_ptr);
 }
