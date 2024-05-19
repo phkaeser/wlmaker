@@ -77,7 +77,7 @@ start:          object
 
 object:         string |
                 dict |
-                TK_LPAREN TK_RPAREN
+                array |
                 ;
 
 string:         TK_STRING {
@@ -124,6 +124,11 @@ kv:             TK_STRING TK_EQUAL object {
     if (!rv) return -1;
                 }
                 ;
+
+array:          TK_LPAREN element_list TK_RPAREN;
+
+element_list:   object |
+                element_list TK_COMMA object;
 
 %%
 /* == Epilogue ============================================================= */
