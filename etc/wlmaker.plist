@@ -1,14 +1,18 @@
 // Base configuration for wlmaker: Keyboard and autostarted applications.
 {
-  XKeyboardConfig = {
-    Rules = "evdev";
-    Model = "pc105";
-    Layout = "ch";
-    Variant = "de_nodeadkeys";
-    Options = ""
-  };
-  KeyboardRepeat = {
-    Rate = 25;
-    DelayMilliSec = 300
+  Keyboard = {
+    XkbRMLVO = {
+      Rules = "evdev";
+      Model = "pc105";
+      Layout = "ch";
+      Variant = "de_nodeadkeys";
+      Options = ""
+    };
+    Repeat = {
+      // Delay before initiating repeats, in milliseconds.
+      Delay = 300;
+      // Repeats per second.
+      Rate = 25
+    }
   }
 }
