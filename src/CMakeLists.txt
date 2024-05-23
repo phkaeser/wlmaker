@@ -94,7 +94,7 @@ SET(HEADERS
 )
 
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})
-ADD_DEPENDENCIES(wlmaker protocol_headers toolkit)
+ADD_DEPENDENCIES(wlmaker protocol_headers conf toolkit)
 
 TARGET_COMPILE_DEFINITIONS(
   wlmaker PRIVATE WLMAKER_ICON_DATA_DIR="${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/wlmaker")
@@ -120,6 +120,7 @@ TARGET_INCLUDE_DIRECTORIES(
 TARGET_LINK_LIBRARIES(
   wlmaker PRIVATE
   base
+  conf
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
