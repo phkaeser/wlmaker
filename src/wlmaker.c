@@ -261,8 +261,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     BS_ASSERT(bs_ptr_stack_init(&subprocess_stack));
 
-
-    wlmaker_server_t *server_ptr = wlmaker_server_create();
+    wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
+    wlmcfg_object_destroy(wlmcfg_object_from_dict(config_dict_ptr));
     if (NULL == server_ptr) return EXIT_FAILURE;
 
     wlmaker_server_bind_key(
@@ -370,7 +370,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     bs_ptr_stack_fini(&subprocess_stack);
-    wlmcfg_object_destroy(wlmcfg_object_from_dict(config_dict_ptr));
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }
