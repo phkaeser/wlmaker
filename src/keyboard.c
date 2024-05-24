@@ -46,6 +46,10 @@ struct _wlmaker_keyboard_t {
     bool                      task_switch_mode_enabled;
 };
 
+static bool _wlmaker_keyboard_populate_rules(
+    wlmcfg_dict_t *dict_ptr,
+    struct xkb_rule_names *rules_ptr);
+
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
                              void *data_ptr);
@@ -78,22 +82,28 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     BS_ASSERT_NOTNULL(wlmcfg_object_dup(object_ptr));
     keyboard_ptr->config_dict_ptr = config_dict_ptr;
 
+    struct xkb_rule_names xkb_rule;
+    if (!_wlmaker_keyboard_populate_rules(
+            keyboard_ptr->config_dict_ptr, &xkb_rule)) {
+        bs_log(BS_ERROR, "No rule data found in 'Keyboard' dict.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+
     // Set keyboard layout.
     struct xkb_context *xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     struct xkb_keymap *xkb_keymap_ptr = xkb_keymap_new_from_names(
-        xkb_context_ptr,
-        config_keyboard_rule_names,
-        XKB_KEYMAP_COMPILE_NO_FLAGS);
+        xkb_context_ptr, &xkb_rule, XKB_KEYMAP_COMPILE_NO_FLAGS);
     if (NULL == xkb_keymap_ptr) {
         bs_log(BS_ERROR, "Failed xkb_keymap_new_from_names(%p, { .rules = %s, "
                ".model = %s, .layout = %s, variant = %s, .options = %s }, "
                "XKB_KEYMAP_COMPILE_NO_NO_FLAGS)",
                xkb_context_ptr,
-               config_keyboard_rule_names->rules,
-               config_keyboard_rule_names->model,
-               config_keyboard_rule_names->layout,
-               config_keyboard_rule_names->variant,
-               config_keyboard_rule_names->options);
+               xkb_rule.rules,
+               xkb_rule.model,
+               xkb_rule.layout,
+               xkb_rule.variant,
+               xkb_rule.options);
         wlmaker_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
@@ -136,6 +146,45 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Populates the XKB rules struct from the config dict.
+ *
+ * @param dict_ptr
+ * @param rules_ptr
+ *
+ * @return true on success
+ */
+bool _wlmaker_keyboard_populate_rules(
+    wlmcfg_dict_t *dict_ptr,
+    struct xkb_rule_names *rules_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(dict_ptr, "XkbRMLVO");
+    if (NULL == obj_ptr) {
+        bs_log(BS_ERROR, "No XkbRMLVO section in Keyboard dict.");
+        return false;
+    }
+
+    dict_ptr = wlmcfg_dict_from_object(obj_ptr);
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "Not a dict.");
+        return false;
+    }
+
+    rules_ptr->rules = wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rules")));
+    rules_ptr->model = wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Model")));
+    rules_ptr->layout = wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Layout")));
+    rules_ptr->variant = wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Variant")));
+    rules_ptr->options = wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Options")));
+
+    return true;
+}
 
 /* ------------------------------------------------------------------------- */
 /**

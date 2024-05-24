@@ -93,7 +93,6 @@ typedef struct {
 
 extern const int32_t config_keyboard_repeat_rate;
 extern const int32_t config_keyboard_repeat_delay;
-extern const struct xkb_rule_names *config_keyboard_rule_names;
 
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
