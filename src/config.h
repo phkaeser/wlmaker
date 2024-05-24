@@ -26,6 +26,7 @@
 #include <stdbool.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "conf/plist.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -108,6 +109,22 @@ extern const uint32_t wlmaker_config_window_drag_modifiers;
 
 extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
 extern const wlmaker_config_theme_t wlmaker_config_theme;
+
+/**
+ * Loads the configuration for wlmaker.
+ *
+ * If `fname_ptr` is give, it will attempt to load the configuration from the
+ * specified file. Otherwise, it will attempt to load the files specified in
+ * @ref _wlmaker_config_fname_ptrs, or (at last) use the built-in default.
+ *
+ * @param fname_ptr           Optional: Name of the file to load it from. May
+ *                            be NULL.
+ *
+ * @return A dict object, or NULL on error. Errors will already be logged.
+ *     The caller must free the associated resources by calling
+ *     @ref wlmcfg_object_destroy.
+ */
+wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

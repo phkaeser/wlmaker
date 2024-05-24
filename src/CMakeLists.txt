@@ -146,6 +146,7 @@ TARGET_INCLUDE_DIRECTORIES(
 TARGET_LINK_LIBRARIES(
   wlmaker_test PRIVATE
   base
+  conf
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO

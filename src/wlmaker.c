@@ -33,6 +33,7 @@
 #include "conf/plist.h"
 
 #include "clip.h"
+#include "config.h"
 #include "dock.h"
 #include "server.h"
 #include "task_list.h"
@@ -48,15 +49,6 @@ static regex_t                wlmaker_wlr_log_regex;
 /** Regular expression string for extracting file & line no. from wlr_log. */
 static const char             *wlmaker_wlr_log_regex_string =
     "^\\[([^\\:]+)\\:([0-9]+)\\]\\ ";
-
-/** Lookup paths for the configuration file. */
-const char *config_file_paths[] = {
-    "~/.wlmaker.plist",
-#if defined(WLMAKER_SOURCE_DIR)
-    WLMAKER_SOURCE_DIR "/etc/wlmaker.plist",
-#endif  // WLMAKER_SOURCE_DIR
-    NULL
-};
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -242,30 +234,7 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
 
     BS_ASSERT(bs_ptr_stack_init(&subprocess_stack));
 
-    wlmcfg_dict_t *config_dict_ptr = NULL;
-    for (const char **config_file_name = config_file_paths;
-         *config_file_name != NULL;
-         ++config_file_name) {
-        char full_path[PATH_MAX];
-        char *path_ptr = bs_file_resolve_path(*config_file_name, full_path);
-        if (NULL == path_ptr) {
-            bs_log(BS_ERROR | BS_ERRNO, "Failed bs_file_resolve_path(%s, %s)",
-                   *config_file_name, full_path);
-            continue;
-        }
-
-        config_dict_ptr = wlmcfg_dict_from_object(
-            wlmcfg_create_object_from_plist_file(path_ptr));
-        if (NULL == config_dict_ptr) {
-            bs_log(BS_ERROR, "Failed wlmcfg_create_object_from_plist_file(%s)",
-                   path_ptr);
-            return EXIT_FAILURE;
-        }
-    }
-    if (NULL == config_dict_ptr) {
-        bs_log(BS_ERROR, "No configuration file found.");
-        return EXIT_FAILURE;
-    }
+    wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(NULL);
     wlmcfg_object_destroy(wlmcfg_object_from_dict(config_dict_ptr));
 
     wlmaker_server_t *server_ptr = wlmaker_server_create();
