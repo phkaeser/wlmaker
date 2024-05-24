@@ -247,9 +247,9 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
          *config_file_name != NULL;
          ++config_file_name) {
         char full_path[PATH_MAX];
-        char *path_ptr = bs_file_realpath(*config_file_name, full_path);
+        char *path_ptr = bs_file_resolve_path(*config_file_name, full_path);
         if (NULL == path_ptr) {
-            bs_log(BS_ERROR, "Failed bs_file_realpath(%s, %s)",
+            bs_log(BS_ERROR | BS_ERRNO, "Failed bs_file_resolve_path(%s, %s)",
                    *config_file_name, full_path);
             continue;
         }
