@@ -470,8 +470,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->config_dict_ptr) {
-        wlmcfg_object_destroy(
-            wlmcfg_object_from_dict(server_ptr->config_dict_ptr));
+        wlmcfg_dict_destroy(server_ptr->config_dict_ptr);
         server_ptr->config_dict_ptr = NULL;
     }
 

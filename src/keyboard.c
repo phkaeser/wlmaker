@@ -145,8 +145,7 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
 
     if (NULL != keyboard_ptr->config_dict_ptr) {
-        wlmcfg_object_destroy(wlmcfg_object_from_dict(
-                                  keyboard_ptr->config_dict_ptr));
+        wlmcfg_dict_destroy(keyboard_ptr->config_dict_ptr);
         keyboard_ptr->config_dict_ptr = NULL;
     }
 

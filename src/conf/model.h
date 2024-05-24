@@ -95,6 +95,16 @@ wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
  */
 wlmcfg_dict_t *wlmcfg_dict_create(void);
 
+/** @return the superclass @ref wlmcfg_object_t of the dict. */
+wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr);
+/** @return the @ref wlmcfg_dict_t for `object_ptr`. NULL if not a dict. */
+wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
+
+/** Destroys the dict. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr) {
+    wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
+}
+
 /**
  * Adds an object to the dict.
  *
@@ -116,11 +126,6 @@ wlmcfg_object_t *wlmcfg_dict_get(
     wlmcfg_dict_t *dict_ptr,
     const char *key_ptr);
 
-/** @return the superclass @ref wlmcfg_object_t of the dict. */
-wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr);
-/** @return the @ref wlmcfg_dict_t for `object_ptr`. NULL if not a dict. */
-wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
-
 /* -- Array methods -------------------------------------------------------- */
 
 /**
@@ -129,6 +134,16 @@ wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
  * @return The array object, or NULL on error.
  */
 wlmcfg_array_t *wlmcfg_array_create(void);
+
+/** @return the superclass @ref wlmcfg_object_t of the array. */
+wlmcfg_object_t *wlmcfg_object_from_array(wlmcfg_array_t *array_ptr);
+/** @return the @ref wlmcfg_array_t for `object_ptr`. NULL if not an array. */
+wlmcfg_array_t *wlmcfg_array_from_object(wlmcfg_object_t *object_ptr);
+
+/** Destroys the array. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcfg_array_destroy(wlmcfg_array_t *array_ptr) {
+    wlmcfg_object_destroy(wlmcfg_object_from_array(array_ptr));
+}
 
 /**
  * Adds an object to the end of the array.
@@ -155,11 +170,6 @@ bool wlmcfg_array_push_back(
 wlmcfg_object_t *wlmcfg_array_at(
     wlmcfg_array_t *array_ptr,
     size_t index);
-
-/** @return the superclass @ref wlmcfg_object_t of the array. */
-wlmcfg_object_t *wlmcfg_object_from_array(wlmcfg_array_t *array_ptr);
-/** @return the @ref wlmcfg_array_t for `object_ptr`. NULL if not an array. */
-wlmcfg_array_t *wlmcfg_array_from_object(wlmcfg_object_t *object_ptr);
 
 /** Unit tests for the config data model. */
 extern const bs_test_case_t wlmcfg_model_test_cases[];

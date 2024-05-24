@@ -142,13 +142,14 @@ const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr)
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr)
 {
+    if (NULL == string_ptr) return NULL;
     return &string_ptr->super_object;
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr)
 {
-    if (WLMCFG_STRING != object_ptr->type) return NULL;
+    if (NULL == object_ptr || WLMCFG_STRING != object_ptr->type) return NULL;
     return BS_CONTAINER_OF(object_ptr, wlmcfg_string_t, super_object);
 }
 
@@ -209,12 +210,14 @@ wlmcfg_object_t *wlmcfg_dict_get(
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr)
 {
+    if (NULL == dict_ptr) return NULL;
     return &dict_ptr->super_object;
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr)
 {
+    if (NULL == object_ptr || WLMCFG_DICT != object_ptr->type) return NULL;
     return BS_CONTAINER_OF(object_ptr, wlmcfg_dict_t, super_object);
 }
 
@@ -263,12 +266,14 @@ wlmcfg_object_t *wlmcfg_array_at(
 /* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_object_from_array(wlmcfg_array_t *array_ptr)
 {
+    if (NULL == array_ptr) return NULL;
     return &array_ptr->super_object;
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcfg_array_t *wlmcfg_array_from_object(wlmcfg_object_t *object_ptr)
 {
+    if (NULL == object_ptr || WLMCFG_ARRAY != object_ptr->type) return NULL;
     return BS_CONTAINER_OF(object_ptr, wlmcfg_array_t, super_object);
 }
 
@@ -487,7 +492,7 @@ void test_dict(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(
                                 wlmcfg_dict_get(dict_ptr, "key1"))));
 
-    wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
+    wlmcfg_dict_destroy(dict_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -513,7 +518,7 @@ void test_array(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, obj0_ptr, wlmcfg_array_at(array_ptr, 0));
     BS_TEST_VERIFY_EQ(test_ptr, obj1_ptr, wlmcfg_array_at(array_ptr, 1));
 
-    wlmcfg_object_destroy(wlmcfg_object_from_array(array_ptr));
+    wlmcfg_array_destroy(array_ptr);
 }
 
 /* == End of model.c ======================================================= */
