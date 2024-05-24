@@ -28,6 +28,8 @@
 
 /** Keyboard handle. */
 struct _wlmaker_keyboard_t {
+    /** Configuration dictionnary, just the "Keyboard" section. */
+    wlmcfg_dict_t             *config_dict_ptr;
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
     /** The wlroots keyboard structure. */
@@ -62,6 +64,19 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     keyboard_ptr->server_ptr = server_ptr;
     keyboard_ptr->wlr_keyboard_ptr = wlr_keyboard_ptr;
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
+
+    // Retrieve configuration.
+    wlmcfg_object_t *object_ptr = wlmcfg_dict_get(
+        server_ptr->config_dict_ptr, "Keyboard");
+    wlmcfg_dict_t *config_dict_ptr;
+    if (NULL == object_ptr ||
+        NULL == (config_dict_ptr = wlmcfg_dict_from_object(object_ptr))) {
+        bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+    BS_ASSERT_NOTNULL(wlmcfg_object_dup(object_ptr));
+    keyboard_ptr->config_dict_ptr = config_dict_ptr;
 
     // Set keyboard layout.
     struct xkb_context *xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
@@ -110,6 +125,12 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
 {
     wl_list_remove(&keyboard_ptr->key_listener.link);
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
+
+    if (NULL != keyboard_ptr->config_dict_ptr) {
+        wlmcfg_object_destroy(wlmcfg_object_from_dict(
+                                  keyboard_ptr->config_dict_ptr));
+        keyboard_ptr->config_dict_ptr = NULL;
+    }
 
     free(keyboard_ptr);
 }
