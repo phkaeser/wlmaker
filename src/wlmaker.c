@@ -38,6 +38,21 @@
 #include "server.h"
 #include "task_list.h"
 
+/** Will hold the value of --config_file. */
+static char *wlmaker_arg_config_file_ptr = NULL;
+
+/** Definition of commandline arguments. */
+static const bs_arg_t wlmaker_args[] = {
+    BS_ARG_STRING(
+        "config_file",
+        "Optional: Path to a configuration file. If not provided, wlmaker "
+        "will scan default paths for a configuration file, or fall back to "
+        "a built-in configuration.",
+        NULL,
+        &wlmaker_arg_config_file_ptr),
+    BS_ARG_SENTINEL()
+};
+
 /** Set of commands to be executed on startup. */
 static const char *autostarted_commands[] = {
     "/usr/bin/foot",
@@ -209,7 +224,7 @@ void toggle_maximize(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 
 /* == Main program ========================================================= */
 /** The main program. */
-int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
+int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 {
     wlmaker_dock_t            *dock_ptr = NULL;
     wlmaker_clip_t            *clip_ptr = NULL;
@@ -232,10 +247,20 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;
 
+    if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
+        fprintf(stderr, "Failed to parse commandline arguments.\n");
+        return EXIT_FAILURE;
+    }
+    wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(
+        wlmaker_arg_config_file_ptr);
+    if (NULL != wlmaker_arg_config_file_ptr) free(wlmaker_arg_config_file_ptr);
+    if (NULL == config_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize configuration.\n");
+        return EXIT_FAILURE;
+    }
+
     BS_ASSERT(bs_ptr_stack_init(&subprocess_stack));
 
-    wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(NULL);
-    wlmcfg_object_destroy(wlmcfg_object_from_dict(config_dict_ptr));
 
     wlmaker_server_t *server_ptr = wlmaker_server_create();
     if (NULL == server_ptr) return EXIT_FAILURE;
@@ -345,6 +370,7 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
     }
 
     bs_ptr_stack_fini(&subprocess_stack);
+    wlmcfg_object_destroy(wlmcfg_object_from_dict(config_dict_ptr));
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }
