@@ -36,12 +36,6 @@ static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
 
 /* == Data ================================================================= */
 
-/** Repeat rate, per second. */
-const int32_t config_keyboard_repeat_rate = 25;
-
-/** Repeat delay, in ms. */
-const int32_t config_keyboard_repeat_delay = 300;
-
 /** Name of the xcursor theme. NULL picks the default. */
 const char *config_xcursor_theme_name = NULL;
 

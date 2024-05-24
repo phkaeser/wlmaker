@@ -49,6 +49,10 @@ struct _wlmaker_keyboard_t {
 static bool _wlmaker_keyboard_populate_rules(
     wlmcfg_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr);
+static bool _wlmaker_keyboard_populate_repeat(
+    wlmcfg_dict_t *dict_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr);
 
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
@@ -112,10 +116,14 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     xkb_context_unref(xkb_context_ptr);
 
     // Repeat rate and delay.
-    wlr_keyboard_set_repeat_info(
-        keyboard_ptr->wlr_keyboard_ptr,
-        config_keyboard_repeat_rate,
-        config_keyboard_repeat_delay);
+    int32_t rate, delay;
+    if (!_wlmaker_keyboard_populate_repeat(
+            keyboard_ptr->config_dict_ptr, &rate, &delay)) {
+        bs_log(BS_ERROR, "No repeat data found in 'Keyboard' dict.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+    wlr_keyboard_set_repeat_info(keyboard_ptr->wlr_keyboard_ptr, rate, delay);
 
     wlmtk_util_connect_listener_signal(
         &keyboard_ptr->wlr_keyboard_ptr->events.key,
@@ -182,6 +190,57 @@ bool _wlmaker_keyboard_populate_rules(
         wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Variant")));
     rules_ptr->options = wlmcfg_string_value(
         wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Options")));
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Retrieves and converts the 'Repeat' parameters from the config dict.
+ *
+ * @param dict_ptr
+ * @param rate_ptr
+ * @param delay_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmaker_keyboard_populate_repeat(
+    wlmcfg_dict_t *dict_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(dict_ptr, "Repeat");
+    if (NULL == obj_ptr) {
+        bs_log(BS_ERROR, "No 'Repeat' section in Keyboard dict.");
+        return false;
+    }
+
+    dict_ptr = wlmcfg_dict_from_object(obj_ptr);
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "Not a dict.");
+        return false;
+    }
+
+    uint64_t value;
+    if (!bs_strconvert_uint64(
+            wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Delay"))),
+            &value, 10) ||
+        value > INT32_MAX) {
+        bs_log(BS_ERROR, "Invalid value for 'Delay': %s",
+               wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Delay"))));
+        return false;
+    }
+    *delay_ptr = value;
+
+    if (!bs_strconvert_uint64(
+            wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rate"))),
+            &value, 10) ||
+        value > INT32_MAX) {
+        bs_log(BS_ERROR, "Invalid value for 'Rate': %s",
+               wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rate"))));
+        return false;
+    }
+    *rate_ptr = value;
 
     return true;
 }
