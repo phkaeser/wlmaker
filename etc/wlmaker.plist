@@ -14,5 +14,9 @@
       // Repeats per second.
       Rate = 25
     }
-  }
+  };
+  // Optional array: Commands to start once wlmaker is running.
+  Autostart = (
+    "/usr/bin/foot"
+  )
 }
