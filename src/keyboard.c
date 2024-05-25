@@ -171,16 +171,11 @@ bool _wlmaker_keyboard_populate_rules(
         return false;
     }
 
-    rules_ptr->rules = wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rules")));
-    rules_ptr->model = wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Model")));
-    rules_ptr->layout = wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Layout")));
-    rules_ptr->variant = wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Variant")));
-    rules_ptr->options = wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Options")));
+    rules_ptr->rules = wlmcfg_dict_get_string_value(dict_ptr, "Rules");
+    rules_ptr->model = wlmcfg_dict_get_string_value(dict_ptr, "Model");
+    rules_ptr->layout = wlmcfg_dict_get_string_value(dict_ptr, "Layout");
+    rules_ptr->variant = wlmcfg_dict_get_string_value(dict_ptr, "Variant");
+    rules_ptr->options = wlmcfg_dict_get_string_value(dict_ptr, "Options");
 
     return true;
 }
@@ -208,21 +203,21 @@ bool _wlmaker_keyboard_populate_repeat(
 
     uint64_t value;
     if (!bs_strconvert_uint64(
-            wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Delay"))),
+            wlmcfg_dict_get_string_value(dict_ptr, "Delay"),
             &value, 10) ||
         value > INT32_MAX) {
         bs_log(BS_ERROR, "Invalid value for 'Delay': %s",
-               wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Delay"))));
+               wlmcfg_dict_get_string_value(dict_ptr, "Delay"));
         return false;
     }
     *delay_ptr = value;
 
     if (!bs_strconvert_uint64(
-            wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rate"))),
+            wlmcfg_dict_get_string_value(dict_ptr, "Rate"),
             &value, 10) ||
         value > INT32_MAX) {
         bs_log(BS_ERROR, "Invalid value for 'Rate': %s",
-               wlmcfg_string_value(wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, "Rate"))));
+               wlmcfg_dict_get_string_value(dict_ptr, "Rate"));
         return false;
     }
     *rate_ptr = value;

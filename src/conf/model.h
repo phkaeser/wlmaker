@@ -152,6 +152,14 @@ static inline wlmcfg_dict_t *wlmcfg_dict_get_dict(
     return wlmcfg_dict_from_object(wlmcfg_dict_get(dict_ptr, key_ptr));
 }
 
+/** @return the string value of the specified object, or NULL on rror. */
+static inline const char *wlmcfg_dict_get_string_value(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr) {
+    return wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, key_ptr)));
+}
+
 /* -- Array methods -------------------------------------------------------- */
 
 /**
