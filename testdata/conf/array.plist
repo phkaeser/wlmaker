@@ -1,0 +1,6 @@
+// A toplevel array. We do currently NOT enforce the same type.
+(
+  elem0,  // a string.
+  (subelem0, subelem1),  // A sub-array.
+  {subkey0 = (val0, val1)}
+)

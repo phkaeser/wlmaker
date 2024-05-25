@@ -53,6 +53,7 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "xwl.h"
 #include "workspace.h"
 
+#include "conf/model.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -61,6 +62,9 @@ extern "C" {
 
 /** State of the Wayland server. */
 struct _wlmaker_server_t {
+    /** Configuration dictionnary. */
+    wlmcfg_dict_t             *config_dict_ptr;
+
     /** Wayland display. */
     struct wl_display         *wl_display_ptr;
     /** Name of the socket for clients to connect. */
@@ -191,10 +195,13 @@ typedef struct _wlmaker_server_key_binding_t wlmaker_server_key_binding_t;
 /**
  * Creates the server and initializes all needed sub-modules.
  *
+ * @param config_dict_ptr     Configuration, as dictionary object. The server
+ *                            will keep a reference on it until destroyed.
+ *
  * @return The server handle or NULL on failure. The handle must be freed by
  * calling wlmaker_server_destroy().
  */
-wlmaker_server_t *wlmaker_server_create(void);
+wlmaker_server_t *wlmaker_server_create(wlmcfg_dict_t *config_dict_ptr);
 
 /**
  * Destroys the server handle, as created by wlmaker_server_create().

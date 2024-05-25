@@ -136,8 +136,10 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
 
 * Configuration file support
-  * Basic theme configuration (decoration style) loaded from configuration file.
-  * Workspaces and backgrounds .
+  * [done] Pick or implement parser for configuration file.
+  * File for basic configuration: Keyboard map & config, auto-started apps.
+  * File for visual style (theme): decoration style, background.
+  * File to define workspaces and dock.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.

@@ -79,9 +79,11 @@ bool wlmaker_decorations_draw_tile_icon(
               cairo_image_surface_get_height(cairo_get_target(cairo_ptr)));
 
     char full_path[PATH_MAX];
-    char *path_ptr = bs_file_lookup(icon_path_ptr, lookup_paths, 0, full_path);
+    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
+        icon_path_ptr, lookup_paths, 0, full_path);
     if (NULL == path_ptr) {
-        bs_log(BS_ERROR, "Failed bs_file_lookup(%s, ...) in lookup_paths.",
+        bs_log(BS_ERROR | BS_ERRNO,
+               "Failed bs_file_resolve_and_lookup_from_paths(%s, ...).",
                icon_path_ptr);
         return false;
     }

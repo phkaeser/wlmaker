@@ -96,10 +96,17 @@ static void wlmaker_server_switch_to_workspace(
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_server_t *wlmaker_server_create(void)
+wlmaker_server_t *wlmaker_server_create(wlmcfg_dict_t *config_dict_ptr)
 {
     wlmaker_server_t *server_ptr = logged_calloc(1, sizeof(wlmaker_server_t));
     if (NULL == server_ptr) return NULL;
+
+    server_ptr->config_dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_object_dup(wlmcfg_object_from_dict(config_dict_ptr)));
+    if (NULL == server_ptr->config_dict_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
 
     wl_signal_init(&server_ptr->workspace_changed);
 
@@ -460,6 +467,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wlr_allocator_ptr) {
         wlr_allocator_destroy(server_ptr->wlr_allocator_ptr);
         server_ptr->wlr_allocator_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->config_dict_ptr) {
+        wlmcfg_dict_destroy(server_ptr->config_dict_ptr);
+        server_ptr->config_dict_ptr = NULL;
     }
 
     free(server_ptr);

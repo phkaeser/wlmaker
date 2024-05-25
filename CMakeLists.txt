@@ -82,6 +82,7 @@ ADD_SUBDIRECTORY(icons)
 ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(src/conf)
 ADD_SUBDIRECTORY(src/toolkit)
 
 # Adds submodules last, to permit checking on already-existing targets.

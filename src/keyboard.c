@@ -28,6 +28,8 @@
 
 /** Keyboard handle. */
 struct _wlmaker_keyboard_t {
+    /** Configuration dictionnary, just the "Keyboard" section. */
+    wlmcfg_dict_t             *config_dict_ptr;
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
     /** The wlroots keyboard structure. */
@@ -43,6 +45,14 @@ struct _wlmaker_keyboard_t {
     /** Whether the task switching mode is currently enabled. */
     bool                      task_switch_mode_enabled;
 };
+
+static bool _wlmaker_keyboard_populate_rules(
+    wlmcfg_dict_t *dict_ptr,
+    struct xkb_rule_names *rules_ptr);
+static bool _wlmaker_keyboard_populate_repeat(
+    wlmcfg_dict_t *dict_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr);
 
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
@@ -63,22 +73,39 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     keyboard_ptr->wlr_keyboard_ptr = wlr_keyboard_ptr;
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
+    // Retrieve configuration.
+    wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
+        server_ptr->config_dict_ptr, "Keyboard");
+    if (NULL == config_dict_ptr) {
+        bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+    keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_dict_dup(config_dict_ptr));
+
+    struct xkb_rule_names xkb_rule;
+    if (!_wlmaker_keyboard_populate_rules(
+            keyboard_ptr->config_dict_ptr, &xkb_rule)) {
+        bs_log(BS_ERROR, "No rule data found in 'Keyboard' dict.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+
     // Set keyboard layout.
     struct xkb_context *xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     struct xkb_keymap *xkb_keymap_ptr = xkb_keymap_new_from_names(
-        xkb_context_ptr,
-        config_keyboard_rule_names,
-        XKB_KEYMAP_COMPILE_NO_FLAGS);
+        xkb_context_ptr, &xkb_rule, XKB_KEYMAP_COMPILE_NO_FLAGS);
     if (NULL == xkb_keymap_ptr) {
         bs_log(BS_ERROR, "Failed xkb_keymap_new_from_names(%p, { .rules = %s, "
                ".model = %s, .layout = %s, variant = %s, .options = %s }, "
                "XKB_KEYMAP_COMPILE_NO_NO_FLAGS)",
                xkb_context_ptr,
-               config_keyboard_rule_names->rules,
-               config_keyboard_rule_names->model,
-               config_keyboard_rule_names->layout,
-               config_keyboard_rule_names->variant,
-               config_keyboard_rule_names->options);
+               xkb_rule.rules,
+               xkb_rule.model,
+               xkb_rule.layout,
+               xkb_rule.variant,
+               xkb_rule.options);
         wlmaker_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
@@ -87,10 +114,14 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     xkb_context_unref(xkb_context_ptr);
 
     // Repeat rate and delay.
-    wlr_keyboard_set_repeat_info(
-        keyboard_ptr->wlr_keyboard_ptr,
-        config_keyboard_repeat_rate,
-        config_keyboard_repeat_delay);
+    int32_t rate, delay;
+    if (!_wlmaker_keyboard_populate_repeat(
+            keyboard_ptr->config_dict_ptr, &rate, &delay)) {
+        bs_log(BS_ERROR, "No repeat data found in 'Keyboard' dict.");
+        wlmaker_keyboard_destroy(keyboard_ptr);
+        return NULL;
+    }
+    wlr_keyboard_set_repeat_info(keyboard_ptr->wlr_keyboard_ptr, rate, delay);
 
     wlmtk_util_connect_listener_signal(
         &keyboard_ptr->wlr_keyboard_ptr->events.key,
@@ -111,10 +142,88 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
     wl_list_remove(&keyboard_ptr->key_listener.link);
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
 
+    if (NULL != keyboard_ptr->config_dict_ptr) {
+        wlmcfg_dict_destroy(keyboard_ptr->config_dict_ptr);
+        keyboard_ptr->config_dict_ptr = NULL;
+    }
+
     free(keyboard_ptr);
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Populates the XKB rules struct from the config dict.
+ *
+ * @param dict_ptr
+ * @param rules_ptr
+ *
+ * @return true on success
+ */
+bool _wlmaker_keyboard_populate_rules(
+    wlmcfg_dict_t *dict_ptr,
+    struct xkb_rule_names *rules_ptr)
+{
+    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "XkbRMLVO");
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "No 'XkbRMLVO' dict in 'Keyboard' dict.");
+        return false;
+    }
+
+    rules_ptr->rules = wlmcfg_dict_get_string_value(dict_ptr, "Rules");
+    rules_ptr->model = wlmcfg_dict_get_string_value(dict_ptr, "Model");
+    rules_ptr->layout = wlmcfg_dict_get_string_value(dict_ptr, "Layout");
+    rules_ptr->variant = wlmcfg_dict_get_string_value(dict_ptr, "Variant");
+    rules_ptr->options = wlmcfg_dict_get_string_value(dict_ptr, "Options");
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Retrieves and converts the 'Repeat' parameters from the config dict.
+ *
+ * @param dict_ptr
+ * @param rate_ptr
+ * @param delay_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmaker_keyboard_populate_repeat(
+    wlmcfg_dict_t *dict_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr)
+{
+    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "Repeat");
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "No 'Repeat' dict in 'Keyboard' dict.");
+        return false;
+    }
+
+    uint64_t value;
+    if (!bs_strconvert_uint64(
+            wlmcfg_dict_get_string_value(dict_ptr, "Delay"),
+            &value, 10) ||
+        value > INT32_MAX) {
+        bs_log(BS_ERROR, "Invalid value for 'Delay': %s",
+               wlmcfg_dict_get_string_value(dict_ptr, "Delay"));
+        return false;
+    }
+    *delay_ptr = value;
+
+    if (!bs_strconvert_uint64(
+            wlmcfg_dict_get_string_value(dict_ptr, "Rate"),
+            &value, 10) ||
+        value > INT32_MAX) {
+        bs_log(BS_ERROR, "Invalid value for 'Rate': %s",
+               wlmcfg_dict_get_string_value(dict_ptr, "Rate"));
+        return false;
+    }
+    *rate_ptr = value;
+
+    return true;
+}
 
 /* ------------------------------------------------------------------------- */
 /**

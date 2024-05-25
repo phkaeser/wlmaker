@@ -30,16 +30,31 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#include "conf/plist.h"
+
 #include "clip.h"
+#include "config.h"
 #include "dock.h"
 #include "server.h"
 #include "task_list.h"
 
-/** Set of commands to be executed on startup. */
-static const char *autostarted_commands[] = {
-    "/usr/bin/foot",
-    NULL  // sentinel.
+/** Will hold the value of --config_file. */
+static char *wlmaker_arg_config_file_ptr = NULL;
+
+/** Definition of commandline arguments. */
+static const bs_arg_t wlmaker_args[] = {
+    BS_ARG_STRING(
+        "config_file",
+        "Optional: Path to a configuration file. If not provided, wlmaker "
+        "will scan default paths for a configuration file, or fall back to "
+        "a built-in configuration.",
+        NULL,
+        &wlmaker_arg_config_file_ptr),
+    BS_ARG_SENTINEL()
 };
+
+/** References auto-started subprocesses. */
+static bs_ptr_stack_t         wlmaker_subprocess_stack;
 
 /** Compiled regular expression for extracting file & line no. from wlr_log. */
 static regex_t                wlmaker_wlr_log_regex;
@@ -95,6 +110,26 @@ static void wlr_to_bs_log(
 
     bs_log_write(severity, &buf[matches[1].rm_so], (int)line_no, "%s",
         &buf[matches[0].rm_eo]);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Launches a sub-process, and keeps it on the subprocess stack. */
+bool start_subprocess(const char *cmdline_ptr)
+{
+    bs_subprocess_t *sp_ptr = bs_subprocess_create_cmdline(cmdline_ptr);
+    if (NULL == sp_ptr) {
+        bs_log(BS_ERROR, "Failed bs_subprocess_create_cmdline(\"%s\")",
+               cmdline_ptr);
+        return false;
+    }
+    if (!bs_subprocess_start(sp_ptr)) {
+        bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\".",
+               cmdline_ptr);
+        return false;
+    }
+    // Push to stack. Ignore errors: We'll keep it running untracked.
+    bs_ptr_stack_push(&wlmaker_subprocess_stack, sp_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -206,13 +241,11 @@ void toggle_maximize(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 
 /* == Main program ========================================================= */
 /** The main program. */
-int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
+int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 {
     wlmaker_dock_t            *dock_ptr = NULL;
     wlmaker_clip_t            *clip_ptr = NULL;
     wlmaker_task_list_t       *task_list_ptr = NULL;
-    bs_ptr_stack_t            subprocess_stack;
-    bs_subprocess_t           *subprocess_ptr;
     int                       rv = EXIT_SUCCESS;
 
     rv = regcomp(
@@ -229,9 +262,22 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;
 
-    BS_ASSERT(bs_ptr_stack_init(&subprocess_stack));
+    if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
+        fprintf(stderr, "Failed to parse commandline arguments.\n");
+        return EXIT_FAILURE;
+    }
+    wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(
+        wlmaker_arg_config_file_ptr);
+    if (NULL != wlmaker_arg_config_file_ptr) free(wlmaker_arg_config_file_ptr);
+    if (NULL == config_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize configuration.\n");
+        return EXIT_FAILURE;
+    }
 
-    wlmaker_server_t *server_ptr = wlmaker_server_create();
+    BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
+
+    wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
+    wlmcfg_dict_destroy(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
     wlmaker_server_bind_key(
@@ -298,21 +344,14 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
 
         setenv("WAYLAND_DISPLAY", server_ptr->wl_socket_name_ptr, true);
 
-        for (const char **cmd_ptr = &autostarted_commands[0];
-             NULL != *cmd_ptr;
-             ++cmd_ptr) {
-            subprocess_ptr = bs_subprocess_create_cmdline(*cmd_ptr);
-            if (NULL == subprocess_ptr) {
-                bs_log(BS_ERROR, "Failed bs_subprocess_create_cmdline(\"%s\")",
-                       *cmd_ptr);
-                return EXIT_FAILURE;
+        wlmcfg_array_t *autostarted_ptr = wlmcfg_dict_get_array(
+            config_dict_ptr, "Autostart");
+        if (NULL != autostarted_ptr) {
+            for (size_t i = 0; i < wlmcfg_array_size(autostarted_ptr); ++i) {
+                const char *cmd_ptr = wlmcfg_array_string_value_at(
+                    autostarted_ptr, i);
+                if (!start_subprocess(cmd_ptr)) return EXIT_FAILURE;
             }
-            if (!bs_subprocess_start(subprocess_ptr)) {
-                bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\".",
-                       *cmd_ptr);
-                return EXIT_FAILURE;
-            }
-            bs_ptr_stack_push(&subprocess_stack, subprocess_ptr);
         }
 
         dock_ptr = wlmaker_dock_create(server_ptr);
@@ -334,11 +373,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
     if (NULL != dock_ptr) wlmaker_dock_destroy(dock_ptr);
     wlmaker_server_destroy(server_ptr);
 
-    while (NULL != (subprocess_ptr = bs_ptr_stack_pop(&subprocess_stack))) {
-        bs_subprocess_destroy(subprocess_ptr);
+    bs_subprocess_t *sp_ptr;
+    while (NULL != (sp_ptr = bs_ptr_stack_pop(&wlmaker_subprocess_stack))) {
+        bs_subprocess_destroy(sp_ptr);
     }
+    bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
-    bs_ptr_stack_fini(&subprocess_stack);
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }
