@@ -62,7 +62,6 @@ wlmcfg_object_t *wlmcfg_object_dup(wlmcfg_object_t *object_ptr);
  */
 void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
 
-/* -- String methods ------------------------------------------------------- */
 /**
  * Creates a string object.
  *
@@ -77,12 +76,6 @@ wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
 /** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
 wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
 
-/** Destroys the string. Wraps to @ref wlmcfg_object_destroy. */
-static inline void wlmcf_string_destroy(wlmcfg_string_t *string_ptr)
-{
-    wlmcfg_object_destroy(wlmcfg_object_from_string(string_ptr));
-}
-
 /**
  * Returns the value of the string.
  *
@@ -91,8 +84,6 @@ static inline void wlmcf_string_destroy(wlmcfg_string_t *string_ptr)
  * @return Pointer to the string's value.
  */
 const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr);
-
-/* -- Dict methods --------------------------------------------------------- */
 
 /**
  * Creates a dict object.
@@ -105,16 +96,6 @@ wlmcfg_dict_t *wlmcfg_dict_create(void);
 wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr);
 /** @return the @ref wlmcfg_dict_t for `object_ptr`. NULL if not a dict. */
 wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
-
-/** Gets a reference to `dict_ptr`. */
-static inline wlmcfg_dict_t *wlmcfg_dict_dup(wlmcfg_dict_t *dict_ptr) {
-    return wlmcfg_dict_from_object(
-        wlmcfg_object_dup(wlmcfg_object_from_dict(dict_ptr)));
-}
-/** Destroys the dict. Wraps to @ref wlmcfg_object_destroy. */
-static inline void wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr) {
-    wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
-}
 
 /**
  * Adds an object to the dict.
@@ -138,31 +119,6 @@ wlmcfg_object_t *wlmcfg_dict_get(
     const char *key_ptr);
 
 /**
- * Returns the specified dict from the dict.
- *
- * @param dict_ptr
- * @param key_ptr
- *
- * @return The dict requested for, or NULL if the object is not a dict or no
- *     value with the specified key exists in `dict_ptr`.
- */
-static inline wlmcfg_dict_t *wlmcfg_dict_get_dict(
-    wlmcfg_dict_t *dict_ptr,
-    const char *key_ptr) {
-    return wlmcfg_dict_from_object(wlmcfg_dict_get(dict_ptr, key_ptr));
-}
-
-/** @return the string value of the specified object, or NULL on rror. */
-static inline const char *wlmcfg_dict_get_string_value(
-    wlmcfg_dict_t *dict_ptr,
-    const char *key_ptr) {
-    return wlmcfg_string_value(
-        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, key_ptr)));
-}
-
-/* -- Array methods -------------------------------------------------------- */
-
-/**
  * Creates an array object.
  *
  * @return The array object, or NULL on error.
@@ -173,11 +129,6 @@ wlmcfg_array_t *wlmcfg_array_create(void);
 wlmcfg_object_t *wlmcfg_object_from_array(wlmcfg_array_t *array_ptr);
 /** @return the @ref wlmcfg_array_t for `object_ptr`. NULL if not an array. */
 wlmcfg_array_t *wlmcfg_array_from_object(wlmcfg_object_t *object_ptr);
-
-/** Destroys the array. Wraps to @ref wlmcfg_object_destroy. */
-static inline void wlmcfg_array_destroy(wlmcfg_array_t *array_ptr) {
-    wlmcfg_object_destroy(wlmcfg_object_from_array(array_ptr));
-}
 
 /**
  * Adds an object to the end of the array.
@@ -192,6 +143,9 @@ bool wlmcfg_array_push_back(
     wlmcfg_array_t *array_ptr,
     wlmcfg_object_t *object_ptr);
 
+/** @return Size of the array, ie. the number of contained objects. */
+size_t wlmcfg_array_size(wlmcfg_array_t *array_ptr);
+
 /**
  * Returns the object at the position `index` of the array.
  *
@@ -204,6 +158,57 @@ bool wlmcfg_array_push_back(
 wlmcfg_object_t *wlmcfg_array_at(
     wlmcfg_array_t *array_ptr,
     size_t index);
+
+/* -- Static & inlined methods: Convenience wrappers ----------------------- */
+
+/** Destroys the string. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcf_string_destroy(wlmcfg_string_t *string_ptr)
+{
+    wlmcfg_object_destroy(wlmcfg_object_from_string(string_ptr));
+}
+
+/** Gets a reference to `dict_ptr`. */
+static inline wlmcfg_dict_t *wlmcfg_dict_dup(wlmcfg_dict_t *dict_ptr) {
+    return wlmcfg_dict_from_object(
+        wlmcfg_object_dup(wlmcfg_object_from_dict(dict_ptr)));
+}
+/** Destroys the dict. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr) {
+    wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
+}
+
+/** @return the dict value of the specified object, or NULL on error. */
+static inline wlmcfg_dict_t *wlmcfg_dict_get_dict(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr) {
+    return wlmcfg_dict_from_object(wlmcfg_dict_get(dict_ptr, key_ptr));
+}
+
+/** @return the array value of the specified object, or NULL on error. */
+static inline wlmcfg_array_t *wlmcfg_dict_get_array(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr) {
+    return wlmcfg_array_from_object(wlmcfg_dict_get(dict_ptr, key_ptr));
+}
+/** @return the string value of the specified object, or NULL on error. */
+static inline const char *wlmcfg_dict_get_string_value(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr) {
+    return wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_dict_get(dict_ptr, key_ptr)));
+}
+
+/** Destroys the array. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcfg_array_destroy(wlmcfg_array_t *array_ptr) {
+    wlmcfg_object_destroy(wlmcfg_object_from_array(array_ptr));
+}
+
+/** @return the value of the string object at `idx`, or NULL on error. */
+static inline const char *wlmcfg_array_string_value_at(
+    wlmcfg_array_t *array_ptr, size_t idx) {
+    return wlmcfg_string_value(
+        wlmcfg_string_from_object(wlmcfg_array_at(array_ptr, idx)));
+}
 
 /** Unit tests for the config data model. */
 extern const bs_test_case_t wlmcfg_model_test_cases[];

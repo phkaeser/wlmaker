@@ -256,6 +256,12 @@ bool wlmcfg_array_push_back(
 }
 
 /* ------------------------------------------------------------------------- */
+size_t wlmcfg_array_size(wlmcfg_array_t *array_ptr)
+{
+    return bs_ptr_vector_size(&array_ptr->object_vector);
+}
+
+/* ------------------------------------------------------------------------- */
 wlmcfg_object_t *wlmcfg_array_at(
     wlmcfg_array_t *array_ptr,
     size_t index)
