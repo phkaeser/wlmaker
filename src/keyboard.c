@@ -74,17 +74,15 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     // Retrieve configuration.
-    wlmcfg_object_t *object_ptr = wlmcfg_dict_get(
+    wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
         server_ptr->config_dict_ptr, "Keyboard");
-    wlmcfg_dict_t *config_dict_ptr;
-    if (NULL == object_ptr ||
-        NULL == (config_dict_ptr = wlmcfg_dict_from_object(object_ptr))) {
+    if (NULL == config_dict_ptr) {
         bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
         wlmaker_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
-    BS_ASSERT_NOTNULL(wlmcfg_object_dup(object_ptr));
-    keyboard_ptr->config_dict_ptr = config_dict_ptr;
+    keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
+        wlmcfg_dict_dup(config_dict_ptr));
 
     struct xkb_rule_names xkb_rule;
     if (!_wlmaker_keyboard_populate_rules(
@@ -167,15 +165,9 @@ bool _wlmaker_keyboard_populate_rules(
     wlmcfg_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr)
 {
-    wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(dict_ptr, "XkbRMLVO");
-    if (NULL == obj_ptr) {
-        bs_log(BS_ERROR, "No XkbRMLVO section in Keyboard dict.");
-        return false;
-    }
-
-    dict_ptr = wlmcfg_dict_from_object(obj_ptr);
+    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "XkbRMLVO");
     if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "Not a dict.");
+        bs_log(BS_ERROR, "No 'XkbRMLVO' dict in 'Keyboard' dict.");
         return false;
     }
 
@@ -208,15 +200,9 @@ bool _wlmaker_keyboard_populate_repeat(
     int32_t *rate_ptr,
     int32_t *delay_ptr)
 {
-    wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(dict_ptr, "Repeat");
-    if (NULL == obj_ptr) {
-        bs_log(BS_ERROR, "No 'Repeat' section in Keyboard dict.");
-        return false;
-    }
-
-    dict_ptr = wlmcfg_dict_from_object(obj_ptr);
+    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "Repeat");
     if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "Not a dict.");
+        bs_log(BS_ERROR, "No 'Repeat' dict in 'Keyboard' dict.");
         return false;
     }
 

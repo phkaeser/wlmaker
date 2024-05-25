@@ -106,6 +106,11 @@ wlmcfg_object_t *wlmcfg_object_from_dict(wlmcfg_dict_t *dict_ptr);
 /** @return the @ref wlmcfg_dict_t for `object_ptr`. NULL if not a dict. */
 wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
 
+/** Gets a reference to `dict_ptr`. */
+static inline wlmcfg_dict_t *wlmcfg_dict_dup(wlmcfg_dict_t *dict_ptr) {
+    return wlmcfg_dict_from_object(
+        wlmcfg_object_dup(wlmcfg_object_from_dict(dict_ptr)));
+}
 /** Destroys the dict. Wraps to @ref wlmcfg_object_destroy. */
 static inline void wlmcfg_dict_destroy(wlmcfg_dict_t *dict_ptr) {
     wlmcfg_object_destroy(wlmcfg_object_from_dict(dict_ptr));
@@ -131,6 +136,21 @@ bool wlmcfg_dict_add(
 wlmcfg_object_t *wlmcfg_dict_get(
     wlmcfg_dict_t *dict_ptr,
     const char *key_ptr);
+
+/**
+ * Returns the specified dict from the dict.
+ *
+ * @param dict_ptr
+ * @param key_ptr
+ *
+ * @return The dict requested for, or NULL if the object is not a dict or no
+ *     value with the specified key exists in `dict_ptr`.
+ */
+static inline wlmcfg_dict_t *wlmcfg_dict_get_dict(
+    wlmcfg_dict_t *dict_ptr,
+    const char *key_ptr) {
+    return wlmcfg_dict_from_object(wlmcfg_dict_get(dict_ptr, key_ptr));
+}
 
 /* -- Array methods -------------------------------------------------------- */
 
