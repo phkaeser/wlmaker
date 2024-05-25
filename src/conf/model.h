@@ -72,6 +72,17 @@ void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr);
  */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
 
+/** Gets the superclass @ref wlmcfg_object_t from the string. */
+wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
+/** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
+wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
+
+/** Destroys the string. Wraps to @ref wlmcfg_object_destroy. */
+static inline void wlmcf_string_destroy(wlmcfg_string_t *string_ptr)
+{
+    wlmcfg_object_destroy(wlmcfg_object_from_string(string_ptr));
+}
+
 /**
  * Returns the value of the string.
  *
@@ -80,11 +91,6 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr);
  * @return Pointer to the string's value.
  */
 const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr);
-
-/** Gets the superclass @ref wlmcfg_object_t from the string. */
-wlmcfg_object_t *wlmcfg_object_from_string(wlmcfg_string_t *string_ptr);
-/** Gets the @ref wlmcfg_string_t for `object_ptr`. NULL if not a string. */
-wlmcfg_string_t *wlmcfg_string_from_object(wlmcfg_object_t *object_ptr);
 
 /* -- Dict methods --------------------------------------------------------- */
 
