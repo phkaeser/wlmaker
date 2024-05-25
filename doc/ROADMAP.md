@@ -137,7 +137,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Configuration file support
   * [done] Pick or implement parser for configuration file.
-  * File for basic configuration: Keymap, auto-started applications.
+  * File for basic configuration: Keyboard map & config, auto-started apps.
   * File for visual style (theme): decoration style, background.
   * File to define workspaces and dock.
 
