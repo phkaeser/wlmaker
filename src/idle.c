@@ -108,7 +108,7 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
         wlmaker_idle_monitor_destroy(monitor_ptr);
         return NULL;
     }
-    wlmcfg_dict_dup(monitor_ptr->lock_config_dict_ptr);
+    wlmcfg_dict_ref(monitor_ptr->lock_config_dict_ptr);
 
     monitor_ptr->wlr_idle_inhibit_manager_v1_ptr =
         wlr_idle_inhibit_v1_create(server_ptr->wl_display_ptr);
@@ -162,7 +162,7 @@ void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr)
     }
 
     if (NULL != idle_monitor_ptr->lock_config_dict_ptr) {
-        wlmcfg_dict_destroy(idle_monitor_ptr->lock_config_dict_ptr);
+        wlmcfg_dict_unref(idle_monitor_ptr->lock_config_dict_ptr);
         idle_monitor_ptr->lock_config_dict_ptr = NULL;
     }
 

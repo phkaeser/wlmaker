@@ -277,7 +277,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
 
     wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
-    wlmcfg_dict_destroy(config_dict_ptr);
+    wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
     wlmaker_server_bind_key(

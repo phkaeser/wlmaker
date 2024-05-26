@@ -82,7 +82,7 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         return NULL;
     }
     keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_dup(config_dict_ptr));
+        wlmcfg_dict_ref(config_dict_ptr));
 
     struct xkb_rule_names xkb_rule;
     if (!_wlmaker_keyboard_populate_rules(
@@ -143,7 +143,7 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
 
     if (NULL != keyboard_ptr->config_dict_ptr) {
-        wlmcfg_dict_destroy(keyboard_ptr->config_dict_ptr);
+        wlmcfg_dict_unref(keyboard_ptr->config_dict_ptr);
         keyboard_ptr->config_dict_ptr = NULL;
     }
 

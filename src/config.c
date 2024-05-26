@@ -169,7 +169,7 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(obj_ptr);
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "Not a plist dict in %s", fname_ptr);
-        wlmcfg_object_destroy(obj_ptr);
+        wlmcfg_object_unref(obj_ptr);
         return NULL;
     }
 
