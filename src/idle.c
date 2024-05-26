@@ -101,14 +101,13 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
     monitor_ptr->wl_event_loop_ptr = wl_display_get_event_loop(
         server_ptr->wl_display_ptr);
 
-    monitor_ptr->lock_config_dict_ptr = wlmcfg_dict_get_dict(
-        server_ptr->config_dict_ptr, "ScreenLock");
+    monitor_ptr->lock_config_dict_ptr = wlmcfg_dict_ref(
+        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "ScreenLock"));
     if (NULL == monitor_ptr->lock_config_dict_ptr) {
         bs_log(BS_ERROR, "No 'ScreenLock' dict found in config.");
         wlmaker_idle_monitor_destroy(monitor_ptr);
         return NULL;
     }
-    wlmcfg_dict_ref(monitor_ptr->lock_config_dict_ptr);
 
     monitor_ptr->wlr_idle_inhibit_manager_v1_ptr =
         wlr_idle_inhibit_v1_create(server_ptr->wl_display_ptr);
