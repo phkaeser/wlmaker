@@ -49,9 +49,6 @@ const float config_output_scale = 1.0;
 const wlmaker_config_decoration_t config_decoration =
     WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER;
 
-/** Time interval within two clicks need to happen to count as double-click. */
-const uint64_t wlmaker_config_double_click_wait_msec = 250ull;
-
 /** Modifiers for moving the window with the cursor. */
 const uint32_t wlmaker_config_window_drag_modifiers =
     WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;

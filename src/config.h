@@ -98,7 +98,6 @@ extern const float config_output_scale;
 
 extern const wlmaker_config_decoration_t config_decoration;
 
-extern const uint64_t wlmaker_config_double_click_wait_msec;
 extern const uint32_t wlmaker_config_window_drag_modifiers;
 
 extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
