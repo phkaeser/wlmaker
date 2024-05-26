@@ -42,18 +42,12 @@ const char *config_xcursor_theme_name = NULL;
 /** Base size for the xcursor theme (when scale==1.0). */
 const uint32_t config_xcursor_theme_size = 24;
 
-/** Delay in milliseconds until the idle monitor invokes a lock. */
-const int config_idle_lock_msec = 300000;
-
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
 
 /** Whether to always request server-side decorations. */
 const wlmaker_config_decoration_t config_decoration =
     WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER;
-
-/** Time interval within two clicks need to happen to count as double-click. */
-const uint64_t wlmaker_config_double_click_wait_msec = 250ull;
 
 /** Modifiers for moving the window with the cursor. */
 const uint32_t wlmaker_config_window_drag_modifiers =
@@ -169,7 +163,7 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(obj_ptr);
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "Not a plist dict in %s", fname_ptr);
-        wlmcfg_object_destroy(obj_ptr);
+        wlmcfg_object_unref(obj_ptr);
         return NULL;
     }
 

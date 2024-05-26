@@ -94,13 +94,10 @@ typedef struct {
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
 
-extern const int config_idle_lock_msec;
-
 extern const float config_output_scale;
 
 extern const wlmaker_config_decoration_t config_decoration;
 
-extern const uint64_t wlmaker_config_double_click_wait_msec;
 extern const uint32_t wlmaker_config_window_drag_modifiers;
 
 extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
@@ -118,7 +115,7 @@ extern const wlmaker_config_theme_t wlmaker_config_theme;
  *
  * @return A dict object, or NULL on error. Errors will already be logged.
  *     The caller must free the associated resources by calling
- *     @ref wlmcfg_object_destroy.
+ *     @ref wlmcfg_object_unref.
  */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
 

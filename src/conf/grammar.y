@@ -119,7 +119,7 @@ kv:             TK_STRING TK_EQUAL object {
         bs_log(BS_WARNING, "Failed wlmcfg_dict_add(%p, %s, %p)",
                dict_ptr, $1, object_ptr);
     }
-    wlmcfg_object_destroy(object_ptr);
+    wlmcfg_object_unref(object_ptr);
     free($1);
     if (!rv) return -1;
                 }
@@ -145,7 +145,7 @@ element:        object {
         bs_log(BS_WARNING, "Failed wlmcfg_array_push_back(%p, %p)",
                array_ptr, object_ptr);
     }
-    wlmcfg_object_destroy(object_ptr);
+    wlmcfg_object_unref(object_ptr);
                 };
 
 %%

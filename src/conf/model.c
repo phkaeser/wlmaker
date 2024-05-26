@@ -92,14 +92,14 @@ static void _wlmcfg_dict_item_node_destroy(
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmcfg_object_t *wlmcfg_object_dup(wlmcfg_object_t *object_ptr)
+wlmcfg_object_t *wlmcfg_object_ref(wlmcfg_object_t *object_ptr)
 {
     ++object_ptr->references;
     return object_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmcfg_object_destroy(wlmcfg_object_t *object_ptr)
+void wlmcfg_object_unref(wlmcfg_object_t *object_ptr)
 {
     if (NULL == object_ptr) return;
 
@@ -249,7 +249,7 @@ bool wlmcfg_array_push_back(
     wlmcfg_array_t *array_ptr,
     wlmcfg_object_t *object_ptr)
 {
-    wlmcfg_object_t *new_object_ptr = wlmcfg_object_dup(object_ptr);
+    wlmcfg_object_t *new_object_ptr = wlmcfg_object_ref(object_ptr);
     if (NULL == new_object_ptr) return false;
 
     return bs_ptr_vector_push_back(&array_ptr->object_vector, new_object_ptr);
@@ -362,7 +362,7 @@ wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
         return NULL;
     }
 
-    item_ptr->value_object_ptr = wlmcfg_object_dup(object_ptr);
+    item_ptr->value_object_ptr = wlmcfg_object_ref(object_ptr);
     if (NULL == item_ptr->value_object_ptr) {
         _wlmcfg_dict_item_destroy(item_ptr);
         return NULL;
@@ -375,7 +375,7 @@ wlmcfg_dict_item_t *_wlmcfg_dict_item_create(
 void _wlmcfg_dict_item_destroy(wlmcfg_dict_item_t *item_ptr)
 {
     if (NULL != item_ptr->value_object_ptr) {
-        wlmcfg_object_destroy(item_ptr->value_object_ptr);
+        wlmcfg_object_unref(item_ptr->value_object_ptr);
         item_ptr->value_object_ptr = NULL;
     }
     if (NULL != item_ptr->key_ptr) {
@@ -423,7 +423,7 @@ void _wlmcfg_array_object_destroy(wlmcfg_object_t *object_ptr)
         bs_ptr_vector_erase(
             &array_ptr->object_vector,
             bs_ptr_vector_size(&array_ptr->object_vector) - 1);
-        wlmcfg_object_destroy(object_ptr);
+        wlmcfg_object_unref(object_ptr);
     }
 
     bs_ptr_vector_fini(&array_ptr->object_vector);
@@ -461,7 +461,7 @@ void test_string(bs_test_t *test_ptr)
         string_ptr,
         wlmcfg_string_from_object(object_ptr));
 
-    wlmcfg_object_destroy(object_ptr);
+    wlmcfg_object_unref(object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -475,7 +475,7 @@ void test_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_dict_add(dict_ptr, "key0", obj0_ptr));
-    wlmcfg_object_destroy(obj0_ptr);
+    wlmcfg_object_unref(obj0_ptr);
 
     wlmcfg_object_t *obj1_ptr = BS_ASSERT_NOTNULL(
         wlmcfg_object_from_string(wlmcfg_string_create("val1")));
@@ -485,7 +485,7 @@ void test_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_dict_add(dict_ptr, "key1", obj1_ptr));
-    wlmcfg_object_destroy(obj1_ptr);
+    wlmcfg_object_unref(obj1_ptr);
 
     BS_TEST_VERIFY_STREQ(
         test_ptr,
@@ -498,7 +498,7 @@ void test_dict(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(
                                 wlmcfg_dict_get(dict_ptr, "key1"))));
 
-    wlmcfg_dict_destroy(dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -512,19 +512,19 @@ void test_array(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_array_push_back(array_ptr, obj0_ptr));
-    wlmcfg_object_destroy(obj0_ptr);
+    wlmcfg_object_unref(obj0_ptr);
 
     wlmcfg_object_t *obj1_ptr = BS_ASSERT_NOTNULL(
         wlmcfg_object_from_string(wlmcfg_string_create("val1")));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_array_push_back(array_ptr, obj1_ptr));
-    wlmcfg_object_destroy(obj1_ptr);
+    wlmcfg_object_unref(obj1_ptr);
 
     BS_TEST_VERIFY_EQ(test_ptr, obj0_ptr, wlmcfg_array_at(array_ptr, 0));
     BS_TEST_VERIFY_EQ(test_ptr, obj1_ptr, wlmcfg_array_at(array_ptr, 1));
 
-    wlmcfg_array_destroy(array_ptr);
+    wlmcfg_array_unref(array_ptr);
 }
 
 /* == End of model.c ======================================================= */

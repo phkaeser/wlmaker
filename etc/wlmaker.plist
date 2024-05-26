@@ -15,6 +15,10 @@
       Rate = 25
     }
   };
+  ScreenLock = {
+    IdleSeconds = 300;
+    Command = "/usr/bin/swaylock"
+  };
   // Optional array: Commands to start once wlmaker is running.
   Autostart = (
     "/usr/bin/foot"
