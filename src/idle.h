@@ -53,6 +53,15 @@ void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr);
  */
 void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr);
 
+/**
+ * Executes the configured 'Command' for locking.
+ *
+ * @param idle_monitor_ptr
+ *
+ * @return true on success.
+ */
+bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

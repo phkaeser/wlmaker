@@ -75,6 +75,7 @@ struct _wlmaker_idle_inhibitor_t {
 
 static int _wlmaker_idle_monitor_timer(void *data_ptr);
 
+static int _wlmaker_idle_msec(wlmaker_idle_monitor_t *idle_monitor_ptr);
 static bool _wlmaker_idle_monitor_add_inhibitor(
     wlmaker_idle_monitor_t *idle_monitor_ptr,
     struct wlr_idle_inhibitor_v1 *wlr_idle_inhibitor_v1_ptr);
@@ -137,7 +138,7 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
 
     if (0 != wl_event_source_timer_update(
             monitor_ptr->timer_event_source_ptr,
-            config_idle_lock_msec)) {
+            _wlmaker_idle_msec(monitor_ptr))) {
         bs_log(BS_ERROR, "Failed wl_event_source_timer_update(%p, 1000)",
                monitor_ptr->timer_event_source_ptr);
         wlmaker_idle_monitor_destroy(monitor_ptr);
@@ -177,8 +178,49 @@ void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr)
 
     int rv = wl_event_source_timer_update(
         idle_monitor_ptr->timer_event_source_ptr,
-        config_idle_lock_msec);
+        _wlmaker_idle_msec(idle_monitor_ptr));
     BS_ASSERT(0 == rv);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr)
+{
+    const char *cmd_ptr = wlmcfg_dict_get_string_value(
+        idle_monitor_ptr->lock_config_dict_ptr, "Command");
+    if (NULL == cmd_ptr) {
+        bs_log(BS_WARNING, "No 'Command' configured in 'ScreenLock' config.");
+        return false;
+    }
+
+    bs_subprocess_t *subprocess_ptr = bs_subprocess_create_cmdline(cmd_ptr);
+    if (NULL == subprocess_ptr) {
+        bs_log(BS_WARNING, "Failed bs_subprocess_create_cmdline(\"%s\")",
+               cmd_ptr);
+        return false;
+    }
+
+    if (!bs_subprocess_start(subprocess_ptr)) {
+        bs_log(BS_WARNING, "Failed bs_subprocess_start(%p) for \"%s\".",
+               subprocess_ptr, cmd_ptr);
+        bs_subprocess_destroy(subprocess_ptr);
+        return false;
+    }
+
+    wlmaker_subprocess_handle_t *handle_ptr =
+        wlmaker_subprocess_monitor_entrust(
+            idle_monitor_ptr->server_ptr->monitor_ptr,
+            subprocess_ptr,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
+    if (NULL != handle_ptr) {
+        wlmaker_subprocess_monitor_cede(
+            idle_monitor_ptr->server_ptr->monitor_ptr, handle_ptr);
+    }
+    return true;
 }
 
 /* == Local (static) methods =============================================== */
@@ -197,22 +239,42 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
 {
     wlmaker_idle_monitor_t *idle_monitor_ptr = data_ptr;
 
-    // TODO(kaeser@gubbe.ch): We should better handle this via a subprocess.
-    // And maybe keep monitoring the outcome?
-    pid_t rv = fork();
-    if (-1 == rv) {
-        bs_log(BS_ERROR | BS_ERRNO, "Failed fork()");
-        return 0;
-    } else if (0 == rv) {
-        execl("/usr/bin/swaylock", "/usr/bin/swaylock", (void *)NULL);
-    } else {
-        idle_monitor_ptr->locked = true;
-        wlmaker_root_connect_unlock_signal(
-            idle_monitor_ptr->server_ptr->root_ptr,
-            &idle_monitor_ptr->unlock_listener,
-            _wlmaker_idle_monitor_handle_unlock);
-    }
+    if (!wlmaker_idle_monitor_lock(idle_monitor_ptr)) return 0;
+
+    idle_monitor_ptr->locked = true;
+    wlmaker_root_connect_unlock_signal(
+        idle_monitor_ptr->server_ptr->root_ptr,
+        &idle_monitor_ptr->unlock_listener,
+        _wlmaker_idle_monitor_handle_unlock);
     return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returnss the idle timeout time in milliseconds.
+ *
+ * @param idle_monitor_ptr
+ *
+ * @return The idle timeout, read from the config dictionnary. If no or a
+ *     negative value was configured, 0 is returned, indicating the timer
+ *     to NOT be armed.
+ */
+int _wlmaker_idle_msec(wlmaker_idle_monitor_t *idle_monitor_ptr)
+{
+    const char *idle_seconds_ptr = wlmcfg_dict_get_string_value(
+        idle_monitor_ptr->lock_config_dict_ptr, "IdleSeconds");
+    if (NULL == idle_seconds_ptr) return 0;
+
+    uint64_t seconds;
+    if (!bs_strconvert_uint64(idle_seconds_ptr, &seconds, 10) ||
+        seconds >= (INT32_MAX / 1000)) {
+        bs_log(BS_WARNING, "Bad value for 'IdleSeconds': %s",
+               idle_seconds_ptr);
+        return 0;
+    }
+
+    if (0 >= seconds) return 0;
+    return 1000 * seconds;
 }
 
 /* ------------------------------------------------------------------------- */

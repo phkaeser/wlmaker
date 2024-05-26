@@ -143,8 +143,8 @@ void handle_quit(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 /** Invokes a locking program. */
 void lock(__UNUSED__ wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
 {
-    if (0 == fork()) {
-        execl("/usr/bin/swaylock", "/usr/bin/swaylock", (void *)NULL);
+    if (NULL != server_ptr->idle_monitor_ptr) {
+        wlmaker_idle_monitor_lock(server_ptr->idle_monitor_ptr);
     }
 }
 

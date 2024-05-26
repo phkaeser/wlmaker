@@ -94,8 +94,6 @@ typedef struct {
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
 
-extern const int config_idle_lock_msec;
-
 extern const float config_output_scale;
 
 extern const wlmaker_config_decoration_t config_decoration;
