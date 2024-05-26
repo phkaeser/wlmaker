@@ -118,7 +118,7 @@ extern const wlmaker_config_theme_t wlmaker_config_theme;
  *
  * @return A dict object, or NULL on error. Errors will already be logged.
  *     The caller must free the associated resources by calling
- *     @ref wlmcfg_object_destroy.
+ *     @ref wlmcfg_object_unref.
  */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
 

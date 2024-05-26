@@ -104,7 +104,7 @@ wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr);
  * @param dict_ptr
  * @param key_ptr
  * @param object_ptr          The object to add. It will be duplicated by
- *                            calling @ref wlmcfg_object_dup.
+ *                            calling @ref wlmcfg_object_ref.
  *
  * @return true on success. Adding the object can fail if the key already
  *     exists, or if memory could not get allocated.
