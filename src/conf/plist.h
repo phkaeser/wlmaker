@@ -38,6 +38,17 @@ extern "C" {
 wlmcfg_object_t *wlmcfg_create_object_from_plist_string(const char *buf_ptr);
 
 /**
+ * Parses the plist data with given size and returns the de-serialized object.
+ *
+ * @param data_ptr
+ * @param data_size
+ *
+ * @return The de-serialized object, or NULL on error.
+ */
+wlmcfg_object_t *wlmcfg_create_object_from_plist_data(
+    const uint8_t *data_ptr, size_t data_size);
+
+/**
  * Parses the file `fname_ptr` and returns the de-serialized object.
  *
  * @param fname_ptr
