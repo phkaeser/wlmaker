@@ -16,6 +16,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 # Embeds a binary file: Creates source and header, with corresponding
 # _data and _prefix definitions to address and size the data.
+#
+# Rationale for using cmake function:
+#
+# Using GCC and the GNU linker, the canonical way would be to use
+# "ld -r -b binary -o <file.o> <file>", respectively
+# "objcopy -I binary -O <bfd> <file> <file.o>".
+# The latter needs the <bfd> target (specific for the target architecture), and
+# the former ties the build to the GNU chain.
 FUNCTION(EmbedBinary binary_file prefix generated_source generated_header)
   SET(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
 
