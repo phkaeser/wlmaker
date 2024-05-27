@@ -113,9 +113,6 @@ static const char *_wlmaker_config_fname_ptrs[] = {
     NULL  // Sentinel.
 };
 
-/** Default configuration, a hardcoded default. */
-const char* _wlmaker_config_default_ptr = "{}";
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
