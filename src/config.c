@@ -30,6 +30,8 @@
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
 
+#include "default_configuration.h"
+
 /* == Declarations ========================================================= */
 
 static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
@@ -142,9 +144,10 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
     }
 
     // Hardcoded configuration. Failing to load that is an error.
-    return BS_ASSERT_NOTNULL(
-        wlmcfg_dict_from_object(wlmcfg_create_object_from_plist_string(
-                                    _wlmaker_config_default_ptr)));
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+        wlmaker_embedded_default_configuration_data,
+        wlmaker_embedded_default_configuration_size);
+    return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(obj_ptr));
 }
 
 /* == Local (static) methods =============================================== */
