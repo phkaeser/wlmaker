@@ -13,6 +13,7 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+INCLUDE(EmbedBinary)
 
 SET(SOURCES
   button.c
@@ -93,8 +94,23 @@ SET(HEADERS
   xwl_toplevel.h
 )
 
+# TODO: Make this function create a library right away.
+EmbedBinary(
+  ${PROJECT_SOURCE_DIR}/etc/wlmaker.plist
+  "default_configuration"
+  DEFAULTCONFIG_SOURCE
+  DEFAULTCONFIG_HEADER)
+
+SET(PUBLIC_HEADER_FILES
+  ${DEFAULTCONFIG_HEADER})
+ADD_LIBRARY(embedded STATIC)
+TARGET_SOURCES(embedded PRIVATE ${DEFAULTCONFIG_SOURCE} ${DEFAULTCONFIG_HEADER})
+TARGET_INCLUDE_DIRECTORIES(
+  embedded PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+SET_TARGET_PROPERTIES(embedded PROPERTIES VERSION 1.0 PUBLIC_HEADER ${DEFAULTCONFIG_HEADER})
+
 ADD_EXECUTABLE(wlmaker wlmaker.c ${SOURCES} ${HEADERS})
-ADD_DEPENDENCIES(wlmaker protocol_headers conf toolkit)
+ADD_DEPENDENCIES(wlmaker protocol_headers conf toolkit embedded)
 
 TARGET_COMPILE_DEFINITIONS(
   wlmaker PRIVATE WLMAKER_ICON_DATA_DIR="${CMAKE_INSTALL_FULL_DATAROOTDIR}/icons/wlmaker")
@@ -115,6 +131,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${WLROOTS_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}  # for 'embedded'.
 )
 
 TARGET_LINK_LIBRARIES(
@@ -122,6 +139,7 @@ TARGET_LINK_LIBRARIES(
   base
   conf
   toolkit
+  embedded
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND
@@ -131,7 +149,7 @@ TARGET_LINK_LIBRARIES(
 )
 
 ADD_EXECUTABLE(wlmaker_test wlmaker_test.c ${SOURCES} ${HEADERS})
-ADD_DEPENDENCIES(wlmaker_test protocol_headers toolkit)
+ADD_DEPENDENCIES(wlmaker_test protocol_headers toolkit embedded)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_test PRIVATE
   ${PROJECT_BINARY_DIR}/third_party/protocols
@@ -141,6 +159,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${WLROOTS_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}  # for 'embedded'.
 )
 
 TARGET_LINK_LIBRARIES(
@@ -148,6 +167,7 @@ TARGET_LINK_LIBRARIES(
   base
   conf
   toolkit
+  embedded
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND

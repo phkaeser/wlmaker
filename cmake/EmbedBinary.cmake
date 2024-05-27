@@ -27,6 +27,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 FUNCTION(EmbedBinary binary_file prefix generated_source generated_header)
   SET(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
 
+  # TODO: Should have 'binary_file' as dependency to the output.
+
   FILE(READ ${binary_file} binary_content HEX)
   STRING(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" separated_content ${binary_content})
 
