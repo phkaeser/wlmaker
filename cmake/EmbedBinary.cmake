@@ -80,4 +80,5 @@ extern size_t wlmaker_embedded_${prefix}_size\;
   SET(${generated_source} "${output_basename}.c" PARENT_SCOPE)
   SET(${generated_header} "${output_basename}.h" PARENT_SCOPE)
 
+  # ADD_CUSTOM_TARGET(generated_source DEPENDS binary_file) ?
 ENDFUNCTION()
