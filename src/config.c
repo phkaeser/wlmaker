@@ -142,8 +142,8 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
 
     // Hardcoded configuration. Failing to load that is an error.
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
-        wlmaker_embedded_default_configuration_data,
-        wlmaker_embedded_default_configuration_size);
+        embedded_binary_default_configuration_data,
+        embedded_binary_default_configuration_size);
     return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(obj_ptr));
 }
 
