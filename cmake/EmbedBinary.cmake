@@ -81,4 +81,7 @@ extern size_t wlmaker_embedded_${prefix}_size\;
   SET(${generated_header} "${output_basename}.h" PARENT_SCOPE)
 
   # ADD_CUSTOM_TARGET(generated_source DEPENDS binary_file) ?
+  # https://cmake.org/cmake/help/latest/guide/tutorial/Adding%20a%20Custom%20Command%20and%20Generated%20File.html
+  # https://stackoverflow.com/questions/14776463/compile-and-add-an-object-file-from-a-binary-with-cmake
+  # http://gareus.org/wiki/embedding_resources_in_executables
 ENDFUNCTION()
