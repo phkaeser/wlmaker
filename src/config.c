@@ -137,10 +137,12 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
+        bs_log(BS_INFO, "Loading configuration from \"%s\"", *fname_ptr_ptr);
         return _wlmaker_config_from_plist(*fname_ptr_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
+    bs_log(BS_INFO, "No configuration file found, using embedded default.");
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
