@@ -67,8 +67,8 @@ const size_t wlmaker_embedded_${prefix}_size = sizeof(wlmaker_embedded_${prefix}
 
 #include <stdint.h>
 
-extern uint8_t wlmaker_embedded_${prefix}_data[]\;
-extern size_t wlmaker_embedded_${prefix}_size\;
+extern const uint8_t wlmaker_embedded_${prefix}_data[]\;
+extern const size_t wlmaker_embedded_${prefix}_size\;
 
 #endif // __EMBEDDED_${prefix}_H__
 ")
@@ -84,4 +84,27 @@ extern size_t wlmaker_embedded_${prefix}_size\;
   # https://cmake.org/cmake/help/latest/guide/tutorial/Adding%20a%20Custom%20Command%20and%20Generated%20File.html
   # https://stackoverflow.com/questions/14776463/compile-and-add-an-object-file-from-a-binary-with-cmake
   # http://gareus.org/wiki/embedding_resources_in_executables
+ENDFUNCTION()
+
+# Adds a C library to embed the binary file with the specified prefix.
+#
+# Generates a C source and header file from the contents of `binary_file`, and
+# adds both of these to a new library target `library_target`.
+#
+# The embedded data can then be accessed as external variables:
+#    const uint8_t wlmaker_embedded_<prefix>_data[];
+#    const size_t wlmaker_embedded_<prefix>_size;
+FUNCTION(AddLibraryToEmbedBinary library_target prefix binary_file)
+
+  # Create header, create source.
+  EmbedBinary(${binary_file} ${prefix} source header)
+
+  ADD_LIBRARY(${library_target} STATIC)
+  TARGET_SOURCES(${library_target} PRIVATE ${source} ${header})
+  TARGET_INCLUDE_DIRECTORIES(${library_target} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+  SET_TARGET_PROPERTIES(
+    ${library_target}
+    PROPERTIES VERSION 1.0
+    PUBLIC_HEADER ${header})
+
 ENDFUNCTION()
