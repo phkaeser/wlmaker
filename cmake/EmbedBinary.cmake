@@ -98,7 +98,7 @@ ENDFUNCTION()
 # The embedded data can then be accessed as external variables:
 #    const uint8_t wlmaker_embedded_<prefix>_data[];
 #    const size_t wlmaker_embedded_<prefix>_size;
-FUNCTION(AddLibraryToEmbedBinary library_target prefix binary_file)
+FUNCTION(AddLibraryWithEmbeddedBinary library_target prefix binary_file)
 
   # Create header, create source.
   #EmbedBinary(${binary_file} ${prefix} source header)

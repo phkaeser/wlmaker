@@ -94,7 +94,7 @@ SET(HEADERS
   xwl_toplevel.h
 )
 
-AddLibraryToEmbedBinary(
+AddLibraryWithEmbeddedBinary(
   embedded
   "default_configuration"
   ${PROJECT_SOURCE_DIR}/etc/wlmaker.plist)
