@@ -86,6 +86,10 @@ extern const size_t wlmaker_embedded_${prefix}_size\;
   # http://gareus.org/wiki/embedding_resources_in_executables
 ENDFUNCTION()
 
+FUNCTION(GenerateEmbedCMake generated_cmake_file)
+  FILE(WRITE ${generated_cmake_file} "MESSAGE(WARNING, \"hello world\")")
+ENDFUNCTION()
+
 # Adds a C library to embed the binary file with the specified prefix.
 #
 # Generates a C source and header file from the contents of `binary_file`, and
@@ -97,14 +101,26 @@ ENDFUNCTION()
 FUNCTION(AddLibraryToEmbedBinary library_target prefix binary_file)
 
   # Create header, create source.
-  EmbedBinary(${binary_file} ${prefix} source header)
+  #EmbedBinary(${binary_file} ${prefix} source header)
+  SET(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
+  SET(output_source "${output_basename}.c")
+  SET(output_header "${output_basename}.h")
+  SET(generated_cmake "${output_basename}.cmake")
+
+  GenerateEmbedCMake(${generated_cmake})
+
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${output_source} ${output_header}
+    COMMAND ${CMAKE_COMMAND} -P ${generated_cmake}
+    MAIN_DEPENDENCY ${binary_file}
+  )
 
   ADD_LIBRARY(${library_target} STATIC)
-  TARGET_SOURCES(${library_target} PRIVATE ${source} ${header})
+  TARGET_SOURCES(${library_target} PRIVATE ${output_source} ${output_header})
   TARGET_INCLUDE_DIRECTORIES(${library_target} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
   SET_TARGET_PROPERTIES(
     ${library_target}
     PROPERTIES VERSION 1.0
-    PUBLIC_HEADER ${header})
+    PUBLIC_HEADER ${output_header})
 
 ENDFUNCTION()
