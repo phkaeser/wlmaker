@@ -182,6 +182,9 @@ const bs_test_case_t wlmaker_config_test_cases[] = {
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that the embedded config loads. */
+// TODO(kaeser@gubbe.ch): For now, this just verifies that the configuration
+// **parses**. There is no further verification of the dict contents. Would
+// be great to extend this.
 void test_embedded(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
@@ -193,6 +196,9 @@ void test_embedded(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that the (example) config file loads. */
+// TODO(kaeser@gubbe.ch): For now, this just verifies that the configuration
+// file **parses**. There is no further verification of the dict contents.
+// Would be great to extend this.
 void test_file(bs_test_t *test_ptr)
 {
 #ifndef WLMAKER_SOURCE_DIR
