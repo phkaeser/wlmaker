@@ -107,9 +107,6 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
 /** Lookup paths for the configuration file. */
 static const char *_wlmaker_config_fname_ptrs[] = {
     "~/.wlmaker.plist",
-#if defined(WLMAKER_SOURCE_DIR)
-    WLMAKER_SOURCE_DIR "/etc/wlmaker.plist",
-#endif  // WLMAKER_SOURCE_DIR
     NULL  // Sentinel.
 };
 
@@ -170,6 +167,41 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     }
 
     return dict_ptr;
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_embedded(bs_test_t *test_ptr);
+static void test_file(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_config_test_cases[] = {
+    { 1, "embedded", test_embedded },
+    { 1, "file", test_file },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that the embedded config loads. */
+void test_embedded(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_configuration_data,
+        embedded_binary_default_configuration_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    wlmcfg_object_unref(obj_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that the (example) config file loads. */
+void test_file(bs_test_t *test_ptr)
+{
+#ifndef WLMAKER_SOURCE_DIR
+#error "Missing definition of WLMAKER_SOURCE_DIR!"
+#endif
+    wlmcfg_dict_t *dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/wlmaker.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
 }
 
 /* == End of config.c ====================================================== */
