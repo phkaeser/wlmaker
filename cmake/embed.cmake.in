@@ -23,6 +23,7 @@ SET(binary_file "@binary_file@")
 SET(output_header "@output_header@")
 SET(output_source "@output_source@")
 SET(output_data "")
+
 SET(bytes 0)
 FOREACH(token IN LISTS separated_content)
   IF(NOT bytes EQUAL 0)
@@ -41,4 +42,4 @@ ENDFOREACH()
 CONFIGURE_FILE("@template_header@" "@output_header@" @ONLY)
 CONFIGURE_FILE("@template_source@" "@output_source@" @ONLY)
 
-FILE(WRITE @OUTPUT_BASENAME@.c ${output})
+FILE(WRITE @OUTPUT_BASENAME@.c "${output}")
