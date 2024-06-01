@@ -51,9 +51,10 @@ struct _wlmtk_panel_vmt_t {
      *
      * @return WLR Layer Shell configuration serial.
      */
-    uint32_t (*request_size)(wlmtk_panel_t *panel_ptr,
-                             int width,
-                             int size);
+    uint32_t (*request_size)(
+        wlmtk_panel_t *panel_ptr,
+        int width,
+        int height);
 };
 
 /** The panel's positioning parameters. */
