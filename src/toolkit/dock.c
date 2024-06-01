@@ -45,7 +45,9 @@ static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_dock_t *wlmtk_dock_create(wlmtk_env_t *env_ptr)
+wlmtk_dock_t *wlmtk_dock_create(
+    __UNUSED__ const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    wlmtk_env_t *env_ptr)
 {
     wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
     if (NULL == dock_ptr) return NULL;

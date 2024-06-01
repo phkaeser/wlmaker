@@ -30,17 +30,34 @@ extern "C" {
 /** Dock handle. */
 typedef struct _wlmtk_dock_t wlmtk_dock_t;
 
+/** Orientation of the dock. */
+typedef enum {
+    WLMTK_DOCK_HORIZONTAL,
+    WLMTK_DOCK_VERTICAL,
+} wlmtk_dock_orientation_t;
+
+/** Positioning options for the dock. */
+typedef struct {
+    /** Anchor edges for the dock. See `enum wlr_edges`. */
+    uint32_t                  anchor;
+    /** Orientation of the dock. */
+    wlmtk_dock_orientation_t  orientation;
+} wlmtk_dock_positioning_t;
+
 /**
  * Creates a dock. A dock contains icons, launchers and the likes.
  *
  * The dock is an implementation of a @ref wlmtk_panel_t.
  *
+ * @param dock_positioning_ptr
  * @param env_ptr
  *
  * @return The dock handle, or NULL on error. Must be destroyed calling
  *     @ref wlmtk_dock_destroy.
  */
-wlmtk_dock_t *wlmtk_dock_create(wlmtk_env_t *env_ptr);
+wlmtk_dock_t *wlmtk_dock_create(
+    const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the dock.
