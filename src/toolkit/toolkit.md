@@ -111,16 +111,16 @@ abstract class Surface {
 
 abstract class Content {
   Container super_container
-  
+
   Surface surface
   Surface popups[]
-  
+
   init(surface)
   fini()
-  
+
   request_size()
   get_size()
-  
+
   request_close()
   set_activated()
 }
@@ -130,9 +130,9 @@ abstract class Content {
 
 class Toplevel {
   Content super_content
-  
+
   -- because: implement request_close, set_activated, ...
-  
+
   -- but: Window ?
 }
 
@@ -166,8 +166,8 @@ end note
 
 class Layer {
   Container super_container
-  
-  
+
+
   add_panel()
   remove_panel()
 }
@@ -379,16 +379,33 @@ Button is pressed again, without much move since last press.
 ## Dock and Clip class elements
 
 ```plantuml
+class DockOptions {
+  int anchor
+  int orientation
+  int layer
+}
+
 class Dock {
-  Container container[]
-  DockEntry entries[]
+  Panel super_panel
+
+  init(DockOptions options)
+
+  DockEntry entries[];
+
+  add_entry()
+  remove_entry()
 }
 
 class DockEntry {
   Element
+
+  set_size(int size)
 }
 
 class Launcher {
+
+  const char *icon_file_path;
+  const char *commandline;
 }
 DockEntry <|-- Launcher
 
@@ -404,4 +421,47 @@ Dock <|-- Clip
 class IconArea {}
 Dock <|-- IconArea
 ```
+
+### Description
+
+* A `Dock` is the base class for the Dock, Clip or icon area. It has an anchor
+  to either a corner or an edge of the screen, and an orientation (vertical or
+  horizontal). On screen edges, the orientation must be parallel to the edge's
+  orientation.
+
+* A `DockEntry` is the parent for what's shown in the dock, clip or the icon
+  area. An entry is quadratic, and the size is given by the dock. The size may
+  change during execution.
+  A DockEntry will accept and may pass on pointer events.
+
+* A `Launcher` is an implementation of a DockEntry.
+  It shows an image (the application icon), and will spawn a subprocess to
+  execute the configured commandline when invoked.
+  A launcher is invoked by a click (TODO: doubleclick?).
+  It shows status of the spawned subprocesses ("running", "starting", "error").
+
+  If the application is running, it may show the application's icon (provided by
+  the running application via a Wayland protocol), instead of the pre-configured
+  one.
+
+  The Launcher is not part of wlmtk, but of wlmaker implementation.
+
+### Thoughts
+
+* A running application in WLMaker may (1) have an icon, and (2) be in
+  miniaturized (*iconified*) state.
+
+  An "application" in this context refers to ... a wayland client? an XDG
+  toplevel? Any toplevel (eg. X11 toplevel)? For UI interaction, a "toplevel"
+  seems a good answer, as it's the *toplevel* that can be *iconified*.
+  That would apply to both X11 and XDG shell toplevels.
+
+  Implication: WLMaker needs to keep track of "applications".
+
+  If there is an icon, it should be shown on the launcher that spawned the
+  "application". (showing the icon of the most recently launched one).
+  Otherwise, it should be displayed in the icon area.
+
+  An "application" that is *iconified* will be shown in the icon area. This is
+  irrespective of whether there is already an icon shown for that "application".
 
