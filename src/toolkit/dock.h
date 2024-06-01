@@ -21,6 +21,7 @@
 #define __WLMTK_DOCK_H__
 
 #include "env.h"
+#include "panel.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,9 @@ wlmtk_dock_t *wlmtk_dock_create(wlmtk_env_t *env_ptr);
  * @param dock_ptr
  */
 void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr);
+
+/** @return Pointer to the superclass @ref wlmtk_panel_t of `dock_ptr`. */
+wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -20,8 +20,6 @@
 
 #include "dock.h"
 
-#include "panel.h"
-
 /* == Declarations ========================================================= */
 
 /** State of the toolkit dock. */
@@ -69,6 +67,12 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 {
     wlmtk_panel_fini(&dock_ptr->super_panel);
     free(dock_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr)
+{
+    return &dock_ptr->super_panel;
 }
 
 /* == Local (static) methods =============================================== */
