@@ -47,6 +47,7 @@
 #include "resizebar.h"
 #include "resizebar_area.h"
 #include "surface.h"
+#include "tile.h"
 #include "titlebar.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
