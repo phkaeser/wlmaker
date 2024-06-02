@@ -108,6 +108,9 @@ void wlmtk_box_add_element_back(wlmtk_box_t *box_ptr, wlmtk_element_t *element_p
  */
 void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr);
 
+/** @return Pointer to the superclass' @ref wlmtk_element_t of `box_ptr`. */
+wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr);
+
 /** Unit tests. */
 extern const bs_test_case_t wlmtk_box_test_cases[];
 
