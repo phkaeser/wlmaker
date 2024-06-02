@@ -42,6 +42,7 @@ typedef struct {
     uint32_t                  anchor;
     /** Orientation of the dock. */
     wlmtk_dock_orientation_t  orientation;
+    int                       tile_size;
 } wlmtk_dock_positioning_t;
 
 /**
@@ -68,6 +69,9 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr);
 
 /** @return Pointer to the superclass @ref wlmtk_panel_t of `dock_ptr`. */
 wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr);
+
+/** @return Pointer to the superclass @ref wlmtk_element_t of `dock_ptr`. */
+wlmtk_element_t *wlmtk_dock_element(wlmtk_dock_t *dock_ptr);
 
 /** Unit tests for @ref wlmtk_dock_t. */
 extern const bs_test_case_t wlmtk_dock_test_cases[];

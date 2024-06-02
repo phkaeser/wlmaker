@@ -59,6 +59,10 @@ wlmtk_dock_t *wlmtk_dock_create(
     wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
     if (NULL == dock_ptr) return NULL;
 
+    dock_ptr->panel_positioning.anchor = dock_positioning_ptr->anchor;
+    dock_ptr->panel_positioning.desired_width = dock_positioning_ptr->tile_size;
+    dock_ptr->panel_positioning.desired_height = dock_positioning_ptr->tile_size;
+
     if (!wlmtk_panel_init(
             &dock_ptr->super_panel,
             &dock_ptr->panel_positioning,
@@ -107,6 +111,12 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr)
 {
     return &dock_ptr->super_panel;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_dock_element(wlmtk_dock_t *dock_ptr)
+{
+    return wlmtk_panel_element(wlmtk_dock_panel(dock_ptr));
 }
 
 /* == Local (static) methods =============================================== */
