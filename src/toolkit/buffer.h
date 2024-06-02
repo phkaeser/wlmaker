@@ -82,6 +82,9 @@ void wlmtk_buffer_set(
     wlmtk_buffer_t *buffer_ptr,
     struct wlr_buffer *wlr_buffer_ptr);
 
+/** @return the superclass' @ref wlmtk_element_t of `buffer_ptr`. */
+wlmtk_element_t *wlmtk_buffer_element(wlmtk_buffer_t *buffer_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
