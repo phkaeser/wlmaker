@@ -20,6 +20,8 @@
 
 #include "dock.h"
 
+#include <wlr/util/edges.h>
+
 #include "config.h"
 #include "dock_app.h"
 #include "toolkit/toolkit.h"
@@ -42,6 +44,9 @@ struct _wlmaker_dock_t {
 
     /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
     struct wl_listener        workspace_changed_listener;
+
+    /** Toolkit dock. */
+    wlmtk_dock_t              *wlmtk_dock_ptr;
 };
 
 static wlmaker_dock_t *dock_from_view(wlmaker_view_t *view_ptr);
@@ -90,6 +95,33 @@ wlmaker_dock_t *wlmaker_dock_create(
     wlmaker_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmaker_dock_t));
     if (NULL == dock_ptr) return NULL;
     dock_ptr->server_ptr = server_ptr;
+
+    if (false) {
+        wlmtk_dock_positioning_t positioning = {
+            .anchor = WLR_EDGE_LEFT | WLR_EDGE_BOTTOM,
+            .orientation = WLMTK_DOCK_VERTICAL,
+            .tile_size = 64
+        };
+
+        dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
+            &positioning,
+            server_ptr->env_ptr);
+        if (NULL == dock_ptr->wlmtk_dock_ptr) {
+            wlmaker_dock_destroy(dock_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_dock_element(dock_ptr->wlmtk_dock_ptr),
+            true);
+
+        wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
+            wlmaker_server_get_current_workspace(server_ptr));
+        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+            wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+        wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+    }
 
     dock_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
         &server_ptr->void_wlr_scene_ptr->tree);
@@ -154,6 +186,20 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
     }
 
     wlmaker_view_fini(&dock_ptr->view);
+
+    if (NULL != dock_ptr->wlmtk_dock_ptr) {
+
+        wlmtk_layer_t *layer_ptr = wlmtk_panel_get_layer(
+            wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+        if (NULL != layer_ptr) {
+            wlmtk_layer_remove_panel(
+                layer_ptr,
+                wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+        }
+
+        wlmtk_dock_destroy(dock_ptr->wlmtk_dock_ptr);
+        dock_ptr->wlmtk_dock_ptr = NULL;
+    }
 
     free(dock_ptr);
 }
