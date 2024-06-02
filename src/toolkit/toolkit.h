@@ -36,6 +36,7 @@
 #include "button.h"
 #include "container.h"
 #include "content.h"
+#include "dock.h"
 #include "element.h"
 #include "env.h"
 #include "fsm.h"

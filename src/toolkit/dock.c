@@ -129,4 +129,24 @@ uint32_t _wlmtk_dock_panel_request_size(
     return 0;
 }
 
+/* == Unit tests =========================================================== */
+
+static void test_create_destroy(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_dock_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Exercises ctor and dtor. */
+ void test_create_destroy(bs_test_t *test_ptr)
+{
+    wlmtk_dock_positioning_t pos = {};
+    wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
+    wlmtk_dock_destroy(dock_ptr);
+
+}
+
 /* == End of dock.c ======================================================== */

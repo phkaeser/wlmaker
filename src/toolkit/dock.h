@@ -69,6 +69,9 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr);
 /** @return Pointer to the superclass @ref wlmtk_panel_t of `dock_ptr`. */
 wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr);
 
+/** Unit tests for @ref wlmtk_dock_t. */
+extern const bs_test_case_t wlmtk_dock_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
