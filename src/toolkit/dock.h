@@ -42,6 +42,7 @@ typedef struct {
     uint32_t                  anchor;
     /** Orientation of the dock. */
     wlmtk_dock_orientation_t  orientation;
+    /** Size of the tile. */
     int                       tile_size;
 } wlmtk_dock_positioning_t;
 
