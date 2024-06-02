@@ -390,13 +390,13 @@ class Dock {
 
   init(DockOptions options)
 
-  DockEntry entries[];
+  Tile entries[];
 
   add_entry()
   remove_entry()
 }
 
-class DockEntry {
+class Tile {
   Element
 
   set_size(int size)
@@ -407,13 +407,13 @@ class Launcher {
   const char *icon_file_path;
   const char *commandline;
 }
-DockEntry <|-- Launcher
+Tile <|-- Launcher
 
 class Icon {}
-DockEntry <|-- Icon
+Tile <|-- Icon
 
 class IconSurface {}
-DockEntry <|-- IconSurface
+Tile <|-- IconSurface
 
 class Clip {}
 Dock <|-- Clip
@@ -429,12 +429,12 @@ Dock <|-- IconArea
   horizontal). On screen edges, the orientation must be parallel to the edge's
   orientation.
 
-* A `DockEntry` is the parent for what's shown in the dock, clip or the icon
+* A `Tile` is the parent for what's shown in the dock, clip or the icon
   area. An entry is quadratic, and the size is given by the dock. The size may
   change during execution.
-  A DockEntry will accept and may pass on pointer events.
+  A Tile will accept and may pass on pointer events.
 
-* A `Launcher` is an implementation of a DockEntry.
+* A `Launcher` is an implementation of a Tile.
   It shows an image (the application icon), and will spawn a subprocess to
   execute the configured commandline when invoked.
   A launcher is invoked by a click (TODO: doubleclick?).
