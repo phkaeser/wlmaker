@@ -20,9 +20,15 @@
 
 #include "tile.h"
 
+#include "gfxbuf.h"
+#include "primitives.h"
+
 /* == Declarations ========================================================= */
 
 static void _wlmtk_tile_update_layout(wlmtk_container_t *container_ptr);
+
+static struct wlr_buffer *_wlmtk_tile_create_buffer(
+    const wlmtk_tile_style_t *style_ptr);
 
 /* == Data ================================================================= */
 
@@ -60,12 +66,41 @@ bool wlmtk_tile_init(
     tile_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &tile_ptr->super_container, &_wlmtk_tile_container_vmt);
 
+    if (!wlmtk_buffer_init(&tile_ptr->buffer, NULL)) {
+        wlmtk_tile_fini(tile_ptr);
+        return false;
+    }
+    wlmtk_element_set_visible(wlmtk_buffer_element(&tile_ptr->buffer), true);
+    wlmtk_container_add_element(
+        &tile_ptr->super_container,
+        wlmtk_buffer_element(&tile_ptr->buffer));
+
+    tile_ptr->background_wlr_buffer_ptr = _wlmtk_tile_create_buffer(
+        &tile_ptr->style);
+    if (NULL == tile_ptr->background_wlr_buffer_ptr) {
+        wlmtk_tile_fini(tile_ptr);
+        return false;
+    }
+    wlmtk_buffer_set(&tile_ptr->buffer, tile_ptr->background_wlr_buffer_ptr);
+
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
 {
+    if (NULL != tile_ptr->background_wlr_buffer_ptr) {
+        wlr_buffer_drop(tile_ptr->background_wlr_buffer_ptr);
+        tile_ptr->background_wlr_buffer_ptr = NULL;
+    }
+
+    if (wlmtk_buffer_element(&tile_ptr->buffer)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &tile_ptr->super_container,
+            wlmtk_buffer_element(&tile_ptr->buffer));
+        wlmtk_buffer_fini(&tile_ptr->buffer);
+    }
+
     wlmtk_container_fini(&tile_ptr->super_container);
 }
 
@@ -81,6 +116,28 @@ wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
 /** Handles requests to update layout. Called when elements are added. */
 void _wlmtk_tile_update_layout(__UNUSED__ wlmtk_container_t *container_ptr)
 {
+}
+
+/* ------------------------------------------------------------------------- */
+/** Crates a wlr_buffer with background, as described in `style_ptr`. */
+struct wlr_buffer *_wlmtk_tile_create_buffer(
+    const wlmtk_tile_style_t *style_ptr)
+{
+    struct wlr_buffer* wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        style_ptr->size, style_ptr->size);
+    if (NULL == wlr_buffer_ptr) return NULL;
+
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+    if (NULL == cairo_ptr) {
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return NULL;
+    }
+
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
+    wlmaker_primitives_draw_bezel(cairo_ptr, style_ptr->bezel_width, true);
+
+    cairo_destroy(cairo_ptr);
+    return wlr_buffer_ptr;
 }
 
 /* == Unit tests =========================================================== */

@@ -23,6 +23,7 @@
 /** Forward declaration: State of a tile. */
 typedef struct _wlmtk_tile_t wlmtk_tile_t;
 
+#include "buffer.h"
 #include "container.h"
 #include "style.h"
 
@@ -47,8 +48,14 @@ struct _wlmtk_tile_t {
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
 
+    /** The tile background is modelled as @ref wlmtk_buffer_t. */
+    wlmtk_buffer_t            buffer;
+
     /** Style to be used for this tile. */
     wlmtk_tile_style_t        style;
+
+    /** Holds the tile's background, used in @ref wlmtk_tile_t::buffer. */
+    struct wlr_buffer         *background_wlr_buffer_ptr;
 };
 
 /**
