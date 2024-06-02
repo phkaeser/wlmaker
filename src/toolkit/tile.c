@@ -56,7 +56,7 @@ void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_tile_elmeent(wlmtk_tile_t *tile_ptr)
+wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
 {
     return &tile_ptr->super_container.super_element;
 }
@@ -71,8 +71,25 @@ void _wlmtk_tile_update_layout(__UNUSED__ wlmtk_container_t *container_ptr)
 
 /* == Unit tests =========================================================== */
 
+static void test_init_fini(bs_test_t *test_ptr);
+
 const bs_test_case_t wlmtk_tile_test_cases[] = {
+    { 1, "init_fini", test_init_fini },
     { 0, NULL, NULL }
 };
+
+/* ------------------------------------------------------------------------- */
+/** Exercises setup and teardown. */
+static void test_init_fini(bs_test_t *test_ptr)
+{
+    wlmtk_tile_t tile;
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, NULL));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &tile.super_container.super_element,
+        wlmtk_tile_element(&tile));
+    wlmtk_tile_fini(&tile);
+}
 
 /* == End of tile.c ======================================================== */

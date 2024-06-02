@@ -57,7 +57,7 @@ bool wlmtk_tile_init(
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr);
 
 /** @return the superclass' @ref wlmtk_element_t of `tile_ptr`. */
-wlmtk_element_t *wlmtk_tile_elmeent(wlmtk_tile_t *tile_ptr);
+wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr);
 
 /** Unit test cases for @ref wlmtk_tile_t. */
 extern const bs_test_case_t wlmtk_tile_test_cases[];
