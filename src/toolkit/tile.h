@@ -24,10 +24,21 @@
 typedef struct _wlmtk_tile_t wlmtk_tile_t;
 
 #include "container.h"
+#include "style.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** Style options for the tile. */
+typedef struct {
+    /** Fill style for the tile's background. */
+    wlmtk_style_fill_t        fill;
+    /** Size of the tile, in pixels. Tiles are of quadratic shape. */
+    int                       size;
+    /** Width of the bezel. */
+    int                       bezel_width;
+} wlmtk_tile_style_t;
 
 /** State of a tile. */
 struct _wlmtk_tile_t {
@@ -35,18 +46,23 @@ struct _wlmtk_tile_t {
     wlmtk_container_t         super_container;
     /** Virtual method table of the superclass' container. */
     wlmtk_container_vmt_t     orig_super_container_vmt;
+
+    /** Style to be used for this tile. */
+    wlmtk_tile_style_t        style;
 };
 
 /**
  * Initializes the tile.
  *
  * @param tile_ptr
+ * @param style_ptr
  * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
+    const wlmtk_tile_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

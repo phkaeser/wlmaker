@@ -31,14 +31,28 @@ static const wlmtk_container_vmt_t _wlmtk_tile_container_vmt = {
     .update_layout = _wlmtk_tile_update_layout
 };
 
+// Background: A buffer element. (he tile texture and such).
+// has: fill, and bezel width & details.
+//
+// This needs the desired tile size. This *may* be change-able, part of style.
+// then bs_gfxbuf_create_wlr_buffer(...)
+//
+// So, we need:
+// - size
+// - fill style
+// - bezel width
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
+    const wlmtk_tile_style_t *style_ptr,
     wlmtk_env_t *env_ptr)
 {
     memset(tile_ptr, 0, sizeof(wlmtk_tile_t));
+    memcpy(&tile_ptr->style, style_ptr, sizeof(wlmtk_tile_style_t));
+
     if (!wlmtk_container_init(&tile_ptr->super_container, env_ptr)) {
         wlmtk_tile_fini(tile_ptr);
         return false;
@@ -83,8 +97,9 @@ const bs_test_case_t wlmtk_tile_test_cases[] = {
 static void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_tile_t tile;
+    wlmtk_tile_style_t style = { .size = 64 };
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, &style, NULL));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &tile.super_container.super_element,
