@@ -37,17 +37,6 @@ static const wlmtk_container_vmt_t _wlmtk_tile_container_vmt = {
     .update_layout = _wlmtk_tile_update_layout
 };
 
-// Background: A buffer element. (he tile texture and such).
-// has: fill, and bezel width & details.
-//
-// This needs the desired tile size. This *may* be change-able, part of style.
-// then bs_gfxbuf_create_wlr_buffer(...)
-//
-// So, we need:
-// - size
-// - fill style
-// - bezel width
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
