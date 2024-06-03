@@ -31,6 +31,8 @@
 #undef WLR_USE_UNSTABLE
 
 #include "default_configuration.h"
+#include "default_dock_state.h"
+#include "default_style.h"
 
 /* == Declarations ========================================================= */
 
@@ -187,25 +189,51 @@ const bs_test_case_t wlmaker_config_test_cases[] = {
 // be great to extend this.
 void test_embedded(bs_test_t *test_ptr)
 {
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+    wlmcfg_object_t *obj_ptr;
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_dock_state_data,
+        embedded_binary_default_dock_state_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_style_data,
+        embedded_binary_default_style_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Verifies that the (example) config file loads. */
+/** Verifies that the (example) config files are loading. */
 // TODO(kaeser@gubbe.ch): For now, this just verifies that the configuration
 // file **parses**. There is no further verification of the dict contents.
 // Would be great to extend this.
 void test_file(bs_test_t *test_ptr)
 {
+    wlmcfg_dict_t *dict_ptr;
+
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
-    wlmcfg_dict_t *dict_ptr = _wlmaker_config_from_plist(
+    dict_ptr = _wlmaker_config_from_plist(
         WLMAKER_SOURCE_DIR "/etc/wlmaker.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/dock.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_dict_unref(dict_ptr);
 }

@@ -1,0 +1,10 @@
+{
+  Edge = LEFT;
+  Anchor = TOP;
+  Launchers = (
+    {
+      CommandLine = "/usr/bin/foot";
+      Icon = "terminal-48x48.png"
+    }
+  )
+}
