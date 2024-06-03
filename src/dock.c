@@ -21,10 +21,11 @@
 #include "dock.h"
 
 #include <wlr/util/edges.h>
+#include <toolkit/toolkit.h>
 
 #include "config.h"
 #include "dock_app.h"
-#include "toolkit/toolkit.h"
+#include "launcher.h"
 #include "view.h"
 
 /* == Declarations ========================================================= */
@@ -98,14 +99,16 @@ wlmaker_dock_t *wlmaker_dock_create(
 
     if (false) {
         wlmtk_dock_positioning_t positioning = {
-            .anchor = WLR_EDGE_LEFT | WLR_EDGE_BOTTOM,
-            .orientation = WLMTK_DOCK_VERTICAL,
+            .edge = WLR_EDGE_LEFT,
+            .anchor = WLR_EDGE_BOTTOM,
             .tile_size = 64
+        };
+        wlmtk_dock_style_t style = {
+            .margin = { .width = 3 }
         };
 
         dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
-            &positioning,
-            server_ptr->env_ptr);
+            &positioning, &style, server_ptr->env_ptr);
         if (NULL == dock_ptr->wlmtk_dock_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
@@ -121,6 +124,18 @@ wlmaker_dock_t *wlmaker_dock_create(
         wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+
+        wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create(
+            server_ptr);
+        wlmtk_dock_add_tile(
+            dock_ptr->wlmtk_dock_ptr,
+            wlmaker_launcher_tile(launcher_ptr));
+
+        launcher_ptr = wlmaker_launcher_create(
+            server_ptr);
+        wlmtk_dock_add_tile(
+            dock_ptr->wlmtk_dock_ptr,
+            wlmaker_launcher_tile(launcher_ptr));
     }
 
     dock_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
