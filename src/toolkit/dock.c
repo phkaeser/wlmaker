@@ -271,7 +271,6 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
         dock_ptr->tile_box.orientation);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
     wlmtk_dock_destroy(dock_ptr);
-
 }
 
 /* == End of dock.c ======================================================== */
