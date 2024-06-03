@@ -31,8 +31,8 @@ struct _wlmtk_dock_t {
     /** Positioning information for the panel. */
     wlmtk_panel_positioning_t panel_positioning;
 
-    /** A dock is primarily a box, as element of the panel. */
-    wlmtk_box_t               entry_box;
+    /** Principal element of the dock is a box, holding tiles. */
+    wlmtk_box_t               tile_box;
     /** Margin style of the box. */
     wlmtk_margin_style_t      box_style;
 };
@@ -78,17 +78,17 @@ wlmtk_dock_t *wlmtk_dock_create(
         box_orientation = WLMTK_BOX_VERTICAL;
     }
     if (!wlmtk_box_init(
-            &dock_ptr->entry_box,
+            &dock_ptr->tile_box,
             env_ptr,
             box_orientation,
             &dock_ptr->box_style)) {
         wlmtk_dock_destroy(dock_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(wlmtk_box_element(&dock_ptr->entry_box), true);
+    wlmtk_element_set_visible(wlmtk_box_element(&dock_ptr->tile_box), true);
     wlmtk_container_add_element(
         &dock_ptr->super_panel.super_container,
-        wlmtk_box_element(&dock_ptr->entry_box));
+        wlmtk_box_element(&dock_ptr->tile_box));
 
     return dock_ptr;
 }
@@ -96,11 +96,11 @@ wlmtk_dock_t *wlmtk_dock_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 {
-    if (wlmtk_box_element(&dock_ptr->entry_box)->parent_container_ptr) {
+    if (wlmtk_box_element(&dock_ptr->tile_box)->parent_container_ptr) {
         wlmtk_container_remove_element(
             &dock_ptr->super_panel.super_container,
-            wlmtk_box_element(&dock_ptr->entry_box));
-        wlmtk_box_fini(&dock_ptr->entry_box);
+            wlmtk_box_element(&dock_ptr->tile_box));
+        wlmtk_box_fini(&dock_ptr->tile_box);
     }
 
     wlmtk_panel_fini(&dock_ptr->super_panel);
@@ -114,7 +114,7 @@ void wlmtk_dock_add_tile(
 {
     BS_ASSERT(NULL == wlmtk_tile_element(tile_ptr)->parent_container_ptr);
     wlmtk_box_add_element_back(
-        &dock_ptr->entry_box,
+        &dock_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
 }
 
@@ -124,10 +124,10 @@ void wlmtk_dock_remove_tile(
     wlmtk_tile_t *tile_ptr)
 {
     BS_ASSERT(
-        &dock_ptr->entry_box.super_container ==
+        &dock_ptr->tile_box.super_container ==
         wlmtk_tile_element(tile_ptr)->parent_container_ptr);
     wlmtk_box_remove_element(
-        &dock_ptr->entry_box,
+        &dock_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
 }
 
