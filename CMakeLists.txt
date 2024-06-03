@@ -14,6 +14,7 @@
 #
 # Default arguments:
 # cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -B build
+# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -B build-clang
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(wlmaker VERSION 0.1

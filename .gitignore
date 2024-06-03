@@ -2,6 +2,7 @@
 **/CMakeFiles/*
 **/CMakeCache.txt
 **/build/*
+**/build-clang/*
 TAGS
 cscope.files
 cscope.in.out
