@@ -108,6 +108,30 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_dock_add_tile(
+    wlmtk_dock_t *dock_ptr,
+    wlmtk_tile_t *tile_ptr)
+{
+    BS_ASSERT(NULL == wlmtk_tile_element(tile_ptr)->parent_container_ptr);
+    wlmtk_box_add_element_back(
+        &dock_ptr->entry_box,
+        wlmtk_tile_element(tile_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_dock_remove_tile(
+    wlmtk_dock_t *dock_ptr,
+    wlmtk_tile_t *tile_ptr)
+{
+    BS_ASSERT(
+        &dock_ptr->entry_box.super_container ==
+        wlmtk_tile_element(tile_ptr)->parent_container_ptr);
+    wlmtk_box_remove_element(
+        &dock_ptr->entry_box,
+        wlmtk_tile_element(tile_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr)
 {
     return &dock_ptr->super_panel;

@@ -20,15 +20,16 @@
 #ifndef __WLMTK_DOCK_H__
 #define __WLMTK_DOCK_H__
 
+/** Forward declaration: Dock handle. */
+typedef struct _wlmtk_dock_t wlmtk_dock_t;
+
 #include "env.h"
 #include "panel.h"
+#include "tile.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Dock handle. */
-typedef struct _wlmtk_dock_t wlmtk_dock_t;
 
 /** Orientation of the dock. */
 typedef enum {
@@ -67,6 +68,26 @@ wlmtk_dock_t *wlmtk_dock_create(
  * @param dock_ptr
  */
 void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr);
+
+/**
+ * Adds the tile to the dock.
+ *
+ * @param dock_ptr
+ * @param tile_ptr
+ */
+void wlmtk_dock_add_tile(
+    wlmtk_dock_t *dock_ptr,
+    wlmtk_tile_t *tile_ptr);
+
+/**
+ * Removes the tile from the dock.
+ *
+ * @param dock_ptr
+ * @param tile_ptr
+ */
+void wlmtk_dock_remove_tile(
+    wlmtk_dock_t *dock_ptr,
+    wlmtk_tile_t *tile_ptr);
 
 /** @return Pointer to the superclass @ref wlmtk_panel_t of `dock_ptr`. */
 wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr);
