@@ -32,6 +32,7 @@ SET(PUBLIC_HEADER_FILES
   layer_panel.h
   layer_shell.h
   layer_surface.h
+  launcher.h
   lock_mgr.h
   menu.h
   menu_item.h
@@ -68,6 +69,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   idle.c
   interactive.c
   keyboard.c
+  launcher.c
   layer_panel.c
   layer_shell.c
   layer_surface.c
