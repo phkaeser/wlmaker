@@ -20,6 +20,8 @@
 #ifndef __LAUNCHER_H__
 #define __LAUNCHER_H__
 
+#include "server.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -30,9 +32,11 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
 /**
  * Creates an application launcher.
  *
+ * @param server_ptr
+ *
  * @return Pointer to the launcher handle or NULL on error.
  */
-wlmaker_launcher_t *wlmaker_launcher_create(void);
+wlmaker_launcher_t *wlmaker_launcher_create(wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the application launcher.
@@ -41,9 +45,15 @@ wlmaker_launcher_t *wlmaker_launcher_create(void);
  */
 void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr);
 
+/** @return A pointer to the @ref wlmtk_tile_t superclass of `launcher_ptr`. */
+wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr);
+
+/** Unit tests. */
+extern const bs_test_case_t wlmaker_launcher_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
 #endif /* __LAUNCHER_H__ */
-/* == End of launcher.h ================================================== */
+/* == End of launcher.h ==================================================== */
