@@ -70,9 +70,10 @@ ws                  [[:blank:]\r\n]
 "="                 { return TK_EQUAL; }
 ";"                 { return TK_SEMICOLON; }
 
-.                   { bs_log(BS_ERROR, "Unexpected character at %d,%d: '%s'.",
+.                   { bs_log(BS_ERROR,
+                             "Unexpected character at %d,%d: '%s'.",
                              yylloc->first_line, yylloc->first_column, yytext);
-                      return -1; }
+                      return YYerror; }
 
 %%
 /* == User code section ==================================================== */

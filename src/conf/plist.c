@@ -140,6 +140,10 @@ void test_from_string(bs_test_t *test_ptr)
         wlmcfg_string_value(wlmcfg_string_from_object(object_ptr)));
     wlmcfg_object_unref(object_ptr);
 
+    // A string that should be quoted.
+    object_ptr = wlmcfg_create_object_from_plist_string("va:lue");
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
+
     // A dict.
     object_ptr = wlmcfg_create_object_from_plist_string(
         "{key1=dict_value1;key2=dict_value2}");
