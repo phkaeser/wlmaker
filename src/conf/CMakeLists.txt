@@ -37,6 +37,9 @@ TARGET_SOURCES(conf PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/analyzer.c
   ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 TARGET_INCLUDE_DIRECTORIES(conf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/)
+# TODO(kaeser@gubbe.ch):Remove, once updating post bison 3.8.2 (Aug 2022).
+# See: https://github.com/phkaeser/wlmaker/issues/53
+TARGET_COMPILE_OPTIONS(conf PRIVATE -Wno-unused-but-set-variable)
 TARGET_LINK_LIBRARIES(conf base)
 
 ADD_EXECUTABLE(conf_test conf_test.c)
