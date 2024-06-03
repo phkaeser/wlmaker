@@ -44,12 +44,19 @@ typedef struct {
     int                       tile_size;
 } wlmtk_dock_positioning_t;
 
+/** Styling information for the dock. */
+typedef struct {
+    /** The margin's style of the dock's box. */
+    wlmtk_margin_style_t      margin;
+} wlmtk_dock_style_t;
+
 /**
  * Creates a dock. A dock contains icons, launchers and the likes.
  *
  * The dock is an implementation of a @ref wlmtk_panel_t.
  *
  * @param dock_positioning_ptr
+ * @param style_ptr
  * @param env_ptr
  *
  * @return The dock handle, or NULL on error. Must be destroyed calling
@@ -57,6 +64,7 @@ typedef struct {
  */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    const wlmtk_dock_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

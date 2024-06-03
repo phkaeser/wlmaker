@@ -33,11 +33,11 @@ struct _wlmtk_dock_t {
 
     /** Copy of the positioning information this dock was called from. */
     wlmtk_dock_positioning_t  dock_positioning;
+    /** Styling info of the dock. */
+    wlmtk_dock_style_t        dock_style;
 
     /** Principal element of the dock is a box, holding tiles. */
     wlmtk_box_t               tile_box;
-    /** Margin style of the box. */
-    wlmtk_margin_style_t      box_style;
 };
 
 static uint32_t _wlmtk_dock_panel_request_size(
@@ -62,17 +62,20 @@ static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    const wlmtk_dock_style_t *style_ptr,
+
     wlmtk_env_t *env_ptr)
 {
     wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
     if (NULL == dock_ptr) return NULL;
     dock_ptr->dock_positioning = *dock_positioning_ptr;
+    dock_ptr->dock_style = *style_ptr;
 
     if (!wlmtk_box_init(
             &dock_ptr->tile_box,
             env_ptr,
             _wlmtk_dock_orientation(dock_ptr),
-            &dock_ptr->box_style)) {
+            &dock_ptr->dock_style.margin)) {
         wlmtk_dock_destroy(dock_ptr);
         return NULL;
     }
@@ -290,8 +293,9 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
         .anchor = WLR_EDGE_BOTTOM,
         .tile_size = 42,
     };
+    wlmtk_dock_style_t style = {};
 
-    wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, NULL);
+    wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, &style, NULL);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_LEFT | WLR_EDGE_BOTTOM,
