@@ -44,6 +44,8 @@ wlmaker_launcher_t *wlmaker_launcher_create(wlmaker_server_t *server_ptr)
 
         return NULL;
     }
+    wlmtk_element_set_visible(
+        wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
     return launcher_ptr;
 }
