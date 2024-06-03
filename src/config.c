@@ -37,6 +37,7 @@
 /* == Declarations ========================================================= */
 
 static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
+static bool decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr);
 
 /* == Data ================================================================= */
 
@@ -171,14 +172,35 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     return dict_ptr;
 }
 
+/** Deocdes an ARGB32 value from the config object. */
+bool decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
+    if (NULL == string_ptr) return false;
+
+    const char *value_ptr = wlmcfg_string_value(string_ptr);
+    if (NULL == value_ptr) return false;
+    int rv = sscanf(value_ptr, "argb32:%"PRIx32, argb32_ptr);
+    if (1 != rv) {
+        bs_log(BS_DEBUG | BS_ERRNO,
+               "Failed sscanf(\"%s\", \"argb32:%%"PRIx32", %p)",
+               value_ptr, argb32_ptr);
+        return false;
+    }
+
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
+static void test_decode_argb32(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
+    { 1, "decode_argb32", test_decode_argb32 },
     { 0, NULL, NULL }
 };
 
@@ -236,6 +258,20 @@ void test_file(bs_test_t *test_ptr)
         WLMAKER_SOURCE_DIR "/etc/dock.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_dict_unref(dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests argb32 decoding. */
+void test_decode_argb32(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_string(
+        "\"argb32:01020304\"");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+
+    uint32_t argb32;
+    BS_TEST_VERIFY_TRUE(test_ptr, decode_argb32(obj_ptr, &argb32));
+    BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, argb32);
+    wlmcfg_object_unref(obj_ptr);
 }
 
 /* == End of config.c ====================================================== */
