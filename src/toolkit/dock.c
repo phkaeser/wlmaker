@@ -42,6 +42,11 @@ static uint32_t _wlmtk_dock_panel_request_size(
     int width,
     int height);
 
+static bool _wlmtk_dock_positioning(
+    const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    wlmtk_panel_positioning_t *panel_positioning_ptr,
+    wlmtk_box_orientation_t *box_orientation_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table of the panel. */
@@ -59,9 +64,14 @@ wlmtk_dock_t *wlmtk_dock_create(
     wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
     if (NULL == dock_ptr) return NULL;
 
-    dock_ptr->panel_positioning.anchor = dock_positioning_ptr->anchor;
-    dock_ptr->panel_positioning.desired_width = dock_positioning_ptr->tile_size;
-    dock_ptr->panel_positioning.desired_height = dock_positioning_ptr->tile_size;
+    wlmtk_box_orientation_t box_orientation;
+    if (!_wlmtk_dock_positioning(
+            dock_positioning_ptr,
+            &dock_ptr->panel_positioning,
+            &box_orientation)) {
+        wlmtk_dock_destroy(dock_ptr);
+        return NULL;
+    }
 
     if (!wlmtk_panel_init(
             &dock_ptr->super_panel,
@@ -73,10 +83,6 @@ wlmtk_dock_t *wlmtk_dock_create(
     }
     wlmtk_panel_extend(&dock_ptr->super_panel, &_wlmtk_dock_panel_vmt);
 
-    wlmtk_box_orientation_t box_orientation = WLMTK_BOX_HORIZONTAL;
-    if (WLMTK_DOCK_VERTICAL == dock_positioning_ptr->orientation) {
-        box_orientation = WLMTK_BOX_VERTICAL;
-    }
     if (!wlmtk_box_init(
             &dock_ptr->tile_box,
             env_ptr,
@@ -163,6 +169,70 @@ uint32_t _wlmtk_dock_panel_request_size(
     return 0;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Fills the panel positioning parameters from the dock's. */
+bool _wlmtk_dock_positioning(
+    const wlmtk_dock_positioning_t *dock_positioning_ptr,
+    wlmtk_panel_positioning_t *panel_positioning_ptr,
+    wlmtk_box_orientation_t *box_orientation_ptr)
+{
+    switch (dock_positioning_ptr->edge) {
+    case WLR_EDGE_LEFT:
+    case WLR_EDGE_RIGHT:
+        panel_positioning_ptr->anchor = dock_positioning_ptr->edge;
+        panel_positioning_ptr->desired_width =
+            dock_positioning_ptr->tile_size;
+
+        if (dock_positioning_ptr->anchor != WLR_EDGE_TOP &&
+            dock_positioning_ptr->anchor != WLR_EDGE_BOTTOM) {
+            bs_log(BS_ERROR, "wlmtk_dock_t anchor must be adjacent to edge: "
+                   "anchor %"PRIx32", edge %"PRIx32,
+                   dock_positioning_ptr->anchor,
+                   dock_positioning_ptr->edge);
+            return false;
+        }
+        panel_positioning_ptr->anchor |= dock_positioning_ptr->anchor;
+        *box_orientation_ptr = WLMTK_BOX_VERTICAL;
+
+        // The layer protocol requires a non-zero value for panels not spanning
+        // the entire height. Go with a one-tile dimension, as long as there's
+        // no tiles yet.
+        panel_positioning_ptr->desired_height =
+            dock_positioning_ptr->tile_size;
+        break;
+
+    case WLR_EDGE_TOP:
+    case WLR_EDGE_BOTTOM:
+        panel_positioning_ptr->anchor = dock_positioning_ptr->edge;
+        panel_positioning_ptr->desired_height =
+            dock_positioning_ptr->tile_size;
+        if (dock_positioning_ptr->anchor != WLR_EDGE_LEFT &&
+            dock_positioning_ptr->anchor != WLR_EDGE_RIGHT) {
+            bs_log(BS_ERROR, "wlmtk_dock_t anchor must be adjacent to edge: "
+                   "anchor %"PRIx32", edge %"PRIx32,
+                   dock_positioning_ptr->anchor,
+                   dock_positioning_ptr->edge);
+            return false;
+        }
+        panel_positioning_ptr->anchor |= dock_positioning_ptr->anchor;
+        *box_orientation_ptr = WLMTK_BOX_HORIZONTAL;
+
+        // The layer protocol requires a non-zero value for panels not spanning
+        // the entire width. Go with a one-tile dimension, as long as there's
+        // no tiles yet.
+        panel_positioning_ptr->desired_width =
+            dock_positioning_ptr->tile_size;
+        break;
+
+    default:
+        bs_log(BS_ERROR, "Unexpected wlmtk_dock_t positioning edge 0x%"PRIx32,
+               dock_positioning_ptr->edge);
+        return false;
+    }
+
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -176,8 +246,29 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
 /** Exercises ctor and dtor. */
  void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_dock_positioning_t pos = {};
+    wlmtk_dock_positioning_t pos = {
+        .edge = WLR_EDGE_LEFT,
+        .anchor = WLR_EDGE_BOTTOM,
+        .tile_size = 42,
+    };
+
     wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, NULL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_EDGE_LEFT | WLR_EDGE_BOTTOM,
+        dock_ptr->super_panel.positioning.anchor);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        42,
+        dock_ptr->super_panel.positioning.desired_width);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        42,
+        dock_ptr->super_panel.positioning.desired_height);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_BOX_VERTICAL,
+        dock_ptr->tile_box.orientation);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
     wlmtk_dock_destroy(dock_ptr);
 

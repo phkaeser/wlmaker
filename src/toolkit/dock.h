@@ -20,6 +20,8 @@
 #ifndef __WLMTK_DOCK_H__
 #define __WLMTK_DOCK_H__
 
+#include <wlr/util/edges.h>
+
 /** Forward declaration: Dock handle. */
 typedef struct _wlmtk_dock_t wlmtk_dock_t;
 
@@ -31,18 +33,13 @@ typedef struct _wlmtk_dock_t wlmtk_dock_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Orientation of the dock. */
-typedef enum {
-    WLMTK_DOCK_HORIZONTAL,
-    WLMTK_DOCK_VERTICAL,
-} wlmtk_dock_orientation_t;
-
 /** Positioning options for the dock. */
 typedef struct {
-    /** Anchor edges for the dock. See `enum wlr_edges`. */
-    uint32_t                  anchor;
-    /** Orientation of the dock. */
-    wlmtk_dock_orientation_t  orientation;
+    /** Principal edge the dock aligns to. Must not be WLR_EDGE_NONE. */
+    enum wlr_edges            edge;
+    /** Dock anchor, along @ref wlmtk_dock_positioning_t::edge. */
+    enum wlr_edges            anchor;
+
     /** Size of the tile. */
     int                       tile_size;
 } wlmtk_dock_positioning_t;
