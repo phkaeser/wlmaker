@@ -23,6 +23,7 @@
 #include <libbase/libbase.h>
 
 #include "model.h"
+#include "decode.h"
 
 #ifdef __cplusplus
 extern "C" {
