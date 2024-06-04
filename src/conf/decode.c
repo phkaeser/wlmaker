@@ -41,6 +41,10 @@ static bool _wlmcfg_decode_uint64(
 static bool _wlmcfg_decode_argb32(
     wlmcfg_object_t *obj_ptr,
     uint32_t *argb32_ptr);
+static bool _wlmcfg_decode_enum(
+    wlmcfg_object_t *obj_ptr,
+    const wlmcfg_enum_desc_t *enum_desc_ptr,
+    int *enum_value_ptr);
 
 /* == Exported methods ===================================================== */
 
