@@ -28,19 +28,24 @@
 
 /* == Declarations ========================================================= */
 
+/** A pointer of type `value_type`, at `offset` behind `base_ptr`. */
+#define BS_VALUE_AT(_value_type, _base_ptr, _offset) \
+    ((_value_type*)((uint8_t*)(_base_ptr) + (_offset)))
+
 static bool _wlmcfg_init_defaults(
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr);
 
-static bool _wlmcfg_decode_int64(
-    wlmcfg_object_t *obj_ptr,
-    int64_t *int64_ptr);
 static bool _wlmcfg_decode_uint64(
     wlmcfg_object_t *obj_ptr,
     uint64_t *uint64_ptr);
+static bool _wlmcfg_decode_int64(
+    wlmcfg_object_t *obj_ptr,
+    int64_t *int64_ptr);
 static bool _wlmcfg_decode_argb32(
     wlmcfg_object_t *obj_ptr,
     uint32_t *argb32_ptr);
+// FIXME: bool
 static bool _wlmcfg_decode_enum(
     wlmcfg_object_t *obj_ptr,
     const wlmcfg_enum_desc_t *enum_desc_ptr,
@@ -65,13 +70,40 @@ bool wlmcfg_decode_dict(
 
         wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(
             dict_ptr, iter_desc_ptr->key_ptr);
-        if (NULL == obj_ptr) {
-            bs_log(BS_ERROR, "Key \"%s\" not found in dict %p.",
-                   iter_desc_ptr->key_ptr, dict_ptr);
-            return false;
-        }
+        // No such value. We currently don't test for required entries.
+        if (NULL == obj_ptr) continue;
 
+        bool rv = false;
         switch (iter_desc_ptr->type) {
+        case WLMCFG_TYPE_UINT64:
+            rv = _wlmcfg_decode_uint64(
+                obj_ptr,
+                BS_VALUE_AT(uint64_t, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_INT64:
+            rv = _wlmcfg_decode_int64(
+                obj_ptr,
+                BS_VALUE_AT(int64_t, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_ARGB32:
+            rv = _wlmcfg_decode_argb32(
+                obj_ptr,
+                BS_VALUE_AT(uint32_t, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_BOOL:
+            // FIXME
+            break;
+        case WLMCFG_TYPE_ENUM:
+            rv = _wlmcfg_decode_enum(
+                obj_ptr,
+                iter_desc_ptr->v.v_enum.desc_ptr,
+                BS_VALUE_AT(int, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_STRING:
+            rv = _wlmcfg_decode_string(
+                obj_ptr,
+                BS_VALUE_AT(char*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
         default:
             bs_log(BS_ERROR, "Unsupported type %d.", iter_desc_ptr->type);
             return false;
@@ -81,10 +113,6 @@ bool wlmcfg_decode_dict(
 }
 
 /* == Local (static) methods =============================================== */
-
-/** A pointer of type `value_type`, at `offset` behind `base_ptr`. */
-#define BS_VALUE_AT(_value_type, _base_ptr, _offset) \
-    ((_value_type*)((uint8_t*)(_base_ptr) + (_offset)))
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -138,17 +166,6 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-/** Decodes a signed number, using int64_t as carry-all. */
-bool _wlmcfg_decode_int64(wlmcfg_object_t *obj_ptr, int64_t *int64_ptr)
-{
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
-    if (NULL == string_ptr) return false;
-    const char *value_ptr = wlmcfg_string_value(string_ptr);
-    if (NULL == value_ptr) return false;
-    return bs_strconvert_int64(value_ptr, int64_ptr, 10);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Decodes an unsigned number, using uint64_t as carry-all. */
 bool _wlmcfg_decode_uint64(wlmcfg_object_t *obj_ptr, uint64_t *uint64_ptr)
 {
@@ -157,6 +174,17 @@ bool _wlmcfg_decode_uint64(wlmcfg_object_t *obj_ptr, uint64_t *uint64_ptr)
     const char *value_ptr = wlmcfg_string_value(string_ptr);
     if (NULL == value_ptr) return false;
     return bs_strconvert_uint64(value_ptr, uint64_ptr, 10);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Decodes a signed number, using int64_t as carry-all. */
+bool _wlmcfg_decode_int64(wlmcfg_object_t *obj_ptr, int64_t *int64_ptr)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
+    if (NULL == string_ptr) return false;
+    const char *value_ptr = wlmcfg_string_value(string_ptr);
+    if (NULL == value_ptr) return false;
+    return bs_strconvert_int64(value_ptr, int64_ptr, 10);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -220,6 +248,7 @@ bool _wlmcfg_decode_string(
 /* == Unit tests =========================================================== */
 
 static void test_init_defaults(bs_test_t *test_ptr);
+static void test_decode_dict(bs_test_t *test_ptr);
 static void test_decode_number(bs_test_t *test_ptr);
 static void test_decode_argb32(bs_test_t *test_ptr);
 static void test_decode_enum(bs_test_t *test_ptr);
@@ -227,6 +256,7 @@ static void test_decode_string(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "init_defaults", test_init_defaults },
+    { 1, "dict", test_decode_dict },
     { 1, "number", test_decode_number },
     { 1, "argb32", test_decode_argb32 },
     { 1, "enum", test_decode_enum },
@@ -279,12 +309,51 @@ void test_init_defaults(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests dict decoding. */
+void test_decode_dict(bs_test_t *test_ptr)
+{
+    _test_value_t val = {};
+    const char *plist_string_ptr = ("{"
+                                    "u64 = \"100\";"
+                                    "i64 = \"-101\";"
+                                    "argb32 = \"argb32:0204080c\";"
+                                    "enum = enum1;"
+                                    "string = TestString"
+                                    "}");
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_create_object_from_plist_string(plist_string_ptr));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(dict_ptr, _wlmcfg_decode_test_desc, &val));
+    BS_TEST_VERIFY_EQ(test_ptr, 100, val.v_uint64);
+    BS_TEST_VERIFY_EQ(test_ptr, -101, val.v_int64);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, val.v_argb32);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
+    BS_TEST_VERIFY_STREQ(test_ptr, "TestString", val.v_string);
+    wlmcfg_dict_unref(dict_ptr);
+    free(val.v_string);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Tests number decoding. */
 void test_decode_number(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *obj_ptr;
     int64_t i64;
     uint64_t u64;
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("42");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_uint64(obj_ptr, &u64));
+    BS_TEST_VERIFY_EQ(test_ptr, 42, u64);
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\"");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmcfg_decode_uint64(obj_ptr, &u64));
+    wlmcfg_object_unref(obj_ptr);
 
     obj_ptr = wlmcfg_create_object_from_plist_string("42");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
@@ -296,17 +365,6 @@ void test_decode_number(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_int64(obj_ptr, &i64));
     BS_TEST_VERIFY_EQ(test_ptr, -1234, i64);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("42");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_uint64(obj_ptr, &u64));
-    BS_TEST_VERIFY_EQ(test_ptr, 42, u64);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, _wlmcfg_decode_uint64(obj_ptr, &u64));
     wlmcfg_object_unref(obj_ptr);
 }
 
