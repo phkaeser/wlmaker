@@ -45,7 +45,9 @@ static bool _wlmcfg_decode_int64(
 static bool _wlmcfg_decode_argb32(
     wlmcfg_object_t *obj_ptr,
     uint32_t *argb32_ptr);
-// FIXME: bool
+static bool _wlmcfg_decode_bool(
+    wlmcfg_object_t *obj_ptr,
+    bool *bool_ptr);
 static bool _wlmcfg_decode_enum(
     wlmcfg_object_t *obj_ptr,
     const wlmcfg_enum_desc_t *enum_desc_ptr,
@@ -54,6 +56,18 @@ static bool _wlmcfg_decode_string(
     wlmcfg_object_t *obj_ptr,
     char **str_ptr_ptr);
 
+/** Enum descriptor for decoding bool. */
+static const wlmcfg_enum_desc_t _wlmcfg_bool_desc[] = {
+    WLMCFG_ENUM("True", true),
+    WLMCFG_ENUM("False", false),
+    WLMCFG_ENUM("Yes", true),
+    WLMCFG_ENUM("No", false),
+    WLMCFG_ENUM("Enabled", true),
+    WLMCFG_ENUM("Disabled", false),
+    WLMCFG_ENUM("On", true),
+    WLMCFG_ENUM("Off", false),
+    WLMCFG_ENUM_SENTINEL()
+};
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -91,7 +105,9 @@ bool wlmcfg_decode_dict(
                 BS_VALUE_AT(uint32_t, dest_ptr, iter_desc_ptr->field_offset));
             break;
         case WLMCFG_TYPE_BOOL:
-            // FIXME
+            rv = _wlmcfg_decode_bool(
+                obj_ptr,
+                BS_VALUE_AT(bool, dest_ptr, iter_desc_ptr->field_offset));
             break;
         case WLMCFG_TYPE_ENUM:
             rv = _wlmcfg_decode_enum(
@@ -141,6 +157,11 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
         case WLMCFG_TYPE_ARGB32:
             *BS_VALUE_AT(uint32_t, dest_ptr, iter_desc_ptr->field_offset) =
                 iter_desc_ptr->v.v_argb32.default_value;
+            break;
+
+        case WLMCFG_TYPE_BOOL:
+            *BS_VALUE_AT(bool, dest_ptr, iter_desc_ptr->field_offset) =
+                iter_desc_ptr->v.v_bool.default_value;
             break;
 
         case WLMCFG_TYPE_ENUM:
@@ -208,6 +229,18 @@ bool _wlmcfg_decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Translates a bool value from the string. */
+bool _wlmcfg_decode_bool(
+    wlmcfg_object_t *obj_ptr,
+    bool *bool_ptr)
+{
+    int bool_value;
+    bool rv = _wlmcfg_decode_enum(obj_ptr, _wlmcfg_bool_desc, &bool_value);
+    if (rv) *bool_ptr = bool_value;
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Translates a enum value from the string, using the provided descriptor. */
 bool _wlmcfg_decode_enum(
     wlmcfg_object_t *obj_ptr,
@@ -251,6 +284,7 @@ static void test_init_defaults(bs_test_t *test_ptr);
 static void test_decode_dict(bs_test_t *test_ptr);
 static void test_decode_number(bs_test_t *test_ptr);
 static void test_decode_argb32(bs_test_t *test_ptr);
+static void test_decode_bool(bs_test_t *test_ptr);
 static void test_decode_enum(bs_test_t *test_ptr);
 static void test_decode_string(bs_test_t *test_ptr);
 
@@ -259,6 +293,7 @@ const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "dict", test_decode_dict },
     { 1, "number", test_decode_number },
     { 1, "argb32", test_decode_argb32 },
+    { 1, "bool", test_decode_bool },
     { 1, "enum", test_decode_enum },
     { 1, "string", test_decode_string },
     { 0, NULL, NULL },
@@ -270,6 +305,7 @@ typedef struct {
     uint64_t                  v_uint64;
     int64_t                   v_int64;
     uint32_t                  v_argb32;
+    bool                      v_bool;
     int                       v_enum;
     char                      *v_string;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
@@ -287,6 +323,7 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_UINT64("u64", _test_value_t, v_uint64, 1234),
     WLMCFG_DESC_INT64("i64", _test_value_t, v_int64, -1234),
     WLMCFG_DESC_ARGB32("argb32", _test_value_t, v_argb32, 0x01020304),
+    WLMCFG_DESC_BOOL("bool", _test_value_t, v_bool, true),
     WLMCFG_DESC_ENUM("enum", _test_value_t, v_enum, 3, _test_enum_desc),
     WLMCFG_DESC_STRING("string", _test_value_t, v_string, "The String"),
     WLMCFG_DESC_SENTINEL(),
@@ -303,6 +340,7 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1234, val.v_uint64);
     BS_TEST_VERIFY_EQ(test_ptr, -1234, val.v_int64);
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, val.v_argb32);
+    BS_TEST_VERIFY_EQ(test_ptr, true, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 3, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "The String", val.v_string);
     free(val.v_string);
@@ -317,6 +355,7 @@ void test_decode_dict(bs_test_t *test_ptr)
                                     "u64 = \"100\";"
                                     "i64 = \"-101\";"
                                     "argb32 = \"argb32:0204080c\";"
+                                    "bool = Disabled;"
                                     "enum = enum1;"
                                     "string = TestString"
                                     "}");
@@ -330,6 +369,7 @@ void test_decode_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, val.v_uint64);
     BS_TEST_VERIFY_EQ(test_ptr, -101, val.v_int64);
     BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, val.v_argb32);
+    BS_TEST_VERIFY_EQ(test_ptr, false, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "TestString", val.v_string);
     wlmcfg_dict_unref(dict_ptr);
@@ -379,6 +419,26 @@ void test_decode_argb32(bs_test_t *test_ptr)
     uint32_t argb32;
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_argb32(obj_ptr, &argb32));
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, argb32);
+    wlmcfg_object_unref(obj_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests bool decoding. */
+void test_decode_bool(bs_test_t *test_ptr)
+{
+    bool value;
+    wlmcfg_object_t *obj_ptr;
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("Yes");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_bool(obj_ptr, &value));
+    BS_TEST_VERIFY_TRUE(test_ptr, value);
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("Disabled");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_bool(obj_ptr, &value));
+    BS_TEST_VERIFY_FALSE(test_ptr, value);
     wlmcfg_object_unref(obj_ptr);
 }
 

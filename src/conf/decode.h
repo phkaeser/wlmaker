@@ -142,6 +142,14 @@ typedef struct {
         .v.v_argb32.default_value = _default                    \
     }
 
+/** Descriptor for a bool value. */
+#define WLMCFG_DESC_BOOL(_key, _base, _field, _default) {       \
+        .type = WLMCFG_TYPE_BOOL,                               \
+        .key_ptr = (_key),                                      \
+        .field_offset = offsetof(_base, _field),                \
+        .v.v_bool.default_value = _default                      \
+    }
+
 /** Descriptor for an enum value. */
 #define WLMCFG_DESC_ENUM(_key, _base, _field, _default, _desc_ptr) {    \
         .type = WLMCFG_TYPE_ENUM,                                       \
