@@ -130,6 +130,7 @@ const bs_test_case_t wlmcfg_plist_test_cases[] = {
 void test_from_string(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *object_ptr, *v_ptr;
+    wlmcfg_array_t *array_ptr;
 
     // A string.
     object_ptr = wlmcfg_create_object_from_plist_string("value");
@@ -163,11 +164,16 @@ void test_from_string(bs_test_t *test_ptr)
         "{key1=dict_value1;key1=dict_value2}");
     BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
 
+    // TODO: Make this work -- An empty dict.
+    /* object_ptr = wlmcfg_create_object_from_plist_string("{}"); */
+    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr); */
+    /* wlmcfg_object_unref(object_ptr); */
+
     // An array.
     object_ptr = wlmcfg_create_object_from_plist_string(
         "(elem0,elem1)");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
-    wlmcfg_array_t *array_ptr = wlmcfg_array_from_object(object_ptr);
+    array_ptr = wlmcfg_array_from_object(object_ptr);
     BS_TEST_VERIFY_STREQ(
         test_ptr,
         "elem0",
@@ -180,6 +186,13 @@ void test_from_string(bs_test_t *test_ptr)
                                 wlmcfg_array_at(array_ptr, 1))));
     wlmcfg_object_unref(object_ptr);
 
+    // TODO: Make this work -- An empty array.
+    /* object_ptr = wlmcfg_create_object_from_plist_string("()"); */
+    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr); */
+    /* array_ptr = wlmcfg_array_from_object(object_ptr); */
+    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr); */
+    /* BS_TEST_VERIFY_EQ(test_ptr, 0, wlmcfg_array_size(array_ptr)); */
+    /* wlmcfg_object_unref(object_ptr); */
 }
 
 /* ------------------------------------------------------------------------- */
