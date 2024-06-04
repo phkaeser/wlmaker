@@ -382,11 +382,10 @@ void test_decode_number(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 42, u64);
     wlmcfg_object_unref(obj_ptr);
 
-    // Interesting. This is strtoull behaviour, but undesired for us.
-    /* obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\""); */
-    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr); */
-    /* BS_TEST_VERIFY_FALSE(test_ptr, decode_uint64(obj_ptr, &u64)); */
-    /* wlmcfg_object_unref(obj_ptr); */
+    obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\"");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, decode_uint64(obj_ptr, &u64));
+    wlmcfg_object_unref(obj_ptr);
 }
 
 /* == End of config.c ====================================================== */
