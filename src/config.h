@@ -15,7 +15,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the iLicense.
  */
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
@@ -102,6 +102,30 @@ extern const uint32_t wlmaker_config_window_drag_modifiers;
 
 extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
 extern const wlmaker_config_theme_t wlmaker_config_theme;
+
+/**
+ * Decodes the fill style struct from a plist dict.
+ *
+ * @param dict_ptr
+ * @param fill_ptr
+ *
+ * @return true on success.
+ */
+bool wlmaker_config_decode_fill_style(
+    wlmcfg_dict_t *dict_ptr,
+    wlmtk_style_fill_t *fill_ptr);
+
+/**
+ * Decodes the tile style struct from a plist dict.
+ *
+ * @param dict_ptr
+ * @param tile_style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmaker_config_decode_tile_style(
+    wlmcfg_dict_t *dict_ptr,
+    wlmtk_tile_style_t *tile_style_ptr);
 
 /**
  * Loads the configuration for wlmaker.
