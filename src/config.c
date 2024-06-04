@@ -37,7 +37,6 @@
 /* == Declarations ========================================================= */
 
 static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
-static bool decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr);
 
 /* == Data ================================================================= */
 
@@ -172,87 +171,14 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     return dict_ptr;
 }
 
-/** Enum descriptor. */
-typedef struct {
-    /** The string representation of the enum. */
-    const char                *name_ptr;
-    /** The corresponding numeric value. */
-    int                       value;
-} wlmaker_config_enum_desc_t;
-
-/** Translates a enum value from the string, using the provided decsriptor. */
-bool decode_enum(wlmcfg_object_t *obj_ptr,
-            const wlmaker_config_enum_desc_t *enum_desc_ptr,
-            int *enum_value_ptr)
-{
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
-    if (NULL == string_ptr) return false;
-    const char *value_ptr = wlmcfg_string_value(string_ptr);
-    if (NULL == value_ptr) return false;
-
-    for (; NULL != enum_desc_ptr->name_ptr; ++enum_desc_ptr) {
-        if (0 == strcmp(enum_desc_ptr->name_ptr, value_ptr)) {
-            *enum_value_ptr = enum_desc_ptr->value;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/** Deocdes an ARGB32 value from the config object. */
-bool decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr)
-{
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
-    if (NULL == string_ptr) return false;
-
-    const char *value_ptr = wlmcfg_string_value(string_ptr);
-    if (NULL == value_ptr) return false;
-    int rv = sscanf(value_ptr, "argb32:%"PRIx32, argb32_ptr);
-    if (1 != rv) {
-        bs_log(BS_DEBUG | BS_ERRNO,
-               "Failed sscanf(\"%s\", \"argb32:%%"PRIx32", %p)",
-               value_ptr, argb32_ptr);
-        return false;
-    }
-
-    return true;
-}
-
-/** Decodes a signed number, using int64_t as carry-all. */
-bool decode_int64(wlmcfg_object_t *obj_ptr, int64_t *int64_ptr)
-{
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
-    if (NULL == string_ptr) return false;
-    const char *value_ptr = wlmcfg_string_value(string_ptr);
-    if (NULL == value_ptr) return false;
-    return bs_strconvert_int64(value_ptr, int64_ptr, 10);
-}
-
-/** Decodes an unsigned number, using uint64_t as carry-all. */
-bool decode_uint64(wlmcfg_object_t *obj_ptr, uint64_t *uint64_ptr)
-{
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
-    if (NULL == string_ptr) return false;
-    const char *value_ptr = wlmcfg_string_value(string_ptr);
-    if (NULL == value_ptr) return false;
-    return bs_strconvert_uint64(value_ptr, uint64_ptr, 10);
-}
-
 /* == Unit tests =========================================================== */
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
-static void test_decode_argb32(bs_test_t *test_ptr);
-static void test_decode_enum(bs_test_t *test_ptr);
-static void test_decode_number(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
-    { 1, "decode_argb32", test_decode_argb32 },
-    { 1, "decode_enum", test_decode_enum },
-    { 1, "decode_number", test_decode_number },
     { 0, NULL, NULL }
 };
 
@@ -310,82 +236,6 @@ void test_file(bs_test_t *test_ptr)
         WLMAKER_SOURCE_DIR "/etc/dock.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_dict_unref(dict_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests argb32 decoding. */
-void test_decode_argb32(bs_test_t *test_ptr)
-{
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_string(
-        "\"argb32:01020304\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-
-    uint32_t argb32;
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_argb32(obj_ptr, &argb32));
-    BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, argb32);
-    wlmcfg_object_unref(obj_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests enum decoding. */
-void test_decode_enum(bs_test_t *test_ptr)
-{
-    static const wlmaker_config_enum_desc_t desc[] = {
-        { .name_ptr = "HGRADIENT", .value = 1 },
-        { .name_ptr = "DGRADIENT", .value = 2 },
-        {}
-    };
-    int value;
-    wlmcfg_object_t *obj_ptr;
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("DGRADIENT");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_enum(obj_ptr, desc, &value));
-    BS_TEST_VERIFY_EQ(test_ptr, 2, value);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("\"DGRADIENT\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_enum(obj_ptr, desc, &value));
-    BS_TEST_VERIFY_EQ(test_ptr, 2, value);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("INVALID");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, decode_enum(obj_ptr, desc, &value));
-    wlmcfg_object_unref(obj_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests number decoding. */
-void test_decode_number(bs_test_t *test_ptr)
-{
-    wlmcfg_object_t *obj_ptr;
-    int64_t i64;
-    uint64_t u64;
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("42");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_int64(obj_ptr, &i64));
-    BS_TEST_VERIFY_EQ(test_ptr, 42, i64);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_int64(obj_ptr, &i64));
-    BS_TEST_VERIFY_EQ(test_ptr, -1234, i64);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("42");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, decode_uint64(obj_ptr, &u64));
-    BS_TEST_VERIFY_EQ(test_ptr, 42, u64);
-    wlmcfg_object_unref(obj_ptr);
-
-    obj_ptr = wlmcfg_create_object_from_plist_string("\"-1234\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
-    BS_TEST_VERIFY_FALSE(test_ptr, decode_uint64(obj_ptr, &u64));
-    wlmcfg_object_unref(obj_ptr);
 }
 
 /* == End of config.c ====================================================== */
