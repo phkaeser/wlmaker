@@ -34,6 +34,9 @@
 extern "C" {
 #endif  // __cplusplus
 
+/** Forward declaration: Descriptor. */
+typedef struct _wlmcfg_desc_t wlmcfg_desc_t;
+
 /** Enum descriptor. */
 typedef struct {
     /** The string representation of the enum. */
@@ -55,7 +58,8 @@ typedef enum {
     WLMCFG_TYPE_ARGB32,
     WLMCFG_TYPE_BOOL,
     WLMCFG_TYPE_ENUM,
-    WLMCFG_TYPE_STRING
+    WLMCFG_TYPE_STRING,
+    WLMCFG_TYPE_DICT,
 } wlmcfg_decode_type_t;
 
 /** A signed 64-bit integer. */
@@ -97,7 +101,7 @@ typedef struct {
 } wlmcfg_desc_string_t;
 
 /** Descriptor to decode a plist dict. */
-typedef struct {
+struct _wlmcfg_desc_t {
     /** Type of the value. */
     wlmcfg_decode_type_t      type;
     /** The key used for the described value in the plist dict. */
@@ -114,8 +118,9 @@ typedef struct {
         wlmcfg_desc_bool_t    v_bool;
         wlmcfg_desc_enum_t    v_enum;
         wlmcfg_desc_string_t  v_string;
+        const wlmcfg_desc_t   *v_dict_desc_ptr;
     } v;
-} wlmcfg_desc_t;
+};
 
 /** Descriptor sentinel. Put at end of a @ref wlmcfg_desc_t sequence. */
 #define WLMCFG_DESC_SENTINEL() { .key_ptr = NULL }
@@ -123,8 +128,8 @@ typedef struct {
 /** Descriptor for an unsigned int64. */
 #define WLMCFG_DESC_UINT64(_key, _required, _base, _field, _default) {  \
         .type = WLMCFG_TYPE_UINT64,                                     \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_uint64.default_value = _default                            \
     }
@@ -132,8 +137,8 @@ typedef struct {
 /** Descriptor for an signed int64. */
 #define WLMCFG_DESC_INT64(_key, _required, _base, _field, _default) {   \
         .type = WLMCFG_TYPE_INT64,                                      \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_int64.default_value = _default                             \
     }
@@ -141,8 +146,8 @@ typedef struct {
 /** Descriptor for an ARGB32 value. */
 #define WLMCFG_DESC_ARGB32(_key, _required, _base, _field, _default) {  \
         .type = WLMCFG_TYPE_ARGB32,                                     \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_argb32.default_value = _default                            \
     }
@@ -150,8 +155,8 @@ typedef struct {
 /** Descriptor for a bool value. */
 #define WLMCFG_DESC_BOOL(_key, _required, _base, _field, _default) {    \
         .type = WLMCFG_TYPE_BOOL,                                       \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_bool.default_value = _default                              \
     }
@@ -160,8 +165,8 @@ typedef struct {
 #define WLMCFG_DESC_ENUM(_key, _required, _base, _field, _default, _desc_ptr) \
     {                                                                   \
         .type = WLMCFG_TYPE_ENUM,                                       \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_enum.default_value = _default,                             \
         .v.v_enum.desc_ptr = _desc_ptr                                  \
@@ -170,10 +175,19 @@ typedef struct {
 /** Descriptor for a string value value. */
 #define WLMCFG_DESC_STRING(_key, _required, _base, _field, _default) {  \
         .type = WLMCFG_TYPE_STRING,                                     \
-        .required = _required,                                          \
         .key_ptr = (_key),                                              \
+        .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_string.default_value_ptr = _default,                       \
+    }
+
+/** Descriptor for a dict sub-value. */
+#define WLMCFG_DESC_DICT(_key, _required, _base, _field, _desc) {       \
+        .type = WLMCFG_TYPE_DICT,                                       \
+        .key_ptr = (_key),                                              \
+        .required = _required,                                          \
+        .field_offset = offsetof(_base, _field),                        \
+        .v.v_dict_desc_ptr = _desc                                      \
     }
 
 /**
@@ -191,7 +205,7 @@ bool wlmcfg_decode_dict(
     void *dest_ptr);
 
 /**
- * Destroys resources that were allocated during @ref wlmckg_decode_dict.
+ * Destroys resources that were allocated during @ref wlmcfg_decode_dict.
  *
  * @param desc_ptr
  * @param dest_ptr

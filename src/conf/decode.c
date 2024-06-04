@@ -127,6 +127,12 @@ bool wlmcfg_decode_dict(
                 obj_ptr,
                 BS_VALUE_AT(char*, dest_ptr, iter_desc_ptr->field_offset));
             break;
+        case WLMCFG_TYPE_DICT:
+            rv = wlmcfg_decode_dict(
+                wlmcfg_dict_from_object(obj_ptr),
+                iter_desc_ptr->v.v_dict_desc_ptr,
+                BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
         default:
             bs_log(BS_ERROR, "Unsupported type %d.", iter_desc_ptr->type);
             rv = false;
@@ -142,12 +148,6 @@ bool wlmcfg_decode_dict(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Destroys resources allocated by the decoder in the destination.
- *
- * @param desc_ptr
- * @param dest_ptr
- */
 void wlmcfg_decoded_destroy(
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr)
@@ -164,6 +164,14 @@ void wlmcfg_decoded_destroy(
                 *str_ptr_ptr = NULL;
             }
             break;
+
+        case WLMCFG_TYPE_DICT:
+            wlmcfg_decoded_destroy(
+                iter_desc_ptr->v.v_dict_desc_ptr,
+                BS_VALUE_AT(
+                    void*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+
         default:
             // Nothing.
             break;
@@ -219,6 +227,15 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
             *str_ptr = logged_strdup(
                 iter_desc_ptr->v.v_string.default_value_ptr);
             if (NULL == *str_ptr) return false;
+            break;
+
+        case WLMCFG_TYPE_DICT:
+            if (!_wlmcfg_init_defaults(
+                    iter_desc_ptr->v.v_dict_desc_ptr,
+                    BS_VALUE_AT(void*, dest_ptr,
+                                iter_desc_ptr->field_offset))) {
+                return false;
+            }
             break;
 
         default:
@@ -345,12 +362,20 @@ const bs_test_case_t wlmcfg_decode_test_cases[] = {
 /** Structure with test values. */
 typedef struct {
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
+    char                      *value;
+#endif  // DOXYGEN_SHOULD_SKIP_THIS
+} _test_subdict_value_t;
+
+/** Structure with test values. */
+typedef struct {
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
     uint64_t                  v_uint64;
     int64_t                   v_int64;
     uint32_t                  v_argb32;
     bool                      v_bool;
     int                       v_enum;
     char                      *v_string;
+    _test_subdict_value_t     subdict;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
 } _test_value_t;
 
@@ -361,6 +386,13 @@ static const wlmcfg_enum_desc_t _test_enum_desc[] = {
     WLMCFG_ENUM_SENTINEL()
 };
 
+/** Descriptor of a contained dict. */
+static const wlmcfg_desc_t _wlmcfg_decode_test_subdesc[] = {
+    WLMCFG_DESC_STRING("string", true, _test_subdict_value_t, value,
+                       "Other String"),
+    WLMCFG_DESC_SENTINEL(),
+};
+
 /** Test descriptor. */
 static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_UINT64("u64", true, _test_value_t, v_uint64, 1234),
@@ -369,6 +401,8 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_BOOL("bool", true, _test_value_t, v_bool, true),
     WLMCFG_DESC_ENUM("enum", true, _test_value_t, v_enum, 3, _test_enum_desc),
     WLMCFG_DESC_STRING("string", true, _test_value_t, v_string, "The String"),
+    WLMCFG_DESC_DICT("subdict", true, _test_value_t, subdict,
+                     _wlmcfg_decode_test_subdesc),
     WLMCFG_DESC_SENTINEL(),
 };
 
@@ -386,6 +420,7 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, true, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 3, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "The String", val.v_string);
+    BS_TEST_VERIFY_STREQ(test_ptr, "Other String", val.subdict.value);
     wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
 }
 
@@ -400,7 +435,8 @@ void test_decode_dict(bs_test_t *test_ptr)
                                     "argb32 = \"argb32:0204080c\";"
                                     "bool = Disabled;"
                                     "enum = enum1;"
-                                    "string = TestString"
+                                    "string = TestString;"
+                                    "subdict = { string = OtherTestString }"
                                     "}");
     wlmcfg_dict_t *dict_ptr;
 
