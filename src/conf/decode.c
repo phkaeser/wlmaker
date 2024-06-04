@@ -76,7 +76,10 @@ bool wlmcfg_decode_dict(
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr)
 {
-    if (!_wlmcfg_init_defaults(desc_ptr, dest_ptr)) return false;
+    if (!_wlmcfg_init_defaults(desc_ptr, dest_ptr)) {
+        wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
+        return false;
+    }
 
     for (const wlmcfg_desc_t *iter_desc_ptr = desc_ptr;
          iter_desc_ptr->key_ptr != NULL;
@@ -84,8 +87,12 @@ bool wlmcfg_decode_dict(
 
         wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(
             dict_ptr, iter_desc_ptr->key_ptr);
-        // No such value. We currently don't test for required entries.
-        if (NULL == obj_ptr) continue;
+        if (NULL == obj_ptr && iter_desc_ptr->required) {
+            bs_log(BS_ERROR, "Key \"%s\" not found in dict %p.",
+                   iter_desc_ptr->key_ptr, dict_ptr);
+            wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
+            return false;
+        }
 
         bool rv = false;
         switch (iter_desc_ptr->type) {
@@ -122,10 +129,46 @@ bool wlmcfg_decode_dict(
             break;
         default:
             bs_log(BS_ERROR, "Unsupported type %d.", iter_desc_ptr->type);
+            rv = false;
+            break;
+        }
+
+        if (!rv) {
+            wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
             return false;
         }
     }
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Destroys resources allocated by the decoder in the destination.
+ *
+ * @param desc_ptr
+ * @param dest_ptr
+ */
+void wlmcfg_decoded_destroy(
+    const wlmcfg_desc_t *desc_ptr,
+    void *dest_ptr)
+{
+    for (const wlmcfg_desc_t *iter_desc_ptr = desc_ptr;
+         iter_desc_ptr->key_ptr != NULL;
+         ++iter_desc_ptr) {
+        switch (iter_desc_ptr->type) {
+        case WLMCFG_TYPE_STRING:
+            char **str_ptr_ptr = BS_VALUE_AT(
+                char*, dest_ptr, iter_desc_ptr->field_offset);
+            if (NULL != *str_ptr_ptr) {
+                free(*str_ptr_ptr);
+                *str_ptr_ptr = NULL;
+            }
+            break;
+        default:
+            // Nothing.
+            break;
+        }
+    }
 }
 
 /* == Local (static) methods =============================================== */
@@ -320,12 +363,12 @@ static const wlmcfg_enum_desc_t _test_enum_desc[] = {
 
 /** Test descriptor. */
 static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
-    WLMCFG_DESC_UINT64("u64", _test_value_t, v_uint64, 1234),
-    WLMCFG_DESC_INT64("i64", _test_value_t, v_int64, -1234),
-    WLMCFG_DESC_ARGB32("argb32", _test_value_t, v_argb32, 0x01020304),
-    WLMCFG_DESC_BOOL("bool", _test_value_t, v_bool, true),
-    WLMCFG_DESC_ENUM("enum", _test_value_t, v_enum, 3, _test_enum_desc),
-    WLMCFG_DESC_STRING("string", _test_value_t, v_string, "The String"),
+    WLMCFG_DESC_UINT64("u64", true, _test_value_t, v_uint64, 1234),
+    WLMCFG_DESC_INT64("i64", true, _test_value_t, v_int64, -1234),
+    WLMCFG_DESC_ARGB32("argb32", true, _test_value_t, v_argb32, 0x01020304),
+    WLMCFG_DESC_BOOL("bool", true, _test_value_t, v_bool, true),
+    WLMCFG_DESC_ENUM("enum", true, _test_value_t, v_enum, 3, _test_enum_desc),
+    WLMCFG_DESC_STRING("string", true, _test_value_t, v_string, "The String"),
     WLMCFG_DESC_SENTINEL(),
 };
 
@@ -343,7 +386,7 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, true, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 3, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "The String", val.v_string);
-    free(val.v_string);
+    wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -359,8 +402,9 @@ void test_decode_dict(bs_test_t *test_ptr)
                                     "enum = enum1;"
                                     "string = TestString"
                                     "}");
+    wlmcfg_dict_t *dict_ptr;
 
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+    dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_string(plist_string_ptr));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     BS_TEST_VERIFY_TRUE(
@@ -373,7 +417,14 @@ void test_decode_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "TestString", val.v_string);
     wlmcfg_dict_unref(dict_ptr);
-    free(val.v_string);
+    wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
+
+    dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_create_object_from_plist_string("{anything=value}"));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmcfg_decode_dict(dict_ptr, _wlmcfg_decode_test_desc, &val));
+    wlmcfg_dict_unref(dict_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
