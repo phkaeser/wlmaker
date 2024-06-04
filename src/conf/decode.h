@@ -151,6 +151,14 @@ typedef struct {
         .v.v_enum.desc_ptr = _desc_ptr                                  \
     }
 
+/** Descriptor for a string value value. */
+#define WLMCFG_DESC_STRING(_key, _base, _field, _default) {             \
+        .type = WLMCFG_TYPE_STRING,                                     \
+        .key_ptr = (_key),                                              \
+        .field_offset = offsetof(_base, _field),                        \
+        .v.v_string.default_value_ptr = _default,                       \
+    }
+
 /**
  * Decodes the plist `dict_ptr` into `dest_ptr` as described.
  *

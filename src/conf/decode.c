@@ -45,6 +45,9 @@ static bool _wlmcfg_decode_enum(
     wlmcfg_object_t *obj_ptr,
     const wlmcfg_enum_desc_t *enum_desc_ptr,
     int *enum_value_ptr);
+static bool _wlmcfg_decode_string(
+    wlmcfg_object_t *obj_ptr,
+    char **str_ptr_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -117,6 +120,15 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
                 iter_desc_ptr->v.v_enum.default_value;
             break;
 
+        case WLMCFG_TYPE_STRING:
+            char **str_ptr = BS_VALUE_AT(
+                char*, dest_ptr, iter_desc_ptr->field_offset);
+            if (NULL != *str_ptr) free(*str_ptr);
+            *str_ptr = logged_strdup(
+                iter_desc_ptr->v.v_string.default_value_ptr);
+            if (NULL == *str_ptr) return false;
+            break;
+
         default:
             bs_log(BS_ERROR, "Unsupported type %d.", iter_desc_ptr->type);
             return false;
@@ -168,7 +180,7 @@ bool _wlmcfg_decode_argb32(wlmcfg_object_t *obj_ptr, uint32_t *argb32_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Translates a enum value from the string, using the provided decsriptor. */
+/** Translates a enum value from the string, using the provided descriptor. */
 bool _wlmcfg_decode_enum(
     wlmcfg_object_t *obj_ptr,
     const wlmcfg_enum_desc_t *enum_desc_ptr,
@@ -189,18 +201,36 @@ bool _wlmcfg_decode_enum(
     return false;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Translates (ie. duplicates) a string value from the plist string. */
+bool _wlmcfg_decode_string(
+    wlmcfg_object_t *obj_ptr,
+    char **str_ptr_ptr)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
+    if (NULL == string_ptr) return false;
+    const char *value_ptr = wlmcfg_string_value(string_ptr);
+    if (NULL == value_ptr) return false;
+
+    if (NULL != *str_ptr_ptr) free(*str_ptr_ptr);
+    *str_ptr_ptr = logged_strdup(value_ptr);
+    return (NULL != *str_ptr_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_defaults(bs_test_t *test_ptr);
 static void test_decode_number(bs_test_t *test_ptr);
 static void test_decode_argb32(bs_test_t *test_ptr);
 static void test_decode_enum(bs_test_t *test_ptr);
+static void test_decode_string(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "init_defaults", test_init_defaults },
     { 1, "number", test_decode_number },
     { 1, "argb32", test_decode_argb32 },
     { 1, "enum", test_decode_enum },
+    { 1, "string", test_decode_string },
     { 0, NULL, NULL },
 };
 
@@ -211,6 +241,7 @@ typedef struct {
     int64_t                   v_int64;
     uint32_t                  v_argb32;
     int                       v_enum;
+    char                      *v_string;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
 } _test_value_t;
 
@@ -227,6 +258,7 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_INT64("i64", _test_value_t, v_int64, -1234),
     WLMCFG_DESC_ARGB32("argb32", _test_value_t, v_argb32, 0x01020304),
     WLMCFG_DESC_ENUM("enum", _test_value_t, v_enum, 3, _test_enum_desc),
+    WLMCFG_DESC_STRING("string", _test_value_t, v_string, "The String"),
     WLMCFG_DESC_SENTINEL(),
 };
 
@@ -241,6 +273,9 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1234, val.v_uint64);
     BS_TEST_VERIFY_EQ(test_ptr, -1234, val.v_int64);
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, val.v_argb32);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, val.v_enum);
+    BS_TEST_VERIFY_STREQ(test_ptr, "The String", val.v_string);
+    free(val.v_string);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -318,6 +353,36 @@ void test_decode_enum(bs_test_t *test_ptr)
         test_ptr,
         _wlmcfg_decode_enum(obj_ptr, _test_enum_desc, &value));
     wlmcfg_object_unref(obj_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests string decoding. */
+void test_decode_string(bs_test_t *test_ptr)
+{
+    char *v_ptr = NULL;
+    wlmcfg_object_t *obj_ptr;
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("TheString");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_string(obj_ptr, &v_ptr));
+    BS_TEST_VERIFY_STREQ(test_ptr, "TheString", v_ptr);
+    wlmcfg_object_unref(obj_ptr);
+    free(v_ptr);
+    v_ptr = NULL;
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("1234");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_string(obj_ptr, &v_ptr));
+    BS_TEST_VERIFY_STREQ(test_ptr, "1234", v_ptr);
+    wlmcfg_object_unref(obj_ptr);
+    // Not free-ing v_ptr => the next 'decode' call has to do that.
+
+    obj_ptr = wlmcfg_create_object_from_plist_string("\"quoted string\"");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_string(obj_ptr, &v_ptr));
+    BS_TEST_VERIFY_STREQ(test_ptr, "quoted string", v_ptr);
+    wlmcfg_object_unref(obj_ptr);
+    free(v_ptr);
 }
 
 /* == End of decode.c ====================================================== */
