@@ -60,6 +60,7 @@ typedef enum {
     WLMCFG_TYPE_ENUM,
     WLMCFG_TYPE_STRING,
     WLMCFG_TYPE_DICT,
+    WLMCFG_TYPE_CUSTOM,
 } wlmcfg_decode_type_t;
 
 /** A signed 64-bit integer. */
@@ -100,6 +101,15 @@ typedef struct {
     const char                *default_value_ptr;
 } wlmcfg_desc_string_t;
 
+typedef struct {
+    /** Decoding method. */
+    bool (*decode)(wlmcfg_object_t *obj_ptr, void *dest_ptr);
+    /** Initializer method. */
+    bool (*init)(void *dest_ptr);
+    /** Cleanup method. */
+    bool (*fini)(void *dest_ptr);
+} wlmcfg_desc_custom_t;
+
 /** Descriptor to decode a plist dict. */
 struct _wlmcfg_desc_t {
     /** Type of the value. */
@@ -119,6 +129,7 @@ struct _wlmcfg_desc_t {
         wlmcfg_desc_enum_t    v_enum;
         wlmcfg_desc_string_t  v_string;
         const wlmcfg_desc_t   *v_dict_desc_ptr;
+        wlmcfg_desc_custom_t  v_custom;
     } v;
 };
 
