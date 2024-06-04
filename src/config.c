@@ -143,6 +143,23 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
         "Size", true, wlmtk_tile_style_t, size, 64),
     WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
+    // Custom: call into decoder, for object.
+    WLMCFG_DESC_DICT(
+        "Fill", true, wlmtk_tile_style_t, fill,
+        _wlmaker_config_fill_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Style information. */
+typedef struct {
+    wlmtk_tile_style_t        tile;
+} wlmaker_config_style_t;
+
+/** Desciptor for decoding the style information from a plist. */
+static const wlmcfg_desc_t _wlmaker_config_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Tile", true, wlmaker_config_style_t, tile,
+        _wlmaker_config_tile_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -260,12 +277,14 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
+static void test_style_file(bs_test_t *test_ptr);
 static void test_decode_fill(bs_test_t *test_ptr);
 static void test_decode_tile(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
+    { 1, "style_file", test_style_file },
     { 1, "decode_fill", test_decode_fill },
     { 1, "decode_tile", test_decode_tile },
     { 0, NULL, NULL }
@@ -317,13 +336,29 @@ void test_file(bs_test_t *test_ptr)
     wlmcfg_dict_unref(dict_ptr);
 
     dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
-    wlmcfg_dict_unref(dict_ptr);
-
-    dict_ptr = _wlmaker_config_from_plist(
         WLMAKER_SOURCE_DIR "/etc/dock.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Loads and decodes the style file. */
+void test_style_file(bs_test_t *test_ptr)
+{
+    wlmcfg_dict_t *dict_ptr;
+
+#ifndef WLMAKER_SOURCE_DIR
+#error "Missing definition of WLMAKER_SOURCE_DIR!"
+#endif
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+
+    wlmaker_config_style_t config_style;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(
+            dict_ptr, _wlmaker_config_style_desc, &config_style));
     wlmcfg_dict_unref(dict_ptr);
 }
 
@@ -384,7 +419,12 @@ void test_decode_tile(bs_test_t *test_ptr)
 {
     const char *s = ("{"
                      "Size = 48;"
-                     "BezelWidth = 4"
+                     "BezelWidth = 4;"
+                     "Fill = {"
+                     "From = \"argb:ff204080\";"
+                     "To = \"argb:ff4080c0\";"
+                     "Type = DGRADIENT"
+                     "}"
                      "}");
     wlmtk_tile_style_t tile_style;
     wlmcfg_dict_t *dict_ptr;
@@ -396,6 +436,9 @@ void test_decode_tile(bs_test_t *test_ptr)
         wlmaker_config_decode_tile_style(dict_ptr, &tile_style));
     BS_TEST_VERIFY_EQ(test_ptr, 48, tile_style.size);
     BS_TEST_VERIFY_EQ(test_ptr, 4, tile_style.bezel_width);
+
+     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT,
+                       tile_style.fill.type);
     wlmcfg_dict_unref(dict_ptr);
 
 }
