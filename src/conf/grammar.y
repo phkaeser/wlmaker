@@ -72,8 +72,7 @@
 /* == Grammar rules ======================================================== */
 /* See https://code.google.com/archive/p/networkpx/wikis/PlistSpec.wiki. */
 
-start:          object
-                ;
+start:          object;
 
 object:         string
                 | dict
@@ -83,36 +82,26 @@ string:         TK_STRING {
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1);
     free($1);
     bs_ptr_stack_push(&ctx_ptr->object_stack,
-                      wlmcfg_object_from_string(string_ptr));
-                } |
-                TK_QUOTED_STRING {
+                      wlmcfg_object_from_string(string_ptr)); }
+                | TK_QUOTED_STRING {
     size_t len = strlen($1);
     BS_ASSERT(2 <= len);  // It is supposed to be quoted.
     $1[len - 1] = '\0';
     wlmcfg_string_t *string_ptr = wlmcfg_string_create($1 + 1);
     free($1);
     bs_ptr_stack_push(&ctx_ptr->object_stack,
-                      wlmcfg_object_from_string(string_ptr));
-                }
-                ;
+                      wlmcfg_object_from_string(string_ptr)); };
 
 dict:           TK_LBRACE {
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_create();
     bs_ptr_stack_push(
         &ctx_ptr->object_stack,
         wlmcfg_object_from_dict(dict_ptr));
-                } TK_RBRACE |
-                TK_LBRACE {
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_create();
-    bs_ptr_stack_push(
-        &ctx_ptr->object_stack,
-        wlmcfg_object_from_dict(dict_ptr));
-                } kv_list TK_RBRACE
-                ;
+                } kv_list TK_RBRACE;
 
-kv_list:        kv_list TK_SEMICOLON kv |
-                kv
-                ;
+kv_list:        kv TK_SEMICOLON kv_list
+                | kv
+                | %empty;
 
 kv:             TK_STRING TK_EQUAL object {
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
@@ -126,9 +115,7 @@ kv:             TK_STRING TK_EQUAL object {
     }
     wlmcfg_object_unref(object_ptr);
     free($1);
-    if (!rv) return -1;
-                }
-                ;
+    if (!rv) return -1; };
 
 array:          TK_LPAREN {
     wlmcfg_array_t *array_ptr = wlmcfg_array_create();
@@ -139,8 +126,7 @@ array:          TK_LPAREN {
 
 element_list:   element TK_COMMA element_list
                 | element
-                | %empty
-                ;
+                | %empty;
 
 element:        object {
     wlmcfg_array_t *array_ptr = wlmcfg_array_from_object(
