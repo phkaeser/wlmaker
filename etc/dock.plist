@@ -4,7 +4,7 @@
   Launchers = (
     {
       CommandLine = "/usr/bin/foot";
-      Icon = "terminal-48x48.png"
+      Icon = "terminal-48x48.png";
     }
   )
 }
