@@ -101,6 +101,7 @@ wlmcfg_object_t *_wlmcfg_create_object_from_plist_scanner(yyscan_t scanner)
     wlmcfg_parser_context_t ctx = {};
     if (!bs_ptr_stack_init(&ctx.object_stack)) return NULL;
     // TODO(kaeser@gubbe.ch): Clean up stack on error!
+    yyset_extra(&ctx, scanner);
     int rv = yyparse(scanner, &ctx);
     wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(&ctx.object_stack);
     bs_ptr_stack_fini(&ctx.object_stack);
