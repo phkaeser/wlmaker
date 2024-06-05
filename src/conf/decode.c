@@ -133,6 +133,11 @@ bool wlmcfg_decode_dict(
                 iter_desc_ptr->v.v_dict_desc_ptr,
                 BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
             break;
+        case WLMCFG_TYPE_CUSTOM:
+            rv = iter_desc_ptr->v.v_custom.decode(
+                obj_ptr,
+                BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
         default:
             bs_log(BS_ERROR, "Unsupported type %d.", iter_desc_ptr->type);
             rv = false;
@@ -172,6 +177,10 @@ void wlmcfg_decoded_destroy(
                     void*, dest_ptr, iter_desc_ptr->field_offset));
             break;
 
+        case WLMCFG_TYPE_CUSTOM:
+            iter_desc_ptr->v.v_custom.fini(
+                BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
         default:
             // Nothing.
             break;
@@ -234,6 +243,13 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
                     iter_desc_ptr->v.v_dict_desc_ptr,
                     BS_VALUE_AT(void*, dest_ptr,
                                 iter_desc_ptr->field_offset))) {
+                return false;
+            }
+            break;
+
+        case WLMCFG_TYPE_CUSTOM:
+            if (!iter_desc_ptr->v.v_custom.init(
+                    BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset))) {
                 return false;
             }
             break;
@@ -359,6 +375,10 @@ const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 0, NULL, NULL },
 };
 
+static bool _wlmcfg_test_custom_decode(wlmcfg_object_t *o_ptr, void *dst_ptr);
+static bool _wlmcfg_test_custom_init(void *dst_ptr);
+static void _wlmcfg_test_custom_fini(void *dst_ptr);
+
 /** Structure with test values. */
 typedef struct {
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -376,6 +396,7 @@ typedef struct {
     int                       v_enum;
     char                      *v_string;
     _test_subdict_value_t     subdict;
+    void                      *v_custom_ptr;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
 } _test_value_t;
 
@@ -403,8 +424,48 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_STRING("string", true, _test_value_t, v_string, "The String"),
     WLMCFG_DESC_DICT("subdict", true, _test_value_t, subdict,
                      _wlmcfg_decode_test_subdesc),
+    WLMCFG_DESC_CUSTOM("custom", true, _test_value_t, v_custom_ptr,
+                       _wlmcfg_test_custom_decode,
+                       _wlmcfg_test_custom_init,
+                       _wlmcfg_test_custom_fini),
     WLMCFG_DESC_SENTINEL(),
 };
+
+
+/* ------------------------------------------------------------------------- */
+/** A custom decoding function. Here: just decode a string. */
+bool _wlmcfg_test_custom_decode(wlmcfg_object_t *o_ptr,
+                                void *dst_ptr)
+{
+    char** str_ptr_ptr = dst_ptr;
+    _wlmcfg_test_custom_fini(dst_ptr);
+
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(o_ptr);
+    if (NULL == string_ptr) return false;
+    *str_ptr_ptr = logged_strdup(wlmcfg_string_value(string_ptr));
+    return *str_ptr_ptr != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** A custom decoding initializer. Here: Just create a string. */
+bool _wlmcfg_test_custom_init(void *dst_ptr)
+{
+    char** str_ptr_ptr = dst_ptr;
+    _wlmcfg_test_custom_fini(dst_ptr);
+    *str_ptr_ptr = logged_strdup("Custom Init");
+    return *str_ptr_ptr != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** A custom decoding cleanup method. Frees the string. */
+void _wlmcfg_test_custom_fini(void *dst_ptr)
+{
+    char** str_ptr_ptr = dst_ptr;
+    if (NULL != *str_ptr_ptr) {
+        free(*str_ptr_ptr);
+        *str_ptr_ptr = NULL;
+    }
+}
 
 /* ------------------------------------------------------------------------- */
 /** Tests initialization of default values. */
@@ -421,6 +482,7 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 3, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "The String", val.v_string);
     BS_TEST_VERIFY_STREQ(test_ptr, "Other String", val.subdict.value);
+    BS_TEST_VERIFY_STREQ(test_ptr, "Custom Init", val.v_custom_ptr);
     wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
 }
 
@@ -436,7 +498,8 @@ void test_decode_dict(bs_test_t *test_ptr)
                                     "bool = Disabled;"
                                     "enum = enum1;"
                                     "string = TestString;"
-                                    "subdict = { string = OtherTestString }"
+                                    "subdict = { string = OtherTestString };"
+                                    "custom = CustomThing"
                                     "}");
     wlmcfg_dict_t *dict_ptr;
 
@@ -452,6 +515,7 @@ void test_decode_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, false, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "TestString", val.v_string);
+    BS_TEST_VERIFY_STREQ(test_ptr, "CustomThing", val.v_custom_ptr);
     wlmcfg_dict_unref(dict_ptr);
     wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
 

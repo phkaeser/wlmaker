@@ -107,7 +107,7 @@ typedef struct {
     /** Initializer method. */
     bool (*init)(void *dest_ptr);
     /** Cleanup method. */
-    bool (*fini)(void *dest_ptr);
+    void (*fini)(void *dest_ptr);
 } wlmcfg_desc_custom_t;
 
 /** Descriptor to decode a plist dict. */
@@ -200,6 +200,16 @@ struct _wlmcfg_desc_t {
         .field_offset = offsetof(_base, _field),                        \
         .v.v_dict_desc_ptr = _desc                                      \
     }
+
+#define WLMCFG_DESC_CUSTOM(_key, _required, _base, _field, _d ,_i, _f) { \
+    .type = WLMCFG_TYPE_CUSTOM,                                         \
+        .key_ptr = (_key),                                              \
+        .required = _required,                                          \
+        .field_offset = offsetof(_base, _field),                        \
+        .v.v_custom.decode = _d,                                        \
+        .v.v_custom.init = _i,                                          \
+        .v.v_custom.fini = _f,                                          \
+        }
 
 /**
  * Decodes the plist `dict_ptr` into `dest_ptr` as described.
