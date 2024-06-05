@@ -169,6 +169,7 @@ void test_from_string(bs_test_t *test_ptr)
     object_ptr = wlmcfg_create_object_from_plist_string(
         "{key1=dict_value1;key2=dict_value2;}");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(object_ptr));
+    wlmcfg_object_unref(object_ptr);
 
     // A dict with a duplicate key. Will return NULL, no need to unref.
     object_ptr = wlmcfg_create_object_from_plist_string(
