@@ -25,13 +25,19 @@
 
 #include "grammar.h"
 
+/** Addresses valgrind unitialized memory warnings. */
+#define YY_USER_INIT do {                               \
+  yylineno = 0; yycolumn = 0; yyleng = 0;               \
+  memset(yylloc, 0, sizeof(*yylloc));                   \
+} while (0);
+
 /** Permits location tracking, for positioned error reports. */
 #define YY_USER_ACTION					\
 do {							\
-    yylloc->first_line = yylloc->last_line = yylineno;  \
-    yylloc->first_column = yycolumn - 1;                \
-    yylloc->last_column = yycolumn + yyleng - 1;        \
-    yycolumn += yyleng;                                 \
+  yylloc->first_line = yylloc->last_line = yylineno;    \
+  yylloc->first_column = yycolumn - 1;                  \
+  yylloc->last_column = yycolumn + yyleng - 1;          \
+  yycolumn += yyleng;                                   \
 } while (0);
 
 %}
@@ -70,9 +76,10 @@ ws                  [[:blank:]\r\n]
 "="                 { return TK_EQUAL; }
 ";"                 { return TK_SEMICOLON; }
 
-.                   { bs_log(BS_ERROR,
-                             "Unexpected character at %d,%d: '%s'.",
-                             yylloc->first_line, yylloc->first_column, yytext);
+.                   { char msg[256];
+                      snprintf(msg, sizeof(msg), "Unexpected character: '%s'",
+                               yytext);
+                      yyerror(yylloc, yyscanner, yyextra, msg);
                       return YYerror; }
 
 %%
