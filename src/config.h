@@ -45,6 +45,14 @@ typedef enum {
     WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER
 } wlmaker_config_decoration_t;
 
+/** Style information. Replaces @ref wlmaker_config_theme_t. */
+typedef struct {
+    /** The tile. */
+    wlmtk_tile_style_t        tile;
+    /** Dock optics: Margin. */
+    wlmtk_dock_style_t        dock;
+} wlmaker_config_style_t;
+
 /** The theme. */
 typedef struct {
     /** Color of the window margin. */
@@ -118,6 +126,8 @@ extern const wlmaker_config_theme_t wlmaker_config_theme;
  *     @ref wlmcfg_object_unref.
  */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
+
+extern const wlmcfg_desc_t wlmaker_config_style_desc[];
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmaker_config_test_cases[];

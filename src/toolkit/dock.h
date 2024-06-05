@@ -41,12 +41,6 @@ typedef struct {
     enum wlr_edges            anchor;
 } wlmtk_dock_positioning_t;
 
-/** Styling information for the dock. */
-typedef struct {
-    /** The margin's style of the dock's box. */
-    wlmtk_margin_style_t      margin;
-} wlmtk_dock_style_t;
-
 /**
  * Creates a dock. A dock contains icons, launchers and the likes.
  *

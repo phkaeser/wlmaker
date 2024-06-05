@@ -33,10 +33,13 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
  * Creates an application launcher.
  *
  * @param server_ptr
+ * @param style_ptr
  *
  * @return Pointer to the launcher handle or NULL on error.
  */
-wlmaker_launcher_t *wlmaker_launcher_create(wlmaker_server_t *server_ptr);
+wlmaker_launcher_t *wlmaker_launcher_create(
+    wlmaker_server_t *server_ptr,
+    const wlmtk_tile_style_t *style_ptr);
 
 /**
  * Destroys the application launcher.

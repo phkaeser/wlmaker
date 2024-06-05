@@ -126,7 +126,8 @@ const wlmcfg_desc_t _wlmaker_dock_desc[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_dock_t *wlmaker_dock_create(
-    wlmaker_server_t *server_ptr)
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmaker_dock_t));
     if (NULL == dock_ptr) return NULL;
@@ -144,12 +145,8 @@ wlmaker_dock_t *wlmaker_dock_create(
             _wlmaker_dock_desc,
             &args);
 
-        wlmtk_dock_style_t style = {
-            .margin = { .width = 3 }
-        };
-
         dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
-            &args.positioning, &style, server_ptr->env_ptr);
+            &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
         if (NULL == dock_ptr->wlmtk_dock_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
@@ -167,13 +164,13 @@ wlmaker_dock_t *wlmaker_dock_create(
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
 
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create(
-            server_ptr);
+            server_ptr, &style_ptr->tile);
         wlmtk_dock_add_tile(
             dock_ptr->wlmtk_dock_ptr,
             wlmaker_launcher_tile(launcher_ptr));
 
         launcher_ptr = wlmaker_launcher_create(
-            server_ptr);
+            server_ptr, &style_ptr->tile);
         wlmtk_dock_add_tile(
             dock_ptr->wlmtk_dock_ptr,
             wlmaker_launcher_tile(launcher_ptr));

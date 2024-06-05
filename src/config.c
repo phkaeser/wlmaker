@@ -153,17 +153,31 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
-/** Style information. */
-typedef struct {
-    /** The tile. */
-    wlmtk_tile_style_t        tile;
-} wlmaker_config_style_t;
+/** Plist decoding descriptor of a margin's style. */
+static const wlmcfg_desc_t _wlmaker_config_margin_style_desc[] = {
+    WLMCFG_DESC_UINT64(
+        "Width", true, wlmtk_margin_style_t, width, 0),
+    WLMCFG_DESC_ARGB32(
+        "Color", true, wlmtk_margin_style_t, color, 0xff000000),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of the dock's style. */
+static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_dock_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
 
 /** Desciptor for decoding the style information from a plist. */
-static const wlmcfg_desc_t _wlmaker_config_style_desc[] = {
+const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Tile", true, wlmaker_config_style_t, tile,
         _wlmaker_config_tile_style_desc),
+    WLMCFG_DESC_DICT(
+        "Dock", true, wlmaker_config_style_t, dock,
+        _wlmaker_config_dock_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -361,7 +375,7 @@ void test_style_file(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_decode_dict(
-            dict_ptr, _wlmaker_config_style_desc, &config_style));
+            dict_ptr, wlmaker_config_style_desc, &config_style));
     wlmcfg_dict_unref(dict_ptr);
 }
 
