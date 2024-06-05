@@ -72,7 +72,7 @@ static const wlmcfg_enum_desc_t _wlmcfg_bool_desc[] = {
 
 /* ------------------------------------------------------------------------- */
 bool wlmcfg_decode_dict(
-    __UNUSED__ wlmcfg_dict_t *dict_ptr,
+    wlmcfg_dict_t *dict_ptr,
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr)
 {
