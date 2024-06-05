@@ -9,12 +9,27 @@
 #include <libbase/libbase.h>
 #include <toolkit/toolkit.h>
 
+#include "conf/decode.h"
+#include "conf/plist.h"
+
 /* == Declarations ========================================================= */
 
 /** State of a launcher. */
 struct _wlmaker_launcher_t {
     /** The launcher is derived from a @ref wlmtk_tile_t. */
     wlmtk_tile_t              super_tile;
+
+    char                      *cmdline_ptr;
+    char                      *icon_path_ptr;
+};
+
+/** Plist descroptor for a launcher. */
+static const wlmcfg_desc_t _wlmaker_launcher_plist_desc[] = {
+    WLMCFG_DESC_STRING(
+        "CommandLine", true, wlmaker_launcher_t, cmdline_ptr, ""),
+    WLMCFG_DESC_STRING(
+        "Icon", true, wlmaker_launcher_t, icon_path_ptr, ""),
+    WLMCFG_DESC_SENTINEL(),
 };
 
 /* == Data ================================================================= */
@@ -45,6 +60,7 @@ wlmaker_launcher_t *wlmaker_launcher_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
 {
+    wlmcfg_decoded_destroy(_wlmaker_launcher_plist_desc, launcher_ptr);
     free(launcher_ptr);
 }
 
@@ -59,9 +75,11 @@ wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr)
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_plist(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_launcher_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "plist", test_plist },
     { 0, NULL, NULL }
 };
 
@@ -81,6 +99,23 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmaker_launcher_tile(launcher_ptr));
 
     wlmaker_launcher_destroy(launcher_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises plist parser. */
+void test_plist(bs_test_t *test_ptr)
+{
+    static const char *plist_ptr = "{CommandLine = \"a\": Icon = \"b\";}";
+    wlmaker_launcher_t launcher = {};
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_create_object_from_plist_string(plist_ptr));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher.cmdline_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher.icon_path_ptr);
+
+    wlmcfg_dict_unref(dict_ptr);
+    wlmcfg_decoded_destroy(_wlmaker_launcher_plist_desc, &launcher);
 }
 
 /* == End of launcher.c ==================================================== */
