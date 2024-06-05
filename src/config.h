@@ -104,16 +104,16 @@ extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
 extern const wlmaker_config_theme_t wlmaker_config_theme;
 
 /**
- * Decodes the fill style struct from a plist dict.
+ * Custom decoder for fill style struct from a plist dict.
  *
- * @param dict_ptr
- * @param fill_ptr
+ * @param object_ptr
+ * @param dest_ptr
  *
  * @return true on success.
  */
 bool wlmaker_config_decode_fill_style(
-    wlmcfg_dict_t *dict_ptr,
-    wlmtk_style_fill_t *fill_ptr);
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr);
 
 /**
  * Decodes the tile style struct from a plist dict.

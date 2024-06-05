@@ -143,15 +143,15 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
         "Size", true, wlmtk_tile_style_t, size, 64),
     WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
-    // Custom: call into decoder, for object.
-    WLMCFG_DESC_DICT(
+    WLMCFG_DESC_CUSTOM(
         "Fill", true, wlmtk_tile_style_t, fill,
-        _wlmaker_config_fill_style_desc),
+        wlmaker_config_decode_fill_style, NULL, NULL),
     WLMCFG_DESC_SENTINEL()
 };
 
 /** Style information. */
 typedef struct {
+    /** The tile. */
     wlmtk_tile_style_t        tile;
 } wlmaker_config_style_t;
 
@@ -207,9 +207,13 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
 
 /* ------------------------------------------------------------------------- */
 bool wlmaker_config_decode_fill_style(
-    wlmcfg_dict_t *dict_ptr,
-    wlmtk_style_fill_t *fill_ptr)
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr)
 {
+    wlmtk_style_fill_t *fill_ptr = dest_ptr;
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    if (NULL == dict_ptr) return false;
+
     if (!wlmcfg_decode_dict(
             dict_ptr,
             _wlmaker_config_fill_style_desc,
@@ -372,45 +376,42 @@ void test_decode_fill(bs_test_t *test_ptr)
                      "To = \"argb32:0x0204080c\""
                      "}");
     wlmtk_style_fill_t fill;
-    wlmcfg_dict_t *dict_ptr;
+    wlmcfg_object_t *object_ptr;
 
-    dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_from_object(wlmcfg_create_object_from_plist_string(s)));
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(dict_ptr, &fill));
+        wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, fill.param.dgradient.from);
     BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, fill.param.dgradient.to);
-    wlmcfg_dict_unref(dict_ptr);
+    wlmcfg_object_unref(object_ptr);
 
     s = ("{"
          "Type = HGRADIENT;"
          "From = \"argb32:0x04030201\";"
          "To = \"argb32:0x40302010\""
          "}");
-    dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_from_object(wlmcfg_create_object_from_plist_string(s)));
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(dict_ptr, &fill));
+        wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_HGRADIENT, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x04030201, fill.param.hgradient.from);
     BS_TEST_VERIFY_EQ(test_ptr, 0x40302010, fill.param.hgradient.to);
-    wlmcfg_dict_unref(dict_ptr);
+    wlmcfg_object_unref(object_ptr);
 
     s = ("{"
          "Type = SOLID;"
          "Color = \"argb32:0x11223344\""
          "}");
-    dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_from_object(wlmcfg_create_object_from_plist_string(s)));
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(dict_ptr, &fill));
+        wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x11223344, fill.param.solid.color);
-    wlmcfg_dict_unref(dict_ptr);
+    wlmcfg_object_unref(object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -421,8 +422,8 @@ void test_decode_tile(bs_test_t *test_ptr)
                      "Size = 48;"
                      "BezelWidth = 4;"
                      "Fill = {"
-                     "From = \"argb:ff204080\";"
-                     "To = \"argb:ff4080c0\";"
+                     "From = \"argb32:ff204080\";"
+                     "To = \"argb32:ff4080c0\";"
                      "Type = DGRADIENT"
                      "}"
                      "}");
