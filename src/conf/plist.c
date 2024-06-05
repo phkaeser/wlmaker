@@ -169,10 +169,10 @@ void test_from_string(bs_test_t *test_ptr)
         "{key1=dict_value1;key1=dict_value2}");
     BS_TEST_VERIFY_EQ(test_ptr, NULL, object_ptr);
 
-    // TODO: Make this work -- An empty dict.
-    /* object_ptr = wlmcfg_create_object_from_plist_string("{}"); */
-    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr); */
-    /* wlmcfg_object_unref(object_ptr); */
+    // An empty dict.
+    object_ptr = wlmcfg_create_object_from_plist_string("{}");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    wlmcfg_object_unref(object_ptr);
 
     // An array.
     object_ptr = wlmcfg_create_object_from_plist_string(

@@ -102,6 +102,12 @@ dict:           TK_LBRACE {
     bs_ptr_stack_push(
         &ctx_ptr->object_stack,
         wlmcfg_object_from_dict(dict_ptr));
+                } TK_RBRACE |
+                TK_LBRACE {
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_create();
+    bs_ptr_stack_push(
+        &ctx_ptr->object_stack,
+        wlmcfg_object_from_dict(dict_ptr));
                 } kv_list TK_RBRACE
                 ;
 
