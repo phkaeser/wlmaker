@@ -27,6 +27,7 @@
 #include "dock_app.h"
 #include "launcher.h"
 #include "view.h"
+#include "default_dock_state.h"
 
 /* == Declarations ========================================================= */
 
@@ -58,6 +59,10 @@ static void handle_workspace_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static bool _wlmaker_dock_decode_launchers(
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr);
+
 /* == Data ================================================================= */
 
 /** View implementor methods. */
@@ -87,6 +92,36 @@ wlmaker_dock_app_config_t app_configs[] = {
     }
 };
 
+/** TODO: Replace this. */
+typedef struct {
+    /** Positioning data. */
+    wlmtk_dock_positioning_t  positioning;
+    /** Launchers. */
+    wlmcfg_array_t            *launchers_array_ptr;
+} parse_args;
+
+/** Enum descriptor for `enum wlr_edges`. */
+static const wlmcfg_enum_desc_t _wlmaker_dock_edges[] = {
+    WLMCFG_ENUM("TOP", WLR_EDGE_TOP),
+    WLMCFG_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
+    WLMCFG_ENUM("LEFT", WLR_EDGE_LEFT),
+    WLMCFG_ENUM("RIGHT", WLR_EDGE_RIGHT),
+    WLMCFG_ENUM_SENTINEL(),
+};
+
+/** Descriptor for the dock's plist. */
+const wlmcfg_desc_t _wlmaker_dock_desc[] = {
+    WLMCFG_DESC_ENUM("Edge", true, parse_args, positioning.edge,
+                     WLR_EDGE_NONE, _wlmaker_dock_edges),
+    WLMCFG_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
+                     WLR_EDGE_NONE, _wlmaker_dock_edges),
+    WLMCFG_DESC_CUSTOM("Launchers", true, parse_args, launchers_array_ptr,
+                       _wlmaker_dock_decode_launchers, NULL, NULL),
+    WLMCFG_DESC_SENTINEL(),
+};
+
+
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -97,18 +132,25 @@ wlmaker_dock_t *wlmaker_dock_create(
     if (NULL == dock_ptr) return NULL;
     dock_ptr->server_ptr = server_ptr;
 
-    if (false) {
-        wlmtk_dock_positioning_t positioning = {
-            .edge = WLR_EDGE_LEFT,
-            .anchor = WLR_EDGE_BOTTOM,
-            .tile_size = 64
-        };
+    if (true) {
+
+        parse_args args = {};
+        wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
+            embedded_binary_default_dock_state_data,
+            embedded_binary_default_dock_state_size);
+        BS_ASSERT(NULL != object_ptr);
+        wlmcfg_decode_dict(
+            wlmcfg_dict_from_object(object_ptr),
+            _wlmaker_dock_desc,
+            &args);
+
+        args.positioning.tile_size = 64;
         wlmtk_dock_style_t style = {
             .margin = { .width = 3 }
         };
 
         dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
-            &positioning, &style, server_ptr->env_ptr);
+            &args.positioning, &style, server_ptr->env_ptr);
         if (NULL == dock_ptr->wlmtk_dock_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
@@ -217,6 +259,21 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
     }
 
     free(dock_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Decoder for the "Launchers" array. Currently just stores a reference. */
+bool _wlmaker_dock_decode_launchers(
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr)
+{
+    wlmcfg_array_t **array_ptr_ptr = dest_ptr;
+
+    *array_ptr_ptr = wlmcfg_array_from_object(object_ptr);
+    if (NULL == *array_ptr_ptr) return false;
+
+    wlmcfg_object_ref(wlmcfg_object_from_array(*array_ptr_ptr));
+    return true;
 }
 
 /* == Local (static) methods =============================================== */
