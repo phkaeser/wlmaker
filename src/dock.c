@@ -144,7 +144,6 @@ wlmaker_dock_t *wlmaker_dock_create(
             _wlmaker_dock_desc,
             &args);
 
-        args.positioning.tile_size = 64;
         wlmtk_dock_style_t style = {
             .margin = { .width = 3 }
         };

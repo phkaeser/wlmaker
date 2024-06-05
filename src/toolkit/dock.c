@@ -224,8 +224,7 @@ bool _wlmtk_dock_positioning(
     case WLR_EDGE_LEFT:
     case WLR_EDGE_RIGHT:
         panel_positioning_ptr->anchor = dock_ptr->dock_positioning.edge;
-        panel_positioning_ptr->desired_width = BS_MAX(
-            box.width, dock_ptr->dock_positioning.tile_size);
+        panel_positioning_ptr->desired_width = BS_MAX(box.width, 1);
 
         if (dock_ptr->dock_positioning.anchor != WLR_EDGE_TOP &&
             dock_ptr->dock_positioning.anchor != WLR_EDGE_BOTTOM) {
@@ -240,15 +239,13 @@ bool _wlmtk_dock_positioning(
         // The layer protocol requires a non-zero value for panels not spanning
         // the entire height. Go with a one-tile dimension, as long as there's
         // no tiles yet.
-        panel_positioning_ptr->desired_height = BS_MAX(
-            box.height, dock_ptr->dock_positioning.tile_size);
+        panel_positioning_ptr->desired_height = BS_MAX(box.height, 1);
         break;
 
     case WLR_EDGE_TOP:
     case WLR_EDGE_BOTTOM:
         panel_positioning_ptr->anchor = dock_ptr->dock_positioning.edge;
-        panel_positioning_ptr->desired_height = BS_MAX(
-            box.height, dock_ptr->dock_positioning.tile_size);
+        panel_positioning_ptr->desired_height = BS_MAX(box.height, 1);
         if (dock_ptr->dock_positioning.anchor != WLR_EDGE_LEFT &&
             dock_ptr->dock_positioning.anchor != WLR_EDGE_RIGHT) {
             bs_log(BS_ERROR, "wlmtk_dock_t anchor must be adjacent to edge: "
@@ -262,8 +259,7 @@ bool _wlmtk_dock_positioning(
         // The layer protocol requires a non-zero value for panels not spanning
         // the entire width. Go with a one-tile dimension, as long as there's
         // no tiles yet.
-        panel_positioning_ptr->desired_width = BS_MAX(
-            box.width, dock_ptr->dock_positioning.tile_size);
+        panel_positioning_ptr->desired_width = BS_MAX(box.width, 1);
         break;
 
     default:
@@ -291,7 +287,6 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
     wlmtk_dock_positioning_t pos = {
         .edge = WLR_EDGE_LEFT,
         .anchor = WLR_EDGE_BOTTOM,
-        .tile_size = 42,
     };
     wlmtk_dock_style_t style = {};
 
@@ -302,11 +297,11 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
         dock_ptr->super_panel.positioning.anchor);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        42,
+        1,
         dock_ptr->super_panel.positioning.desired_width);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        42,
+        1,
         dock_ptr->super_panel.positioning.desired_height);
     BS_TEST_VERIFY_EQ(
         test_ptr,

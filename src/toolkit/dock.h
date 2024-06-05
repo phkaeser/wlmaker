@@ -39,9 +39,6 @@ typedef struct {
     enum wlr_edges            edge;
     /** Dock anchor, along @ref wlmtk_dock_positioning_t::edge. */
     enum wlr_edges            anchor;
-
-    /** Size of the tile. */
-    int                       tile_size;
 } wlmtk_dock_positioning_t;
 
 /** Styling information for the dock. */
