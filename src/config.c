@@ -38,6 +38,10 @@
 
 static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
 
+static bool _wlmaker_config_decode_fill_style(
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr);
+
 /* == Data ================================================================= */
 
 /** Name of the xcursor theme. NULL picks the default. */
@@ -145,7 +149,7 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
     WLMCFG_DESC_CUSTOM(
         "Fill", true, wlmtk_tile_style_t, fill,
-        wlmaker_config_decode_fill_style, NULL, NULL),
+        _wlmaker_config_decode_fill_style, NULL, NULL),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -205,8 +209,39 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
     return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(obj_ptr));
 }
 
+/* == Local (static) methods =============================================== */
+
 /* ------------------------------------------------------------------------- */
-bool wlmaker_config_decode_fill_style(
+/** Loads a plist dict from fname_ptr. Returns NULL on error. */
+wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_file(fname_ptr);
+    if (NULL == obj_ptr) {
+        bs_log(BS_ERROR, "Failed wlmcfg_create_object_from_plist(%s)",
+               fname_ptr);
+        return NULL;
+    }
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(obj_ptr);
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "Not a plist dict in %s", fname_ptr);
+        wlmcfg_object_unref(obj_ptr);
+        return NULL;
+    }
+
+    return dict_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Custom decoder for fill style struct from a plist dict.
+ *
+ * @param object_ptr
+ * @param dest_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmaker_config_decode_fill_style(
     wlmcfg_object_t *object_ptr,
     void *dest_ptr)
 {
@@ -243,54 +278,18 @@ bool wlmaker_config_decode_fill_style(
     return false;
 }
 
-/* ------------------------------------------------------------------------- */
-bool wlmaker_config_decode_tile_style(
-    wlmcfg_dict_t *dict_ptr,
-    wlmtk_tile_style_t *tile_style_ptr)
-{
-    return wlmcfg_decode_dict(
-        dict_ptr,
-        _wlmaker_config_tile_style_desc,
-        tile_style_ptr);
-}
-
-/* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/** Loads a plist dict from fname_ptr. Returns NULL on error. */
-wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
-{
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_file(fname_ptr);
-    if (NULL == obj_ptr) {
-        bs_log(BS_ERROR, "Failed wlmcfg_create_object_from_plist(%s)",
-               fname_ptr);
-        return NULL;
-    }
-
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(obj_ptr);
-    if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "Not a plist dict in %s", fname_ptr);
-        wlmcfg_object_unref(obj_ptr);
-        return NULL;
-    }
-
-    return dict_ptr;
-}
-
 /* == Unit tests =========================================================== */
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
 static void test_style_file(bs_test_t *test_ptr);
 static void test_decode_fill(bs_test_t *test_ptr);
-static void test_decode_tile(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
     { 1, "style_file", test_style_file },
     { 1, "decode_fill", test_decode_fill },
-    { 1, "decode_tile", test_decode_tile },
     { 0, NULL, NULL }
 };
 
@@ -367,7 +366,7 @@ void test_style_file(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests decoding the fill style. */
+/** Tests the decoder for the fill style. */
 void test_decode_fill(bs_test_t *test_ptr)
 {
     const char *s = ("{"
@@ -381,7 +380,7 @@ void test_decode_fill(bs_test_t *test_ptr)
     object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(object_ptr, &fill));
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, fill.param.dgradient.from);
     BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, fill.param.dgradient.to);
@@ -395,7 +394,7 @@ void test_decode_fill(bs_test_t *test_ptr)
     object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(object_ptr, &fill));
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_HGRADIENT, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x04030201, fill.param.hgradient.from);
     BS_TEST_VERIFY_EQ(test_ptr, 0x40302010, fill.param.hgradient.to);
@@ -408,40 +407,10 @@ void test_decode_fill(bs_test_t *test_ptr)
     object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_config_decode_fill_style(object_ptr, &fill));
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x11223344, fill.param.solid.color);
     wlmcfg_object_unref(object_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests decoding the tile style. */
-void test_decode_tile(bs_test_t *test_ptr)
-{
-    const char *s = ("{"
-                     "Size = 48;"
-                     "BezelWidth = 4;"
-                     "Fill = {"
-                     "From = \"argb32:ff204080\";"
-                     "To = \"argb32:ff4080c0\";"
-                     "Type = DGRADIENT"
-                     "}"
-                     "}");
-    wlmtk_tile_style_t tile_style;
-    wlmcfg_dict_t *dict_ptr;
-
-    dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_from_object(wlmcfg_create_object_from_plist_string(s)));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmaker_config_decode_tile_style(dict_ptr, &tile_style));
-    BS_TEST_VERIFY_EQ(test_ptr, 48, tile_style.size);
-    BS_TEST_VERIFY_EQ(test_ptr, 4, tile_style.bezel_width);
-
-     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT,
-                       tile_style.fill.type);
-    wlmcfg_dict_unref(dict_ptr);
-
 }
 
 /* == End of config.c ====================================================== */
