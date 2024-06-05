@@ -1,10 +1,16 @@
 {
+  Dock = {
+    Margin = {
+      Width = 4;
+      Color = "argb32:c0000000";
+    }
+  };
   Tile = {
-    Size = 64;
-    BezelWidth = 3;
+    Size = 96;
+    BezelWidth = 2;
     Fill = {
-      From = "argb32:ff204080";
-      To = "argb32:ff4080c0";
+      From = "argb32:ffa6a6b6";
+      To = "argb32:ff515561";
       Type = DGRADIENT
     }
   }
