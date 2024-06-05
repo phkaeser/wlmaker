@@ -180,25 +180,28 @@ void test_from_string(bs_test_t *test_ptr)
         "(elem0,elem1)");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     array_ptr = wlmcfg_array_from_object(object_ptr);
-    BS_TEST_VERIFY_STREQ(
-        test_ptr,
-        "elem0",
-        wlmcfg_string_value(wlmcfg_string_from_object(
-                                wlmcfg_array_at(array_ptr, 0))));
-    BS_TEST_VERIFY_STREQ(
-        test_ptr,
-        "elem1",
-        wlmcfg_string_value(wlmcfg_string_from_object(
-                                wlmcfg_array_at(array_ptr, 1))));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr);
+    if (NULL != array_ptr) {
+        BS_TEST_VERIFY_STREQ(
+            test_ptr,
+            "elem0",
+            wlmcfg_string_value(wlmcfg_string_from_object(
+                                    wlmcfg_array_at(array_ptr, 0))));
+        BS_TEST_VERIFY_STREQ(
+            test_ptr,
+            "elem1",
+            wlmcfg_string_value(wlmcfg_string_from_object(
+                                    wlmcfg_array_at(array_ptr, 1))));
+    }
     wlmcfg_object_unref(object_ptr);
 
-    // TODO: Make this work -- An empty array.
-    /* object_ptr = wlmcfg_create_object_from_plist_string("()"); */
-    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr); */
-    /* array_ptr = wlmcfg_array_from_object(object_ptr); */
-    /* BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr); */
-    /* BS_TEST_VERIFY_EQ(test_ptr, 0, wlmcfg_array_size(array_ptr)); */
-    /* wlmcfg_object_unref(object_ptr); */
+    // An empty array.
+    object_ptr = wlmcfg_create_object_from_plist_string("()");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
+    array_ptr = wlmcfg_array_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmcfg_array_size(array_ptr));
+    wlmcfg_object_unref(object_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
