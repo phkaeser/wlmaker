@@ -132,6 +132,7 @@ void test_from_string(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *object_ptr, *v_ptr;
     wlmcfg_array_t *array_ptr;
+    wlmcfg_dict_t *dict_ptr;
 
     // A string.
     object_ptr = wlmcfg_create_object_from_plist_string("value");
@@ -150,7 +151,7 @@ void test_from_string(bs_test_t *test_ptr)
     object_ptr = wlmcfg_create_object_from_plist_string(
         "{key1=dict_value1;key2=dict_value2}");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    dict_ptr = wlmcfg_dict_from_object(object_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     v_ptr = wlmcfg_dict_get(dict_ptr, "key1");
     BS_TEST_VERIFY_STREQ(
