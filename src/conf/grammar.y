@@ -40,8 +40,8 @@
 %define parse.error verbose
 
 %define api.pure full
-%parse-param { void* scanner } { wlmcfg_parser_context_t *ctx_ptr }
-
+%parse-param { void* scanner }
+%parse-param { wlmcfg_parser_context_t *ctx_ptr }
 %lex-param { yyscan_t scanner }
 
 %code requires {
