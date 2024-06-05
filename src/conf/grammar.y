@@ -138,7 +138,7 @@ array:          TK_LPAREN {
         wlmcfg_object_from_array(array_ptr));
                 } element_list TK_RPAREN;
 
-element_list:   element_list TK_COMMA element |
+element_list:   element TK_COMMA element_list |
                 element
                 ;
 
