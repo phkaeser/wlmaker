@@ -3,8 +3,8 @@
     Size = 64;
     BezelWidth = 3;
     Fill = {
-      From = "argb:ff204080";
-      To = "argb:ff4080c0";
+      From = "argb32:ff204080";
+      To = "argb32:ff4080c0";
       Type = DGRADIENT
     }
   }
