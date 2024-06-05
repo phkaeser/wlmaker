@@ -180,7 +180,7 @@ uint32_t _wlmtk_dock_panel_request_size(
     wlmtk_dock_t *dock_ptr = BS_CONTAINER_OF(
         panel_ptr, wlmtk_dock_t, super_panel);
 
-    wlmtk_panel_positioning_t panel_positioning;
+    wlmtk_panel_positioning_t panel_positioning = {};
     if (!_wlmtk_dock_positioning(dock_ptr, &panel_positioning)) {
         bs_log(BS_ERROR, "Panel %p invalid positioning data.", panel_ptr);
         return 0;
@@ -225,7 +225,7 @@ bool _wlmtk_dock_positioning(
     case WLR_EDGE_RIGHT:
         panel_positioning_ptr->anchor = dock_ptr->dock_positioning.edge;
         panel_positioning_ptr->desired_width = BS_MAX(
-            box.width, dock_ptr->dock_positioning.tile_size );
+            box.width, dock_ptr->dock_positioning.tile_size);
 
         if (dock_ptr->dock_positioning.anchor != WLR_EDGE_TOP &&
             dock_ptr->dock_positioning.anchor != WLR_EDGE_BOTTOM) {
