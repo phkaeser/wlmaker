@@ -178,7 +178,6 @@ void test_from_string(bs_test_t *test_ptr)
     // An array.
     object_ptr = wlmcfg_create_object_from_plist_string(
         "(elem0,elem1)");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, object_ptr);
     array_ptr = wlmcfg_array_from_object(object_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr);
     if (NULL != array_ptr) {
@@ -193,6 +192,13 @@ void test_from_string(bs_test_t *test_ptr)
             wlmcfg_string_value(wlmcfg_string_from_object(
                                     wlmcfg_array_at(array_ptr, 1))));
     }
+    wlmcfg_object_unref(object_ptr);
+
+    // An array with a comma at the end.
+    object_ptr = wlmcfg_create_object_from_plist_string(
+        "(elem0,elem1,)");
+    array_ptr = wlmcfg_array_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, array_ptr);
     wlmcfg_object_unref(object_ptr);
 
     // An empty array.
