@@ -178,8 +178,10 @@ void wlmcfg_decoded_destroy(
             break;
 
         case WLMCFG_TYPE_CUSTOM:
-            iter_desc_ptr->v.v_custom.fini(
-                BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
+            if (NULL != iter_desc_ptr->v.v_custom.fini) {
+                iter_desc_ptr->v.v_custom.fini(
+                    BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset));
+            }
             break;
         default:
             // Nothing.
@@ -248,7 +250,8 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
             break;
 
         case WLMCFG_TYPE_CUSTOM:
-            if (!iter_desc_ptr->v.v_custom.init(
+            if (NULL != iter_desc_ptr->v.v_custom.init &&
+                !iter_desc_ptr->v.v_custom.init(
                     BS_VALUE_AT(void*, dest_ptr, iter_desc_ptr->field_offset))) {
                 return false;
             }

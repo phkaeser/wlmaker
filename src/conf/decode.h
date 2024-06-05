@@ -101,12 +101,13 @@ typedef struct {
     const char                *default_value_ptr;
 } wlmcfg_desc_string_t;
 
+/** A custom decoder. */
 typedef struct {
-    /** Decoding method. */
+    /** Decoding method: From obhect into `dest_ptr`. */
     bool (*decode)(wlmcfg_object_t *obj_ptr, void *dest_ptr);
-    /** Initializer method. */
+    /** Initializer method: Allocate or prepare `dest_ptr`. May be NULL. */
     bool (*init)(void *dest_ptr);
-    /** Cleanup method. */
+    /** Cleanup method: Frees `dest_ptr`. May be NULL.. */
     void (*fini)(void *dest_ptr);
 } wlmcfg_desc_custom_t;
 
@@ -201,15 +202,16 @@ struct _wlmcfg_desc_t {
         .v.v_dict_desc_ptr = _desc                                      \
     }
 
+/** Descriptor for a custom object decoder. */
 #define WLMCFG_DESC_CUSTOM(_key, _required, _base, _field, _d ,_i, _f) { \
-    .type = WLMCFG_TYPE_CUSTOM,                                         \
+        .type = WLMCFG_TYPE_CUSTOM,                                     \
         .key_ptr = (_key),                                              \
         .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_custom.decode = _d,                                        \
         .v.v_custom.init = _i,                                          \
         .v.v_custom.fini = _f,                                          \
-        }
+    }
 
 /**
  * Decodes the plist `dict_ptr` into `dest_ptr` as described.
