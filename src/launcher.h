@@ -42,6 +42,20 @@ wlmaker_launcher_t *wlmaker_launcher_create(
     const wlmtk_tile_style_t *style_ptr);
 
 /**
+ * Creates an application launcher, configured from a plist dict.
+ *
+ * @param server_ptr
+ * @param style_ptr
+ * @param dict_ptr
+ *
+ * @return Pointer to the launcher handle or NULL on error.
+ */
+wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
+    wlmaker_server_t *server_ptr,
+    const wlmtk_tile_style_t *style_ptr,
+    wlmcfg_dict_t *dict_ptr);
+
+/**
  * Destroys the application launcher.
  *
  * @param launcher_ptr
