@@ -39,8 +39,9 @@ typedef struct _wlmtk_image_t wlmtk_image_t;
  *
  * @return Pointer to the toolkit image, or NULL on error.
  */
-wlmtk_image_t *wlmtk_image_create(const char *image_path_ptr,
-                                  wlmtk_env_t *env_ptr);
+wlmtk_image_t *wlmtk_image_create(
+    const char *image_path_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the toolkit image.
