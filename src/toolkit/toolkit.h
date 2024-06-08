@@ -40,6 +40,7 @@
 #include "element.h"
 #include "env.h"
 #include "fsm.h"
+#include "image.h"
 #include "input.h"
 #include "panel.h"
 #include "popup.h"

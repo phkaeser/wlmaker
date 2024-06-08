@@ -26,6 +26,7 @@ SET(PUBLIC_HEADER_FILES
   env.h
   fsm.h
   gfxbuf.h
+  image.h
   input.h
   layer.h
   panel.h
@@ -59,6 +60,7 @@ TARGET_SOURCES(toolkit PRIVATE
   env.c
   fsm.c
   gfxbuf.c
+  image.c
   layer.c
   panel.c
   popup.c
