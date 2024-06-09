@@ -123,7 +123,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         }
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
             server_ptr, &style_ptr->tile, dict_ptr);
-        if (NULL == dict_ptr) {
+        if (NULL == launcher_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
         }
@@ -131,6 +131,8 @@ wlmaker_dock_t *wlmaker_dock_create(
             dock_ptr->wlmtk_dock_ptr,
             wlmaker_launcher_tile(launcher_ptr));
     }
+    // FIXME: This is leaky.
+    wlmcfg_object_unref(object_ptr);
 
 #if 0
     // FIXME: Changing workspaces needs to be (re)fixed.
