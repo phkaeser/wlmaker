@@ -44,22 +44,6 @@ wlmtk_image_t *wlmtk_image_create(
     wlmtk_buffer_set(&image_ptr->super_buffer, wlr_buffer_ptr);
     wlr_buffer_drop(wlr_buffer_ptr);
 
-#if 0
-    // FIXME == Resolution should be done by caller.
-    // Resolve to a full path, and verify the file exists.
-    char full_path[PATH_MAX];
-    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
-        image_path_ptr, lookup_paths_ptr, 0, full_path);
-    if (NULL == path_ptr) {
-        bs_log(BS_ERROR | BS_ERRNO,
-               "Failed bs_file_resolve_and_lookup_from_paths(%s, ...).",
-               icon_path_ptr);
-        wlmtk_image_destroy(image_ptr);
-        return NULL;
-    }
-#endif
-
-
     return image_ptr;
 }
 
@@ -140,6 +124,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_image_t *image_ptr = wlmtk_image_create(
         bs_test_resolve_path("toolkit/test_icon.png"), NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, image_ptr);
+
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr,
+        bs_gfxbuf_from_wlr_buffer(image_ptr->super_buffer.wlr_buffer_ptr),
+        "toolkit/test_icon.png");
 
     wlmtk_image_destroy(image_ptr);
 }

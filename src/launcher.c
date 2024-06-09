@@ -78,6 +78,24 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
+    // FIXME: Create icon buffer.
+
+#if 0
+    // FIXME == Resolution should be done by caller.
+    // Resolve to a full path, and verify the file exists.
+    char full_path[PATH_MAX];
+    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
+        image_path_ptr, lookup_paths_ptr, 0, full_path);
+    if (NULL == path_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO,
+               "Failed bs_file_resolve_and_lookup_from_paths(%s, ...).",
+               icon_path_ptr);
+        wlmtk_image_destroy(image_ptr);
+        return NULL;
+    }
+#endif
+
+
     if (!wlmcfg_decode_dict(
             dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
         bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
