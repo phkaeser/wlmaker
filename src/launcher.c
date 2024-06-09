@@ -19,6 +19,8 @@
 struct _wlmaker_launcher_t {
     /** The launcher is derived from a @ref wlmtk_tile_t. */
     wlmtk_tile_t              super_tile;
+    /** Original virtual method table fo the element. */
+    wlmtk_element_vmt_t       orig_element_vmt;
 
     /** Image element. One element of @ref wlmaker_launcher_t::super_tile. */
     wlmtk_image_t             *image_ptr;
@@ -51,7 +53,16 @@ static const char *lookup_paths[] = {
     NULL
 };
 
+static bool _wlmaker_launcher_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
 /* == Data ================================================================= */
+
+/** The launcher's extension to @ref wlmtk_element_t virtual method table. */
+static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
+    .pointer_button = _wlmaker_launcher_pointer_button,
+};
 
 /* == Exported methods ===================================================== */
 
@@ -70,6 +81,9 @@ wlmaker_launcher_t *wlmaker_launcher_create(
 
         return NULL;
     }
+    launcher_ptr->orig_element_vmt = wlmtk_element_extend(
+        wlmtk_tile_element(&launcher_ptr->super_tile),
+        &_wlmaker_launcher_element_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
@@ -159,6 +173,30 @@ wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_button.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return true always.
+ */
+bool _wlmaker_launcher_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_launcher_t,
+        super_tile.super_container.super_element);
+
+    if (BTN_LEFT != button_event_ptr->button) return true;
+    if (WLMTK_BUTTON_CLICK != button_event_ptr->type) return true;
+
+    bs_log(BS_INFO, "FIXME: Click launcher %p!", launcher_ptr);
+    return true;
+}
 
 /* == Unit tests =========================================================== */
 
