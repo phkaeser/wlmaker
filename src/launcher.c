@@ -120,16 +120,11 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-
-
-
-    // FIXME: Create icon buffer.
-
-#if 0
-    // FIXME == Resolution should be done by caller.
-#endif
-
-
+    wlmtk_element_set_visible(
+        wlmtk_image_element(launcher_ptr->image_ptr), true);
+    wlmtk_tile_set_content(
+        &launcher_ptr->super_tile,
+        wlmtk_image_element(launcher_ptr->image_ptr));
 
     return launcher_ptr;
 }
@@ -137,7 +132,8 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
 /* ------------------------------------------------------------------------- */
 void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
 {
-    if (NULL != launcher_ptr->image_ptr) {
+    if (false && NULL != launcher_ptr->image_ptr) {
+        wlmtk_tile_set_content(&launcher_ptr->super_tile, NULL);
         wlmtk_image_destroy(launcher_ptr->image_ptr);
         launcher_ptr->image_ptr = NULL;
     }

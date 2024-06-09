@@ -20,6 +20,15 @@ struct _wlmtk_image_t {
 struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
     const char *path_ptr);
 
+static void _wlmtk_image_element_destroy(wlmtk_element_t *element_ptr);
+
+/* == Data ================================================================= */
+
+/** The imag'es virtual method table for @ref wlmtk_element_t superclass. */
+static const wlmtk_element_vmt_t _wlmtk_image_element_vmt = {
+    .destroy = _wlmtk_image_element_destroy,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -34,6 +43,9 @@ wlmtk_image_t *wlmtk_image_create(
         wlmtk_image_destroy(image_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        wlmtk_image_element(image_ptr),
+        &_wlmtk_image_element_vmt);
 
     struct wlr_buffer *wlr_buffer_ptr =
         _wlmtk_image_create_wlr_buffer_from_image(image_path_ptr);
@@ -52,6 +64,12 @@ void wlmtk_image_destroy(wlmtk_image_t *image_ptr)
 {
     wlmtk_buffer_fini(&image_ptr->super_buffer);
     free(image_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_image_element(wlmtk_image_t *image_ptr)
+{
+    return wlmtk_buffer_element(&image_ptr->super_buffer);
 }
 
 /* == Local (static) methods =============================================== */
@@ -109,6 +127,15 @@ struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
     return wlr_buffer_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy -- virtual dtor. */
+void _wlmtk_image_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmtk_image_t *image_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_image_t, super_buffer.super_element);
+    wlmtk_image_destroy(image_ptr);
+}
+
 /* == Unit tests =========================================================== */
 static void test_create_destroy(bs_test_t *test_ptr);
 
@@ -129,6 +156,11 @@ void test_create_destroy(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(image_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/test_icon.png");
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &image_ptr->super_buffer.super_element,
+        wlmtk_image_element(image_ptr));
 
     wlmtk_image_destroy(image_ptr);
 }

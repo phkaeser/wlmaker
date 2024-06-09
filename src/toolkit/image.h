@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 
+#include "element.h"
 #include "env.h"
 
 #ifdef __cplusplus
@@ -49,6 +50,9 @@ wlmtk_image_t *wlmtk_image_create(
  * @param image_ptr
  */
 void wlmtk_image_destroy(wlmtk_image_t *image_ptr);
+
+/** @return the parent @ref wlmtk_element_t of `image_ptr`. */
+wlmtk_element_t *wlmtk_image_element(wlmtk_image_t *image_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_image_test_cases[];

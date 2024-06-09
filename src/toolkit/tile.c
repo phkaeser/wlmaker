@@ -94,6 +94,29 @@ void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_tile_set_content(
+    wlmtk_tile_t *tile_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    if (element_ptr == tile_ptr->content_element_ptr) return;
+
+    if (NULL != tile_ptr->content_element_ptr) {
+        wlmtk_container_remove_element(
+            &tile_ptr->super_container,
+            tile_ptr->content_element_ptr);
+        tile_ptr->content_element_ptr = NULL;
+    }
+
+    if (NULL != element_ptr) {
+        wlmtk_container_add_element_atop(
+            &tile_ptr->super_container,
+            wlmtk_buffer_element(&tile_ptr->buffer),
+            element_ptr);
+        tile_ptr->content_element_ptr = element_ptr;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
 {
     return &tile_ptr->super_container.super_element;

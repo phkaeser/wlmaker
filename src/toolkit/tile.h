@@ -56,6 +56,9 @@ struct _wlmtk_tile_t {
 
     /** Holds the tile's background, used in @ref wlmtk_tile_t::buffer. */
     struct wlr_buffer         *background_wlr_buffer_ptr;
+
+    /** References the content element from @ref wlmtk_tile_set_content. */
+    wlmtk_element_t           *content_element_ptr;
 };
 
 /**
@@ -78,6 +81,19 @@ bool wlmtk_tile_init(
  * @param tile_ptr
  */
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr);
+
+/**
+ * Sets `element_ptr` as the content of `tile_ptr`.
+ *
+ * TODO(kaeser@gubbe.ch): Flesh out the behaviour -- permit only 1 content?
+ * Does the tile claim ownerwhip? How to reset the content?
+ *
+ * @param tile_ptr
+ * @param element_ptr
+ */
+void wlmtk_tile_set_content(
+    wlmtk_tile_t *tile_ptr,
+    wlmtk_element_t *element_ptr);
 
 /** @return the superclass' @ref wlmtk_element_t of `tile_ptr`. */
 wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr);
