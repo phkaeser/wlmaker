@@ -6,6 +6,7 @@
 
 #include "launcher.h"
 
+#include <limits.h>
 #include <libbase/libbase.h>
 #include <toolkit/toolkit.h>
 
@@ -18,6 +19,9 @@
 struct _wlmaker_launcher_t {
     /** The launcher is derived from a @ref wlmtk_tile_t. */
     wlmtk_tile_t              super_tile;
+
+    /** Image element. One element of @ref wlmaker_launcher_t::super_tile. */
+    wlmtk_image_t             *image_ptr;
 
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
@@ -32,6 +36,19 @@ static const wlmcfg_desc_t _wlmaker_launcher_plist_desc[] = {
     WLMCFG_DESC_STRING(
         "Icon", true, wlmaker_launcher_t, icon_path_ptr, ""),
     WLMCFG_DESC_SENTINEL(),
+};
+
+/** Lookup paths for icons. */
+static const char *lookup_paths[] = {
+    "/usr/share/icons/wlmaker",
+    "/usr/local/share/icons/wlmaker",
+#if defined(WLMAKER_SOURCE_DIR)
+    WLMAKER_SOURCE_DIR "/icons",
+#endif  // WLMAKER_SOURCE_DIR
+#if defined(WLMAKER_ICON_DATA_DIR)
+    WLMAKER_ICON_DATA_DIR,
+#endif  // WLMAKER_ICON_DATA_DIR
+    NULL
 };
 
 /* == Data ================================================================= */
@@ -78,24 +95,6 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
-    // FIXME: Create icon buffer.
-
-#if 0
-    // FIXME == Resolution should be done by caller.
-    // Resolve to a full path, and verify the file exists.
-    char full_path[PATH_MAX];
-    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
-        image_path_ptr, lookup_paths_ptr, 0, full_path);
-    if (NULL == path_ptr) {
-        bs_log(BS_ERROR | BS_ERRNO,
-               "Failed bs_file_resolve_and_lookup_from_paths(%s, ...).",
-               icon_path_ptr);
-        wlmtk_image_destroy(image_ptr);
-        return NULL;
-    }
-#endif
-
-
     if (!wlmcfg_decode_dict(
             dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
         bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
@@ -103,12 +102,46 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         return NULL;
     }
 
+    // Resolves to a full path, and verifies the icon file exists.
+    char full_path[PATH_MAX];
+    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
+        BS_ASSERT_NOTNULL(launcher_ptr->icon_path_ptr),
+        lookup_paths, 0, full_path);
+    if (NULL == path_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO,
+               "Failed bs_file_resolve_and_lookup_from_paths(\"%s\" ...)",
+               launcher_ptr->icon_path_ptr);
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+    launcher_ptr->image_ptr = wlmtk_image_create(
+        path_ptr, server_ptr->env_ptr);
+    if (NULL == launcher_ptr->image_ptr) {
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+
+
+
+    // FIXME: Create icon buffer.
+
+#if 0
+    // FIXME == Resolution should be done by caller.
+#endif
+
+
+
     return launcher_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
 {
+    if (NULL != launcher_ptr->image_ptr) {
+        wlmtk_image_destroy(launcher_ptr->image_ptr);
+        launcher_ptr->image_ptr = NULL;
+    }
+
     if (NULL != launcher_ptr->cmdline_ptr) {
         free(launcher_ptr->cmdline_ptr);
         launcher_ptr->cmdline_ptr = NULL;
@@ -165,7 +198,8 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_create_from_plist(bs_test_t *test_ptr)
 {
     static const wlmtk_tile_style_t style = { .size = 96 };
-    static const char *plist_ptr = "{CommandLine = \"a\"; Icon = \"b\";}";
+    static const char *plist_ptr =
+        "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
     wlmaker_server_t server = {};
 
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
@@ -177,7 +211,8 @@ void test_create_from_plist(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
 
     BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher_ptr->cmdline_ptr);
-    BS_TEST_VERIFY_STREQ(test_ptr, "b", launcher_ptr->icon_path_ptr);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr, "chrome-48x48.png", launcher_ptr->icon_path_ptr);
 
     wlmaker_launcher_destroy(launcher_ptr);
 }

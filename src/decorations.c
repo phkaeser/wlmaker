@@ -42,7 +42,7 @@ static cairo_surface_t *create_background(
     const wlmtk_style_fill_t *fill_ptr);
 
 /** Lookup paths for icons. */
-const char *lookup_paths[] = {
+static const char *lookup_paths[] = {
     "/usr/share/icons/wlmaker",
     "/usr/local/share/icons/wlmaker",
 #if defined(WLMAKER_SOURCE_DIR)
