@@ -132,7 +132,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
 /* ------------------------------------------------------------------------- */
 void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
 {
-    if (false && NULL != launcher_ptr->image_ptr) {
+    if (NULL != launcher_ptr->image_ptr) {
         wlmtk_tile_set_content(&launcher_ptr->super_tile, NULL);
         wlmtk_image_destroy(launcher_ptr->image_ptr);
         launcher_ptr->image_ptr = NULL;

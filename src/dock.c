@@ -163,17 +163,26 @@ wlmaker_dock_t *wlmaker_dock_create(
             layer_ptr,
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
 
-        wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create(
-            server_ptr, &style_ptr->tile);
-        wlmtk_dock_add_tile(
-            dock_ptr->wlmtk_dock_ptr,
-            wlmaker_launcher_tile(launcher_ptr));
-
-        launcher_ptr = wlmaker_launcher_create(
-            server_ptr, &style_ptr->tile);
-        wlmtk_dock_add_tile(
-            dock_ptr->wlmtk_dock_ptr,
-            wlmaker_launcher_tile(launcher_ptr));
+        for (size_t i = 0;
+             i < wlmcfg_array_size(args.launchers_array_ptr);
+             ++i) {
+            wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+                wlmcfg_array_at(args.launchers_array_ptr, i));
+            if (NULL == dict_ptr) {
+                bs_log(BS_ERROR, "Elements of 'Launchers' must be dicts.");
+                wlmaker_dock_destroy(dock_ptr);
+                return NULL;
+            }
+            wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
+                server_ptr, &style_ptr->tile, dict_ptr);
+            if (NULL == dict_ptr) {
+                wlmaker_dock_destroy(dock_ptr);
+                return NULL;
+            }
+            wlmtk_dock_add_tile(
+                dock_ptr->wlmtk_dock_ptr,
+                wlmaker_launcher_tile(launcher_ptr));
+        }
     }
 
     dock_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
