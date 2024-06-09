@@ -113,6 +113,17 @@ void wlmtk_tile_set_content(
             wlmtk_buffer_element(&tile_ptr->buffer),
             element_ptr);
         tile_ptr->content_element_ptr = element_ptr;
+
+        struct wlr_box box = wlmtk_element_get_dimensions_box(element_ptr);
+        if ((unsigned)box.width > tile_ptr->style.size ||
+            (unsigned)box.height > tile_ptr->style.size) {
+            bs_log(BS_WARNING, "Content size %d x %d > tile size %"PRIu64,
+                   box.width, box.height, tile_ptr->style.size);
+        }
+        wlmtk_element_set_position(
+            element_ptr,
+            ((int)tile_ptr->style.size - box.width) / 2,
+            ((int)tile_ptr->style.size - box.height) / 2);
     }
 }
 
