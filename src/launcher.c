@@ -67,30 +67,6 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_launcher_t *wlmaker_launcher_create(
-    wlmaker_server_t *server_ptr,
-    const wlmtk_tile_style_t *style_ptr)
-{
-    wlmaker_launcher_t *launcher_ptr = logged_calloc(
-        1, sizeof(wlmaker_launcher_t));
-    if (NULL == launcher_ptr) return NULL;
-
-    if (!wlmtk_tile_init(&launcher_ptr->super_tile,
-                         style_ptr,
-                         server_ptr->env_ptr)) {
-
-        return NULL;
-    }
-    launcher_ptr->orig_element_vmt = wlmtk_element_extend(
-        wlmtk_tile_element(&launcher_ptr->super_tile),
-        &_wlmaker_launcher_element_vmt);
-    wlmtk_element_set_visible(
-        wlmtk_tile_element(&launcher_ptr->super_tile), true);
-
-    return launcher_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     wlmaker_server_t *server_ptr,
     const wlmtk_tile_style_t *style_ptr,
@@ -106,6 +82,9 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
 
         return NULL;
     }
+    launcher_ptr->orig_element_vmt = wlmtk_element_extend(
+        wlmtk_tile_element(&launcher_ptr->super_tile),
+        &_wlmaker_launcher_element_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
@@ -195,37 +174,18 @@ bool _wlmaker_launcher_pointer_button(
     if (WLMTK_BUTTON_CLICK != button_event_ptr->type) return true;
 
     bs_log(BS_INFO, "FIXME: Click launcher %p!", launcher_ptr);
+
     return true;
 }
 
 /* == Unit tests =========================================================== */
 
-static void test_create_destroy(bs_test_t *test_ptr);
 static void test_create_from_plist(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_launcher_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
     { 1, "create_from_plist", test_create_from_plist },
     { 0, NULL, NULL }
 };
-
-/* ------------------------------------------------------------------------- */
-/** Exercises ctor and dtor of @ref wlmaker_launcher_t. */
-void test_create_destroy(bs_test_t *test_ptr)
-{
-    wlmtk_tile_style_t style = { .size = 96 };
-    wlmaker_server_t server = {};
-    wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create(
-        &server, &style);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
-
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        &launcher_ptr->super_tile,
-        wlmaker_launcher_tile(launcher_ptr));
-
-    wlmaker_launcher_destroy(launcher_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 /** Exercises plist parser. */
