@@ -24,6 +24,8 @@ struct _wlmaker_launcher_t {
 
     /** Image element. One element of @ref wlmaker_launcher_t::super_tile. */
     wlmtk_image_t             *image_ptr;
+    /** Overlay element. Atop on the tile. */
+    wlmtk_buffer_t            overlay_buffer;
 
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
@@ -62,6 +64,10 @@ static const char *lookup_paths[] = {
 #endif  // WLMAKER_ICON_DATA_DIR
     NULL
 };
+
+static void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr);
+static struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
+    wlmaker_launcher_t *launcher_ptr);
 
 static bool _wlmaker_launcher_pointer_button(
     wlmtk_element_t *element_ptr,
@@ -111,7 +117,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     if (NULL == launcher_ptr) return NULL;
     launcher_ptr->server_ptr = server_ptr;
 
-    if (!wlmtk_tile_init(&launcher_ptr->super_tile,
+     if (!wlmtk_tile_init(&launcher_ptr->super_tile,
                          style_ptr,
                          server_ptr->env_ptr)) {
 
@@ -122,13 +128,6 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         &_wlmaker_launcher_element_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
-
-    if (!wlmcfg_decode_dict(
-            dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
-        bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
-        wlmaker_launcher_destroy(launcher_ptr);
-        return NULL;
-    }
 
     launcher_ptr->created_windows_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->created_windows_ptr) {
@@ -142,6 +141,25 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     }
     launcher_ptr->subprocesses_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->subprocesses_ptr) {
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+
+    if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer,
+                           server_ptr->env_ptr)) {
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_buffer_element(&launcher_ptr->overlay_buffer), true);
+    _wlmaker_launcher_update_overlay(launcher_ptr);
+    wlmtk_tile_set_overlay(
+        &launcher_ptr->super_tile,
+        wlmtk_buffer_element(&launcher_ptr->overlay_buffer));
+
+    if (!wlmcfg_decode_dict(
+            dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
+        bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
@@ -182,6 +200,9 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
         launcher_ptr->image_ptr = NULL;
     }
 
+    wlmtk_tile_set_overlay(&launcher_ptr->super_tile, NULL);
+    wlmtk_buffer_fini(&launcher_ptr->overlay_buffer);
+
     if (NULL != launcher_ptr->subprocesses_ptr) {
         wlmaker_subprocess_handle_t *subprocess_handle_ptr;
         while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
@@ -195,6 +216,7 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
         bs_ptr_set_destroy(launcher_ptr->subprocesses_ptr);
         launcher_ptr->subprocesses_ptr = NULL;
     }
+
     if (NULL != launcher_ptr->mapped_windows_ptr) {
         bs_ptr_set_destroy(launcher_ptr->mapped_windows_ptr);
         launcher_ptr->mapped_windows_ptr = NULL;
@@ -225,6 +247,62 @@ wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Redraws the overlay element. */
+void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr)
+{
+    struct wlr_buffer *wlr_buffer_ptr = _wlmaker_launcher_create_overlay_buffer(
+        launcher_ptr);
+    if (NULL == wlr_buffer_ptr) return;
+
+    wlmtk_buffer_set(&launcher_ptr->overlay_buffer, wlr_buffer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates an overlay wlr_buffer. */
+struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
+    wlmaker_launcher_t *launcher_ptr)
+{
+    int s = launcher_ptr->super_tile.style.size;
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(s, s);
+    if (NULL == wlr_buffer_ptr) return NULL;
+
+    const char *status_ptr = NULL;
+    if (!bs_ptr_set_empty(launcher_ptr->mapped_windows_ptr)) {
+        status_ptr = "Running";
+    } else if (!bs_ptr_set_empty(launcher_ptr->created_windows_ptr)) {
+        status_ptr = "Started";
+    }
+    if (NULL == status_ptr) return wlr_buffer_ptr;
+
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+    if (NULL == cairo_ptr) {
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return NULL;
+    }
+
+    float r, g, b, alpha;
+    bs_gfxbuf_argb8888_to_floats(0xff12905a, &r, &g, &b, &alpha);
+    cairo_pattern_t *cairo_pattern_ptr = cairo_pattern_create_rgba(
+        r, g, b, alpha);
+    cairo_set_source(cairo_ptr, cairo_pattern_ptr);
+    cairo_pattern_destroy(cairo_pattern_ptr);
+    cairo_rectangle(cairo_ptr, 0, s - 12, s, 12);
+    cairo_fill(cairo_ptr);
+    cairo_stroke(cairo_ptr);
+
+    cairo_select_font_face(cairo_ptr, "Helvetica",
+                           CAIRO_FONT_SLANT_NORMAL,
+                           CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cairo_ptr, 10.0);
+    cairo_set_source_argb8888(cairo_ptr, 0xffffffff);
+    cairo_move_to(cairo_ptr, 4, s - 2);
+    cairo_show_text(cairo_ptr, status_ptr);
+
+    cairo_destroy(cairo_ptr);
+    return wlr_buffer_ptr;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -357,7 +435,7 @@ void _wlmaker_launcher_handle_window_created(
     bool rv = bs_ptr_set_insert(launcher_ptr->created_windows_ptr, window_ptr);
     if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
-    // FIXME : redraw_tile(dock_app_ptr);
+    _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -385,7 +463,7 @@ void _wlmaker_launcher_handle_window_mapped(
     bool rv = bs_ptr_set_insert(launcher_ptr->mapped_windows_ptr, window_ptr);
     if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
 
-    // FIXME: redraw_tile(dock_app_ptr);
+    _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -408,7 +486,7 @@ void _wlmaker_launcher_handle_window_unmapped(
 
     bs_ptr_set_erase(launcher_ptr->mapped_windows_ptr, window_ptr);
 
-    // FIXME: redraw_tile(dock_app_ptr);
+    _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -431,7 +509,7 @@ void _wlmaker_launcher_handle_window_destroyed(
 
     bs_ptr_set_erase(launcher_ptr->created_windows_ptr, window_ptr);
 
-    // FIXME: redraw_tile(dock_app_ptr);
+    _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
 /* == Unit tests =========================================================== */

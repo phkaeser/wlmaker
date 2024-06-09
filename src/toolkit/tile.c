@@ -128,6 +128,37 @@ void wlmtk_tile_set_content(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_tile_set_overlay(
+    wlmtk_tile_t *tile_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    if (element_ptr == tile_ptr->overlay_element_ptr) return;
+
+    if (NULL != tile_ptr->overlay_element_ptr) {
+        wlmtk_container_remove_element(
+            &tile_ptr->super_container,
+            tile_ptr->overlay_element_ptr);
+        tile_ptr->overlay_element_ptr = NULL;
+    }
+
+    if (NULL != element_ptr) {
+        wlmtk_container_add_element(&tile_ptr->super_container, element_ptr);
+        tile_ptr->overlay_element_ptr = element_ptr;
+
+        struct wlr_box box = wlmtk_element_get_dimensions_box(element_ptr);
+        if ((unsigned)box.width > tile_ptr->style.size ||
+            (unsigned)box.height > tile_ptr->style.size) {
+            bs_log(BS_WARNING, "Overlay size %d x %d > tile size %"PRIu64,
+                   box.width, box.height, tile_ptr->style.size);
+        }
+        wlmtk_element_set_position(
+            element_ptr,
+            ((int)tile_ptr->style.size - box.width) / 2,
+            ((int)tile_ptr->style.size - box.height) / 2);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
 {
     return &tile_ptr->super_container.super_element;

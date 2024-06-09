@@ -59,6 +59,8 @@ struct _wlmtk_tile_t {
 
     /** References the content element from @ref wlmtk_tile_set_content. */
     wlmtk_element_t           *content_element_ptr;
+    /** References the content element from @ref wlmtk_tile_set_overlay. */
+    wlmtk_element_t           *overlay_element_ptr;
 };
 
 /**
@@ -92,6 +94,19 @@ void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr);
  * @param element_ptr
  */
 void wlmtk_tile_set_content(
+    wlmtk_tile_t *tile_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
+ * Sets `element_ptr` as the overlay of `tile_ptr`.
+ *
+ * TODO(kaeser@gubbe.ch): Flesh out the behaviour -- permit only 1 overlay?
+ * Does the tile claim ownerwhip? How to reset the overlay?
+ *
+ * @param tile_ptr
+ * @param element_ptr
+ */
+void wlmtk_tile_set_overlay(
     wlmtk_tile_t *tile_ptr,
     wlmtk_element_t *element_ptr);
 
