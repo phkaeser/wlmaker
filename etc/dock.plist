@@ -1,5 +1,5 @@
 {
-  Edge = LEFT;
+  Edge = RIGHT;
   Anchor = TOP;
   Launchers = (
     {
