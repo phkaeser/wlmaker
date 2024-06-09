@@ -184,6 +184,17 @@ static void test_init_fini(bs_test_t *test_ptr)
         test_ptr,
         &tile.super_container.super_element,
         wlmtk_tile_element(&tile));
+
+    // Adds content and verifies it's centered.
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    fe_ptr->dimensions.width = 48;
+    fe_ptr->dimensions.height = 36;
+    wlmtk_tile_set_content(&tile, &fe_ptr->element);
+    int x, y;
+    wlmtk_element_get_position(&fe_ptr->element, &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 8, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 14, y);
+
     wlmtk_tile_fini(&tile);
 }
 
