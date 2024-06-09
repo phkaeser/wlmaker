@@ -33,6 +33,10 @@ struct _wlmaker_launcher_t {
     /** Path to the icon. */
     char                      *icon_path_ptr;
 
+    /** Windows that are running from subprocesses of this App (launcher). */
+    bs_ptr_set_t              *created_windows_ptr;
+    /** Windows that are mapped from subprocesses of this App (launcher). */
+    bs_ptr_set_t              *mapped_windows_ptr;
     /** Subprocesses that were created by this launcher. */
     bs_ptr_set_t              *subprocesses_ptr;
 };
@@ -64,6 +68,28 @@ static bool _wlmaker_launcher_pointer_button(
     const wlmtk_button_event_t *button_event_ptr);
 
 static void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr);
+
+static void _wlmaker_launcher_handle_terminated(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    int state,
+    int code);
+static void _wlmaker_launcher_handle_window_created(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr);
+static void _wlmaker_launcher_handle_window_mapped(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr);
+static void _wlmaker_launcher_handle_window_unmapped(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr);
+static void _wlmaker_launcher_handle_window_destroyed(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr);
 
 /* == Data ================================================================= */
 
@@ -104,6 +130,16 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         return NULL;
     }
 
+    launcher_ptr->created_windows_ptr = bs_ptr_set_create();
+    if (NULL == launcher_ptr->created_windows_ptr) {
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+    launcher_ptr->mapped_windows_ptr = bs_ptr_set_create();
+    if (NULL == launcher_ptr->mapped_windows_ptr) {
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
     launcher_ptr->subprocesses_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->subprocesses_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
@@ -158,6 +194,14 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
         }
         bs_ptr_set_destroy(launcher_ptr->subprocesses_ptr);
         launcher_ptr->subprocesses_ptr = NULL;
+    }
+    if (NULL != launcher_ptr->mapped_windows_ptr) {
+        bs_ptr_set_destroy(launcher_ptr->mapped_windows_ptr);
+        launcher_ptr->mapped_windows_ptr = NULL;
+    }
+    if (NULL != launcher_ptr->created_windows_ptr) {
+        bs_ptr_set_destroy(launcher_ptr->created_windows_ptr);
+        launcher_ptr->created_windows_ptr = NULL;
     }
 
     if (NULL != launcher_ptr->cmdline_ptr) {
@@ -229,17 +273,16 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
         return;
     }
 
-#if 0
     wlmaker_subprocess_handle_t *subprocess_handle_ptr;
     subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
-        dock_app_ptr->view_ptr->server_ptr->monitor_ptr,
+        launcher_ptr->server_ptr->monitor_ptr,
         subprocess_ptr,
-        handle_terminated,
-        dock_app_ptr,
-        handle_window_created,
-        handle_window_mapped,
-        handle_window_unmapped,
-        handle_window_destroyed);
+        _wlmaker_launcher_handle_terminated,
+        launcher_ptr,
+        _wlmaker_launcher_handle_window_created,
+        _wlmaker_launcher_handle_window_mapped,
+        _wlmaker_launcher_handle_window_unmapped,
+        _wlmaker_launcher_handle_window_destroyed);
 
     if (!bs_ptr_set_insert(launcher_ptr->subprocesses_ptr,
                            subprocess_handle_ptr)) {
@@ -251,7 +294,144 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
             launcher_ptr->server_ptr->monitor_ptr,
             subprocess_handle_ptr);
     }
-#endif
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback handler for when the registered subprocess terminates.
+ *
+ * @param userdata_ptr        Points to @ref wlmaker_launcher_t.
+ * @param subprocess_handle_ptr
+ * @param exit_status
+ * @param signal_number
+ */
+void _wlmaker_launcher_handle_terminated(
+    void *userdata_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    int exit_status,
+    int signal_number)
+{
+    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+    const char *format_ptr;
+    int code;
+
+    if (0 == signal_number) {
+        format_ptr = "App '%s' (%p) terminated, status code %d.";
+        code = exit_status;
+    } else {
+        format_ptr = "App '%s' (%p) killed by signal %d.";
+        code = signal_number;
+    }
+
+    bs_log(BS_INFO, format_ptr,
+           launcher_ptr->cmdline_ptr,
+           launcher_ptr,
+           code);
+    // TODO(kaeser@gubbe.ch): Keep exit status and latest output available
+    // for visualization.
+    wlmaker_subprocess_monitor_cede(
+        launcher_ptr->server_ptr->monitor_ptr,
+        subprocess_handle_ptr);
+    bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
+                     subprocess_handle_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for then a window from the launched subprocess is created.
+ *
+ * Registers the windows as "created", and will then redraw the launcher tile
+ * to reflect potential status changes.
+ *
+ * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
+ * @param subprocess_handle_ptr
+ * @param window_ptr
+ */
+void _wlmaker_launcher_handle_window_created(
+    void *userdata_ptr,
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+
+    bool rv = bs_ptr_set_insert(launcher_ptr->created_windows_ptr, window_ptr);
+    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
+
+    // FIXME : redraw_tile(dock_app_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for then a window from the launched subprocess is mapped.
+ *
+ * Registers the window as "mapped", and will then redraw the launcher tile
+ * to reflect potential status changes.
+ *
+ * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
+ * @param subprocess_handle_ptr
+ * @param window_ptr
+ */
+void _wlmaker_launcher_handle_window_mapped(
+    void *userdata_ptr,
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+
+    // TODO(kaeser@gubbe.ch): Appears we do encounter this scenario. File this
+    // as a bug and fix it.
+    // BS_ASSERT(bs_ptr_set_contains(launcher_ptr->created_windows_ptr, window_ptr));
+
+    bool rv = bs_ptr_set_insert(launcher_ptr->mapped_windows_ptr, window_ptr);
+    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
+
+    // FIXME: redraw_tile(dock_app_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for then a window from the launched subprocess is unmapped.
+ *
+ * Removes the window from the set of "mapped" windows, and will then redraw
+ * the launcher tile to reflect potential status changes.
+ *
+ * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
+ * @param subprocess_handle_ptr
+ * @param window_ptr
+ */
+void _wlmaker_launcher_handle_window_unmapped(
+    void *userdata_ptr,
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+
+    bs_ptr_set_erase(launcher_ptr->mapped_windows_ptr, window_ptr);
+
+    // FIXME: redraw_tile(dock_app_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for then a window from the launched subprocess is destroyed.
+ *
+ * Removes the window from the set of "created" windows, and will then redraw
+ * the launcher tile to reflect potential status changes.
+ *
+ * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
+ * @param subprocess_handle_ptr
+ * @param window_ptr
+ */
+void _wlmaker_launcher_handle_window_destroyed(
+    void *userdata_ptr,
+    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+
+    bs_ptr_set_erase(launcher_ptr->created_windows_ptr, window_ptr);
+
+    // FIXME: redraw_tile(dock_app_ptr);
 }
 
 /* == Unit tests =========================================================== */
