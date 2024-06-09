@@ -22,7 +22,6 @@ SET(PUBLIC_HEADER_FILES
   config.h
   cursor.h
   decorations.h
-  dock_app.h
   dock.h
   icon_manager.h
   iconified.h
@@ -62,7 +61,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   config.c
   cursor.c
   decorations.c
-  dock_app.c
   dock.c
   icon_manager.c
   iconified.c
