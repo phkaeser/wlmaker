@@ -255,8 +255,8 @@ void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr)
     struct wlr_buffer *wlr_buffer_ptr = _wlmaker_launcher_create_overlay_buffer(
         launcher_ptr);
     if (NULL == wlr_buffer_ptr) return;
-
     wlmtk_buffer_set(&launcher_ptr->overlay_buffer, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
