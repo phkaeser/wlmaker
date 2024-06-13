@@ -27,8 +27,8 @@ struct _wlmaker_launcher_t {
     /** Overlay element. Atop on the tile. */
     wlmtk_buffer_t            overlay_buffer;
 
-    /** Back-link to the server. */
-    wlmaker_server_t          *server_ptr;
+    /** Subprocess monitor to register launched processes to. */
+    wlmaker_subprocess_monitor_t *monitor_ptr;
 
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
@@ -111,20 +111,18 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
-    wlmaker_server_t *server_ptr,
     const wlmtk_tile_style_t *style_ptr,
-    wlmcfg_dict_t *dict_ptr)
+    wlmcfg_dict_t *dict_ptr,
+    wlmaker_subprocess_monitor_t *monitor_ptr,
+    wlmtk_env_t *env_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = logged_calloc(
         1, sizeof(wlmaker_launcher_t));
     if (NULL == launcher_ptr) return NULL;
-    launcher_ptr->server_ptr = server_ptr;
+    launcher_ptr->monitor_ptr = monitor_ptr;
 
-     if (!wlmtk_tile_init(&launcher_ptr->super_tile,
-                         style_ptr,
-                         server_ptr->env_ptr)) {
-
-        return NULL;
+     if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr, env_ptr)) {
+         return NULL;
     }
     launcher_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_tile_element(&launcher_ptr->super_tile),
@@ -148,8 +146,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         return NULL;
     }
 
-    if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer,
-                           server_ptr->env_ptr)) {
+    if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer, env_ptr)) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
@@ -179,8 +176,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-    launcher_ptr->image_ptr = wlmtk_image_create(
-        path_ptr, server_ptr->env_ptr);
+    launcher_ptr->image_ptr = wlmtk_image_create(path_ptr, env_ptr);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -211,7 +207,7 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
         while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
                             launcher_ptr->subprocesses_ptr))) {
             wlmaker_subprocess_monitor_cede(
-                launcher_ptr->server_ptr->monitor_ptr,
+                launcher_ptr->monitor_ptr,
                 subprocess_handle_ptr);
             bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
                              subprocess_handle_ptr);
@@ -372,7 +368,7 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
 
     wlmaker_subprocess_handle_t *subprocess_handle_ptr;
     subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
-        launcher_ptr->server_ptr->monitor_ptr,
+        launcher_ptr->monitor_ptr,
         subprocess_ptr,
         _wlmaker_launcher_handle_terminated,
         launcher_ptr,
@@ -388,7 +384,7 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
                launcher_ptr, launcher_ptr->subprocesses_ptr,
                subprocess_handle_ptr);
         wlmaker_subprocess_monitor_cede(
-            launcher_ptr->server_ptr->monitor_ptr,
+            launcher_ptr->monitor_ptr,
             subprocess_handle_ptr);
     }
 }
@@ -427,7 +423,7 @@ void _wlmaker_launcher_handle_terminated(
     // TODO(kaeser@gubbe.ch): Keep exit status and latest output available
     // for visualization.
     wlmaker_subprocess_monitor_cede(
-        launcher_ptr->server_ptr->monitor_ptr,
+        launcher_ptr->monitor_ptr,
         subprocess_handle_ptr);
     bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
                      subprocess_handle_ptr);
@@ -547,13 +543,12 @@ void test_create_from_plist(bs_test_t *test_ptr)
     static const wlmtk_tile_style_t style = { .size = 96 };
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
-    wlmaker_server_t server = {};
 
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_string(plist_ptr));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
-        &server, &style, dict_ptr);
+        &style, dict_ptr, NULL, NULL);
     wlmcfg_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
 

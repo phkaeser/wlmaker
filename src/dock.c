@@ -123,7 +123,8 @@ wlmaker_dock_t *wlmaker_dock_create(
         }
         bs_log(BS_ERROR, "FIXME: Created launcher!");
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
-            server_ptr, &style_ptr->tile, dict_ptr);
+            &style_ptr->tile, dict_ptr,
+            server_ptr->monitor_ptr, server_ptr->env_ptr);
         if (NULL == launcher_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
