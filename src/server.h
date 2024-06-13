@@ -145,6 +145,8 @@ struct _wlmaker_server_t {
     wlmaker_workspace_t       *current_workspace_ptr;
     /** List of all workspaces. */
     bs_dllist_t               workspaces;
+    /** Fake workspace, injectable for tests. */
+    wlmtk_fake_workspace_t    *fake_wlmtk_workspace_ptr;
     /**
      * Signal: Raised when the current workspace is changed.
      * Data: Pointer to the new `wlmaker_workspace_t`.
@@ -277,6 +279,16 @@ bool wlmaker_server_process_key(
  * @return Pointer to the `wlmaker_workspace_t` currently active.
  */
 wlmaker_workspace_t *wlmaker_server_get_current_workspace(
+    wlmaker_server_t *server_ptr);
+
+/**
+ * Returns the currently active workspace.
+ *
+ * @param server_ptr
+ *
+ * @return Pointer to the `wlmtk_workspace_t` currently active.
+ */
+wlmtk_workspace_t *wlmaker_server_get_current_wlmtk_workspace(
     wlmaker_server_t *server_ptr);
 
 /**
