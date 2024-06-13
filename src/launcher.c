@@ -69,6 +69,8 @@ static void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr);
 static struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
     wlmaker_launcher_t *launcher_ptr);
 
+static void _wlmaker_launcher_element_destroy(
+    wlmtk_element_t *element_ptr);
 static bool _wlmaker_launcher_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -101,6 +103,7 @@ static void _wlmaker_launcher_handle_window_destroyed(
 
 /** The launcher's extension to @ref wlmtk_element_t virtual method table. */
 static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
+    .destroy = _wlmaker_launcher_element_destroy,
     .pointer_button = _wlmaker_launcher_pointer_button,
 };
 
@@ -302,6 +305,22 @@ struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::destroy. Calls
+ * @ref wlmaker_launcher_destroy.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_launcher_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_launcher_t,
+        super_tile.super_container.super_element);
+    wlmaker_launcher_destroy(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
