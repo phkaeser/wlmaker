@@ -79,15 +79,17 @@ bool wlmtk_box_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_box_fini(wlmtk_box_t *box_ptr)
 {
-    if (NULL != box_ptr->margin_container.super_element.parent_container_ptr) {
-        wlmtk_container_remove_element(
-            &box_ptr->super_container,
-            &box_ptr->margin_container.super_element);
-    }
     if (NULL != box_ptr->element_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &box_ptr->super_container,
             &box_ptr->element_container.super_element);
+        wlmtk_container_fini(&box_ptr->element_container);
+    }
+    if (NULL != box_ptr->margin_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &box_ptr->super_container,
+            &box_ptr->margin_container.super_element);
+        wlmtk_container_fini(&box_ptr->margin_container);
     }
 
     wlmtk_container_fini(&box_ptr->super_container);
