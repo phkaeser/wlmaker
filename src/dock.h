@@ -55,6 +55,9 @@ wlmaker_dock_t *wlmaker_dock_create(
  */
 void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr);
 
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_dock_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

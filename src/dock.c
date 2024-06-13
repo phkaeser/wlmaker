@@ -103,8 +103,8 @@ wlmaker_dock_t *wlmaker_dock_create(
         wlmtk_dock_element(dock_ptr->wlmtk_dock_ptr),
         true);
 
-    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
-        wlmaker_server_get_current_workspace(server_ptr));
+    wlmtk_workspace_t *wlmtk_workspace_ptr =
+        wlmaker_server_get_current_wlmtk_workspace(server_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -121,6 +121,7 @@ wlmaker_dock_t *wlmaker_dock_create(
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
         }
+        bs_log(BS_ERROR, "FIXME: Created launcher!");
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
             server_ptr, &style_ptr->tile, dict_ptr);
         if (NULL == launcher_ptr) {
@@ -133,6 +134,10 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
     // FIXME: This is leaky.
     wlmcfg_object_unref(object_ptr);
+    if (NULL != args.launchers_array_ptr) {
+        wlmcfg_array_unref(args.launchers_array_ptr);
+        args.launchers_array_ptr = NULL;
+    }
 
 #if 0
     // FIXME: Changing workspaces needs to be (re)fixed.
@@ -177,5 +182,30 @@ bool _wlmaker_dock_decode_launchers(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* == Unit tests =========================================================== */
+
+static void test_create_destroy(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_dock_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests ctor and dtor; to help fix leaks. */
+void test_create_destroy(bs_test_t *test_ptr)
+{
+    wlmtk_fake_workspace_t *fw_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_fake_workspace_create(1024, 768));
+    wlmaker_server_t server = { .fake_wlmtk_workspace_ptr = fw_ptr };
+    wlmaker_config_style_t style = {};
+
+    wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, &style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
+
+    wlmaker_dock_destroy(dock_ptr);
+    wlmtk_fake_workspace_destroy(fw_ptr);
+}
 
 /* == End of dock.c ======================================================== */
