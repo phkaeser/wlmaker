@@ -16,5 +16,9 @@
         Icon = "firefox-48x48.png";
       }
     )
+  };
+  Clip = {
+    Edge = LEFT;
+    Anchor = BOTTOM;
   }
 }
