@@ -37,6 +37,12 @@ struct _wlmaker_clip_t {
     /** The toolkit dock, holding the clip tile. */
     wlmtk_dock_t              *wlmtk_dock_ptr;
 
+    /** The tile's texture buffer without any buttons pressed */
+    struct wlr_buffer         *tile_buffer_ptr;
+    /** The tile's texture buffer with the 'Next' buttons pressed. */
+    struct wlr_buffer         *next_pressed_tile_buffer_ptr;
+    /** The tile's texture buffer with the 'Previous' buttons pressed. */
+    struct wlr_buffer         *prev_pressed_tile_buffer_ptr;
 
 
 
@@ -146,6 +152,20 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->server_ptr = server_ptr;
 
     if (true) {
+
+        clip_ptr->tile_buffer_ptr = _wlmaker_clip_create_tile(
+            &style_ptr->tile, false, false);
+        clip_ptr->prev_pressed_tile_buffer_ptr = _wlmaker_clip_create_tile(
+            &style_ptr->tile, true, false);
+        clip_ptr->next_pressed_tile_buffer_ptr = _wlmaker_clip_create_tile(
+            &style_ptr->tile, false, true);
+        if (NULL == clip_ptr->tile_buffer_ptr ||
+            NULL == clip_ptr->prev_pressed_tile_buffer_ptr ||
+            NULL == clip_ptr->next_pressed_tile_buffer_ptr) {
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+
 
         parse_args args = {};
         wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
@@ -383,6 +403,10 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
     }
 
 
+
+
+
+
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
         wlmtk_dock_remove_tile(
             clip_ptr->wlmtk_dock_ptr,
@@ -397,6 +421,19 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 
         wlmtk_dock_destroy(clip_ptr->wlmtk_dock_ptr);
         clip_ptr->wlmtk_dock_ptr = NULL;
+    }
+
+    if (NULL != clip_ptr->tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->tile_buffer_ptr);
+        clip_ptr->tile_buffer_ptr = NULL;
+    }
+    if (NULL != clip_ptr->prev_pressed_tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->prev_pressed_tile_buffer_ptr);
+        clip_ptr->prev_pressed_tile_buffer_ptr = NULL;
+    }
+    if (NULL != clip_ptr->next_pressed_tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->next_pressed_tile_buffer_ptr);
+        clip_ptr->next_pressed_tile_buffer_ptr = NULL;
     }
 
     free(clip_ptr);
