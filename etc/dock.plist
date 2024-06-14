@@ -1,18 +1,20 @@
 {
-  Edge = RIGHT;
-  Anchor = TOP;
-  Launchers = (
-    {
-      CommandLine = "/usr/bin/foot";
-      Icon = "terminal-48x48.png";
-    },
-    {
-      CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland --user-data-dir=/tmp/chrome-wayland";
-      Icon = "chrome-48x48.png";
-    },
-    {
-      CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";
-      Icon = "firefox-48x48.png";
-    }
-  )
+  Dock = {
+    Edge = RIGHT;
+    Anchor = TOP;
+    Launchers = (
+      {
+        CommandLine = "/usr/bin/foot";
+        Icon = "terminal-48x48.png";
+      },
+      {
+        CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland --user-data-dir=/tmp/chrome-wayland";
+        Icon = "chrome-48x48.png";
+      },
+      {
+        CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";
+        Icon = "firefox-48x48.png";
+      }
+    )
+  }
 }

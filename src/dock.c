@@ -95,10 +95,14 @@ wlmaker_dock_t *wlmaker_dock_create(
         embedded_binary_default_dock_state_data,
         embedded_binary_default_dock_state_size);
     BS_ASSERT(NULL != object_ptr);
-    wlmcfg_decode_dict(
-        wlmcfg_dict_from_object(object_ptr),
-        _wlmaker_dock_desc,
-        &args);
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
+        wlmcfg_dict_from_object(object_ptr), "Dock");
+    if (NULL == dict_ptr) {
+        bs_log(BS_ERROR, "No 'Dock' dict found in configuration.");
+        wlmaker_dock_destroy(dock_ptr);
+        return NULL;
+    }
+    wlmcfg_decode_dict(dict_ptr, _wlmaker_dock_desc, &args);
 
     dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
