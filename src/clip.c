@@ -24,11 +24,24 @@
 #include "config.h"
 #include "decorations.h"
 #include "toolkit/toolkit.h"
+#include "default_dock_state.h"
 
 /* == Declarations ========================================================= */
 
 /** Clip handle. */
 struct _wlmaker_clip_t {
+
+    /** The clip happens to be derived from a tile. */
+    wlmtk_tile_t              super_tile;
+
+    /** The toolkit dock, holding the clip tile. */
+    wlmtk_dock_t              *wlmtk_dock_ptr;
+
+
+
+
+
+
     /** Corresponding view. */
     wlmaker_view_t            view;
     /** Backlink to the server. */
@@ -85,6 +98,30 @@ static void handle_axis(
 
 /* == Data ================================================================= */
 
+/** TODO: Replace this. */
+typedef struct {
+    /** Positioning data. */
+    wlmtk_dock_positioning_t  positioning;
+} parse_args;
+
+/** Enum descriptor for `enum wlr_edges`. */
+static const wlmcfg_enum_desc_t _wlmaker_clip_edges[] = {
+    WLMCFG_ENUM("TOP", WLR_EDGE_TOP),
+    WLMCFG_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
+    WLMCFG_ENUM("LEFT", WLR_EDGE_LEFT),
+    WLMCFG_ENUM("RIGHT", WLR_EDGE_RIGHT),
+    WLMCFG_ENUM_SENTINEL(),
+};
+
+/** Descriptor for the clip's plist. */
+const wlmcfg_desc_t _wlmaker_clip_desc[] = {
+    WLMCFG_DESC_ENUM("Edge", true, parse_args, positioning.edge,
+                     WLR_EDGE_NONE, _wlmaker_clip_edges),
+    WLMCFG_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
+                     WLR_EDGE_NONE, _wlmaker_clip_edges),
+    WLMCFG_DESC_SENTINEL(),
+};
+
 /** View implementor methods. */
 const wlmaker_view_impl_t     clip_view_impl = {
     .set_activated = NULL,
@@ -96,11 +133,56 @@ const wlmaker_view_impl_t     clip_view_impl = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_clip_t *wlmaker_clip_create(
-    wlmaker_server_t *server_ptr)
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_clip_t *clip_ptr = logged_calloc(1, sizeof(wlmaker_clip_t));
     if (NULL == clip_ptr) return NULL;
     clip_ptr->server_ptr = server_ptr;
+
+    if (true) {
+
+        parse_args args = {};
+        wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
+            embedded_binary_default_dock_state_data,
+            embedded_binary_default_dock_state_size);
+        BS_ASSERT(NULL != object_ptr);
+        wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
+            wlmcfg_dict_from_object(object_ptr), "Clip");
+        if (NULL == dict_ptr) {
+            bs_log(BS_ERROR, "No 'Clip' dict found in configuration.");
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+        wlmcfg_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
+        wlmcfg_object_unref(object_ptr);
+
+        clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
+            &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
+        wlmtk_element_set_visible(
+            wlmtk_dock_element(clip_ptr->wlmtk_dock_ptr),
+            true);
+
+        if (!wlmtk_tile_init(
+                &clip_ptr->super_tile,
+                &style_ptr->tile,
+                server_ptr->env_ptr)) {
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_tile_element(&clip_ptr->super_tile), true);
+        wlmtk_dock_add_tile(clip_ptr->wlmtk_dock_ptr, &clip_ptr->super_tile);
+
+        wlmtk_workspace_t *wlmtk_workspace_ptr =
+            wlmaker_server_get_current_wlmtk_workspace(server_ptr);
+        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+            wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+        wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+
+    }
 
     clip_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
         &server_ptr->void_wlr_scene_ptr->tree);
@@ -293,6 +375,23 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
     if (NULL != clip_ptr->next_button_pressed_buffer_ptr) {
         wlr_buffer_drop(clip_ptr->next_button_pressed_buffer_ptr);
         clip_ptr->next_button_pressed_buffer_ptr = NULL;
+    }
+
+
+    if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
+        wlmtk_dock_remove_tile(
+            clip_ptr->wlmtk_dock_ptr,
+            &clip_ptr->super_tile);
+    }
+    wlmtk_tile_fini(&clip_ptr->super_tile);
+
+    if (NULL != clip_ptr->wlmtk_dock_ptr) {
+        wlmtk_layer_remove_panel(
+            wlmtk_panel_get_layer(wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr)),
+            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+
+        wlmtk_dock_destroy(clip_ptr->wlmtk_dock_ptr);
+        clip_ptr->wlmtk_dock_ptr = NULL;
     }
 
     free(clip_ptr);
