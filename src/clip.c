@@ -32,9 +32,10 @@
 
 /** Clip handle. */
 struct _wlmaker_clip_t {
-
     /** The clip happens to be derived from a tile. */
     wlmtk_tile_t              super_tile;
+    /** Original virtual method table fo the element. */
+    wlmtk_element_vmt_t       orig_element_vmt;
 
     /** The toolkit dock, holding the clip tile. */
     wlmtk_dock_t              *wlmtk_dock_ptr;
@@ -108,6 +109,13 @@ static void handle_axis(
     wlmaker_view_t *view_ptr,
     struct wlr_pointer_axis_event *event_ptr);
 
+static bool _wlmaker_clip_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
+static bool _wlmaker_clip_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
 static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
 static struct wlr_buffer *_wlmaker_clip_create_tile(
     const wlmtk_tile_style_t *style_ptr,
@@ -115,6 +123,12 @@ static struct wlr_buffer *_wlmaker_clip_create_tile(
     bool next_pressed);
 
 /* == Data ================================================================= */
+
+/** The clip's extension to @ref wlmtk_element_t virtual method table. */
+static const wlmtk_element_vmt_t _wlmaker_clip_element_vmt = {
+    .pointer_axis = _wlmaker_clip_pointer_axis,
+    .pointer_button = _wlmaker_clip_pointer_button,
+};
 
 /** TODO: Replace this. */
 typedef struct {
@@ -215,6 +229,9 @@ wlmaker_clip_t *wlmaker_clip_create(
             wlmaker_clip_destroy(clip_ptr);
             return NULL;
         }
+        clip_ptr->orig_element_vmt = wlmtk_element_extend(
+            wlmtk_tile_element(&clip_ptr->super_tile),
+            &_wlmaker_clip_element_vmt);
         wlmtk_element_set_visible(
             wlmtk_tile_element(&clip_ptr->super_tile), true);
         wlmtk_tile_set_background_buffer(
@@ -662,6 +679,40 @@ void handle_axis(
         // Scroll wheel "down" -> next.
         wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+bool _wlmaker_clip_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_clip_t,
+        super_tile.super_container.super_element);
+
+    if (0 > wlr_pointer_axis_event_ptr->delta_discrete) {
+        // Scroll wheel "up" -> next.
+        wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
+    } else if (0 < wlr_pointer_axis_event_ptr->delta_discrete) {
+        // Scroll wheel "down" -> next.
+        wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+bool _wlmaker_clip_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_clip_t,
+        super_tile.super_container.super_element);
+
+    if (BTN_LEFT != button_event_ptr->button) return true;
+
+    bs_log(BS_ERROR, "FIXME: Button pressed for clip %p!", clip_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
