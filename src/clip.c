@@ -20,6 +20,8 @@
 
 #include "clip.h"
 
+#include <limits.h>
+
 #include "button.h"
 #include "config.h"
 #include "decorations.h"
@@ -44,6 +46,10 @@ struct _wlmaker_clip_t {
     /** The tile's texture buffer with the 'Previous' buttons pressed. */
     struct wlr_buffer         *prev_pressed_tile_buffer_ptr;
 
+    /** Overlay buffer element: Contains the workspace's title and number. */
+    wlmtk_buffer_t            overlay_buffer;
+    /** Clip image. */
+    wlmtk_image_t             *image_ptr;
 
 
 
@@ -102,6 +108,7 @@ static void handle_axis(
     wlmaker_view_t *view_ptr,
     struct wlr_pointer_axis_event *event_ptr);
 
+static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
 static struct wlr_buffer *_wlmaker_clip_create_tile(
     const wlmtk_tile_style_t *style_ptr,
     bool prev_pressed,
@@ -138,6 +145,19 @@ const wlmaker_view_impl_t     clip_view_impl = {
     .set_activated = NULL,
     .get_size = clip_get_size,
     .handle_axis = handle_axis
+};
+
+/** Lookup paths for icons -- FIXME: de-duplicate this! */
+static const char *lookup_paths[] = {
+    "/usr/share/icons/wlmaker",
+    "/usr/local/share/icons/wlmaker",
+#if defined(WLMAKER_SOURCE_DIR)
+    WLMAKER_SOURCE_DIR "/icons",
+#endif  // WLMAKER_SOURCE_DIR
+#if defined(WLMAKER_ICON_DATA_DIR)
+    WLMAKER_ICON_DATA_DIR,
+#endif  // WLMAKER_ICON_DATA_DIR
+    NULL
 };
 
 /* == Exported methods ===================================================== */
@@ -201,6 +221,14 @@ wlmaker_clip_t *wlmaker_clip_create(
             &clip_ptr->super_tile, clip_ptr->tile_buffer_ptr);
         wlmtk_dock_add_tile(clip_ptr->wlmtk_dock_ptr, &clip_ptr->super_tile);
 
+        if (!wlmtk_buffer_init(
+                &clip_ptr->overlay_buffer, server_ptr->env_ptr)) {
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_buffer_element(&clip_ptr->overlay_buffer), true);
+
         wlmtk_workspace_t *wlmtk_workspace_ptr =
             wlmaker_server_get_current_wlmtk_workspace(server_ptr);
         wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
@@ -209,6 +237,30 @@ wlmaker_clip_t *wlmaker_clip_create(
             layer_ptr,
             wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
 
+        char full_path[PATH_MAX];
+        char *path_ptr = bs_file_resolve_and_lookup_from_paths(
+            "clip-48x48.png", lookup_paths, 0, full_path);
+        if (NULL == path_ptr) {
+            bs_log(BS_ERROR | BS_ERRNO,
+                   "Failed bs_file_resolve_and_lookup_from_paths(\"clip-48x48.png\" ...)");
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+        clip_ptr->image_ptr = wlmtk_image_create(path_ptr, server_ptr->env_ptr);
+        if (NULL == clip_ptr->image_ptr) {
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_image_element(clip_ptr->image_ptr), true);
+        wlmtk_tile_set_content(
+            &clip_ptr->super_tile,
+            wlmtk_image_element(clip_ptr->image_ptr));
+
+        _wlmaker_clip_update_overlay(clip_ptr);
+        wlmtk_tile_set_overlay(
+            &clip_ptr->super_tile,
+            wlmtk_buffer_element(&clip_ptr->overlay_buffer));
     }
 
     clip_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
@@ -409,12 +461,21 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 
 
 
+
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
+        wlmtk_tile_set_content(&clip_ptr->super_tile, NULL);
+        wlmtk_tile_set_overlay(&clip_ptr->super_tile, NULL);
         wlmtk_dock_remove_tile(
             clip_ptr->wlmtk_dock_ptr,
             &clip_ptr->super_tile);
     }
     wlmtk_tile_fini(&clip_ptr->super_tile);
+    wlmtk_buffer_fini(&clip_ptr->overlay_buffer);
+
+    if (NULL != clip_ptr->image_ptr) {
+        wlmtk_image_destroy(clip_ptr->image_ptr);
+        clip_ptr->image_ptr = NULL;
+    }
 
     if (NULL != clip_ptr->wlmtk_dock_ptr) {
         wlmtk_layer_remove_panel(
@@ -601,6 +662,46 @@ void handle_axis(
         // Scroll wheel "down" -> next.
         wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Updates the overlay buffer's content with workspace name and index. */
+void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
+{
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        clip_ptr->super_tile.style.size, clip_ptr->super_tile.style.size);
+    if (NULL == wlr_buffer_ptr) return;
+
+    int index = 0;
+    const char *name_ptr = NULL;
+    wlmaker_workspace_get_details(
+        wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
+        &index, &name_ptr);
+
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+    if (NULL == cairo_ptr) {
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return;
+    }
+
+    cairo_select_font_face(
+        cairo_ptr, "Helvetica",
+        CAIRO_FONT_SLANT_NORMAL,
+        CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cairo_ptr, 12.0);
+    cairo_set_source_argb8888(cairo_ptr, 0xff000000);
+    cairo_move_to(cairo_ptr, 4, 14);
+    cairo_show_text(cairo_ptr, name_ptr);
+
+    cairo_move_to(cairo_ptr, 50, 56);
+    char buf[10];
+    snprintf(buf, sizeof(buf), "%d", index);
+    cairo_show_text(cairo_ptr, buf);
+
+    cairo_destroy(cairo_ptr);
+
+    wlmtk_buffer_set(&clip_ptr->overlay_buffer, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
