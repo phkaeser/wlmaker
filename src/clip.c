@@ -96,6 +96,11 @@ static void handle_axis(
     wlmaker_view_t *view_ptr,
     struct wlr_pointer_axis_event *event_ptr);
 
+static struct wlr_buffer *_wlmaker_clip_create_tile(
+    const wlmtk_tile_style_t *style_ptr,
+    bool prev_pressed,
+    bool next_pressed);
+
 /* == Data ================================================================= */
 
 /** TODO: Replace this. */
@@ -559,8 +564,21 @@ void handle_axis(
     }
 }
 
-
-struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a wlr_buffer with texture suitable to show the 'next' and 'prev'
+ * buttons in each raised or pressed state.
+ *
+ * @param style_ptr
+ * @param prev_pressed
+ * @param next_pressed
+ *
+ * @return A wlr buffer.
+ */
+struct wlr_buffer *_wlmaker_clip_create_tile(
+    const wlmtk_tile_style_t *style_ptr,
+    bool prev_pressed,
+    bool next_pressed)
 {
     struct wlr_buffer* wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         style_ptr->size, style_ptr->size);
@@ -569,7 +587,6 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     double tsize = style_ptr->size;
     double bsize = 22.0 / 64.0 * style_ptr->size;
     double margin = style_ptr->bezel_width;
-    bool pressed = true;
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
@@ -579,7 +596,7 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
 
     wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
 
-    // Northwestern corner, illuminated when raised. Clock-wise.
+    // Northern + Western sides. Drawn clock-wise.
     wlmaker_primitives_set_bezel_color(cairo_ptr, true);
     cairo_move_to(cairo_ptr, 0, 0);
     cairo_line_to(cairo_ptr, tsize - bsize, 0);
@@ -590,7 +607,7 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     cairo_line_to(cairo_ptr, 0, 0);
     cairo_fill(cairo_ptr);
 
-    // Southeastern corner, illuminted when pressed. Also clock-wise.
+    // Southern + Eastern sides. Also drawn Also clock-wise.
     wlmaker_primitives_set_bezel_color(cairo_ptr, false);
     cairo_move_to(cairo_ptr, tsize, tsize);
     cairo_line_to(cairo_ptr, bsize, tsize);
@@ -619,13 +636,9 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     cairo_line_to(cairo_ptr, 0, tsize - bsize);
     cairo_fill(cairo_ptr);
 
-
-
-
-
-
+    // The "Next" button, north-eastern corner.
     // Northern edge, illuminated when raised
-    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !next_pressed);
     cairo_move_to(cairo_ptr, tsize - bsize, 0);
     cairo_line_to(cairo_ptr, tsize, 0);
     cairo_line_to(cairo_ptr, tsize - margin, margin);
@@ -634,7 +647,7 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     cairo_fill(cairo_ptr);
 
     // Eastern edge, illuminated when pressed
-    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, next_pressed);
     cairo_move_to(cairo_ptr, tsize, 0);
     cairo_line_to(cairo_ptr, tsize, bsize);
     cairo_line_to(cairo_ptr, tsize - margin, bsize - 2 * margin);
@@ -643,7 +656,7 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     cairo_fill(cairo_ptr);
 
     // Diagonal, illuminated when pressed.
-    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, next_pressed);
     cairo_move_to(cairo_ptr, tsize - bsize, 0);
     cairo_line_to(cairo_ptr, tsize - bsize + 2 * margin, margin);
     cairo_line_to(cairo_ptr, tsize - margin, bsize - 2 *margin);
@@ -680,64 +693,59 @@ struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
     cairo_line_to(cairo_ptr, tsize - tpad, tpad);
     cairo_fill(cairo_ptr);
 
-
-
-
+    // The "Prev" button, south-western corner.
     // Southern edge, illuminated when pressed.
-    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
-    cairo_move_to(cairo_ptr, 0, tsize - bsize + bsize);
-    cairo_line_to(cairo_ptr, margin, tsize - bsize + bsize - margin);
-    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - bsize + bsize - margin);
-    cairo_line_to(cairo_ptr, bsize, tsize - bsize + bsize);
-    cairo_line_to(cairo_ptr, 0, tsize - bsize + bsize);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, prev_pressed);
+    cairo_move_to(cairo_ptr, 0, tsize);
+    cairo_line_to(cairo_ptr, margin, tsize - margin);
+    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - margin);
+    cairo_line_to(cairo_ptr, bsize, tsize);
+    cairo_line_to(cairo_ptr, 0, tsize);
     cairo_fill(cairo_ptr);
 
     // Western edge, illuminated when raised.
-    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
-    cairo_move_to(cairo_ptr, 0, tsize - bsize + bsize);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !prev_pressed);
+    cairo_move_to(cairo_ptr, 0, tsize);
     cairo_line_to(cairo_ptr, 0, tsize - bsize + 0);
     cairo_line_to(cairo_ptr, margin, tsize - bsize + 2 * margin);
-    cairo_line_to(cairo_ptr, margin, tsize - bsize + bsize - margin);
-    cairo_line_to(cairo_ptr, 0, tsize - bsize + bsize);
+    cairo_line_to(cairo_ptr, margin, tsize - margin);
+    cairo_line_to(cairo_ptr, 0, tsize);
     cairo_fill(cairo_ptr);
 
     // Diagonal, illuminated when raised.
-    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !prev_pressed);
     cairo_move_to(cairo_ptr, 0, tsize - bsize + 0);
-    cairo_line_to(cairo_ptr, bsize, tsize - bsize + bsize);
-    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - bsize + bsize - margin);
+    cairo_line_to(cairo_ptr, bsize, tsize);
+    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - margin);
     cairo_line_to(cairo_ptr, margin, tsize - bsize + 2 * margin);
     cairo_line_to(cairo_ptr, 0, tsize - bsize + 0);
     cairo_fill(cairo_ptr);
 
     // The black triangle. Use relative sizes.
     cairo_set_source_rgba(cairo_ptr, 0, 0, 0, 1.0);
-    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
-    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - trsize - tpad);
-    cairo_line_to(cairo_ptr, tpad + trsize, tsize - bsize + bsize - tpad);
-    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_move_to(cairo_ptr, tpad, tsize - tpad);
+    cairo_line_to(cairo_ptr, tpad, tsize - trsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize, tsize - tpad);
+    cairo_line_to(cairo_ptr, tpad, tsize - tpad);
     cairo_fill(cairo_ptr);
 
     // Southern edge of triangle, illuminated.
     wlmaker_primitives_set_bezel_color(cairo_ptr, true);
-    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
-    cairo_line_to(cairo_ptr, tpad + trsize, tsize - bsize + bsize - tpad);
-    cairo_line_to(cairo_ptr, tpad + trsize + tmargin, tsize - bsize + bsize - tpad + tmargin);
-    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad + tmargin);
-    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_move_to(cairo_ptr, tpad, tsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize, tsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize + tmargin, tsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad, tsize - tpad);
     cairo_fill(cairo_ptr);
 
     // Eastern side of triangle, not illuminated.
     wlmaker_primitives_set_bezel_color(cairo_ptr, false);
-    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
-    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad + tmargin);
-    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad - trsize - tmargin);
-    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad - trsize);
-    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_move_to(cairo_ptr, tpad, tsize - tpad);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - tpad - trsize - tmargin);
+    cairo_line_to(cairo_ptr, tpad, tsize - tpad - trsize);
+    cairo_line_to(cairo_ptr, tpad, tsize - tpad);
     cairo_fill(cairo_ptr);
-
-
-
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
@@ -753,30 +761,32 @@ const bs_test_case_t wlmaker_clip_test_cases[] = {
 };
 
 /* ------------------------------------------------------------------------- */
+/** Tests that the clip tile is drawn correctly. */
 void test_draw_tile(bs_test_t *test_ptr)
 {
-    wlmtk_tile_style_t style = {
+    static const wlmtk_tile_style_t style = {
         .fill = {
             .type = WLMTK_STYLE_COLOR_DGRADIENT,
-            .param = {
-                .dgradient = {
-                    .from = 0xffa6a6b6,
-                    .to = 0xff515561
-                }
-            }
+            .param = { .dgradient = { .from = 0xffa6a6b6, .to = 0xff515561 } }
         },
         .bezel_width = 2,
         .size = 64
     };
+    struct wlr_buffer* wlr_buffer_ptr;
+    bs_gfxbuf_t *gfxbuf_ptr;
 
-    struct wlr_buffer* wlr_buffer_ptr = create_clip_tile(&style);
+    wlr_buffer_ptr = _wlmaker_clip_create_tile(&style, false, false);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlr_buffer_ptr);
-
-    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
-        test_ptr, gfxbuf_ptr, "menu.png");
+        test_ptr, gfxbuf_ptr, "clip_raised.png");
+    wlr_buffer_drop(wlr_buffer_ptr);
 
-
+    wlr_buffer_ptr = _wlmaker_clip_create_tile(&style, true, true);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlr_buffer_ptr);
+    gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, gfxbuf_ptr, "clip_pressed.png");
     wlr_buffer_drop(wlr_buffer_ptr);
 }
 
