@@ -231,6 +231,7 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_fake_workspace_create(1024, 768));
     wlmaker_server_t server = { .fake_wlmtk_workspace_ptr = fw_ptr };
     wlmaker_config_style_t style = {};
+    wl_signal_init(&server.workspace_changed);
 
     wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
