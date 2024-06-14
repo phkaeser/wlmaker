@@ -61,7 +61,8 @@ void wlr_buffer_drop_nullify(struct wlr_buffer **wlr_buffer_ptr_ptr);
  *                            `wlr_buffer` that was previously created by
  *                            @ref bs_gfxbuf_create_wlr_buffer.
  *
- * @return Pointer to the libbase graphics buffer.
+ * @return Pointer to the libbase graphics buffer. The `wlr_buffer_ptr` must
+ *     outlive the `bs_gfxbuf_t*`. Must not be destroyed.
  */
 bs_gfxbuf_t *bs_gfxbuf_from_wlr_buffer(struct wlr_buffer *wlr_buffer_ptr);
 
@@ -73,7 +74,7 @@ bs_gfxbuf_t *bs_gfxbuf_from_wlr_buffer(struct wlr_buffer *wlr_buffer_ptr);
  *                            @ref bs_gfxbuf_create_wlr_buffer.
  *
  * @return Pointer to the the cairo. The `wlr_buffer_ptr` must outlive the
- *     `cairo_t`. It must be destroyed using `cairo_destroy`.
+ *     `cairo_t*`. It must be destroyed using `cairo_destroy`.
  */
 cairo_t *cairo_create_from_wlr_buffer(struct wlr_buffer *wlr_buffer_ptr);
 
