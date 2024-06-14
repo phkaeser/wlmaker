@@ -682,6 +682,17 @@ void handle_axis(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_axis.
+ *
+ * Moves to the next or previous workspace, depending on the axis (scroll-
+ * wheel) direction.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return true
+ */
 bool _wlmaker_clip_pointer_axis(
     wlmtk_element_t *element_ptr,
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
@@ -701,6 +712,17 @@ bool _wlmaker_clip_pointer_axis(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_button.
+ *
+ * Checks if the button press is on either 'next' or 'prev' button area,
+ * updates visualization if pressed, and switches workspace if needed.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return true.
+ */
 bool _wlmaker_clip_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
