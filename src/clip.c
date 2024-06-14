@@ -197,6 +197,8 @@ wlmaker_clip_t *wlmaker_clip_create(
         }
         wlmtk_element_set_visible(
             wlmtk_tile_element(&clip_ptr->super_tile), true);
+        wlmtk_tile_set_background_buffer(
+            &clip_ptr->super_tile, clip_ptr->tile_buffer_ptr);
         wlmtk_dock_add_tile(clip_ptr->wlmtk_dock_ptr, &clip_ptr->super_tile);
 
         wlmtk_workspace_t *wlmtk_workspace_ptr =
