@@ -36,11 +36,18 @@ struct _wlmaker_dock_t {
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
+
+    /** Listens for when the workspace changed. */
+    struct wl_listener        workspace_changed_listener;
 };
 
 static bool _wlmaker_dock_decode_launchers(
     wlmcfg_object_t *object_ptr,
     void *dest_ptr);
+
+static void _wlmaker_dock_handle_workspace_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
@@ -140,13 +147,10 @@ wlmaker_dock_t *wlmaker_dock_create(
         args.launchers_array_ptr = NULL;
     }
 
-#if 0
-    // FIXME: Changing workspaces needs to be (re)fixed.
     wlmtk_util_connect_listener_signal(
         &server_ptr->workspace_changed,
         &dock_ptr->workspace_changed_listener,
-        handle_workspace_changed);
-#endif
+        _wlmaker_dock_handle_workspace_changed);
 
     bs_log(BS_INFO, "Created dock %p", dock_ptr);
     return dock_ptr;
@@ -155,6 +159,8 @@ wlmaker_dock_t *wlmaker_dock_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
 {
+    wlmtk_util_disconnect_listener(&dock_ptr->workspace_changed_listener);
+
     if (NULL != dock_ptr->wlmtk_dock_ptr) {
         wlmtk_layer_remove_panel(
             wlmtk_panel_get_layer(wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr)),
@@ -166,6 +172,8 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
 
     free(dock_ptr);
 }
+
+/* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Decoder for the "Launchers" array. Currently just stores a reference. */
@@ -182,7 +190,29 @@ bool _wlmaker_dock_decode_launchers(
     return true;
 }
 
-/* == Local (static) methods =============================================== */
+/* ------------------------------------------------------------------------- */
+/** Re-attaches the dock to the new "current" workspace. */
+void _wlmaker_dock_handle_workspace_changed(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_dock_t *dock_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_dock_t, workspace_changed_listener);
+    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr);
+
+    wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
+    wlmtk_workspace_t *wlmtk_workspace_ptr =
+        wlmaker_server_get_current_wlmtk_workspace(dock_ptr->server_ptr);
+    wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
+        wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+
+    if (current_layer_ptr == new_layer_ptr) return;
+
+    if (NULL != current_layer_ptr) {
+        wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
+    }
+    wlmtk_layer_add_panel(new_layer_ptr, panel_ptr);
+}
 
 /* == Unit tests =========================================================== */
 
