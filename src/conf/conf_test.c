@@ -22,11 +22,13 @@
 
 #include <libbase/libbase.h>
 
+#include "decode.h"
 #include "model.h"
 #include "plist.h"
 
 /** Conf module unit tests. */
 const bs_test_set_t conf_tests[] = {
+    { 1, "decode", wlmcfg_decode_test_cases },
     { 1, "model", wlmcfg_model_test_cases },
     { 1, "plist", wlmcfg_plist_test_cases },
     { 0, NULL, NULL },

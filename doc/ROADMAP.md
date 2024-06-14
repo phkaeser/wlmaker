@@ -148,19 +148,19 @@ Support for visual effects to improve usability, but not for pure show.
 * Multiple workspaces, based on toolkit.
   * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
 
-* Dock, visible across workspaces, based on toolkit.
-  * Keep track of subprocesses and the corresponding windows.
-  * Style similar to Window Maker.
-  * With application launchers (hardcoded).
+* [done] Dock, visible across workspaces, based on toolkit.
+  * [done] Keep track of subprocesses and the corresponding windows.
+  * [done] Style similar to Window Maker.
+  * [done] With application launchers (configurable in file).
 
 * Clip, based on toolkit.
   * Display the current workspace.
   * Buttons to switch between workspaces.
 
-* Application launchers, based on toolkit.
-  * Display an icon.
-  * Display application status (*starting*, *running*).
-  * Configurable (in code).
+* [done] Application launchers, based on toolkit.
+  * [done] Display an icon.
+  * [done] Display application status (*starting*, *running*).
+  * [done] Configurable (in code).
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
 

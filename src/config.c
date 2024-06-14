@@ -31,10 +31,16 @@
 #undef WLR_USE_UNSTABLE
 
 #include "default_configuration.h"
+#include "default_dock_state.h"
+#include "default_style.h"
 
 /* == Declarations ========================================================= */
 
 static wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
+
+static bool _wlmaker_config_decode_fill_style(
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr);
 
 /* == Data ================================================================= */
 
@@ -103,6 +109,77 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
     .task_list_text_color = 0xffffffff,
 };
 
+/** Plist decoding descriptor of the fill type. */
+static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
+    WLMCFG_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),
+    WLMCFG_ENUM("HGRADIENT", WLMTK_STYLE_COLOR_HGRADIENT),
+    WLMCFG_ENUM("DGRADIENT", WLMTK_STYLE_COLOR_DGRADIENT),
+    WLMCFG_ENUM_SENTINEL()
+};
+
+/** Plist decoding descriptor of the fill style. */
+static const wlmcfg_desc_t _wlmaker_config_fill_style_desc[] = {
+    WLMCFG_DESC_ENUM("Type", true, wlmtk_style_fill_t, type,
+                     WLMTK_STYLE_COLOR_SOLID,
+                     _wlmaker_config_fill_type_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of the solid color. */
+static const wlmcfg_desc_t _wlmaker_config_style_color_solid_desc[] = {
+    WLMCFG_DESC_ARGB32(
+        "Color", true, wlmtk_style_color_solid_data_t, color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of a color gradient. */
+static const wlmcfg_desc_t _wlmaker_config_style_color_gradient_desc[] = {
+    WLMCFG_DESC_ARGB32(
+        "From", true, wlmtk_style_color_gradient_data_t, from, 0),
+    WLMCFG_DESC_ARGB32(
+        "To", true, wlmtk_style_color_gradient_data_t, to, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of a tile style. */
+static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
+    WLMCFG_DESC_UINT64(
+        "Size", true, wlmtk_tile_style_t, size, 64),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmtk_tile_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of a margin's style. */
+static const wlmcfg_desc_t _wlmaker_config_margin_style_desc[] = {
+    WLMCFG_DESC_UINT64(
+        "Width", true, wlmtk_margin_style_t, width, 0),
+    WLMCFG_DESC_ARGB32(
+        "Color", true, wlmtk_margin_style_t, color, 0xff000000),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Plist decoding descriptor of the dock's style. */
+static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_dock_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Desciptor for decoding the style information from a plist. */
+const wlmcfg_desc_t wlmaker_config_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Tile", true, wlmaker_config_style_t, tile,
+        _wlmaker_config_tile_style_desc),
+    WLMCFG_DESC_DICT(
+        "Dock", true, wlmaker_config_style_t, dock,
+        _wlmaker_config_dock_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
 
 /** Lookup paths for the configuration file. */
 static const char *_wlmaker_config_fname_ptrs[] = {
@@ -169,14 +246,64 @@ wlmcfg_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     return dict_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Custom decoder for fill style struct from a plist dict.
+ *
+ * @param object_ptr
+ * @param dest_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmaker_config_decode_fill_style(
+    wlmcfg_object_t *object_ptr,
+    void *dest_ptr)
+{
+    wlmtk_style_fill_t *fill_ptr = dest_ptr;
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    if (NULL == dict_ptr) return false;
+
+    if (!wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_fill_style_desc,
+            fill_ptr)) return false;
+
+    switch (fill_ptr->type) {
+    case WLMTK_STYLE_COLOR_SOLID:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_solid_desc,
+            &fill_ptr->param.solid);
+    case WLMTK_STYLE_COLOR_DGRADIENT:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_gradient_desc,
+            &fill_ptr->param.dgradient);
+    case WLMTK_STYLE_COLOR_HGRADIENT:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_gradient_desc,
+            &fill_ptr->param.hgradient);
+    default:
+        bs_log(BS_ERROR, "Unhandled fill type %d", fill_ptr->type);
+        return false;
+    }
+    bs_log(BS_FATAL, "Uh... no idea how this got here.");
+    return false;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
+static void test_style_file(bs_test_t *test_ptr);
+static void test_decode_fill(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
+    { 1, "style_file", test_style_file },
+    { 1, "decode_fill", test_decode_fill },
     { 0, NULL, NULL }
 };
 
@@ -187,27 +314,117 @@ const bs_test_case_t wlmaker_config_test_cases[] = {
 // be great to extend this.
 void test_embedded(bs_test_t *test_ptr)
 {
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+    wlmcfg_object_t *obj_ptr;
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_dock_state_data,
+        embedded_binary_default_dock_state_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_style_data,
+        embedded_binary_default_style_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Verifies that the (example) config file loads. */
+/** Verifies that the (example) config files are loading. */
 // TODO(kaeser@gubbe.ch): For now, this just verifies that the configuration
 // file **parses**. There is no further verification of the dict contents.
 // Would be great to extend this.
 void test_file(bs_test_t *test_ptr)
 {
+    wlmcfg_dict_t *dict_ptr;
+
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
-    wlmcfg_dict_t *dict_ptr = _wlmaker_config_from_plist(
+    dict_ptr = _wlmaker_config_from_plist(
         WLMAKER_SOURCE_DIR "/etc/wlmaker.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/dock.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Loads and decodes the style file. */
+void test_style_file(bs_test_t *test_ptr)
+{
+    wlmcfg_dict_t *dict_ptr;
+
+#ifndef WLMAKER_SOURCE_DIR
+#error "Missing definition of WLMAKER_SOURCE_DIR!"
+#endif
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+
+    wlmaker_config_style_t config_style;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(
+            dict_ptr, wlmaker_config_style_desc, &config_style));
+    wlmcfg_dict_unref(dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests the decoder for the fill style. */
+void test_decode_fill(bs_test_t *test_ptr)
+{
+    const char *s = ("{"
+                     "Type = DGRADIENT;"
+                     "From = \"argb32:0x01020304\";"
+                     "To = \"argb32:0x0204080c\""
+                     "}");
+    wlmtk_style_fill_t fill;
+    wlmcfg_object_t *object_ptr;
+
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT, fill.type);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, fill.param.dgradient.from);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, fill.param.dgradient.to);
+    wlmcfg_object_unref(object_ptr);
+
+    s = ("{"
+         "Type = HGRADIENT;"
+         "From = \"argb32:0x04030201\";"
+         "To = \"argb32:0x40302010\""
+         "}");
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_HGRADIENT, fill.type);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x04030201, fill.param.hgradient.from);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x40302010, fill.param.hgradient.to);
+    wlmcfg_object_unref(object_ptr);
+
+    s = ("{"
+         "Type = SOLID;"
+         "Color = \"argb32:0x11223344\""
+         "}");
+    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_config_decode_fill_style(object_ptr, &fill));
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, fill.type);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x11223344, fill.param.solid.color);
+    wlmcfg_object_unref(object_ptr);
 }
 
 /* == End of config.c ====================================================== */

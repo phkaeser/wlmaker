@@ -66,7 +66,7 @@ void wlr_buffer_drop_nullify(struct wlr_buffer **wlr_buffer_ptr_ptr);
 bs_gfxbuf_t *bs_gfxbuf_from_wlr_buffer(struct wlr_buffer *wlr_buffer_ptr);
 
 /**
- * Returns a `cairo_t` for the WLR buffer backged by a libbase graphics buffer.
+ * Returns a `cairo_t` for the WLR buffer backed by a libbase graphics buffer.
  *
  * @param wlr_buffer_ptr      Pointer to a `struct wlr_buffer`. Must be a
  *                            `wlr_buffer` that was previously created by

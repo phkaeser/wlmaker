@@ -22,7 +22,6 @@ SET(PUBLIC_HEADER_FILES
   config.h
   cursor.h
   decorations.h
-  dock_app.h
   dock.h
   icon_manager.h
   iconified.h
@@ -32,6 +31,7 @@ SET(PUBLIC_HEADER_FILES
   layer_panel.h
   layer_shell.h
   layer_surface.h
+  launcher.h
   lock_mgr.h
   menu.h
   menu_item.h
@@ -61,13 +61,13 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   config.c
   cursor.c
   decorations.c
-  dock_app.c
   dock.c
   icon_manager.c
   iconified.c
   idle.c
   interactive.c
   keyboard.c
+  launcher.c
   layer_panel.c
   layer_shell.c
   layer_surface.c
@@ -103,12 +103,24 @@ EmbedBinary_ADD_LIBRARY(
   "default_configuration"
   "${PROJECT_SOURCE_DIR}/etc/wlmaker.plist")
 
+EmbedBinary_ADD_LIBRARY(
+  embedded_dock_state
+  "default_dock_state"
+  "${PROJECT_SOURCE_DIR}/etc/dock.plist")
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_style
+  "default_style"
+  "${PROJECT_SOURCE_DIR}/etc/default-style.plist")
+
 ADD_DEPENDENCIES(
   wlmaker_lib
   protocol_headers
   conf
   toolkit
   embedded_configuration
+  embedded_dock_state
+  embedded_style
   wlmaker_lib)
 
 TARGET_LINK_LIBRARIES(
@@ -117,6 +129,8 @@ TARGET_LINK_LIBRARIES(
   conf
   toolkit
   embedded_configuration
+  embedded_dock_state
+  embedded_style
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND

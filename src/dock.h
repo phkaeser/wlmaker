@@ -29,6 +29,7 @@
 /** Forward definition: Dock handle. */
 typedef struct _wlmaker_dock_t wlmaker_dock_t;
 
+#include "config.h"
 #include "server.h"
 
 #ifdef __cplusplus
@@ -39,11 +40,13 @@ extern "C" {
  * Creates the Dock handle. Needs the server to be up with workspaces running.
  *
  * @param server_ptr
+ * @param style_ptr
  *
  * @return Pointer to the Dock handle, or NULL on error.
  */
 wlmaker_dock_t *wlmaker_dock_create(
-    wlmaker_server_t *server_ptr);
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr);
 
 /**
  * Destroys the Dock handle.
@@ -51,6 +54,9 @@ wlmaker_dock_t *wlmaker_dock_create(
  * @param dock_ptr
  */
 void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_dock_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

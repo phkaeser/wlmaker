@@ -30,8 +30,14 @@ BISON_TARGET(
 
 ADD_FLEX_BISON_DEPENDENCY(analyzer grammar)
 
+SET(PUBLIC_HEADER_FILES
+  decode.h
+  model.h
+  plist.h)
+
 ADD_LIBRARY(conf STATIC)
 TARGET_SOURCES(conf PRIVATE
+  decode.c
   model.c
   plist.c
   ${CMAKE_CURRENT_BINARY_DIR}/analyzer.c
@@ -41,6 +47,10 @@ TARGET_INCLUDE_DIRECTORIES(conf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURR
 # See: https://github.com/phkaeser/wlmaker/issues/53
 TARGET_COMPILE_OPTIONS(conf PRIVATE -Wno-unused-but-set-variable)
 TARGET_LINK_LIBRARIES(conf base)
+SET_TARGET_PROPERTIES(
+  conf
+  PROPERTIES VERSION 1.0
+  PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
 
 ADD_EXECUTABLE(conf_test conf_test.c)
 TARGET_LINK_LIBRARIES(conf_test base conf)

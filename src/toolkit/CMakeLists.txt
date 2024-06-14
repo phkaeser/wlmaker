@@ -21,10 +21,12 @@ SET(PUBLIC_HEADER_FILES
   button.h
   container.h
   content.h
+  dock.h
   element.h
   env.h
   fsm.h
   gfxbuf.h
+  image.h
   input.h
   layer.h
   panel.h
@@ -35,6 +37,7 @@ SET(PUBLIC_HEADER_FILES
   resizebar_area.h
   style.h
   surface.h
+  tile.h
   titlebar.h
   titlebar_button.h
   titlebar_title.h
@@ -52,10 +55,12 @@ TARGET_SOURCES(toolkit PRIVATE
   button.c
   container.c
   content.c
+  dock.c
   element.c
   env.c
   fsm.c
   gfxbuf.c
+  image.c
   layer.c
   panel.c
   popup.c
@@ -64,6 +69,7 @@ TARGET_SOURCES(toolkit PRIVATE
   resizebar.c
   resizebar_area.c
   surface.c
+  tile.c
   titlebar.c
   titlebar_button.c
   titlebar_title.c

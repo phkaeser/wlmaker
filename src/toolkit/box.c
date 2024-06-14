@@ -79,15 +79,17 @@ bool wlmtk_box_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_box_fini(wlmtk_box_t *box_ptr)
 {
-    if (NULL != box_ptr->margin_container.super_element.parent_container_ptr) {
-        wlmtk_container_remove_element(
-            &box_ptr->super_container,
-            &box_ptr->margin_container.super_element);
-    }
     if (NULL != box_ptr->element_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &box_ptr->super_container,
             &box_ptr->element_container.super_element);
+        wlmtk_container_fini(&box_ptr->element_container);
+    }
+    if (NULL != box_ptr->margin_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &box_ptr->super_container,
+            &box_ptr->margin_container.super_element);
+        wlmtk_container_fini(&box_ptr->margin_container);
     }
 
     wlmtk_container_fini(&box_ptr->super_container);
@@ -115,6 +117,12 @@ void wlmtk_box_add_element_back(
 void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr)
 {
     wlmtk_container_remove_element(&box_ptr->element_container, element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr)
+{
+    return &box_ptr->super_container.super_element;
 }
 
 /* == Local (static) methods =============================================== */
@@ -262,6 +270,12 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_box_t box;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_box_init(
                             &box, NULL, WLMTK_BOX_HORIZONTAL, &test_style));
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &box.super_container.super_element,
+        wlmtk_box_element(&box));
+
     wlmtk_box_fini(&box);
 }
 

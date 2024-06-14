@@ -74,6 +74,12 @@ typedef struct {
     uint32_t                  color;
 } wlmtk_margin_style_t;
 
+/** Styling information for the dock. */
+typedef struct {
+    /** The margin's style of the dock's box. */
+    wlmtk_margin_style_t      margin;
+} wlmtk_dock_style_t;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -104,6 +104,12 @@ void wlmtk_buffer_set(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_buffer_element(wlmtk_buffer_t *buffer_ptr)
+{
+    return &buffer_ptr->super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
