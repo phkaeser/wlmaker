@@ -559,4 +559,225 @@ void handle_axis(
     }
 }
 
+
+struct wlr_buffer *create_clip_tile(const wlmtk_tile_style_t *style_ptr)
+{
+    struct wlr_buffer* wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        style_ptr->size, style_ptr->size);
+    if (NULL == wlr_buffer_ptr) return NULL;
+
+    double tsize = style_ptr->size;
+    double bsize = 22.0 / 64.0 * style_ptr->size;
+    double margin = style_ptr->bezel_width;
+    bool pressed = true;
+
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+    if (NULL == cairo_ptr) {
+        wlr_buffer_drop(wlr_buffer_ptr);
+        return NULL;
+    }
+
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
+
+    // Northwestern corner, illuminated when raised. Clock-wise.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, true);
+    cairo_move_to(cairo_ptr, 0, 0);
+    cairo_line_to(cairo_ptr, tsize - bsize, 0);
+    cairo_line_to(cairo_ptr, tsize - bsize, margin);
+    cairo_line_to(cairo_ptr, margin, margin);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize);
+    cairo_line_to(cairo_ptr, 0, 0);
+    cairo_fill(cairo_ptr);
+
+    // Southeastern corner, illuminted when pressed. Also clock-wise.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, false);
+    cairo_move_to(cairo_ptr, tsize, tsize);
+    cairo_line_to(cairo_ptr, bsize, tsize);
+    cairo_line_to(cairo_ptr, bsize, tsize - margin);
+    cairo_line_to(cairo_ptr, tsize - margin, tsize - margin);
+    cairo_line_to(cairo_ptr, tsize - margin, bsize);
+    cairo_line_to(cairo_ptr, tsize, bsize);
+    cairo_line_to(cairo_ptr, tsize, tsize);
+    cairo_fill(cairo_ptr);
+
+    // Diagonal at the north-eastern corner. Drawn clockwise.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, true);
+    cairo_move_to(cairo_ptr, tsize - bsize, 0);
+    cairo_line_to(cairo_ptr, tsize, bsize);
+    cairo_line_to(cairo_ptr, tsize - margin, bsize);
+    cairo_line_to(cairo_ptr, tsize - bsize, margin);
+    cairo_line_to(cairo_ptr, tsize - bsize, 0);
+    cairo_fill(cairo_ptr);
+
+    // Diagonal at south-western corner. Drawn clockwise.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, false);
+    cairo_move_to(cairo_ptr, 0, tsize - bsize);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize);
+    cairo_line_to(cairo_ptr, bsize, tsize - margin);
+    cairo_line_to(cairo_ptr, bsize, tsize);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize);
+    cairo_fill(cairo_ptr);
+
+
+
+
+
+
+    // Northern edge, illuminated when raised
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
+    cairo_move_to(cairo_ptr, tsize - bsize, 0);
+    cairo_line_to(cairo_ptr, tsize, 0);
+    cairo_line_to(cairo_ptr, tsize - margin, margin);
+    cairo_line_to(cairo_ptr, tsize - bsize + 2 * margin, margin);
+    cairo_line_to(cairo_ptr, tsize - bsize , 0);
+    cairo_fill(cairo_ptr);
+
+    // Eastern edge, illuminated when pressed
+    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
+    cairo_move_to(cairo_ptr, tsize, 0);
+    cairo_line_to(cairo_ptr, tsize, bsize);
+    cairo_line_to(cairo_ptr, tsize - margin, bsize - 2 * margin);
+    cairo_line_to(cairo_ptr, tsize - margin,  margin);
+    cairo_line_to(cairo_ptr, tsize, 0);
+    cairo_fill(cairo_ptr);
+
+    // Diagonal, illuminated when pressed.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
+    cairo_move_to(cairo_ptr, tsize - bsize, 0);
+    cairo_line_to(cairo_ptr, tsize - bsize + 2 * margin, margin);
+    cairo_line_to(cairo_ptr, tsize - margin, bsize - 2 *margin);
+    cairo_line_to(cairo_ptr, tsize, bsize);
+    cairo_line_to(cairo_ptr, tsize - bsize, 0);
+    cairo_fill(cairo_ptr);
+
+    // The black triangle. Use relative sizes.
+    double tpad = bsize * 5.0 / 22.0;
+    double trsize = bsize * 7.0 / 22.0;
+    double tmargin = bsize * 1.0 / 22.0;
+    cairo_set_source_rgba(cairo_ptr, 0, 0, 0, 1.0);
+    cairo_move_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad, trsize + tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad - trsize, tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_fill(cairo_ptr);
+
+    // Northern edge of triangle, not illuminated.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, false);
+    cairo_move_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad - trsize, tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad - trsize - tmargin, tpad - tmargin);
+    cairo_line_to(cairo_ptr, tsize - tpad + tmargin, tpad - tmargin);
+    cairo_line_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_fill(cairo_ptr);
+
+    // Eastern side of triangle, illuminated.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, true);
+    cairo_move_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_line_to(cairo_ptr, tsize - tpad + tmargin, tpad - tmargin);
+    cairo_line_to(cairo_ptr, tsize - tpad + tmargin, tpad + trsize + tmargin);
+    cairo_line_to(cairo_ptr, tsize - tpad, tpad + trsize);
+    cairo_line_to(cairo_ptr, tsize - tpad, tpad);
+    cairo_fill(cairo_ptr);
+
+
+
+
+    // Southern edge, illuminated when pressed.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, pressed);
+    cairo_move_to(cairo_ptr, 0, tsize - bsize + bsize);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize + bsize - margin);
+    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - bsize + bsize - margin);
+    cairo_line_to(cairo_ptr, bsize, tsize - bsize + bsize);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize + bsize);
+    cairo_fill(cairo_ptr);
+
+    // Western edge, illuminated when raised.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
+    cairo_move_to(cairo_ptr, 0, tsize - bsize + bsize);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize + 0);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize + 2 * margin);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize + bsize - margin);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize + bsize);
+    cairo_fill(cairo_ptr);
+
+    // Diagonal, illuminated when raised.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, !pressed);
+    cairo_move_to(cairo_ptr, 0, tsize - bsize + 0);
+    cairo_line_to(cairo_ptr, bsize, tsize - bsize + bsize);
+    cairo_line_to(cairo_ptr, bsize - 2 * margin, tsize - bsize + bsize - margin);
+    cairo_line_to(cairo_ptr, margin, tsize - bsize + 2 * margin);
+    cairo_line_to(cairo_ptr, 0, tsize - bsize + 0);
+    cairo_fill(cairo_ptr);
+
+    // The black triangle. Use relative sizes.
+    cairo_set_source_rgba(cairo_ptr, 0, 0, 0, 1.0);
+    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - trsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize, tsize - bsize + bsize - tpad);
+    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_fill(cairo_ptr);
+
+    // Southern edge of triangle, illuminated.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, true);
+    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize, tsize - bsize + bsize - tpad);
+    cairo_line_to(cairo_ptr, tpad + trsize + tmargin, tsize - bsize + bsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_fill(cairo_ptr);
+
+    // Eastern side of triangle, not illuminated.
+    wlmaker_primitives_set_bezel_color(cairo_ptr, false);
+    cairo_move_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad + tmargin);
+    cairo_line_to(cairo_ptr, tpad - tmargin, tsize - bsize + bsize - tpad - trsize - tmargin);
+    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad - trsize);
+    cairo_line_to(cairo_ptr, tpad, tsize - bsize + bsize - tpad);
+    cairo_fill(cairo_ptr);
+
+
+
+
+    cairo_destroy(cairo_ptr);
+    return wlr_buffer_ptr;
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_draw_tile(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_clip_test_cases[] = {
+    { 1, "draw_tile", test_draw_tile },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+void test_draw_tile(bs_test_t *test_ptr)
+{
+    wlmtk_tile_style_t style = {
+        .fill = {
+            .type = WLMTK_STYLE_COLOR_DGRADIENT,
+            .param = {
+                .dgradient = {
+                    .from = 0xffa6a6b6,
+                    .to = 0xff515561
+                }
+            }
+        },
+        .bezel_width = 2,
+        .size = 64
+    };
+
+    struct wlr_buffer* wlr_buffer_ptr = create_clip_tile(&style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlr_buffer_ptr);
+
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, gfxbuf_ptr, "menu.png");
+
+
+    wlr_buffer_drop(wlr_buffer_ptr);
+}
+
 /* == End of clip.c ======================================================== */
