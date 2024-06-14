@@ -157,10 +157,10 @@ Support for visual effects to improve usability, but not for pure show.
   * Display the current workspace.
   * Buttons to switch between workspaces.
 
-* Application launchers, based on toolkit.
-  * Display an icon.
-  * Display application status (*starting*, *running*).
-  * Configurable (in code).
+* [done] Application launchers, based on toolkit.
+  * [done] Display an icon.
+  * [done] Display application status (*starting*, *running*).
+  * [done] Configurable (in code).
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
 
