@@ -139,8 +139,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Pick or implement parser for configuration file.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
+  * File to define workspaces and dock, falling back to default if not provided.
   * File for visual style (theme): decoration style, background.
-  * File to define workspaces and dock.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
