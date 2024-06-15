@@ -142,6 +142,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Configure idle monitor and screensaver command via config file.
   * File to define workspaces and dock, falling back to default if not provided.
   * File for visual style (theme): decoration style, background.
+  * Include at least one additional theme.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
@@ -187,6 +188,10 @@ Support for visual effects to improve usability, but not for pure show.
   * Magic corner to lock immediately.
   * Magic corner to inhibit locking.
   * Configurable corners, timeout and visualization.
+
+* Documentation updates
+  * Update README to reflect "early-access" vs. "early development".
+  * Screenshots included. (can we script these?)
 
 ## Pending
 
