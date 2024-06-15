@@ -37,7 +37,7 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates the Clip handle. Needs the server to be up with workspaces running.
+ * Creates the Clip. Needs the server to be up with workspaces running.
  *
  * @param server_ptr
  * @param style_ptr
@@ -49,7 +49,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     const wlmaker_config_style_t *style_ptr);
 
 /**
- * Destroys the Clip handle.
+ * Destroys the Clip.
  *
  * @param clip_ptr
  */
