@@ -129,6 +129,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Bugfixes
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
+  * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
@@ -153,10 +154,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Style similar to Window Maker.
   * [done] With application launchers (configurable in file).
 
-* Clip, based on toolkit.
+* [done] Clip, based on toolkit.
   * [done] Display the current workspace.
   * [done] Buttons to switch between workspaces.
-  * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * [done] Application launchers, based on toolkit.
   * [done] Display an icon.
