@@ -47,7 +47,6 @@ enum _wlmaker_workspace_layer_t {
 };
 
 #include "iconified.h"
-#include "layer_surface.h"
 #include "server.h"
 #include "tile_container.h"
 #include "toolkit/toolkit.h"
@@ -251,40 +250,6 @@ void wlmaker_workspace_promote_view_to_fullscreen(
 void wlmaker_workspace_demote_view_from_fullscreen(
     wlmaker_workspace_t *workspace_ptr,
     wlmaker_view_t *view_ptr);
-
-/**
- * Adds the layer surface to the specified layer.
- *
- * In addition to the reference to the layer surface's view, we want to retain
- * pointers to all currently-mapped layer surfaces on our workspace and layer.
- * Required for re-configuring the surfaces through the wlroots layer surface
- * API. This should be called after @ref wlmaker_workspace_add_view.
- *
- * TODO(kaeser@gubbe.ch): Layer views should be recognized and added in
- * @ref wlmaker_workspace_add_view, not needing an extra call.
- *
- * @param workspace_ptr
- * @param layer
- * @param layer_surface_ptr
- */
-void wlmaker_workspace_layer_surface_add(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_workspace_layer_t layer,
-    wlmaker_layer_surface_t *layer_surface_ptr);
-
-/**
- * Removes the layer surface from the specified layer.
- *
- * |layer_surface_ptr| must currently be a member of |layer_surfaces|.
- *
- * @param workspace_ptr
- * @param layer
- * @param layer_surface_ptr
- */
-void wlmaker_workspace_layer_surface_remove(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_workspace_layer_t layer,
-    wlmaker_layer_surface_t *layer_surface_ptr);
 
 /**
  * Retrieves the naming detalis of this workspace.

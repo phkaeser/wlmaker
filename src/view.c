@@ -20,7 +20,6 @@
 
 #include "view.h"
 
-#include "button.h"
 #include "config.h"
 #include "decorations.h"
 #include "menu.h"
