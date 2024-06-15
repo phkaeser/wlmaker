@@ -22,6 +22,10 @@
 
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_layer_shell_v1.h>
+#undef WLR_USE_UNSTABLE
+
 #include "xdg_popup.h"
 
 /* == Declarations ========================================================= */

@@ -21,7 +21,6 @@
 #include "layer_panel.h"
 #include "layer_shell.h"
 
-#include "layer_surface.h"
 #include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
@@ -129,17 +128,10 @@ void handle_new_surface(
             layer_shell_ptr->server_ptr);
     }
 
-    if (true) {
-        __UNUSED__ wlmaker_layer_panel_t *layer_panel_ptr =
-            wlmaker_layer_panel_create(
-                wlr_layer_surface_v1_ptr,
-                layer_shell_ptr->server_ptr);
-    } else {
-        __UNUSED__ wlmaker_layer_surface_t *layer_surface_ptr =
-            wlmaker_layer_surface_create(
-                wlr_layer_surface_v1_ptr,
-                layer_shell_ptr->server_ptr);
-    }
+    __UNUSED__ wlmaker_layer_panel_t *layer_panel_ptr =
+        wlmaker_layer_panel_create(
+            wlr_layer_surface_v1_ptr,
+            layer_shell_ptr->server_ptr);
 }
 
 /* == End of layer_shell.c ================================================= */

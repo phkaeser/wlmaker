@@ -40,13 +40,6 @@ typedef struct {
 
     /** Scene graph subtree holding all nodes of this layer. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
-
-    /**
-     * Holds all mapped `wlmaker_layer_surface_t` which are mapped on this
-     * layer and workspace. As it contains only the `wlmaker_layer_surface_t`
-     * elements, it is a subset of the mapped views.
-     */
-    bs_dllist_t               layer_surfaces;
 } wlmaker_workspace_layer_data_t;
 
 /** Workspace state. */
@@ -100,8 +93,6 @@ struct _wlmaker_workspace_t {
     /** Injeactable: replaces call to wlmaker_view_set_active. */
     void (*injectable_view_set_active)(wlmaker_view_t *view_ptr, bool active);
 };
-
-static void arrange_layers(wlmaker_workspace_t *workspace_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -452,8 +443,6 @@ void wlmaker_workspace_set_extents(
 /* ------------------------------------------------------------------------- */
 void wlmaker_workspace_arrange_views(wlmaker_workspace_t *workspace_ptr)
 {
-    arrange_layers(workspace_ptr);
-
     struct wlr_box extents;
     wlr_output_layout_get_box(
         workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
@@ -594,32 +583,6 @@ void wlmaker_workspace_iconified_set_as_view(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_workspace_layer_surface_add(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_workspace_layer_t layer,
-    wlmaker_layer_surface_t *layer_surface_ptr)
-{
-    BS_ASSERT(0 <= layer);
-    BS_ASSERT(layer < WLMAKER_WORKSPACE_LAYER_NUM);
-    bs_dllist_push_back(
-        &workspace_ptr->layers[layer].layer_surfaces,
-        wlmaker_dlnode_from_layer_surface(layer_surface_ptr));
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_workspace_layer_surface_remove(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_workspace_layer_t layer,
-    wlmaker_layer_surface_t *layer_surface_ptr)
-{
-    BS_ASSERT(0 <= layer);
-    BS_ASSERT(layer < WLMAKER_WORKSPACE_LAYER_NUM);
-    bs_dllist_remove(
-        &workspace_ptr->layers[layer].layer_surfaces,
-        wlmaker_dlnode_from_layer_surface(layer_surface_ptr));
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmaker_workspace_get_details(
     wlmaker_workspace_t *workspace_ptr,
     int *index_ptr,
@@ -686,51 +649,6 @@ wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr)
 }
 
 /* == Static (local) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Arranges the `wlmaker_layer_surface_t` layer elements.
- *
- * @param workspace_ptr
- */
-void arrange_layers(wlmaker_workspace_t *workspace_ptr)
-{
-    struct wlr_box extents;
-    wlr_output_layout_get_box(
-        workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
-    struct wlr_box usable_area = extents;
-
-    for (int idx = 0; idx < WLMAKER_WORKSPACE_LAYER_NUM; ++idx) {
-        wlmaker_workspace_layer_data_t *layer_data_ptr =
-            &workspace_ptr->layers[idx];
-        bs_dllist_node_t *dlnode_ptr;
-        for (dlnode_ptr = layer_data_ptr->layer_surfaces.head_ptr;
-             dlnode_ptr != NULL;
-             dlnode_ptr = dlnode_ptr->next_ptr) {
-            wlmaker_layer_surface_t *layer_surface_ptr =
-                wlmaker_layer_surface_from_dlnode(dlnode_ptr);
-            if (wlmaker_layer_surface_is_exclusive(layer_surface_ptr)) {
-                wlmaker_layer_surface_configure(
-                    layer_surface_ptr, &extents, &usable_area);
-            }
-        }
-
-        for (dlnode_ptr = layer_data_ptr->layer_surfaces.head_ptr;
-             dlnode_ptr != NULL;
-             dlnode_ptr = dlnode_ptr->next_ptr) {
-            wlmaker_layer_surface_t *layer_surface_ptr =
-                wlmaker_layer_surface_from_dlnode(dlnode_ptr);
-            if (!wlmaker_layer_surface_is_exclusive(layer_surface_ptr)) {
-                wlmaker_layer_surface_configure(
-                    layer_surface_ptr, &extents, &usable_area);
-            }
-        }
-
-        // TODO(kaeser@gubbe.ch): We may have to update the node positions in
-        // case the outputs are different. The layer nodes may not always be
-        // positioned at (0, 0).
-    }
-}
 
 /* == Unit tests =========================================================== */
 
