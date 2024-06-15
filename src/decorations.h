@@ -52,18 +52,6 @@ void wlmaker_decorations_draw_tile(
     bool pressed);
 
 /**
- * Loads an icon and draws it onto the pre-drawn tile at |cairo_ptr|.
- *
- * @param cairo_ptr
- * @param icon_path_ptr
- *
- * @return true if the icon was loaded (and then drawn) successfully.
- */
-bool wlmaker_decorations_draw_tile_icon(
-    cairo_t *cairo_ptr,
-    const char *icon_path_ptr);
-
-/**
  * Draws the title of an iconified on to `cairo_ptr`.
  *
  * @param cairo_ptr

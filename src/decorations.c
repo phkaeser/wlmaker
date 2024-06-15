@@ -39,19 +39,6 @@ static cairo_surface_t *create_background(
     unsigned height,
     const wlmtk_style_fill_t *fill_ptr);
 
-/** Lookup paths for icons. */
-static const char *lookup_paths[] = {
-    "/usr/share/icons/wlmaker",
-    "/usr/local/share/icons/wlmaker",
-#if defined(WLMAKER_SOURCE_DIR)
-    WLMAKER_SOURCE_DIR "/icons",
-#endif  // WLMAKER_SOURCE_DIR
-#if defined(WLMAKER_ICON_DATA_DIR)
-    WLMAKER_ICON_DATA_DIR,
-#endif  // WLMAKER_ICON_DATA_DIR
-    NULL
-};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -63,56 +50,6 @@ void wlmaker_decorations_draw_tile(
     wlmaker_primitives_cairo_fill(cairo_ptr, fill_ptr);
     wlmaker_primitives_draw_bezel(
         cairo_ptr, wlmaker_decorations_tile_margin, !pressed);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmaker_decorations_draw_tile_icon(
-    cairo_t *cairo_ptr,
-    const char *icon_path_ptr)
-{
-    // Just double-check that the cairo is of appropriate size...
-    BS_ASSERT((int)wlmaker_decorations_tile_size ==
-              cairo_image_surface_get_width(cairo_get_target(cairo_ptr)));
-    BS_ASSERT((int)wlmaker_decorations_tile_size ==
-              cairo_image_surface_get_height(cairo_get_target(cairo_ptr)));
-
-    char full_path[PATH_MAX];
-    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
-        icon_path_ptr, lookup_paths, 0, full_path);
-    if (NULL == path_ptr) {
-        bs_log(BS_ERROR | BS_ERRNO,
-               "Failed bs_file_resolve_and_lookup_from_paths(%s, ...).",
-               icon_path_ptr);
-        return false;
-    }
-
-    cairo_surface_t *icon_surface_ptr = cairo_image_surface_create_from_png(
-        path_ptr);
-    if (NULL == icon_surface_ptr) {
-        bs_log(BS_ERROR, "Failed cairo_image_surface_create_from_png(%s).",
-               path_ptr);
-        return false;
-    }
-
-    // Find top-left, and cap the icon to max the tile size.
-    int width = BS_MIN(
-        (int)wlmaker_decorations_tile_size,
-        cairo_image_surface_get_width(icon_surface_ptr));
-    int height = BS_MIN(
-        (int)wlmaker_decorations_tile_size,
-        cairo_image_surface_get_height(icon_surface_ptr));
-    int x = (wlmaker_decorations_tile_size - width) / 2;
-    int y = (wlmaker_decorations_tile_size - height) / 2;
-
-    cairo_save(cairo_ptr);
-    cairo_set_source_surface(cairo_ptr, icon_surface_ptr, x, y);
-    cairo_rectangle(cairo_ptr, x, y, width, height);
-    cairo_fill(cairo_ptr);
-    cairo_stroke(cairo_ptr);
-    cairo_restore(cairo_ptr);
-
-    cairo_surface_destroy(icon_surface_ptr);
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
