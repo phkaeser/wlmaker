@@ -87,6 +87,8 @@ void wlmtk_buffer_set(
     wlmtk_buffer_t *buffer_ptr,
     struct wlr_buffer *wlr_buffer_ptr)
 {
+    if (wlr_buffer_ptr == buffer_ptr->wlr_buffer_ptr) return;
+
     if (NULL != buffer_ptr->wlr_buffer_ptr) {
         wlr_buffer_unlock(buffer_ptr->wlr_buffer_ptr);
     }
