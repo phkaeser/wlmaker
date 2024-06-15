@@ -27,7 +27,6 @@
 #include <stdint.h>
 #include <libbase/libbase.h>
 
-#include "cairo_util.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus

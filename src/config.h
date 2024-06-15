@@ -20,8 +20,6 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include "cairo_util.h"
-
 #include <inttypes.h>
 #include <stdbool.h>
 #include <xkbcommon/xkbcommon.h>
