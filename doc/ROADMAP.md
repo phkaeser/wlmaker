@@ -142,6 +142,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Configure idle monitor and screensaver command via config file.
   * File to define workspaces and dock, falling back to default if not provided.
   * File for visual style (theme): decoration style, background.
+  * Include at least one additional theme.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
@@ -164,6 +165,33 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Configurable (in code).
 
 *  Task list (window-alt-esc), cycling through windows, based on toolkit.
+
+## Plan for 0.4
+
+**Focus**: Multi-output (mirrored), Menus: "Early-Access" ready.
+
+* Support for dynamic output configurations.
+  * Multiple monitors, with output mirrored across.
+  * Per-monitor fractional scale.
+
+* Menu, based on toolkit.
+  * Available as window menu in windows.
+  * Available as (hardcoded) application menu.
+  * Root menu.
+  * Menu with submenus.
+  * Window menu adapting to window state.
+    (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
+
+* Build & compile off dependency versions found in recent distros (libwlroot, ...).
+
+* Screensaver support.
+  * Magic corner to lock immediately.
+  * Magic corner to inhibit locking.
+  * Configurable corners, timeout and visualization.
+
+* Documentation updates
+  * Update README to reflect "early-access" vs. "early development".
+  * Screenshots included. (can we script these?)
 
 ## Pending
 
@@ -199,8 +227,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Consider running this as task selector, as separate binary.
 
 * Support for dynamic output configurations.
-  * Multiple monitors.
-  * Per-monitor fractional scale.
+  * Multiple monitors, in configurations other than mirrored.
   * Work with hot-plugged monitor, remember configurations.
 
 * Window attributes
@@ -246,14 +273,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Auto-started applications.
 
 * Configurable keyboard map.
-
-* Menu, based on toolkit
-  * Available as window menu in windows.
-  * Available as (hardcoded) application menu.
-  * Root menu.
-  * Menu with submenus.
-  * Window menu adapting to window state.
-    (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
+  * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)
 
 * Window placement
   * Automatic placement on a free spot.
@@ -261,12 +281,6 @@ Features for further versions, not ordered by priority nor timeline.
   * Mouse pull to sides or corners will set window to half or quarter screen.
 
 * Configuration tool, similar to WPrefs.
-
-* Screensaver support.
-  * Magic corner to lock immediately.
-  * Magic corner to inhibit locking.
-  * Configurable corners, timeout and visualization.
-  * Stretch: Consider supporting XScreenSaver (or visualization modules).
 
 * Compositor features
   * Bindable hotkeys.
@@ -282,6 +296,9 @@ Features for further versions, not ordered by priority nor timeline.
 * Reduce Technical Debt
   * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
     creation, just after fork. These should not impact the parent process.
+
+* Exploratory ideas
+  * Stretch: Consider supporting XScreenSaver (or visualization modules).
 
 ## Visualization and effects
 
@@ -308,7 +325,6 @@ Features for further versions, not ordered by priority nor timeline.
 
 ## Build, compile, deployment
 
-* Build & compile off dependency versions found in recent distros (libwlroot, ...).
 * Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
 * Provide binary package of wlmaker.
 * Run github workflows to build with GCC and Clang, x86_64 and arm64, and Linux + *BSD.
