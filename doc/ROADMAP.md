@@ -154,8 +154,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] With application launchers (configurable in file).
 
 * Clip, based on toolkit.
-  * Display the current workspace.
-  * Buttons to switch between workspaces.
+  * [done] Display the current workspace.
+  * [done] Buttons to switch between workspaces.
   * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * [done] Application launchers, based on toolkit.
