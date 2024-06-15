@@ -61,6 +61,8 @@ struct _wlmaker_clip_t {
     /** Whether the 'next' button had been pressed. */
     bool                      next_button_pressed;
 
+    /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
+    struct wl_listener        workspace_changed_listener;
 
 
     /** Corresponding view. */
@@ -94,8 +96,6 @@ struct _wlmaker_clip_t {
     /** Interactive holding the "next workspace" button. */
     wlmaker_interactive_t     *next_interactive_ptr;
 
-    /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
-    struct wl_listener        workspace_changed_listener;
 };
 
 static wlmaker_clip_t *clip_from_view(wlmaker_view_t *view_ptr);
@@ -110,12 +110,16 @@ static void callback_prev(wlmaker_interactive_t *interactive_ptr,
 static void callback_next(wlmaker_interactive_t *interactive_ptr,
                           void *data_ptr);
 
-static void handle_workspace_changed(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void handle_axis(
     wlmaker_view_t *view_ptr,
     struct wlr_pointer_axis_event *event_ptr);
+
+
+
+static void _wlmaker_clip_handle_workspace_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 
 static bool _wlmaker_clip_pointer_axis(
     wlmtk_element_t *element_ptr,
@@ -295,6 +299,11 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_tile_set_overlay(
             &clip_ptr->super_tile,
             wlmtk_buffer_element(&clip_ptr->overlay_buffer));
+
+        wlmtk_util_connect_listener_signal(
+            &server_ptr->workspace_changed,
+            &clip_ptr->workspace_changed_listener,
+            _wlmaker_clip_handle_workspace_changed);
     }
 
     clip_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
@@ -445,11 +454,6 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->view.anchor =
         WLMAKER_VIEW_ANCHOR_BOTTOM | WLMAKER_VIEW_ANCHOR_RIGHT;
 
-    wlmtk_util_connect_listener_signal(
-        &server_ptr->workspace_changed,
-        &clip_ptr->workspace_changed_listener,
-        handle_workspace_changed);
-
     wlmaker_view_map(
         &clip_ptr->view,
         wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
@@ -461,7 +465,7 @@ wlmaker_clip_t *wlmaker_clip_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 {
-    wl_list_remove(&clip_ptr->workspace_changed_listener.link);
+    wlmtk_util_disconnect_listener(&clip_ptr->workspace_changed_listener);
 
     wlmaker_view_unmap(&clip_ptr->view);
     wlmaker_view_fini(&clip_ptr->view);
@@ -627,8 +631,8 @@ void callback_next(__UNUSED__ wlmaker_interactive_t *interactive_ptr,
     wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
 }
 
-/* ------------------------------------------------------------------------- */
-/**
+/* -------------------------------------------------------------------------- */
+ /**
  * Handler for the `workspace_changed` signal of `wlmaker_server_t`.
  *
  * Will redraw the clip contents with the current workspace, and re-map the
@@ -637,43 +641,28 @@ void callback_next(__UNUSED__ wlmaker_interactive_t *interactive_ptr,
  * @param listener_ptr
  * @param data_ptr            Points to the new `wlmaker_workspace_t`.
  */
-void handle_workspace_changed(
+void _wlmaker_clip_handle_workspace_changed(
     struct wl_listener *listener_ptr,
-    void *data_ptr)
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_clip_t, workspace_changed_listener);
-    wlmaker_workspace_t *workspace_ptr = data_ptr;
+    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr);
 
-    // TODO(kaeser@gubbe.ch): Should be part of that code cleanup...
-    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(64, 64);
-    BS_ASSERT(NULL != wlr_buffer_ptr);
+    wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
+    wlmtk_workspace_t *wlmtk_workspace_ptr =
+        wlmaker_server_get_current_wlmtk_workspace(clip_ptr->server_ptr);
+    wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
+        wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 
-    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
-    BS_ASSERT(NULL != cairo_ptr);
-    wlmaker_decorations_draw_clip(
-        cairo_ptr, &wlmaker_config_theme.tile_fill, false);
-    int index = 0;
-    const char *name_ptr = NULL;
-    wlmaker_workspace_get_details(workspace_ptr, &index, &name_ptr);
-    draw_workspace(cairo_ptr, index, name_ptr);
-    cairo_destroy(cairo_ptr);
+    if (current_layer_ptr == new_layer_ptr) return;
 
-    if (NULL != clip_ptr->tile_wlr_buffer_ptr) {
-        wlr_buffer_drop(clip_ptr->tile_wlr_buffer_ptr);
+    if (NULL != current_layer_ptr) {
+        wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
     }
-    clip_ptr->tile_wlr_buffer_ptr = wlr_buffer_ptr;
+    wlmtk_layer_add_panel(new_layer_ptr, panel_ptr);
 
-    wlr_scene_buffer_set_buffer(
-        clip_ptr->tile_scene_buffer_ptr,
-        clip_ptr->tile_wlr_buffer_ptr);
-
-    // TODO(kaeser@gubbe.ch): Should add a "remap" command.
-    wlmaker_view_unmap(&clip_ptr->view);
-    wlmaker_view_map(
-        &clip_ptr->view,
-        wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
-        WLMAKER_WORKSPACE_LAYER_TOP);
+    _wlmaker_clip_update_overlay(clip_ptr);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -767,10 +756,10 @@ bool _wlmaker_clip_pointer_button(
         // the pressed button: Trigger the action.
         if (clip_ptr->pointer_inside_next_button &&
             clip_ptr->next_button_pressed) {
-            bs_log(BS_ERROR, "FIXME: Next");
+            wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
         } else if (clip_ptr->pointer_inside_prev_button &&
                    clip_ptr->prev_button_pressed) {
-            bs_log(BS_ERROR, "FIXME: Previous");
+            wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
         }
 
         clip_ptr->next_button_pressed = false;
