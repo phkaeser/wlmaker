@@ -34,8 +34,8 @@
 struct _wlmaker_clip_t {
     /** The clip happens to be derived from a tile. */
     wlmtk_tile_t              super_tile;
-    /** Original virtual method table fo the element. */
-    wlmtk_element_vmt_t       orig_element_vmt;
+    /** Original virtual method table fo the superclass' element. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** The toolkit dock, holding the clip tile. */
     wlmtk_dock_t              *wlmtk_dock_ptr;
@@ -52,6 +52,14 @@ struct _wlmaker_clip_t {
     /** Clip image. */
     wlmtk_image_t             *image_ptr;
 
+    /** Whether the pointer is currently inside the 'prev' button. */
+    bool                      pointer_inside_prev_button;
+    /** Whether the pointer is currently inside the 'next' button. */
+    bool                      pointer_inside_next_button;
+    /** Whether the 'prev' button had been pressed. */
+    bool                      prev_button_pressed;
+    /** Whether the 'next' button had been pressed. */
+    bool                      next_button_pressed;
 
 
 
@@ -115,7 +123,14 @@ static bool _wlmaker_clip_pointer_axis(
 static bool _wlmaker_clip_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmaker_clip_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec);
+static void _wlmaker_clip_pointer_leave(
+    wlmtk_element_t *element_ptr);
 
+static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr);
 static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
 static struct wlr_buffer *_wlmaker_clip_create_tile(
     const wlmtk_tile_style_t *style_ptr,
@@ -128,6 +143,8 @@ static struct wlr_buffer *_wlmaker_clip_create_tile(
 static const wlmtk_element_vmt_t _wlmaker_clip_element_vmt = {
     .pointer_axis = _wlmaker_clip_pointer_axis,
     .pointer_button = _wlmaker_clip_pointer_button,
+    .pointer_motion = _wlmaker_clip_pointer_motion,
+    .pointer_leave = _wlmaker_clip_pointer_leave,
 };
 
 /** TODO: Replace this. */
@@ -229,7 +246,7 @@ wlmaker_clip_t *wlmaker_clip_create(
             wlmaker_clip_destroy(clip_ptr);
             return NULL;
         }
-        clip_ptr->orig_element_vmt = wlmtk_element_extend(
+        clip_ptr->orig_super_element_vmt = wlmtk_element_extend(
             wlmtk_tile_element(&clip_ptr->super_tile),
             &_wlmaker_clip_element_vmt);
         wlmtk_element_set_visible(
@@ -733,8 +750,114 @@ bool _wlmaker_clip_pointer_button(
 
     if (BTN_LEFT != button_event_ptr->button) return true;
 
-    bs_log(BS_ERROR, "FIXME: Button pressed for clip %p!", clip_ptr);
+    switch (button_event_ptr->type) {
+    case WLMTK_BUTTON_DOWN:
+        // Pointer button tressed. Translate to button press if in area.
+        if (clip_ptr->pointer_inside_next_button) {
+            clip_ptr->next_button_pressed = true;
+            clip_ptr->prev_button_pressed = false;
+        } else if (clip_ptr->pointer_inside_prev_button) {
+            clip_ptr->next_button_pressed = false;
+            clip_ptr->prev_button_pressed = true;
+        }
+        break;
+
+    case WLMTK_BUTTON_UP:
+        // Button is released (closed the click). If we're within the area of
+        // the pressed button: Trigger the action.
+        if (clip_ptr->pointer_inside_next_button &&
+            clip_ptr->next_button_pressed) {
+            bs_log(BS_ERROR, "FIXME: Next");
+        } else if (clip_ptr->pointer_inside_prev_button &&
+                   clip_ptr->prev_button_pressed) {
+            bs_log(BS_ERROR, "FIXME: Previous");
+        }
+
+        clip_ptr->next_button_pressed = false;
+        clip_ptr->prev_button_pressed = false;
+        break;
+
+    case WLMTK_BUTTON_CLICK:
+    default:
+        break;
+    }
+
+    _wlmaker_clip_update_buttons(clip_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_motion.
+ *
+ * Tracks whether the pointer is within any of the 'Next' or 'Previous' button
+ * areas, and triggers an update to the tile's texture.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return See @ref wlmtk_element_vmt_t::pointer_motion.
+ */
+bool _wlmaker_clip_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_clip_t,
+        super_tile.super_container.super_element);
+
+    clip_ptr->pointer_inside_prev_button = false;
+    clip_ptr->pointer_inside_next_button = false;
+
+    double tile_size = clip_ptr->super_tile.style.size;
+    double button_size = (22.0 / 64.0) * tile_size;
+    if (x >= tile_size - button_size && x < tile_size &&
+        y >= 0 && y < button_size) {
+        // Next button.
+        clip_ptr->pointer_inside_next_button = true;
+    } else if (x >= 0 && x < button_size &&
+               y >= tile_size - button_size && y < tile_size) {
+        // Prev button.
+        clip_ptr->pointer_inside_prev_button = true;
+    }
+
+    _wlmaker_clip_update_buttons(clip_ptr);
+    return clip_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::pointer_leave. Updates texture. */
+void _wlmaker_clip_pointer_leave(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_clip_t,
+        super_tile.super_container.super_element);
+
+    clip_ptr->pointer_inside_prev_button = false;
+    clip_ptr->pointer_inside_next_button = false;
+    _wlmaker_clip_update_buttons(clip_ptr);
+    clip_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
+}
+
+
+/* ------------------------------------------------------------------------- */
+/** Updates the button textures, based on current state what's pressed. */
+static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr)
+{
+    struct wlr_buffer *wlr_buffer_ptr = clip_ptr->tile_buffer_ptr;
+    if (clip_ptr->pointer_inside_next_button &&
+        clip_ptr->next_button_pressed) {
+        wlr_buffer_ptr = clip_ptr->next_pressed_tile_buffer_ptr;
+    } else if (clip_ptr->pointer_inside_prev_button &&
+               clip_ptr->prev_button_pressed) {
+        wlr_buffer_ptr = clip_ptr->prev_pressed_tile_buffer_ptr;
+    }
+    wlmtk_tile_set_background_buffer(&clip_ptr->super_tile, wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
