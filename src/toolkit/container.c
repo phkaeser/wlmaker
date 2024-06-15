@@ -241,6 +241,7 @@ void wlmtk_container_remove_element(
     }
 
     wlmtk_container_update_layout(container_ptr);
+    wlmtk_container_update_pointer_focus(container_ptr);
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
     BS_ASSERT(element_ptr != container_ptr->keyboard_focus_element_ptr);
 }
