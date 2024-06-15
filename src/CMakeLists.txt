@@ -16,7 +16,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 INCLUDE(EmbedBinary)
 
 SET(PUBLIC_HEADER_FILES
-  button.h
   cairo_util.h
   clip.h
   config.h
@@ -54,7 +53,6 @@ SET(PUBLIC_HEADER_FILES
 
 ADD_LIBRARY(wlmaker_lib STATIC)
 TARGET_SOURCES(wlmaker_lib PRIVATE
-  button.c
   cairo_util.c
   clip.c
   config.c
