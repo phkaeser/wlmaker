@@ -18,7 +18,7 @@
     )
   };
   Clip = {
-    Edge = LEFT;
-    Anchor = BOTTOM;
+    Edge = BOTTOM;
+    Anchor = RIGHT;
   }
 }
