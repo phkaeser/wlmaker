@@ -129,6 +129,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Bugfixes
   * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
+  * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
@@ -139,8 +140,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Pick or implement parser for configuration file.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
+  * File to define workspaces and dock, falling back to default if not provided.
   * File for visual style (theme): decoration style, background.
-  * File to define workspaces and dock.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
@@ -153,9 +154,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Style similar to Window Maker.
   * [done] With application launchers (configurable in file).
 
-* Clip, based on toolkit.
-  * Display the current workspace.
-  * Buttons to switch between workspaces.
+* [done] Clip, based on toolkit.
+  * [done] Display the current workspace.
+  * [done] Buttons to switch between workspaces.
 
 * [done] Application launchers, based on toolkit.
   * [done] Display an icon.

@@ -29,6 +29,7 @@
 /** Forward definition: Clip handle. */
 typedef struct _wlmaker_clip_t wlmaker_clip_t;
 
+#include "config.h"
 #include "server.h"
 
 #ifdef __cplusplus
@@ -36,21 +37,26 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates the Clip handle. Needs the server to be up with workspaces running.
+ * Creates the Clip. Needs the server to be up with workspaces running.
  *
  * @param server_ptr
+ * @param style_ptr
  *
  * @return Pointer to the Clip handle, or NULL on error.
  */
 wlmaker_clip_t *wlmaker_clip_create(
-    wlmaker_server_t *server_ptr);
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr);
 
 /**
- * Destroys the Clip handle.
+ * Destroys the Clip.
  *
  * @param clip_ptr
  */
 void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_clip_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

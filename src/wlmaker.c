@@ -368,7 +368,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         }
 
         dock_ptr = wlmaker_dock_create(server_ptr, &style);
-        clip_ptr = wlmaker_clip_create(server_ptr);
+        clip_ptr = wlmaker_clip_create(server_ptr, &style);
         task_list_ptr = wlmaker_task_list_create(server_ptr);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");

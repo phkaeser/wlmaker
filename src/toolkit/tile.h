@@ -85,6 +85,24 @@ bool wlmtk_tile_init(
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr);
 
 /**
+ * Sets (overwrites) the default tile's background buffer.
+ *
+ * This permits specific tiles, eg. a Dock Clip to include active elements in
+ * the background, or change the bezel or texture.
+ *
+ * @param tile_ptr
+ * @param wlr_buffer_ptr      Points to a `struct wlr_buffer`. The tile will
+ *                            add a buffer lock, so the caller may safely
+ *                            drop or unlock the buffer.
+ *                            The buffer must match the tile's size.
+ *
+ * @return false if the buffer did not match the tile size.
+ */
+bool wlmtk_tile_set_background_buffer(
+    wlmtk_tile_t *tile_ptr,
+    struct wlr_buffer *wlr_buffer_ptr);
+
+/**
  * Sets `element_ptr` as the content of `tile_ptr`.
  *
  * TODO(kaeser@gubbe.ch): Flesh out the behaviour -- permit only 1 content?

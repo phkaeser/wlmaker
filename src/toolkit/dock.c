@@ -141,7 +141,7 @@ void wlmtk_dock_remove_tile(
     wlmtk_tile_t *tile_ptr)
 {
     BS_ASSERT(
-        &dock_ptr->tile_box.super_container ==
+        &dock_ptr->tile_box.element_container ==
         wlmtk_tile_element(tile_ptr)->parent_container_ptr);
     wlmtk_box_remove_element(
         &dock_ptr->tile_box,

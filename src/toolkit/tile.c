@@ -64,13 +64,14 @@ bool wlmtk_tile_init(
         &tile_ptr->super_container,
         wlmtk_buffer_element(&tile_ptr->buffer));
 
-    tile_ptr->background_wlr_buffer_ptr = _wlmtk_tile_create_buffer(
+    struct wlr_buffer *wlr_buffer_ptr = _wlmtk_tile_create_buffer(
         &tile_ptr->style);
-    if (NULL == tile_ptr->background_wlr_buffer_ptr) {
+    if (NULL == wlr_buffer_ptr) {
         wlmtk_tile_fini(tile_ptr);
         return false;
     }
-    wlmtk_buffer_set(&tile_ptr->buffer, tile_ptr->background_wlr_buffer_ptr);
+    wlmtk_tile_set_background_buffer(tile_ptr, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
 
     return true;
 }
@@ -79,7 +80,7 @@ bool wlmtk_tile_init(
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
 {
     if (NULL != tile_ptr->background_wlr_buffer_ptr) {
-        wlr_buffer_drop(tile_ptr->background_wlr_buffer_ptr);
+        wlr_buffer_unlock(tile_ptr->background_wlr_buffer_ptr);
         tile_ptr->background_wlr_buffer_ptr = NULL;
     }
 
@@ -91,6 +92,22 @@ void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
     }
 
     wlmtk_container_fini(&tile_ptr->super_container);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_tile_set_background_buffer(
+    wlmtk_tile_t *tile_ptr,
+    struct wlr_buffer *wlr_buffer_ptr)
+{
+    if (tile_ptr->style.size != (uint64_t)wlr_buffer_ptr->width ||
+        tile_ptr->style.size != (uint64_t)wlr_buffer_ptr->height) return false;
+
+    if (NULL != tile_ptr->background_wlr_buffer_ptr) {
+        wlr_buffer_unlock(tile_ptr->background_wlr_buffer_ptr);
+    }
+    tile_ptr->background_wlr_buffer_ptr = wlr_buffer_lock(wlr_buffer_ptr);
+    wlmtk_buffer_set(&tile_ptr->buffer, tile_ptr->background_wlr_buffer_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
