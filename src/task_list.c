@@ -155,6 +155,8 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         }
         wlmtk_panel_extend(&task_list_ptr->super_panel,
                            &_wlmaker_task_list_vmt);
+        wlmtk_element_set_visible(
+            wlmtk_panel_element(&task_list_ptr->super_panel), true);
 
         if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
             wlmaker_task_list_destroy(task_list_ptr);
@@ -274,6 +276,9 @@ void task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
         workspace_ptr);
+
+    wlmtk_buffer_set(&task_list_ptr->buffer, wlr_buffer_ptr);
+
     wlr_scene_buffer_set_buffer(
         task_list_ptr->wlr_scene_buffer_ptr,
         wlr_buffer_ptr);
