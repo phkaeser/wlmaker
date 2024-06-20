@@ -38,6 +38,15 @@
 
 /** State of the task list. */
 struct _wlmaker_task_list_t {
+    /** Derived from a toolkit panel. */
+    wlmtk_panel_t             super_panel;
+
+    /** Buffer that shows the tasklist's content. */
+    wlmtk_buffer_t            buffer;
+
+
+
+
     /** Corresponding view. */
     wlmaker_view_t            view;
     /** Backlink to the server. */
@@ -93,6 +102,11 @@ static void draw_window_into_cairo(
     int pos_y);
 static const char *window_name(wlmtk_window_t *window_ptr);
 
+static uint32_t _wlmaker_task_list_request_size(
+    wlmtk_panel_t *panel_ptr,
+    int width,
+    int height);
+
 static void handle_task_list_enabled(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -106,6 +120,21 @@ static void handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+/* == Data ================================================================= */
+
+/** Task list positioning: Fixed dimensions, at center of layer. */
+static const wlmtk_panel_positioning_t _wlmaker_task_list_positioning = {
+    .desired_width = 400,
+    .desired_height = 200,
+    .anchor = WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT
+    // FIXME: WLR_EDGE_BOTTOM | WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT
+};
+
+/** Virtual method table for the task list. */
+static const wlmtk_panel_vmt_t _wlmaker_task_list_vmt = {
+    .request_size = _wlmaker_task_list_request_size
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -115,6 +144,31 @@ wlmaker_task_list_t *wlmaker_task_list_create(
     wlmaker_task_list_t *task_list_ptr = logged_calloc(
         1, sizeof(wlmaker_task_list_t));
     task_list_ptr->server_ptr = server_ptr;
+
+    if (true) {
+
+        if (!wlmtk_panel_init(&task_list_ptr->super_panel,
+                              &_wlmaker_task_list_positioning,
+                              server_ptr->env_ptr)) {
+            wlmaker_task_list_destroy(task_list_ptr);
+            return NULL;
+        }
+        wlmtk_panel_extend(&task_list_ptr->super_panel,
+                           &_wlmaker_task_list_vmt);
+
+        if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
+            wlmaker_task_list_destroy(task_list_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(
+            wlmtk_buffer_element(&task_list_ptr->buffer), true);
+        wlmtk_container_add_element(
+            &task_list_ptr->super_panel.super_container,
+            wlmtk_buffer_element(&task_list_ptr->buffer));
+
+    }
+
+
 
     task_list_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
         &server_ptr->void_wlr_scene_ptr->tree);
@@ -174,6 +228,14 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
     wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
 
     wlmaker_view_fini(&task_list_ptr->view);
+
+    if (wlmtk_buffer_element(&task_list_ptr->buffer)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &task_list_ptr->super_panel.super_container,
+            wlmtk_buffer_element(&task_list_ptr->buffer));
+    }
+    wlmtk_buffer_fini(&task_list_ptr->buffer);
+    wlmtk_panel_fini(&task_list_ptr->super_panel);
 
     free(task_list_ptr);
 }
@@ -379,6 +441,26 @@ const char *window_name(wlmtk_window_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Implements @ref wlmtk_panel_vmt_t::request_size.
+ *
+ * @param panel_ptr
+ * @param width
+ * @param height
+ *
+ * @return 0 always.
+ */
+uint32_t _wlmaker_task_list_request_size(
+    wlmtk_panel_t *panel_ptr,
+    int width,
+    int height)
+{
+    bs_log(BS_ERROR, "FIXME: Request size %p - %d, %d",
+           panel_ptr, width, height);
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Handler for the `task_list_enabled_listener`.
  *
  * Enables the task listener: Creates the task list for the currently-active
@@ -411,6 +493,12 @@ void handle_task_list_enabled(
     wlr_output_layout_get_box(
         task_list_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
 
+    wlmtk_workspace_t *workspace_ptr = wlmaker_workspace_wlmtk(
+        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr));
+    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+        workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
+    wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);
+
     wlmaker_view_set_position(
         &task_list_ptr->view,
         (extents.width - task_list_width) / 2,
@@ -430,6 +518,10 @@ void handle_task_list_disabled(
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, task_list_disabled_listener);
+
+    wlmtk_layer_remove_panel(
+        wlmtk_panel_get_layer(&task_list_ptr->super_panel),
+        &task_list_ptr->super_panel);
 
     BS_ASSERT(NULL != task_list_ptr->view.workspace_ptr);
     wlmaker_view_unmap(&task_list_ptr->view);
