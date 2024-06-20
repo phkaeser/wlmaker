@@ -164,7 +164,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Display application status (*starting*, *running*).
   * [done] Configurable (in code).
 
-*  Task list (window-alt-esc), cycling through windows, based on toolkit.
+* Task list (window-alt-esc), cycling through windows, based on toolkit.
+  * Key combination configurable in the config file.
 
 ## Plan for 0.4
 
