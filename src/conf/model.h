@@ -120,6 +120,20 @@ wlmcfg_object_t *wlmcfg_dict_get(
     const char *key_ptr);
 
 /**
+ * Executes `fn` for each key and object of the dict.
+ *
+ * @param dict_ptr
+ * @param fn
+ * @param userdata_ptr
+ */
+void wlmcfg_dict_foreach(
+    wlmcfg_dict_t *dict_ptr,
+    void (*fn)(const char *key_ptr,
+               wlmcfg_object_t *object_ptr,
+               void *userdata_ptr),
+    void *userdata_ptr);
+
+/**
  * Creates an array object.
  *
  * @return The array object, or NULL on error.
