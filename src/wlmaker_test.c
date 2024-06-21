@@ -22,6 +22,7 @@
 #include "config.h"
 #include "decorations.h"
 #include "dock.h"
+#include "keybindings.h"
 #include "launcher.h"
 #include "layer_panel.h"
 #include "menu.h"
@@ -35,6 +36,7 @@ const bs_test_set_t wlmaker_tests[] = {
     { 1, "clip", wlmaker_clip_test_cases },
     { 1, "decorations", wlmaker_decorations_test_cases },
     { 1, "dock", wlmaker_dock_test_cases },
+    { 1, "keybindings", wlmaker_keybindings_test_cases },
     { 1, "launcher", wlmaker_launcher_test_cases},
     { 1, "layer_panel", wlmaker_layer_panel_test_cases },
     { 1, "menu", wlmaker_menu_test_cases },

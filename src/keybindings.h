@@ -20,12 +20,13 @@
 #ifndef __WLMAKER_KEYBINDINGS_H__
 #define __WLMAKER_KEYBINDINGS_H__
 
+#include <libbase/libbase.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-
-
+extern const bs_test_case_t   wlmaker_keybindings_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
