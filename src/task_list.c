@@ -44,43 +44,21 @@ struct _wlmaker_task_list_t {
     /** Buffer that shows the tasklist's content. */
     wlmtk_buffer_t            buffer;
 
-
-
-
-    /** Corresponding view. */
-    wlmaker_view_t            view;
     /** Backlink to the server. */
     wlmaker_server_t          *server_ptr;
-
-    /** Scene graph subtree holding all layers of the task list. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-
-    /** Scnee buffer: Wraps task list (WLR buffer) into scene graph. */
-    struct wlr_scene_buffer   *wlr_scene_buffer_ptr;
 
     /** Listener for the `task_list_enabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_enabled_listener;
     /** Listener for the `task_list_disabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_disabled_listener;
 
-    /** Listener for the `window_mapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for `window_mapped_event` signal by `wlmaker_server_t`. */
     struct wl_listener        window_mapped_listener;
-    /** Listener for the `window_unmapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for `window_unmapped_event` signal by `wlmaker_server_t`. */
     struct wl_listener        window_unmapped_listener;
 
     /** Whether the task list is currently enabled (mapped). */
     bool                      enabled;
-};
-
-static void get_size(wlmaker_view_t *view_ptr,
-                     uint32_t *width_ptr,
-                     uint32_t *height_ptr);
-
-/** View implementor methods. */
-const wlmaker_view_impl_t     task_list_view_impl = {
-    .set_activated = NULL,
-    .get_size = get_size,
-    .handle_axis = NULL
 };
 
 /** Width of the task list overlay. */
@@ -126,8 +104,7 @@ static void handle_window_unmapped(
 static const wlmtk_panel_positioning_t _wlmaker_task_list_positioning = {
     .desired_width = 400,
     .desired_height = 200,
-    .anchor = WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT
-    // FIXME: WLR_EDGE_BOTTOM | WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT
+    .anchor = WLR_EDGE_BOTTOM | WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT
 };
 
 /** Virtual method table for the task list. */
@@ -145,60 +122,26 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         1, sizeof(wlmaker_task_list_t));
     task_list_ptr->server_ptr = server_ptr;
 
-    if (true) {
-
-        if (!wlmtk_panel_init(&task_list_ptr->super_panel,
-                              &_wlmaker_task_list_positioning,
-                              server_ptr->env_ptr)) {
-            wlmaker_task_list_destroy(task_list_ptr);
-            return NULL;
-        }
-        wlmtk_panel_extend(&task_list_ptr->super_panel,
-                           &_wlmaker_task_list_vmt);
-        wlmtk_element_set_visible(
-            wlmtk_panel_element(&task_list_ptr->super_panel), true);
-
-        if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
-            wlmaker_task_list_destroy(task_list_ptr);
-            return NULL;
-        }
-        wlmtk_element_set_visible(
-            wlmtk_buffer_element(&task_list_ptr->buffer), true);
-        wlmtk_container_add_element(
-            &task_list_ptr->super_panel.super_container,
-            wlmtk_buffer_element(&task_list_ptr->buffer));
-
-    }
-
-
-
-    task_list_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
-        &server_ptr->void_wlr_scene_ptr->tree);
-    if (NULL == task_list_ptr->wlr_scene_tree_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_tree_create()");
+    if (!wlmtk_panel_init(&task_list_ptr->super_panel,
+                          &_wlmaker_task_list_positioning,
+                          server_ptr->env_ptr)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }
+    wlmtk_panel_extend(&task_list_ptr->super_panel,
+                       &_wlmaker_task_list_vmt);
+    wlmtk_element_set_visible(
+        wlmtk_panel_element(&task_list_ptr->super_panel), true);
 
-    task_list_ptr->wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        task_list_ptr->wlr_scene_tree_ptr, NULL);
-    if (NULL == task_list_ptr->wlr_scene_buffer_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_buffer_create()");
+    if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }
-    wlr_scene_node_set_enabled(
-        &task_list_ptr->wlr_scene_buffer_ptr->node, true);
-    wlr_scene_node_raise_to_top(
-        &task_list_ptr->wlr_scene_buffer_ptr->node);
-
-    wlmaker_view_init(
-        &task_list_ptr->view,
-        &task_list_view_impl,
-        server_ptr,
-        NULL,  // wlr_surface_ptr.
-        task_list_ptr->wlr_scene_tree_ptr,
-        NULL);  // send_close_callback.
+    wlmtk_element_set_visible(
+        wlmtk_buffer_element(&task_list_ptr->buffer), true);
+    wlmtk_container_add_element(
+        &task_list_ptr->super_panel.super_container,
+        wlmtk_buffer_element(&task_list_ptr->buffer));
 
     wlmtk_util_connect_listener_signal(
         &server_ptr->task_list_enabled_event,
@@ -229,8 +172,6 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
     wl_list_remove(&task_list_ptr->task_list_disabled_listener.link);
     wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
 
-    wlmaker_view_fini(&task_list_ptr->view);
-
     if (wlmtk_buffer_element(&task_list_ptr->buffer)->parent_container_ptr) {
         wlmtk_container_remove_element(
             &task_list_ptr->super_panel.super_container,
@@ -246,25 +187,6 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Provides the size of the view into `*width_ptr`, `*height_ptr`.
- *
- * @param view_ptr
- * @param width_ptr           If not NULL: This view's width in pixels will
- *                            get stored at `*width_ptr`..
- * @param height_ptr          If not NULL: This view's height in pixels will
- *                            get stored at `*height_ptr`..
- */
-void get_size(
-    __UNUSED__ wlmaker_view_t *view_ptr,
-    uint32_t *width_ptr,
-    uint32_t *height_ptr)
-{
-    if (NULL != width_ptr) *width_ptr = task_list_width;
-    if (NULL != height_ptr) *height_ptr = task_list_height;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
  * Refreshes the task list. Should be done whenever a list is mapped/unmapped.
  *
  * @param task_list_ptr
@@ -276,12 +198,8 @@ void task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
         workspace_ptr);
-
     wlmtk_buffer_set(&task_list_ptr->buffer, wlr_buffer_ptr);
-
-    wlr_scene_buffer_set_buffer(
-        task_list_ptr->wlr_scene_buffer_ptr,
-        wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -456,11 +374,10 @@ const char *window_name(wlmtk_window_t *window_ptr)
  */
 uint32_t _wlmaker_task_list_request_size(
     wlmtk_panel_t *panel_ptr,
-    int width,
-    int height)
+    __UNUSED__ int width,
+    __UNUSED__ int height)
 {
-    bs_log(BS_ERROR, "FIXME: Request size %p - %d, %d",
-           panel_ptr, width, height);
+    wlmtk_panel_commit(panel_ptr, 0, &_wlmaker_task_list_positioning);
     return 0;
 }
 
@@ -484,30 +401,16 @@ void handle_task_list_enabled(
     task_list_refresh(task_list_ptr);
 
     if (task_list_ptr->enabled) {
-        BS_ASSERT(NULL != task_list_ptr->view.workspace_ptr);
+        BS_ASSERT(NULL != wlmtk_panel_get_layer(&task_list_ptr->super_panel));
         return;
     }
-
-    BS_ASSERT(NULL == task_list_ptr->view.workspace_ptr);
-    wlmaker_view_map(
-        &task_list_ptr->view,
-        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr),
-        WLMAKER_WORKSPACE_LAYER_OVERLAY);
-    task_list_ptr->enabled = true;
-    struct wlr_box extents;
-    wlr_output_layout_get_box(
-        task_list_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
 
     wlmtk_workspace_t *workspace_ptr = wlmaker_workspace_wlmtk(
         wlmaker_server_get_current_workspace(task_list_ptr->server_ptr));
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
     wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);
-
-    wlmaker_view_set_position(
-        &task_list_ptr->view,
-        (extents.width - task_list_width) / 2,
-        (extents.height - task_list_height) / 2);
+    task_list_ptr->enabled = true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -524,12 +427,10 @@ void handle_task_list_disabled(
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, task_list_disabled_listener);
 
+    BS_ASSERT(NULL != wlmtk_panel_get_layer(&task_list_ptr->super_panel));
     wlmtk_layer_remove_panel(
         wlmtk_panel_get_layer(&task_list_ptr->super_panel),
         &task_list_ptr->super_panel);
-
-    BS_ASSERT(NULL != task_list_ptr->view.workspace_ptr);
-    wlmaker_view_unmap(&task_list_ptr->view);
     task_list_ptr->enabled = false;
 }
 
