@@ -125,10 +125,13 @@ wlmcfg_object_t *wlmcfg_dict_get(
  * @param dict_ptr
  * @param fn
  * @param userdata_ptr
+ *
+ * @return true if all calls to `fn` returned true. The iteration will be
+ *     aborted on the first failed call to `fn`.
  */
-void wlmcfg_dict_foreach(
+bool wlmcfg_dict_foreach(
     wlmcfg_dict_t *dict_ptr,
-    void (*fn)(const char *key_ptr,
+    bool (*fn)(const char *key_ptr,
                wlmcfg_object_t *object_ptr,
                void *userdata_ptr),
     void *userdata_ptr);

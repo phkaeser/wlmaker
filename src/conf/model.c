@@ -222,9 +222,9 @@ wlmcfg_dict_t *wlmcfg_dict_from_object(wlmcfg_object_t *object_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmcfg_dict_foreach(
+bool wlmcfg_dict_foreach(
     wlmcfg_dict_t *dict_ptr,
-    void (*fn)(const char *key_ptr,
+    bool (*fn)(const char *key_ptr,
                wlmcfg_object_t *object_ptr,
                void *userdata_ptr),
     void *userdata_ptr)
@@ -234,8 +234,11 @@ void wlmcfg_dict_foreach(
          node_ptr = bs_avltree_node_next(dict_ptr->tree_ptr, node_ptr)) {
         wlmcfg_dict_item_t *item_ptr = BS_CONTAINER_OF(
             node_ptr, wlmcfg_dict_item_t, avlnode);
-        fn(item_ptr->key_ptr, item_ptr->value_object_ptr, userdata_ptr);
+        if (!fn(item_ptr->key_ptr, item_ptr->value_object_ptr, userdata_ptr)) {
+            return false;
+        }
     }
+    return true;
 }
 
 /* == Array methods ======================================================== */
@@ -462,7 +465,7 @@ const bs_test_case_t wlmcfg_model_test_cases[] = {
 
 /* ------------------------------------------------------------------------- */
 /** Test helper: A callback for @ref wlmcfg_dict_foreach. */
-static void foreach_callback(
+static bool foreach_callback(
     const char *key_ptr,
     __UNUSED__ wlmcfg_object_t *object_ptr,
     void *userdata_ptr)
@@ -473,6 +476,7 @@ static void foreach_callback(
     } else if (strcmp(key_ptr, "key1") == 0) {
         *map |= 2;
     }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -529,7 +533,9 @@ void test_dict(bs_test_t *test_ptr)
                                 wlmcfg_dict_get(dict_ptr, "key1"))));
 
     int val = 0;
-    wlmcfg_dict_foreach(dict_ptr, foreach_callback, &val);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_dict_foreach(dict_ptr, foreach_callback, &val));
     BS_TEST_VERIFY_EQ(test_ptr, 3, val);
 
     wlmcfg_dict_unref(dict_ptr);
