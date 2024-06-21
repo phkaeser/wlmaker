@@ -20,8 +20,10 @@
 
 #include "keybindings.h"
 
+#include "default_configuration.h"
 #include "server.h"
 #include "conf/decode.h"
+#include "conf/plist.h"
 
 #include <xkbcommon/xkbcommon.h>
 
@@ -44,9 +46,6 @@ typedef struct {
     void                      (*action)(wlmaker_server_t* server_ptr);
 } _wlmaker_keybindings_action_t;
 
-static void _task_list_next(wlmaker_server_t *server_ptr);
-static void _task_list_previous(wlmaker_server_t *server_ptr);
-
 /* == Exported methods ===================================================== */
 
 /* == Data ================================================================= */
@@ -65,25 +64,77 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
 };
 
 /** The actions that can be bound. */
-static const _wlmaker_keybindings_action_t _wlmaker_keybindings_actions[] = {
-    { "TaskListNext", _task_list_next },
-    { "TaskListPrevious", _task_list_previous },
-    { NULL, NULL }
+static const wlmcfg_enum_desc_t _wlmaker_keybindings_actions[] = {
+    WLMCFG_ENUM("TaskListNext", 1 ),
+    WLMCFG_ENUM("TaskListPrevious", 2),
+    WLMCFG_ENUM_SENTINEL(),
 };
+
+static bool _wlmaker_keybindings_bind_item(
+    const char *key_ptr,
+    wlmcfg_object_t *object_ptr,
+    void *userdata_ptr);
 
 /* == Local (static) methods =============================================== */
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Binds an action for one item of the 'KeyBindings' dict.
+ *
+ * @param key_ptr             Name of the action to bind the key to.
+ * @param object_ptr          Configuration object, must be a string and
+ *                            contain a parse-able modifier + keysym.
+ * @param userdata_ptr        Points to @wlmaker_server_t.
+ *
+ * @return true on success.
+ */
+bool _wlmaker_keybindings_bind_item(
+    const char *key_ptr,
+    wlmcfg_object_t *object_ptr,
+    __UNUSED__ void *userdata_ptr)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(object_ptr);
+    if (NULL == string_ptr) {
+        bs_log(BS_WARNING, "Not a string value for keybinding action '%s'",
+               key_ptr);
+        return false;
+    }
+
+    uint32_t modifiers;
+    xkb_keysym_t keysym;
+    if (!_wlmaker_keybindings_parse(
+            wlmcfg_string_value(string_ptr), &modifiers, &keysym)) {
+        bs_log(BS_WARNING,
+               "Failed to parse binding '%s' for keybinding action '%s'",
+               wlmcfg_string_value(string_ptr), key_ptr);
+        return false;
+    }
+
+    int action;
+    if (!wlmcfg_enum_name_to_value(
+            _wlmaker_keybindings_actions, key_ptr, &action)) {
+        bs_log(BS_WARNING, "Not a valid keybinding action: '%s'", key_ptr);
+        return false;
+    }
+
+    // FIXME: Lookup the action code & register with server_ptr.
+    char buf[10];
+    xkb_keysym_get_name(keysym, buf, sizeof(buf));
+    bs_log(BS_WARNING, "FIXME: Action %d for %s to %"PRIx32" and %s",
+           action, key_ptr, modifiers, buf);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 bool _wlmaker_bind_keys(
     __UNUSED__ wlmaker_server_t *server_ptr,
-    __UNUSED__ wlmcfg_dict_t *keybindings_dict_ptr)
+    wlmcfg_dict_t *keybindings_dict_ptr)
 {
-    // Iterate over each of the keys.
+    if (!wlmcfg_dict_foreach(
+            keybindings_dict_ptr,
+            _wlmaker_keybindings_bind_item,
+            server_ptr)) return false;
 
-    const _wlmaker_keybindings_action_t *action_ptr;
-    for (action_ptr = _wlmaker_keybindings_actions;
-         action_ptr->name_ptr != NULL;
-         ++action_ptr) {
-    }
     return true;
 }
 
@@ -112,10 +163,10 @@ bool _wlmaker_keybindings_parse(
         const char *end_ptr = start_ptr;
         while (*end_ptr != '\0' && *end_ptr != '+') ++end_ptr;
 
-        size_t len = end_ptr - start_ptr + 1;
+        size_t len = end_ptr - start_ptr;
         char *token_ptr = malloc(len + 1);
         memcpy(token_ptr, start_ptr, len);
-        token_ptr[len - 1] = '\0';
+        token_ptr[len] = '\0';
 
         start_ptr = end_ptr;
 
@@ -131,32 +182,21 @@ bool _wlmaker_keybindings_parse(
         }
 
         free(token_ptr);
+        if (!*start_ptr) break;
     }
 
     return rv && (XKB_KEY_NoSymbol != *keysym_ptr);
 }
 
-/* ------------------------------------------------------------------------- */
-/** TOOD(kaeser@gubbe.ch): Move to better place. */
-void _task_list_next(wlmaker_server_t *server_ptr)
-{
-    bs_log(BS_WARNING, "FIXME: Next for %p", server_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** TOOD(kaeser@gubbe.ch): Move to better place. */
-void _task_list_previous(wlmaker_server_t *server_ptr)
-{
-    bs_log(BS_WARNING, "FIXME: Previous for %p", server_ptr);
-}
-
 /* == Unit tests =========================================================== */
 
 static void test_keybindings_parse(bs_test_t *test_ptr);
+static void test_default_keybindings(bs_test_t *test_ptr);
 
 /** Test cases for key bindings. */
 const bs_test_case_t          wlmaker_keybindings_test_cases[] = {
     { 1, "parse", test_keybindings_parse },
+    { 1, "default_keybindings", test_default_keybindings },
     { 0, NULL, NULL }
 };
 
@@ -196,6 +236,22 @@ void test_keybindings_parse(bs_test_t *test_ptr)
         test_ptr, _wlmaker_keybindings_parse("A+B", &m, &ks));
     BS_TEST_VERIFY_FALSE(
         test_ptr, _wlmaker_keybindings_parse("Shift+Ctrl", &m, &ks));
+}
+
+/* ------------------------------------------------------------------------- */
+void test_default_keybindings(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+        embedded_binary_default_configuration_data,
+        embedded_binary_default_configuration_size);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
+        wlmcfg_dict_from_object(obj_ptr), "KeyBindings");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmaker_bind_keys(NULL, dict_ptr));
+    wlmcfg_object_unref(obj_ptr);
 }
 
 /* == End of keybindings.c ================================================= */

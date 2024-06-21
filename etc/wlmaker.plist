@@ -16,8 +16,8 @@
     }
   };
   KeyBindings = {
-    TaskListNext = "Control+Alt+Logo+Esc";
-    TaskListPrevious = "Shift+Control+Alt+Logo+Esc";
+    TaskListNext = "Ctrl+Alt+Logo+Escape";
+    TaskListPrevious = "Shift+Ctrl+Alt+Logo+Escape";
   };
   ScreenLock = {
     IdleSeconds = 300;
