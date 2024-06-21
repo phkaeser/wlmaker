@@ -164,12 +164,13 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Display application status (*starting*, *running*).
   * [done] Configurable (in code).
 
-* Task list (window-alt-esc), cycling through windows, based on toolkit.
+* Task list (window-alt-esc), cycling through windows.
+  * [done] Migrate implementation to wlmtk.
   * Key combination configurable in the config file.
 
 ## Plan for 0.4
 
-**Focus**: Multi-output (mirrored), Menus: "Early-Access" ready.
+**Focus**: Add menus & make it ready for  "Early-Access".
 
 * Support for dynamic output configurations.
   * Multiple monitors, with output mirrored across.
@@ -196,7 +197,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Pending
 
-Features for further versions, not ordered by priority nor timeline.
+### Major feature milestones
+
+* Initial multi-monitor support: Mirrored.
+* Toplevel windows represented as icons & minimized (iconified) windows.
+* Drag-n-drop of icons into & from dock & clip.
+
+### Features for further versions, not ordered by priority nor timeline.
 
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
