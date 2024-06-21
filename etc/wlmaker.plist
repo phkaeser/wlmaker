@@ -15,6 +15,10 @@
       Rate = 25
     }
   };
+  KeyBindings = {
+    TaskListNext = "Control+Alt+Logo+Esc";
+    TaskListPrevious = "Shift+Control+Alt+Logo+Esc";
+  };
   ScreenLock = {
     IdleSeconds = 300;
     Command = "/usr/bin/swaylock"

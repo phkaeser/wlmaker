@@ -19,6 +19,8 @@
  */
 
 #include "keybindings.h"
+
+#include "server.h"
 #include "conf/decode.h"
 
 #include <xkbcommon/xkbcommon.h>
@@ -33,6 +35,17 @@ static bool _wlmaker_keybindings_parse(
     xkb_keysym_t *keysym_ptr);
 
 /* == Declarations ========================================================= */
+
+/** A name/action binding. */
+typedef struct {
+    /** The name. */
+    const char                *name_ptr;
+    /** The action. */
+    void                      (*action)(wlmaker_server_t* server_ptr);
+} _wlmaker_keybindings_action_t;
+
+static void _task_list_next(wlmaker_server_t *server_ptr);
+static void _task_list_previous(wlmaker_server_t *server_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -51,7 +64,28 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
     WLMCFG_ENUM_SENTINEL(),
 };
 
+/** The actions that can be bound. */
+static const _wlmaker_keybindings_action_t _wlmaker_keybindings_actions[] = {
+    { "TaskListNext", _task_list_next },
+    { "TaskListPrevious", _task_list_previous },
+    { NULL, NULL }
+};
+
 /* == Local (static) methods =============================================== */
+
+bool _wlmaker_bind_keys(
+    __UNUSED__ wlmaker_server_t *server_ptr,
+    __UNUSED__ wlmcfg_dict_t *keybindings_dict_ptr)
+{
+    // Iterate over each of the keys.
+
+    const _wlmaker_keybindings_action_t *action_ptr;
+    for (action_ptr = _wlmaker_keybindings_actions;
+         action_ptr->name_ptr != NULL;
+         ++action_ptr) {
+    }
+    return true;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -102,6 +136,20 @@ bool _wlmaker_keybindings_parse(
     return rv && (XKB_KEY_NoSymbol != *keysym_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** TOOD(kaeser@gubbe.ch): Move to better place. */
+void _task_list_next(wlmaker_server_t *server_ptr)
+{
+    bs_log(BS_WARNING, "FIXME: Next for %p", server_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** TOOD(kaeser@gubbe.ch): Move to better place. */
+void _task_list_previous(wlmaker_server_t *server_ptr)
+{
+    bs_log(BS_WARNING, "FIXME: Previous for %p", server_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_keybindings_parse(bs_test_t *test_ptr);
@@ -149,6 +197,5 @@ void test_keybindings_parse(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr, _wlmaker_keybindings_parse("Shift+Ctrl", &m, &ks));
 }
-
 
 /* == End of keybindings.c ================================================= */
