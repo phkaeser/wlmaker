@@ -32,7 +32,7 @@
 
 #include "default_configuration.h"
 #include "default_dock_state.h"
-#include "default_style.h"
+#include "style_default.h"
 
 /* == Declarations ========================================================= */
 
@@ -170,6 +170,38 @@ static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descroptor for decoding the "TitleBar" dict below "Window". */
+static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "FocussedFill", true, wlmtk_titlebar_style_t, focussed_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_ARGB32(
+        "FocussedTextColor", true, wlmtk_titlebar_style_t,
+        focussed_text_color, 0),
+    WLMCFG_DESC_CUSTOM(
+        "BlurredFill", true, wlmtk_titlebar_style_t, blurred_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_ARGB32(
+        "BlurredTextColor", true, wlmtk_titlebar_style_t,
+        blurred_text_color, 0),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_titlebar_style_t, height, 22),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, 1),
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_titlebar_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+ };
+
+/** Descriptor for decoding the "Window" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "TitleBar", true, wlmtk_window_style_t, titlebar,
+        _wlmaker_config_window_titlebar_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
@@ -178,6 +210,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Dock", true, wlmaker_config_style_t, dock,
         _wlmaker_config_dock_style_desc),
+    WLMCFG_DESC_DICT(
+        "Window", true, wlmaker_config_style_t, window,
+        _wlmaker_config_window_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -329,8 +364,8 @@ void test_embedded(bs_test_t *test_ptr)
     wlmcfg_object_unref(obj_ptr);
 
     obj_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_default_style_data,
-        embedded_binary_default_style_size);
+        embedded_binary_style_default_data,
+        embedded_binary_style_default_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
@@ -363,15 +398,25 @@ void test_file(bs_test_t *test_ptr)
 void test_style_file(bs_test_t *test_ptr)
 {
     wlmcfg_dict_t *dict_ptr;
+    wlmaker_config_style_t config_style;
 
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
-    dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
-    wlmaker_config_style_t config_style;
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/style-default.plist");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(
+            dict_ptr, wlmaker_config_style_desc, &config_style));
+    wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/style-debian.plist");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_decode_dict(
@@ -391,7 +436,9 @@ void test_decode_fill(bs_test_t *test_ptr)
     wlmtk_style_fill_t fill;
     wlmcfg_object_t *object_ptr;
 
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
+
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));
@@ -405,7 +452,8 @@ void test_decode_fill(bs_test_t *test_ptr)
          "From = \"argb32:0x04030201\";"
          "To = \"argb32:0x40302010\""
          "}");
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));
@@ -418,7 +466,8 @@ void test_decode_fill(bs_test_t *test_ptr)
          "Type = SOLID;"
          "Color = \"argb32:0x11223344\""
          "}");
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));

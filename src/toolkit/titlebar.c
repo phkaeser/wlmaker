@@ -99,7 +99,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box, env_ptr,
                         WLMTK_BOX_HORIZONTAL,
-                        &titlebar_ptr->style.margin_style)) {
+                        &titlebar_ptr->style.margin)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -202,15 +202,15 @@ bool wlmtk_titlebar_set_width(
     if (3 * titlebar_ptr->style.height < width) {
         titlebar_ptr->close_position = width - titlebar_ptr->style.height;
         titlebar_ptr->title_width -= titlebar_ptr->style.height +
-            titlebar_ptr->style.margin_style.width;
+            titlebar_ptr->style.margin.width;
     }
     titlebar_ptr->title_position = 0;
     // Also having room for a minimize button?
     if (4 * titlebar_ptr->style.height < width) {
         titlebar_ptr->title_position = titlebar_ptr->style.height +
-            titlebar_ptr->style.margin_style.width;
+            titlebar_ptr->style.margin.width;
         titlebar_ptr->title_width -= titlebar_ptr->style.height +
-            titlebar_ptr->style.margin_style.width;
+            titlebar_ptr->style.margin.width;
     }
 
     if (!redraw(titlebar_ptr)) {
@@ -405,7 +405,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
-    wlmtk_titlebar_style_t style = { .height = 22, .margin_style = { .width = 2 } };
+    wlmtk_titlebar_style_t style = { .height = 22, .margin = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(
         NULL, fake_window_ptr->window_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, titlebar_ptr);

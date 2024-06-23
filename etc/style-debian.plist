@@ -1,0 +1,40 @@
+// Following the 'Debian' theme of Window Maker.
+{
+  Dock = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:c0000000";
+    };
+  };
+  Tile = {
+    Size = 64;
+    BezelWidth = 2;
+    Fill = {
+      From = "argb32:ffa6a6b6";
+      To = "argb32:ff515561";
+      Type = DGRADIENT;
+    };
+  };
+  Window = {
+    TitleBar = {
+      FocussedFill = {
+        From = "argb32:ff505a5e";
+        To = "argb32:ff202a2e";
+        Type = HGRADIENT;
+      };
+      FocussedTextColor = "argb32:ffffffff";
+      BlurredFill = {
+        From = "argb32:ffc2c0c5";
+        To = "argb32:ff828085";
+        Type = HGRADIENT;
+      };
+      BlurredTextColor = "argb32:ff000000";
+      Height = 22;
+      BezelWidth = 1;
+      Margin = {
+        Width = 1;
+        Color = "argb32:ff000000" ;
+      };
+    };
+  };
+}

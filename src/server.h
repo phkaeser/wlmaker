@@ -52,6 +52,7 @@ typedef struct _wlmaker_key_binding_t wlmaker_key_binding_t;
  */
 typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 
+#include "config.h"
 #include "cursor.h"
 #include "idle.h"
 #include "output.h"
@@ -198,6 +199,9 @@ struct _wlmaker_server_t {
      * The signal is raised right after the window was unmapped.
      */
     struct wl_signal          window_unmapped_event;
+
+    /** The current configuration style. */
+    wlmaker_config_style_t    style;
 };
 
 /** Specifies the key + modifier to bind. */

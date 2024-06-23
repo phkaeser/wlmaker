@@ -39,10 +39,12 @@
 #include "server.h"
 #include "task_list.h"
 
-#include "default_style.h"
+#include "style_default.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
+/** Will hold the value of --style_file. */
+static char *wlmaker_arg_style_file_ptr = NULL;
 
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
@@ -53,6 +55,12 @@ static const bs_arg_t wlmaker_args[] = {
         "a built-in configuration.",
         NULL,
         &wlmaker_arg_config_file_ptr),
+    BS_ARG_STRING(
+        "style_file",
+        "Optional: Path to a style (\"theme\") file. If not provided, wlmaker "
+        "will use a built-in default style.",
+        NULL,
+        &wlmaker_arg_style_file_ptr),
     BS_ARG_SENTINEL()
 };
 
@@ -158,8 +166,11 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;
 
+    BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
+
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
+        bs_arg_print_usage(stderr, wlmaker_args);
         return EXIT_FAILURE;
     }
     wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(
@@ -170,22 +181,29 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
-    // TODO: Should be loaded from file, if given in the config. Or on the
-    // commandline. And, Maybe store this in server?
-    wlmaker_config_style_t style = {};
-    wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
-        wlmcfg_create_object_from_plist_data(
-            embedded_binary_default_style_data,
-            embedded_binary_default_style_size));
-    BS_ASSERT(wlmcfg_decode_dict(
-                  style_dict_ptr,
-                  wlmaker_config_style_desc, &style));
-
-    BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
-
     wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
+
+    // TODO: Should be loaded from file, if given in the config. Or on the
+    // commandline.
+    wlmcfg_dict_t *style_dict_ptr = NULL;
+    if (NULL != wlmaker_arg_style_file_ptr) {
+        style_dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_create_object_from_plist_file(
+                wlmaker_arg_style_file_ptr));
+    } else {
+        style_dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_create_object_from_plist_data(
+                embedded_binary_style_default_data,
+                embedded_binary_style_default_size));
+    }
+    if (NULL == style_dict_ptr) return EXIT_FAILURE;
+    BS_ASSERT(wlmcfg_decode_dict(
+                  style_dict_ptr,
+                  wlmaker_config_style_desc,
+                  &server_ptr->style));
+    wlmcfg_dict_unref(style_dict_ptr);
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
@@ -212,8 +230,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             }
         }
 
-        dock_ptr = wlmaker_dock_create(server_ptr, &style);
-        clip_ptr = wlmaker_clip_create(server_ptr, &style);
+        dock_ptr = wlmaker_dock_create(server_ptr, &server_ptr->style);
+        clip_ptr = wlmaker_clip_create(server_ptr, &server_ptr->style);
         task_list_ptr = wlmaker_task_list_create(server_ptr);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
