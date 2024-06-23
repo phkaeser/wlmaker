@@ -74,6 +74,17 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
 /** The actions that can be bound. */
 static const wlmcfg_enum_desc_t _wlmaker_actions[] = {
     WLMCFG_ENUM("Quit", WLMAKER_ACTION_QUIT),
+    WLMCFG_ENUM("LockScreen", WLMAKER_ACTION_LOCK_SCREEN),
+    WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
+
+    WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
+    WLMCFG_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
+
+    WLMCFG_ENUM("WindowRaise", WLMAKER_ACTION_WINDOW_RAISE),
+    WLMCFG_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
+    WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
+    WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
+
     WLMCFG_ENUM_SENTINEL(),
 };
 
@@ -104,11 +115,11 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         }
         break;
 
-    case WLMAKER_ACTION_WORKSPACE_SWITCH_TO_PREVIOUS:
+    case WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS:
         wlmaker_server_switch_to_previous_workspace(server_ptr);
         break;
 
-    case WLMAKER_ACTION_WORKSPACE_SWITCH_TO_NEXT:
+    case WLMAKER_ACTION_WORKSPACE_TO_NEXT:
         wlmaker_server_switch_to_next_workspace(server_ptr);
         break;
 
@@ -207,6 +218,8 @@ bool _wlmaker_keybindings_bind_item(
     _wlmaker_action_binding_t *action_binding_ptr = logged_calloc(
         1, sizeof(_wlmaker_action_binding_t));
     if (NULL == action_binding_ptr) return false;
+    action_binding_ptr->server_ptr = server_ptr;
+    action_binding_ptr->action = action;
     action_binding_ptr->binding.keysym = keysym;
     action_binding_ptr->binding.ignore_case = true;
     action_binding_ptr->binding.modifiers = modifiers;
@@ -284,13 +297,9 @@ bool _wlmaker_action_bound_callback(
     _wlmaker_action_binding_t *action_binding_ptr = BS_CONTAINER_OF(
         binding_ptr, _wlmaker_action_binding_t, binding);
 
-    if (false) {
-        wlmaker_action_execute(
-            action_binding_ptr->server_ptr,
-            action_binding_ptr->action);
-    } else {
-        bs_log(BS_ERROR, "FIXME: Action %d!!", action_binding_ptr->action);
-    }
+    wlmaker_action_execute(
+        action_binding_ptr->server_ptr,
+        action_binding_ptr->action);
     return true;
 }
 
