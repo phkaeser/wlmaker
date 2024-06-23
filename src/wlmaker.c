@@ -32,6 +32,7 @@
 
 #include "conf/plist.h"
 
+#include "action.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
@@ -292,6 +293,13 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
+
+    if (!wlmaker_action_bind_keys(
+            server_ptr,
+            wlmcfg_dict_get_dict(config_dict_ptr, "KeyBindings"))) {
+        bs_log(BS_ERROR, "Failed to bind keys.");
+        return EXIT_FAILURE;
+    }
 
     wlmaker_server_bind_key(
         server_ptr,

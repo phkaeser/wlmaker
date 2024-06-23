@@ -33,13 +33,15 @@
 
 /* == Declarations ========================================================= */
 
-/** A name/action binding. */
+/** Key binding for a standard action. */
 typedef struct {
-    /** The name. */
-    const char                *name_ptr;
-    /** The action. */
-    void                      (*action)(wlmaker_server_t* server_ptr);
-} _wlmaker_keybindings_action_t;
+    /** The key binding. */
+    wlmaker_keybinding_t      binding;
+    /** The associated action. */
+    wlmaker_action_t          action;
+    /** State of the server. */
+    wlmaker_server_t          *server_ptr;
+} _wlmaker_action_binding_t;
 
 static bool _wlmaker_keybindings_parse(
     const char *string_ptr,
@@ -50,6 +52,9 @@ static bool _wlmaker_keybindings_bind_item(
     const char *key_ptr,
     wlmcfg_object_t *object_ptr,
     void *userdata_ptr);
+
+static bool _wlmaker_action_bound_callback(
+    const wlmaker_keybinding_t *binding_ptr);
 
 /* == Data ================================================================= */
 
@@ -68,8 +73,7 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
 
 /** The actions that can be bound. */
 static const wlmcfg_enum_desc_t _wlmaker_actions[] = {
-    WLMCFG_ENUM("TaskListNext", 1 ),
-    WLMCFG_ENUM("TaskListPrevious", 2),
+    WLMCFG_ENUM("Quit", WLMAKER_ACTION_QUIT),
     WLMCFG_ENUM_SENTINEL(),
 };
 
@@ -144,6 +148,19 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     }
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmaker_action_bind_keys(
+    wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *keybindings_dict_ptr)
+{
+    if (!wlmcfg_dict_foreach(
+            keybindings_dict_ptr,
+            _wlmaker_keybindings_bind_item,
+            server_ptr)) return false;
+
+    return true;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -160,51 +177,46 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 bool _wlmaker_keybindings_bind_item(
     const char *key_ptr,
     wlmcfg_object_t *object_ptr,
-    __UNUSED__ void *userdata_ptr)
+    void *userdata_ptr)
 {
+    wlmaker_server_t *server_ptr = userdata_ptr;
     wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(object_ptr);
     if (NULL == string_ptr) {
-        bs_log(BS_WARNING, "Not a string value for keybinding action '%s'",
+        bs_log(BS_WARNING, "Action must be a string for key binding \"%s\"",
                key_ptr);
         return false;
     }
 
     uint32_t modifiers;
     xkb_keysym_t keysym;
-    if (!_wlmaker_keybindings_parse(
-            wlmcfg_string_value(string_ptr), &modifiers, &keysym)) {
+    if (!_wlmaker_keybindings_parse(key_ptr, &modifiers, &keysym)) {
         bs_log(BS_WARNING,
                "Failed to parse binding '%s' for keybinding action '%s'",
-               wlmcfg_string_value(string_ptr), key_ptr);
+               key_ptr, wlmcfg_string_value(string_ptr));
         return false;
     }
 
     int action;
-    if (!wlmcfg_enum_name_to_value(_wlmaker_actions, key_ptr, &action)) {
-        bs_log(BS_WARNING, "Not a valid keybinding action: '%s'", key_ptr);
+    if (!wlmcfg_enum_name_to_value(
+            _wlmaker_actions, wlmcfg_string_value(string_ptr), &action)) {
+        bs_log(BS_WARNING, "Not a valid keybinding action: '%s'",
+               wlmcfg_string_value(string_ptr));
         return false;
     }
 
-    // FIXME: Lookup the action code & register with server_ptr.
-    char buf[10];
-    xkb_keysym_get_name(keysym, buf, sizeof(buf));
-    bs_log(BS_WARNING, "FIXME: Action %d for %s to %"PRIx32" and %s",
-           action, key_ptr, modifiers, buf);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** FIXME */
-bool _wlmaker_bind_keys(
-    __UNUSED__ wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *keybindings_dict_ptr)
-{
-    if (!wlmcfg_dict_foreach(
-            keybindings_dict_ptr,
-            _wlmaker_keybindings_bind_item,
-            server_ptr)) return false;
-
-    return true;
+    _wlmaker_action_binding_t *action_binding_ptr = logged_calloc(
+        1, sizeof(_wlmaker_action_binding_t));
+    if (NULL == action_binding_ptr) return false;
+    action_binding_ptr->binding.keysym = keysym;
+    action_binding_ptr->binding.ignore_case = true;
+    action_binding_ptr->binding.modifiers = modifiers;
+    action_binding_ptr->binding.modifiers_mask = 0;  // FIXME
+    bool rv = wlmaker_server_keyboard_bind(
+        server_ptr,
+        &action_binding_ptr->binding,
+        _wlmaker_action_bound_callback);
+    if (!rv) free(action_binding_ptr);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -255,6 +267,31 @@ bool _wlmaker_keybindings_parse(
     }
 
     return rv && (XKB_KEY_NoSymbol != *keysym_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for when the bound key is triggered: Executes the corresponding
+ * action.
+ *
+ * @param binding_ptr
+ *
+ * @return true always.
+ */
+bool _wlmaker_action_bound_callback(
+    const wlmaker_keybinding_t *binding_ptr)
+{
+    _wlmaker_action_binding_t *action_binding_ptr = BS_CONTAINER_OF(
+        binding_ptr, _wlmaker_action_binding_t, binding);
+
+    if (false) {
+        wlmaker_action_execute(
+            action_binding_ptr->server_ptr,
+            action_binding_ptr->action);
+    } else {
+        bs_log(BS_ERROR, "FIXME: Action %d!!", action_binding_ptr->action);
+    }
+    return true;
 }
 
 /* == Unit tests =========================================================== */
@@ -311,6 +348,7 @@ void test_keybindings_parse(bs_test_t *test_ptr)
 /** Tests the default configuration's 'KeyBindings' section. */
 void test_default_keybindings(bs_test_t *test_ptr)
 {
+    wlmaker_server_t server = {};
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
@@ -320,7 +358,7 @@ void test_default_keybindings(bs_test_t *test_ptr)
         wlmcfg_dict_from_object(obj_ptr), "KeyBindings");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmaker_bind_keys(NULL, dict_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_action_bind_keys(&server, dict_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
 
