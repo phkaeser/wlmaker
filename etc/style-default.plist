@@ -18,15 +18,13 @@
   Window = {
     TitleBar = {
       FocussedFill = {
-        From = "argb32:ff505a5e";
-        To = "argb32:ff202a2e";
-        Type = HGRADIENT;
+        Color = "argb32:ff000000";
+        Type = SOLID;
       };
       FocussedTextColor = "argb32:ffffffff";
       BlurredFill = {
-        From = "argb32:ffc2c0c5";
-        To = "argb32:ff828085";
-        Type = HGRADIENT;
+        Color = "argb32:ff666666";
+        Type = SOLID;
       };
       BlurredTextColor = "argb32:ff000000";
       Height = 22;

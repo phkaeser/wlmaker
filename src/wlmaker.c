@@ -43,6 +43,8 @@
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
+/** Will hold the value of --style_file. */
+static char *wlmaker_arg_style_file_ptr = NULL;
 
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
@@ -53,6 +55,12 @@ static const bs_arg_t wlmaker_args[] = {
         "a built-in configuration.",
         NULL,
         &wlmaker_arg_config_file_ptr),
+    BS_ARG_STRING(
+        "style_file",
+        "Optional: Path to a style (\"theme\") file. If not provided, wlmaker "
+        "will use a built-in default style.",
+        NULL,
+        &wlmaker_arg_style_file_ptr),
     BS_ARG_SENTINEL()
 };
 
@@ -178,10 +186,17 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     // TODO: Should be loaded from file, if given in the config. Or on the
     // commandline.
-    wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
-        wlmcfg_create_object_from_plist_data(
-            embedded_binary_style_default_data,
-            embedded_binary_style_default_size));
+    wlmcfg_dict_t *style_dict_ptr = NULL;
+    if (NULL != wlmaker_arg_style_file_ptr) {
+        style_dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_create_object_from_plist_file(
+                wlmaker_arg_style_file_ptr));
+    } else {
+        style_dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_create_object_from_plist_data(
+                embedded_binary_style_default_data,
+                embedded_binary_style_default_size));
+    }
     if (NULL == style_dict_ptr) return EXIT_FAILURE;
     BS_ASSERT(wlmcfg_decode_dict(
                   style_dict_ptr,
