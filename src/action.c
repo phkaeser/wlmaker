@@ -35,7 +35,7 @@
 
 /** State of the bound actions. */
 struct _wlmaker_action_handle_t {
-    /** Bindings, linked by @ref wlmaker_action_binding_t::qnode. */
+    /** Bindings, linked by @ref _wlmaker_action_binding_t::qnode. */
     bs_dequeue_t              bindings;
     /** Back-link to server state. */
     wlmaker_server_t          *server_ptr;
@@ -67,6 +67,9 @@ static bool _wlmaker_action_bound_callback(
     const wlmaker_keybinding_t *binding_ptr);
 
 /* == Data ================================================================= */
+
+/** Key to lookup the dict from the config dictionary. */
+const char *wlmaker_action_config_dict_key = "KeyBindings";
 
 /** Supported modifiers for key bindings. */
 static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
@@ -404,7 +407,7 @@ void test_default_keybindings(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
 
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
-        wlmcfg_dict_from_object(obj_ptr), "KeyBindings");
+        wlmcfg_dict_from_object(obj_ptr), wlmaker_action_config_dict_key);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
     wlmaker_action_handle_t *handle_ptr = wlmaker_action_bind_keys(

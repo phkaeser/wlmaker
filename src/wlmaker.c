@@ -189,7 +189,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
-        wlmcfg_dict_get_dict(config_dict_ptr, "KeyBindings"));
+        wlmcfg_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
     if (NULL == action_handle_ptr) {
         bs_log(BS_ERROR, "Failed to bind keys.");
         return EXIT_FAILURE;

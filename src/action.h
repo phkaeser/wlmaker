@@ -41,6 +41,8 @@ typedef enum {
     WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED,
 } wlmaker_action_t;
 
+extern const char *wlmaker_action_config_dict_key;
+
 /** Forward declaration: Handle for bound actions. */
 typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;
 
