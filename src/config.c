@@ -170,6 +170,38 @@ static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descroptor for decoding the "TitleBar" dict below "Window". */
+static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "FocussedFill", true, wlmtk_titlebar_style_t, focussed_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_ARGB32(
+        "FocussedTextColor", true, wlmtk_titlebar_style_t,
+        focussed_text_color, 0),
+    WLMCFG_DESC_CUSTOM(
+        "BlurredFill", true, wlmtk_titlebar_style_t, blurred_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_ARGB32(
+        "BlurredTextColor", true, wlmtk_titlebar_style_t,
+        blurred_text_color, 0),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_titlebar_style_t, height, 22),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, 1),
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_titlebar_style_t, margin_style,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+ };
+
+/** Descriptor for decoding the "Window" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "TitleBar", true, wlmtk_window_style_t, titlebar_style,
+        _wlmaker_config_window_titlebar_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
@@ -178,6 +210,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Dock", true, wlmaker_config_style_t, dock,
         _wlmaker_config_dock_style_desc),
+    WLMCFG_DESC_DICT(
+        "Window", true, wlmaker_config_style_t, window,
+        _wlmaker_config_window_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 

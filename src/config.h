@@ -49,6 +49,8 @@ typedef struct {
     wlmtk_tile_style_t        tile;
     /** Dock optics: Margin. */
     wlmtk_dock_style_t        dock;
+    /** Window style. */
+    wlmtk_window_style_t      window;
 } wlmaker_config_style_t;
 
 /** The theme. */

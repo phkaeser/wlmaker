@@ -39,6 +39,12 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Style options for the window. */
+typedef struct {
+    /** The titlebar's style. */
+    wlmtk_titlebar_style_t    titlebar_style;
+} wlmtk_window_style_t;
+
 /**
  * Creates a window for the given content.
  *
