@@ -33,14 +33,24 @@
 
 /* == Declarations ========================================================= */
 
+/** State of the bound actions. */
+struct _wlmaker_action_handle_t {
+    /** Bindings, linked by @ref wlmaker_action_binding_t::qnode. */
+    bs_dequeue_t              bindings;
+    /** Back-link to server state. */
+    wlmaker_server_t          *server_ptr;
+};
+
 /** Key binding for a standard action. */
 typedef struct {
+    /** Node of @ref wlmaker_action_handle_t::bindings. */
+    bs_dequeue_node_t         qnode;
     /** The key binding. */
     wlmaker_keybinding_t      binding;
     /** The associated action. */
     wlmaker_action_t          action;
-    /** State of the server. */
-    wlmaker_server_t          *server_ptr;
+    /** State of the bound actions. */
+    wlmaker_action_handle_t   *handle_ptr;
 } _wlmaker_action_binding_t;
 
 static bool _wlmaker_keybindings_parse(
@@ -89,6 +99,44 @@ static const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
 };
 
 /* == Exported methods ===================================================== */
+
+/* ------------------------------------------------------------------------- */
+wlmaker_action_handle_t *wlmaker_action_bind_keys(
+    wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *keybindings_dict_ptr)
+{
+    wlmaker_action_handle_t *handle_ptr = logged_calloc(
+        1, sizeof(wlmaker_action_handle_t));
+    if (NULL == handle_ptr) return NULL;
+    handle_ptr->server_ptr = server_ptr;
+
+    if (wlmcfg_dict_foreach(
+            keybindings_dict_ptr,
+            _wlmaker_keybindings_bind_item,
+            handle_ptr)) {
+        return handle_ptr;
+    }
+
+    wlmaker_action_unbind_keys(handle_ptr);
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
+{
+    bs_dequeue_node_t *qnode_ptr = handle_ptr->bindings.head_ptr;
+    while (NULL != qnode_ptr) {
+        _wlmaker_action_binding_t *binding_ptr = BS_CONTAINER_OF(
+            qnode_ptr, _wlmaker_action_binding_t, qnode);
+        qnode_ptr = qnode_ptr->next_ptr;
+        wlmaker_server_keyboard_release(
+            handle_ptr->server_ptr,
+            &binding_ptr->binding);
+        free(binding_ptr);
+    }
+
+    free(handle_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_execute(wlmaker_server_t *server_ptr,
@@ -159,19 +207,6 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     }
 }
 
-/* ------------------------------------------------------------------------- */
-bool wlmaker_action_bind_keys(
-    wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *keybindings_dict_ptr)
-{
-    if (!wlmcfg_dict_foreach(
-            keybindings_dict_ptr,
-            _wlmaker_keybindings_bind_item,
-            server_ptr)) return false;
-
-    return true;
-}
-
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -190,7 +225,7 @@ bool _wlmaker_keybindings_bind_item(
     wlmcfg_object_t *object_ptr,
     void *userdata_ptr)
 {
-    wlmaker_server_t *server_ptr = userdata_ptr;
+    wlmaker_action_handle_t *handle_ptr = userdata_ptr;
     wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(object_ptr);
     if (NULL == string_ptr) {
         bs_log(BS_WARNING, "Action must be a string for key binding \"%s\"",
@@ -218,17 +253,22 @@ bool _wlmaker_keybindings_bind_item(
     _wlmaker_action_binding_t *action_binding_ptr = logged_calloc(
         1, sizeof(_wlmaker_action_binding_t));
     if (NULL == action_binding_ptr) return false;
-    action_binding_ptr->server_ptr = server_ptr;
+    action_binding_ptr->handle_ptr = handle_ptr;
     action_binding_ptr->action = action;
     action_binding_ptr->binding.keysym = keysym;
     action_binding_ptr->binding.ignore_case = true;
     action_binding_ptr->binding.modifiers = modifiers;
     action_binding_ptr->binding.modifiers_mask = 0;  // FIXME
     bool rv = wlmaker_server_keyboard_bind(
-        server_ptr,
+        handle_ptr->server_ptr,
         &action_binding_ptr->binding,
         _wlmaker_action_bound_callback);
-    if (!rv) free(action_binding_ptr);
+    if (rv) {
+        bs_dequeue_push_back(
+            &handle_ptr->bindings, &action_binding_ptr->qnode);
+    } else {
+        free(action_binding_ptr);
+    }
     return rv;
 }
 
@@ -298,7 +338,7 @@ bool _wlmaker_action_bound_callback(
         binding_ptr, _wlmaker_action_binding_t, binding);
 
     wlmaker_action_execute(
-        action_binding_ptr->server_ptr,
+        action_binding_ptr->handle_ptr->server_ptr,
         action_binding_ptr->action);
     return true;
 }
@@ -367,8 +407,11 @@ void test_default_keybindings(bs_test_t *test_ptr)
         wlmcfg_dict_from_object(obj_ptr), "KeyBindings");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_action_bind_keys(&server, dict_ptr));
+    wlmaker_action_handle_t *handle_ptr = wlmaker_action_bind_keys(
+        &server, dict_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
     wlmcfg_object_unref(obj_ptr);
+    wlmaker_action_unbind_keys(handle_ptr);
 }
 
 /* == End of action.c ====================================================== */

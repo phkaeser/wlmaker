@@ -187,9 +187,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
-    if (!wlmaker_action_bind_keys(
-            server_ptr,
-            wlmcfg_dict_get_dict(config_dict_ptr, "KeyBindings"))) {
+    wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
+        server_ptr,
+        wlmcfg_dict_get_dict(config_dict_ptr, "KeyBindings"));
+    if (NULL == action_handle_ptr) {
         bs_log(BS_ERROR, "Failed to bind keys.");
         return EXIT_FAILURE;
     }
@@ -228,6 +229,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     if (NULL != task_list_ptr) wlmaker_task_list_destroy(task_list_ptr);
     if (NULL != clip_ptr) wlmaker_clip_destroy(clip_ptr);
     if (NULL != dock_ptr) wlmaker_dock_destroy(dock_ptr);
+    wlmaker_action_unbind_keys(action_handle_ptr);
     wlmaker_server_destroy(server_ptr);
 
     bs_subprocess_t *sp_ptr;

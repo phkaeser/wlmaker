@@ -41,6 +41,28 @@ typedef enum {
     WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED,
 } wlmaker_action_t;
 
+/** Forward declaration: Handle for bound actions. */
+typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;
+
+/**
+ * Binds the actions specified in the config dictionary.
+ *
+ * @param server_ptr
+ * @param keybindings_dict_ptr
+ *
+ * @return A bound action handle, or NULL on error.
+ */
+wlmaker_action_handle_t *wlmaker_action_bind_keys(
+    wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *keybindings_dict_ptr);
+
+/**
+ * Unbinds actions previously bound by @ref wlmaker_action_bind_keys.
+ *
+ * @param handle_ptr
+ */
+void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr);
+
 /**
  * Executes the given action on wlmaker.
  *
@@ -50,18 +72,6 @@ typedef enum {
 void wlmaker_action_execute(
     wlmaker_server_t *server_ptr,
     wlmaker_action_t action);
-
-/**
- * Binds the actions specified in the config dictionary.
- *
- * @param server_ptr
- * @param keybindings_dict_ptr
- *
- * @return true on success.
- */
-bool wlmaker_action_bind_keys(
-    wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *keybindings_dict_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t   wlmaker_action_test_cases[];
