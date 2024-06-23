@@ -241,12 +241,6 @@ void toggle_maximize(wlmaker_server_t *server_ptr, __UNUSED__ void *arg_ptr)
     }
 }
 
-bool cb(const wlmaker_keybinding_t *binding_ptr)
-{
-    bs_log(BS_ERROR, "FIXME called %p", binding_ptr);
-    return true;
-}
-
 /* == Main program ========================================================= */
 /** The main program. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
@@ -298,13 +292,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
-
-    wlmaker_keybinding_t binding = {
-        .modifiers = WLR_MODIFIER_CTRL,
-        .keysym = XKB_KEY_p,
-        .ignore_case = true
-    };
-    wlmaker_server_keyboard_bind(server_ptr, &binding, cb);
 
     wlmaker_server_bind_key(
         server_ptr,

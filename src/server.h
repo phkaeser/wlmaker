@@ -291,7 +291,7 @@ void wlmaker_server_unbind_key(
 /**
  * Binds a particular key to a callback.
  *
- * @param keyboard_ptr
+ * @param server_ptr
  * @param binding_ptr
  * @param callback
  *
@@ -305,7 +305,7 @@ bool wlmaker_server_keyboard_bind(
 /**
  * Releases a key binding. @see wlmaker_keyboard_bind.
  *
- * @param keyboard_ptr
+ * @param server_ptr
  * @param binding_ptr
  */
 void wlmaker_server_keyboard_release(
