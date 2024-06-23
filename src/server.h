@@ -202,7 +202,7 @@ struct _wlmaker_server_t {
 
 /** Specifies the key + modifier to bind. */
 struct _wlmaker_key_combo_t {
-    /** Modifiers expected for this keybinding. */
+    /** Modifiers required. See `enum wlr_keyboard_modifiers`. */
     uint32_t                  modifiers;
     /** Modifier mask: Only masked modifiers are considered. */
     uint32_t                  modifiers_mask;
@@ -329,6 +329,9 @@ void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
  */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr);
+
+/** All modifiers to use by default. */
+extern const uint32_t wlmaker_modifier_default_mask;
 
 /** Unit test cases. */
 extern const bs_test_case_t   wlmaker_server_test_cases[];

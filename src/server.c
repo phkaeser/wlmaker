@@ -86,6 +86,18 @@ static void wlmaker_server_switch_to_workspace(
     wlmaker_server_t *server_ptr,
     wlmaker_workspace_t *workspace_ptr);
 
+/* == Data ================================================================= */
+
+const uint32_t wlmaker_modifier_default_mask = (
+    WLR_MODIFIER_SHIFT |
+    // Excluding: WLR_MODIFIER_CAPS.
+    WLR_MODIFIER_CTRL |
+    WLR_MODIFIER_ALT |
+    WLR_MODIFIER_MOD2 |
+    WLR_MODIFIER_MOD3 |
+    WLR_MODIFIER_LOGO |
+    WLR_MODIFIER_MOD5);
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */

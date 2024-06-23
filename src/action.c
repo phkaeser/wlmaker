@@ -263,7 +263,8 @@ bool _wlmaker_keybindings_bind_item(
     action_binding_ptr->key_combo.keysym = keysym;
     action_binding_ptr->key_combo.ignore_case = true;
     action_binding_ptr->key_combo.modifiers = modifiers;
-    action_binding_ptr->key_combo.modifiers_mask = 0;  // FIXME
+    action_binding_ptr->key_combo.modifiers_mask =
+        wlmaker_modifier_default_mask;
     action_binding_ptr->key_binding_ptr = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
         &action_binding_ptr->key_combo,
