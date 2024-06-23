@@ -32,10 +32,6 @@
 /** Type of the keyboard handle. */
 typedef struct _wlmaker_keyboard_t wlmaker_keyboard_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
 /**
  * Creates a handle for a registered keyboard.
  *

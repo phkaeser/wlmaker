@@ -103,18 +103,22 @@ kv_list:        kv TK_SEMICOLON kv_list
                 | kv
                 | %empty;
 
-kv:             TK_STRING TK_EQUAL object {
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-        bs_ptr_stack_peek(&ctx_ptr->object_stack, 1));
+kv:             string TK_EQUAL object {
     wlmcfg_object_t *object_ptr = bs_ptr_stack_pop(&ctx_ptr->object_stack);
-    bool rv = wlmcfg_dict_add(dict_ptr, $1, object_ptr);
+    wlmcfg_string_t *key_string_ptr = wlmcfg_string_from_object(
+        bs_ptr_stack_pop(&ctx_ptr->object_stack));
+    const char *key_ptr = wlmcfg_string_value(key_string_ptr);
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        bs_ptr_stack_peek(&ctx_ptr->object_stack, 0));
+    bool rv = wlmcfg_dict_add(dict_ptr, key_ptr, object_ptr);
     if (!rv) {
         // TODO(kaeser@gubbe.ch): Keep this as error in context.
         bs_log(BS_WARNING, "Failed wlmcfg_dict_add(%p, %s, %p)",
-               dict_ptr, $1, object_ptr);
+               dict_ptr, key_ptr, object_ptr);
     }
     wlmcfg_object_unref(object_ptr);
-    free($1);
+    wlmcfg_string_unref(key_string_ptr);
     if (!rv) return -1; };
 
 array:          TK_LPAREN {

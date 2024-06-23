@@ -237,6 +237,34 @@ void wlmcfg_decoded_destroy(
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr);
 
+/**
+ * Translates from the given name of an enum to it's value.
+ *
+ * @param enum_desc_ptr
+ * @param name_ptr
+ * @param value_ptr
+ *
+ * @return true if `name_ptr` was a valid enum name.
+ */
+bool wlmcfg_enum_name_to_value(
+    const wlmcfg_enum_desc_t *enum_desc_ptr,
+    const char *name_ptr,
+    int *value_ptr);
+
+/**
+ * Translates from the given value of an enum to it's name.
+ *
+ * @param enum_desc_ptr
+ * @param value
+ * @param name_ptr_ptr
+ *
+ * @return true if `name_ptr` was a valid enum name.
+ */
+bool wlmcfg_enum_value_to_name(
+    const wlmcfg_enum_desc_t *enum_desc_ptr,
+    int value,
+    const char **name_ptr_ptr);
+
 /** Unit tests. */
 extern const bs_test_case_t wlmcfg_decode_test_cases[];
 

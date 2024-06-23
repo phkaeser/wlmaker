@@ -190,6 +190,36 @@ void wlmcfg_decoded_destroy(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmcfg_enum_name_to_value(
+    const wlmcfg_enum_desc_t *enum_desc_ptr,
+    const char *name_ptr,
+    int *value_ptr)
+{
+    for (; NULL != enum_desc_ptr->name_ptr; ++enum_desc_ptr) {
+        if (0 == strcmp(enum_desc_ptr->name_ptr, name_ptr)) {
+            *value_ptr = enum_desc_ptr->value;
+            return true;
+        }
+    }
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmcfg_enum_value_to_name(
+    const wlmcfg_enum_desc_t *enum_desc_ptr,
+    int value,
+    const char **name_ptr_ptr)
+{
+    for (; NULL != enum_desc_ptr->name_ptr; ++enum_desc_ptr) {
+        if (value == enum_desc_ptr->value) {
+            *name_ptr_ptr = enum_desc_ptr->name_ptr;
+            return true;
+        }
+    }
+    return false;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -360,6 +390,7 @@ bool _wlmcfg_decode_string(
 /* == Unit tests =========================================================== */
 
 static void test_init_defaults(bs_test_t *test_ptr);
+static void test_enum_translate(bs_test_t *test_ptr);
 static void test_decode_dict(bs_test_t *test_ptr);
 static void test_decode_number(bs_test_t *test_ptr);
 static void test_decode_argb32(bs_test_t *test_ptr);
@@ -369,6 +400,7 @@ static void test_decode_string(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "init_defaults", test_init_defaults },
+    { 1, "enum_translate", test_enum_translate },
     { 1, "dict", test_decode_dict },
     { 1, "number", test_decode_number },
     { 1, "argb32", test_decode_argb32 },
@@ -487,6 +519,29 @@ void test_init_defaults(bs_test_t *test_ptr)
     BS_TEST_VERIFY_STREQ(test_ptr, "Other String", val.subdict.value);
     BS_TEST_VERIFY_STREQ(test_ptr, "Custom Init", val.v_custom_ptr);
     wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests @ref wlmcfg_enum_name_to_value and @ref wlmcfg_enum_value_to_name. */
+void test_enum_translate(bs_test_t *test_ptr)
+{
+    const wlmcfg_enum_desc_t *d = _wlmcfg_bool_desc;
+    int v;
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmcfg_enum_name_to_value(d, "True", &v));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, v);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmcfg_enum_name_to_value(d, "On", &v));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, v);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmcfg_enum_name_to_value(d, "Off", &v));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, v);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmcfg_enum_name_to_value(d, "Bad", &v));
+
+    const char *n_ptr;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmcfg_enum_value_to_name(d, true, &n_ptr));
+    BS_TEST_VERIFY_STREQ(test_ptr, "True", n_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmcfg_enum_value_to_name(d, false, &n_ptr));
+    BS_TEST_VERIFY_STREQ(test_ptr, "False", n_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmcfg_enum_value_to_name(d, 42, &n_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

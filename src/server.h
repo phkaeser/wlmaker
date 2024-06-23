@@ -38,6 +38,20 @@
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
+/** A key combination. */
+typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
+/** Handle for a key binding. */
+typedef struct _wlmaker_key_binding_t wlmaker_key_binding_t;
+
+/**
+ * Callback for a key binding.
+ *
+ * @param kc                  The key combo that triggered the callback.
+ *
+ * @return true if the key can be considered "consumed".
+ */
+typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
+
 #include "cursor.h"
 #include "idle.h"
 #include "output.h"
@@ -157,8 +171,8 @@ struct _wlmaker_server_t {
     /** Signal: When the task list is disabled. (to be hidden) */
     struct wl_signal          task_list_disabled_event;
 
-    /** Keys bound to specific actions. */
-    bs_dllist_t               key_bindings;
+    /** List of all bound keys, see @ref wlmaker_key_binding_t::dlnode. */
+    bs_dllist_t               bindings;
 
     /** Clients for this server. */
     bs_dllist_t               clients;
@@ -186,13 +200,17 @@ struct _wlmaker_server_t {
     struct wl_signal          window_unmapped_event;
 };
 
-/** Callback for key binding. */
-typedef void (*wlmaker_server_bind_key_callback_t)(
-    wlmaker_server_t *server_ptr,
-    void *callback_arg_ptr);
-
-/** State of a key binding. */
-typedef struct _wlmaker_server_key_binding_t wlmaker_server_key_binding_t;
+/** Specifies the key + modifier to bind. */
+struct _wlmaker_key_combo_t {
+    /** Modifiers required. See `enum wlr_keyboard_modifiers`. */
+    uint32_t                  modifiers;
+    /** Modifier mask: Only masked modifiers are considered. */
+    uint32_t                  modifiers_mask;
+    /** XKB Keysym to trigger on. */
+    xkb_keysym_t              keysym;
+    /** Whether to ignore case when matching. */
+    bool                      ignore_case;
+};
 
 /**
  * Creates the server and initializes all needed sub-modules.
@@ -231,44 +249,41 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
                                   wlmaker_output_t *output_ptr);
 
 /**
- * Binds the callback to the specified key and modifiers.
+ * Binds a particular key to a callback.
  *
  * @param server_ptr
- * @param key_sym             The key to bind. Both upper- and lower-case will
- *                            be bound!
- * @param modifiers           Modifiers of the bound key.
- * @param callback            Callback for when key is pressed.
- * @param callback_arg_ptr    Argument to pass to |callback|.
+ * @param key_combo_ptr
+ * @param callback
+ *
+ * @return The key binding handle or NULL on error.
  */
-wlmaker_server_key_binding_t *wlmaker_server_bind_key(
+wlmaker_key_binding_t *wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
-    uint32_t modifiers,
-    wlmaker_server_bind_key_callback_t callback,
-    void *callback_arg_ptr);
+    const wlmaker_key_combo_t *key_combo_ptr,
+    wlmaker_keybinding_callback_t callback);
 
 /**
- * Releases a previously-bound key binding.
+ * Releases a key binding. @see wlmaker_bind_key.
  *
  * @param server_ptr
  * @param key_binding_ptr
  */
 void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
-    wlmaker_server_key_binding_t *key_binding_ptr);
+    wlmaker_key_binding_t *key_binding_ptr);
 
 /**
- * Processes a key press: Looks for matching bindings and runs the callback.
+ * Processes key bindings: Call back if a matching binding is found.
  *
  * @param server_ptr
- * @param key_sym
+ * @param keysym
  * @param modifiers
  *
- * @return true, if there was a matching binding; false if not.
+ * @return true if a binding was found AND the callback returned true.
  */
-bool wlmaker_server_process_key(
+bool wlmaker_keyboard_process_bindings(
     wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
+    xkb_keysym_t keysym,
     uint32_t modifiers);
 
 /**
@@ -314,6 +329,12 @@ void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
  */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr);
+
+/** All modifiers to use by default. */
+extern const uint32_t wlmaker_modifier_default_mask;
+
+/** Unit test cases. */
+extern const bs_test_case_t   wlmaker_server_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
