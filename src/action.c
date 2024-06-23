@@ -132,7 +132,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         _wlmaker_action_binding_t *binding_ptr = BS_CONTAINER_OF(
             qnode_ptr, _wlmaker_action_binding_t, qnode);
         qnode_ptr = qnode_ptr->next_ptr;
-        wlmaker_server_keyboard_unbind(
+        wlmaker_server_unbind_key(
             handle_ptr->server_ptr,
             &binding_ptr->binding);
         free(binding_ptr);
@@ -262,7 +262,7 @@ bool _wlmaker_keybindings_bind_item(
     action_binding_ptr->binding.ignore_case = true;
     action_binding_ptr->binding.modifiers = modifiers;
     action_binding_ptr->binding.modifiers_mask = 0;  // FIXME
-    bool rv = wlmaker_server_keyboard_bind(
+    bool rv = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
         &action_binding_ptr->binding,
         _wlmaker_action_bound_callback);

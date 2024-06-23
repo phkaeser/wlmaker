@@ -254,18 +254,18 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
  *
  * @return true on success.
  */
-bool wlmaker_server_keyboard_bind(
+bool wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr,
     wlmaker_keybinding_callback_t callback);
 
 /**
- * Releases a key binding. @see wlmaker_keyboard_bind.
+ * Releases a key binding. @see wlmaker_bind_key.
  *
  * @param server_ptr
  * @param binding_ptr
  */
-void wlmaker_server_keyboard_unbind(
+void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr);
 

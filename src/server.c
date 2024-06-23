@@ -569,7 +569,7 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmaker_server_keyboard_bind(
+bool wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr,
     wlmaker_keybinding_callback_t callback)
@@ -580,7 +580,7 @@ bool wlmaker_server_keyboard_bind(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_server_keyboard_unbind(
+void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr)
 {
@@ -918,10 +918,10 @@ void test_bind(bs_test_t *test_ptr)
     // First binding. Ctrl-A, permitting other modifiers except Ctrl.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_server_keyboard_bind(&srv, &binding_a, test_binding_callback));
+        wlmaker_server_bind_key(&srv, &binding_a, test_binding_callback));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmaker_server_keyboard_bind(&srv, &binding_b, test_binding_callback));
+        wlmaker_server_bind_key(&srv, &binding_b, test_binding_callback));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmaker_keyboard_process_bindings(&srv, XKB_KEY_A, WLR_MODIFIER_CTRL));
@@ -949,8 +949,8 @@ void test_bind(bs_test_t *test_ptr)
         test_ptr,
         wlmaker_keyboard_process_bindings(&srv, XKB_KEY_B, 0));
 
-    wlmaker_server_keyboard_unbind(&srv, &binding_b);
-    wlmaker_server_keyboard_unbind(&srv, &binding_a);
+    wlmaker_server_unbind_key(&srv, &binding_b);
+    wlmaker_server_unbind_key(&srv, &binding_a);
 }
 
 /* == End of server.c ====================================================== */
