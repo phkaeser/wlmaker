@@ -134,6 +134,9 @@ struct _wlmtk_window_t {
     bool                      server_side_decorated;
     /** Stores whether the window is activated (keyboard focus). */
     bool                      activated;
+
+    /** The style used for this window. */
+    wlmtk_window_style_t      style;
 };
 
 /** State of a fake window: Includes the public record and the window. */
@@ -203,24 +206,6 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
     .request_resize = _wlmtk_window_request_resize,
 };
 
-/** Style of the title bar. */
-// TODO(kaeser@gubbe.ch): Move to central config. */
-static const wlmtk_titlebar_style_t titlebar_style = {
-    .focussed_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xff505a5e,.to = 0xff202a2e }}
-    },
-    .blurred_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xffc2c0c5,.to = 0xff828085 }}
-    },
-    .focussed_text_color = 0xffffffff,
-    .blurred_text_color = 0xff000000,
-    .height = 22,
-    .bezel_width = 1,
-    .margin_style = { .width = 1, .color = 0xff000000 },
-};
-
 /** Style of the resize bar. */
 // TODO(kaeser@gubbe.ch): Move to central config. */
 static const wlmtk_resizebar_style_t resizebar_style = {
@@ -231,16 +216,18 @@ static const wlmtk_resizebar_style_t resizebar_style = {
     .height = 7,
     .corner_width = 29,
     .bezel_width = 1,
-    .margin_style = { .width = 0, .color = 0xff000000 },
+    .margin = { .width = 0, .color = 0xff000000 },
 };
 
 /** Style of the margin between title, surface and resizebar. */
+// TODO(kaeser@gubbe.ch): Move to central config. */
 static const wlmtk_margin_style_t margin_style = {
     .width = 1,
     .color = 0xff000000,
 };
 
 /** Style of the border around the window. */
+// TODO(kaeser@gubbe.ch): Move to central config. */
 static const wlmtk_margin_style_t border_style = {
     .width = 1,
     .color = 0xff000000,
@@ -251,10 +238,12 @@ static const wlmtk_margin_style_t border_style = {
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
+    const wlmtk_window_style_t *style_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
+    window_ptr->style = *style_ptr;
 
     if (!_wlmtk_window_init(
             window_ptr,
@@ -558,7 +547,7 @@ void wlmtk_window_get_size(
     *height_ptr = dimensions.height;
 
     if (NULL != window_ptr->titlebar_ptr) {
-        *height_ptr += titlebar_style.height + margin_style.width;
+        *height_ptr += window_ptr->style.titlebar.height + margin_style.width;
     }
     if (NULL != window_ptr->resizebar_ptr) {
         *height_ptr += resizebar_style.height + margin_style.width;
@@ -869,7 +858,7 @@ void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
     // Create decoration.
     window_ptr->titlebar_ptr = wlmtk_titlebar_create(
         window_ptr->super_bordered.super_container.super_element.env_ptr,
-        window_ptr, &titlebar_style);
+        window_ptr, &window_ptr->style.titlebar);
     BS_ASSERT(NULL != window_ptr->titlebar_ptr);
     wlmtk_titlebar_set_activated(
         window_ptr->titlebar_ptr, window_ptr->activated);
@@ -975,7 +964,7 @@ void _wlmtk_window_request_position_and_size_decorated(
 {
     // Correct for borders, margin and decoration.
     if (include_titlebar) {
-        height -= titlebar_style.height + margin_style.width;
+        height -= window_ptr->style.titlebar.height + margin_style.width;
     }
     if (include_resizebar) {
         height -= resizebar_style.height + margin_style.width;
@@ -1206,9 +1195,10 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
+    wlmtk_window_style_t style;
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &style, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 

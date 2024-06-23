@@ -24,13 +24,7 @@
 typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 
 #include "element.h"
-
 #include "primitives.h"
-#include "window.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
 
 /** Style options for the titlebar. */
 typedef struct {
@@ -47,8 +41,14 @@ typedef struct {
     /** Width of the bezel. */
     uint32_t                  bezel_width;
     /** Style of the margin within the resizebar. */
-    wlmtk_margin_style_t      margin_style;
+    wlmtk_margin_style_t      margin;
 } wlmtk_titlebar_style_t;
+
+#include "window.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 /**
  * Creates a title bar, suitable as a window title.

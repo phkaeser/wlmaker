@@ -1,0 +1,38 @@
+// Style oriented on Window Maker's default.
+{
+  Dock = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+  };
+  Tile = {
+    Size = 64;
+    BezelWidth = 2;
+    Fill = {
+      From = "argb32:ffa6a6b6";
+      To = "argb32:ff515561";
+      Type = DGRADIENT;
+    };
+  };
+  Window = {
+    TitleBar = {
+      FocussedFill = {
+        Color = "argb32:ff000000";
+        Type = SOLID;
+      };
+      FocussedTextColor = "argb32:ffffffff";
+      BlurredFill = {
+        Color = "argb32:ff666666";
+        Type = SOLID;
+      };
+      BlurredTextColor = "argb32:ff000000";
+      Height = 22;
+      BezelWidth = 1;
+      Margin = {
+        Width = 1;
+        Color = "argb32:ff000000" ;
+      };
+    };
+  };
+}
