@@ -243,6 +243,12 @@ void test_from_file(bs_test_t *test_ptr)
         "value0",
         wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
 
+    v_ptr = BS_ASSERT_NOTNULL(wlmcfg_dict_get(dict_ptr, "quoted+key"));
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "value",
+        wlmcfg_string_value(wlmcfg_string_from_object(v_ptr)));
+
     wlmcfg_object_unref(object_ptr);
 
     object_ptr = wlmcfg_create_object_from_plist_file(

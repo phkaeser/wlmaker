@@ -4,6 +4,7 @@
   // more comment.
   subdict = {  // comment.
     key1 = value1  // comment.
-  }  // comment.
+  };  // comment.
+  "quoted+key" = value;
 }
 //more.
