@@ -288,11 +288,11 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
                 wl_signal_emit(
                     &keyboard_ptr->server_ptr->task_list_enabled_event, NULL);
                 processed = true;
-            }  else {
-                processed = wlmaker_server_process_key(
-                    keyboard_ptr->server_ptr,
-                    key_syms[i],
-                    modifiers);
+            }
+
+            if (!processed) {
+                processed = wlmaker_keyboard_process_bindings(
+                    keyboard_ptr->server_ptr, key_syms[i], modifiers);
             }
         }
     }
