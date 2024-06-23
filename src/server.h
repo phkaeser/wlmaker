@@ -38,7 +38,7 @@
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
-/** A key binding. */
+/** A key combination. */
 typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
 
 /**
@@ -169,7 +169,7 @@ struct _wlmaker_server_t {
     /** Signal: When the task list is disabled. (to be hidden) */
     struct wl_signal          task_list_disabled_event;
 
-    /** List of all bound keys, see @ref wlmaker_keyboard_binding_t::dlnode. */
+    /** List of all bound keys, see @ref wlmaker_key_binding_t::dlnode. */
     bs_dllist_t               bindings;
 
     /** Clients for this server. */

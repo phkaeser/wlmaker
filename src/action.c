@@ -262,6 +262,8 @@ bool _wlmaker_keybindings_bind_item(
     action_binding_ptr->key_combo.ignore_case = true;
     action_binding_ptr->key_combo.modifiers = modifiers;
     action_binding_ptr->key_combo.modifiers_mask = 0;  // FIXME
+
+    // FIXME: bind! action_binding_ptr-Y
     bool rv = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
         &action_binding_ptr->key_combo,

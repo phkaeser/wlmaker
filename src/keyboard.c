@@ -42,9 +42,6 @@ struct _wlmaker_keyboard_t {
     /** Listener for the `key` signal of `wl_keyboard`. */
     struct wl_listener        key_listener;
 
-    /** List of all bound keys, see @ref wlmaker_keyboard_binding_t::dlnode. */
-    bs_dllist_t               bindings;
-
     /** Whether the task switching mode is currently enabled. */
     bool                      task_switch_mode_enabled;
 };

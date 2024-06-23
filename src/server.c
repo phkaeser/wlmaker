@@ -51,13 +51,13 @@ typedef struct {
 
 /** Internal struct holding a keybinding. */
 typedef struct {
-    /** Node within @ref wlmaker_keyboard_t::bindings. */
+    /** Node within @ref wlmaker_server_t::bindings. */
     bs_dllist_node_t          dlnode;
     /** The key binding: Modifier and keysym to bind to. */
     const wlmaker_key_combo_t *key_combo_ptr;
     /** Callback for when this modifier + key is encountered. */
     wlmaker_keybinding_callback_t callback;
-} wlmaker_keyboard_binding_t;
+} wlmaker_key_binding_t;
 
 static bool register_input_device(
     wlmaker_server_t *server_ptr,
@@ -86,13 +86,13 @@ static void wlmaker_server_switch_to_workspace(
     wlmaker_server_t *server_ptr,
     wlmaker_workspace_t *workspace_ptr);
 
-static wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
+static wlmaker_key_binding_t *_wlmaker_keyboard_binding_create(
     wlmaker_server_t *server_ptr,
     const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback);
 static void _wlmaker_keyboard_binding_destroy(
     wlmaker_server_t *server_ptr,
-    wlmaker_keyboard_binding_t *kb_binding_ptr);
+    wlmaker_key_binding_t *key_binding_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -378,10 +378,10 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     {
         bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
         while (NULL != dlnode_ptr) {
-            wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
-                dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
+            wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
+                dlnode_ptr, wlmaker_key_binding_t, dlnode);
             dlnode_ptr = dlnode_ptr->next_ptr;
-            _wlmaker_keyboard_binding_destroy(server_ptr, kb_binding_ptr);
+            _wlmaker_keyboard_binding_destroy(server_ptr, key_binding_ptr);
         }
     }
 
@@ -574,9 +574,9 @@ bool wlmaker_server_bind_key(
     const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback)
 {
-    wlmaker_keyboard_binding_t *kb_binding_ptr =
+    wlmaker_key_binding_t *key_binding_ptr =
         _wlmaker_keyboard_binding_create(server_ptr, key_combo_ptr, callback);
-    return NULL != kb_binding_ptr;
+    return NULL != key_binding_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -587,10 +587,10 @@ void wlmaker_server_unbind_key(
     for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.tail_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = dlnode_ptr->prev_ptr) {
-        wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
-        if (kb_binding_ptr->key_combo_ptr == key_combo_ptr)  {
-            _wlmaker_keyboard_binding_destroy(server_ptr, kb_binding_ptr);
+        wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_key_binding_t, dlnode);
+        if (key_binding_ptr->key_combo_ptr == key_combo_ptr)  {
+            _wlmaker_keyboard_binding_destroy(server_ptr, key_binding_ptr);
             return;
         }
     }
@@ -605,10 +605,10 @@ bool wlmaker_keyboard_process_bindings(
     for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = dlnode_ptr->next_ptr) {
-        wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
+        wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_key_binding_t, dlnode);
         const wlmaker_key_combo_t *key_combo_ptr =
-            kb_binding_ptr->key_combo_ptr;
+            key_binding_ptr->key_combo_ptr;
 
         uint32_t mask = key_combo_ptr->modifiers_mask;
         if (!mask) mask = UINT32_MAX;
@@ -621,7 +621,7 @@ bool wlmaker_keyboard_process_bindings(
             keysym != xkb_keysym_to_lower(bound_ks) &&
             keysym != xkb_keysym_to_upper(bound_ks)) continue;
 
-        if (kb_binding_ptr->callback(key_combo_ptr)) return true;
+        if (key_binding_ptr->callback(key_combo_ptr)) return true;
     }
     return false;
 }
@@ -857,32 +857,32 @@ void wlmaker_server_switch_to_workspace(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Ctor for @ref wlmaker_keyboard_binding_t. */
-wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
+/** Ctor for @ref wlmaker_key_binding_t. */
+wlmaker_key_binding_t *_wlmaker_keyboard_binding_create(
     wlmaker_server_t *server_ptr,
     const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback)
 {
-    wlmaker_keyboard_binding_t *kb_binding_ptr = logged_calloc(
-        1, sizeof(wlmaker_keyboard_binding_t));
-    if (NULL == kb_binding_ptr) return NULL;
+    wlmaker_key_binding_t *key_binding_ptr = logged_calloc(
+        1, sizeof(wlmaker_key_binding_t));
+    if (NULL == key_binding_ptr) return NULL;
 
-    kb_binding_ptr->key_combo_ptr = key_combo_ptr;
-    kb_binding_ptr->callback = callback;
-    bs_dllist_push_back(&server_ptr->bindings, &kb_binding_ptr->dlnode);
-    return kb_binding_ptr;
+    key_binding_ptr->key_combo_ptr = key_combo_ptr;
+    key_binding_ptr->callback = callback;
+    bs_dllist_push_back(&server_ptr->bindings, &key_binding_ptr->dlnode);
+    return key_binding_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-/** Dtor for @ref wlmaker_keyboard_binding_t. */
+/** Dtor for @ref wlmaker_key_binding_t. */
 void _wlmaker_keyboard_binding_destroy(
     wlmaker_server_t *server_ptr,
-    wlmaker_keyboard_binding_t *kb_binding_ptr)
+    wlmaker_key_binding_t *key_binding_ptr)
 {
-    if (NULL == kb_binding_ptr) return;
+    if (NULL == key_binding_ptr) return;
 
-    bs_dllist_remove(&server_ptr->bindings, &kb_binding_ptr->dlnode);
-    free(kb_binding_ptr);
+    bs_dllist_remove(&server_ptr->bindings, &key_binding_ptr->dlnode);
+    free(key_binding_ptr);
 }
 
 /* == Unit tests =========================================================== */
