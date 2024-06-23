@@ -46,7 +46,7 @@ typedef struct {
     /** Node of @ref wlmaker_action_handle_t::bindings. */
     bs_dequeue_node_t         qnode;
     /** The key binding. */
-    wlmaker_keybinding_t      binding;
+    wlmaker_key_combo_t       key_combo;
     /** The associated action. */
     wlmaker_action_t          action;
     /** State of the bound actions. */
@@ -64,7 +64,7 @@ static bool _wlmaker_keybindings_bind_item(
     void *userdata_ptr);
 
 static bool _wlmaker_action_bound_callback(
-    const wlmaker_keybinding_t *binding_ptr);
+    const wlmaker_key_combo_t *binding_ptr);
 
 /* == Data ================================================================= */
 
@@ -134,7 +134,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         qnode_ptr = qnode_ptr->next_ptr;
         wlmaker_server_unbind_key(
             handle_ptr->server_ptr,
-            &binding_ptr->binding);
+            &binding_ptr->key_combo);
         free(binding_ptr);
     }
 
@@ -258,13 +258,13 @@ bool _wlmaker_keybindings_bind_item(
     if (NULL == action_binding_ptr) return false;
     action_binding_ptr->handle_ptr = handle_ptr;
     action_binding_ptr->action = action;
-    action_binding_ptr->binding.keysym = keysym;
-    action_binding_ptr->binding.ignore_case = true;
-    action_binding_ptr->binding.modifiers = modifiers;
-    action_binding_ptr->binding.modifiers_mask = 0;  // FIXME
+    action_binding_ptr->key_combo.keysym = keysym;
+    action_binding_ptr->key_combo.ignore_case = true;
+    action_binding_ptr->key_combo.modifiers = modifiers;
+    action_binding_ptr->key_combo.modifiers_mask = 0;  // FIXME
     bool rv = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
-        &action_binding_ptr->binding,
+        &action_binding_ptr->key_combo,
         _wlmaker_action_bound_callback);
     if (rv) {
         bs_dequeue_push_back(
@@ -330,15 +330,14 @@ bool _wlmaker_keybindings_parse(
  * Callback for when the bound key is triggered: Executes the corresponding
  * action.
  *
- * @param binding_ptr
+ * @param key_combo_ptr
  *
  * @return true always.
  */
-bool _wlmaker_action_bound_callback(
-    const wlmaker_keybinding_t *binding_ptr)
+bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
 {
     _wlmaker_action_binding_t *action_binding_ptr = BS_CONTAINER_OF(
-        binding_ptr, _wlmaker_action_binding_t, binding);
+        key_combo_ptr, _wlmaker_action_binding_t, key_combo);
 
     wlmaker_action_execute(
         action_binding_ptr->handle_ptr->server_ptr,

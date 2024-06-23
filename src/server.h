@@ -37,8 +37,9 @@
 
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
+
 /** A key binding. */
-typedef struct _wlmaker_keybinding_t wlmaker_keybinding_t;
+typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
 
 /**
  * Callback for a key binding.
@@ -47,7 +48,7 @@ typedef struct _wlmaker_keybinding_t wlmaker_keybinding_t;
  *
  * @return true if the key can be considered "consumed".
  */
-typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_keybinding_t *b);
+typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *b);
 
 #include "cursor.h"
 #include "idle.h"
@@ -198,7 +199,7 @@ struct _wlmaker_server_t {
 };
 
 /** Specifies the key + modifier to bind. */
-struct _wlmaker_keybinding_t {
+struct _wlmaker_key_combo_t {
     /** Modifiers expected for this keybinding. */
     uint32_t                  modifiers;
     /** Modifier mask: Only masked modifiers are considered. */
@@ -249,25 +250,25 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
  * Binds a particular key to a callback.
  *
  * @param server_ptr
- * @param binding_ptr
+ * @param key_combo_ptr
  * @param callback
  *
  * @return true on success.
  */
 bool wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr,
+    const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback);
 
 /**
  * Releases a key binding. @see wlmaker_bind_key.
  *
  * @param server_ptr
- * @param binding_ptr
+ * @param key_combo_ptr
  */
 void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr);
+    const wlmaker_key_combo_t *key_combo_ptr);
 
 /**
  * Processes key bindings: Call back if a matching binding is found.

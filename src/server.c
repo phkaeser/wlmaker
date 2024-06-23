@@ -54,7 +54,7 @@ typedef struct {
     /** Node within @ref wlmaker_keyboard_t::bindings. */
     bs_dllist_node_t          dlnode;
     /** The key binding: Modifier and keysym to bind to. */
-    const wlmaker_keybinding_t *binding_ptr;
+    const wlmaker_key_combo_t *key_combo_ptr;
     /** Callback for when this modifier + key is encountered. */
     wlmaker_keybinding_callback_t callback;
 } wlmaker_keyboard_binding_t;
@@ -88,7 +88,7 @@ static void wlmaker_server_switch_to_workspace(
 
 static wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr,
+    const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback);
 static void _wlmaker_keyboard_binding_destroy(
     wlmaker_server_t *server_ptr,
@@ -571,25 +571,25 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr,
+    const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback)
 {
     wlmaker_keyboard_binding_t *kb_binding_ptr =
-        _wlmaker_keyboard_binding_create(server_ptr, binding_ptr, callback);
+        _wlmaker_keyboard_binding_create(server_ptr, key_combo_ptr, callback);
     return NULL != kb_binding_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr)
+    const wlmaker_key_combo_t *key_combo_ptr)
 {
     for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.tail_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = dlnode_ptr->prev_ptr) {
         wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
             dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
-        if (kb_binding_ptr->binding_ptr == binding_ptr)  {
+        if (kb_binding_ptr->key_combo_ptr == key_combo_ptr)  {
             _wlmaker_keyboard_binding_destroy(server_ptr, kb_binding_ptr);
             return;
         }
@@ -607,20 +607,21 @@ bool wlmaker_keyboard_process_bindings(
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
             dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
-        const wlmaker_keybinding_t *binding_ptr = kb_binding_ptr->binding_ptr;
+        const wlmaker_key_combo_t *key_combo_ptr =
+            kb_binding_ptr->key_combo_ptr;
 
-        uint32_t mask = binding_ptr->modifiers_mask;
+        uint32_t mask = key_combo_ptr->modifiers_mask;
         if (!mask) mask = UINT32_MAX;
-        if ((modifiers & mask) != binding_ptr->modifiers) continue;
+        if ((modifiers & mask) != key_combo_ptr->modifiers) continue;
 
-        xkb_keysym_t bound_ks = binding_ptr->keysym;
-        if (!binding_ptr->ignore_case && keysym != bound_ks) continue;
+        xkb_keysym_t bound_ks = key_combo_ptr->keysym;
+        if (!key_combo_ptr->ignore_case && keysym != bound_ks) continue;
 
-        if (binding_ptr->ignore_case &&
+        if (key_combo_ptr->ignore_case &&
             keysym != xkb_keysym_to_lower(bound_ks) &&
             keysym != xkb_keysym_to_upper(bound_ks)) continue;
 
-        if (kb_binding_ptr->callback(binding_ptr)) return true;
+        if (kb_binding_ptr->callback(key_combo_ptr)) return true;
     }
     return false;
 }
@@ -859,14 +860,14 @@ void wlmaker_server_switch_to_workspace(
 /** Ctor for @ref wlmaker_keyboard_binding_t. */
 wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
     wlmaker_server_t *server_ptr,
-    const wlmaker_keybinding_t *binding_ptr,
+    const wlmaker_key_combo_t *key_combo_ptr,
     wlmaker_keybinding_callback_t callback)
 {
     wlmaker_keyboard_binding_t *kb_binding_ptr = logged_calloc(
         1, sizeof(wlmaker_keyboard_binding_t));
     if (NULL == kb_binding_ptr) return NULL;
 
-    kb_binding_ptr->binding_ptr = binding_ptr;
+    kb_binding_ptr->key_combo_ptr = key_combo_ptr;
     kb_binding_ptr->callback = callback;
     bs_dllist_push_back(&server_ptr->bindings, &kb_binding_ptr->dlnode);
     return kb_binding_ptr;
@@ -896,7 +897,7 @@ const bs_test_case_t          wlmaker_server_test_cases[] = {
 
 /** Test helper: Callback for a keybinding. */
 bool test_binding_callback(
-    __UNUSED__ const wlmaker_keybinding_t *binding_ptr) {
+    __UNUSED__ const wlmaker_key_combo_t *key_combo_ptr) {
     return true;
 }
 
@@ -905,13 +906,13 @@ bool test_binding_callback(
 void test_bind(bs_test_t *test_ptr)
 {
     wlmaker_server_t          srv = {};
-    wlmaker_keybinding_t      binding_a = {
+    wlmaker_key_combo_t      binding_a = {
         .modifiers = WLR_MODIFIER_CTRL,
         .modifiers_mask = WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT,
         .keysym = XKB_KEY_A,
         .ignore_case = true
     };
-    wlmaker_keybinding_t      binding_b = {
+    wlmaker_key_combo_t      binding_b = {
         .keysym = XKB_KEY_b
     };
 
