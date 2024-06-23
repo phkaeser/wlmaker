@@ -49,6 +49,8 @@ typedef struct {
     wlmaker_key_combo_t       key_combo;
     /** The associated action. */
     wlmaker_action_t          action;
+    /** The key binding it to this node. */
+    wlmaker_key_binding_t     *key_binding_ptr;
     /** State of the bound actions. */
     wlmaker_action_handle_t   *handle_ptr;
 } _wlmaker_action_binding_t;
@@ -134,7 +136,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         qnode_ptr = qnode_ptr->next_ptr;
         wlmaker_server_unbind_key(
             handle_ptr->server_ptr,
-            &binding_ptr->key_combo);
+            binding_ptr->key_binding_ptr);
         free(binding_ptr);
     }
 
@@ -262,19 +264,18 @@ bool _wlmaker_keybindings_bind_item(
     action_binding_ptr->key_combo.ignore_case = true;
     action_binding_ptr->key_combo.modifiers = modifiers;
     action_binding_ptr->key_combo.modifiers_mask = 0;  // FIXME
-
-    // FIXME: bind! action_binding_ptr-Y
-    bool rv = wlmaker_server_bind_key(
+    action_binding_ptr->key_binding_ptr = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
         &action_binding_ptr->key_combo,
         _wlmaker_action_bound_callback);
-    if (rv) {
+    if (NULL != action_binding_ptr->key_binding_ptr) {
         bs_dequeue_push_back(
             &handle_ptr->bindings, &action_binding_ptr->qnode);
-    } else {
-        free(action_binding_ptr);
+        return true;
     }
-    return rv;
+
+    free(action_binding_ptr);
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
