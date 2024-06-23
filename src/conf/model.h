@@ -180,7 +180,7 @@ wlmcfg_object_t *wlmcfg_array_at(
 /* -- Static & inlined methods: Convenience wrappers ----------------------- */
 
 /** Unreferences the string. Wraps to @ref wlmcfg_object_unref. */
-static inline void wlmcf_string_unref(wlmcfg_string_t *string_ptr)
+static inline void wlmcfg_string_unref(wlmcfg_string_t *string_ptr)
 {
     wlmcfg_object_unref(wlmcfg_object_from_string(string_ptr));
 }
