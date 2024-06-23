@@ -158,6 +158,7 @@ struct _wlmaker_server_t {
     struct wl_signal          task_list_disabled_event;
 
     /** Keys bound to specific actions. */
+    // TODO(kaeser@gubbe.ch): Remove.
     bs_dllist_t               key_bindings;
 
     /** Clients for this server. */
@@ -187,11 +188,13 @@ struct _wlmaker_server_t {
 };
 
 /** Callback for key binding. */
+// TODO(kaeser@gubbe.ch): Remove.
 typedef void (*wlmaker_server_bind_key_callback_t)(
     wlmaker_server_t *server_ptr,
     void *callback_arg_ptr);
 
 /** State of a key binding. */
+// TODO(kaeser@gubbe.ch): Remove.
 typedef struct _wlmaker_server_key_binding_t wlmaker_server_key_binding_t;
 
 /**
@@ -240,6 +243,7 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
  * @param callback            Callback for when key is pressed.
  * @param callback_arg_ptr    Argument to pass to |callback|.
  */
+// TODO(kaeser@gubbe.ch): Remove.
 wlmaker_server_key_binding_t *wlmaker_server_bind_key(
     wlmaker_server_t *server_ptr,
     xkb_keysym_t key_sym,
@@ -253,6 +257,7 @@ wlmaker_server_key_binding_t *wlmaker_server_bind_key(
  * @param server_ptr
  * @param key_binding_ptr
  */
+// TODO(kaeser@gubbe.ch): Remove.
 void wlmaker_server_unbind_key(
     wlmaker_server_t *server_ptr,
     wlmaker_server_key_binding_t *key_binding_ptr);
@@ -266,6 +271,7 @@ void wlmaker_server_unbind_key(
  *
  * @return true, if there was a matching binding; false if not.
  */
+// TODO(kaeser@gubbe.ch): Remove.
 bool wlmaker_server_process_key(
     wlmaker_server_t *server_ptr,
     xkb_keysym_t key_sym,
