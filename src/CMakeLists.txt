@@ -26,7 +26,6 @@ SET(PUBLIC_HEADER_FILES
   iconified.h
   idle.h
   interactive.h
-  keybindings.h
   keyboard.h
   layer_panel.h
   layer_shell.h
@@ -64,7 +63,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   iconified.c
   idle.c
   interactive.c
-  keybindings.c
   keyboard.c
   launcher.c
   layer_panel.c

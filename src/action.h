@@ -47,8 +47,12 @@ typedef enum {
  * @param server_ptr
  * @param action
  */
-void wlmaker_action_execute(wlmaker_server_t *server_ptr,
-                            wlmaker_action_t action);
+void wlmaker_action_execute(
+    wlmaker_server_t *server_ptr,
+    wlmaker_action_t action);
+
+/** Unit test cases. */
+extern const bs_test_case_t   wlmaker_action_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
