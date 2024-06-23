@@ -72,7 +72,7 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
 };
 
 /** The actions that can be bound. */
-static const wlmcfg_enum_desc_t _wlmaker_actions[] = {
+static const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("Quit", WLMAKER_ACTION_QUIT),
     WLMCFG_ENUM("LockScreen", WLMAKER_ACTION_LOCK_SCREEN),
     WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
@@ -209,7 +209,7 @@ bool _wlmaker_keybindings_bind_item(
 
     int action;
     if (!wlmcfg_enum_name_to_value(
-            _wlmaker_actions, wlmcfg_string_value(string_ptr), &action)) {
+            wlmaker_action_desc, wlmcfg_string_value(string_ptr), &action)) {
         bs_log(BS_WARNING, "Not a valid keybinding action: '%s'",
                wlmcfg_string_value(string_ptr));
         return false;

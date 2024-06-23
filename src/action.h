@@ -26,7 +26,7 @@
 extern "C" {
 #endif  // __cplusplus
 
-/** wlmaker actions. Can be bound to keys. */
+/** wlmaker actions. Can be bound to keys. Also @see wlmaker_action_desc. */
 typedef enum {
     WLMAKER_ACTION_QUIT,
     WLMAKER_ACTION_LOCK_SCREEN,
