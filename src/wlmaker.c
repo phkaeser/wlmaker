@@ -39,7 +39,7 @@
 #include "server.h"
 #include "task_list.h"
 
-#include "default_style.h"
+#include "style_default.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
@@ -175,8 +175,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_config_style_t style = {};
     wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_data(
-            embedded_binary_default_style_data,
-            embedded_binary_default_style_size));
+            embedded_binary_style_default_data,
+            embedded_binary_style_default_size));
     BS_ASSERT(wlmcfg_decode_dict(
                   style_dict_ptr,
                   wlmaker_config_style_desc, &style));

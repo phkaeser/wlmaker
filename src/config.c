@@ -32,7 +32,7 @@
 
 #include "default_configuration.h"
 #include "default_dock_state.h"
-#include "default_style.h"
+#include "style_default.h"
 
 /* == Declarations ========================================================= */
 
@@ -329,8 +329,8 @@ void test_embedded(bs_test_t *test_ptr)
     wlmcfg_object_unref(obj_ptr);
 
     obj_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_default_style_data,
-        embedded_binary_default_style_size);
+        embedded_binary_style_default_data,
+        embedded_binary_style_default_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
@@ -363,15 +363,25 @@ void test_file(bs_test_t *test_ptr)
 void test_style_file(bs_test_t *test_ptr)
 {
     wlmcfg_dict_t *dict_ptr;
+    wlmaker_config_style_t config_style;
 
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
-    dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/default-style.plist");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
-    wlmaker_config_style_t config_style;
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/style-default.plist");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(
+            dict_ptr, wlmaker_config_style_desc, &config_style));
+    wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/style-debian.plist");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmcfg_decode_dict(
@@ -391,7 +401,9 @@ void test_decode_fill(bs_test_t *test_ptr)
     wlmtk_style_fill_t fill;
     wlmcfg_object_t *object_ptr;
 
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
+
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));
@@ -405,7 +417,8 @@ void test_decode_fill(bs_test_t *test_ptr)
          "From = \"argb32:0x04030201\";"
          "To = \"argb32:0x40302010\""
          "}");
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));
@@ -418,7 +431,8 @@ void test_decode_fill(bs_test_t *test_ptr)
          "Type = SOLID;"
          "Color = \"argb32:0x11223344\""
          "}");
-    object_ptr = BS_ASSERT_NOTNULL(wlmcfg_create_object_from_plist_string(s));
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         _wlmaker_config_decode_fill_style(object_ptr, &fill));

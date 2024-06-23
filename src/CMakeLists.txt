@@ -106,8 +106,8 @@ EmbedBinary_ADD_LIBRARY(
 
 EmbedBinary_ADD_LIBRARY(
   embedded_style
-  "default_style"
-  "${PROJECT_SOURCE_DIR}/etc/default-style.plist")
+  "style_default"
+  "${PROJECT_SOURCE_DIR}/etc/style-default.plist")
 
 ADD_DEPENDENCIES(
   wlmaker_lib

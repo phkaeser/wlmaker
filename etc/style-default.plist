@@ -1,0 +1,18 @@
+// Style oriented on Window Maker's default.
+{
+  Dock = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    }
+  };
+  Tile = {
+    Size = 64;
+    BezelWidth = 2;
+    Fill = {
+      From = "argb32:ffa6a6b6";
+      To = "argb32:ff515561";
+      Type = DGRADIENT
+    }
+  }
+}
