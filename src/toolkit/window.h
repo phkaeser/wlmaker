@@ -42,13 +42,14 @@ extern "C" {
 /** Style options for the window. */
 typedef struct {
     /** The titlebar's style. */
-    wlmtk_titlebar_style_t    titlebar_style;
+    wlmtk_titlebar_style_t    titlebar;
 } wlmtk_window_style_t;
 
 /**
  * Creates a window for the given content.
  *
  * @param env_ptr
+ * @param style_ptr
  * @param content_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
@@ -56,6 +57,7 @@ typedef struct {
  */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
+    const wlmtk_window_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

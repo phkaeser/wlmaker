@@ -189,7 +189,7 @@ static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, 1),
     WLMCFG_DESC_DICT(
-        "Margin", true, wlmtk_titlebar_style_t, margin_style,
+        "Margin", true, wlmtk_titlebar_style_t, margin,
         _wlmaker_config_margin_style_desc),
     WLMCFG_DESC_SENTINEL()
  };
@@ -197,7 +197,7 @@ static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
 /** Descriptor for decoding the "Window" dictionary. */
 static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_DICT(
-        "TitleBar", true, wlmtk_window_style_t, titlebar_style,
+        "TitleBar", true, wlmtk_window_style_t, titlebar,
         _wlmaker_config_window_titlebar_style_desc),
     WLMCFG_DESC_SENTINEL()
 };

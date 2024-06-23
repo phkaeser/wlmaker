@@ -29,7 +29,7 @@
         Type = HGRADIENT;
       };
       BlurredTextColor = "argb32:ff000000";
-      Height = 2;
+      Height = 22;
       BezelWidth = 1;
       Margin = {
         Width = 1;

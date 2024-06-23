@@ -158,6 +158,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;
 
+    BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
+
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
         return EXIT_FAILURE;
@@ -170,22 +172,22 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
+    wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
+    wlmcfg_dict_unref(config_dict_ptr);
+    if (NULL == server_ptr) return EXIT_FAILURE;
+
     // TODO: Should be loaded from file, if given in the config. Or on the
-    // commandline. And, Maybe store this in server?
-    wlmaker_config_style_t style = {};
+    // commandline.
     wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_data(
             embedded_binary_style_default_data,
             embedded_binary_style_default_size));
+    if (NULL == style_dict_ptr) return EXIT_FAILURE;
     BS_ASSERT(wlmcfg_decode_dict(
                   style_dict_ptr,
-                  wlmaker_config_style_desc, &style));
-
-    BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
-
-    wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
-    wlmcfg_dict_unref(config_dict_ptr);
-    if (NULL == server_ptr) return EXIT_FAILURE;
+                  wlmaker_config_style_desc,
+                  &server_ptr->style));
+    wlmcfg_dict_unref(style_dict_ptr);
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
@@ -212,8 +214,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             }
         }
 
-        dock_ptr = wlmaker_dock_create(server_ptr, &style);
-        clip_ptr = wlmaker_clip_create(server_ptr, &style);
+        dock_ptr = wlmaker_dock_create(server_ptr, &server_ptr->style);
+        clip_ptr = wlmaker_clip_create(server_ptr, &server_ptr->style);
         task_list_ptr = wlmaker_task_list_create(server_ptr);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
