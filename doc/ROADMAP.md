@@ -141,15 +141,28 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
   * [done] Configurable key combinations for basic window actions (minimize, ...).
+  * [done] File for visual style (theme): decoration style, background.
   * File to define workspaces and dock, falling back to default if not provided.
-  * File for visual style (theme): decoration style, background.
   * Include at least one additional theme.
+
+* Theme details
+  * Style for resizebar.
+  * Style for the window's margin.
+  * Style for the window border.
+  * Titlebar icons centered.
+  * Titlebar icons with text color.
+  * Bezel 'off' color so it is visible on black.
+  * Titlebar font and size.
+  * Style for clip.
+  * Style for task list fill and text color.
+  * Default background color.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
 
 * Multiple workspaces, based on toolkit.
   * Remove the earlier non-toolkit code.
+  * Background color for separate workspaces, configured in state.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.
