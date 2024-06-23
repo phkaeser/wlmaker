@@ -168,10 +168,6 @@ struct _wlmaker_server_t {
     /** Signal: When the task list is disabled. (to be hidden) */
     struct wl_signal          task_list_disabled_event;
 
-    /** Keys bound to specific actions. */
-    // TODO(kaeser@gubbe.ch): Remove.
-    bs_dllist_t               key_bindings;
-
     /** List of all bound keys, see @ref wlmaker_keyboard_binding_t::dlnode. */
     bs_dllist_t               bindings;
 
@@ -213,16 +209,6 @@ struct _wlmaker_keybinding_t {
     bool                      ignore_case;
 };
 
-/** Callback for key binding. */
-// TODO(kaeser@gubbe.ch): Remove.
-typedef void (*wlmaker_server_bind_key_callback_t)(
-    wlmaker_server_t *server_ptr,
-    void *callback_arg_ptr);
-
-/** State of a key binding. */
-// TODO(kaeser@gubbe.ch): Remove.
-typedef struct _wlmaker_server_key_binding_t wlmaker_server_key_binding_t;
-
 /**
  * Creates the server and initializes all needed sub-modules.
  *
@@ -260,35 +246,6 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
                                   wlmaker_output_t *output_ptr);
 
 /**
- * Binds the callback to the specified key and modifiers.
- *
- * @param server_ptr
- * @param key_sym             The key to bind. Both upper- and lower-case will
- *                            be bound!
- * @param modifiers           Modifiers of the bound key.
- * @param callback            Callback for when key is pressed.
- * @param callback_arg_ptr    Argument to pass to |callback|.
- */
-// TODO(kaeser@gubbe.ch): Remove.
-wlmaker_server_key_binding_t *wlmaker_server_bind_key(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
-    uint32_t modifiers,
-    wlmaker_server_bind_key_callback_t callback,
-    void *callback_arg_ptr);
-
-/**
- * Releases a previously-bound key binding.
- *
- * @param server_ptr
- * @param key_binding_ptr
- */
-// TODO(kaeser@gubbe.ch): Remove.
-void wlmaker_server_unbind_key(
-    wlmaker_server_t *server_ptr,
-    wlmaker_server_key_binding_t *key_binding_ptr);
-
-/**
  * Binds a particular key to a callback.
  *
  * @param server_ptr
@@ -312,28 +269,19 @@ void wlmaker_server_keyboard_release(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr);
 
-// FIXME.
-bool _wlmaker_keyboard_process_bindings(
+/**
+ * Processes key bindings: Call back if a matching binding is found.
+ *
+ * @param server_ptr
+ * @param keysym
+ * @param modifiers
+ *
+ * @return true if a binding was found AND the callback returned true.
+ */
+bool wlmaker_keyboard_process_bindings(
     wlmaker_server_t *server_ptr,
     xkb_keysym_t keysym,
     uint32_t modifiers);
-
-/**
- * Processes a key press: Looks for matching bindings and runs the callback.
- *
- * @param server_ptr
- * @param key_sym
- * @param modifiers
- *
- * @return true, if there was a matching binding; false if not.
- */
-// TODO(kaeser@gubbe.ch): Remove.
-bool wlmaker_server_process_key(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
-    uint32_t modifiers);
-
-
 
 /**
  * Returns the currently active workspace.

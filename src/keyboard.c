@@ -294,7 +294,7 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
             }
 
             if (!processed) {
-                processed = _wlmaker_keyboard_process_bindings(
+                processed = wlmaker_keyboard_process_bindings(
                     keyboard_ptr->server_ptr, key_syms[i], modifiers);
             }
         }
