@@ -170,6 +170,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
+        bs_arg_print_usage(stderr, wlmaker_args);
         return EXIT_FAILURE;
     }
     wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(
