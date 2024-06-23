@@ -140,6 +140,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Pick or implement parser for configuration file.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
+  * [done] Configurable key combinations for basic window actions (minimize, ...).
   * File to define workspaces and dock, falling back to default if not provided.
   * File for visual style (theme): decoration style, background.
   * Include at least one additional theme.
@@ -148,7 +149,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] XDG Popups.
 
 * Multiple workspaces, based on toolkit.
-  * Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+  * Remove the earlier non-toolkit code.
+  * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.
   * [done] Keep track of subprocesses and the corresponding windows.
@@ -164,7 +166,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Display application status (*starting*, *running*).
   * [done] Configurable (in code).
 
-*  Task list (window-alt-esc), cycling through windows, based on toolkit.
+* Task list (window-alt-esc), cycling through windows, based on toolkit.
+  * Key combination configurable.
 
 ## Plan for 0.4
 
@@ -258,7 +261,6 @@ Features for further versions, not ordered by priority nor timeline.
 
 * Window actions
   * Send to another workspace, using menu or key combinations.
-  * Configurable key combinations for basic actions (minimize, ...).
   * Window *shade* triggered by double-click, and animated.
   * Minimize (*iconify*) windows, using wlmtk.
   * Window menu.

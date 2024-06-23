@@ -49,21 +49,14 @@ typedef struct {
     struct wl_listener        destroy_listener;
 } wlmaker_input_device_t;
 
-/** State of a key binding. */
-struct _wlmaker_server_key_binding_t {
-    /** List node, as an element of `wlmaker_server_t.key_bindings`. */
-    bs_dllist_node_t          node;
-
-    /** The bound key, upper case. */
-    xkb_keysym_t              key_sym_upper;
-    /** The bound key, lower case. */
-    xkb_keysym_t              key_sym_lower;
-    /** Modifiers of the bound key. */
-    uint32_t                  modifiers;
-    /** Callback for when key is pressed. */
-    wlmaker_server_bind_key_callback_t callback;
-    /** Argument to pass to |callback| when key is pressed. */
-    void                      *callback_arg_ptr;
+/** Internal struct holding a keybinding. */
+struct _wlmaker_key_binding_t {
+    /** Node within @ref wlmaker_server_t::bindings. */
+    bs_dllist_node_t          dlnode;
+    /** The key binding: Modifier and keysym to bind to. */
+    const wlmaker_key_combo_t *key_combo_ptr;
+    /** Callback for when this modifier + key is encountered. */
+    wlmaker_keybinding_callback_t callback;
 };
 
 static bool register_input_device(
@@ -92,6 +85,18 @@ static void arrange_views(
 static void wlmaker_server_switch_to_workspace(
     wlmaker_server_t *server_ptr,
     wlmaker_workspace_t *workspace_ptr);
+
+/* == Data ================================================================= */
+
+const uint32_t wlmaker_modifier_default_mask = (
+    WLR_MODIFIER_SHIFT |
+    // Excluding: WLR_MODIFIER_CAPS.
+    WLR_MODIFIER_CTRL |
+    WLR_MODIFIER_ALT |
+    WLR_MODIFIER_MOD2 |
+    WLR_MODIFIER_MOD3 |
+    WLR_MODIFIER_LOGO |
+    WLR_MODIFIER_MOD5);
 
 /* == Exported methods ===================================================== */
 
@@ -374,6 +379,15 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
     // * server_ptr->void_wlr_scene_ptr
+    {
+        bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
+        while (NULL != dlnode_ptr) {
+            wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
+                dlnode_ptr, wlmaker_key_binding_t, dlnode);
+            dlnode_ptr = dlnode_ptr->next_ptr;
+            wlmaker_server_unbind_key(server_ptr, key_binding_ptr);
+        }
+    }
 
     if (NULL != server_ptr->monitor_ptr) {
         wlmaker_subprocess_monitor_destroy(server_ptr->monitor_ptr);
@@ -457,12 +471,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->lock_mgr_ptr = NULL;
     }
 
-    while (NULL != server_ptr->key_bindings.head_ptr) {
-        wlmaker_server_key_binding_t *key_binding_ptr =
-            (wlmaker_server_key_binding_t *)server_ptr->key_bindings.head_ptr;
-        wlmaker_server_unbind_key(server_ptr, key_binding_ptr);
-    }
-
     if (NULL != server_ptr->wlr_allocator_ptr) {
         wlr_allocator_destroy(server_ptr->wlr_allocator_ptr);
         server_ptr->wlr_allocator_ptr = NULL;
@@ -504,73 +512,6 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
     bs_dllist_remove(&server_ptr->outputs, &output_ptr->node);
     wlr_output_layout_remove(server_ptr->wlr_output_layout_ptr,
                              output_ptr->wlr_output_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-wlmaker_server_key_binding_t *wlmaker_server_bind_key(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
-    uint32_t modifiers,
-    wlmaker_server_bind_key_callback_t callback,
-    void *callback_arg_ptr)
-{
-    for (bs_dllist_node_t *node_ptr = server_ptr->key_bindings.head_ptr;
-         NULL != node_ptr;
-         node_ptr = node_ptr->next_ptr) {
-        wlmaker_server_key_binding_t *iter_kb_ptr =
-            (wlmaker_server_key_binding_t*)node_ptr;
-        if ((iter_kb_ptr->key_sym_lower == key_sym ||
-             iter_kb_ptr->key_sym_upper == key_sym) &&
-            iter_kb_ptr->modifiers == modifiers) {
-            bs_log(BS_WARNING, "Key sym 0x%d, modifier 0x%x is already bound, "
-                   "cannot bind again.", key_sym, modifiers);
-            return NULL;
-        }
-    }
-
-    wlmaker_server_key_binding_t *key_binding_ptr = logged_calloc(
-        1, sizeof(wlmaker_server_key_binding_t));
-    if (NULL == key_binding_ptr) return NULL;
-
-    key_binding_ptr->key_sym_lower = xkb_keysym_to_lower(key_sym);
-    key_binding_ptr->key_sym_upper = xkb_keysym_to_upper(key_sym);
-    key_binding_ptr->modifiers = modifiers;
-    key_binding_ptr->callback = callback;
-    key_binding_ptr->callback_arg_ptr = callback_arg_ptr;
-
-    bs_dllist_push_back(&server_ptr->key_bindings, &key_binding_ptr->node);
-    return key_binding_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_server_unbind_key(
-    wlmaker_server_t *server_ptr,
-    wlmaker_server_key_binding_t *key_binding_ptr)
-{
-    bs_dllist_remove(&server_ptr->key_bindings, &key_binding_ptr->node);
-    free(key_binding_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmaker_server_process_key(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t key_sym,
-    uint32_t modifiers)
-{
-    for (bs_dllist_node_t *node_ptr = server_ptr->key_bindings.head_ptr;
-         NULL != node_ptr;
-         node_ptr = node_ptr->next_ptr) {
-        wlmaker_server_key_binding_t *iter_kb_ptr =
-            (wlmaker_server_key_binding_t*)node_ptr;
-
-        if ((iter_kb_ptr->key_sym_lower == key_sym ||
-             iter_kb_ptr->key_sym_upper == key_sym) &&
-            iter_kb_ptr->modifiers == (iter_kb_ptr->modifiers & modifiers)) {
-            iter_kb_ptr->callback(server_ptr, iter_kb_ptr->callback_arg_ptr);
-            return true;
-        }
-    }
-    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -629,6 +570,61 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
         server_ptr->wlr_output_layout_ptr,
         server_ptr->cursor_ptr->wlr_cursor_ptr->x,
         server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmaker_key_binding_t *wlmaker_server_bind_key(
+    wlmaker_server_t *server_ptr,
+    const wlmaker_key_combo_t *key_combo_ptr,
+    wlmaker_keybinding_callback_t callback)
+{
+    wlmaker_key_binding_t *key_binding_ptr = logged_calloc(
+        1, sizeof(wlmaker_key_binding_t));
+    if (NULL == key_binding_ptr) return NULL;
+
+    key_binding_ptr->key_combo_ptr = key_combo_ptr;
+    key_binding_ptr->callback = callback;
+    bs_dllist_push_back(&server_ptr->bindings, &key_binding_ptr->dlnode);
+    return key_binding_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_server_unbind_key(
+    wlmaker_server_t *server_ptr,
+    wlmaker_key_binding_t *key_binding_ptr)
+{
+    bs_dllist_remove(&server_ptr->bindings, &key_binding_ptr->dlnode);
+    free(key_binding_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_keyboard_process_bindings(
+    wlmaker_server_t *server_ptr,
+    xkb_keysym_t keysym,
+    uint32_t modifiers)
+{
+    for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
+         NULL != dlnode_ptr;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_key_binding_t, dlnode);
+        const wlmaker_key_combo_t *key_combo_ptr =
+            key_binding_ptr->key_combo_ptr;
+
+        uint32_t mask = key_combo_ptr->modifiers_mask;
+        if (!mask) mask = UINT32_MAX;
+        if ((modifiers & mask) != key_combo_ptr->modifiers) continue;
+
+        xkb_keysym_t bound_ks = key_combo_ptr->keysym;
+        if (!key_combo_ptr->ignore_case && keysym != bound_ks) continue;
+
+        if (key_combo_ptr->ignore_case &&
+            keysym != xkb_keysym_to_lower(bound_ks) &&
+            keysym != xkb_keysym_to_upper(bound_ks)) continue;
+
+        if (key_binding_ptr->callback(key_combo_ptr)) return true;
+    }
+    return false;
 }
 
 /* == Local (static) methods =============================================== */
@@ -859,6 +855,76 @@ void wlmaker_server_switch_to_workspace(
     wlmaker_workspace_set_enabled(server_ptr->current_workspace_ptr, true);
     wl_signal_emit(&server_ptr->workspace_changed,
                    server_ptr->current_workspace_ptr);
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_bind(bs_test_t *test_ptr);
+
+/** Test cases for the server. */
+const bs_test_case_t          wlmaker_server_test_cases[] = {
+    { 1, "bind", test_bind },
+    { 0, NULL, NULL }
+};
+
+/** Test helper: Callback for a keybinding. */
+bool test_binding_callback(
+    __UNUSED__ const wlmaker_key_combo_t *key_combo_ptr) {
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests key bindings. */
+void test_bind(bs_test_t *test_ptr)
+{
+    wlmaker_server_t          srv = {};
+    wlmaker_key_combo_t      binding_a = {
+        .modifiers = WLR_MODIFIER_CTRL,
+        .modifiers_mask = WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT,
+        .keysym = XKB_KEY_A,
+        .ignore_case = true
+    };
+    wlmaker_key_combo_t      binding_b = {
+        .keysym = XKB_KEY_b
+    };
+
+    wlmaker_key_binding_t *kb1_ptr = wlmaker_server_bind_key(
+        &srv, &binding_a, test_binding_callback);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, kb1_ptr);
+    wlmaker_key_binding_t *kb2_ptr = wlmaker_server_bind_key(
+        &srv, &binding_b, test_binding_callback);
+        BS_TEST_VERIFY_NEQ(test_ptr, NULL, kb2_ptr);
+
+    // First binding. Ctrl-A, permitting other modifiers except Ctrl.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_A, WLR_MODIFIER_CTRL));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_a, WLR_MODIFIER_CTRL));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(
+            &srv, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT));
+
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(
+            &srv, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_A, 0));
+
+    // Second binding. Triggers only on lower-case 'b'.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_b, 0));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_B, 0));
+
+    wlmaker_server_unbind_key(&srv, kb2_ptr);
+    wlmaker_server_unbind_key(&srv, kb1_ptr);
 }
 
 /* == End of server.c ====================================================== */

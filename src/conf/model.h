@@ -120,6 +120,23 @@ wlmcfg_object_t *wlmcfg_dict_get(
     const char *key_ptr);
 
 /**
+ * Executes `fn` for each key and object of the dict.
+ *
+ * @param dict_ptr
+ * @param fn
+ * @param userdata_ptr
+ *
+ * @return true if all calls to `fn` returned true. The iteration will be
+ *     aborted on the first failed call to `fn`.
+ */
+bool wlmcfg_dict_foreach(
+    wlmcfg_dict_t *dict_ptr,
+    bool (*fn)(const char *key_ptr,
+               wlmcfg_object_t *object_ptr,
+               void *userdata_ptr),
+    void *userdata_ptr);
+
+/**
  * Creates an array object.
  *
  * @return The array object, or NULL on error.
@@ -163,7 +180,7 @@ wlmcfg_object_t *wlmcfg_array_at(
 /* -- Static & inlined methods: Convenience wrappers ----------------------- */
 
 /** Unreferences the string. Wraps to @ref wlmcfg_object_unref. */
-static inline void wlmcf_string_unref(wlmcfg_string_t *string_ptr)
+static inline void wlmcfg_string_unref(wlmcfg_string_t *string_ptr)
 {
     wlmcfg_object_unref(wlmcfg_object_from_string(string_ptr));
 }
