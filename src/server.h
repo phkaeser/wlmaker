@@ -37,6 +37,17 @@
 
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
+/** A key binding. */
+typedef struct _wlmaker_keybinding_t wlmaker_keybinding_t;
+
+/**
+ * Callback for a key binding.
+ *
+ * @param b                   The keybinding that triggered the callback.
+ *
+ * @return true if the key can be considered "consumed".
+ */
+typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_keybinding_t *b);
 
 #include "cursor.h"
 #include "idle.h"
@@ -161,6 +172,9 @@ struct _wlmaker_server_t {
     // TODO(kaeser@gubbe.ch): Remove.
     bs_dllist_t               key_bindings;
 
+    /** List of all bound keys, see @ref wlmaker_keyboard_binding_t::dlnode. */
+    bs_dllist_t               bindings;
+
     /** Clients for this server. */
     bs_dllist_t               clients;
 
@@ -185,6 +199,18 @@ struct _wlmaker_server_t {
      * The signal is raised right after the window was unmapped.
      */
     struct wl_signal          window_unmapped_event;
+};
+
+/** Specifies the key + modifier to bind. */
+struct _wlmaker_keybinding_t {
+    /** Modifiers expected for this keybinding. */
+    uint32_t                  modifiers;
+    /** Modifier mask: Only masked modifiers are considered. */
+    uint32_t                  modifiers_mask;
+    /** XKB Keysym to trigger on. */
+    xkb_keysym_t              keysym;
+    /** Whether to ignore case when matching. */
+    bool                      ignore_case;
 };
 
 /** Callback for key binding. */
@@ -263,6 +289,36 @@ void wlmaker_server_unbind_key(
     wlmaker_server_key_binding_t *key_binding_ptr);
 
 /**
+ * Binds a particular key to a callback.
+ *
+ * @param keyboard_ptr
+ * @param binding_ptr
+ * @param callback
+ *
+ * @return true on success.
+ */
+bool wlmaker_server_keyboard_bind(
+    wlmaker_server_t *server_ptr,
+    const wlmaker_keybinding_t *binding_ptr,
+    wlmaker_keybinding_callback_t callback);
+
+/**
+ * Releases a key binding. @see wlmaker_keyboard_bind.
+ *
+ * @param keyboard_ptr
+ * @param binding_ptr
+ */
+void wlmaker_server_keyboard_release(
+    wlmaker_server_t *server_ptr,
+    const wlmaker_keybinding_t *binding_ptr);
+
+// FIXME.
+bool _wlmaker_keyboard_process_bindings(
+    wlmaker_server_t *server_ptr,
+    xkb_keysym_t keysym,
+    uint32_t modifiers);
+
+/**
  * Processes a key press: Looks for matching bindings and runs the callback.
  *
  * @param server_ptr
@@ -276,6 +332,8 @@ bool wlmaker_server_process_key(
     wlmaker_server_t *server_ptr,
     xkb_keysym_t key_sym,
     uint32_t modifiers);
+
+
 
 /**
  * Returns the currently active workspace.
@@ -320,6 +378,9 @@ void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
  */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t   wlmaker_server_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
