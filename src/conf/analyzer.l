@@ -27,7 +27,7 @@
 
 /** Addresses valgrind unitialized memory warnings. */
 #define YY_USER_INIT do {                               \
-  yylineno = 0; yycolumn = 0; yyleng = 0;               \
+  yylineno = 1; yycolumn = 0; yyleng = 0;               \
   memset(yylloc, 0, sizeof(*yylloc));                   \
 } while (0);
 
