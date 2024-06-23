@@ -265,7 +265,7 @@ bool wlmaker_server_keyboard_bind(
  * @param server_ptr
  * @param binding_ptr
  */
-void wlmaker_server_keyboard_release(
+void wlmaker_server_keyboard_unbind(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr);
 

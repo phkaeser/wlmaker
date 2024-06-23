@@ -132,7 +132,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         _wlmaker_action_binding_t *binding_ptr = BS_CONTAINER_OF(
             qnode_ptr, _wlmaker_action_binding_t, qnode);
         qnode_ptr = qnode_ptr->next_ptr;
-        wlmaker_server_keyboard_release(
+        wlmaker_server_keyboard_unbind(
             handle_ptr->server_ptr,
             &binding_ptr->binding);
         free(binding_ptr);

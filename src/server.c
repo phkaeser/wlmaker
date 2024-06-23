@@ -580,7 +580,7 @@ bool wlmaker_server_keyboard_bind(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_server_keyboard_release(
+void wlmaker_server_keyboard_unbind(
     wlmaker_server_t *server_ptr,
     const wlmaker_keybinding_t *binding_ptr)
 {
@@ -949,8 +949,8 @@ void test_bind(bs_test_t *test_ptr)
         test_ptr,
         wlmaker_keyboard_process_bindings(&srv, XKB_KEY_B, 0));
 
-    wlmaker_server_keyboard_release(&srv, &binding_b);
-    wlmaker_server_keyboard_release(&srv, &binding_a);
+    wlmaker_server_keyboard_unbind(&srv, &binding_b);
+    wlmaker_server_keyboard_unbind(&srv, &binding_a);
 }
 
 /* == End of server.c ====================================================== */
