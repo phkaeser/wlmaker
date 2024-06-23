@@ -31,10 +31,34 @@
 
 /** Type of the keyboard handle. */
 typedef struct _wlmaker_keyboard_t wlmaker_keyboard_t;
+/** A key binding. */
+typedef struct _wlmaker_keybinding_t wlmaker_keybinding_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** Specifies the key + modifier to bind. */
+struct _wlmaker_keybinding_t {
+    /** Modifiers expected for this keybinding. */
+    uint32_t                  modifiers;
+    /** Modifier mask: Only masked modifiers are considered. */
+    uint32_t                  modifiers_mask;
+    /** XKB Keysym to trigger on. */
+    xkb_keysym_t              keysym;
+    /** Whether to ignore case when matching. */
+    bool                      ignore_case;
+};
+
+/**
+ * Callback for a key binding.
+ *
+ * @param b                   The keybinding that triggered the callback.
+ *
+ * @return true if the key can be considered "consumed".
+ */
+typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_keybinding_t *b);
+
 
 /**
  * Creates a handle for a registered keyboard.
@@ -56,6 +80,33 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
  * @param keyboard_ptr
  */
 void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr);
+
+/**
+ * Binds a particular key to a callback.
+ *
+ * @param keyboard_ptr
+ * @param binding_ptr
+ * @param callback
+ *
+ * @return true on success.
+ */
+bool wlmaker_keyboard_bind(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr,
+    wlmaker_keybinding_callback_t callback);
+
+/**
+ * Releases a key binding. @see wlmaker_keyboard_bind.
+ *
+ * @param keyboard_ptr
+ * @param binding_ptr
+ */
+void wlmaker_keyboard_release(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t   wlmaker_keyboard_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

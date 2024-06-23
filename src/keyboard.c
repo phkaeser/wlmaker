@@ -42,9 +42,22 @@ struct _wlmaker_keyboard_t {
     /** Listener for the `key` signal of `wl_keyboard`. */
     struct wl_listener        key_listener;
 
+    /** List of all bound keys, see @ref wlmaker_keyboard_binding_t::dlnode. */
+    bs_dllist_t               bindings;
+
     /** Whether the task switching mode is currently enabled. */
     bool                      task_switch_mode_enabled;
 };
+
+/** Internal struct holding a keybinding. */
+typedef struct {
+    /** Node within @ref wlmaker_keyboard_t::bindings. */
+    bs_dllist_node_t          dlnode;
+    /** The key binding: Modifier and keysym to bind to. */
+    const wlmaker_keybinding_t *binding_ptr;
+    /** Callback for when this modifier + key is encountered. */
+    wlmaker_keybinding_callback_t callback;
+} wlmaker_keyboard_binding_t;
 
 static bool _wlmaker_keyboard_populate_rules(
     wlmcfg_dict_t *dict_ptr,
@@ -57,6 +70,20 @@ static bool _wlmaker_keyboard_populate_repeat(
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
                              void *data_ptr);
+
+wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr,
+    wlmaker_keybinding_callback_t callback);
+
+void _wlmaker_keyboard_binding_destroy(
+    wlmaker_keyboard_t *keyboard_ptr,
+    wlmaker_keyboard_binding_t *kb_binding_ptr);
+
+bool _wlmaker_keyboard_process_bindings(
+    wlmaker_keyboard_t *keyboard_ptr,
+    xkb_keysym_t keysym,
+    uint32_t modifiers);
 
 /* == Exported methods ===================================================== */
 
@@ -139,6 +166,14 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
 {
+    bs_dllist_node_t *dlnode_ptr = keyboard_ptr->bindings.head_ptr;
+    while (NULL != dlnode_ptr) {
+        wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
+        dlnode_ptr = dlnode_ptr->next_ptr;
+        _wlmaker_keyboard_binding_destroy(keyboard_ptr, kb_binding_ptr);
+    }
+
     wl_list_remove(&keyboard_ptr->key_listener.link);
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
 
@@ -148,6 +183,34 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
     }
 
     free(keyboard_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_keyboard_bind(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr,
+    wlmaker_keybinding_callback_t callback)
+{
+    wlmaker_keyboard_binding_t *kb_binding_ptr =
+        _wlmaker_keyboard_binding_create(keyboard_ptr, binding_ptr, callback);
+    return NULL != kb_binding_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_keyboard_release(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr)
+{
+    for (bs_dllist_node_t *dlnode_ptr = keyboard_ptr->bindings.tail_ptr;
+         NULL != dlnode_ptr;
+         dlnode_ptr = dlnode_ptr->prev_ptr) {
+        wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
+        if (kb_binding_ptr->binding_ptr == binding_ptr)  {
+            _wlmaker_keyboard_binding_destroy(keyboard_ptr, kb_binding_ptr);
+            return;
+        }
+    }
 }
 
 /* == Local (static) methods =============================================== */
@@ -356,6 +419,142 @@ void handle_modifiers(struct wl_listener *listener_ptr,
     wlr_seat_keyboard_notify_modifiers(
         keyboard_ptr->wlr_seat_ptr,
         &keyboard_ptr->wlr_keyboard_ptr->modifiers);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Ctor for @ref wlmaker_keyboard_binding_t. */
+wlmaker_keyboard_binding_t *_wlmaker_keyboard_binding_create(
+    wlmaker_keyboard_t *keyboard_ptr,
+    const wlmaker_keybinding_t *binding_ptr,
+    wlmaker_keybinding_callback_t callback)
+{
+    wlmaker_keyboard_binding_t *kb_binding_ptr = logged_calloc(
+        1, sizeof(wlmaker_keyboard_binding_t));
+    if (NULL == kb_binding_ptr) return NULL;
+
+    kb_binding_ptr->binding_ptr = binding_ptr;
+    kb_binding_ptr->callback = callback;
+    bs_dllist_push_back(&keyboard_ptr->bindings, &kb_binding_ptr->dlnode);
+    return kb_binding_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Dtor for @ref wlmaker_keyboard_binding_t. */
+void _wlmaker_keyboard_binding_destroy(
+    wlmaker_keyboard_t *keyboard_ptr,
+    wlmaker_keyboard_binding_t *kb_binding_ptr)
+{
+    if (NULL == kb_binding_ptr) return;
+
+    bs_dllist_remove(&keyboard_ptr->bindings, &kb_binding_ptr->dlnode);
+    free(kb_binding_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Processes key bindings: Call back if a matching binding is found.
+ *
+ * @param keyboard_ptr
+ * @param keysym
+ * @param modifiers
+ *
+ * @return true if a binding was found AND the callback returned true.
+ */
+bool _wlmaker_keyboard_process_bindings(
+    wlmaker_keyboard_t *keyboard_ptr,
+    xkb_keysym_t keysym,
+    uint32_t modifiers)
+{
+    for (bs_dllist_node_t *dlnode_ptr = keyboard_ptr->bindings.head_ptr;
+         NULL != dlnode_ptr;
+         dlnode_ptr = dlnode_ptr->next_ptr) {
+        wlmaker_keyboard_binding_t *kb_binding_ptr = BS_CONTAINER_OF(
+            dlnode_ptr, wlmaker_keyboard_binding_t, dlnode);
+        if ((modifiers & kb_binding_ptr->binding_ptr->modifiers_mask) !=
+            kb_binding_ptr->binding_ptr->modifiers) continue;
+
+        xkb_keysym_t bound_ks = kb_binding_ptr->binding_ptr->keysym;
+        if (!kb_binding_ptr->binding_ptr->ignore_case &&
+            keysym != bound_ks) continue;
+
+        if (kb_binding_ptr->binding_ptr->ignore_case &&
+            keysym != xkb_keysym_to_lower(bound_ks) &&
+            keysym != xkb_keysym_to_upper(bound_ks)) continue;
+
+        if (kb_binding_ptr->callback(kb_binding_ptr->binding_ptr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_bind(bs_test_t *test_ptr);
+
+/** Test cases for the keyboard component. */
+const bs_test_case_t          wlmaker_keyboard_test_cases[] = {
+    { 1, "bind", test_bind },
+    { 0, NULL, NULL }
+};
+
+/** Test helper: Callback for a keybinding. */
+bool test_binding_callback(
+    __UNUSED__ const wlmaker_keybinding_t *binding_ptr) {
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests key bindings. */
+void test_bind(bs_test_t *test_ptr)
+{
+    wlmaker_keyboard_t        kb = {};
+    wlmaker_keybinding_t      binding_a = {
+        .modifiers = WLR_MODIFIER_CTRL,
+        .modifiers_mask = WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT,
+        .keysym = XKB_KEY_A,
+        .ignore_case = true
+    };
+    wlmaker_keybinding_t      binding_b = {
+        .keysym = XKB_KEY_b
+    };
+
+    // First binding. Ctrl-A, permitting other modifiers except Ctrl.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_bind(&kb, &binding_a, test_binding_callback));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_keyboard_bind(&kb, &binding_b, test_binding_callback));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(&kb, XKB_KEY_A, WLR_MODIFIER_CTRL));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(&kb, XKB_KEY_a, WLR_MODIFIER_CTRL));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(
+            &kb, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT));
+
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(
+            &kb, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(&kb, XKB_KEY_A, 0));
+
+    // Second binding. Triggers only on lower-case 'b'.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(&kb, XKB_KEY_b, 0));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        _wlmaker_keyboard_process_bindings(&kb, XKB_KEY_B, 0));
+
+    wlmaker_keyboard_release(&kb, &binding_b);
+    wlmaker_keyboard_release(&kb, &binding_a);
 }
 
 /* == End of keyboard.c ==================================================== */
