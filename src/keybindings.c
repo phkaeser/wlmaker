@@ -84,7 +84,7 @@ static bool _wlmaker_keybindings_bind_item(
  * @param key_ptr             Name of the action to bind the key to.
  * @param object_ptr          Configuration object, must be a string and
  *                            contain a parse-able modifier + keysym.
- * @param userdata_ptr        Points to @wlmaker_server_t.
+ * @param userdata_ptr        Points to @ref wlmaker_server_t.
  *
  * @return true on success.
  */
@@ -126,6 +126,7 @@ bool _wlmaker_keybindings_bind_item(
 }
 
 /* ------------------------------------------------------------------------- */
+/** FIXME */
 bool _wlmaker_bind_keys(
     __UNUSED__ wlmaker_server_t *server_ptr,
     wlmcfg_dict_t *keybindings_dict_ptr)
@@ -239,6 +240,7 @@ void test_keybindings_parse(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests the default configuration's 'KeyBindings' section. */
 void test_default_keybindings(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
