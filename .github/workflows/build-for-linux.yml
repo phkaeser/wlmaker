@@ -26,6 +26,7 @@ jobs:
         apt-get update
         apt-get install -y git \
           bison \
+          clang \
           cmake \
           doxygen \
           flex \
