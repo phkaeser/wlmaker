@@ -2,9 +2,9 @@ name: Build for Linux
 
 on:
   push:
-    branches: [ "main" "clang-fix" ]
+    branches: [ "main", "clang-fix" ]
   pull_request:
-    branches: [ "main" "clang-fix"  ]
+    branches: [ "main", "clang-fix"  ]
 
 env:
   INSTALL_PATH: "${HOME}/wlmaker"
