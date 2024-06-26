@@ -157,12 +157,14 @@ void wlmcfg_decoded_destroy(
     const wlmcfg_desc_t *desc_ptr,
     void *dest_ptr)
 {
+    char **str_ptr_ptr;
+
     for (const wlmcfg_desc_t *iter_desc_ptr = desc_ptr;
          iter_desc_ptr->key_ptr != NULL;
          ++iter_desc_ptr) {
         switch (iter_desc_ptr->type) {
         case WLMCFG_TYPE_STRING:
-            char **str_ptr_ptr = BS_VALUE_AT(
+            str_ptr_ptr = BS_VALUE_AT(
                 char*, dest_ptr, iter_desc_ptr->field_offset);
             if (NULL != *str_ptr_ptr) {
                 free(*str_ptr_ptr);
@@ -232,6 +234,8 @@ bool wlmcfg_enum_value_to_name(
 bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
                            void *dest_ptr)
 {
+    char **str_ptr;
+
     for (const wlmcfg_desc_t *iter_desc_ptr = desc_ptr;
          iter_desc_ptr->key_ptr != NULL;
          ++iter_desc_ptr) {
@@ -262,7 +266,7 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
             break;
 
         case WLMCFG_TYPE_STRING:
-            char **str_ptr = BS_VALUE_AT(
+            str_ptr = BS_VALUE_AT(
                 char*, dest_ptr, iter_desc_ptr->field_offset);
             if (NULL != *str_ptr) free(*str_ptr);
             *str_ptr = logged_strdup(
