@@ -111,20 +111,24 @@ void wlmaker_primitives_draw_bezel_at(
  * Draws the "minimize" icon, as used in the title bar.
  *
  * @param cairo_ptr
+ * @param size
  * @param color
  */
 void wlmaker_primitives_draw_minimize_icon(
     cairo_t *cairo_ptr,
+    int size,
     uint32_t color);
 
 /**
  * Draws the "close" icon, as used in the title bar.
  *
  * @param cairo_ptr
+ * @param size
  * @param color
  */
 void wlmaker_primitives_draw_close_icon(
     cairo_t *cairo_ptr,
+    int size,
     uint32_t color);
 
 /**

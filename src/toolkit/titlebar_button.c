@@ -241,7 +241,7 @@ struct wlr_buffer *create_buf(
     bool pressed,
     bool focussed,
     const wlmtk_titlebar_style_t *style_ptr,
-    void (*draw)(cairo_t *cairo_ptr, uint32_t color))
+    wlmtk_titlebar_button_draw_t draw)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         style_ptr->height, style_ptr->height);
@@ -260,7 +260,7 @@ struct wlr_buffer *create_buf(
         cairo_ptr, style_ptr->bezel_width, !pressed);
     uint32_t color = style_ptr->focussed_text_color;
     if (!focussed) color = style_ptr->blurred_text_color;
-    draw(cairo_ptr, color);
+    draw(cairo_ptr, style_ptr->height, color);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
