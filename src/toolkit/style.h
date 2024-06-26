@@ -69,7 +69,7 @@ typedef struct {
 /** Specifies color and width of a margin. */
 typedef struct {
     /** Width of the margin. */
-    int                       width;
+    uint64_t                  width;
     /** Color of the margin. */
     uint32_t                  color;
 } wlmtk_margin_style_t;

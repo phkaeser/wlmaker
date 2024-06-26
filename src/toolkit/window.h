@@ -43,6 +43,8 @@ extern "C" {
 typedef struct {
     /** The titlebar's style. */
     wlmtk_titlebar_style_t    titlebar;
+    /** The resizebar's style. */
+    wlmtk_resizebar_style_t    resizebar;
 } wlmtk_window_style_t;
 
 /**

@@ -194,12 +194,29 @@ static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
  };
 
+/** Descroptor for decoding the "TitleBar" dict below "Window". */
+static const wlmcfg_desc_t _wlmaker_config_window_resize_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmtk_resizebar_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_resizebar_style_t, height, 7),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_resizebar_style_t, bezel_width, 1),
+    WLMCFG_DESC_UINT64(
+        "CornerWidth", true, wlmtk_resizebar_style_t, corner_width, 1),
+    WLMCFG_DESC_SENTINEL()
+ };
+
 /** Descriptor for decoding the "Window" dictionary. */
 static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_DICT(
         "TitleBar", true, wlmtk_window_style_t, titlebar,
         _wlmaker_config_window_titlebar_style_desc),
-    WLMCFG_DESC_SENTINEL()
+    WLMCFG_DESC_DICT(
+        "ResizeBar", true, wlmtk_window_style_t, resizebar,
+        _wlmaker_config_window_resize_style_desc),
+WLMCFG_DESC_SENTINEL()
 };
 
 /** Desciptor for decoding the style information from a plist. */

@@ -36,5 +36,14 @@
         Color = "argb32:ff000000" ;
       };
     };
+    ResizeBar = {
+      Fill = {
+        Color = "argb32:ffc2c0c5";
+        Type = SOLID;
+      };
+      Height = 7;
+      BezelWidth = 1;
+      CornerWidth = 29;
+    };
   };
 }

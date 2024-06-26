@@ -37,9 +37,9 @@ typedef struct {
     /** Color of the title text when blurred. */
     uint32_t                  blurred_text_color;
     /** Height of the title bar, in pixels. */
-    uint32_t                  height;
+    uint64_t                  height;
     /** Width of the bezel. */
-    uint32_t                  bezel_width;
+    uint64_t                  bezel_width;
     /** Style of the margin within the resizebar. */
     wlmtk_margin_style_t      margin;
 } wlmtk_titlebar_style_t;

@@ -146,7 +146,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Include at least one additional theme.
 
 * Theme details
-  * Style for resizebar.
+  * [done] Style for resizebar.
   * Style for the window's margin.
   * Style for the window border.
   * Titlebar icons centered.
