@@ -1058,6 +1058,7 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         return NULL;
     }
 
+    fake_window_state_ptr->window.style.border.width = 1;
     if (!_wlmtk_window_init(
             &fake_window_state_ptr->window,
             NULL,
