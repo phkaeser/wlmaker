@@ -216,6 +216,12 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_DICT(
         "ResizeBar", true, wlmtk_window_style_t, resizebar,
         _wlmaker_config_window_resize_style_desc),
+    WLMCFG_DESC_DICT(
+        "Border", true, wlmtk_window_style_t, border,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_window_style_t, margin,
+        _wlmaker_config_margin_style_desc),
 WLMCFG_DESC_SENTINEL()
 };
 

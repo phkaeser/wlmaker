@@ -43,5 +43,13 @@
       CornerWidth = 29;
       BezelWidth = 1;
     };
+    Border = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
   };
 }

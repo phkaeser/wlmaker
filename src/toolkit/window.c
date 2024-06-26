@@ -206,20 +206,6 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
     .request_resize = _wlmtk_window_request_resize,
 };
 
-/** Style of the margin between title, surface and resizebar. */
-// TODO(kaeser@gubbe.ch): Move to central config. */
-static const wlmtk_margin_style_t margin_style = {
-    .width = 1,
-    .color = 0xff000000,
-};
-
-/** Style of the border around the window. */
-// TODO(kaeser@gubbe.ch): Move to central config. */
-static const wlmtk_margin_style_t border_style = {
-    .width = 1,
-    .color = 0xff000000,
-};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -463,7 +449,7 @@ void wlmtk_window_commit_fullscreen(
     // when we zero out the border with, or hide the border elements.
     // Figure out what causes that, then get rid of the border on fullscreen.
     if (true && fullscreen) {
-        wlmtk_margin_style_t bstyle = border_style;
+        wlmtk_margin_style_t bstyle = window_ptr->style.border;
         if (fullscreen) bstyle.width = 1;
         wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
     }
@@ -534,10 +520,12 @@ void wlmtk_window_get_size(
     *height_ptr = dimensions.height;
 
     if (NULL != window_ptr->titlebar_ptr) {
-        *height_ptr += window_ptr->style.titlebar.height + margin_style.width;
+        *height_ptr += window_ptr->style.titlebar.height +
+            window_ptr->style.margin.width;
     }
     if (NULL != window_ptr->resizebar_ptr) {
-        *height_ptr += window_ptr->style.resizebar.height + margin_style.width;
+        *height_ptr += window_ptr->style.resizebar.height +
+            window_ptr->style.margin.width;
     }
     *height_ptr += 2 * window_ptr->super_bordered.style.width;
 
@@ -655,7 +643,7 @@ bool _wlmtk_window_init(
 
     if (!wlmtk_box_init(&window_ptr->box, env_ptr,
                         WLMTK_BOX_VERTICAL,
-                        &margin_style)) {
+                        &window_ptr->style.margin)) {
         _wlmtk_window_fini(window_ptr);
         return false;
     }
@@ -665,7 +653,7 @@ bool _wlmtk_window_init(
     if (!wlmtk_bordered_init(&window_ptr->super_bordered,
                              env_ptr,
                              &window_ptr->box.super_container.super_element,
-                             &border_style)) {
+                             &window_ptr->style.border)) {
         _wlmtk_window_fini(window_ptr);
         return false;
     }
@@ -913,7 +901,7 @@ void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
 /** Applies window decoration depending on current state. */
 void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 {
-    wlmtk_margin_style_t bstyle = border_style;
+    wlmtk_margin_style_t bstyle = window_ptr->style.border;
 
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
         _wlmtk_window_create_titlebar(window_ptr);
@@ -951,10 +939,12 @@ void _wlmtk_window_request_position_and_size_decorated(
 {
     // Correct for borders, margin and decoration.
     if (include_titlebar) {
-        height -= window_ptr->style.titlebar.height + margin_style.width;
+        height -= window_ptr->style.titlebar.height +
+            window_ptr->style.margin.width;
     }
     if (include_resizebar) {
-        height -= window_ptr->style.resizebar.height + margin_style.width;
+        height -= window_ptr->style.resizebar.height +
+            window_ptr->style.margin.width;
     }
     height -= 2 * window_ptr->super_bordered.style.width;
     width -= 2 * window_ptr->super_bordered.style.width;

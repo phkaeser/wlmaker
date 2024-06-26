@@ -45,6 +45,10 @@ typedef struct {
     wlmtk_titlebar_style_t    titlebar;
     /** The resizebar's style. */
     wlmtk_resizebar_style_t    resizebar;
+    /** Style of the window border. */
+    wlmtk_margin_style_t       border;
+    /** Style of the margins between titlebar, window and resizebar. */
+    wlmtk_margin_style_t       margin;
 } wlmtk_window_style_t;
 
 /**

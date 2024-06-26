@@ -147,8 +147,8 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Theme details
   * [done] Style for resizebar.
-  * Style for the window's margin.
-  * Style for the window border.
+  * [done] Style for the window's margin.
+  * [done] Style for the window border.
   * Titlebar icons centered.
   * Titlebar icons with text color.
   * Bezel 'off' color so it is visible on black.
