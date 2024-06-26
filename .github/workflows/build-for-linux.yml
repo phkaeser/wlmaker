@@ -12,7 +12,10 @@ env:
   INSTALL_PKGCONFIG_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/wlmaker/share/pkgconfig/"
 
 jobs:
-  build:
+  build_matrix:
+    strategy:
+      matrix:
+        compiler: [ "gcc", "clang" ]
     runs-on: ubuntu-latest
     container:
       image: debian:bookworm
@@ -61,6 +64,7 @@ jobs:
 
     - name: Configure and build submodule dependencies.
       run: |
+        export CC="${{ matrix.compiler }}"
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
@@ -69,6 +73,7 @@ jobs:
 
     - name: Configure wlmaker through CMake.
       run: |
+        export CC="${{ matrix.compiler }}"
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
@@ -76,6 +81,7 @@ jobs:
 
     - name: Build wlmaker.
       run: |
+        export CC="${{ matrix.compiler }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --build build/
