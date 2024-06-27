@@ -65,6 +65,18 @@ void wlmaker_primitives_cairo_fill_at(
             cairo_pattern_ptr, 1, r, g, b, alpha);
         break;
 
+    case WLMTK_STYLE_COLOR_VGRADIENT:
+        cairo_pattern_ptr = cairo_pattern_create_linear(0, 0, 0, height);
+        bs_gfxbuf_argb8888_to_floats(
+            fill_ptr->param.vgradient.from, &r, &g, &b, &alpha);
+        cairo_pattern_add_color_stop_rgba(
+            cairo_pattern_ptr, 0, r, g, b, alpha);
+        bs_gfxbuf_argb8888_to_floats(
+            fill_ptr->param.vgradient.to, &r, &g, &b, &alpha);
+        cairo_pattern_add_color_stop_rgba(
+            cairo_pattern_ptr, 1, r, g, b, alpha);
+        break;
+
     case WLMTK_STYLE_COLOR_DGRADIENT:
         cairo_pattern_ptr = cairo_pattern_create_linear(0, 0, width, height);
         bs_gfxbuf_argb8888_to_floats(
@@ -88,7 +100,6 @@ void wlmaker_primitives_cairo_fill_at(
     cairo_pattern_destroy(cairo_pattern_ptr);
     cairo_rectangle(cairo_ptr, x, y, width, height);
     cairo_fill(cairo_ptr);
-    cairo_stroke(cairo_ptr);
     cairo_restore(cairo_ptr);
 }
 
@@ -257,7 +268,7 @@ void test_fill(bs_test_t *test_ptr)
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_solid.png");
 
-    // Horizontal fill.
+    // Horizontal gradient fill.
     wlmtk_style_fill_t fill_hgradient = {
         .type = WLMTK_STYLE_COLOR_HGRADIENT,
         .param = { .hgradient = { .from = 0xff102040, .to = 0xff4080ff }}
@@ -265,6 +276,15 @@ void test_fill(bs_test_t *test_ptr)
     wlmaker_primitives_cairo_fill(cairo_ptr, &fill_hgradient);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_hgradient.png");
+
+    // Vertical gradient fill.
+    wlmtk_style_fill_t fill_vgradient = {
+        .type = WLMTK_STYLE_COLOR_VGRADIENT,
+        .param = { .vgradient = { .from = 0xff102040, .to = 0xff4080ff }}
+    };
+    wlmaker_primitives_cairo_fill(cairo_ptr, &fill_vgradient);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_vgradient.png");
 
     // Diagonal fill.
     wlmtk_style_fill_t fill_dgradient = {

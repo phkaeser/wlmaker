@@ -292,6 +292,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Workspace configuration.
   * Background.
   * Theme.
+    * Look into swapping the diagonal gradient to follow window maker style (not cairo).
   * Auto-started applications.
 
 * Configurable keyboard map.

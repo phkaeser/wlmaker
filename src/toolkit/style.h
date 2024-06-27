@@ -32,6 +32,8 @@ typedef enum {
     WLMTK_STYLE_COLOR_SOLID,
     /** Horizontal color gradient. */
     WLMTK_STYLE_COLOR_HGRADIENT,
+    /** Vertical color gradient. */
+    WLMTK_STYLE_COLOR_VGRADIENT,
     /** Diagonal color gradient, top-left to bottom-right. */
     WLMTK_STYLE_COLOR_DGRADIENT
     // TODO(kaeser@gubbe.ch): Add VGRADIENT.
@@ -61,6 +63,8 @@ typedef struct {
         wlmtk_style_color_solid_data_t solid;
         /** Horizontal color gradient. */
         wlmtk_style_color_gradient_data_t hgradient;
+        /** Vertical color gradient. */
+        wlmtk_style_color_gradient_data_t vgradient;
         /** Diagonal color gradient. */
         wlmtk_style_color_gradient_data_t dgradient;
     } param;
