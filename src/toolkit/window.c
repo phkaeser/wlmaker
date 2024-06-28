@@ -445,15 +445,6 @@ void wlmtk_window_commit_fullscreen(
     window_ptr->fullscreen = fullscreen;
     _wlmtk_window_apply_decoration(window_ptr);
 
-    // TODO(kaeser@gubbe.ch): For whatever reason, the node isn't displayed
-    // when we zero out the border with, or hide the border elements.
-    // Figure out what causes that, then get rid of the border on fullscreen.
-    if (true && fullscreen) {
-        wlmtk_margin_style_t bstyle = window_ptr->style.border;
-        if (fullscreen) bstyle.width = 1;
-        wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
-    }
-
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
 }
@@ -946,13 +937,15 @@ void _wlmtk_window_request_position_and_size_decorated(
         height -= window_ptr->style.resizebar.height +
             window_ptr->style.margin.width;
     }
-    height -= 2 * window_ptr->super_bordered.style.width;
-    width -= 2 * window_ptr->super_bordered.style.width;
+    if (include_titlebar || include_resizebar) {
+        height -= 2 * window_ptr->style.border.width;
+        width -= 2 * window_ptr->style.border.width;
+    }
     height = BS_MAX(0, height);
     width = BS_MAX(0, width);
 
     // Account for potential extra size beyond the content: For example, by
-    // sub-surfaces that clients use for borders or resizse-areas.
+    // sub-surfaces that clients use for borders or resize-areas.
     if (include_extra) {
         struct wlr_box dimensions = wlmtk_element_get_dimensions_box(
             wlmtk_content_element(window_ptr->content_ptr));
@@ -1418,8 +1411,8 @@ void test_fullscreen(bs_test_t *test_ptr)
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
@@ -1494,8 +1487,8 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
-    BS_TEST_VERIFY_EQ(test_ptr, 1024 + 2, box.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 768 + 2, box.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, box.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
