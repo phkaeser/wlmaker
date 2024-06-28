@@ -252,10 +252,6 @@ Support for visual effects to improve usability, but not for pure show.
   * Drag-and-drop into clip or dock area.
   * Consider running this as task selector, as separate binary.
 
-* Support for dynamic output configurations.
-  * Multiple monitors, in configurations other than mirrored.
-  * Work with hot-plugged monitor, remember configurations.
-
 * Window attributes
   * Determine how to detect client preferences.
   * Configurable and overridable (titlebar, resizebar, buttons, ...).
