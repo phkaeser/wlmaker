@@ -151,7 +151,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Style for the window border.
   * [done] Titlebar icons centered.
   * [done] Titlebar icons with text color, blurred or focussed.
-  * Bezel 'off' color so it is visible on black.
+  * ~~Bezel 'off' color so it is visible on black (not doing).~~
   * Titlebar font and size.
   * Style for clip.
   * Style for task list fill and text color.
