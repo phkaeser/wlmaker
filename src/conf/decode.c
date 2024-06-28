@@ -55,6 +55,10 @@ static bool _wlmcfg_decode_enum(
 static bool _wlmcfg_decode_string(
     wlmcfg_object_t *obj_ptr,
     char **str_ptr_ptr);
+static bool _wlmcfg_decode_charbuf(
+    wlmcfg_object_t *obj_ptr,
+    char *str_ptr,
+    size_t len);
 
 /** Enum descriptor for decoding bool. */
 static const wlmcfg_enum_desc_t _wlmcfg_bool_desc[] = {
@@ -126,6 +130,12 @@ bool wlmcfg_decode_dict(
             rv = _wlmcfg_decode_string(
                 obj_ptr,
                 BS_VALUE_AT(char*, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_CHARBUF:
+            rv = _wlmcfg_decode_charbuf(
+                obj_ptr,
+                BS_VALUE_AT(char, dest_ptr, iter_desc_ptr->field_offset),
+                iter_desc_ptr->v.v_charbuf.len);
             break;
         case WLMCFG_TYPE_DICT:
             rv = wlmcfg_decode_dict(
@@ -234,7 +244,8 @@ bool wlmcfg_enum_value_to_name(
 bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
                            void *dest_ptr)
 {
-    char **str_ptr;
+    char **str_ptr_ptr;
+    char *str_ptr;
 
     for (const wlmcfg_desc_t *iter_desc_ptr = desc_ptr;
          iter_desc_ptr->key_ptr != NULL;
@@ -266,12 +277,27 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
             break;
 
         case WLMCFG_TYPE_STRING:
-            str_ptr = BS_VALUE_AT(
+            str_ptr_ptr = BS_VALUE_AT(
                 char*, dest_ptr, iter_desc_ptr->field_offset);
-            if (NULL != *str_ptr) free(*str_ptr);
-            *str_ptr = logged_strdup(
+            if (NULL != *str_ptr_ptr) free(*str_ptr_ptr);
+            *str_ptr_ptr = logged_strdup(
                 iter_desc_ptr->v.v_string.default_value_ptr);
-            if (NULL == *str_ptr) return false;
+            if (NULL == *str_ptr_ptr) return false;
+            break;
+
+        case WLMCFG_TYPE_CHARBUF:
+            str_ptr = BS_VALUE_AT(
+                char, dest_ptr, iter_desc_ptr->field_offset);
+            if (iter_desc_ptr->v.v_charbuf.len <
+                strlen(iter_desc_ptr->v.v_charbuf.default_value_ptr) + 1) {
+                bs_log(BS_ERROR,
+                       "Buffer size %zu <  %zu + 1, default charbuf (\"%s\")",
+                       iter_desc_ptr->v.v_charbuf.len,
+                       strlen(iter_desc_ptr->v.v_charbuf.default_value_ptr),
+                       iter_desc_ptr->v.v_charbuf.default_value_ptr);
+                return false;
+            }
+            strcpy(str_ptr, iter_desc_ptr->v.v_charbuf.default_value_ptr);
             break;
 
         case WLMCFG_TYPE_DICT:
@@ -391,6 +417,27 @@ bool _wlmcfg_decode_string(
     return (NULL != *str_ptr_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Translates (ie. duplicates) a char buf from the plist string. */
+bool _wlmcfg_decode_charbuf(
+    wlmcfg_object_t *obj_ptr,
+    char *str_ptr,
+    size_t len)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
+    if (NULL == string_ptr) return false;
+    const char *value_ptr = wlmcfg_string_value(string_ptr);
+    if (NULL == value_ptr) return false;
+
+    if (len < strlen(value_ptr) + 1) {
+        bs_log(BS_WARNING, "Charbuf size %zu < %zu + 1 for \"%s\"",
+               len, strlen(value_ptr), value_ptr);
+        return false;
+    }
+    strcpy(str_ptr, value_ptr);
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_defaults(bs_test_t *test_ptr);
@@ -401,6 +448,7 @@ static void test_decode_argb32(bs_test_t *test_ptr);
 static void test_decode_bool(bs_test_t *test_ptr);
 static void test_decode_enum(bs_test_t *test_ptr);
 static void test_decode_string(bs_test_t *test_ptr);
+static void test_decode_charbuf(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "init_defaults", test_init_defaults },
@@ -411,6 +459,7 @@ const bs_test_case_t wlmcfg_decode_test_cases[] = {
     { 1, "bool", test_decode_bool },
     { 1, "enum", test_decode_enum },
     { 1, "string", test_decode_string },
+    { 1, "charbuf", test_decode_charbuf },
     { 0, NULL, NULL },
 };
 
@@ -434,6 +483,7 @@ typedef struct {
     bool                      v_bool;
     int                       v_enum;
     char                      *v_string;
+    char                      v_charbuf[10];
     _test_subdict_value_t     subdict;
     void                      *v_custom_ptr;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
@@ -461,6 +511,7 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_BOOL("bool", true, _test_value_t, v_bool, true),
     WLMCFG_DESC_ENUM("enum", true, _test_value_t, v_enum, 3, _test_enum_desc),
     WLMCFG_DESC_STRING("string", true, _test_value_t, v_string, "The String"),
+    WLMCFG_DESC_CHARBUF("charbuf", true, _test_value_t, v_charbuf, 10, "CharBuf"),
     WLMCFG_DESC_DICT("subdict", true, _test_value_t, subdict,
                      _wlmcfg_decode_test_subdesc),
     WLMCFG_DESC_CUSTOM("custom", true, _test_value_t, v_custom_ptr,
@@ -560,6 +611,7 @@ void test_decode_dict(bs_test_t *test_ptr)
                                     "bool = Disabled;"
                                     "enum = enum1;"
                                     "string = TestString;"
+                                    "charbuf = TestBuf;"
                                     "subdict = { string = OtherTestString };"
                                     "custom = CustomThing"
                                     "}");
@@ -567,8 +619,8 @@ void test_decode_dict(bs_test_t *test_ptr)
 
     dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_string(plist_string_ptr));
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
-    BS_TEST_VERIFY_TRUE(
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
         test_ptr,
         wlmcfg_decode_dict(dict_ptr, _wlmcfg_decode_test_desc, &val));
     BS_TEST_VERIFY_EQ(test_ptr, 100, val.v_uint64);
@@ -577,6 +629,7 @@ void test_decode_dict(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, false, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
     BS_TEST_VERIFY_STREQ(test_ptr, "TestString", val.v_string);
+    BS_TEST_VERIFY_STREQ(test_ptr, "TestBuf", val.v_charbuf);
     BS_TEST_VERIFY_STREQ(test_ptr, "CustomThing", val.v_custom_ptr);
     wlmcfg_dict_unref(dict_ptr);
     wlmcfg_decoded_destroy(_wlmcfg_decode_test_desc, &val);
@@ -714,6 +767,23 @@ void test_decode_string(bs_test_t *test_ptr)
     BS_TEST_VERIFY_STREQ(test_ptr, "quoted string", v_ptr);
     wlmcfg_object_unref(obj_ptr);
     free(v_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests string decoding into a char buf. */
+void test_decode_charbuf(bs_test_t *test_ptr)
+{
+    char b[10];
+    wlmcfg_object_t *o;
+
+    o = wlmcfg_create_object_from_plist_string("123456789");
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_charbuf(o, b, sizeof(b)));
+    BS_TEST_VERIFY_STREQ(test_ptr, b, "123456789");
+    wlmcfg_object_unref(o);
+
+    o = wlmcfg_create_object_from_plist_string("1234567890");
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmcfg_decode_charbuf(o, b, sizeof(b)));
+    wlmcfg_object_unref(o);
 }
 
 /* == End of decode.c ====================================================== */
