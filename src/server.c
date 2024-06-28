@@ -563,6 +563,31 @@ void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr)
+{
+    server_ptr->task_list_enabled = true;
+    wl_signal_emit(&server_ptr->task_list_enabled_event, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr)
+{
+    if (!server_ptr->task_list_enabled) return;
+
+    server_ptr->task_list_enabled = false;
+    wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
+
+    wlmaker_workspace_t *workspace_ptr =
+        wlmaker_server_get_current_workspace(server_ptr);
+    wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+    wlmtk_window_t *window_ptr =
+        wlmtk_workspace_get_activated_window(wlmtk_ptr);
+    if (NULL != window_ptr) {
+        wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr)
 {

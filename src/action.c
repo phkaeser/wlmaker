@@ -179,6 +179,20 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         wlmaker_server_switch_to_next_workspace(server_ptr);
         break;
 
+    case WLMAKER_ACTION_TASK_TO_PREVIOUS:
+        wlmtk_workspace_activate_previous_window(
+            wlmaker_workspace_wlmtk(
+                wlmaker_server_get_current_workspace(server_ptr)));
+        wlmaker_server_activate_task_list(server_ptr);
+        break;
+
+    case WLMAKER_ACTION_TASK_TO_NEXT:
+        wlmtk_workspace_activate_next_window(
+            wlmaker_workspace_wlmtk(
+                wlmaker_server_get_current_workspace(server_ptr)));
+        wlmaker_server_activate_task_list(server_ptr);
+        break;
+
     case WLMAKER_ACTION_WINDOW_RAISE:
         // TODO(kaeser@gubbe.ch): (re)implement using toolkit.
         bs_log(BS_WARNING, "Raise window: Unimplemented.");

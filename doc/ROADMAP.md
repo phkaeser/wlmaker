@@ -179,9 +179,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Display application status (*starting*, *running*).
   * [done] Configurable (in code).
 
-* Task list (window-alt-esc), cycling through windows.
+* [done] Task list (window-alt-esc), cycling through windows.
   * [done] Migrate implementation to wlmtk.
-  * Key combination configurable in the config file.
+  * [done]Key combination configurable in the config file.
 
 ## Plan for 0.4
 
@@ -332,6 +332,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Task switcher
   * Application icons or minimized surfaces to visualize applications.
   * Animations when switching focus.
+  * Clean up signal handling (emit on task switch, enable, disable).
 
 * Resizing & moving
   * Consider visualizing windows partially transparent when resizing or moving.

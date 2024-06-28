@@ -167,6 +167,8 @@ struct _wlmaker_server_t {
      * Data: Pointer to the new `wlmaker_workspace_t`.
      */
     struct wl_signal          workspace_changed;
+    /** Whether the task list is currently shown. */
+    bool                      task_list_enabled;
     /** Signal: When the task list is enabled. (to be shown) */
     struct wl_signal          task_list_enabled_event;
     /** Signal: When the task list is disabled. (to be hidden) */
@@ -323,6 +325,20 @@ void wlmaker_server_switch_to_next_workspace(wlmaker_server_t *server_ptr);
  * @param server_ptr
  */
 void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
+
+/**
+ * Activates the task list.
+ *
+ * @param server_ptr
+ */
+void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr);
+
+/**
+ * De-activates the task list.
+ *
+ * @param server_ptr
+ */
+void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr);
 
 /**
  * Looks up which output serves the current cursor coordinates and returns that.
