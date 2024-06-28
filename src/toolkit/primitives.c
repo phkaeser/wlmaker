@@ -213,18 +213,20 @@ void wlmaker_primitives_draw_close_icon(
 /* ------------------------------------------------------------------------- */
 void wlmaker_primitives_draw_window_title(
     cairo_t *cairo_ptr,
+    const wlmtk_style_font_t *font_style_ptr,
     const char *title_ptr,
     uint32_t color)
 {
     cairo_save(cairo_ptr);
     cairo_select_font_face(
-        cairo_ptr, "Helvetica",
-        CAIRO_FONT_SLANT_NORMAL,
+        cairo_ptr,
+        font_style_ptr->face,
+        CAIRO_FONT_SLANT_NORMAL,  // FIXME
         CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cairo_ptr, 15.0);
+    cairo_set_font_size(cairo_ptr, font_style_ptr->size);
     cairo_set_source_argb8888(cairo_ptr, color);
 
-    cairo_move_to(cairo_ptr, 6, 17);
+    cairo_move_to(cairo_ptr, 6, 2 + font_style_ptr->size);
     cairo_show_text(cairo_ptr, title_ptr ? title_ptr : "Unnamed");
     cairo_restore(cairo_ptr);
 }
@@ -381,7 +383,14 @@ void test_window_title(bs_test_t *test_ptr)
         return;
     }
 
-    wlmaker_primitives_draw_window_title(cairo_ptr, "Title", 0xffffffff);
+    static const wlmtk_style_font_t font_style = {
+        .face = "Helvetica",
+        .weight = WLMTK_FONT_WEIGHT_BOLD,
+        .size = 15,
+    };
+
+    wlmaker_primitives_draw_window_title(
+        cairo_ptr, &font_style, "Title", 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_window_title.png");
 

@@ -135,11 +135,13 @@ void wlmaker_primitives_draw_close_icon(
  * Draws the window title into the `cairo_t`.
  *
  * @param cairo_ptr
+ * @param font_style_ptr      The font style to use.
  * @param title_ptr           Title string, or NULL.
  * @param color               As an ARGB 8888 value.
  */
 void wlmaker_primitives_draw_window_title(
     cairo_t *cairo_ptr,
+    const wlmtk_style_font_t *font_style_ptr,
     const char *title_ptr,
     uint32_t color);
 

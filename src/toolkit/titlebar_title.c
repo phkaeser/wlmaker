@@ -288,7 +288,7 @@ struct wlr_buffer *title_create_buffer(
     wlmaker_primitives_draw_bezel_at(
         cairo_ptr, 0, 0, width, style_ptr->height, 1.0, true);
     wlmaker_primitives_draw_window_title(
-        cairo_ptr, title_ptr, text_color);
+        cairo_ptr, &style_ptr->font, title_ptr, text_color);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
@@ -313,7 +313,13 @@ void test_title(bs_test_t *test_ptr)
         .focussed_text_color = 0xffc0c0c0,
         .blurred_text_color = 0xff808080,
         .height = 22,
+        .font = {
+            .face = "Helvetica",
+            .weight = WLMTK_FONT_WEIGHT_BOLD,
+            .size = 15,
+        }
     };
+
     bs_gfxbuf_t *focussed_gfxbuf_ptr = bs_gfxbuf_create(120, 22);
     bs_gfxbuf_t *blurred_gfxbuf_ptr = bs_gfxbuf_create(120, 22);
     bs_gfxbuf_clear(focussed_gfxbuf_ptr, 0xff2020c0);
