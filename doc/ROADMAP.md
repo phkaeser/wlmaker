@@ -128,7 +128,7 @@ Support for visual effects to improve usability, but not for pure show.
 ## Plan for 0.3
 
 * Bugfixes
-  * Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
+  * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
   * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * [done] Screensaver support.
