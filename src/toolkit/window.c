@@ -229,8 +229,8 @@ static const wlmtk_margin_style_t margin_style = {
 /** Style of the border around the window. */
 // TODO(kaeser@gubbe.ch): Move to central config. */
 static const wlmtk_margin_style_t border_style = {
-    .width = 5,
-    .color = 0xffc080a0, // FIXXME 000000,
+    .width = 1,
+    .color = 0xff000000,
 };
 
 /* == Exported methods ===================================================== */
