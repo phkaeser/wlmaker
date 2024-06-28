@@ -27,28 +27,26 @@ struct wlr_cursor;
 /** Forward declaration. */
 struct wlr_xcursor_manager;
 
-
 #include "element.h"
 #include "primitives.h"
-#include "window.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
 
 /** Style options for the resizebar. */
 typedef struct {
     /** Fill style for the complete resizebar. */
     wlmtk_style_fill_t        fill;
     /** Height of the resize bar. */
-    unsigned                  height;
+    uint64_t                  height;
     /** Width of the corners. */
-    unsigned                  corner_width;
+    uint64_t                  corner_width;
     /** Width of the bezel. */
-    uint32_t                  bezel_width;
-    /** Style of the margin within the resizebar. */
-    wlmtk_margin_style_t      margin;
+    uint64_t                  bezel_width;
 } wlmtk_resizebar_style_t;
+
+#include "window.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 /**
  * Creates the resize bar.

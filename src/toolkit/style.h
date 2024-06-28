@@ -20,6 +20,7 @@
 #ifndef __WLMTK_STYLE_H__
 #define __WLMTK_STYLE_H__
 
+#include <cairo.h>
 #include <inttypes.h>
 
 #ifdef __cplusplus
@@ -32,6 +33,8 @@ typedef enum {
     WLMTK_STYLE_COLOR_SOLID,
     /** Horizontal color gradient. */
     WLMTK_STYLE_COLOR_HGRADIENT,
+    /** Vertical color gradient. */
+    WLMTK_STYLE_COLOR_VGRADIENT,
     /** Diagonal color gradient, top-left to bottom-right. */
     WLMTK_STYLE_COLOR_DGRADIENT
     // TODO(kaeser@gubbe.ch): Add VGRADIENT.
@@ -61,15 +64,37 @@ typedef struct {
         wlmtk_style_color_solid_data_t solid;
         /** Horizontal color gradient. */
         wlmtk_style_color_gradient_data_t hgradient;
+        /** Vertical color gradient. */
+        wlmtk_style_color_gradient_data_t vgradient;
         /** Diagonal color gradient. */
         wlmtk_style_color_gradient_data_t dgradient;
     } param;
 } wlmtk_style_fill_t;
 
+/** Hardcoded max length of the font face name. */
+#define WLMTK_STYLE_FONT_FACE_LENGTH 128
+
+/** Weight of a font. */
+typedef enum {
+    WLMTK_FONT_WEIGHT_NORMAL,
+    WLMTK_FONT_WEIGHT_BOLD,
+} wlmtk_style_font_weight_t;
+
+/** Style of font. */
+typedef struct {
+    /** Font face family name. */
+    char                      face[WLMTK_STYLE_FONT_FACE_LENGTH];
+    /** Weight. */
+    wlmtk_style_font_weight_t weight;
+    /** Size of the font, in pixels per "em" square side. */
+    uint64_t                  size;
+} wlmtk_style_font_t;
+
+
 /** Specifies color and width of a margin. */
 typedef struct {
     /** Width of the margin. */
-    int                       width;
+    uint64_t                  width;
     /** Color of the margin. */
     uint32_t                  color;
 } wlmtk_margin_style_t;
@@ -79,6 +104,10 @@ typedef struct {
     /** The margin's style of the dock's box. */
     wlmtk_margin_style_t      margin;
 } wlmtk_dock_style_t;
+
+/** Translates the font weight from toolkit into cairo enum. */
+cairo_font_weight_t wlmtk_style_font_weight_cairo_from_wlmtk(
+    wlmtk_style_font_weight_t weight);
 
 #ifdef __cplusplus
 }  // extern "C"

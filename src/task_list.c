@@ -38,129 +38,132 @@
 
 /** State of the task list. */
 struct _wlmaker_task_list_t {
-    /** Corresponding view. */
-    wlmaker_view_t            view;
+    /** Derived from a toolkit panel. */
+    wlmtk_panel_t             super_panel;
+
+    /** Buffer that shows the tasklist's content. */
+    wlmtk_buffer_t            buffer;
+
     /** Backlink to the server. */
     wlmaker_server_t          *server_ptr;
-
-    /** Scene graph subtree holding all layers of the task list. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-
-    /** Scnee buffer: Wraps task list (WLR buffer) into scene graph. */
-    struct wlr_scene_buffer   *wlr_scene_buffer_ptr;
 
     /** Listener for the `task_list_enabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_enabled_listener;
     /** Listener for the `task_list_disabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_disabled_listener;
 
-    /** Listener for the `window_mapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for `window_mapped_event` signal by `wlmaker_server_t`. */
     struct wl_listener        window_mapped_listener;
-    /** Listener for the `window_unmapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for `window_unmapped_event` signal by `wlmaker_server_t`. */
     struct wl_listener        window_unmapped_listener;
 
     /** Whether the task list is currently enabled (mapped). */
     bool                      enabled;
+    /** Visual style. */
+    wlmaker_config_task_list_style_t style;
 };
 
-static void get_size(wlmaker_view_t *view_ptr,
-                     uint32_t *width_ptr,
-                     uint32_t *height_ptr);
-
-/** View implementor methods. */
-const wlmaker_view_impl_t     task_list_view_impl = {
-    .set_activated = NULL,
-    .get_size = get_size,
-    .handle_axis = NULL
-};
-
-/** Width of the task list overlay. */
-static const uint32_t         task_list_width = 400;
-/** Height of the task list overlay. */
-static const uint32_t         task_list_height = 200;
-
-static void task_list_refresh(
+static void _wlmaker_task_list_refresh(
     wlmaker_task_list_t *task_list_ptr);
 static struct wlr_buffer *create_wlr_buffer(
-    wlmaker_workspace_t *workspace_ptr);
-static void draw_into_cairo(
+    wlmaker_workspace_t *workspace_ptr,
+    wlmaker_config_task_list_style_t *style_ptr);
+static void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
+    wlmaker_config_task_list_style_t *style_ptr,
     wlmaker_workspace_t *workspace_ptr);
-static void draw_window_into_cairo(
+static void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
+    wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
     int pos_y);
-static const char *window_name(wlmtk_window_t *window_ptr);
+static const char *_wlmaker_task_list_window_name(
+    wlmtk_window_t *window_ptr);
 
-static void handle_task_list_enabled(
+static uint32_t _wlmaker_task_list_request_size(
+    wlmtk_panel_t *panel_ptr,
+    int width,
+    int height);
+
+static void _wlmaker_task_list_handle_task_list_enabled(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_task_list_disabled(
+static void _wlmaker_task_list_handle_task_list_disabled(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_window_mapped(
+static void _wlmaker_task_list_handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_window_unmapped(
+static void _wlmaker_task_list_handle_window_unmapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+/* == Data ================================================================= */
+
+/** Task list positioning: Fixed dimensions, at center of layer. */
+static const wlmtk_panel_positioning_t _wlmaker_task_list_positioning = {
+    .desired_width = 400,
+    .desired_height = 200,
+    .anchor = WLR_EDGE_BOTTOM | WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT
+};
+
+/** Virtual method table for the task list. */
+static const wlmtk_panel_vmt_t _wlmaker_task_list_vmt = {
+    .request_size = _wlmaker_task_list_request_size
+};
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_task_list_t *wlmaker_task_list_create(
-    wlmaker_server_t *server_ptr)
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = logged_calloc(
         1, sizeof(wlmaker_task_list_t));
     task_list_ptr->server_ptr = server_ptr;
+    task_list_ptr->style = style_ptr->task_list;
 
-    task_list_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
-        &server_ptr->void_wlr_scene_ptr->tree);
-    if (NULL == task_list_ptr->wlr_scene_tree_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_tree_create()");
+    if (!wlmtk_panel_init(&task_list_ptr->super_panel,
+                          &_wlmaker_task_list_positioning,
+                          server_ptr->env_ptr)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }
+    wlmtk_panel_extend(&task_list_ptr->super_panel,
+                       &_wlmaker_task_list_vmt);
+    wlmtk_element_set_visible(
+        wlmtk_panel_element(&task_list_ptr->super_panel), true);
 
-    task_list_ptr->wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        task_list_ptr->wlr_scene_tree_ptr, NULL);
-    if (NULL == task_list_ptr->wlr_scene_buffer_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_buffer_create()");
+    if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }
-    wlr_scene_node_set_enabled(
-        &task_list_ptr->wlr_scene_buffer_ptr->node, true);
-    wlr_scene_node_raise_to_top(
-        &task_list_ptr->wlr_scene_buffer_ptr->node);
-
-    wlmaker_view_init(
-        &task_list_ptr->view,
-        &task_list_view_impl,
-        server_ptr,
-        NULL,  // wlr_surface_ptr.
-        task_list_ptr->wlr_scene_tree_ptr,
-        NULL);  // send_close_callback.
+    wlmtk_element_set_visible(
+        wlmtk_buffer_element(&task_list_ptr->buffer), true);
+    wlmtk_container_add_element(
+        &task_list_ptr->super_panel.super_container,
+        wlmtk_buffer_element(&task_list_ptr->buffer));
 
     wlmtk_util_connect_listener_signal(
         &server_ptr->task_list_enabled_event,
         &task_list_ptr->task_list_enabled_listener,
-        handle_task_list_enabled);
+        _wlmaker_task_list_handle_task_list_enabled);
     wlmtk_util_connect_listener_signal(
         &server_ptr->task_list_disabled_event,
         &task_list_ptr->task_list_disabled_listener,
-        handle_task_list_disabled);
+        _wlmaker_task_list_handle_task_list_disabled);
 
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_mapped_event,
         &task_list_ptr->window_mapped_listener,
-        handle_window_mapped);
+        _wlmaker_task_list_handle_window_mapped);
     wlmtk_util_connect_listener_signal(
         &server_ptr->window_unmapped_event,
         &task_list_ptr->window_unmapped_listener,
-        handle_window_unmapped);
+        _wlmaker_task_list_handle_window_unmapped);
 
     return task_list_ptr;
 }
@@ -173,7 +176,13 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
     wl_list_remove(&task_list_ptr->task_list_disabled_listener.link);
     wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
 
-    wlmaker_view_fini(&task_list_ptr->view);
+    if (wlmtk_buffer_element(&task_list_ptr->buffer)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &task_list_ptr->super_panel.super_container,
+            wlmtk_buffer_element(&task_list_ptr->buffer));
+    }
+    wlmtk_buffer_fini(&task_list_ptr->buffer);
+    wlmtk_panel_fini(&task_list_ptr->super_panel);
 
     free(task_list_ptr);
 }
@@ -182,39 +191,19 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Provides the size of the view into `*width_ptr`, `*height_ptr`.
- *
- * @param view_ptr
- * @param width_ptr           If not NULL: This view's width in pixels will
- *                            get stored at `*width_ptr`..
- * @param height_ptr          If not NULL: This view's height in pixels will
- *                            get stored at `*height_ptr`..
- */
-void get_size(
-    __UNUSED__ wlmaker_view_t *view_ptr,
-    uint32_t *width_ptr,
-    uint32_t *height_ptr)
-{
-    if (NULL != width_ptr) *width_ptr = task_list_width;
-    if (NULL != height_ptr) *height_ptr = task_list_height;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
  * Refreshes the task list. Should be done whenever a list is mapped/unmapped.
  *
  * @param task_list_ptr
  */
-void task_list_refresh(wlmaker_task_list_t *task_list_ptr)
+void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 {
     wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
         task_list_ptr->server_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
-        workspace_ptr);
-    wlr_scene_buffer_set_buffer(
-        task_list_ptr->wlr_scene_buffer_ptr,
-        wlr_buffer_ptr);
+        workspace_ptr, &task_list_ptr->style);
+    wlmtk_buffer_set(&task_list_ptr->buffer, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -222,14 +211,18 @@ void task_list_refresh(wlmaker_task_list_t *task_list_ptr)
  * Creates a `struct wlr_buffer` with windows of `workspace_ptr` drawn into.
  *
  * @param workspace_ptr
+ * @param style_ptr
  *
  * @return A pointer to the `struct wlr_buffer` with the list of windows
  *     (tasks), or NULL on error.
  */
-struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
+struct wlr_buffer *create_wlr_buffer(
+    wlmaker_workspace_t *workspace_ptr,
+    wlmaker_config_task_list_style_t *style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        task_list_width, task_list_height);
+        _wlmaker_task_list_positioning.desired_width,
+        _wlmaker_task_list_positioning.desired_height);
     if (NULL == wlr_buffer_ptr) return NULL;
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
@@ -237,7 +230,7 @@ struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
         wlr_buffer_drop(wlr_buffer_ptr);
         return NULL;
     }
-    draw_into_cairo(cairo_ptr, workspace_ptr);
+    _wlmaker_task_list_draw_into_cairo(cairo_ptr, style_ptr, workspace_ptr);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
@@ -248,12 +241,15 @@ struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
  * Draws all tasks of `workspace_ptr` into `cairo_ptr`.
  *
  * @param cairo_ptr
+ * @param style_ptr
  * @param workspace_ptr
  */
-void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
+void _wlmaker_task_list_draw_into_cairo(
+    cairo_t *cairo_ptr,
+    wlmaker_config_task_list_style_t *style_ptr,
+    wlmaker_workspace_t *workspace_ptr)
 {
-    wlmaker_primitives_cairo_fill(
-        cairo_ptr, &wlmaker_config_theme.task_list_fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
 
     // Not tied to a workspace? We're done, all set.
     if (NULL == workspace_ptr) return;
@@ -276,9 +272,11 @@ void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
     }
     if (NULL != active_dlnode_ptr) centered_dlnode_ptr = active_dlnode_ptr;
 
-    int pos_y = task_list_height / 2 + 10;
-    draw_window_into_cairo(
+    int pos_y = _wlmaker_task_list_positioning.desired_height / 2 + 10;
+    _wlmaker_task_list_draw_window_into_cairo(
         cairo_ptr,
+        &style_ptr->font,
+        style_ptr->text_color,
         wlmtk_window_from_dlnode(centered_dlnode_ptr),
         centered_dlnode_ptr == active_dlnode_ptr,
         pos_y);
@@ -287,8 +285,10 @@ void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
     for (int further_windows = 1;
          NULL != dlnode_ptr && further_windows <= 3;
          dlnode_ptr = dlnode_ptr->prev_ptr, ++further_windows) {
-        draw_window_into_cairo(
+        _wlmaker_task_list_draw_window_into_cairo(
             cairo_ptr,
+            &style_ptr->font,
+            style_ptr->text_color,
             wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y - further_windows * 26);
@@ -298,8 +298,10 @@ void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
     for (int further_windows = 1;
          NULL != dlnode_ptr && further_windows <= 3;
          dlnode_ptr = dlnode_ptr->next_ptr, ++further_windows) {
-        draw_window_into_cairo(
+        _wlmaker_task_list_draw_window_into_cairo(
             cairo_ptr,
+            &style_ptr->font,
+            style_ptr->text_color,
             wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y + further_windows * 26);
@@ -311,27 +313,29 @@ void draw_into_cairo(cairo_t *cairo_ptr, wlmaker_workspace_t *workspace_ptr)
  * Draws one window (task) into `cairo_ptr`.
  *
  * @param cairo_ptr
+ * @param font_style_ptr
+ * @param color
  * @param window_ptr
  * @param active              Whether this window is currently active.
  * @param pos_y               Y position within the `cairo_ptr`.
  */
-void draw_window_into_cairo(
+void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
+    wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
     int pos_y)
 {
-    cairo_set_source_argb8888(
-        cairo_ptr,
-        wlmaker_config_theme.task_list_text_color);
-    cairo_set_font_size(cairo_ptr, 16.0);
+    cairo_set_source_argb8888(cairo_ptr, color);
+    cairo_set_font_size(cairo_ptr, font_style_ptr->size);
     cairo_select_font_face(
         cairo_ptr,
-        "Helvetica",
+        font_style_ptr->face,
         CAIRO_FONT_SLANT_NORMAL,
         active ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
     cairo_move_to(cairo_ptr, 10, pos_y);
-    cairo_show_text(cairo_ptr, window_name(window_ptr));
+    cairo_show_text(cairo_ptr, _wlmaker_task_list_window_name(window_ptr));
  }
 
 /* ------------------------------------------------------------------------- */
@@ -344,7 +348,7 @@ void draw_window_into_cairo(
  *     not require to be free'd, but will be re-used upon next call to
  *     window_name.
  */
-const char *window_name(wlmtk_window_t *window_ptr)
+const char *_wlmaker_task_list_window_name(wlmtk_window_t *window_ptr)
 {
     static char               name[256];
 
@@ -379,6 +383,25 @@ const char *window_name(wlmtk_window_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Implements @ref wlmtk_panel_vmt_t::request_size.
+ *
+ * @param panel_ptr
+ * @param width
+ * @param height
+ *
+ * @return 0 always.
+ */
+uint32_t _wlmaker_task_list_request_size(
+    wlmtk_panel_t *panel_ptr,
+    __UNUSED__ int width,
+    __UNUSED__ int height)
+{
+    wlmtk_panel_commit(panel_ptr, 0, &_wlmaker_task_list_positioning);
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Handler for the `task_list_enabled_listener`.
  *
  * Enables the task listener: Creates the task list for the currently-active
@@ -387,34 +410,26 @@ const char *window_name(wlmtk_window_t *window_ptr)
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_task_list_enabled(
+void _wlmaker_task_list_handle_task_list_enabled(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, task_list_enabled_listener);
 
-    task_list_refresh(task_list_ptr);
+    _wlmaker_task_list_refresh(task_list_ptr);
 
     if (task_list_ptr->enabled) {
-        BS_ASSERT(NULL != task_list_ptr->view.workspace_ptr);
+        BS_ASSERT(NULL != wlmtk_panel_get_layer(&task_list_ptr->super_panel));
         return;
     }
 
-    BS_ASSERT(NULL == task_list_ptr->view.workspace_ptr);
-    wlmaker_view_map(
-        &task_list_ptr->view,
-        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr),
-        WLMAKER_WORKSPACE_LAYER_OVERLAY);
+    wlmtk_workspace_t *workspace_ptr = wlmaker_workspace_wlmtk(
+        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr));
+    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+        workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
+    wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);
     task_list_ptr->enabled = true;
-    struct wlr_box extents;
-    wlr_output_layout_get_box(
-        task_list_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);
-
-    wlmaker_view_set_position(
-        &task_list_ptr->view,
-        (extents.width - task_list_width) / 2,
-        (extents.height - task_list_height) / 2);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -424,15 +439,17 @@ void handle_task_list_enabled(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_task_list_disabled(
+void _wlmaker_task_list_handle_task_list_disabled(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, task_list_disabled_listener);
 
-    BS_ASSERT(NULL != task_list_ptr->view.workspace_ptr);
-    wlmaker_view_unmap(&task_list_ptr->view);
+    BS_ASSERT(NULL != wlmtk_panel_get_layer(&task_list_ptr->super_panel));
+    wlmtk_layer_remove_panel(
+        wlmtk_panel_get_layer(&task_list_ptr->super_panel),
+        &task_list_ptr->super_panel);
     task_list_ptr->enabled = false;
 }
 
@@ -443,14 +460,14 @@ void handle_task_list_disabled(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_window_mapped(
+void _wlmaker_task_list_handle_window_mapped(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, window_mapped_listener);
     if (task_list_ptr->enabled) {
-        task_list_refresh(task_list_ptr);
+        _wlmaker_task_list_refresh(task_list_ptr);
     }
 }
 
@@ -461,14 +478,14 @@ void handle_window_mapped(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_window_unmapped(
+void _wlmaker_task_list_handle_window_unmapped(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, window_unmapped_listener);
     if (task_list_ptr->enabled) {
-        task_list_refresh(task_list_ptr);
+        _wlmaker_task_list_refresh(task_list_ptr);
     }
 }
 

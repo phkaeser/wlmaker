@@ -15,11 +15,20 @@
       Type = DGRADIENT;
     };
   };
+  Clip = {
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 12;
+    };
+    TextColor = "argb32:ff000000";
+  };
   Window = {
     TitleBar = {
       FocussedFill = {
-        Color = "argb32:ff000000";
-        Type = SOLID;
+        From = "argb32:ff000010";
+        To = "argb32:ff202070";
+        Type = DGRADIENT;
       };
       FocussedTextColor = "argb32:ffffffff";
       BlurredFill = {
@@ -33,6 +42,40 @@
         Width = 1;
         Color = "argb32:ff000000" ;
       };
+      Font = {
+        Face = Helvetica;
+        Weight = Bold;
+        Size = 15;
+      };
     };
+    ResizeBar = {
+      Fill = {
+        Color = "argb32:ffc2c0c5";
+        Type = SOLID;
+      };
+      Height = 7;
+      CornerWidth = 29;
+      BezelWidth = 1;
+    };
+    Border = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+  };
+  TaskList = {
+    Fill = {
+      Color = "argb32:c0202020";
+      Type = SOLID;
+    };
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 18;
+    };
+    TextColor = "argb32:ffffffff";
   };
 }

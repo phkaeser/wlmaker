@@ -34,7 +34,7 @@ extern "C" {
 
 /** Function pointer to method for drawing the button contents. */
 typedef void (*wlmtk_titlebar_button_draw_t)(
-    cairo_t *cairo_ptr, uint32_t color);
+    cairo_t *cairo_ptr, int siye, uint32_t color);
 
 /**
  * Creates a button for the titlebar.

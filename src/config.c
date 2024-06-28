@@ -101,12 +101,6 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
         .param = { .solid = { .color = 0xffffffff }}  // White, opaque..
     },
     .menu_item_selected_text_color = 0xff000000,  // Black, opaque.
-
-    .task_list_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param.solid.color = 0xc0202020  // Dark grey, partly transparent.
-    },
-    .task_list_text_color = 0xffffffff,
 };
 
 /** Plist decoding descriptor of the fill type. */
@@ -114,6 +108,13 @@ static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
     WLMCFG_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),
     WLMCFG_ENUM("HGRADIENT", WLMTK_STYLE_COLOR_HGRADIENT),
     WLMCFG_ENUM("DGRADIENT", WLMTK_STYLE_COLOR_DGRADIENT),
+    WLMCFG_ENUM_SENTINEL()
+};
+
+/** Plist decoding descriptor for font weight. */
+static const wlmcfg_enum_desc_t _wlmaker_config_font_weight_desc[] = {
+    WLMCFG_ENUM("Normal", WLMTK_FONT_WEIGHT_NORMAL),
+    WLMCFG_ENUM("Bold", WLMTK_FONT_WEIGHT_BOLD),
     WLMCFG_ENUM_SENTINEL()
 };
 
@@ -170,6 +171,19 @@ static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding "Font" sections. */
+static const wlmcfg_desc_t _wlmaker_config_font_style_desc[] = {
+    WLMCFG_DESC_CHARBUF(
+        "Face", true, wlmtk_style_font_t, face,
+        WLMTK_STYLE_FONT_FACE_LENGTH, NULL),
+    WLMCFG_DESC_ENUM(
+        "Weight", true, wlmtk_style_font_t, weight,
+        WLMTK_FONT_WEIGHT_NORMAL, _wlmaker_config_font_weight_desc),
+    WLMCFG_DESC_UINT64(
+        "Size", true, wlmtk_style_font_t, size, 10),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Descroptor for decoding the "TitleBar" dict below "Window". */
 static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_CUSTOM(
@@ -191,6 +205,23 @@ static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_titlebar_style_t, margin,
         _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmtk_titlebar_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_SENTINEL()
+ };
+
+/** Descroptor for decoding the "TitleBar" dict below "Window". */
+static const wlmcfg_desc_t _wlmaker_config_window_resize_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmtk_resizebar_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_resizebar_style_t, height, 7),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_resizebar_style_t, bezel_width, 1),
+    WLMCFG_DESC_UINT64(
+        "CornerWidth", true, wlmtk_resizebar_style_t, corner_width, 1),
     WLMCFG_DESC_SENTINEL()
  };
 
@@ -199,6 +230,40 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_DICT(
         "TitleBar", true, wlmtk_window_style_t, titlebar,
         _wlmaker_config_window_titlebar_style_desc),
+    WLMCFG_DESC_DICT(
+        "ResizeBar", true, wlmtk_window_style_t, resizebar,
+        _wlmaker_config_window_resize_style_desc),
+    WLMCFG_DESC_DICT(
+        "Border", true, wlmtk_window_style_t, border,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_window_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Descriptor for decoding the "TaskList" dictionary. */
+static const wlmcfg_desc_t _wlmaker_task_list_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmaker_config_task_list_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmaker_config_task_list_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "TextColor", true, wlmaker_config_task_list_style_t,
+        text_color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Descriptor for decoding the "Clip" dictionary. */
+static const wlmcfg_desc_t _wlmaker_clip_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmaker_config_clip_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "TextColor", true, wlmaker_config_clip_style_t,
+        text_color, 0),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -213,6 +278,12 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Window", true, wlmaker_config_style_t, window,
         _wlmaker_config_window_style_desc),
+    WLMCFG_DESC_DICT(
+        "TaskList", true, wlmaker_config_style_t, task_list,
+        _wlmaker_task_list_style_desc),
+    WLMCFG_DESC_DICT(
+        "Clip", true, wlmaker_config_style_t, clip,
+        _wlmaker_clip_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -333,12 +404,14 @@ static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
 static void test_style_file(bs_test_t *test_ptr);
 static void test_decode_fill(bs_test_t *test_ptr);
+static void test_decode_font(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmaker_config_test_cases[] = {
     { 1, "embedded", test_embedded },
     { 1, "file", test_file },
     { 1, "style_file", test_style_file },
     { 1, "decode_fill", test_decode_fill },
+    { 1, "decode_font", test_decode_font },
     { 0, NULL, NULL }
 };
 
@@ -473,6 +546,34 @@ void test_decode_fill(bs_test_t *test_ptr)
         _wlmaker_config_decode_fill_style(object_ptr, &fill));
     BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, fill.type);
     BS_TEST_VERIFY_EQ(test_ptr, 0x11223344, fill.param.solid.color);
+    wlmcfg_object_unref(object_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests the decoder for a font descriptor. */
+void test_decode_font(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *object_ptr;
+    const char *s = ("{"
+                     "Face = Helvetica;"
+                     "Weight = Bold;"
+                     "Size = 12;"
+                     "}");
+
+    object_ptr = wlmcfg_create_object_from_plist_string(s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(object_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    wlmtk_style_font_t font = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(dict_ptr, _wlmaker_config_font_style_desc, &font));
+
+    BS_TEST_VERIFY_STREQ(test_ptr, "Helvetica", font.face);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_FONT_WEIGHT_BOLD, font.weight);
+    BS_TEST_VERIFY_EQ(test_ptr, 12, font.size);
+
     wlmcfg_object_unref(object_ptr);
 }
 

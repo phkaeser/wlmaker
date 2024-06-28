@@ -143,19 +143,18 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Configurable key combinations for basic window actions (minimize, ...).
   * [done] File for visual style (theme): decoration style, background.
   * File to define workspaces and dock, falling back to default if not provided.
-  * Include at least one additional theme.
+  * [done] Include at least one additional theme.
 
-* Theme details
-  * Style for resizebar.
-  * Style for the window's margin.
-  * Style for the window border.
-  * Titlebar icons centered.
-  * Titlebar icons with text color.
-  * Bezel 'off' color so it is visible on black.
-  * Titlebar font and size.
-  * Style for clip.
-  * Style for task list fill and text color.
-  * Default background color.
+* [done] Theme details
+  * [done] Style for resizebar.
+  * [done] Style for the window's margin.
+  * [done] Style for the window border.
+  * [done] Titlebar icons centered.
+  * [done] Titlebar icons with text color, blurred or focussed.
+  * ~~Bezel 'off' color so it is visible on black (not doing).~~
+  * [done] Titlebar font and size.
+  * [done] Style for clip.
+  * [done] Style for task list fill and text color.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
@@ -163,6 +162,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Multiple workspaces, based on toolkit.
   * Remove the earlier non-toolkit code.
   * Background color for separate workspaces, configured in state.
+  * Default background color, picked up from style file.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.
@@ -179,12 +179,13 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Display application status (*starting*, *running*).
   * [done] Configurable (in code).
 
-* Task list (window-alt-esc), cycling through windows, based on toolkit.
-  * Key combination configurable.
+* [done] Task list (window-alt-esc), cycling through windows.
+  * [done] Migrate implementation to wlmtk.
+  * [done]Key combination configurable in the config file.
 
 ## Plan for 0.4
 
-**Focus**: Multi-output (mirrored), Menus: "Early-Access" ready.
+**Focus**: Add menus & make it ready for  "Early-Access".
 
 * Support for dynamic output configurations.
   * Multiple monitors, with output mirrored across.
@@ -211,7 +212,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Pending
 
-Features for further versions, not ordered by priority nor timeline.
+### Major feature milestones
+
+* Initial multi-monitor support: Mirrored.
+* Toplevel windows represented as icons & minimized (iconified) windows.
+* Drag-n-drop of icons into & from dock & clip.
+
+### Features for further versions, not ordered by priority nor timeline.
 
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
@@ -285,6 +292,7 @@ Features for further versions, not ordered by priority nor timeline.
   * Workspace configuration.
   * Background.
   * Theme.
+    * Look into swapping the diagonal gradient to follow window maker style (not cairo).
   * Auto-started applications.
 
 * Configurable keyboard map.
@@ -324,6 +332,7 @@ Features for further versions, not ordered by priority nor timeline.
 * Task switcher
   * Application icons or minimized surfaces to visualize applications.
   * Animations when switching focus.
+  * Clean up signal handling (emit on task switch, enable, disable).
 
 * Resizing & moving
   * Consider visualizing windows partially transparent when resizing or moving.

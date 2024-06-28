@@ -59,6 +59,7 @@ typedef enum {
     WLMCFG_TYPE_BOOL,
     WLMCFG_TYPE_ENUM,
     WLMCFG_TYPE_STRING,
+    WLMCFG_TYPE_CHARBUF,
     WLMCFG_TYPE_DICT,
     WLMCFG_TYPE_CUSTOM,
 } wlmcfg_decode_type_t;
@@ -101,6 +102,14 @@ typedef struct {
     const char                *default_value_ptr;
 } wlmcfg_desc_string_t;
 
+/** A char buffer. Fixed size, no need to create. */
+typedef struct {
+    /** Size of the char buffer at the specified offset. */
+    size_t                    len;
+    /** The default value, if not in the dict. */
+    const char                *default_value_ptr;
+} wlmcfg_desc_charbuf_t;
+
 /** A custom decoder. */
 typedef struct {
     /** Decoding method: From obhect into `dest_ptr`. */
@@ -129,6 +138,7 @@ struct _wlmcfg_desc_t {
         wlmcfg_desc_bool_t    v_bool;
         wlmcfg_desc_enum_t    v_enum;
         wlmcfg_desc_string_t  v_string;
+        wlmcfg_desc_charbuf_t v_charbuf;
         const wlmcfg_desc_t   *v_dict_desc_ptr;
         wlmcfg_desc_custom_t  v_custom;
     } v;
@@ -191,6 +201,16 @@ struct _wlmcfg_desc_t {
         .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_string.default_value_ptr = _default,                       \
+    }
+
+/** Descriptor for a char buffer. */
+#define WLMCFG_DESC_CHARBUF(_key, _required, _base, _field, _len, _default) { \
+        .type = WLMCFG_TYPE_CHARBUF,                                    \
+        .key_ptr = (_key),                                              \
+        .required = _required,                                          \
+        .field_offset = offsetof(_base, _field),                        \
+        .v.v_charbuf.len = _len,                                        \
+        .v.v_charbuf.default_value_ptr = _default,                      \
     }
 
 /** Descriptor for a dict sub-value. */
