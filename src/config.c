@@ -101,12 +101,6 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
         .param = { .solid = { .color = 0xffffffff }}  // White, opaque..
     },
     .menu_item_selected_text_color = 0xff000000,  // Black, opaque.
-
-    .task_list_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param.solid.color = 0xc0202020  // Dark grey, partly transparent.
-    },
-    .task_list_text_color = 0xffffffff,
 };
 
 /** Plist decoding descriptor of the fill type. */
@@ -248,6 +242,20 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "TaskList" dictionary. */
+static const wlmcfg_desc_t _wlmaker_task_list_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmaker_config_task_list_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmaker_config_task_list_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "TextColor", true, wlmaker_config_task_list_style_t,
+        text_color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
@@ -259,6 +267,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Window", true, wlmaker_config_style_t, window,
         _wlmaker_config_window_style_desc),
+    WLMCFG_DESC_DICT(
+        "TaskList", true, wlmaker_config_style_t, task_list,
+        _wlmaker_task_list_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 

@@ -59,17 +59,23 @@ struct _wlmaker_task_list_t {
 
     /** Whether the task list is currently enabled (mapped). */
     bool                      enabled;
+    /** Visual style. */
+    wlmaker_config_task_list_style_t style;
 };
 
 static void _wlmaker_task_list_refresh(
     wlmaker_task_list_t *task_list_ptr);
 static struct wlr_buffer *create_wlr_buffer(
-    wlmaker_workspace_t *workspace_ptr);
+    wlmaker_workspace_t *workspace_ptr,
+    wlmaker_config_task_list_style_t *style_ptr);
 static void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
+    wlmaker_config_task_list_style_t *style_ptr,
     wlmaker_workspace_t *workspace_ptr);
 static void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
+    wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
     int pos_y);
@@ -112,11 +118,13 @@ static const wlmtk_panel_vmt_t _wlmaker_task_list_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_task_list_t *wlmaker_task_list_create(
-    wlmaker_server_t *server_ptr)
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = logged_calloc(
         1, sizeof(wlmaker_task_list_t));
     task_list_ptr->server_ptr = server_ptr;
+    task_list_ptr->style = style_ptr->task_list;
 
     if (!wlmtk_panel_init(&task_list_ptr->super_panel,
                           &_wlmaker_task_list_positioning,
@@ -193,7 +201,7 @@ void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
         task_list_ptr->server_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
-        workspace_ptr);
+        workspace_ptr, &task_list_ptr->style);
     wlmtk_buffer_set(&task_list_ptr->buffer, wlr_buffer_ptr);
     wlr_buffer_drop(wlr_buffer_ptr);
 }
@@ -203,11 +211,14 @@ void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
  * Creates a `struct wlr_buffer` with windows of `workspace_ptr` drawn into.
  *
  * @param workspace_ptr
+ * @param style_ptr
  *
  * @return A pointer to the `struct wlr_buffer` with the list of windows
  *     (tasks), or NULL on error.
  */
-struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
+struct wlr_buffer *create_wlr_buffer(
+    wlmaker_workspace_t *workspace_ptr,
+    wlmaker_config_task_list_style_t *style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         _wlmaker_task_list_positioning.desired_width,
@@ -219,7 +230,7 @@ struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
         wlr_buffer_drop(wlr_buffer_ptr);
         return NULL;
     }
-    _wlmaker_task_list_draw_into_cairo(cairo_ptr, workspace_ptr);
+    _wlmaker_task_list_draw_into_cairo(cairo_ptr, style_ptr, workspace_ptr);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
@@ -230,14 +241,15 @@ struct wlr_buffer *create_wlr_buffer(wlmaker_workspace_t *workspace_ptr)
  * Draws all tasks of `workspace_ptr` into `cairo_ptr`.
  *
  * @param cairo_ptr
+ * @param style_ptr
  * @param workspace_ptr
  */
 void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
+    wlmaker_config_task_list_style_t *style_ptr,
     wlmaker_workspace_t *workspace_ptr)
 {
-    wlmaker_primitives_cairo_fill(
-        cairo_ptr, &wlmaker_config_theme.task_list_fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
 
     // Not tied to a workspace? We're done, all set.
     if (NULL == workspace_ptr) return;
@@ -263,6 +275,8 @@ void _wlmaker_task_list_draw_into_cairo(
     int pos_y = _wlmaker_task_list_positioning.desired_height / 2 + 10;
     _wlmaker_task_list_draw_window_into_cairo(
         cairo_ptr,
+        &style_ptr->font,
+        style_ptr->text_color,
         wlmtk_window_from_dlnode(centered_dlnode_ptr),
         centered_dlnode_ptr == active_dlnode_ptr,
         pos_y);
@@ -273,6 +287,8 @@ void _wlmaker_task_list_draw_into_cairo(
          dlnode_ptr = dlnode_ptr->prev_ptr, ++further_windows) {
         _wlmaker_task_list_draw_window_into_cairo(
             cairo_ptr,
+            &style_ptr->font,
+            style_ptr->text_color,
             wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y - further_windows * 26);
@@ -284,6 +300,8 @@ void _wlmaker_task_list_draw_into_cairo(
          dlnode_ptr = dlnode_ptr->next_ptr, ++further_windows) {
         _wlmaker_task_list_draw_window_into_cairo(
             cairo_ptr,
+            &style_ptr->font,
+            style_ptr->text_color,
             wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y + further_windows * 26);
@@ -295,23 +313,25 @@ void _wlmaker_task_list_draw_into_cairo(
  * Draws one window (task) into `cairo_ptr`.
  *
  * @param cairo_ptr
+ * @param font_style_ptr
+ * @param color
  * @param window_ptr
  * @param active              Whether this window is currently active.
  * @param pos_y               Y position within the `cairo_ptr`.
  */
 void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
+    wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
     int pos_y)
 {
-    cairo_set_source_argb8888(
-        cairo_ptr,
-        wlmaker_config_theme.task_list_text_color);
-    cairo_set_font_size(cairo_ptr, 16.0);
+    cairo_set_source_argb8888(cairo_ptr, color);
+    cairo_set_font_size(cairo_ptr, font_style_ptr->size);
     cairo_select_font_face(
         cairo_ptr,
-        "Helvetica",
+        font_style_ptr->face,
         CAIRO_FONT_SLANT_NORMAL,
         active ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
     cairo_move_to(cairo_ptr, 10, pos_y);

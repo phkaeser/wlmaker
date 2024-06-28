@@ -58,4 +58,16 @@
       Color = "argb32:ff000000";
     };
   };
+  TaskList = {
+    Fill = {
+      Color = "argb32:c0202020";
+      Type = SOLID;
+    };
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 18;
+    };
+    TextColor = "argb32:ffffffff";
+  };
 }

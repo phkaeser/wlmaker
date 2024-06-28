@@ -63,12 +63,14 @@ extern "C" {
  * the `wlmaker_server_t`.
  *
  * @param server_ptr
+ * @param style_ptr
  *
  * @return The task list handle or NULL on error. Must be released by calling
  *     @ref wlmaker_task_list_destroy.
  */
 wlmaker_task_list_t *wlmaker_task_list_create(
-    wlmaker_server_t *server_ptr);
+    wlmaker_server_t *server_ptr,
+    const wlmaker_config_style_t *style_ptr);
 
 /**
  * Destroys the task list, as created by @ref wlmaker_task_list_create.
