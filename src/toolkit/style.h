@@ -70,6 +70,26 @@ typedef struct {
     } param;
 } wlmtk_style_fill_t;
 
+/** Hardcoded max length of the font face name. */
+#define WLMTK_STYLE_FONT_FACE_LENGTH 128
+
+/** Weight of a font. */
+typedef enum {
+    WLMTK_FONT_WEIGHT_NORMAL,
+    WLMTK_FONT_WEIGHT_BOLD,
+} wlmtk_style_font_weight_t;
+
+/** Style of font. */
+typedef struct {
+    /** Font face family name. */
+    char                      face[WLMTK_STYLE_FONT_FACE_LENGTH];
+    /** Weight. */
+    wlmtk_style_font_weight_t weight;
+    /** Size of the font, in pixels per "em" square side. */
+    uint64_t                  size;
+} wlmtk_style_font_t;
+
+
 /** Specifies color and width of a margin. */
 typedef struct {
     /** Width of the margin. */

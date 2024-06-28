@@ -288,6 +288,8 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
         case WLMCFG_TYPE_CHARBUF:
             str_ptr = BS_VALUE_AT(
                 char, dest_ptr, iter_desc_ptr->field_offset);
+            if (NULL == iter_desc_ptr->v.v_charbuf.default_value_ptr) break;
+
             if (iter_desc_ptr->v.v_charbuf.len <
                 strlen(iter_desc_ptr->v.v_charbuf.default_value_ptr) + 1) {
                 bs_log(BS_ERROR,
