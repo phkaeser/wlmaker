@@ -38,16 +38,23 @@ INCLUDE(CTest)
 
 FIND_PACKAGE(PkgConfig REQUIRED)
 
+# Further dependency versions, as submodules:
+# * drm at libdrm-2.4.117
+# * hwdata at v0.371
+# * libdisplay-info at 0.2.0
+# * pixman at pixman-0.43.0
+# * seatd at 0.8.0
+
 PKG_CHECK_MODULES(CAIRO REQUIRED IMPORTED_TARGET cairo>=1.16.0)
 PKG_CHECK_MODULES(
   WAYLAND REQUIRED IMPORTED_TARGET
-  wayland-client>=1.22.90
-  wayland-protocols>=1.31
-  wayland-server>=1.22.90)
+  wayland-client>=1.22.91
+  wayland-protocols>=1.32
+  wayland-server>=1.22.91)
 PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
-PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17)
-PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.14)
-PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.0.3)  # 1.4.1)
+PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17.4)
+PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
+PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
 
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
