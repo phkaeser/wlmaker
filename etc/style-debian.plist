@@ -35,6 +35,11 @@
         Width = 1;
         Color = "argb32:ff000000" ;
       };
+      Font = {
+        Face = Helvetica;
+        Weight = Bold;
+        Size = 15;
+      };
     };
     ResizeBar = {
       Fill = {

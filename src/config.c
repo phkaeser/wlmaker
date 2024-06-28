@@ -177,6 +177,19 @@ static const wlmcfg_desc_t _wlmaker_config_dock_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding "Font" sections. */
+static const wlmcfg_desc_t _wlmaker_config_font_style_desc[] = {
+    WLMCFG_DESC_CHARBUF(
+        "Face", true, wlmtk_style_font_t, face,
+        WLMTK_STYLE_FONT_FACE_LENGTH, NULL),
+    WLMCFG_DESC_ENUM(
+        "Weight", true, wlmtk_style_font_t, weight,
+        WLMTK_FONT_WEIGHT_NORMAL, _wlmaker_config_font_weight_desc),
+    WLMCFG_DESC_UINT64(
+        "Size", true, wlmtk_style_font_t, size, 10),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Descroptor for decoding the "TitleBar" dict below "Window". */
 static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_CUSTOM(
@@ -198,6 +211,9 @@ static const wlmcfg_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_titlebar_style_t, margin,
         _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmtk_titlebar_style_t, font,
+        _wlmaker_config_font_style_desc),
     WLMCFG_DESC_SENTINEL()
  };
 
@@ -229,19 +245,6 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_window_style_t, margin,
         _wlmaker_config_margin_style_desc),
-    WLMCFG_DESC_SENTINEL()
-};
-
-/** Descriptor for decoding "Font" sections. */
-static const wlmcfg_desc_t _wlmaker_config_font_style_desc[] = {
-    WLMCFG_DESC_CHARBUF(
-        "Face", true, wlmtk_style_font_t, face,
-        WLMTK_STYLE_FONT_FACE_LENGTH, NULL),
-    WLMCFG_DESC_ENUM(
-        "Weight", true, wlmtk_style_font_t, weight,
-        WLMTK_FONT_WEIGHT_NORMAL, _wlmaker_config_font_weight_desc),
-    WLMCFG_DESC_UINT64(
-        "Size", true, wlmtk_style_font_t, size, 10),
     WLMCFG_DESC_SENTINEL()
 };
 

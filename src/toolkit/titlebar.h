@@ -42,6 +42,8 @@ typedef struct {
     uint64_t                  bezel_width;
     /** Style of the margin within the resizebar. */
     wlmtk_margin_style_t      margin;
+    /** Font style for the titlebar's title. */
+    wlmtk_style_font_t       font;
 } wlmtk_titlebar_style_t;
 
 #include "window.h"
