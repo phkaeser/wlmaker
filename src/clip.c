@@ -63,6 +63,9 @@ struct _wlmaker_clip_t {
 
     /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
     struct wl_listener        workspace_changed_listener;
+
+    /** The clip's style. */
+    wlmaker_config_clip_style_t style;
 };
 
 static bool _wlmaker_clip_pointer_axis(
@@ -146,6 +149,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     wlmaker_clip_t *clip_ptr = logged_calloc(1, sizeof(wlmaker_clip_t));
     if (NULL == clip_ptr) return NULL;
     clip_ptr->server_ptr = server_ptr;
+    clip_ptr->style = style_ptr->clip;
 
     clip_ptr->tile_buffer_ptr = _wlmaker_clip_create_tile(
         &style_ptr->tile, false, false);
@@ -477,12 +481,13 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
     }
 
     cairo_select_font_face(
-        cairo_ptr, "Helvetica",
+        cairo_ptr,
+        clip_ptr->style.font.face,
         CAIRO_FONT_SLANT_NORMAL,
-        CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cairo_ptr, 12.0);
-    cairo_set_source_argb8888(cairo_ptr, 0xff000000);
-    cairo_move_to(cairo_ptr, 4, 14);
+        wlmtk_style_font_weight_cairo_from_wlmtk(clip_ptr->style.font.weight));
+    cairo_set_font_size(cairo_ptr, clip_ptr->style.font.size);
+    cairo_set_source_argb8888(cairo_ptr, clip_ptr->style.text_color);
+    cairo_move_to(cairo_ptr, 4, 2 + clip_ptr->style.font.size);
     cairo_show_text(cairo_ptr, name_ptr);
 
     cairo_move_to(cairo_ptr, 50, 56);

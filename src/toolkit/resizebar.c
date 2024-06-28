@@ -74,16 +74,16 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_window_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr)
 {
+    static const wlmtk_margin_style_t empty_margin_style = {};
     wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_t));
     if (NULL == resizebar_ptr) return NULL;
     memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
-    BS_ASSERT(0 == resizebar_ptr->style.margin.width);
 
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
                         env_ptr,
                         WLMTK_BOX_HORIZONTAL,
-                        &resizebar_ptr->style.margin)) {
+                        &empty_margin_style)) {
         wlmtk_resizebar_destroy(resizebar_ptr);
         return NULL;
     }

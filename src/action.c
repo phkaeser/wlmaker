@@ -95,6 +95,9 @@ static const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     WLMCFG_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
 
+    WLMCFG_ENUM("TaskPrevious", WLMAKER_ACTION_TASK_TO_PREVIOUS),
+    WLMCFG_ENUM("TaskNext", WLMAKER_ACTION_TASK_TO_NEXT),
+
     WLMCFG_ENUM("WindowRaise", WLMAKER_ACTION_WINDOW_RAISE),
     WLMCFG_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
     WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
@@ -174,6 +177,20 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 
     case WLMAKER_ACTION_WORKSPACE_TO_NEXT:
         wlmaker_server_switch_to_next_workspace(server_ptr);
+        break;
+
+    case WLMAKER_ACTION_TASK_TO_PREVIOUS:
+        wlmtk_workspace_activate_previous_window(
+            wlmaker_workspace_wlmtk(
+                wlmaker_server_get_current_workspace(server_ptr)));
+        wlmaker_server_activate_task_list(server_ptr);
+        break;
+
+    case WLMAKER_ACTION_TASK_TO_NEXT:
+        wlmtk_workspace_activate_next_window(
+            wlmaker_workspace_wlmtk(
+                wlmaker_server_get_current_workspace(server_ptr)));
+        wlmaker_server_activate_task_list(server_ptr);
         break;
 
     case WLMAKER_ACTION_WINDOW_RAISE:

@@ -60,6 +60,7 @@ static struct wlr_buffer *create_buf(
     bs_gfxbuf_t *gfxbuf_ptr,
     int position,
     bool pressed,
+    bool focussed,
     const wlmtk_titlebar_style_t *style_ptr,
     wlmtk_titlebar_button_draw_t draw);
 
@@ -147,13 +148,13 @@ bool wlmtk_titlebar_button_redraw(
     BS_ASSERT(position + style_ptr->height <= focussed_gfxbuf_ptr->width);
 
     struct wlr_buffer *focussed_released_ptr = create_buf(
-        focussed_gfxbuf_ptr, position, false, style_ptr,
+        focussed_gfxbuf_ptr, position, false, true, style_ptr,
         titlebar_button_ptr->draw);
     struct wlr_buffer *focussed_pressed_ptr = create_buf(
-        focussed_gfxbuf_ptr, position, true, style_ptr,
+        focussed_gfxbuf_ptr, position, true, true, style_ptr,
         titlebar_button_ptr->draw);
     struct wlr_buffer *blurred_ptr = create_buf(
-        blurred_gfxbuf_ptr, position, false, style_ptr,
+        blurred_gfxbuf_ptr, position, false, false, style_ptr,
         titlebar_button_ptr->draw);
 
     if (NULL != focussed_released_ptr &&
@@ -238,8 +239,9 @@ struct wlr_buffer *create_buf(
     bs_gfxbuf_t *gfxbuf_ptr,
     int position,
     bool pressed,
+    bool focussed,
     const wlmtk_titlebar_style_t *style_ptr,
-    void (*draw)(cairo_t *cairo_ptr, uint32_t color))
+    wlmtk_titlebar_button_draw_t draw)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         style_ptr->height, style_ptr->height);
@@ -256,7 +258,9 @@ struct wlr_buffer *create_buf(
     }
     wlmaker_primitives_draw_bezel(
         cairo_ptr, style_ptr->bezel_width, !pressed);
-    draw(cairo_ptr, style_ptr->focussed_text_color);
+    uint32_t color = style_ptr->focussed_text_color;
+    if (!focussed) color = style_ptr->blurred_text_color;
+    draw(cairo_ptr, style_ptr->height, color);
     cairo_destroy(cairo_ptr);
 
     return wlr_buffer_ptr;
@@ -292,6 +296,7 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_titlebar_style_t style = {
         .height = 22,
         .focussed_text_color = 0xffffffff,
+        .blurred_text_color = 0xffe0c0a0,
         .bezel_width = 1
     };
     bs_gfxbuf_t *f_ptr = bs_gfxbuf_create(100, 22);

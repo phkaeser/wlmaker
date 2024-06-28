@@ -68,6 +68,7 @@ TARGET_SOURCES(toolkit PRIVATE
   rectangle.c
   resizebar.c
   resizebar_area.c
+  style.c
   surface.c
   tile.c
   titlebar.c

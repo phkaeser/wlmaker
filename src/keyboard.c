@@ -41,9 +41,6 @@ struct _wlmaker_keyboard_t {
     struct wl_listener        modifiers_listener;
     /** Listener for the `key` signal of `wl_keyboard`. */
     struct wl_listener        key_listener;
-
-    /** Whether the task switching mode is currently enabled. */
-    bool                      task_switch_mode_enabled;
 };
 
 static bool _wlmaker_keyboard_populate_rules(
@@ -244,19 +241,11 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
     uint32_t modifiers = wlr_keyboard_get_modifiers(
         keyboard_ptr->wlr_keyboard_ptr);
 
+    // TODO(kaeser@gubbe.ch): Handle this better -- should respect the
+    // modifiers of the task list actions, and be more generalized.
     if ((modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT &&
-        keyboard_ptr->task_switch_mode_enabled) {
-        keyboard_ptr->task_switch_mode_enabled = false;
-        wl_signal_emit(
-            &keyboard_ptr->server_ptr->task_list_disabled_event, NULL);
-        wlmaker_workspace_t *workspace_ptr =
-            wlmaker_server_get_current_workspace(keyboard_ptr->server_ptr);
-        wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
-        wlmtk_window_t *window_ptr =
-            wlmtk_workspace_get_activated_window(wlmtk_ptr);
-        if (NULL != window_ptr) {
-            wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
-        }
+        keyboard_ptr->server_ptr->task_list_enabled) {
+        wlmaker_server_deactivate_task_list(keyboard_ptr->server_ptr);
     }
 
     // For key presses: Pass them on to the server, for potential key bindings.
@@ -270,30 +259,8 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
         int key_syms_count = xkb_state_key_get_syms(
             keyboard_ptr->wlr_keyboard_ptr->xkb_state, keycode, &key_syms);
         for (int i = 0; i < key_syms_count; ++i) {
-
-            if (((modifiers & WLR_MODIFIER_ALT) == WLR_MODIFIER_ALT) &&
-                (key_syms[i] == XKB_KEY_Escape)) {
-                if ((modifiers & WLR_MODIFIER_SHIFT) == WLR_MODIFIER_SHIFT) {
-                    wlmtk_workspace_activate_previous_window(
-                        wlmaker_workspace_wlmtk(
-                            wlmaker_server_get_current_workspace(
-                                keyboard_ptr->server_ptr)));
-                } else {
-                    wlmtk_workspace_activate_next_window(
-                        wlmaker_workspace_wlmtk(
-                            wlmaker_server_get_current_workspace(
-                                keyboard_ptr->server_ptr)));
-                    }
-                keyboard_ptr->task_switch_mode_enabled = true;
-                wl_signal_emit(
-                    &keyboard_ptr->server_ptr->task_list_enabled_event, NULL);
-                processed = true;
-            }
-
-            if (!processed) {
-                processed = wlmaker_keyboard_process_bindings(
-                    keyboard_ptr->server_ptr, key_syms[i], modifiers);
-            }
+            processed = wlmaker_keyboard_process_bindings(
+                keyboard_ptr->server_ptr, key_syms[i], modifiers);
         }
     }
 
@@ -335,19 +302,8 @@ void handle_modifiers(struct wl_listener *listener_ptr,
     uint32_t modifiers = wlr_keyboard_get_modifiers(
         keyboard_ptr->wlr_keyboard_ptr);
 
-    if (keyboard_ptr->task_switch_mode_enabled &&
-        (modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT) {
-        keyboard_ptr->task_switch_mode_enabled = false;
-        wl_signal_emit(
-            &keyboard_ptr->server_ptr->task_list_disabled_event, NULL);
-        wlmaker_workspace_t *workspace_ptr =
-            wlmaker_server_get_current_workspace(keyboard_ptr->server_ptr);
-        wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
-        wlmtk_window_t *window_ptr =
-            wlmtk_workspace_get_activated_window(wlmtk_ptr);
-        if (NULL != window_ptr) {
-            wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
-        }
+    if ((modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT) {
+        wlmaker_server_deactivate_task_list(keyboard_ptr->server_ptr);
     }
 
     wlr_seat_set_keyboard(

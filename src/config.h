@@ -43,6 +43,24 @@ typedef enum {
     WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER
 } wlmaker_config_decoration_t;
 
+/** Style of the task list overlay. */
+typedef struct {
+    /** Fill style. */
+    wlmtk_style_fill_t        fill;
+    /** Font to use. */
+    wlmtk_style_font_t        font;
+    /** Text color for tasks listed. */
+    uint32_t                  text_color;
+} wlmaker_config_task_list_style_t;
+
+/** Style of the clip's configurables. */
+typedef struct {
+    /** Font to use. */
+    wlmtk_style_font_t        font;
+    /** Text color for tasks listed. */
+    uint32_t                  text_color;
+} wlmaker_config_clip_style_t;
+
 /** Style information. Replaces @ref wlmaker_config_theme_t. */
 typedef struct {
     /** The tile. */
@@ -51,6 +69,10 @@ typedef struct {
     wlmtk_dock_style_t        dock;
     /** Window style. */
     wlmtk_window_style_t      window;
+    /** Clip style. */
+    wlmaker_config_clip_style_t clip;
+    /** Task list style. */
+    wlmaker_config_task_list_style_t task_list;
 } wlmaker_config_style_t;
 
 /** The theme. */
@@ -84,11 +106,6 @@ typedef struct {
     wlmtk_style_fill_t        menu_item_selected_fill;
     /** Text color of menu item when selected. */
     uint32_t                  menu_item_selected_text_color;
-
-    /** Fill style of the task list. */
-    wlmtk_style_fill_t        task_list_fill;
-    /** Color of the text describing tasks in the task list. */
-    uint32_t                  task_list_text_color;
 } wlmaker_config_theme_t;
 
 /** Configuration for a workspace. */
