@@ -15,6 +15,14 @@
       Type = DGRADIENT;
     };
   };
+  Clip = {
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 15;
+    };
+    TextColor = "argb32:ff000000";
+  };
   Window = {
     TitleBar = {
       FocussedFill = {

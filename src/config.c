@@ -256,6 +256,17 @@ static const wlmcfg_desc_t _wlmaker_task_list_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "Clip" dictionary. */
+static const wlmcfg_desc_t _wlmaker_clip_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmaker_config_clip_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "TextColor", true, wlmaker_config_clip_style_t,
+        text_color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
@@ -270,6 +281,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "TaskList", true, wlmaker_config_style_t, task_list,
         _wlmaker_task_list_style_desc),
+    WLMCFG_DESC_DICT(
+        "Clip", true, wlmaker_config_style_t, clip,
+        _wlmaker_clip_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 

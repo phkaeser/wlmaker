@@ -53,6 +53,14 @@ typedef struct {
     uint32_t                  text_color;
 } wlmaker_config_task_list_style_t;
 
+/** Style of the clip's configurables. */
+typedef struct {
+    /** Font to use. */
+    wlmtk_style_font_t        font;
+    /** Text color for tasks listed. */
+    uint32_t                  text_color;
+} wlmaker_config_clip_style_t;
+
 /** Style information. Replaces @ref wlmaker_config_theme_t. */
 typedef struct {
     /** The tile. */
@@ -61,6 +69,8 @@ typedef struct {
     wlmtk_dock_style_t        dock;
     /** Window style. */
     wlmtk_window_style_t      window;
+    /** Clip style. */
+    wlmaker_config_clip_style_t clip;
     /** Task list style. */
     wlmaker_config_task_list_style_t task_list;
 } wlmaker_config_style_t;
