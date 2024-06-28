@@ -19,7 +19,7 @@
     Font = {
       Face = Helvetica;
       Weight = Bold;
-      Size = 15;
+      Size = 12;
     };
     TextColor = "argb32:ff000000";
   };

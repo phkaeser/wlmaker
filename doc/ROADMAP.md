@@ -143,9 +143,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Configurable key combinations for basic window actions (minimize, ...).
   * [done] File for visual style (theme): decoration style, background.
   * File to define workspaces and dock, falling back to default if not provided.
-  * Include at least one additional theme.
+  * [done] Include at least one additional theme.
 
-* Theme details
+* [done] Theme details
   * [done] Style for resizebar.
   * [done] Style for the window's margin.
   * [done] Style for the window border.
@@ -153,9 +153,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Titlebar icons with text color, blurred or focussed.
   * ~~Bezel 'off' color so it is visible on black (not doing).~~
   * [done] Titlebar font and size.
-  * Style for clip.
+  * [done] Style for clip.
   * [done] Style for task list fill and text color.
-  * Default background color.
 
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
@@ -163,6 +162,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Multiple workspaces, based on toolkit.
   * Remove the earlier non-toolkit code.
   * Background color for separate workspaces, configured in state.
+  * Default background color, picked up from style file.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.
