@@ -130,6 +130,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Bugfixes
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
   * Fix bug: When switching workspace, pointer state appears to be reset.
+  * Add commandline flag to enabnle/disable XWayland start.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
@@ -187,10 +188,6 @@ Support for visual effects to improve usability, but not for pure show.
 
 **Focus**: Add menus & make it ready for  "Early-Access".
 
-* Support for dynamic output configurations.
-  * Multiple monitors, with output mirrored across.
-  * Per-monitor fractional scale.
-
 * Menu, based on toolkit.
   * Available as window menu in windows.
   * Available as (hardcoded) application menu.
@@ -209,6 +206,12 @@ Support for visual effects to improve usability, but not for pure show.
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
   * Screenshots included. (can we script these?)
+
+## Plan for 0.5
+
+* Support for dynamic output configurations.
+  * Multiple monitors, with output mirrored across.
+  * Per-monitor fractional scale.
 
 ## Pending
 
@@ -248,10 +251,6 @@ Support for visual effects to improve usability, but not for pure show.
   * Show in 'iconified' area.
   * Drag-and-drop into clip or dock area.
   * Consider running this as task selector, as separate binary.
-
-* Support for dynamic output configurations.
-  * Multiple monitors, in configurations other than mirrored.
-  * Work with hot-plugged monitor, remember configurations.
 
 * Window attributes
   * Determine how to detect client preferences.
