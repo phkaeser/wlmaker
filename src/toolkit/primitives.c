@@ -255,10 +255,7 @@ const bs_test_case_t   wlmaker_primitives_test_cases[] = {
 void test_fill(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(16, 8);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(16, 8)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, gfxbuf_ptr);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
 
     // Solid fill.
@@ -306,10 +303,7 @@ void test_close(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(22, 22);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(22, 22)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
 
     wlmaker_primitives_draw_close_icon(cairo_ptr, 22, 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
@@ -324,10 +318,7 @@ void test_close_large(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(50, 50);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(50, 50)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
 
     wlmaker_primitives_draw_close_icon(cairo_ptr, 50, 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
@@ -342,10 +333,7 @@ void test_minimize(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(22, 22);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(22, 22)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
 
     wlmaker_primitives_draw_minimize_icon(cairo_ptr, 22, 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
@@ -360,10 +348,7 @@ void test_minimize_large(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(50, 50);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(50, 50)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
 
     wlmaker_primitives_draw_minimize_icon(cairo_ptr, 50, 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
@@ -378,10 +363,7 @@ void test_window_title(bs_test_t *test_ptr)
 {
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(80, 22);
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
-    if (NULL == gfxbuf_ptr) {
-        BS_TEST_FAIL(test_ptr, "Failed bs_gfxbuf_create(80, 22)");
-        return;
-    }
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
 
     static const wlmtk_style_font_t font_style = {
         .face = "Helvetica",
