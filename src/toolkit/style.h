@@ -20,6 +20,7 @@
 #ifndef __WLMTK_STYLE_H__
 #define __WLMTK_STYLE_H__
 
+#include <cairo.h>
 #include <inttypes.h>
 
 #ifdef __cplusplus
@@ -103,6 +104,10 @@ typedef struct {
     /** The margin's style of the dock's box. */
     wlmtk_margin_style_t      margin;
 } wlmtk_dock_style_t;
+
+/** Translates the font weight from toolkit into cairo enum. */
+cairo_font_weight_t wlmtk_style_font_weight_cairo_from_wlmtk(
+    wlmtk_style_font_weight_t weight);
 
 #ifdef __cplusplus
 }  // extern "C"
