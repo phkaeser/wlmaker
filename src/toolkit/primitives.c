@@ -217,12 +217,21 @@ void wlmaker_primitives_draw_window_title(
     const char *title_ptr,
     uint32_t color)
 {
+    cairo_font_weight_t weight;
+    switch (font_style_ptr->weight) {
+    case WLMTK_FONT_WEIGHT_NORMAL: weight = CAIRO_FONT_WEIGHT_NORMAL; break;
+    case WLMTK_FONT_WEIGHT_BOLD: weight = CAIRO_FONT_WEIGHT_BOLD; break;
+    default:
+        bs_log(BS_FATAL, "Unhandled font weight %d", font_style_ptr->weight);
+        BS_ABORT();
+    }
+
     cairo_save(cairo_ptr);
     cairo_select_font_face(
         cairo_ptr,
         font_style_ptr->face,
-        CAIRO_FONT_SLANT_NORMAL,  // FIXME
-        CAIRO_FONT_WEIGHT_BOLD);
+        CAIRO_FONT_SLANT_NORMAL,
+        weight);
     cairo_set_font_size(cairo_ptr, font_style_ptr->size);
     cairo_set_source_argb8888(cairo_ptr, color);
 
