@@ -159,35 +159,6 @@ void wlmaker_workspace_get_details(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_workspace_get_maximize_area(
-    wlmaker_workspace_t *workspace_ptr,
-    struct wlr_output *wlr_output_ptr,
-    struct wlr_box *maximize_area_ptr)
-{
-    struct wlr_box area;
-    wlr_output_layout_get_box(
-        workspace_ptr->server_ptr->wlr_output_layout_ptr,
-        wlr_output_ptr,
-        &area);
-    wlr_box_intersection(
-        maximize_area_ptr,
-        &area,
-        &workspace_ptr->usable_area);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_workspace_get_fullscreen_area(
-    wlmaker_workspace_t *workspace_ptr,
-    struct wlr_output *wlr_output_ptr,
-    struct wlr_box *fullscreen_area_ptr)
-{
-    wlr_output_layout_get_box(
-        workspace_ptr->server_ptr->wlr_output_layout_ptr,
-        wlr_output_ptr,
-        fullscreen_area_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 wlmaker_workspace_t *wlmaker_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr)
 {

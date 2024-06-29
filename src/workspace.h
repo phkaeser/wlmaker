@@ -118,30 +118,6 @@ void wlmaker_workspace_get_details(
     const char **name_ptr_ptr);
 
 /**
- * Gets the 'maximize' area for this workspace and outpout.
- *
- * @param workspace_ptr
- * @param wlr_output_ptr
- * @param maximize_area_ptr
- */
-void wlmaker_workspace_get_maximize_area(
-    wlmaker_workspace_t *workspace_ptr,
-    struct wlr_output *wlr_output_ptr,
-    struct wlr_box *maximize_area_ptr);
-
-/**
- * Gets the 'fullscreen' area for this workspace and outpout.
- *
- * @param workspace_ptr
- * @param wlr_output_ptr
- * @param fullscreen_area_ptr
- */
-void wlmaker_workspace_get_fullscreen_area(
-    wlmaker_workspace_t *workspace_ptr,
-    struct wlr_output *wlr_output_ptr,
-    struct wlr_box *fullscreen_area_ptr);
-
-/**
  * Cast: Returns a pointer to @ref wlmaker_workspace_t holding `dlnode_ptr`.
  *
  * @param dlnode_ptr          A pointer to the `dlnode` element.
