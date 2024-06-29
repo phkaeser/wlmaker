@@ -25,14 +25,6 @@ FIND_PROGRAM(MESON_EXECUTABLE NAMES meson REQUIRED)
 FIND_PROGRAM(NINJA_EXECUTABLE NAMES ninja REQUIRED)
 FIND_PACKAGE(PkgConfig REQUIRED)
 
-SET(config_PREFIX "Installation prefix." "/tmp/bla")
-IF(config_PREFIX STREQUAL "/tmp/bla")
-  MESSAGE(FATAL_ERROR "Meh")
-ENDIF()
-#MESSAGE(FATAL_ERROR, "HERE: ${CMAKE_INSTALL_PREFIX}")
-
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build
-
 # https://github.com/phkaeser/libbase
 # Initialize: git submodule update --init --recursive --merge
 # Checkout: git submodule update --checkout --recursive --merge
