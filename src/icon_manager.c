@@ -46,7 +46,7 @@ struct _wlmaker_icon_manager_t {
 struct _wlmaker_toplevel_icon_t {
     /** The icon is also a toolkit tile. */
     wlmtk_tile_t              super_tile;
-
+    /** The surface element, being the content of the tile. */
     wlmtk_surface_t           *content_surface_ptr;
 
     /** Back-link to the client requesting the toplevel. */
@@ -68,8 +68,6 @@ struct _wlmaker_toplevel_icon_t {
     /** Serial that needs to be acknowledged. */
     uint32_t                  pending_serial;
 
-    /** Tile container where the DockApp is contained. */
-    wlmaker_tile_container_t  *tile_container_ptr;
     /** DockApp tile, camouflaged as iconified. */
     wlmaker_dockapp_iconified_t *dai_ptr;
 
@@ -405,18 +403,6 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);
 
-    // TODO(kaeser@gubbe.ch): If the toplevel is already mapped, we may want
-    // to pick the same workspace for showing the icon. Similar, the icon
-    // may need to move along as the toplevel switches workspaces.
-    // This needs an update, once the interfaces get more stable.
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        icon_manager_ptr->server_ptr);
-    toplevel_icon_ptr->tile_container_ptr =
-        wlmaker_workspace_get_tile_container(workspace_ptr);
-    wlmaker_tile_container_add(
-        toplevel_icon_ptr->tile_container_ptr,
-        wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
-
     bs_log(BS_DEBUG, "created toplevel icon %p for toplevel %p, surface %p",
            toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr);
 
@@ -452,9 +438,6 @@ void wlmaker_toplevel_icon_destroy(
     // cycles...
 
     if (NULL != toplevel_icon_ptr->dai_ptr) {
-        wlmaker_tile_container_remove(
-            toplevel_icon_ptr->tile_container_ptr,
-            wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
         wlmaker_dockapp_iconified_destroy(toplevel_icon_ptr->dai_ptr);
         toplevel_icon_ptr->dai_ptr = NULL;
     }

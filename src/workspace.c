@@ -20,7 +20,6 @@
 
 #include "workspace.h"
 
-#include "tile_container.h"
 #include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>
@@ -54,9 +53,6 @@ struct _wlmaker_workspace_t {
     bs_dllist_t               views;
     /** Double-linked list of views on the other layers this workspace. */
     bs_dllist_t               layer_views;
-
-    /** Container for iconified tiles. */
-    wlmaker_tile_container_t  *tile_container_ptr;
 
     /** Holds the `wlr_scene_rect` defining the background. */
     struct wlr_scene_rect     *background_wlr_scene_rect_ptr;
@@ -155,9 +151,6 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     wlr_scene_node_set_enabled(
         &workspace_ptr->background_wlr_scene_rect_ptr->node, true);
 
-    workspace_ptr->tile_container_ptr = wlmaker_tile_container_create(
-        workspace_ptr->server_ptr, workspace_ptr);
-
     workspace_ptr->injectable_view_set_active = wlmaker_view_set_active;
     wlmaker_workspace_arrange_views(workspace_ptr);
 
@@ -188,11 +181,6 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
 /* ------------------------------------------------------------------------- */
 void wlmaker_workspace_destroy(wlmaker_workspace_t *workspace_ptr)
 {
-    if (NULL != workspace_ptr->tile_container_ptr) {
-        wlmaker_tile_container_destroy(workspace_ptr->tile_container_ptr);
-        workspace_ptr->tile_container_ptr = NULL;
-    }
-
     for (bs_dllist_node_t *node_ptr = workspace_ptr->layer_views.head_ptr;
          node_ptr != NULL;
          node_ptr = node_ptr->next_ptr) {
@@ -555,9 +543,8 @@ void wlmaker_workspace_view_set_as_iconified(
         wlmaker_wlr_scene_node_from_view(view_ptr),
         &workspace_ptr->server_ptr->void_wlr_scene_ptr->tree);
 
-    wlmaker_iconified_t *iconified_ptr = wlmaker_iconified_create(view_ptr);
-    wlmaker_tile_container_add(
-        workspace_ptr->tile_container_ptr, iconified_ptr);
+    __UNUSED__ wlmaker_iconified_t *iconified_ptr = wlmaker_iconified_create(
+        view_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -565,9 +552,6 @@ void wlmaker_workspace_iconified_set_as_view(
     wlmaker_workspace_t *workspace_ptr,
     wlmaker_iconified_t *iconified_ptr)
 {
-    wlmaker_tile_container_remove(
-        workspace_ptr->tile_container_ptr, iconified_ptr);
-
     wlmaker_view_t *view_ptr = wlmaker_view_from_iconified(iconified_ptr);
     bs_dllist_push_front(
         &workspace_ptr->views,
@@ -633,13 +617,6 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
     wlmaker_workspace_t *workspace_ptr)
 {
     return &workspace_ptr->dlnode;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmaker_tile_container_t *wlmaker_workspace_get_tile_container(
-    wlmaker_workspace_t *workspace_ptr)
-{
-    return workspace_ptr->tile_container_ptr;
 }
 
 /* ------------------------------------------------------------------------- */

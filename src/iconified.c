@@ -35,9 +35,6 @@ struct _wlmaker_iconified_t {
     /** Links to the @ref wlmaker_view_t that is shown as iconified. */
     wlmaker_view_t            *view_ptr;
 
-    /** As an element of @ref wlmaker_tile_container_t `tiles`. */
-    bs_dllist_node_t          dlnode;
-
     /** WLR gfx buffer, where the iconified tile is drawn into. */
     struct wlr_buffer         *wlr_buffer_ptr;
 
@@ -300,13 +297,6 @@ wlmaker_view_t *wlmaker_view_from_iconified(
 }
 
 /* ------------------------------------------------------------------------- */
-bs_dllist_node_t *wlmaker_dlnode_from_iconified(
-    wlmaker_iconified_t *iconified_ptr)
-{
-    return &iconified_ptr->dlnode;
-}
-
-/* ------------------------------------------------------------------------- */
 bs_avltree_node_t *wlmaker_avlnode_from_iconified(
     wlmaker_iconified_t *iconified_ptr)
 {
@@ -325,13 +315,6 @@ struct wlr_scene_node *wlmaker_wlr_scene_node_from_iconified_scene_buffer(
     wlmaker_iconified_t *iconified_ptr)
 {
     return &iconified_ptr->wlr_scene_buffer_ptr->node;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmaker_iconified_t *wlmaker_iconified_from_dlnode(
-    bs_dllist_node_t *dlnode_ptr)
-{
-    return BS_CONTAINER_OF(dlnode_ptr, wlmaker_iconified_t, dlnode);
 }
 
 /* == Local (static) methods =============================================== */

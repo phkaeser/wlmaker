@@ -38,7 +38,6 @@ SET(PUBLIC_HEADER_FILES
   server.h
   subprocess_monitor.h
   task_list.h
-  tile_container.h
   tile.h
   view.h
   workspace.h
@@ -76,7 +75,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   subprocess_monitor.c
   task_list.c
   tile.c
-  tile_container.c
   view.c
   workspace.c
   xdg_decoration.c

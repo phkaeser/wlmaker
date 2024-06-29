@@ -27,14 +27,14 @@
  * - workspace      (that it is shown on) => this should *probably* be
  *                  an "tile_holder"  (dock, clip, drawer, icon-area)
  *
- * tile_set, tile_container
+ * tile_set
  *
  * Note: An "iconified" should be derived from a "tile". Whereas a tile always
  * has a background and edge. As in WM.
  * Note: A 'tile' is also an interactive, since it can be clicked.  And we may
  * pass other events along to it.
  * => The ability to hold multiple "interactives" is a shared property between
- *    a view and the tile_container (and other layer elements).
+ *    a view (and other layer elements).
  *
  * [parent] (view, container, layer element)
  *      +--> view
