@@ -125,9 +125,16 @@ void wlmtk_dock_add_tile(
     wlmtk_tile_t *tile_ptr)
 {
     BS_ASSERT(NULL == wlmtk_tile_element(tile_ptr)->parent_container_ptr);
-    wlmtk_box_add_element_back(
-        &dock_ptr->tile_box,
-        wlmtk_tile_element(tile_ptr));
+    if (WLR_EDGE_TOP == dock_ptr->dock_positioning.anchor ||
+        WLR_EDGE_LEFT == dock_ptr->dock_positioning.anchor) {
+        wlmtk_box_add_element_back(
+            &dock_ptr->tile_box,
+            wlmtk_tile_element(tile_ptr));
+    } else {
+        wlmtk_box_add_element_front(
+            &dock_ptr->tile_box,
+            wlmtk_tile_element(tile_ptr));
+    }
 
     wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(dock_ptr);
     struct wlr_box box = wlmtk_element_get_dimensions_box(
