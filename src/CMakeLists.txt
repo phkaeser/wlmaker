@@ -20,11 +20,9 @@ SET(PUBLIC_HEADER_FILES
   clip.h
   config.h
   cursor.h
-  decorations.h
   dock.h
   icon_manager.h
   idle.h
-  interactive.h
   keyboard.h
   layer_panel.h
   layer_shell.h
@@ -35,7 +33,6 @@ SET(PUBLIC_HEADER_FILES
   server.h
   subprocess_monitor.h
   task_list.h
-  tile.h
   workspace.h
   xdg_decoration.h
   xdg_popup.h
@@ -52,11 +49,9 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   clip.c
   config.c
   cursor.c
-  decorations.c
   dock.c
   icon_manager.c
   idle.c
-  interactive.c
   keyboard.c
   launcher.c
   layer_panel.c
@@ -67,7 +62,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   server.c
   subprocess_monitor.c
   task_list.c
-  tile.c
   workspace.c
   xdg_decoration.c
   xdg_popup.c
