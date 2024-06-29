@@ -42,7 +42,6 @@ static void update_pointer_focus(wlmaker_view_t *view_ptr,
 
 static void window_menu_callback_maximize(void *ud_ptr);
 static void window_menu_callback_fullscreen(void *ud_ptr);
-static void window_menu_callback_minimize(void *ud_ptr);
 static void window_menu_callback_shade(void *ud_ptr);
 static void window_menu_callback_move_to_workspace1(void *ud_ptr);
 static void window_menu_callback_move_to_workspace2(void *ud_ptr);
@@ -56,8 +55,6 @@ static const wlmaker_menu_item_descriptor_t window_menu_descriptors[] = {
         "Maximize", window_menu_callback_maximize),
     WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
         "Fullscreen", window_menu_callback_fullscreen),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Minimize", window_menu_callback_minimize),
     WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
         "Shade", window_menu_callback_shade),
     WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
@@ -540,16 +537,6 @@ void wlmaker_view_set_fullscreen(wlmaker_view_t *view_ptr, bool fullscreen)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_view_set_iconified(wlmaker_view_t *view_ptr, bool iconified)
-{
-    // state: fullscreen, iconified, organic, (some form of maximized)
-    if (iconified) {
-        wlmaker_workspace_view_set_as_iconified(
-            view_ptr->workspace_ptr, view_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmaker_view_set_title(wlmaker_view_t *view_ptr, const char *title_ptr)
 {
     if (NULL != view_ptr->title_ptr) {
@@ -740,18 +727,6 @@ void window_menu_callback_fullscreen(void *ud_ptr)
 {
     wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
     wlmaker_view_set_fullscreen(view_ptr, !view_ptr->fullscreen);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: .
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_minimize(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    wlmaker_view_set_iconified(view_ptr, true);
 }
 
 /* ------------------------------------------------------------------------- */

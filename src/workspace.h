@@ -46,7 +46,6 @@ enum _wlmaker_workspace_layer_t {
     WLMAKER_WORKSPACE_LAYER_OVERLAY = 4,
 };
 
-#include "iconified.h"
 #include "server.h"
 #include "toolkit/toolkit.h"
 
@@ -207,26 +206,6 @@ void wlmaker_workspace_set_extents(
  * @param workspace_ptr
  */
 void wlmaker_workspace_arrange_views(wlmaker_workspace_t *workspace_ptr);
-
-/**
- * Sets `view_ptr` as an iconified, ie. minimizes that view.
- *
- * @param workspace_ptr
- * @param view_ptr
- */
-void wlmaker_workspace_view_set_as_iconified(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_view_t *view_ptr);
-
-/**
- * Sets the `iconified_ptr` as view, ie. un-minimize the corresponding view.
- *
- * @param workspace_ptr
- * @param iconified_ptr
- */
-void wlmaker_workspace_iconified_set_as_view(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_iconified_t *iconified_ptr);
 
 /**
  * Promotes |view_ptr| to the fullscreen layer. Will demote any view currently

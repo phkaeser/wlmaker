@@ -50,20 +50,6 @@ void wlmaker_decorations_draw_tile(
     const wlmtk_style_fill_t *fill_ptr,
     bool pressed);
 
-/**
- * Draws the title of an iconified on to `cairo_ptr`.
- *
- * @param cairo_ptr
- * @param fill_ptr
- * @param font_color
- * @param title_ptr
- */
-void wlmaker_decorations_draw_iconified(
-    cairo_t *cairo_ptr,
-    const wlmtk_style_fill_t *fill_ptr,
-    uint32_t font_color,
-    const char *title_ptr);
-
 /** Unit tests. */
 extern const bs_test_case_t wlmaker_decorations_test_cases[];
 

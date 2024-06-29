@@ -84,10 +84,6 @@ typedef struct {
 
     /** Fill style of a tile. */
     wlmtk_style_fill_t        tile_fill;
-    /** File style of the title element of an iconified. */
-    wlmtk_style_fill_t        iconified_title_fill;
-    /** Color of the iconified's title. */
-    uint32_t                  iconified_title_color;
 
     /** Fill style of the menu's background. */
     wlmtk_style_fill_t        menu_fill;

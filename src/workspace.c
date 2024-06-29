@@ -270,11 +270,6 @@ void wlmaker_workspace_add_view(wlmaker_workspace_t *workspace_ptr,
 void wlmaker_workspace_remove_view(wlmaker_workspace_t *workspace_ptr,
                                    wlmaker_view_t *view_ptr)
 {
-    if (view_ptr->iconified_ptr) {
-        wlmaker_workspace_iconified_set_as_view(
-            workspace_ptr, view_ptr->iconified_ptr);
-    }
-
     if (workspace_ptr->fullscreen_view_ptr == view_ptr) {
         wlmaker_view_set_fullscreen(view_ptr, false);
         BS_ASSERT(NULL == workspace_ptr->fullscreen_view_ptr);
@@ -517,53 +512,6 @@ void wlmaker_workspace_demote_view_from_fullscreen(
 
     workspace_ptr->fullscreen_view_layer = WLMAKER_WORKSPACE_LAYER_NUM;
     workspace_ptr->fullscreen_view_ptr = NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_workspace_view_set_as_iconified(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_view_t *view_ptr)
-{
-    if (view_ptr == workspace_ptr->activated_view_ptr) {
-        workspace_ptr->injectable_view_set_active(view_ptr, false);
-        workspace_ptr->activated_view_ptr = NULL;
-    }
-    BS_ASSERT(bs_dllist_contains(
-                  &workspace_ptr->views,
-                  wlmaker_dlnode_from_view(view_ptr)));
-
-    bs_dllist_remove(
-        &workspace_ptr->views,
-        wlmaker_dlnode_from_view(view_ptr));
-
-    wlr_scene_node_set_enabled(
-        wlmaker_wlr_scene_node_from_view(view_ptr),
-        false);
-    wlr_scene_node_reparent(
-        wlmaker_wlr_scene_node_from_view(view_ptr),
-        &workspace_ptr->server_ptr->void_wlr_scene_ptr->tree);
-
-    __UNUSED__ wlmaker_iconified_t *iconified_ptr = wlmaker_iconified_create(
-        view_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_workspace_iconified_set_as_view(
-    wlmaker_workspace_t *workspace_ptr,
-    wlmaker_iconified_t *iconified_ptr)
-{
-    wlmaker_view_t *view_ptr = wlmaker_view_from_iconified(iconified_ptr);
-    bs_dllist_push_front(
-        &workspace_ptr->views,
-        wlmaker_dlnode_from_view(view_ptr));
-    wlr_scene_node_reparent(
-        wlmaker_wlr_scene_node_from_view(view_ptr),
-        workspace_ptr->layers[WLMAKER_WORKSPACE_LAYER_SHELL].wlr_scene_tree_ptr);
-    wlr_scene_node_set_enabled(
-        wlmaker_wlr_scene_node_from_view(view_ptr),
-        true);
-
-    wlmaker_iconified_destroy(iconified_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

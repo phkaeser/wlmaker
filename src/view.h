@@ -31,16 +31,10 @@
  *
  * Should have a state, which can be:
  * - unmapped
- * - iconified
  * - fullscreen
  * - maximized
  * - shaded    (only applies to server-side decorated views)
  * - organic
- * The current transition between these states is messy. Also, iconified is not
- * just a state of the view, but also an object that wraps the view, leading
- * to some weird interactions there.
- * In C++ terminology, an iconified should be created via a method call to
- * the view (ie. ctor for iconified should be protected and friend to view).
  */
 #ifndef __VIEW_H__
 #define __VIEW_H__
@@ -58,7 +52,6 @@
 /** Type definition of the state of a view. */
 typedef struct _wlmaker_view_t wlmaker_view_t;
 
-#include "iconified.h"
 #include "interactive.h"
 #include "server.h"
 #include "workspace.h"
@@ -210,8 +203,6 @@ struct _wlmaker_view_t {
     bool                      shaded;
     /** Default layer (unless the view is in fullscreen). */
     wlmaker_workspace_layer_t default_layer;
-    /** Is set, iff the view is currently iconified. */
-    wlmaker_iconified_t       *iconified_ptr;
 
     /** The window menu's buffer. */
     struct wlr_scene_buffer   *window_menu_wlr_scene_buffer_ptr;
@@ -452,14 +443,6 @@ void wlmaker_view_set_maximized(wlmaker_view_t *view_ptr, bool maximize);
  * @param fullscreen
  */
 void wlmaker_view_set_fullscreen(wlmaker_view_t *view_ptr, bool fullscreen);
-
-/**
- * Sets, respectively unsets this view as iconified.
- *
- * @param view_ptr
- * @param iconified
- */
-void wlmaker_view_set_iconified(wlmaker_view_t *view_ptr, bool iconified);
 
 /**
  * Retrieves the position of the view, including server-side decoration

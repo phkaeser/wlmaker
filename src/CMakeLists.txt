@@ -23,7 +23,6 @@ SET(PUBLIC_HEADER_FILES
   decorations.h
   dock.h
   icon_manager.h
-  iconified.h
   idle.h
   interactive.h
   keyboard.h
@@ -59,7 +58,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   decorations.c
   dock.c
   icon_manager.c
-  iconified.c
   idle.c
   interactive.c
   keyboard.c

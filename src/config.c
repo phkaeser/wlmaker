@@ -78,11 +78,6 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
     },
-    .iconified_title_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xff404040 }}
-    },
-    .iconified_title_color = 0xffffffff,  // White.
     .menu_fill = {
         .type = WLMTK_STYLE_COLOR_HGRADIENT,
         .param = { .hgradient = { .from = 0xffc2c0c5, .to = 0xff828085 }}
