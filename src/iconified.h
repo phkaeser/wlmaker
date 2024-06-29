@@ -175,20 +175,6 @@ struct wlr_scene_node *wlmaker_wlr_scene_node_from_iconified(
 struct wlr_scene_node *wlmaker_wlr_scene_node_from_iconified_scene_buffer(
     wlmaker_iconified_t *iconified_ptr);
 
-// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
-/** Creates the iconified dockapp. */
-wlmaker_dockapp_iconified_t *wlmaker_dockapp_iconified_create(
-    wlmaker_server_t *server_ptr);
-/** Destroys the iconified dockapp. */
-void wlmaker_dockapp_iconified_destroy(wlmaker_dockapp_iconified_t *dai_ptr);
-/** Gets the iconified from the dockapp. */
-wlmaker_iconified_t *wlmaker_iconified_from_dockapp(
-    wlmaker_dockapp_iconified_t *dai_ptr);
-/** Attaches the surface to the dockapp. */
-void wlmaker_dockapp_iconified_attach(
-    wlmaker_dockapp_iconified_t *dai_ptr,
-    struct wlr_surface *wlr_surface_ptr);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

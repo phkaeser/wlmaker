@@ -52,14 +52,6 @@ struct _wlmaker_iconified_t {
     wlmaker_interactive_t     interactive;
 };
 
-/** Prototype: A DockApp, camouflaged as iconified. TODO: eliminate. */
-struct _wlmaker_dockapp_iconified_t {
-    /** The iconified it camouflages. */
-    wlmaker_iconified_t       iconified;
-    /** Scene tree, holding the tile, and the surface. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-};
-
 static wlmaker_iconified_t *iconified_from_interactive(
     wlmaker_interactive_t *interactive_ptr);
 
@@ -91,114 +83,6 @@ const wlmaker_interactive_impl_t iconified_interactive_impl = {
 };
 
 /* == Exported methods ===================================================== */
-
-/* ------------------------------------------------------------------------- */
-/** Prototype: Creates an iconified as DockApp. */
-// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
-wlmaker_dockapp_iconified_t *wlmaker_dockapp_iconified_create(
-    wlmaker_server_t *server_ptr)
-{
-    wlmaker_dockapp_iconified_t *dai_ptr = logged_calloc(
-        1, sizeof(wlmaker_dockapp_iconified_t));
-    if (NULL == dai_ptr) return NULL;
-    dai_ptr->iconified.view_ptr = NULL;
-
-    dai_ptr->iconified.wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(64, 64);
-    if (NULL == dai_ptr->iconified.wlr_buffer_ptr) {
-        wlmaker_dockapp_iconified_destroy(dai_ptr);
-        return NULL;
-    }
-    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(
-        dai_ptr->iconified.wlr_buffer_ptr);
-    if (NULL == cairo_ptr) {
-        wlmaker_dockapp_iconified_destroy(dai_ptr);
-        return NULL;
-    }
-
-    const wlmtk_style_fill_t fill = {
-        .type = WLMTK_STYLE_COLOR_DGRADIENT,
-        .param = { .hgradient = { .from = 0xff767686,.to = 0xff313541 }}
-    };
-    wlmaker_decorations_draw_tile(cairo_ptr, &fill, false);
-    cairo_destroy(cairo_ptr);
-
-    dai_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
-        &server_ptr->void_wlr_scene_ptr->tree);
-    if (NULL == dai_ptr->wlr_scene_tree_ptr) {
-        wlmaker_dockapp_iconified_destroy(dai_ptr);
-        return NULL;
-    }
-    dai_ptr->iconified.node_ptr = &dai_ptr->wlr_scene_tree_ptr->node;
-
-    // We'll want to create a node. And add this node to ... a "tile_holder".
-    dai_ptr->iconified.wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        dai_ptr->wlr_scene_tree_ptr,
-        dai_ptr->iconified.wlr_buffer_ptr);
-    if (NULL == dai_ptr->iconified.wlr_scene_buffer_ptr) {
-        wlmaker_dockapp_iconified_destroy(dai_ptr);
-        return NULL;
-    }
-
-    wlr_scene_node_set_enabled(
-        &dai_ptr->iconified.wlr_scene_buffer_ptr->node,
-        true);
-
-    wlmaker_interactive_init(
-        &dai_ptr->iconified.interactive,
-        &iconified_interactive_impl,
-        dai_ptr->iconified.wlr_scene_buffer_ptr,
-        server_ptr->cursor_ptr,
-        dai_ptr->iconified.wlr_buffer_ptr);
-
-    return dai_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Prototype: Destroys the iconified as DockApp. */
-// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
-void wlmaker_dockapp_iconified_destroy(wlmaker_dockapp_iconified_t *dai_ptr)
-{
-    if (NULL != dai_ptr->iconified.wlr_scene_buffer_ptr) {
-        wlr_scene_node_destroy(
-            &dai_ptr->iconified.wlr_scene_buffer_ptr->node);
-        dai_ptr->iconified.wlr_scene_buffer_ptr = NULL;
-    }
-
-    if (NULL != dai_ptr->wlr_scene_tree_ptr) {
-        wlr_scene_node_destroy(
-            &dai_ptr->wlr_scene_tree_ptr->node);
-        dai_ptr->wlr_scene_tree_ptr = NULL;
-    }
-
-    if (NULL != dai_ptr->iconified.wlr_buffer_ptr) {
-        wlr_buffer_drop(dai_ptr->iconified.wlr_buffer_ptr);
-        dai_ptr->iconified.wlr_buffer_ptr = NULL;
-    }
-
-    free(dai_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Prototype: Gets the iconified from the DockApp. */
-// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
-wlmaker_iconified_t *wlmaker_iconified_from_dockapp(
-    wlmaker_dockapp_iconified_t *dai_ptr)
-{
-    return &dai_ptr->iconified;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Prototype: Attaches a surface to the DockApp. */
-// TODO(kaeser@gubbe.ch): Remove, once designed and implemented properly.  */
-void wlmaker_dockapp_iconified_attach(
-    wlmaker_dockapp_iconified_t *dai_ptr,
-    struct wlr_surface *wlr_surface_ptr)
-{
-    __UNUSED__ struct wlr_scene_surface *wlr_scene_surface_ptr =
-        wlr_scene_surface_create(
-            dai_ptr->wlr_scene_tree_ptr,
-            wlr_surface_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 wlmaker_iconified_t *wlmaker_iconified_create(

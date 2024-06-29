@@ -68,9 +68,6 @@ struct _wlmaker_toplevel_icon_t {
     /** Serial that needs to be acknowledged. */
     uint32_t                  pending_serial;
 
-    /** DockApp tile, camouflaged as iconified. */
-    wlmaker_dockapp_iconified_t *dai_ptr;
-
     /** Listener for the `commit` event of `wlr_surface_ptr`. */
     struct wl_listener        surface_commit_listener;
 };
@@ -384,18 +381,6 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr),
         true);
 
-    // TODO(kaeser@gubbe.ch): Should catch 'map' and 'unmap', and create or
-    // destroy the icon accordingly.
-    toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
-        icon_manager_ptr->server_ptr);
-    if (NULL == toplevel_icon_ptr->dai_ptr) {
-        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
-        return NULL;
-    }
-    wlmaker_dockapp_iconified_attach(
-        toplevel_icon_ptr->dai_ptr,
-        wlr_surface_ptr);
-
     // Hack: Connect this listener after wlmtk_surface creation, so that the
     // surface knows it's size before added...
     wlmtk_util_connect_listener_signal(
@@ -436,11 +421,6 @@ void wlmaker_toplevel_icon_destroy(
 
     // Note: Not destroying toplevel_icon_ptr->resource, since that causes
     // cycles...
-
-    if (NULL != toplevel_icon_ptr->dai_ptr) {
-        wlmaker_dockapp_iconified_destroy(toplevel_icon_ptr->dai_ptr);
-        toplevel_icon_ptr->dai_ptr = NULL;
-    }
 
     free(toplevel_icon_ptr);
 }
