@@ -275,8 +275,8 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
     if (processed) return;
 
     processed = wlmtk_element_keyboard_event(
-        wlmtk_workspace_element(wlmaker_server_get_current_wlmtk_workspace(
-                                    keyboard_ptr->server_ptr)),
+        wlmtk_workspace_element(
+            wlmaker_server_get_current_workspace(keyboard_ptr->server_ptr)),
         wlr_keyboard_key_event_ptr,
         NULL,
         0,

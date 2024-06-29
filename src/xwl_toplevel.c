@@ -129,8 +129,7 @@ void _xwl_toplevel_handle_surface_map(
         listener_ptr, wlmaker_xwl_toplevel_t, surface_map_listener);
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(
-            xwl_toplevel_ptr->server_ptr);
+        wlmaker_server_get_current_workspace(xwl_toplevel_ptr->server_ptr);
 
     wlmtk_workspace_map_window(workspace_ptr, xwl_toplevel_ptr->window_ptr);
     wlmtk_window_set_position(xwl_toplevel_ptr->window_ptr, 40, 30);

@@ -115,7 +115,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         true);
 
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(server_ptr);
+        wlmaker_server_get_current_workspace(server_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -205,7 +205,7 @@ void _wlmaker_dock_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(dock_ptr->server_ptr);
+        wlmaker_server_get_current_workspace(dock_ptr->server_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 
