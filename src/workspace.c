@@ -32,15 +32,6 @@
 
 /* == Declarations ========================================================= */
 
-/** Data specific to one layer. */
-typedef struct {
-    /** Merely for reference: Which layer this constitutes. */
-    wlmaker_workspace_layer_t layer;
-
-    /** Scene graph subtree holding all nodes of this layer. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-} wlmaker_workspace_layer_data_t;
-
 /** Workspace state. */
 struct _wlmaker_workspace_t {
     /** Back-link to the server. */
@@ -49,17 +40,11 @@ struct _wlmaker_workspace_t {
     /** Node of the `workspaces` element in @ref wlmaker_server_t. */
     bs_dllist_node_t          dlnode;
 
-    /** Holds the `wlr_scene_rect` defining the background. */
-    struct wlr_scene_rect     *background_wlr_scene_rect_ptr;
-
     /** Scene graph subtree holding all layers of this workspace. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
 
     /** Transitional: Link up to toolkit workspace. */
     wlmtk_workspace_t          *wlmtk_workspace_ptr;
-
-    /** Data regarding each layer. */
-    wlmaker_workspace_layer_data_t layers[WLMAKER_WORKSPACE_LAYER_NUM];
 
     /** Whether this workspace is currently enabled (visible) or not. */
     bool                      enabled;

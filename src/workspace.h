@@ -25,28 +25,6 @@
 
 /** Forward definition: Workspace state. */
 typedef struct _wlmaker_workspace_t wlmaker_workspace_t;
-/** Forward definition: Workspace layer. */
-typedef enum _wlmaker_workspace_layer_t wlmaker_workspace_layer_t;
-
-/**
- * Indicates which layer the view shall be rendered in.
- *
- * This follows "wlr-layer-shell-unstable-v1-protocol.h", but adds an explicit
- * "shell" layer between "bottom" and "top". As specified in the layer protocol,
- * these are ordeder by z depth, bottom-most first.
- * wlroots suggests that "Fullscreen shell surfaces will typically be rendered
- * at the top layer". We'll actually render it in scene node placed just above
- * the top layer -- but won't report it as an extra layer.
- *
- * FIXME: Remove.
- */
-enum _wlmaker_workspace_layer_t {
-    WLMAKER_WORKSPACE_LAYER_BACKGROUND = 0,
-    WLMAKER_WORKSPACE_LAYER_BOTTOM = 1,
-    WLMAKER_WORKSPACE_LAYER_SHELL = 2,
-    WLMAKER_WORKSPACE_LAYER_TOP = 3,
-    WLMAKER_WORKSPACE_LAYER_OVERLAY = 4,
-};
 
 #include "server.h"
 #include "toolkit/toolkit.h"
@@ -54,9 +32,6 @@ enum _wlmaker_workspace_layer_t {
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Number of defined layers. Helpful ot iterate over layers 0...NUM. */
-#define WLMAKER_WORKSPACE_LAYER_NUM (WLMAKER_WORKSPACE_LAYER_OVERLAY + 1)
 
 /**
  * Creates a workspace.
@@ -139,9 +114,6 @@ bs_dllist_node_t *wlmaker_dlnode_from_workspace(
 
 /** Transitional: Returns the @ref wlmtk_workspace_t. */
 wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr);
-
-/** Unit tests. */
-extern const bs_test_case_t wlmaker_workspace_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
