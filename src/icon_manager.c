@@ -70,6 +70,8 @@ struct _wlmaker_toplevel_icon_t {
 
     /** Listener for the `commit` event of `wlr_surface_ptr`. */
     struct wl_listener        surface_commit_listener;
+    /** Listener for the `destroy` event of `wlr_surface_ptr`. */
+    struct wl_listener        surface_destroy_listener;
 };
 
 static wlmaker_icon_manager_t *icon_manager_from_resource(
@@ -112,6 +114,9 @@ static void handle_icon_ack_configure(
     struct wl_resource *wl_resource_ptr,
     uint32_t serial);
 static void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_surface_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -387,9 +392,16 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);
+    wlmtk_util_connect_listener_signal(
+        &toplevel_icon_ptr->wlr_surface_ptr->events.destroy,
+        &toplevel_icon_ptr->surface_destroy_listener,
+        handle_surface_destroy);
 
-    bs_log(BS_DEBUG, "created toplevel icon %p for toplevel %p, surface %p",
-           toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr);
+    bs_log(BS_INFO,
+           "created toplevel icon %p for toplevel %p, surface %p, "
+           "wlmtk surface %p",
+           toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr,
+           toplevel_icon_ptr->content_surface_ptr);
 
     return toplevel_icon_ptr;
 }
@@ -403,20 +415,10 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr)
 {
-    bs_log(BS_DEBUG, "Destroying toplevel icon %p", toplevel_icon_ptr);
+    bs_log(BS_INFO, "Destroying toplevel icon %p", toplevel_icon_ptr);
 
-    if (NULL != toplevel_icon_ptr->content_surface_ptr) {
-        wlmtk_tile_set_content(&toplevel_icon_ptr->super_tile, NULL);
-        wlmtk_surface_destroy(toplevel_icon_ptr->content_surface_ptr);
-        toplevel_icon_ptr->content_surface_ptr = NULL;
-    }
-
-    if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
-            )->parent_container_ptr) {
-        wlmtk_dock_remove_tile(
-            toplevel_icon_ptr->icon_manager_ptr->server_ptr->clip_dock_ptr,
-            &toplevel_icon_ptr->super_tile);
-    }
+    _wlmaker_toplevel_icon_element_destroy(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile));
     wlmtk_tile_fini(&toplevel_icon_ptr->super_tile);
 
     // Note: Not destroying toplevel_icon_ptr->resource, since that causes
@@ -510,6 +512,18 @@ void handle_surface_commit(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles when the surface is destroyed. */
+static void handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_toplevel_icon_t, surface_destroy_listener);
+    _wlmaker_toplevel_icon_element_destroy(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile));
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Destructor of the icon's corresponding tile element.
  *
@@ -528,6 +542,18 @@ void _wlmaker_toplevel_icon_element_destroy(wlmtk_element_t *element_ptr)
     wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
         element_ptr, wlmaker_toplevel_icon_t,
         super_tile.super_container.super_element);
+
+    if (NULL != toplevel_icon_ptr->content_surface_ptr) {
+
+        wlmtk_util_disconnect_listener(
+            &toplevel_icon_ptr->surface_destroy_listener);
+        wlmtk_util_disconnect_listener(
+            &toplevel_icon_ptr->surface_commit_listener);
+
+        wlmtk_tile_set_content(&toplevel_icon_ptr->super_tile, NULL);
+        wlmtk_surface_destroy(toplevel_icon_ptr->content_surface_ptr);
+        toplevel_icon_ptr->content_surface_ptr = NULL;
+    }
 
     if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
             )->parent_container_ptr) {
