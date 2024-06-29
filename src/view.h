@@ -169,8 +169,7 @@ struct _wlmaker_view_t {
      * Scene graph tree, holding all the window elements.
      *
      * Will hold the scene node of the view's surfaces & sub-surfaces (as
-     * provided to @ref wlmaker_view_init and re-parented), the decorations
-     * and window menu.
+     * provided to @ref wlmaker_view_init and re-parented), the decorations.
      *
      * The `node.data` field of the tree's scene node is a back-link pointing
      * to @ref wlmaker_view_t.
@@ -203,9 +202,6 @@ struct _wlmaker_view_t {
     bool                      shaded;
     /** Default layer (unless the view is in fullscreen). */
     wlmaker_workspace_layer_t default_layer;
-
-    /** The window menu's buffer. */
-    struct wlr_scene_buffer   *window_menu_wlr_scene_buffer_ptr;
 
     /**
      * AVL tree holding decoration interactives.
@@ -368,26 +364,6 @@ void wlmaker_view_handle_axis(
     double x,
     double y,
     struct wlr_pointer_axis_event *event_ptr);
-
-/**
- * Shows the "window menu" for this view.
- *
- * Creates the `struct wlr_scene_buffer` and `wlmaker_menu_t` and wires it up
- * for event-processing. Will not do anything in case a window menu already
- * exists.
- *
- * @param view_ptr
- */
-void wlmaker_view_window_menu_show(wlmaker_view_t *view_ptr);
-
-/**
- * Hides the "window menu" for this view.
- *
- * Actually destroys the window menu interactive and scene buffer.
- *
- * @param view_ptr
- */
-void wlmaker_view_window_menu_hide(wlmaker_view_t *view_ptr);
 
 /**
  * Handles when the |view_ptr| loses pointer focus.

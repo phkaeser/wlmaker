@@ -30,8 +30,6 @@ SET(PUBLIC_HEADER_FILES
   layer_shell.h
   launcher.h
   lock_mgr.h
-  menu.h
-  menu_item.h
   output.h
   root.h
   server.h
@@ -65,8 +63,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   layer_panel.c
   layer_shell.c
   lock_mgr.c
-  menu.c
-  menu_item.c
   output.c
   root.c
   server.c

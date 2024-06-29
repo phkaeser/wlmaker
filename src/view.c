@@ -22,7 +22,6 @@
 
 #include "config.h"
 #include "decorations.h"
-#include "menu.h"
 #include "toolkit/toolkit.h"
 
 #include <wlr/util/edges.h>
@@ -40,31 +39,7 @@ static void handle_button_release(struct wl_listener *listener_ptr,
 static void update_pointer_focus(wlmaker_view_t *view_ptr,
                                  struct wlr_scene_node *wlr_scene_node_ptr);
 
-static void window_menu_callback_maximize(void *ud_ptr);
-static void window_menu_callback_fullscreen(void *ud_ptr);
-static void window_menu_callback_shade(void *ud_ptr);
-static void window_menu_callback_move_to_workspace1(void *ud_ptr);
-static void window_menu_callback_move_to_workspace2(void *ud_ptr);
-static void window_menu_callback_close(void *ud_ptr);
-
 /* == Data ================================================================= */
-
-/** Descriptors for the menu entries of the view's "Window menu". */
-static const wlmaker_menu_item_descriptor_t window_menu_descriptors[] = {
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Maximize", window_menu_callback_maximize),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Fullscreen", window_menu_callback_fullscreen),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Shade", window_menu_callback_shade),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Move to workspace 1", window_menu_callback_move_to_workspace1),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Move to workspace 2", window_menu_callback_move_to_workspace2),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_ENTRY(
-        "Close", window_menu_callback_close),
-    WLMAKER_MENU_ITEM_DESCRIPTOR_SENTINEL(),
-};
 
 /* == Exported methods ===================================================== */
 
@@ -320,92 +295,6 @@ void wlmaker_view_handle_axis(
     if (NULL != view_ptr->impl_ptr->handle_axis) {
         view_ptr->impl_ptr->handle_axis(view_ptr, event_ptr);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_view_window_menu_show(wlmaker_view_t *view_ptr)
-{
-    if (NULL != view_ptr->window_menu_wlr_scene_buffer_ptr) return;
-
-    view_ptr->window_menu_wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        view_ptr->elements_wlr_scene_tree_ptr, NULL);
-    if (NULL == view_ptr->window_menu_wlr_scene_buffer_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_buffer_create(%p, NULL)",
-               view_ptr->elements_wlr_scene_tree_ptr);
-        return;
-    }
-
-    wlmaker_interactive_t *interactive_ptr = wlmaker_menu_create(
-        view_ptr->window_menu_wlr_scene_buffer_ptr,
-        view_ptr->server_ptr->cursor_ptr,
-        view_ptr,
-        window_menu_descriptors,
-        view_ptr);  // callback_ud_ptr.
-    if (NULL == interactive_ptr) {
-        wlr_scene_node_destroy(
-            &view_ptr->window_menu_wlr_scene_buffer_ptr->node);
-        view_ptr->window_menu_wlr_scene_buffer_ptr = NULL;
-        return;
-    }
-
-    // We just created the node. A collision in the interactive_tree_ptr would
-    // indicate we have a serious corruption issue.
-    bool inserted = bs_avltree_insert(
-        view_ptr->interactive_tree_ptr,
-        &interactive_ptr->wlr_scene_buffer_ptr->node,
-        &interactive_ptr->avlnode,
-        false);
-    BS_ASSERT(inserted);
-
-    interactive_ptr->wlr_scene_buffer_ptr->node.data = view_ptr;
-    wlr_scene_node_set_enabled(
-        &interactive_ptr->wlr_scene_buffer_ptr->node,
-        true);
-    wlr_scene_node_raise_to_top(
-        &interactive_ptr->wlr_scene_buffer_ptr->node);
-
-    // Menu placement: Just below the title bar, centered on the pointer
-    // position. Attempt to bound it by the window dimensions - but may stretch
-    // beyond the right window border, if the window is too narrow.
-    // TODO(kaeser@gubbe.ch): An ugly piece. Clean this up.
-    int x, y;
-    wlmaker_view_get_position(view_ptr, &x, &y);
-    uint32_t view_width;
-    wlmaker_view_get_size(view_ptr, &view_width, NULL);
-
-    double cursor_x, cursor_y;
-    wlmaker_cursor_get_position(
-        view_ptr->server_ptr->cursor_ptr, &cursor_x, &cursor_y);
-
-    uint32_t menu_width;
-    wlmaker_menu_get_size(interactive_ptr, &menu_width, NULL);
-
-    int desired_x = cursor_x - menu_width / 2.0;
-    if (desired_x + menu_width > x + view_width) {
-        desired_x = x + view_width - menu_width;
-    }
-    desired_x = BS_MAX(x, desired_x);
-    wlr_scene_node_set_position(
-        &interactive_ptr->wlr_scene_buffer_ptr->node,
-        desired_x - x, 0);
-
-    // The window menu can be added anytime, so we need to inform the
-    // interactive about the current state of "pointer-focussedness".
-    wlmaker_interactive_focus(interactive_ptr, view_ptr->active);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_view_window_menu_hide(wlmaker_view_t *view_ptr)
-{
-    bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
-        view_ptr->interactive_tree_ptr,
-        &view_ptr->window_menu_wlr_scene_buffer_ptr->node);
-    if (NULL == avlnode_ptr) return;
-    wlmaker_interactive_node_destroy(avlnode_ptr);
-
-    wlr_scene_node_destroy(
-        &view_ptr->window_menu_wlr_scene_buffer_ptr->node);
-    view_ptr->window_menu_wlr_scene_buffer_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -703,78 +592,6 @@ void update_pointer_focus(wlmaker_view_t *view_ptr,
                 wlmaker_interactive_from_avlnode(avl_node_ptr));
         }
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Toggle maximized view.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_maximize(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    wlmaker_view_set_maximized(view_ptr, !view_ptr->maximized);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Toggle fullscreen mode.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_fullscreen(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    wlmaker_view_set_fullscreen(view_ptr, !view_ptr->fullscreen);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Shade (roll up) the window.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_shade(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    wlmaker_view_shade(view_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Move the view to workspace 1.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_move_to_workspace1(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    bs_log(BS_WARNING, "Unimplemented: Move view %p to workspace 1.", view_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Move the view to workspace 2.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_move_to_workspace2(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    bs_log(BS_WARNING, "Unimplemented: Move view %p to workspace 1.", view_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Window menu callback: Close the view.
- *
- * @param ud_ptr              Non-typed pointer to the @ref wlmaker_view_t.
- */
-void window_menu_callback_close(void *ud_ptr)
-{
-    wlmaker_view_t *view_ptr = (wlmaker_view_t*)ud_ptr;
-    view_ptr->send_close_callback(view_ptr);
 }
 
 /* == End of view.c ======================================================== */
