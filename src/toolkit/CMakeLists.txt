@@ -29,6 +29,7 @@ SET(PUBLIC_HEADER_FILES
   image.h
   input.h
   layer.h
+  lock.h
   panel.h
   popup.h
   primitives.h
@@ -62,6 +63,7 @@ TARGET_SOURCES(toolkit PRIVATE
   gfxbuf.c
   image.c
   layer.c
+  lock.c
   panel.c
   popup.c
   primitives.c
