@@ -150,7 +150,6 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
 void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                             wlmaker_action_t action)
 {
-    wlmaker_workspace_t *workspace_ptr;
     wlmtk_workspace_t *wlmtk_workspace_ptr;
     wlmtk_window_t *window_ptr;
 
@@ -181,15 +180,13 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 
     case WLMAKER_ACTION_TASK_TO_PREVIOUS:
         wlmtk_workspace_activate_previous_window(
-            wlmaker_workspace_wlmtk(
-                wlmaker_server_get_current_workspace(server_ptr)));
+            wlmaker_server_get_current_wlmtk_workspace(server_ptr));
         wlmaker_server_activate_task_list(server_ptr);
         break;
 
     case WLMAKER_ACTION_TASK_TO_NEXT:
         wlmtk_workspace_activate_next_window(
-            wlmaker_workspace_wlmtk(
-                wlmaker_server_get_current_workspace(server_ptr)));
+            wlmaker_server_get_current_wlmtk_workspace(server_ptr));
         wlmaker_server_activate_task_list(server_ptr);
         break;
 
@@ -204,8 +201,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN:
-        workspace_ptr = wlmaker_server_get_current_workspace(server_ptr);
-        wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+        wlmtk_workspace_ptr = wlmaker_server_get_current_wlmtk_workspace(
+            server_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_fullscreen(
@@ -214,8 +211,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED:
-        workspace_ptr = wlmaker_server_get_current_workspace(server_ptr);
-        wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+        wlmtk_workspace_ptr = wlmaker_server_get_current_wlmtk_workspace(
+            server_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(
