@@ -161,7 +161,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] XDG Popups.
 
 * Multiple workspaces, based on toolkit.
-  * Remove the earlier non-toolkit code.
+  * [done] Remove the earlier non-toolkit code.
   * Background color for separate workspaces, configured in state.
   * Default background color, picked up from style file.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
