@@ -49,11 +49,6 @@ struct _wlmaker_workspace_t {
     /** Whether this workspace is currently enabled (visible) or not. */
     bool                      enabled;
 
-    /** Index of this workspace. */
-    int                       index;
-    /** Name of this workspace. */
-    char                      *name_ptr;
-
     /** Usable area of the workspace (output minus clip and dock). */
     struct wlr_box            usable_area;
 
@@ -72,12 +67,6 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     if (NULL == workspace_ptr) return NULL;
 
     workspace_ptr->server_ptr = server_ptr;
-    workspace_ptr->index = index;
-    workspace_ptr->name_ptr = logged_strdup(name_ptr);
-    if (NULL == workspace_ptr->name_ptr) {
-        wlmaker_workspace_destroy(workspace_ptr);
-        return NULL;
-    }
 
     workspace_ptr->wlr_scene_tree_ptr = wlr_scene_tree_create(
         &server_ptr->wlr_scene_ptr->tree);
@@ -118,10 +107,6 @@ void wlmaker_workspace_destroy(wlmaker_workspace_t *workspace_ptr)
         wlr_scene_node_destroy(&workspace_ptr->wlr_scene_tree_ptr->node);
     }
 
-    if (NULL != workspace_ptr->name_ptr) {
-        free(workspace_ptr->name_ptr);
-        workspace_ptr->name_ptr = NULL;
-    }
     free(workspace_ptr);
 }
 
@@ -132,16 +117,6 @@ void wlmaker_workspace_set_extents(
 {
     wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr,
                                 extents_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_workspace_get_details(
-    wlmaker_workspace_t *workspace_ptr,
-    int *index_ptr,
-    const char **name_ptr_ptr)
-{
-    *index_ptr = workspace_ptr->index;
-    *name_ptr_ptr = workspace_ptr->name_ptr;
 }
 
 /* ------------------------------------------------------------------------- */

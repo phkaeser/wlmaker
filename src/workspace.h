@@ -81,18 +81,6 @@ void wlmaker_workspace_set_extents(
     const struct wlr_box *extents_ptr);
 
 /**
- * Retrieves the naming detalis of this workspace.
- *
- * @param workspace_ptr
- * @param index_ptr
- * @param name_ptr_ptr
- */
-void wlmaker_workspace_get_details(
-    wlmaker_workspace_t *workspace_ptr,
-    int *index_ptr,
-    const char **name_ptr_ptr);
-
-/**
  * Cast: Returns a pointer to @ref wlmaker_workspace_t holding `dlnode_ptr`.
  *
  * @param dlnode_ptr          A pointer to the `dlnode` element.
