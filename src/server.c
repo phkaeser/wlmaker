@@ -517,21 +517,13 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-wlmaker_workspace_t *wlmaker_server_get_current_workspace(
-    wlmaker_server_t *server_ptr)
-{
-    return server_ptr->current_workspace_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmaker_server_get_current_wlmtk_workspace(
     wlmaker_server_t *server_ptr)
 {
     if (NULL != server_ptr->fake_wlmtk_workspace_ptr) {
         return server_ptr->fake_wlmtk_workspace_ptr->workspace_ptr;
     }
-    return wlmaker_workspace_wlmtk(
-        wlmaker_server_get_current_workspace(server_ptr));
+    return wlmaker_workspace_wlmtk(server_ptr->current_workspace_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

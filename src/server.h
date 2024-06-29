@@ -315,16 +315,6 @@ bool wlmaker_keyboard_process_bindings(
  *
  * @param server_ptr
  *
- * @return Pointer to the `wlmaker_workspace_t` currently active.
- */
-wlmaker_workspace_t *wlmaker_server_get_current_workspace(
-    wlmaker_server_t *server_ptr);
-
-/**
- * Returns the currently active workspace.
- *
- * @param server_ptr
- *
  * @return Pointer to the `wlmtk_workspace_t` currently active.
  */
 wlmtk_workspace_t *wlmaker_server_get_current_wlmtk_workspace(
