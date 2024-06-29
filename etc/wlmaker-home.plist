@@ -20,8 +20,8 @@
     "Ctrl+Alt+Logo+L" = LockScreen;
     "Ctrl+Alt+Logo+T" = LaunchTerminal;
 
-    "Ctrl+Alt+Logo+Right" = WorkspacePrevious;
-    "Ctrl+Alt+Logo+Left" = WorkspaceNext;
+    "Ctrl+Alt+Logo+Left" = WorkspacePrevious;
+    "Ctrl+Alt+Logo+Right" = WorkspaceNext;
 
     "Ctrl+Alt+Logo+Escape" = TaskNext;
     "Shift+Ctrl+Alt+Logo+Escape" = TaskPrevious;
