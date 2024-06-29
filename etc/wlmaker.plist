@@ -28,8 +28,8 @@
 
     "Alt+Logo+Up" = WindowRaise;
     "Alt+Logo+Down" = WindowLower;
-    "Ctrl+Alt+Logo+M" = WindowFullscreen;
-    "Ctrl+Alt+Logo+F" = WindowMaximize;
+    "Ctrl+Alt+Logo+F" = WindowFullscreen;
+    "Ctrl+Alt+Logo+M" = WindowMaximize;
 
   };
   ScreenLock = {
