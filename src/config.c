@@ -461,6 +461,11 @@ void test_file(bs_test_t *test_ptr)
     wlmcfg_dict_unref(dict_ptr);
 
     dict_ptr = _wlmaker_config_from_plist(
+        WLMAKER_SOURCE_DIR "/etc/wlmaker-home.plist");
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+
+    dict_ptr = _wlmaker_config_from_plist(
         WLMAKER_SOURCE_DIR "/etc/dock.plist");
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmcfg_dict_unref(dict_ptr);

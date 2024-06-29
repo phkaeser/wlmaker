@@ -1,0 +1,43 @@
+// Base configuration for wlmaker: Keyboard and autostarted applications.
+{
+  Keyboard = {
+    XkbRMLVO = {
+      Rules = "evdev";
+      Model = "pc105";
+      Layout = "ch";
+      Variant = "de_nodeadkeys";
+      Options = ""
+    };
+    Repeat = {
+      // Delay before initiating repeats, in milliseconds.
+      Delay = 300;
+      // Repeats per second.
+      Rate = 25
+    }
+  };
+  KeyBindings = {
+    "Ctrl+Alt+Logo+Q" = Quit;
+    "Ctrl+Alt+Logo+L" = LockScreen;
+    "Ctrl+Alt+Logo+T" = LaunchTerminal;
+
+    "Ctrl+Alt+Logo+Right" = WorkspacePrevious;
+    "Ctrl+Alt+Logo+Left" = WorkspaceNext;
+
+    "Ctrl+Alt+Logo+Escape" = TaskNext;
+    "Shift+Ctrl+Alt+Logo+Escape" = TaskPrevious;
+
+    "Alt+Logo+Up" = WindowRaise;
+    "Alt+Logo+Down" = WindowLower;
+    "Ctrl+Alt+Logo+M" = WindowFullscreen;
+    "Ctrl+Alt+Logo+F" = WindowMaximize;
+
+  };
+  ScreenLock = {
+    IdleSeconds = 300;
+    Command = "/usr/bin/swaylock"
+  };
+  // Optional array: Commands to start once wlmaker is running.
+  Autostart = (
+    "/usr/bin/foot"
+  )
+}
