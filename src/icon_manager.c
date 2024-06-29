@@ -358,11 +358,6 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
-    wlmtk_util_connect_listener_signal(
-        &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
-        &toplevel_icon_ptr->surface_commit_listener,
-        handle_surface_commit);
-
     if (!wlmtk_tile_init(
             &toplevel_icon_ptr->super_tile,
             &icon_manager_ptr->server_ptr->style.tile,
@@ -380,6 +375,17 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         icon_manager_ptr->server_ptr->clip_dock_ptr,
         &toplevel_icon_ptr->super_tile);
 
+    toplevel_icon_ptr->content_surface_ptr = wlmtk_surface_create(
+        wlr_surface_ptr,
+        icon_manager_ptr->server_ptr->env_ptr);
+    if (NULL == toplevel_icon_ptr->content_surface_ptr) {
+        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr),
+        true);
+
     // TODO(kaeser@gubbe.ch): Should catch 'map' and 'unmap', and create or
     // destroy the icon accordingly.
     toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
@@ -391,6 +397,13 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     wlmaker_dockapp_iconified_attach(
         toplevel_icon_ptr->dai_ptr,
         wlr_surface_ptr);
+
+    // Hack: Connect this listener after wlmtk_surface creation, so that the
+    // surface knows it's size before added...
+    wlmtk_util_connect_listener_signal(
+        &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
+        &toplevel_icon_ptr->surface_commit_listener,
+        handle_surface_commit);
 
     // TODO(kaeser@gubbe.ch): If the toplevel is already mapped, we may want
     // to pick the same workspace for showing the icon. Similar, the icon
@@ -420,6 +433,12 @@ void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr)
 {
     bs_log(BS_DEBUG, "Destroying toplevel icon %p", toplevel_icon_ptr);
+
+    if (NULL != toplevel_icon_ptr->content_surface_ptr) {
+        wlmtk_tile_set_content(&toplevel_icon_ptr->super_tile, NULL);
+        wlmtk_surface_destroy(toplevel_icon_ptr->content_surface_ptr);
+        toplevel_icon_ptr->content_surface_ptr = NULL;
+    }
 
     if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
             )->parent_container_ptr) {
@@ -521,6 +540,10 @@ void handle_surface_commit(
             "Commit non-NULL buffer without configure sequence.");
         return;
     }
+
+    wlmtk_tile_set_content(
+        &toplevel_icon_ptr->super_tile,
+        wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
