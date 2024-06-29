@@ -253,8 +253,7 @@ void handle_button(struct wl_listener *listener_ptr,
     if (consumed) return;
 
     consumed = wlmtk_workspace_button(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
+        wlmaker_server_get_current_wlmtk_workspace(cursor_ptr->server_ptr),
         wlr_pointer_button_event_ptr);
 
     // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
@@ -296,8 +295,7 @@ void handle_axis(struct wl_listener *listener_ptr,
     if (consumed) return;
 
     consumed = wlmtk_workspace_axis(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
+        wlmaker_server_get_current_wlmtk_workspace(cursor_ptr->server_ptr),
         wlr_pointer_axis_event_ptr);
     // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
     // Remove it, once we're fully on toolkit.
@@ -376,8 +374,7 @@ void handle_seat_request_set_cursor(
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
     wlmtk_workspace_motion(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
+        wlmaker_server_get_current_wlmtk_workspace(cursor_ptr->server_ptr),
         cursor_ptr->wlr_cursor_ptr->x,
         cursor_ptr->wlr_cursor_ptr->y,
         time_msec);
