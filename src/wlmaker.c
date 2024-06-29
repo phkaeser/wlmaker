@@ -51,11 +51,13 @@ static wlmaker_server_options_t wlmaker_server_options = {};
 
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
+#if defined(WLMAKER_HAVE_XWAYLAND)
     BS_ARG_BOOL(
         "start_xwayland",
         "Optional: Whether to start XWayland. Disabled by default.",
         false,
         &wlmaker_server_options.start_xwayland),
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
     BS_ARG_STRING(
         "config_file",
         "Optional: Path to a configuration file. If not provided, wlmaker "

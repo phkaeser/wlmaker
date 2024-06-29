@@ -27,13 +27,15 @@ typedef struct _wlmaker_xwl_t wlmaker_xwl_t;
 
 #include "server.h"
 
-#define WLR_USE_UNSTABLE
-#include <wlr/xwayland.h>
-#undef WLR_USE_UNSTABLE
-
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+#if defined(WLMAKER_HAVE_XWAYLAND)
+
+#define WLR_USE_UNSTABLE
+#include <wlr/xwayland.h>
+#undef WLR_USE_UNSTABLE
 
 /** XCB Atom identifiers. */
 typedef enum {
@@ -51,6 +53,7 @@ typedef enum {
     // Sentinel element.
     XWL_MAX_ATOM_ID
 } xwl_atom_identifier_t;
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
 /**
  * Creates the XWayland interface.
@@ -68,6 +71,8 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr);
  * @param xwl_ptr
  */
 void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr);
+
+#if defined(WLMAKER_HAVE_XWAYLAND)
 
 /**
  * Returns whether the XWayland surface has any of the window types.
@@ -93,5 +98,6 @@ const char *xwl_atom_name(
 }  // extern "C"
 #endif  // __cplusplus
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 #endif /* __XWL_H__ */
 /* == End of xwl.h ========================================================= */

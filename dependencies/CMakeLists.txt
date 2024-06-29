@@ -23,6 +23,7 @@ PROJECT(wlmaker VERSION 0.1
 # If not found: Try 'pip3 install --user meson'
 FIND_PROGRAM(MESON_EXECUTABLE NAMES meson REQUIRED)
 FIND_PROGRAM(NINJA_EXECUTABLE NAMES ninja REQUIRED)
+FIND_PACKAGE(PkgConfig REQUIRED)
 
 SET(config_PREFIX "Installation prefix." "/tmp/bla")
 IF(config_PREFIX STREQUAL "/tmp/bla")
@@ -101,10 +102,18 @@ ExternalProject_Add(libdisplay_info
   DEPENDS hwdata
 )
 
+# XWayland as optional dependency, configure wlroots accordingly.
+PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
+IF(XWAYLAND_FOUND)
+  SET(WLROOTS_XWAYLAND "-Dxwayland=enabled")
+ELSE(XWAYLAND_FOUND)
+  SET(WLROOTS_XWAYLAND  "-Dxwayland=disabled")
+ENDIF(XWAYLAND_FOUND)
+
 ExternalProject_Add(wlroots
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wlroots"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 -Dxwayland=enabled
+  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 ${WLROOTS_XWAYLAND}
   BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
   DEPENDS drm wayland pixman wayland_protocols seatd hwdata libdisplay_info

@@ -19,6 +19,7 @@
  */
 #ifndef __XWL_TOPLEVEL_H__
 #define __XWL_TOPLEVEL_H__
+#if defined(WLMAKER_HAVE_XWAYLAND)
 
 #include "xwl_toplevel.h"
 
@@ -70,5 +71,6 @@ wlmtk_window_t *wlmtk_window_from_xwl_toplevel(
 }  // extern "C"
 #endif  // __cplusplus
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 #endif /* __XWL_TOPLEVEL_H__ */
 /* == End of xwl_toplevel.h ================================================== */

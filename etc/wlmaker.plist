@@ -4,8 +4,8 @@
     XkbRMLVO = {
       Rules = "evdev";
       Model = "pc105";
-      Layout = "ch";
-      Variant = "de_nodeadkeys";
+      Layout = "us";
+      Variant = "intl";
       Options = ""
     };
     Repeat = {

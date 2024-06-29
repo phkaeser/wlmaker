@@ -151,7 +151,11 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
-    /** XWayland interface. */
+    /**
+     * XWayland interface. Will be set only if compiled with XWayland, through
+     * WLMAKER_HAVE_XWAYLAND defined.
+     * And through setting @ref wlmaker_server_options_t::start_xwayland.
+     */
     wlmaker_xwl_t             *xwl_ptr;
 
     /** The list of outputs. */

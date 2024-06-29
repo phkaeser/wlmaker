@@ -235,8 +235,9 @@ Support for visual effects to improve usability, but not for pure show.
 
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
-  * Permit conditional compilation of XWayland support, and enabling/disabling via flag.
   * Permit identifying the real X client, not the XWayland connection.
+  * Have a test matrix build that verifies the build works without XWayland.
+  * Fix bug with emacs hanging on saving clipboard (observed once).
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).
