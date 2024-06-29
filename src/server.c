@@ -101,10 +101,13 @@ const uint32_t wlmaker_modifier_default_mask = (
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_server_t *wlmaker_server_create(wlmcfg_dict_t *config_dict_ptr)
+wlmaker_server_t *wlmaker_server_create(
+    wlmcfg_dict_t *config_dict_ptr,
+    const wlmaker_server_options_t *options_ptr)
 {
     wlmaker_server_t *server_ptr = logged_calloc(1, sizeof(wlmaker_server_t));
     if (NULL == server_ptr) return NULL;
+    server_ptr->options_ptr = options_ptr;
 
     server_ptr->config_dict_ptr = wlmcfg_dict_ref(config_dict_ptr);
     if (NULL == server_ptr->config_dict_ptr) {
@@ -353,10 +356,12 @@ wlmaker_server_t *wlmaker_server_create(wlmcfg_dict_t *config_dict_ptr)
         return NULL;
     }
 
-    server_ptr->xwl_ptr = wlmaker_xwl_create(server_ptr);
-    if (NULL == server_ptr->xwl_ptr) {
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
+    if (server_ptr->options_ptr->start_xwayland) {
+        server_ptr->xwl_ptr = wlmaker_xwl_create(server_ptr);
+        if (NULL == server_ptr->xwl_ptr) {
+            wlmaker_server_destroy(server_ptr);
+            return NULL;
+        }
     }
 
     server_ptr->monitor_ptr = wlmaker_subprocess_monitor_create(server_ptr);
