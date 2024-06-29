@@ -88,6 +88,8 @@ static wlmtk_lock_surface_t *_wlmtk_lock_surface_create(
     wlmtk_lock_t *lock_ptr);
 static void _wlmtk_lock_surface_destroy(
     wlmtk_lock_surface_t *lock_surface_ptr);
+static void _wlmtk_lock_surface_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr, void *ud_ptr);
 
 static void _wlmtk_lock_surface_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -132,14 +134,8 @@ wlmtk_lock_t *wlmtk_lock_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_lock_destroy(wlmtk_lock_t *lock_ptr)
 {
-    // FIXME
-    /* bs_dllist_node_t *dlnode_ptr; */
-    /* while (NULL != ( */
-    /*            dlnode_ptr = bs_dllist_pop_front(&lock_ptr->lock_surfaces))) { */
-    /*     wlmtk_lock_surface_t *lock_surface_ptr = BS_CONTAINER_OF( */
-    /*         dlnode_ptr, wlmtk_lock_surface_t, dlnode); */
-    /*     _wlmtk_lock_surface_destroy(lock_surface_ptr); */
-    /* } */
+    bs_dllist_for_each(
+        &lock_ptr->lock_surfaces, _wlmtk_lock_surface_dlnode_destroy, NULL);
 
     wl_list_remove(&lock_ptr->destroy_listener.link);
     wl_list_remove(&lock_ptr->unlock_listener.link);
@@ -294,7 +290,7 @@ wlmtk_lock_surface_t *_wlmtk_lock_surface_create(
  *
  * @param lock_surface_ptr
  */
-void _wlmtk_lock_surface_destroy( wlmtk_lock_surface_t *lock_surface_ptr)
+void _wlmtk_lock_surface_destroy(wlmtk_lock_surface_t *lock_surface_ptr)
 {
     if (bs_dllist_contains(&lock_surface_ptr->lock_ptr->lock_surfaces,
                            &lock_surface_ptr->dlnode)) {
@@ -314,6 +310,16 @@ void _wlmtk_lock_surface_destroy( wlmtk_lock_surface_t *lock_surface_ptr)
     }
 
     free(lock_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Callback for `bs_dllist_for_each` to destroy all lock surfaces. */
+void _wlmtk_lock_surface_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr, __UNUSED__ void *ud_ptr)
+{
+    wlmtk_lock_surface_t *lock_surface_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmtk_lock_surface_t, dlnode);
+    _wlmtk_lock_surface_destroy(lock_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
