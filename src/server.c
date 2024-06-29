@@ -79,9 +79,6 @@ static void handle_output_layout_change(
 static void set_extents(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
-static void arrange_views(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
 static void wlmaker_server_switch_to_workspace(
     wlmaker_server_t *server_ptr,
     wlmaker_workspace_t *workspace_ptr);
@@ -831,7 +828,6 @@ void handle_output_layout_change(
            extents.x, extents.y, extents.width, extents.height);
 
     bs_dllist_for_each(&server_ptr->workspaces, set_extents, &extents);
-    bs_dllist_for_each(&server_ptr->workspaces, arrange_views, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -846,18 +842,6 @@ void set_extents(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     struct wlr_box *extents_ptr = ud_ptr;
     wlmaker_workspace_set_extents(
         wlmaker_workspace_from_dlnode(dlnode_ptr), extents_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to arrange views in a workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr
- */
-void arrange_views(bs_dllist_node_t *dlnode_ptr, __UNUSED__ void *ud_ptr)
-{
-    wlmaker_workspace_arrange_views(wlmaker_workspace_from_dlnode(dlnode_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

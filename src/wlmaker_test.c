@@ -26,7 +26,6 @@
 #include "keyboard.h"
 #include "launcher.h"
 #include "layer_panel.h"
-#include "workspace.h"
 #include "xwl_content.h"
 
 /** WLMaker unit tests. */
@@ -36,14 +35,12 @@ const bs_test_set_t wlmaker_tests[] = {
     { 1, "config", wlmaker_config_test_cases },
     { 1, "decorations", wlmaker_decorations_test_cases },
     { 1, "dock", wlmaker_dock_test_cases },
-    { 1, "launcher", wlmaker_launcher_test_cases},
+    { 1, "launc her", wlmaker_launcher_test_cases},
     { 1, "layer_panel", wlmaker_layer_panel_test_cases },
     { 1, "server", wlmaker_server_test_cases },
 #if defined(WLMAKER_HAVE_XWAYLAND)
     { 1, "xwl_content", wlmaker_xwl_content_test_cases },
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
-    // Known to be broken, ignore for now. TODO(kaeser@gubbe.ch): Fix.
-    { 0, "workspace", wlmaker_workspace_test_cases },
     { 0, NULL, NULL }
 };
 

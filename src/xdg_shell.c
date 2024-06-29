@@ -21,7 +21,6 @@
 #include "xdg_shell.h"
 
 #include "toolkit/toolkit.h"
-#include "view.h"
 #include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>

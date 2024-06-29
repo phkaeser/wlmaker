@@ -16,10 +16,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Using the following references:
- * - struct wlr_xdg_surface.data -> wlmaker_view_t
- * - struct wlr_surface.data -> struct wlr_scene_tree
  */
 #ifndef __XDG_SHELL_H__
 #define __XDG_SHELL_H__

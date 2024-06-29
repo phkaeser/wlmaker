@@ -60,7 +60,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "layer_shell.h"
 #include "lock_mgr.h"
 #include "root.h"
-#include "view.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
 #include "xdg_decoration.h"
