@@ -17,6 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if defined(WLMAKER_HAVE_XWAYLAND)
 
 #include "xwl_popup.h"
 
@@ -50,4 +51,5 @@ void wlmaker_xwl_popup_destroy(wlmaker_xwl_popup_t *xwl_popup_ptr)
 
 /* == Local (static) methods =============================================== */
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 /* == End of xwl_popup.c =================================================== */

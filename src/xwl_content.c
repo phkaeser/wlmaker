@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
+
 #include "xwl_content.h"
 
 #include <libbase/libbase.h>
@@ -825,4 +827,5 @@ void fake_init_wlr_xwayland_surface(
     wl_signal_init(&wlr_xwayland_surface_ptr->events.set_geometry);
 }
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 /* == End of xwl_content.c ================================================= */

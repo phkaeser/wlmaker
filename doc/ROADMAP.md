@@ -130,7 +130,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Bugfixes
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
   * Fix bug: When switching workspace, pointer state appears to be reset.
-  * Add commandline flag to enabnle/disable XWayland start.
+  * [done] Add commandline flag to enabnle/disable XWayland start.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
@@ -235,8 +235,9 @@ Support for visual effects to improve usability, but not for pure show.
 
 * XWayland support (X11 clients).
   * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
-  * Permit conditional compilation of XWayland support, and enabling/disabling via flag.
   * Permit identifying the real X client, not the XWayland connection.
+  * Have a test matrix build that verifies the build works without XWayland.
+  * Fix bug with emacs hanging on saving clipboard (observed once).
 
 * Dock Apps.
   * Attached to dock (visible across workspaces) or clip (per workspace).

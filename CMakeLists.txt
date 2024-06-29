@@ -55,6 +55,8 @@ PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
 PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17.4)
 PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
+# XWayland considered optional.
+PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
 
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)

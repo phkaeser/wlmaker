@@ -20,6 +20,8 @@
 #ifndef __XWL_CONTENT_H__
 #define __XWL_CONTENT_H__
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
+
 #include "server.h"
 #include "xwl.h"
 
@@ -68,5 +70,6 @@ extern const bs_test_case_t wlmaker_xwl_content_test_cases[];
 }  // extern "C"
 #endif  // __cplusplus
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 #endif /* __XWL_CONTENT_H__ */
 /* == End of xwl_content.h ================================================= */

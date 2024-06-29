@@ -19,6 +19,7 @@
  */
 #ifndef __XWL_POPUP_H__
 #define __XWL_POPUP_H__
+#if defined(WLMAKER_HAVE_XWAYLAND)
 
 #include "xwl_content.h"
 
@@ -50,5 +51,6 @@ void wlmaker_xwl_popup_destroy(wlmaker_xwl_popup_t *xwl_popup_ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 #endif /* __XWL_POPUP_H__ */
 /* == End of xwl_popup.h =================================================== */

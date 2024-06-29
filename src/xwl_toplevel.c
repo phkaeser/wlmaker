@@ -17,6 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if defined(WLMAKER_HAVE_XWAYLAND)
 
 #include "xwl_toplevel.h"
 
@@ -150,4 +151,5 @@ void _xwl_toplevel_handle_surface_unmap(
         xwl_toplevel_ptr->window_ptr);
 }
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 /* == End of xwl_toplevel.c ================================================ */

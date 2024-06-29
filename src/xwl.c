@@ -61,6 +61,8 @@
 
 #include <libbase/libbase.h>
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
+
 #define WLR_USE_UNSTABLE
 #include <wlr/xwayland.h>
 #undef WLR_USE_UNSTABLE
@@ -70,6 +72,8 @@
 #include "xwl_content.h"
 #include "x11_cursor.xpm"
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
+
 /* == Declarations ========================================================= */
 
 /** XWayland interface state. */
@@ -77,6 +81,7 @@ struct _wlmaker_xwl_t {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
     /** XWayland server and XWM. */
     struct wlr_xwayland       *wlr_xwayland_ptr;
 
@@ -87,8 +92,10 @@ struct _wlmaker_xwl_t {
 
     /** XCB atoms we consider relevant. */
     xcb_atom_t                xcb_atoms[XWL_MAX_ATOM_ID];
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 };
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
 static void handle_ready(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -114,6 +121,8 @@ static const char *xwl_atom_name_map[XWL_MAX_ATOM_ID] = {
 
 /* == Exported methods ===================================================== */
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
+
 /* ------------------------------------------------------------------------- */
 wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
 {
@@ -121,6 +130,7 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
     if (NULL == xwl_ptr) return NULL;
     xwl_ptr->server_ptr = server_ptr;
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
     xwl_ptr->wlr_xwayland_ptr = wlr_xwayland_create(
         server_ptr->wl_display_ptr,
         server_ptr->wlr_compositor_ptr,
@@ -145,20 +155,25 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
     // TODO(kaeser@gubbe.ch): That's a bit ugly. We should only do a setenv
     // as we create & fork the subprocesses. Needs infrastructure, though.
     setenv("DISPLAY", xwl_ptr->wlr_xwayland_ptr->display_name, true);
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
+
     return xwl_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr)
 {
+#if defined(WLMAKER_HAVE_XWAYLAND)
     if (NULL != xwl_ptr->wlr_xwayland_ptr) {
         wlr_xwayland_destroy(xwl_ptr->wlr_xwayland_ptr);
         xwl_ptr->wlr_xwayland_ptr = NULL;
     }
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
     free(xwl_ptr);
 }
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
 /* ------------------------------------------------------------------------- */
 /**
  * Returns whether the XWayland surface has any of the window types.
@@ -295,4 +310,5 @@ void handle_new_surface(struct wl_listener *listener_ptr,
     }
 }
 
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 /* == End of xwl.c ========================================================= */

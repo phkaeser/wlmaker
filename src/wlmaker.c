@@ -46,8 +46,18 @@ static char *wlmaker_arg_config_file_ptr = NULL;
 /** Will hold the value of --style_file. */
 static char *wlmaker_arg_style_file_ptr = NULL;
 
+/** Startup options for the server. */
+static wlmaker_server_options_t wlmaker_server_options = {};
+
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
+#if defined(WLMAKER_HAVE_XWAYLAND)
+    BS_ARG_BOOL(
+        "start_xwayland",
+        "Optional: Whether to start XWayland. Disabled by default.",
+        false,
+        &wlmaker_server_options.start_xwayland),
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
     BS_ARG_STRING(
         "config_file",
         "Optional: Path to a configuration file. If not provided, wlmaker "
@@ -181,7 +191,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmaker_server_t *server_ptr = wlmaker_server_create(config_dict_ptr);
+    wlmaker_server_t *server_ptr = wlmaker_server_create(
+        config_dict_ptr, &wlmaker_server_options);
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
 

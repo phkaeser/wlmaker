@@ -75,10 +75,18 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 extern "C" {
 #endif  // __cplusplus
 
+/** Options for the Wayland server. */
+typedef struct {
+    /** Whether to start XWayland. */
+    bool                      start_xwayland;
+} wlmaker_server_options_t;
+
 /** State of the Wayland server. */
 struct _wlmaker_server_t {
     /** Configuration dictionnary. */
     wlmcfg_dict_t             *config_dict_ptr;
+    /** Copy of the options. */
+    const wlmaker_server_options_t *options_ptr;
 
     /** Wayland display. */
     struct wl_display         *wl_display_ptr;
@@ -143,7 +151,11 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
-    /** XWayland interface. */
+    /**
+     * XWayland interface. Will be set only if compiled with XWayland, through
+     * WLMAKER_HAVE_XWAYLAND defined.
+     * And through setting @ref wlmaker_server_options_t::start_xwayland.
+     */
     wlmaker_xwl_t             *xwl_ptr;
 
     /** The list of outputs. */
@@ -223,11 +235,15 @@ struct _wlmaker_key_combo_t {
  *
  * @param config_dict_ptr     Configuration, as dictionary object. The server
  *                            will keep a reference on it until destroyed.
+ * @param options_ptr         Options for the server. The server expects the
+ *                            pointed area to outlive the server.
  *
  * @return The server handle or NULL on failure. The handle must be freed by
  * calling wlmaker_server_destroy().
  */
-wlmaker_server_t *wlmaker_server_create(wlmcfg_dict_t *config_dict_ptr);
+wlmaker_server_t *wlmaker_server_create(
+    wlmcfg_dict_t *config_dict_ptr,
+    const wlmaker_server_options_t *options_ptr);
 
 /**
  * Destroys the server handle, as created by wlmaker_server_create().
