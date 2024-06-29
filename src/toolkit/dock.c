@@ -146,6 +146,11 @@ void wlmtk_dock_remove_tile(
     wlmtk_box_remove_element(
         &dock_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
+
+    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(dock_ptr);
+    struct wlr_box box = wlmtk_element_get_dimensions_box(
+        wlmtk_panel_element(panel_ptr));
+    wlmtk_panel_request_size(panel_ptr, box.width, box.height);
 }
 
 /* ------------------------------------------------------------------------- */
