@@ -311,12 +311,9 @@ bool _wlmaker_layer_panel_apply_layer(
         return false;
     }
 
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        layer_panel_ptr->server_ptr);
-    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
-        workspace_ptr);
-    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
-        wlmtk_workspace_ptr, layer);
+    wlmtk_workspace_t *workspace_ptr =
+        wlmaker_server_get_current_wlmtk_workspace(layer_panel_ptr->server_ptr);
+    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(workspace_ptr, layer);
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(
         &layer_panel_ptr->super_panel);

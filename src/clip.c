@@ -475,9 +475,9 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
 
     int index = 0;
     const char *name_ptr = NULL;
-    wlmaker_workspace_get_details(
-        wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
-        &index, &name_ptr);
+    wlmtk_workspace_get_details(
+        wlmaker_server_get_current_wlmtk_workspace(clip_ptr->server_ptr),
+        &name_ptr, &index);
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {

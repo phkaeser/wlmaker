@@ -57,13 +57,17 @@ typedef enum {
  *
  * @param env_ptr
  * @param wlr_scene_tree_ptr
+ * @param name_ptr
+ * @param index
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
     wlmtk_env_t *env_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
+    struct wlr_scene_tree *wlr_scene_tree_ptr,
+    const char *name_ptr,
+    int index);
 
 /**
  * Destroys the workspace. Will destroy any stil-contained element.
@@ -71,6 +75,18 @@ wlmtk_workspace_t *wlmtk_workspace_create(
  * @param workspace_ptr
  */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Retrieves the naming details of this workspace.
+ *
+ * @param workspace_ptr
+ * @param name_ptr_ptr
+ * @param index_ptr
+ */
+void wlmtk_workspace_get_details(
+    wlmtk_workspace_t *workspace_ptr,
+    const char **name_ptr_ptr,
+    int *index_ptr);
 
 /**
  * Sets signals for window events.

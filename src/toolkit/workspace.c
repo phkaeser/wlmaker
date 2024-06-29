@@ -38,6 +38,11 @@ struct _wlmtk_workspace_t {
     /** Original virtual method table. We're overwriting parts. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
 
+    /** Name of the workspace. */
+    char                      *name_ptr;
+    /** Index of this workspace. */
+    int                       index;
+
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
 
@@ -168,11 +173,19 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_workspace_create(
     wlmtk_env_t *env_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
+    struct wlr_scene_tree *wlr_scene_tree_ptr,
+    const char *name_ptr,
+    int index)
 {
     wlmtk_workspace_t *workspace_ptr =
         logged_calloc(1, sizeof(wlmtk_workspace_t));
     if (NULL == workspace_ptr) return NULL;
+    workspace_ptr->index = index;
+    workspace_ptr->name_ptr = logged_strdup(name_ptr);
+    if (NULL == workspace_ptr->name_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
 
     if (!wlmtk_container_init_attached(
             &workspace_ptr->super_container, env_ptr, wlr_scene_tree_ptr)) {
@@ -268,16 +281,6 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_set_signals(
-    wlmtk_workspace_t *workspace_ptr,
-    struct wl_signal *mapped_event_ptr,
-    struct wl_signal *unmapped_event_ptr)
-{
-    workspace_ptr->window_mapped_event_ptr = mapped_event_ptr;
-    workspace_ptr->window_unmapped_event_ptr = unmapped_event_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 {
     if (NULL != workspace_ptr->overlay_layer_ptr) {
@@ -328,7 +331,32 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
     wlmtk_container_fini(&workspace_ptr->window_container);
 
     wlmtk_container_fini(&workspace_ptr->super_container);
+
+    if (NULL != workspace_ptr->name_ptr) {
+        free(workspace_ptr->name_ptr);
+        workspace_ptr->name_ptr = NULL;
+    }
     free(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_get_details(
+    wlmtk_workspace_t *workspace_ptr,
+    const char **name_ptr_ptr,
+    int *index_ptr)
+{
+    *index_ptr = workspace_ptr->index;
+    *name_ptr_ptr = workspace_ptr->name_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_set_signals(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wl_signal *mapped_event_ptr,
+    struct wl_signal *unmapped_event_ptr)
+{
+    workspace_ptr->window_mapped_event_ptr = mapped_event_ptr;
+    workspace_ptr->window_unmapped_event_ptr = unmapped_event_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -713,7 +741,7 @@ wlmtk_fake_workspace_t *wlmtk_fake_workspace_create(int width, int height)
     }
 
     fw_ptr->workspace_ptr = wlmtk_workspace_create(
-        NULL, fw_ptr->fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fw_ptr->fake_parent_ptr->wlr_scene_tree_ptr, "fake", 42);
     if (NULL == fw_ptr->workspace_ptr) {
         wlmtk_fake_workspace_destroy(fw_ptr);
         return NULL;
@@ -1053,7 +1081,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fake_parent_ptr);
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        NULL, fake_parent_ptr->wlr_scene_tree_ptr);
+        NULL, fake_parent_ptr->wlr_scene_tree_ptr, "test", 1);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
@@ -1077,6 +1105,12 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, -20, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.height);
+
+    const char *name_ptr;
+    int index;
+    wlmtk_workspace_get_details(workspace_ptr, &name_ptr, &index);
+    BS_TEST_VERIFY_STREQ(test_ptr, "test", name_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, index);
 
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);

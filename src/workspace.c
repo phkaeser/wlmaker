@@ -87,7 +87,8 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
     }
 
     workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
-        workspace_ptr->server_ptr->env_ptr, workspace_ptr->wlr_scene_tree_ptr);
+        workspace_ptr->server_ptr->env_ptr, workspace_ptr->wlr_scene_tree_ptr,
+        name_ptr, index);
     if (NULL == workspace_ptr->wlmtk_workspace_ptr) {
         wlmaker_workspace_destroy(workspace_ptr);
         return NULL;
