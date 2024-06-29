@@ -44,6 +44,11 @@ struct _wlmaker_icon_manager_t {
 
 /** State of a toplevel icon. */
 struct _wlmaker_toplevel_icon_t {
+    /** The icon is also a toolkit tile. */
+    wlmtk_tile_t              super_tile;
+
+    wlmtk_surface_t           *content_surface_ptr;
+
     /** Back-link to the client requesting the toplevel. */
     struct wl_client          *wl_client_ptr;
     /** Back-link to the icon manager. */
@@ -115,6 +120,9 @@ static void handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmaker_toplevel_icon_element_destroy(
+    wlmtk_element_t *element_ptr);
+
 /* == Data ================================================================= */
 
 /** Implementation of the toplevel icon manager interface. */
@@ -129,6 +137,11 @@ static const struct zwlmaker_toplevel_icon_v1_interface
 toplevel_icon_v1_implementation = {
     .destroy = handle_resource_destroy,
     .ack_configure = handle_icon_ack_configure,
+};
+
+/** The icon's extension to @ref wlmtk_element_t virtual method table. */
+static const wlmtk_element_vmt_t _wlmaker_toplevel_icon_element_vmt = {
+    .destroy = _wlmaker_toplevel_icon_element_destroy,
 };
 
 /* == Exported methods ===================================================== */
@@ -350,6 +363,23 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);
 
+    if (!wlmtk_tile_init(
+            &toplevel_icon_ptr->super_tile,
+            &icon_manager_ptr->server_ptr->style.tile,
+            icon_manager_ptr->server_ptr->env_ptr)) {
+        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
+        &_wlmaker_toplevel_icon_element_vmt);
+    wlmtk_element_set_visible(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
+        true);
+    wlmtk_dock_add_tile(
+        icon_manager_ptr->server_ptr->clip_dock_ptr,
+        &toplevel_icon_ptr->super_tile);
+
     // TODO(kaeser@gubbe.ch): Should catch 'map' and 'unmap', and create or
     // destroy the icon accordingly.
     toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
@@ -390,6 +420,14 @@ void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr)
 {
     bs_log(BS_DEBUG, "Destroying toplevel icon %p", toplevel_icon_ptr);
+
+    if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
+            )->parent_container_ptr) {
+        wlmtk_dock_remove_tile(
+            toplevel_icon_ptr->icon_manager_ptr->server_ptr->clip_dock_ptr,
+            &toplevel_icon_ptr->super_tile);
+    }
+    wlmtk_tile_fini(&toplevel_icon_ptr->super_tile);
 
     // Note: Not destroying toplevel_icon_ptr->resource, since that causes
     // cycles...
@@ -482,6 +520,34 @@ void handle_surface_commit(
             1,
             "Commit non-NULL buffer without configure sequence.");
         return;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Destructor of the icon's corresponding tile element.
+ *
+ * This is a hack: The `wlmaker_toplevel_icon_t` is owned by the wl_resource
+ * and must only be freed when that dtor is caller. But, the element dtor may
+ * be called on wlmaker shutdown, when eg. an icon app is still running.
+ * So, for that case, we just detach the icon here.
+ *
+ * Leaving as is, since the icon model will need to be revamped anyway, to
+ * line up with the new XDG icon protocol.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_toplevel_icon_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_toplevel_icon_t,
+        super_tile.super_container.super_element);
+
+    if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
+            )->parent_container_ptr) {
+        wlmtk_dock_remove_tile(
+            toplevel_icon_ptr->icon_manager_ptr->server_ptr->clip_dock_ptr,
+            &toplevel_icon_ptr->super_tile);
     }
 }
 

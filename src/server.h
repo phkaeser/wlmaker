@@ -214,6 +214,9 @@ struct _wlmaker_server_t {
      */
     struct wl_signal          window_unmapped_event;
 
+    /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
+    wlmtk_dock_t              *clip_dock_ptr;
+
     /** The current configuration style. */
     wlmaker_config_style_t    style;
 };

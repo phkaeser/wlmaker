@@ -248,6 +248,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
 
+    server_ptr->clip_dock_ptr = clip_ptr->wlmtk_dock_ptr;
     bs_log(BS_INFO, "Created clip %p", clip_ptr);
     return clip_ptr;
 }
@@ -255,6 +256,10 @@ wlmaker_clip_t *wlmaker_clip_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 {
+    if (NULL != clip_ptr->server_ptr) {
+        clip_ptr->server_ptr->clip_dock_ptr = NULL;
+    }
+
     wlmtk_util_disconnect_listener(&clip_ptr->workspace_changed_listener);
 
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
