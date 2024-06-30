@@ -90,7 +90,7 @@ cmake -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
 ```
 
 Now you have an installed binary, and can run it with the appropriate
-environment. See [running instructions][RUN.md] for more details.
+environment. See [running instructions](RUN.md) for more details.
 
 ```bash
 LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \

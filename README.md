@@ -33,10 +33,10 @@ Protocol support:
 
 ### Build & use it!
 
-* From source: Please follow the [detailled build instructions][doc/BUILD.md]
+* From source: Please follow the [detailled build instructions](doc/BUILD.md)
   for a step-by-step guide. 
   
-* Once compiled, see the [these instructions][doc/RUN.md] on how to run
+* Once compiled, see the [these instructions](doc/RUN.md) on how to run
   Wayland Maker in a window or standalone.
 
 [!NOTE]

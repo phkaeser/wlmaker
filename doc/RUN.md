@@ -1,6 +1,6 @@
 # Running Wayland Maker
 
-If not done yet, please follow the [detailled build instructions][BUILD.md] to
+If not done yet, please follow the [detailled build instructions](BUILD.md) to
 build and install from source.
 
 The commands below assume that dependencies and `wlmaker` were installed to
