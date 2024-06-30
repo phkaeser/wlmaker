@@ -68,12 +68,17 @@ ExternalProject_Add(wayland_protocols
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
 )
 
+# seatd requires the socket directory to have been created, and is hardcoded.
+ADD_CUSTOM_TARGET(
+  seatd_socket_directory ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_INSTALL_PREFIX}/run")
 ExternalProject_Add(seatd
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/seatd"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Ddefaultpath=<INSTALL_DIR>
+  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Ddefaultpath=<INSTALL_DIR>/run/seatd.sock
   BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
+  DEPENDS seatd_socket_directory
 )
 
 ExternalProject_Add(hwdata
