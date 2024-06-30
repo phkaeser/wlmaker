@@ -56,7 +56,7 @@ Run the commands below from the directory you cloned the source into.
 
 Wayland Maker is still in development and is depending on a set of rapidly
 evolving libraries. To keep the API between code and dependencies synchronized,
-some dependencies are included as github submodules. Here's how to configure 
+some dependencies are included as github submodules. Here's how to configure
 and build these.
 
 The dependencies will be installed to `${HOME}/.local`:
