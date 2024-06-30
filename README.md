@@ -36,8 +36,8 @@ Protocol support:
 * From source: Please follow the [detailled build instructions](doc/BUILD.md)
   for a step-by-step guide.
 
-* Once compiled: see [these instructions](doc/RUN.md) on how to run Wayland
-  Maker in a window or standalone, and to configure it for your needs.
+* Once compiled, see the [these instructions](doc/RUN.md) on how to run
+  Wayland Maker in a window or standalone, and to configure it for your needs.
 
 > [!NOTE]
 > `wlmaker` is still in early development, so it's not recommended to use it as
