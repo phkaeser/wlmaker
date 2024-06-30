@@ -24,13 +24,14 @@ jobs:
     - name: Install package dependencies.
       run: |
         apt-get update
-        apt-get install -y git \
+        apt-get install -y \
           bison \
           clang \
           cmake \
           doxygen \
           flex \
           foot \
+          git \
           glslang-dev \
           glslang-tools \
           graphviz \
