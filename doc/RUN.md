@@ -21,6 +21,24 @@ PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pk
 ${HOME}/.local/bin/wlmaker
 ```
 
+## Option 2: Run from a Linux virtual terminal
+
+If your distribution does not have `seatd` 0.8 (or more recent) installed anr
+running, you first need to run `seatd` with proper permissions.
+
+To run it as root user, for your normal user:
+
+```
+su -c "${HOME}/.local/bin/seatd -g $(id -un) &"
+```
+
+Once seatd is running, start Wayland Maker:
+
+```
+${HOME}/.local/wlmaker
+```
+
+Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 
 ## Make it run for you!
 
