@@ -1,6 +1,6 @@
 # wlmaker - Wayland Maker
 
-A [Wayland](https://wayland.freedesktop.org/) compositor inspired by 
+A [Wayland](https://wayland.freedesktop.org/) compositor inspired by
 [Window Maker](https://www.windowmaker.org/).
 
 Key features:
@@ -34,31 +34,19 @@ Protocol support:
 ### Build & use it!
 
 * From source: Please follow the [detailled build instructions](doc/BUILD.md)
-  for a step-by-step guide. 
-  
+  for a step-by-step guide.
+
 * Once compiled, see the [these instructions](doc/RUN.md) on how to run
-  Wayland Maker in a window or standalone.
+  Wayland Maker in a window or standalone, and to configure it for your needs.
 
-[!NOTE]
-`wlmaker` is still in early development, so it's not recommended to use it as
-your primary compositor.
-
-
-
-It should run fine in it's own window, though:
-
-```bash
-LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
-PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
-${HOME}/.local/bin/wlmaker
-```
-
-Press `ctrl+window+alt T` to open a Terminal (`foot`), and `ctrl-window-alt Q`
-to exit.
+> [!NOTE]
+> `wlmaker` is still in early development, so it's not recommended to use it as
+> your primary compositor.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details, and 
+Contributions and help are highly welcome! See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for details, and
 [code of conduct](CODE_OF_CONDUCT.md) for more.
 
 ## License
