@@ -1,6 +1,6 @@
 # wlmaker - Wayland Maker
 
-A [Wayland](https://wayland.freedesktop.org/) compositor inspired by 
+A [Wayland](https://wayland.freedesktop.org/) compositor inspired by
 [Window Maker](https://www.windowmaker.org/).
 
 Key features:
@@ -18,7 +18,7 @@ Wayland Maker is in early development stage. Highlights for current version (0.2
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
-  Use `--start_xwayland` option to enable XWayland, it's off by default.
+  Use `--start_xwayland` argument to enable XWayland, it's off by default.
 * Appearance, workspaces, dock, keyboard: All hardcoded.
 * A prototype DockApp (`apps/wlmclock`).
 
@@ -31,59 +31,22 @@ Protocol support:
 * `xdg-shell`: Largely implemented & tested.
 * `idle-inhibit-unstable-v1`: Implemented, untested.
 
-### To configure
+### Build & use it!
 
-Some of Wayland Maker's core dependencies are also in development and are a
-moving target, hence these are referred to as git submodules. Build and install
-these first (default to `${HOME}/.local`):
+* From source: Please follow the [detailled build instructions](doc/BUILD.md)
+  for a step-by-step guide.
 
-``` bash
-git submodule update --init --checkout --recursive --merge
-(cd dependencies &&
- LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
- PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
- cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build &&
- cd build &&
- LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
- PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
- make)
-```
+* Once compiled, see the [these instructions](doc/RUN.md) on how to run
+  Wayland Maker in a window or standalone, and to configure it for your needs.
 
-With the dependencies installed, proceed to configure wlmaker:
-
-```bash
-LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
-PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
-cmake -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
-```
-
-### To build and install
-
-``` bash
-(cd build && \
- LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
- PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
- make && \
- make install)
-```
-
-### To run it
-
-Since `wlmaker` is in early development, it's not recommended to use it as your
-primary compositor. It should run fine in it's own window, though:
-
-```bash
-LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
-PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
-${HOME}/.local/bin/wlmaker
-```
-
-Press `ctrl+window+alt T` to open a Terminal (`foot`), and `ctrl-window-alt Q`
-to exit.
+> [!NOTE]
+> `wlmaker` is still in early development, so it's not recommended to use it as
+> your primary compositor.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details, and 
+Contributions and help are highly welcome! See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for details, and
 [code of conduct](CODE_OF_CONDUCT.md) for more.
 
 ## License
