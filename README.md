@@ -18,7 +18,7 @@ Wayland Maker is in early development stage. Highlights for current version (0.2
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
-  Use `--start_xwayland` option to enable XWayland, it's off by default.
+  Use `--start_xwayland` argument to enable XWayland, it's off by default.
 * Appearance, workspaces, dock, keyboard: All hardcoded.
 * A prototype DockApp (`apps/wlmclock`).
 
