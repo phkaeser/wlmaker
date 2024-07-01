@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=WaylandMaker
 Comment=A Wayland compositor inspired by Window Maker
-Exec=@CMAKE_INSTALL_PREFIX@/bin/wrapp-wlmaker.sh
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wrap-wlmaker.sh
 Type=Application
