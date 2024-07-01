@@ -48,6 +48,7 @@
 #include "rectangle.h"
 #include "resizebar.h"
 #include "resizebar_area.h"
+#include "root.h"
 #include "surface.h"
 #include "tile.h"
 #include "titlebar.h"

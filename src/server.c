@@ -275,7 +275,7 @@ wlmaker_server_t *wlmaker_server_create(
     BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
 
     // Root element.
-    server_ptr->root_ptr = wlmaker_root_create(
+    server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
         server_ptr->wlr_output_layout_ptr,
         server_ptr->env_ptr);
@@ -428,7 +428,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->root_ptr) {
-        wlmaker_root_destroy(server_ptr->root_ptr);
+        wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
     }
 

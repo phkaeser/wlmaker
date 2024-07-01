@@ -248,7 +248,7 @@ void handle_button(struct wl_listener *listener_ptr,
     event.button = wlr_pointer_button_event_ptr->button;
     event.time_msec = wlr_pointer_button_event_ptr->time_msec;
     consumed = wlmtk_element_pointer_button(
-        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        wlmtk_root_element(cursor_ptr->server_ptr->root_ptr),
         &event);
     if (consumed) return;
 
@@ -290,7 +290,7 @@ void handle_axis(struct wl_listener *listener_ptr,
 
     bool consumed;
     consumed = wlmtk_element_pointer_axis(
-        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+        wlmtk_root_element(cursor_ptr->server_ptr->root_ptr),
         wlr_pointer_axis_event_ptr);
     if (consumed) return;
 

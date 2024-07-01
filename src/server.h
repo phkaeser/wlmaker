@@ -23,6 +23,8 @@
 #include <libbase/libbase.h>
 #include <wayland-server-core.h>
 
+#include "toolkit/toolkit.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/render/allocator.h>
@@ -59,7 +61,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "keyboard.h"
 #include "layer_shell.h"
 #include "lock_mgr.h"
-#include "root.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
 #include "xdg_decoration.h"
@@ -166,7 +167,7 @@ struct _wlmaker_server_t {
     wlmtk_env_t               *env_ptr;
 
     /** The root element. */
-    wlmaker_root_t            *root_ptr;
+    wlmtk_root_t              *root_ptr;
     /** The current workspace. */
     wlmaker_workspace_t       *current_workspace_ptr;
     /** List of all workspaces. */
