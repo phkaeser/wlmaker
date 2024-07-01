@@ -42,7 +42,6 @@ Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 
 The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
-
 ## Make it run for you!
 
 * [etc/wlmaker.plist](../etc/wlmaker.plist) is the where keyboard options, key
@@ -64,3 +63,20 @@ The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style.
 
+# Debugging issues
+
+1. `wlmaker` fails with an *ERROR* log of `Could not initialize renderer`.
+
+    This indicates that `wlroots` was unable to pick a suitable renderer. For
+    triaging & debugging, try the following:
+
+    1. Verify whether another `wlroots`-based compositor [^1] starts up. If
+        not, it's a `wlroots` issue, please follow up there.
+
+    2. Try using a different renderer, eg. by setting `WLR_RENDERER=pixman` [^2].
+
+    If that does not help: Please file an issue, including a full paste of your
+    the configuration & build log, and of the startup attempt.
+
+[^1]: https://gitlab.freedesktop.org/wlroots/wlroots/-/wikis/Projects-which-use-wlroots#compositors
+[^2]: https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/docs/env_vars.md?ref_type=heads
