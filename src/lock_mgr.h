@@ -24,8 +24,6 @@
 
 /** Forward declaration: State of the session lock manager. */
 typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
-/** Forward declaration: Lock. */
-typedef struct _wlmaker_lock_t wlmaker_lock_t;
 
 #include "server.h"
 
@@ -49,11 +47,6 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
  * @param lock_mgr_ptr
  */
 void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr);
-
-/**
- * @returns Pointer to @ref wlmtk_element_t of @ref wlmaker_lock_t::container.
- * */
-wlmtk_element_t *wlmaker_lock_element(wlmaker_lock_t *lock_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

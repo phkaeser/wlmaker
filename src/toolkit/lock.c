@@ -73,6 +73,10 @@ struct _wlmtk_lock_surface_t {
     struct wl_listener        surface_commit_listener;
 };
 
+static void _wlmtk_lock_report_surface_locked(
+    wlmtk_lock_t *lock_ptr,
+    wlmtk_lock_surface_t *lock_surface_ptr);
+
 static void _wlmtk_lock_handle_new_surface(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -90,6 +94,9 @@ static void _wlmtk_lock_surface_destroy(
     wlmtk_lock_surface_t *lock_surface_ptr);
 static void _wlmtk_lock_surface_dlnode_destroy(
     bs_dllist_node_t *dlnode_ptr, void *ud_ptr);
+static bool _wlmtk_lock_surface_has_wlr_output(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 static void _wlmtk_lock_surface_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -157,6 +164,74 @@ wlmtk_element_t *wlmtk_lock_element(wlmtk_lock_t *lock_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Registers the provided surface as 'locked'. Locks the session, if all
+ * outputs have been locked.
+ *
+ * @param lock_ptr
+ * @param lock_surface_ptr
+ */
+void _wlmtk_lock_report_surface_locked(
+    wlmtk_lock_t *lock_ptr,
+    wlmtk_lock_surface_t *lock_surface_ptr)
+{
+    // Guard clause: Don't add the surface if already reported.
+    if (bs_dllist_contains(
+            &lock_ptr->lock_surfaces, &lock_surface_ptr->dlnode)) return;
+
+    // Another guard: Don't accept the same output twice.
+    if (bs_dllist_find(
+            &lock_ptr->lock_surfaces,
+            _wlmtk_lock_surface_has_wlr_output,
+            lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output)) {
+        bs_log(BS_WARNING, "Extra lock surface detected for wlr_output %p",
+               lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output);
+        wl_resource_post_error(
+            lock_surface_ptr->wlr_session_lock_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_INVALID_METHOD,
+            "Extra lock surface detected for wlr_output %p",
+            lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output);
+        return;
+    }
+
+    bs_dllist_push_back(&lock_ptr->lock_surfaces, &lock_surface_ptr->dlnode);
+    wlmtk_container_add_element(
+        &lock_ptr->container,
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr), true);
+
+    // If not all outputs are covered: No lock yet.
+    // FIXME
+    /* if (bs_dllist_size(&lock_ptr->lock_surfaces) < */
+    /*     bs_dllist_size(&lock_ptr->lock_mgr_ptr->server_ptr->outputs)) return; */
+
+    // FIXME
+    /* if (!wlmaker_root_lock( */
+    /*         lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
+    /*         lock_ptr)) { */
+    /*     wl_resource_post_error( */
+    /*         lock_surface_ptr->wlr_session_lock_surface_v1_ptr->resource, */
+    /*         WL_DISPLAY_ERROR_INVALID_METHOD, */
+    /*         "Failed wlmaker_root_lock(%p, %p): Already locked?", */
+    /*         lock_ptr->lock_mgr_ptr->server_ptr, */
+    /*         lock_ptr); */
+    /*     return; */
+    /* } */
+
+    __UNUSED__ wlmtk_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
+        lock_ptr->lock_surfaces.head_ptr, wlmtk_lock_surface_t, dlnode);
+
+    // FIXME
+    /* wlmaker_root_set_lock_surface( */
+    /*     lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
+    /*     first_surface_ptr->wlmtk_surface_ptr); */
+
+    // Root is locked. Send confirmation to the client.
+    wlr_session_lock_v1_send_locked(lock_ptr->wlr_session_lock_v1_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -323,6 +398,17 @@ void _wlmtk_lock_surface_dlnode_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Returns whether the surface at dlnode_ptr has wlr_output == ud_ptr. */
+bool _wlmtk_lock_surface_has_wlr_output(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_lock_surface_t *lock_surface_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmtk_lock_surface_t, dlnode);
+    return lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output == ud_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Handler for the `destroy` signal of `wlr_session_lock_surface_v1`: Destroy
  * the surface.
@@ -363,9 +449,8 @@ void _wlmtk_lock_surface_handle_surface_commit(
     // Do not accept locking for commits before the requested configuration.
     if (wlr_session_lock_surface_v1_ptr->current.configure_serial >=
         lock_surface_ptr->configure_serial) {
-        // FIXME
-        //_wlmtk_lock_report_surface_locked(
-        //lock_surface_ptr->lock_ptr, lock_surface_ptr);
+        _wlmtk_lock_report_surface_locked(
+            lock_surface_ptr->lock_ptr, lock_surface_ptr);
     }
 }
 

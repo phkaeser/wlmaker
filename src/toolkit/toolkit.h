@@ -42,6 +42,7 @@
 #include "fsm.h"
 #include "image.h"
 #include "input.h"
+#include "lock.h"
 #include "panel.h"
 #include "popup.h"
 #include "rectangle.h"

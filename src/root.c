@@ -39,7 +39,7 @@ struct _wlmaker_root_t {
     /** Whether the root is currently locked. */
     bool                      locked;
     /** Reference to the lock, see @ref wlmaker_root_lock. */
-    wlmaker_lock_t            *lock_ptr;
+    wlmtk_lock_t               *lock_ptr;
 
     /** Curtain element: Permit dimming or hiding everything. */
     wlmtk_rectangle_t         *curtain_rectangle_ptr;
@@ -133,7 +133,7 @@ void wlmaker_root_destroy(wlmaker_root_t *root_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmaker_root_lock(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr)
+    wlmtk_lock_t *lock_ptr)
 {
     if (root_ptr->locked) {
         bs_log(BS_WARNING, "Root already locked by %p", root_ptr->lock_ptr);
@@ -151,7 +151,7 @@ bool wlmaker_root_lock(
 
     wlmtk_container_add_element(
         &root_ptr->container,
-        wlmaker_lock_element(lock_ptr));
+        wlmtk_lock_element(lock_ptr));
     root_ptr->lock_ptr = lock_ptr;
 
     root_ptr->locked = true;
@@ -161,7 +161,7 @@ bool wlmaker_root_lock(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_root_unlock(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr)
+    wlmtk_lock_t *lock_ptr)
 {
     // Guard clause: Not locked => nothing to do.
     if (!root_ptr->locked) return false;
@@ -184,13 +184,13 @@ bool wlmaker_root_unlock(
 /* ------------------------------------------------------------------------- */
 void wlmaker_root_lock_unreference(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr)
+    wlmtk_lock_t *lock_ptr)
 {
     if (lock_ptr != root_ptr->lock_ptr) return;
 
     wlmtk_container_remove_element(
         &root_ptr->container,
-        wlmaker_lock_element(root_ptr->lock_ptr));
+        wlmtk_lock_element(root_ptr->lock_ptr));
     root_ptr->lock_ptr = NULL;
 }
 
@@ -249,7 +249,7 @@ bool _wlmaker_root_element_pointer_motion(
             element_ptr, x, y, time_msec);
     } else if (NULL != root_ptr->lock_ptr) {
         return wlmtk_element_pointer_motion(
-            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlmtk_lock_element(root_ptr->lock_ptr),
             x, y, time_msec);
     }
 
@@ -283,7 +283,7 @@ bool _wlmaker_root_element_pointer_button(
             element_ptr, button_event_ptr);
     } else if (NULL != root_ptr->lock_ptr) {
         return wlmtk_element_pointer_button(
-            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlmtk_lock_element(root_ptr->lock_ptr),
             button_event_ptr);
     }
 
@@ -317,7 +317,7 @@ bool _wlmaker_root_element_pointer_axis(
             element_ptr, wlr_pointer_axis_event_ptr);
     } else if (NULL != root_ptr->lock_ptr) {
         return wlmtk_element_pointer_axis(
-            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlmtk_lock_element(root_ptr->lock_ptr),
             wlr_pointer_axis_event_ptr);
     }
 
@@ -359,7 +359,7 @@ bool _wlmaker_root_element_keyboard_event(
             key_syms, key_syms_count, modifiers);
     } else if (NULL != root_ptr->lock_ptr) {
         return wlmtk_element_keyboard_event(
-            wlmaker_lock_element(root_ptr->lock_ptr),
+            wlmtk_lock_element(root_ptr->lock_ptr),
             wlr_keyboard_key_event_ptr,
             key_syms, key_syms_count, modifiers);
     }

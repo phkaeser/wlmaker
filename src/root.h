@@ -69,7 +69,7 @@ void wlmaker_root_destroy(wlmaker_root_t *root_ptr);
  */
 bool wlmaker_root_lock(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr);
+    wlmtk_lock_t *lock_ptr);
 
 /**
  * Unlocks the root, and releases the reference from @ref wlmaker_root_lock.
@@ -84,7 +84,7 @@ bool wlmaker_root_lock(
  */
 bool wlmaker_root_unlock(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr);
+    wlmtk_lock_t *lock_ptr);
 
 /**
  * Releases the lock reference, but keeps the root locked.
@@ -100,7 +100,7 @@ bool wlmaker_root_unlock(
  */
 void wlmaker_root_lock_unreference(
     wlmaker_root_t *root_ptr,
-    wlmaker_lock_t *lock_ptr);
+    wlmtk_lock_t *lock_ptr);
 
 /**
  * Temporary: Set the lock surface, so events get passed correctly.
