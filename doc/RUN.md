@@ -4,7 +4,7 @@ If not done yet, please follow the [detailled build instructions](BUILD.md) to
 build and install from source.
 
 The commands below assume that dependencies and `wlmaker` were installed to
-`${HOME}/.local`
+`${HOME}/.local`.
 
 Once running: Press `Ctrl-Window-Alt+T` to open a terminal (`foot`), or
 `Ctrl-Window-Alt+Q` to exit.
@@ -13,12 +13,10 @@ Once running: Press `Ctrl-Window-Alt+T` to open a terminal (`foot`), or
 
 The most accessible option is to run Wayland Maker in a window in your
 already-running graphical environment. It can run both on a X11 or a Wayland
-session. To run:
+session. Easiest is to run it via the wrapper script:
 
 ```bash
-LD_LIBRARY_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)" \
-PKG_CONFIG_PATH="${HOME}/.local/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/.local/share/pkgconfig/" \
-${HOME}/.local/bin/wlmaker
+${HOME}/.local/bin/wrap-wlmaker.sh
 ```
 
 ## Option 2: Run from a Linux virtual terminal
@@ -35,19 +33,33 @@ su -c "${HOME}/.local/bin/seatd -g $(id -un) &"
 Once seatd is running, start Wayland Maker:
 
 ```
-${HOME}/.local/wlmaker
+${HOME}/.local/bin/wrap-wlmaker.sh
 ```
 
 Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 
+## Option 3: Run as wayland session
+
+> [!IMPORTANT]
+> It is not recommended to run wlmaker as your main compositor. This approach
+> will not work if dependencies are not all operating correctly, and is hardest
+> to debug.
+
+* Copy `${HOME}/.local/share/wlmaker.desktop` to `/usr/share/wayland-sessions/wlmaker.desktop`
+* Restart your session manager, to reload the sessions.
+
+The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
+
+
 ## Make it run for you!
 
 * [etc/wlmaker.plist](../etc/wlmaker.plist) is the where keyboard options, key
-  bindings, screensaver details and more can be configured. The file in the
+  bindings, screensaver details and more can be configured. That file in the
   source tree is the compiled-in default.
 
-  To extend: Create a copy of the file, modify it suitably, and pass to
-  `wlmaker` via the `--config_file=...` arugment.
+  To extend: Create a copy of the file to `~/.wlmaker.plist` and modify it
+  according to your needs. Or, move it somewhere else and call `wlmaker` with
+  the `--config_file=...` arugment.
 
 * To run X11 applications in Wayland Maker, XWayland must be enabled. It is
   compiled in, if the `xwayland` package is installed. In that case, use the
