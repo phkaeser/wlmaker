@@ -43,7 +43,6 @@ FIND_PACKAGE(PkgConfig REQUIRED)
 # * hwdata at v0.371
 # * libdisplay-info at 0.2.0
 # * pixman at pixman-0.43.0
-# * seatd at 0.8.0
 
 PKG_CHECK_MODULES(CAIRO REQUIRED IMPORTED_TARGET cairo>=1.16.0)
 PKG_CHECK_MODULES(
