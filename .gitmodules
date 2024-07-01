@@ -23,12 +23,6 @@
         url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
         branch = main
         update = rebase
-[submodule "dependencies/seatd"]
-        path = dependencies/seatd
-        # Main site at https://git.sr.ht/~kennylevinsen/seatd, but mirrored to github:
-        url = https://github.com/kennylevinsen/seatd.git
-        branch = master
-        update = rebase
 [submodule "dependencies/hwdata"]
         path = dependencies/hwdata
         url = https://github.com/vcrhonek/hwdata.git
@@ -46,5 +40,5 @@
         branch = master
         update = rebase
 [submodule "examples/gtk-layer-shell"]
-	path = examples/gtk-layer-shell
-	url = https://github.com/wmww/gtk-layer-shell.git
+        path = examples/gtk-layer-shell
+        url = https://github.com/wmww/gtk-layer-shell.git

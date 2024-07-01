@@ -21,16 +21,8 @@ ${HOME}/.local/bin/wrap-wlmaker.sh
 
 ## Option 2: Run from a Linux virtual terminal
 
-If your distribution does not have `seatd` 0.8 (or more recent) installed anr
-running, you first need to run `seatd` with proper permissions.
-
-To run it as root user, for your normal user:
-
-```
-su -c "${HOME}/.local/bin/seatd -g $(id -un) &"
-```
-
-Once seatd is running, start Wayland Maker:
+> [!IMPORTANT]
+> Make sure your distribution has `seatd` installed and running.
 
 ```
 ${HOME}/.local/bin/wrap-wlmaker.sh
