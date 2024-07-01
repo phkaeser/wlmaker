@@ -131,7 +131,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
   * Fix bug: When switching workspace, pointer state appears to be reset.
   * [done] Add commandline flag to enable/disable XWayland start.
-  * Verify startup on console works.
+  * [done] Verify startup on console works.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
