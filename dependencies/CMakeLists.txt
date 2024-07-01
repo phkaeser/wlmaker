@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Default arguments:
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -B build
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(wlmaker VERSION 0.1
@@ -68,14 +71,6 @@ ExternalProject_Add(wayland_protocols
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
 )
 
-ExternalProject_Add(seatd
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/seatd"
-  INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Ddefaultpath=<INSTALL_DIR>
-  BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
-  INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
-)
-
 ExternalProject_Add(hwdata
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/hwdata"
   INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
@@ -108,5 +103,5 @@ ExternalProject_Add(wlroots
   CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true -Dbackends=drm,libinput,x11 ${WLROOTS_XWAYLAND}
   BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
   INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
-  DEPENDS drm wayland pixman wayland_protocols seatd hwdata libdisplay_info
+  DEPENDS drm wayland pixman wayland_protocols hwdata libdisplay_info
 )
