@@ -21,6 +21,7 @@ apt-get install -y \
   libgbm-dev \
   libinput-dev \
   libncurses-dev \
+  libseat-dev \
   libudev-dev \
   libvulkan-dev \
   libwayland-dev \
@@ -36,6 +37,7 @@ apt-get install -y \
   libxml2-dev \
   meson \
   plantuml \
+  seatd \
   wayland-protocols \
   xmlto \
   xsltproc \
