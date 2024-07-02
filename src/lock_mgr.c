@@ -77,8 +77,8 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr)
 {
-    wl_list_remove(&lock_mgr_ptr->destroy_listener.link);
-    wl_list_remove(&lock_mgr_ptr->new_lock_listener.link);
+    wlmtk_util_disconnect_listener(&lock_mgr_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&lock_mgr_ptr->new_lock_listener);
 
     // Note: No destroy method for wlr_session_lock_manager_v1_ptr.
 
