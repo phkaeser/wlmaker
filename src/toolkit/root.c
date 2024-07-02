@@ -50,6 +50,8 @@ struct _wlmtk_root_t {
 
     /** List of workspaces attached to root. @see wlmtk_workspace_t::dlnode. */
     bs_dllist_t               workspaces;
+    /** Currently-active workspace. */
+    wlmtk_workspace_t         *current_workspace_ptr;
 };
 
 static void _wlmtk_root_destroy_workspace(
@@ -212,6 +214,10 @@ void wlmtk_root_add_workspace(
         &root_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
     wlmtk_workspace_set_root(workspace_ptr, root_ptr);
+
+    if (NULL == root_ptr->current_workspace_ptr) {
+        root_ptr->current_workspace_ptr = workspace_ptr;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -227,6 +233,17 @@ void wlmtk_root_remove_workspace(
     wlmtk_container_remove_element(
         &root_ptr->container,
         wlmtk_workspace_element(workspace_ptr));
+
+    if (root_ptr->current_workspace_ptr == workspace_ptr) {
+        root_ptr->current_workspace_ptr = wlmtk_workspace_from_dlnode(
+            root_ptr->workspaces.head_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr)
+{
+    return root_ptr->current_workspace_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -479,16 +496,57 @@ bool _wlmtk_root_element_keyboard_event(
 
 /* == Unit tests =========================================================== */
 
-static void test_button(bs_test_t *test_ptr);
+static void test_workspaces(bs_test_t *test_ptr);
+static void test_pointer_button(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_root_test_cases[] = {
-    { 1, "button", test_button },
+    { 1, "workspaces", test_workspaces },
+    { 1, "pointer_button", test_pointer_button },
     { 0, NULL, NULL }
 };
 
 /* ------------------------------------------------------------------------- */
+/** Exercises workspace adding and removal. */
+void test_workspaces(bs_test_t *test_ptr)
+{
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    struct wlr_output_layout wlr_output_layout = {};
+    wl_list_init(&wlr_output_layout.outputs);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, &wlr_output_layout, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
+
+    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
+
+    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws2_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
+
+    wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
+    wlmtk_workspace_destroy(ws1_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, ws2_ptr, wlmtk_root_get_current_workspace(root_ptr));
+
+    wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
+    wlmtk_workspace_destroy(ws2_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
+
+    wlmtk_root_destroy(root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Tests wlmtk_root_pointer_button. */
-void test_button(bs_test_t *test_ptr)
+void test_pointer_button(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
@@ -550,7 +608,5 @@ void test_button(bs_test_t *test_ptr)
 
     wlmtk_root_destroy(root_ptr);
 }
-
-
 
 /* == End of root.c ======================================================== */

@@ -126,6 +126,13 @@ void wlmtk_root_remove_workspace(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Returns a pointer to the currently-active workspace.
+ *
+ * @param root_ptr
+ */
+wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr);
+
+/**
  * Locks the root, using the provided lock.
  *
  * The root must not be locked already. If locked successfully, the root will

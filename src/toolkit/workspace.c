@@ -690,6 +690,7 @@ bs_dllist_node_t *wlmtk_dlnode_from_workspace(
 wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr)
 {
+    if (NULL == dlnode_ptr) return NULL;
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_workspace_t, dlnode);
 }
 
