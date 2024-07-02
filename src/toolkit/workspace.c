@@ -865,8 +865,6 @@ bool _wlmtk_workspace_element_pointer_motion(
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
-    bs_log(BS_ERROR, "Came here: %f, %f", x, y);
-
     // Note: Workspace ignores the return value. All motion events are whitin.
     bool rv = workspace_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, x, y, time_msec);
@@ -1032,8 +1030,6 @@ bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         workspace_ptr->grabbed_window_ptr,
         left, top,
         right - left, bottom - top);
-    bs_log(BS_ERROR, "FIXME: reqeust %d, %d, %d, %d",
-           left, top, right - left, bottom - top);
     return true;
 }
 
@@ -1254,7 +1250,6 @@ void test_resize(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fw_ptr);
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 0, 0, 40, 20);
     wlmtk_fake_window_commit_size(fw_ptr);
-    bs_log(BS_ERROR, "FIXME: Start");
     wlmtk_element_pointer_motion(
         &fws_ptr->fake_parent_ptr->super_element, 0, 0, 42);
 
@@ -1270,10 +1265,8 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_begin_window_resize(
         fws_ptr->workspace_ptr, fw_ptr->window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
     fw_ptr->fake_content_ptr->serial = 1;  // The serial.
-    bs_log(BS_ERROR, "FIXME: Motion start");
     wlmtk_element_pointer_motion(
         &fws_ptr->fake_parent_ptr->super_element, 1, 2, 44);
-    bs_log(BS_ERROR, "FIXME: Motion End");
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 39, fw_ptr->fake_content_ptr->requested_width);
@@ -1285,9 +1278,6 @@ void test_resize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 39, width);
     BS_TEST_VERIFY_EQ(test_ptr, 18, height);
-    // FIXME: became 38, 16. Moved twice?
-
-    bs_log(BS_ERROR, "FIXME: End");
 
     // Releases the button. Should end the move.
     wlmtk_button_event_t button_event = {
