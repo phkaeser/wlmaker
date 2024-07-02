@@ -100,9 +100,6 @@ wlmaker_workspace_t *wlmaker_workspace_from_dlnode(
 bs_dllist_node_t *wlmaker_dlnode_from_workspace(
     wlmaker_workspace_t *workspace_ptr);
 
-/** Transitional: Returns the @ref wlmtk_workspace_t. */
-wlmtk_workspace_t *wlmaker_workspace_wlmtk(wlmaker_workspace_t *workspace_ptr);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -326,10 +326,10 @@ bool _wlmaker_clip_pointer_axis(
 
     if (0 > wlr_pointer_axis_event_ptr->delta_discrete) {
         // Scroll wheel "up" -> next.
-        wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
+        wlmtk_root_switch_to_next_workspace(clip_ptr->server_ptr->root_ptr);
     } else if (0 < wlr_pointer_axis_event_ptr->delta_discrete) {
         // Scroll wheel "down" -> next.
-        wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
+        wlmtk_root_switch_to_previous_workspace(clip_ptr->server_ptr->root_ptr);
     }
     return true;
 }
@@ -374,11 +374,13 @@ bool _wlmaker_clip_pointer_button(
         if (clip_ptr->pointer_inside_next_button &&
             clip_ptr->next_button_pressed) {
             clip_ptr->next_button_pressed = false;
-            wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
+            wlmtk_root_switch_to_next_workspace(
+                clip_ptr->server_ptr->root_ptr);
         } else if (clip_ptr->pointer_inside_prev_button &&
                    clip_ptr->prev_button_pressed) {
             clip_ptr->prev_button_pressed = false;
-            wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
+            wlmtk_root_switch_to_previous_workspace(
+                clip_ptr->server_ptr->root_ptr);
         }
         break;
 

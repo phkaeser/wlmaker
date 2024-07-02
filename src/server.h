@@ -312,20 +312,6 @@ bool wlmaker_keyboard_process_bindings(
     uint32_t modifiers);
 
 /**
- * Switches to the next workspace.
- *
- * @param server_ptr
- */
-void wlmaker_server_switch_to_next_workspace(wlmaker_server_t *server_ptr);
-
-/**
- * Switches to the previous workspace.
- *
- * @param server_ptr
- */
-void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
-
-/**
  * Activates the task list.
  *
  * @param server_ptr

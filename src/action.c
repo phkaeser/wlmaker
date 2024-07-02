@@ -171,11 +171,11 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS:
-        wlmaker_server_switch_to_previous_workspace(server_ptr);
+        wlmtk_root_switch_to_previous_workspace(server_ptr->root_ptr);
         break;
 
     case WLMAKER_ACTION_WORKSPACE_TO_NEXT:
-        wlmaker_server_switch_to_next_workspace(server_ptr);
+        wlmtk_root_switch_to_next_workspace(server_ptr->root_ptr);
         break;
 
     case WLMAKER_ACTION_TASK_TO_PREVIOUS:
