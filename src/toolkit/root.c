@@ -217,6 +217,8 @@ void wlmtk_root_add_workspace(
 
     if (NULL == root_ptr->current_workspace_ptr) {
         root_ptr->current_workspace_ptr = workspace_ptr;
+        wlmtk_element_set_visible(
+            wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
     }
 }
 
