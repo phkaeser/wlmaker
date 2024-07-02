@@ -472,7 +472,7 @@ bool _wlmtk_root_element_keyboard_event(
 static void test_button(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_root_test_cases[] = {
-    { 0, "button", test_button },
+    { 1, "button", test_button },
     { 0, NULL, NULL }
 };
 
@@ -480,16 +480,18 @@ const bs_test_case_t wlmtk_root_test_cases[] = {
 /** Tests wlmtk_root_pointer_button. */
 void test_button(bs_test_t *test_ptr)
 {
-
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
     wlmtk_element_set_visible(&fake_element_ptr->element, true);
-    BS_ASSERT(NULL != fake_element_ptr);
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     struct wlr_output_layout wlr_output_layout = {};
+    wl_list_init(&wlr_output_layout.outputs);
+
     wlmtk_root_t *root_ptr = wlmtk_root_create(
         wlr_scene_ptr, &wlr_output_layout, NULL);
-
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_container_add_element(
         &root_ptr->container, &fake_element_ptr->element);
 
@@ -506,8 +508,9 @@ void test_button(bs_test_t *test_ptr)
         .state = WLR_BUTTON_PRESSED,
         .time_msec = 4321,
     };
-    // FIXME: return value?
-    wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));
     wlmtk_button_event_t expected_event = {
         .button = 42,
         .type = WLMTK_BUTTON_DOWN,
@@ -521,7 +524,9 @@ void test_button(bs_test_t *test_ptr)
 
     // The button up event should trigger a click.
     wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
-    wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));
     expected_event.type = WLMTK_BUTTON_CLICK;
     BS_TEST_VERIFY_MEMEQ(
         test_ptr,
