@@ -230,10 +230,12 @@ const bs_test_case_t wlmaker_dock_test_cases[] = {
 /** Tests ctor and dtor; to help fix leaks. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_root_add_workspace(root_ptr, ws_ptr);
 
     wlmaker_server_t server = { .root_ptr = root_ptr };

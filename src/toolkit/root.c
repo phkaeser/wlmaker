@@ -153,7 +153,10 @@ void wlmtk_root_set_extents(
 {
     root_ptr->extents = *extents_ptr;
 
-    // FIXME: Update the curtain!
+    wlmtk_rectangle_set_size(
+        root_ptr->curtain_rectangle_ptr,
+        root_ptr->extents.width,
+        root_ptr->extents.height);
 
     bs_dllist_for_each(
         &root_ptr->workspaces, _wlmtk_root_set_workspace_extents,
@@ -384,16 +387,6 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
     return &root_ptr->container.super_element;
 }
 
-/* ------------------------------------------------------------------------- */
-wlmtk_root_t *wlmtk_fake_root_create(void)
-{
-    struct wlr_scene *wlr_scene_ptr = BS_ASSERT_NOTNULL(wlr_scene_create());
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
-    struct wlr_box extents = { .width = 1024, .height = 768 };
-    wlmtk_root_set_extents(root_ptr, &extents);
-    return root_ptr;
-}
-
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -613,7 +606,9 @@ const bs_test_case_t wlmtk_root_test_cases[] = {
 /** Exercises workspace adding and removal. */
 void test_workspaces(bs_test_t *test_ptr)
 {
-    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
@@ -663,7 +658,9 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
     wlmtk_element_set_visible(&fake_element_ptr->element, true);
 
-    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_container_add_element(
         &root_ptr->container, &fake_element_ptr->element);
