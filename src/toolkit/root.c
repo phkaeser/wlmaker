@@ -47,7 +47,14 @@ struct _wlmtk_root_t {
 
     /** Triggers whenever @ref wlmtk_root_unlock succeeds. */
     struct wl_signal          unlock_event;
+
+    /** List of workspaces attached to root. @see wlmtk_workspace_t::dlnode. */
+    bs_dllist_t               workspaces;
 };
+
+static void _wlmtk_root_destroy_workspace(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 static bool _wlmtk_root_element_pointer_motion(
     wlmtk_element_t *element_ptr,
@@ -117,6 +124,11 @@ wlmtk_root_t *wlmtk_root_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 {
+    bs_dllist_for_each(
+        &root_ptr->workspaces,
+        _wlmtk_root_destroy_workspace,
+        root_ptr);
+
     if (NULL != root_ptr->curtain_rectangle_ptr) {
         wlmtk_container_remove_element(
             &root_ptr->container,
@@ -129,6 +141,49 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
     wlmtk_container_fini(&root_ptr->container);
 
     free(root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_root_pointer_motion(
+    wlmtk_root_t *root_ptr,
+    double x,
+    double y,
+    uint32_t time_msec)
+{
+    return wlmtk_element_pointer_motion(
+        &root_ptr->container.super_element, x, y, time_msec);
+
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_add_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr)
+{
+    BS_ASSERT(NULL == wlmtk_workspace_get_root(workspace_ptr));
+
+    wlmtk_container_add_element(
+        &root_ptr->container,
+        wlmtk_workspace_element(workspace_ptr));
+    bs_dllist_push_back(
+        &root_ptr->workspaces,
+        wlmtk_dlnode_from_workspace(workspace_ptr));
+    wlmtk_workspace_set_root(workspace_ptr, root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_remove_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr)
+{
+    BS_ASSERT(root_ptr == wlmtk_workspace_get_root(workspace_ptr));
+    wlmtk_workspace_set_root(workspace_ptr, NULL);
+    bs_dllist_remove(
+        &root_ptr->workspaces,
+        wlmtk_dlnode_from_workspace(workspace_ptr));
+    wlmtk_container_remove_element(
+        &root_ptr->container,
+        wlmtk_workspace_element(workspace_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -220,6 +275,15 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Callback for bs_dllist_for_each: Destroys the workspace. */
+void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+    wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /**

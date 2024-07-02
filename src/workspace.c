@@ -59,8 +59,8 @@ struct _wlmaker_workspace_t {
 /* ------------------------------------------------------------------------- */
 wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
                                               __UNUSED__ uint32_t color,
-                                              int index,
-                                              const char *name_ptr)
+                                              __UNUSED__ int index,
+                                              __UNUSED__ const char *name_ptr)
 {
     wlmaker_workspace_t *workspace_ptr = logged_calloc(
         1, sizeof(wlmaker_workspace_t));
@@ -75,6 +75,7 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
         return NULL;
     }
 
+#if 0
     workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
         workspace_ptr->server_ptr->env_ptr, workspace_ptr->wlr_scene_tree_ptr,
         name_ptr, index);
@@ -82,6 +83,8 @@ wlmaker_workspace_t *wlmaker_workspace_create(wlmaker_server_t *server_ptr,
         wlmaker_workspace_destroy(workspace_ptr);
         return NULL;
     }
+#endif
+
     struct wlr_box extents;
     wlr_output_layout_get_box(
         workspace_ptr->server_ptr->wlr_output_layout_ptr, NULL, &extents);

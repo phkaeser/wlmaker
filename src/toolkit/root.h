@@ -57,6 +57,42 @@ wlmtk_root_t *wlmtk_root_create(
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
 
 /**
+ * Handles a pointer motion event.
+ *
+ * @param root_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return Whether there was an element under the pointer.
+ */
+bool wlmtk_root_pointer_motion(
+    wlmtk_root_t *root_ptr,
+    double x,
+    double y,
+    uint32_t time_msec);
+
+/**
+ * Adds a workspace.
+ *
+ * @param root_ptr
+ * @param workspace_ptr
+ */
+void wlmtk_root_add_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Removes the workspace.
+ *
+ * @param root_ptr
+ * @param workspace_ptr
+ */
+void wlmtk_root_remove_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr);
+
+/**
  * Locks the root, using the provided lock.
  *
  * The root must not be locked already. If locked successfully, the root will

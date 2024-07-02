@@ -339,16 +339,12 @@ void wlmtk_fake_content_destroy(wlmtk_fake_content_t *fake_content_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_content_commit(wlmtk_fake_content_t *fake_content_ptr)
 {
+    int w = fake_content_ptr->requested_width;
+    int h = fake_content_ptr->requested_height;
     wlmtk_content_commit(
-        &fake_content_ptr->content,
-        fake_content_ptr->requested_width,
-        fake_content_ptr->requested_height,
-        fake_content_ptr->serial);
-
+        &fake_content_ptr->content, w, h, fake_content_ptr->serial);
     wlmtk_fake_surface_commit_size(
-        fake_content_ptr->fake_surface_ptr,
-        fake_content_ptr->requested_width,
-        fake_content_ptr->requested_height);
+        fake_content_ptr->fake_surface_ptr, w, h);
 }
 
 /* ------------------------------------------------------------------------- */

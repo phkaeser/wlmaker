@@ -373,8 +373,8 @@ void handle_seat_request_set_cursor(
  */
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
-    wlmtk_workspace_motion(
-        wlmaker_server_get_current_workspace(cursor_ptr->server_ptr),
+    wlmtk_root_pointer_motion(
+        cursor_ptr->server_ptr->root_ptr,
         cursor_ptr->wlr_cursor_ptr->x,
         cursor_ptr->wlr_cursor_ptr->y,
         time_msec);

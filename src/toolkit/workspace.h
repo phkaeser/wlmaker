@@ -25,6 +25,7 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 #include "container.h"
 #include "panel.h"
+#include "root.h"
 #include "window.h"
 
 #ifdef __cplusplus
@@ -52,22 +53,15 @@ typedef enum {
 /**
  * Creates a workspace.
  *
- * TODO(kaeser@gubbe.ch): Consider replacing the interface with a container,
- * and permit a "toplevel" container that will be at the server level.
- *
- * @param env_ptr
- * @param wlr_scene_tree_ptr
  * @param name_ptr
- * @param index
+ * @param env_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
-    wlmtk_env_t *env_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr,
     const char *name_ptr,
-    int index);
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the workspace. Will destroy any stil-contained element.
@@ -189,25 +183,6 @@ void wlmtk_workspace_window_to_fullscreen(
     bool fullscreen);
 
 /**
- * Handles a motion event.
- *
- * TODO(kaeser@gubbe.ch): Move this to the server, and have the workspace's
- * motion handling dealt with the element's pointer_motion method.
- *
- * @param workspace_ptr
- * @param x
- * @param y
- * @param time_msec
- *
- * @return Whether there was an element under the pointer.
- */
-bool wlmtk_workspace_motion(
-    wlmtk_workspace_t *workspace_ptr,
-    double x,
-    double y,
-    uint32_t time_msec);
-
-/**
  * Handles a button event: Translates to button down/up/click/dblclick events.
  *
  * Each button activity (button pressed or released) will directly trigger a
@@ -300,6 +275,29 @@ void wlmtk_workspace_raise_window(
 
 /** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
 wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);
+
+/** @return pointer to the anchor @ref wlmtk_root_t of `workspace_ptr`. */
+wlmtk_root_t *wlmtk_workspace_get_root(wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Sets the anchor @ref wlmtk_root_t of `workspace_ptr`.
+ *
+ * @protected Must only be called from @ref wlmtk_root_t.
+ *
+ * @param workspace_ptr
+ * @param root_ptr
+ */
+void wlmtk_workspace_set_root(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_root_t *root_ptr);
+
+/** @return Pointer to @ref wlmtk_workspace_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_workspace(
+    wlmtk_workspace_t *workspace_ptr);
+
+/** @return Poitner to the @ref wlmtk_workspace_t of the `dlnode_ptr`. */
+wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
+    bs_dllist_node_t *dlnode_ptr);
 
 /** Fake workspace: A real workspace, but with a fake parent. For testing. */
 typedef struct {
