@@ -411,6 +411,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->root_ptr = NULL;
     }
 
+    if (NULL != server_ptr->lock_mgr_ptr) {
+        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
+        server_ptr->lock_mgr_ptr = NULL;
+    }
+
     if (NULL != server_ptr->env_ptr) {
         wlmtk_env_destroy(server_ptr->env_ptr);
         server_ptr->env_ptr = NULL;
@@ -439,11 +444,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->idle_monitor_ptr) {
         wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
         server_ptr->idle_monitor_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->lock_mgr_ptr) {
-        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
-        server_ptr->lock_mgr_ptr = NULL;
     }
 
     if (NULL != server_ptr->wlr_allocator_ptr) {
