@@ -111,15 +111,6 @@ struct _wlmaker_server_t {
     struct wlr_scene          *wlr_scene_ptr;
     /** The scene output layout. */
     struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
-    /**
-     * Another scene graph, not connected to any output.
-     *
-     * We're using this graph's scene tree for "parking" scene nodes when they
-     * are not part of a workspace.
-     *
-     * TODO(kaeser@gubbe.ch): Consider whether this is actually needed.
-     */
-    struct wlr_scene          *void_wlr_scene_ptr;
 
     /** Listener for `new_output` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_output_listener;

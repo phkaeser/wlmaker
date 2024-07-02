@@ -211,13 +211,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->void_wlr_scene_ptr = wlr_scene_create();
-    if (NULL == server_ptr->void_wlr_scene_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     server_ptr->cursor_ptr = wlmaker_cursor_create(server_ptr);
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
@@ -359,7 +352,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_seat_ptr
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
-    // * server_ptr->void_wlr_scene_ptr
     {
         bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
         while (NULL != dlnode_ptr) {
