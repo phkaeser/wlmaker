@@ -561,39 +561,6 @@ void wlmtk_workspace_window_to_fullscreen(
 }
 
 /* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Improve this, has multiple bugs: It won't keep
-// different buttons apart, and there's currently no test associated.
-bool wlmtk_workspace_button(
-    wlmtk_workspace_t *workspace_ptr,
-    const struct wlr_pointer_button_event *event_ptr)
-{
-    wlmtk_button_event_t event;
-
-    // Guard clause: nothing to pass on if no element has the focus.
-    event.button = event_ptr->button;
-    event.time_msec = event_ptr->time_msec;
-    if (WLR_BUTTON_PRESSED == event_ptr->state) {
-        event.type = WLMTK_BUTTON_DOWN;
-        return wlmtk_element_pointer_button(
-            &workspace_ptr->super_container.super_element, &event);
-
-    } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
-        event.type = WLMTK_BUTTON_UP;
-        wlmtk_element_pointer_button(
-            &workspace_ptr->super_container.super_element, &event);
-        event.type = WLMTK_BUTTON_CLICK;
-        return wlmtk_element_pointer_button(
-            &workspace_ptr->super_container.super_element, &event);
-
-    }
-
-    bs_log(BS_WARNING,
-           "Workspace %p: Unhandled state 0x%x for button 0x%x",
-           workspace_ptr, event_ptr->state, event_ptr->button);
-    return false;
-}
-
-/* ------------------------------------------------------------------------- */
 bool wlmtk_workspace_axis(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
@@ -1084,7 +1051,6 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
 
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_map_unmap(bs_test_t *test_ptr);
-static void test_button(bs_test_t *test_ptr);
 static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
 static void test_resize(bs_test_t *test_ptr);
@@ -1094,7 +1060,6 @@ static void test_activate_cycling(bs_test_t *test_ptr);
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "map_unmap", test_map_unmap },
-    { 1, "button", test_button },
     { 1, "move", test_move },
     { 1, "unmap_during_move", test_unmap_during_move },
     { 1, "resize", test_resize },
@@ -1190,62 +1155,6 @@ void test_map_unmap(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests wlmtk_workspace_button. */
-void test_button(bs_test_t *test_ptr)
-{
-    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
-    BS_ASSERT(NULL != fws_ptr);
-    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    wlmtk_element_set_visible(&fake_element_ptr->element, true);
-    BS_ASSERT(NULL != fake_element_ptr);
-
-    wlmtk_container_add_element(
-        &fws_ptr->workspace_ptr->super_container, &fake_element_ptr->element);
-
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_pointer_motion(
-            &fws_ptr->fake_parent_ptr->super_element, 0, 0, 1234));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        fake_element_ptr->pointer_motion_called);
-
-    // Verify that a button down event is passed.
-    struct wlr_pointer_button_event wlr_pointer_button_event = {
-        .button = 42,
-        .state = WLR_BUTTON_PRESSED,
-        .time_msec = 4321,
-    };
-    wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_pointer_button_event);
-    wlmtk_button_event_t expected_event = {
-        .button = 42,
-        .type = WLMTK_BUTTON_DOWN,
-        .time_msec = 4321,
-    };
-    BS_TEST_VERIFY_MEMEQ(
-        test_ptr,
-        &expected_event,
-        &fake_element_ptr->pointer_button_event,
-        sizeof(wlmtk_button_event_t));
-
-    // The button up event should trigger a click.
-    wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
-    wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_pointer_button_event);
-    expected_event.type = WLMTK_BUTTON_CLICK;
-    BS_TEST_VERIFY_MEMEQ(
-        test_ptr,
-        &expected_event,
-        &fake_element_ptr->pointer_button_event,
-        sizeof(wlmtk_button_event_t));
-
-    wlmtk_container_remove_element(
-        &fws_ptr->workspace_ptr->super_container, &fake_element_ptr->element);
-    wlmtk_element_destroy(&fake_element_ptr->element);
-
-    wlmtk_fake_workspace_destroy(fws_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Tests moving a window. */
 void test_move(bs_test_t *test_ptr)
 {
@@ -1269,12 +1178,14 @@ void test_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
     // Releases the button. Should end the move.
-    struct wlr_pointer_button_event wlr_pointer_button_event = {
+    wlmtk_button_event_t button_event = {
         .button = BTN_LEFT,
-        .state = WLR_BUTTON_RELEASED,
+        .type = WLMTK_BUTTON_UP,
         .time_msec = 44,
     };
-    wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_pointer_button_event);
+    wlmtk_element_pointer_button(
+        wlmtk_workspace_element(fws_ptr->workspace_ptr),
+        &button_event);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fws_ptr->workspace_ptr->grabbed_window_ptr);
 
     // More motion, no longer updates the position.
@@ -1379,12 +1290,14 @@ void test_resize(bs_test_t *test_ptr)
     bs_log(BS_ERROR, "FIXME: End");
 
     // Releases the button. Should end the move.
-    struct wlr_pointer_button_event wlr_pointer_button_event = {
+    wlmtk_button_event_t button_event = {
         .button = BTN_LEFT,
-        .state = WLR_BUTTON_RELEASED,
+        .type = WLMTK_BUTTON_UP,
         .time_msec = 44,
     };
-    wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_pointer_button_event);
+    wlmtk_element_pointer_button(
+        wlmtk_workspace_element(fws_ptr->workspace_ptr),
+        &button_event);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fws_ptr->workspace_ptr->grabbed_window_ptr);
 
     wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
@@ -1444,10 +1357,13 @@ void test_activate(bs_test_t *test_ptr)
         wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Click on window 1: Gets activated.
-    struct wlr_pointer_button_event wlr_button_event = {
-        .button = BTN_RIGHT, .state = WLR_BUTTON_PRESSED
+    wlmtk_button_event_t button_event = {
+        .button = BTN_RIGHT,
+        .type = WLMTK_BUTTON_DOWN,
     };
-    wlmtk_workspace_button(fws_ptr->workspace_ptr, &wlr_button_event);
+    wlmtk_element_pointer_button(
+        wlmtk_workspace_element(fws_ptr->workspace_ptr),
+        &button_event);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_window_is_activated(fw1_ptr->window_ptr));

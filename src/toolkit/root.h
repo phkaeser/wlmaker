@@ -73,6 +73,27 @@ bool wlmtk_root_pointer_motion(
     uint32_t time_msec);
 
 /**
+ * Handles a button event: Translates to button down/up/click/dblclick events.
+ *
+ * Each button activity (button pressed or released) will directly trigger a
+ * corresponding BUTTON_DOWN or BUTTON_UP event. Depending on timing and
+ * motion, a "released" event may also triccer a CLICK, DOUBLE_CLICK or
+ * DRAG event.
+ * These events will be forwarded to the event currently having pointer focus.
+ *
+ * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events, and make it
+ * well tested.
+ *
+ * @param root_ptr
+ * @param event_ptr
+ *
+ * @return Whether the button was consumed.
+ */
+bool wlmtk_root_pointer_button(
+    wlmtk_root_t *root_ptr,
+    const struct wlr_pointer_button_event *event_ptr);
+
+/**
  * Adds a workspace.
  *
  * @param root_ptr
@@ -160,6 +181,9 @@ void wlmtk_root_connect_unlock_signal(
 
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_root_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

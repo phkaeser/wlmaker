@@ -183,27 +183,6 @@ void wlmtk_workspace_window_to_fullscreen(
     bool fullscreen);
 
 /**
- * Handles a button event: Translates to button down/up/click/dblclick events.
- *
- * Each button activity (button pressed or released) will directly trigger a
- * corresponding BUTTON_DOWN or BUTTON_UP event. Depending on timing and
- * motion, a "released" event may also triccer a CLICK, DOUBLE_CLICK or
- * DRAG event.
- * These events will be forwarded to the event currently having pointer focus.
- *
- * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events. Also, move
- * this code into the server and make it well tested.
- *
- * @param workspace_ptr
- * @param event_ptr
- *
- * @return Whether the button was consumed.
- */
-bool wlmtk_workspace_button(
-    wlmtk_workspace_t *workspace_ptr,
-    const struct wlr_pointer_button_event *event_ptr);
-
-/**
  * Handles an axis event.
  *
  * @param workspace_ptr

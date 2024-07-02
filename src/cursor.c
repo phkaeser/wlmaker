@@ -252,8 +252,8 @@ void handle_button(struct wl_listener *listener_ptr,
         &event);
     if (consumed) return;
 
-    consumed = wlmtk_workspace_button(
-        wlmaker_server_get_current_workspace(cursor_ptr->server_ptr),
+    consumed = wlmtk_root_pointer_button(
+        cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_button_event_ptr);
 
     // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
