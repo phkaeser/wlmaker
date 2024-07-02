@@ -506,7 +506,7 @@ void test_button(bs_test_t *test_ptr)
         .state = WLR_BUTTON_PRESSED,
         .time_msec = 4321,
     };
-    // FIXME: reutrn value?
+    // FIXME: return value?
     wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event);
     wlmtk_button_event_t expected_event = {
         .button = 42,
