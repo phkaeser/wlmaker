@@ -52,9 +52,6 @@ struct _wlmaker_cursor_t {
 
     /** Listener for the `request_set_cursor` event of `wlr_seat`. */
     struct wl_listener        seat_request_set_cursor_listener;
-
-    /** wlmaker internal: catch 'release' events of cursors. */
-    struct wl_signal          button_release_event;
 };
 
 /**

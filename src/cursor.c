@@ -130,7 +130,6 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
         &cursor_ptr->seat_request_set_cursor_listener,
         handle_seat_request_set_cursor);
 
-    wl_signal_init(&cursor_ptr->button_release_event);
     return cursor_ptr;
 }
 
@@ -243,24 +242,9 @@ void handle_button(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed = wlmtk_root_pointer_button(
+    wlmtk_root_pointer_button(
         cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_button_event_ptr);
-
-    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
-    // Remove it, once we're fully on toolkit.
-    if (consumed) return;
-
-    // Notify the client with pointer focus that a button press has occurred.
-    wlr_seat_pointer_notify_button(
-        cursor_ptr->server_ptr->wlr_seat_ptr,
-        wlr_pointer_button_event_ptr->time_msec,
-        wlr_pointer_button_event_ptr->button,
-        wlr_pointer_button_event_ptr->state);
-
-    if (wlr_pointer_button_event_ptr->state == WLR_BUTTON_RELEASED) {
-        wl_signal_emit(&cursor_ptr->button_release_event, data_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -279,21 +263,9 @@ void handle_axis(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed = wlmtk_root_pointer_axis(
+    wlmtk_root_pointer_axis(
         cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_axis_event_ptr);
-    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
-    // Remove it, once we're fully on toolkit.
-    if (consumed) return;
-
-    /* Notify the client with pointer focus of the axis event. */
-    wlr_seat_pointer_notify_axis(
-        cursor_ptr->server_ptr->wlr_seat_ptr,
-        wlr_pointer_axis_event_ptr->time_msec,
-        wlr_pointer_axis_event_ptr->orientation,
-        wlr_pointer_axis_event_ptr->delta,
-        wlr_pointer_axis_event_ptr->delta_discrete,
-        wlr_pointer_axis_event_ptr->source);
 }
 
 /* ------------------------------------------------------------------------- */
