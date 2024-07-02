@@ -294,8 +294,8 @@ void handle_axis(struct wl_listener *listener_ptr,
         wlr_pointer_axis_event_ptr);
     if (consumed) return;
 
-    consumed = wlmtk_workspace_axis(
-        wlmaker_server_get_current_workspace(cursor_ptr->server_ptr),
+    consumed = wlmtk_root_pointer_axis(
+        cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_axis_event_ptr);
     // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
     // Remove it, once we're fully on toolkit.

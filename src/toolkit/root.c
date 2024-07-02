@@ -189,6 +189,16 @@ bool wlmtk_root_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_root_pointer_axis(
+    wlmtk_root_t *root_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    return wlmtk_element_pointer_axis(
+        &root_ptr->container.super_element,
+        wlr_pointer_axis_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_root_add_workspace(
     wlmtk_root_t *root_ptr,
     wlmtk_workspace_t *workspace_ptr)

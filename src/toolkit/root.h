@@ -94,6 +94,18 @@ bool wlmtk_root_pointer_button(
     const struct wlr_pointer_button_event *event_ptr);
 
 /**
+ * Handles a pointer axis event.
+ *
+ * @param root_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return Whether the axis event was consumed.
+ */
+bool wlmtk_root_pointer_axis(
+    wlmtk_root_t *root_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
+
+/**
  * Adds a workspace.
  *
  * @param root_ptr
