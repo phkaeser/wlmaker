@@ -334,6 +334,15 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
     return &root_ptr->container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_root_t *wlmtk_fake_root_create(void)
+{
+    struct wlr_scene *wlr_scene_ptr = BS_ASSERT_NOTNULL(wlr_scene_create());
+    static struct wlr_output_layout wlr_output_layout = {};
+    wl_list_init(&wlr_output_layout.outputs);
+    return wlmtk_root_create(wlr_scene_ptr, &wlr_output_layout, NULL);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -552,13 +561,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
     wlmtk_element_set_visible(&fake_element_ptr->element, true);
 
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wlr_output_layout wlr_output_layout = {};
-    wl_list_init(&wlr_output_layout.outputs);
-
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, &wlr_output_layout, NULL);
+    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_container_add_element(
         &root_ptr->container, &fake_element_ptr->element);

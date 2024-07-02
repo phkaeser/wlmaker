@@ -211,7 +211,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_buffer_element(&clip_ptr->overlay_buffer), true);
 
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_workspace(server_ptr);
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -476,7 +476,7 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
     int index = 0;
     const char *name_ptr = NULL;
     wlmtk_workspace_get_details(
-        wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
+        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr),
         &name_ptr, &index);
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
@@ -713,7 +713,7 @@ void _wlmaker_clip_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_workspace(clip_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 

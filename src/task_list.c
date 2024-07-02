@@ -198,7 +198,7 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
-        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
         workspace_ptr, &task_list_ptr->style);
@@ -422,7 +422,7 @@ void _wlmaker_task_list_handle_task_list_enabled(
     }
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
     wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);

@@ -201,6 +201,9 @@ void wlmtk_root_connect_unlock_signal(
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
 
+/** Creates a root with fake setup for tests. */
+wlmtk_root_t *wlmtk_fake_root_create(void);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_root_test_cases[];
 

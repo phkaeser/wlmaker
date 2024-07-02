@@ -115,7 +115,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         true);
 
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_workspace(server_ptr);
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -205,7 +205,7 @@ void _wlmaker_dock_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_workspace(dock_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(dock_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 
@@ -230,9 +230,13 @@ const bs_test_case_t wlmaker_dock_test_cases[] = {
 /** Tests ctor and dtor; to help fix leaks. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_fake_workspace_t *fw_ptr = BS_ASSERT_NOTNULL(
-        wlmtk_fake_workspace_create(1024, 768));
-    wlmaker_server_t server = { .fake_wlmtk_workspace_ptr = fw_ptr };
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws_ptr);
+
+    wlmaker_server_t server = { .root_ptr = root_ptr };
     wlmaker_config_style_t style = {};
     wl_signal_init(&server.workspace_changed);
 
@@ -240,7 +244,9 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
-    wlmtk_fake_workspace_destroy(fw_ptr);
+    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+    wlmtk_root_destroy(root_ptr);
 }
 
 /* == End of dock.c ======================================================== */

@@ -539,16 +539,6 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmaker_server_get_current_workspace(
-    wlmaker_server_t *server_ptr)
-{
-    if (NULL != server_ptr->fake_wlmtk_workspace_ptr) {
-        return server_ptr->fake_wlmtk_workspace_ptr->workspace_ptr;
-    }
-    return wlmaker_workspace_wlmtk(server_ptr->current_workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmaker_server_switch_to_next_workspace(wlmaker_server_t *server_ptr)
 {
     bs_dllist_node_t *dlnode_ptr = wlmaker_dlnode_from_workspace(
@@ -594,7 +584,7 @@ void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr)
     wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmaker_server_get_current_workspace(server_ptr);
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_window_t *window_ptr =
         wlmtk_workspace_get_activated_window(workspace_ptr);
     if (NULL != window_ptr) {
