@@ -133,6 +133,20 @@ void wlmtk_root_remove_workspace(
 wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr);
 
 /**
+ * Switches to the next workspace.
+ *
+ * @param root_ptr
+ */
+void wlmtk_root_switch_to_next_workspace(wlmtk_root_t *root_ptr);
+
+/**
+ * Switches to the previous workspace.
+ *
+ * @param root_ptr
+ */
+void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr);
+
+/**
  * Locks the root, using the provided lock.
  *
  * The root must not be locked already. If locked successfully, the root will

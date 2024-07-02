@@ -54,6 +54,9 @@ struct _wlmtk_root_t {
     wlmtk_workspace_t         *current_workspace_ptr;
 };
 
+static void _wlmtk_root_switch_to_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr);
 static void _wlmtk_root_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -216,9 +219,7 @@ void wlmtk_root_add_workspace(
     wlmtk_workspace_set_root(workspace_ptr, root_ptr);
 
     if (NULL == root_ptr->current_workspace_ptr) {
-        root_ptr->current_workspace_ptr = workspace_ptr;
-        wlmtk_element_set_visible(
-            wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
+        _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
     }
 }
 
@@ -239,13 +240,9 @@ void wlmtk_root_remove_workspace(
         wlmtk_workspace_element(workspace_ptr), false);
 
     if (root_ptr->current_workspace_ptr == workspace_ptr) {
-        root_ptr->current_workspace_ptr = wlmtk_workspace_from_dlnode(
-            root_ptr->workspaces.head_ptr);
-        if (NULL != root_ptr->current_workspace_ptr) {
-            wlmtk_element_set_visible(
-                wlmtk_workspace_element(root_ptr->current_workspace_ptr),
-                true);
-        }
+        _wlmtk_root_switch_to_workspace(
+            root_ptr,
+            wlmtk_workspace_from_dlnode(root_ptr->workspaces.head_ptr));
     }
 }
 
@@ -253,6 +250,39 @@ void wlmtk_root_remove_workspace(
 wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr)
 {
     return root_ptr->current_workspace_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_switch_to_next_workspace(wlmtk_root_t *root_ptr)
+{
+    if (NULL == root_ptr->current_workspace_ptr) return;
+
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_workspace(
+        root_ptr->current_workspace_ptr);
+    if (NULL == dlnode_ptr->next_ptr) {
+        dlnode_ptr = root_ptr->workspaces.head_ptr;
+    } else {
+        dlnode_ptr = dlnode_ptr->next_ptr;
+    }
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+
+    _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr)
+{
+    if (NULL == root_ptr->current_workspace_ptr) return;
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_workspace(
+        root_ptr->current_workspace_ptr);
+    if (NULL == dlnode_ptr->prev_ptr) {
+        dlnode_ptr = root_ptr->workspaces.tail_ptr;
+    } else {
+        dlnode_ptr = dlnode_ptr->next_ptr;
+    }
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+
+    _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -361,6 +391,35 @@ void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
     wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Switches to `workspace_ptr` as the current workspace.
+ *
+ * @param root_ptr
+ * @param workspace_ptr
+ */
+void _wlmtk_root_switch_to_workspace(
+    wlmtk_root_t *root_ptr,
+    wlmtk_workspace_t *workspace_ptr)
+{
+    if (NULL == workspace_ptr) {
+        root_ptr->current_workspace_ptr = NULL;
+    } else {
+        BS_ASSERT(root_ptr = wlmtk_workspace_get_root(workspace_ptr));
+
+        if (NULL != root_ptr->current_workspace_ptr) {
+            wlmtk_element_set_visible(
+                wlmtk_workspace_element(root_ptr->current_workspace_ptr),
+                false);
+        }
+        wlmtk_element_set_visible(
+            wlmtk_workspace_element(workspace_ptr), true);
+        root_ptr->current_workspace_ptr = workspace_ptr;
+    }
+
+    // FIXME: emit signal - workspace changed.
 }
 
 /* ------------------------------------------------------------------------- */
