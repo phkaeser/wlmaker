@@ -33,9 +33,7 @@ struct _wlmtk_root_t {
     wlmtk_container_t         container;
     /** Overwritten virtual method table before extending ig. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-
-    /** Back-link to the output layer provided to the ctor. */
-    struct wlr_output_layout  *wlr_output_layout_ptr;
+    /** Extents to be used by root. */
     struct wlr_box            extents;
 
     /** Whether the root is currently locked. */
@@ -95,12 +93,10 @@ static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_root_t *wlmtk_root_create(
     struct wlr_scene *wlr_scene_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_root_t *root_ptr = logged_calloc(1, sizeof(wlmtk_root_t));
     if (NULL == root_ptr) return NULL;
-    root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (!wlmtk_container_init_attached(
             &root_ptr->container,
@@ -114,7 +110,6 @@ wlmtk_root_t *wlmtk_root_create(
         &root_ptr->container.super_element,
         &_wlmtk_root_element_vmt);
 
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
     root_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
         env_ptr, root_ptr->extents.width, root_ptr->extents.height, 0xff000020);
     if (NULL == root_ptr->curtain_rectangle_ptr) {
@@ -313,11 +308,9 @@ bool wlmtk_root_lock(
         return false;
     }
 
-    struct wlr_box extents;
-    wlr_output_layout_get_box(root_ptr->wlr_output_layout_ptr, NULL, &extents);
     wlmtk_rectangle_set_size(
         root_ptr->curtain_rectangle_ptr,
-        extents.width, extents.height);
+        root_ptr->extents.width, root_ptr->extents.height);
     wlmtk_element_set_visible(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         true);
@@ -395,9 +388,10 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
 wlmtk_root_t *wlmtk_fake_root_create(void)
 {
     struct wlr_scene *wlr_scene_ptr = BS_ASSERT_NOTNULL(wlr_scene_create());
-    static struct wlr_output_layout wlr_output_layout = {};
-    wl_list_init(&wlr_output_layout.outputs);
-    return wlmtk_root_create(wlr_scene_ptr, &wlr_output_layout, NULL);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    struct wlr_box extents = { .width = 1024, .height = 768 };
+    wlmtk_root_set_extents(root_ptr, &extents);
+    return root_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -619,12 +613,7 @@ const bs_test_case_t wlmtk_root_test_cases[] = {
 /** Exercises workspace adding and removal. */
 void test_workspaces(bs_test_t *test_ptr)
 {
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wlr_output_layout wlr_output_layout = {};
-    wl_list_init(&wlr_output_layout.outputs);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, &wlr_output_layout, NULL);
+    wlmtk_root_t *root_ptr = wlmtk_fake_root_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
