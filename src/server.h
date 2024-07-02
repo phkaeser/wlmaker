@@ -66,7 +66,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "xdg_decoration.h"
 #include "xdg_shell.h"
 #include "xwl.h"
-#include "workspace.h"
 
 #include "conf/model.h"
 #include "toolkit/toolkit.h"
@@ -168,10 +167,6 @@ struct _wlmaker_server_t {
 
     /** The root element. */
     wlmtk_root_t              *root_ptr;
-    /** The current workspace. */
-    wlmaker_workspace_t       *current_workspace_ptr;
-    /** List of all workspaces. */
-    bs_dllist_t               workspaces;
     /** Fake workspace, injectable for tests. */
     wlmtk_fake_workspace_t    *fake_wlmtk_workspace_ptr;
     /**

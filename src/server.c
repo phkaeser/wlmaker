@@ -234,42 +234,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-#if 0
-    // TODO(kaeser@gubbe.ch): Create the workspaces depending on configuration.
-    int workspace_idx = 0;
-    const wlmaker_config_workspace_t *workspace_config_ptr;
-    for (workspace_config_ptr = &wlmaker_config_workspaces[0];
-         NULL != workspace_config_ptr->name_ptr;
-         ++workspace_config_ptr, ++workspace_idx) {
-        wlmaker_workspace_t *workspace_ptr = wlmaker_workspace_create(
-            server_ptr,
-            workspace_config_ptr->color,
-            workspace_idx + 1,
-            workspace_config_ptr->name_ptr);
-        if (NULL == workspace_ptr) {
-            bs_log(BS_ERROR,
-                   "Failed wlmaker_workspace_create(%p, %"PRIx32", %d, \"%s\")",
-                   server_ptr,
-                   workspace_config_ptr->color,
-                   workspace_idx + 1,
-                   workspace_config_ptr->name_ptr);
-            wlmaker_server_destroy(server_ptr);
-            return NULL;
-        }
-        bs_dllist_push_back(&server_ptr->workspaces,
-                            wlmaker_dlnode_from_workspace(workspace_ptr));
-        wlmaker_workspace_set_enabled(workspace_ptr, workspace_idx == 0);
-    }
-    if (0 == workspace_idx) {
-        bs_log(BS_ERROR, "No workspaces configured.");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-    server_ptr->current_workspace_ptr = wlmaker_workspace_from_dlnode(
-        server_ptr->workspaces.head_ptr);
-    BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
-#endif
-
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
@@ -290,7 +254,7 @@ wlmaker_server_t *wlmaker_server_create(
 
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR,
-                   "Failed wlmaker_workspace_create(%s, %p)",
+                   "Failed wlmtk_workspace_create(%s, %p)",
                    workspace_config_ptr->name_ptr,
                 server_ptr->env_ptr);
             wlmaker_server_destroy(server_ptr);

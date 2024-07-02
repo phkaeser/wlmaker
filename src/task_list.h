@@ -24,7 +24,6 @@
 typedef struct _wlmaker_task_list_t wlmaker_task_list_t;
 
 #include "server.h"
-#include "workspace.h"
 
 #ifdef __cplusplus
 extern "C" {
