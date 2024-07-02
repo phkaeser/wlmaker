@@ -294,7 +294,7 @@ void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr)
     if (NULL == dlnode_ptr->prev_ptr) {
         dlnode_ptr = root_ptr->workspaces.tail_ptr;
     } else {
-        dlnode_ptr = dlnode_ptr->next_ptr;
+        dlnode_ptr = dlnode_ptr->prev_ptr;
     }
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
 
@@ -410,9 +410,9 @@ void _wlmtk_root_switch_to_workspace(
                 wlmtk_workspace_element(root_ptr->current_workspace_ptr),
                 false);
         }
-        wlmtk_element_set_visible(
-            wlmtk_workspace_element(workspace_ptr), true);
         root_ptr->current_workspace_ptr = workspace_ptr;
+        wlmtk_element_set_visible(
+            wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
     }
 
     // FIXME: emit signal - workspace changed.
