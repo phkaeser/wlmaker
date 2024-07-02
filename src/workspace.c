@@ -114,15 +114,6 @@ void wlmaker_workspace_destroy(wlmaker_workspace_t *workspace_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_workspace_set_extents(
-    wlmaker_workspace_t *workspace_ptr,
-    const struct wlr_box *extents_ptr)
-{
-    wlmtk_workspace_set_extents(workspace_ptr->wlmtk_workspace_ptr,
-                                extents_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 wlmaker_workspace_t *wlmaker_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr)
 {

@@ -69,18 +69,6 @@ void wlmaker_workspace_set_enabled(wlmaker_workspace_t *workspace_ptr,
                                    bool enabled);
 
 /**
- * Sets extents of the workspace.
- *
- * TODO(kaeser@gubbe.ch): Should re-trigger re-arranging.
- *
- * @param workspace_ptr
- * @param extents_ptr
- */
-void wlmaker_workspace_set_extents(
-    wlmaker_workspace_t *workspace_ptr,
-    const struct wlr_box *extents_ptr);
-
-/**
  * Cast: Returns a pointer to @ref wlmaker_workspace_t holding `dlnode_ptr`.
  *
  * @param dlnode_ptr          A pointer to the `dlnode` element.
