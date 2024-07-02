@@ -701,7 +701,7 @@ struct wlr_buffer *_wlmaker_clip_create_tile(
  * clip to the new workspace.
  *
  * @param listener_ptr
- * @param data_ptr            Points to the new `wlmaker_workspace_t`.
+ * @param data_ptr            Points to the new `wlmtk_workspace_t`.
  */
 void _wlmaker_clip_handle_workspace_changed(
     struct wl_listener *listener_ptr,
