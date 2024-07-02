@@ -36,6 +36,7 @@ struct _wlmtk_root_t {
 
     /** Back-link to the output layer provided to the ctor. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
+    struct wlr_box            extents;
 
     /** Whether the root is currently locked. */
     bool                      locked;
@@ -57,6 +58,9 @@ struct _wlmtk_root_t {
 static void _wlmtk_root_switch_to_workspace(
     wlmtk_root_t *root_ptr,
     wlmtk_workspace_t *workspace_ptr);
+static void _wlmtk_root_set_workspace_extents(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static void _wlmtk_root_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -110,10 +114,9 @@ wlmtk_root_t *wlmtk_root_create(
         &root_ptr->container.super_element,
         &_wlmtk_root_element_vmt);
 
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
     root_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
-        env_ptr, extents.width, extents.height, 0xff000020);
+        env_ptr, root_ptr->extents.width, root_ptr->extents.height, 0xff000020);
     if (NULL == root_ptr->curtain_rectangle_ptr) {
         wlmtk_root_destroy(root_ptr);
         return NULL;
@@ -146,6 +149,20 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
     wlmtk_container_fini(&root_ptr->container);
 
     free(root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_set_extents(
+    wlmtk_root_t *root_ptr,
+    const struct wlr_box *extents_ptr)
+{
+    root_ptr->extents = *extents_ptr;
+
+    // FIXME: Update the curtain!
+
+    bs_dllist_for_each(
+        &root_ptr->workspaces, _wlmtk_root_set_workspace_extents,
+        &root_ptr->extents);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -217,6 +234,7 @@ void wlmtk_root_add_workspace(
         &root_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
     wlmtk_workspace_set_root(workspace_ptr, root_ptr);
+    wlmtk_workspace_set_extents(workspace_ptr, &root_ptr->extents);
 
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
@@ -385,15 +403,6 @@ wlmtk_root_t *wlmtk_fake_root_create(void)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Callback for bs_dllist_for_each: Destroys the workspace. */
-void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
-{
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-    wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
-    wlmtk_workspace_destroy(workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /**
  * Switches to `workspace_ptr` as the current workspace.
  *
@@ -420,6 +429,30 @@ void _wlmtk_root_switch_to_workspace(
     }
 
     // FIXME: emit signal - workspace changed.
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for `bs_dllist_for_each` to set extents of the workspace.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr
+ */
+void _wlmtk_root_set_workspace_extents(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_workspace_set_extents(
+        wlmtk_workspace_from_dlnode(dlnode_ptr), ud_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Callback for bs_dllist_for_each: Destroys the workspace. */
+void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+    wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

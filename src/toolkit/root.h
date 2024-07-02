@@ -57,6 +57,16 @@ wlmtk_root_t *wlmtk_root_create(
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
 
 /**
+ * Sets the extents of root (and all workspaces thereof).
+ *
+ * @param root_ptr
+ * @param extents_ptr
+ */
+void wlmtk_root_set_extents(
+    wlmtk_root_t *root_ptr,
+    const struct wlr_box *extents_ptr);
+
+/**
  * Handles a pointer motion event.
  *
  * @param root_ptr

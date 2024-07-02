@@ -76,9 +76,6 @@ static void handle_destroy_input_device(
 static void handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void set_extents(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
 
 /* == Data ================================================================= */
 
@@ -790,22 +787,7 @@ void handle_output_layout_change(
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
-
-    bs_dllist_for_each(&server_ptr->workspaces, set_extents, &extents);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to set extents of the workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr
- */
-void set_extents(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
-{
-    struct wlr_box *extents_ptr = ud_ptr;
-    wlmaker_workspace_set_extents(
-        wlmaker_workspace_from_dlnode(dlnode_ptr), extents_ptr);
+    wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
 }
 
 /* == Unit tests =========================================================== */
