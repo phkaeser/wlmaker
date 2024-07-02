@@ -235,10 +235,17 @@ void wlmtk_root_remove_workspace(
     wlmtk_container_remove_element(
         &root_ptr->container,
         wlmtk_workspace_element(workspace_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_workspace_element(workspace_ptr), false);
 
     if (root_ptr->current_workspace_ptr == workspace_ptr) {
         root_ptr->current_workspace_ptr = wlmtk_workspace_from_dlnode(
             root_ptr->workspaces.head_ptr);
+        if (NULL != root_ptr->current_workspace_ptr) {
+            wlmtk_element_set_visible(
+                wlmtk_workspace_element(root_ptr->current_workspace_ptr),
+                true);
+        }
     }
 }
 
@@ -535,17 +542,29 @@ void test_workspaces(bs_test_t *test_ptr)
     wlmtk_root_add_workspace(root_ptr, ws1_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_element(ws1_ptr)->visible);
 
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_root_add_workspace(root_ptr, ws2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_workspace_element(ws2_ptr)->visible);
 
     wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_workspace_element(ws1_ptr)->visible);
     wlmtk_workspace_destroy(ws1_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, ws2_ptr, wlmtk_root_get_current_workspace(root_ptr));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_element(ws2_ptr)->visible);
 
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
     wlmtk_workspace_destroy(ws2_ptr);
