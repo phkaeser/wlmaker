@@ -167,8 +167,6 @@ struct _wlmaker_server_t {
 
     /** The root element. */
     wlmtk_root_t              *root_ptr;
-    /** Fake workspace, injectable for tests. */
-    wlmtk_fake_workspace_t    *fake_wlmtk_workspace_ptr;
     /**
      * Signal: Raised when the current workspace is changed.
      * Data: Pointer to the new `wlmaker_workspace_t`.
