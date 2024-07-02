@@ -243,16 +243,7 @@ void handle_button(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed;
-    wlmtk_button_event_t event = {};
-    event.button = wlr_pointer_button_event_ptr->button;
-    event.time_msec = wlr_pointer_button_event_ptr->time_msec;
-    consumed = wlmtk_element_pointer_button(
-        wlmtk_root_element(cursor_ptr->server_ptr->root_ptr),
-        &event);
-    if (consumed) return;
-
-    consumed = wlmtk_root_pointer_button(
+    bool consumed = wlmtk_root_pointer_button(
         cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_button_event_ptr);
 
@@ -288,13 +279,7 @@ void handle_axis(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed;
-    consumed = wlmtk_element_pointer_axis(
-        wlmtk_root_element(cursor_ptr->server_ptr->root_ptr),
-        wlr_pointer_axis_event_ptr);
-    if (consumed) return;
-
-    consumed = wlmtk_root_pointer_axis(
+    bool consumed = wlmtk_root_pointer_axis(
         cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_axis_event_ptr);
     // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
