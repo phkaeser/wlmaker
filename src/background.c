@@ -62,7 +62,9 @@ static const wlmtk_panel_positioning_t _wlmaker_background_panel_position = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr)
+wlmaker_background_t *wlmaker_background_create(
+    uint32_t color,
+    wlmtk_env_t *env_ptr)
 {
     wlmaker_background_t *background_ptr = logged_calloc(
         1, sizeof(wlmaker_background_t));
@@ -81,7 +83,7 @@ wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr)
                        &_wlmaker_background_panel_vmt);
 
     background_ptr->rectangle_ptr = wlmtk_rectangle_create(
-        env_ptr, 0, 0, 0xff406080);
+        env_ptr, 0, 0, color);
     if (NULL == background_ptr->rectangle_ptr) {
         wlmaker_background_destroy(background_ptr);
         return NULL;

@@ -93,6 +93,23 @@ static regex_t                wlmaker_wlr_log_regex;
 static const char             *wlmaker_wlr_log_regex_string =
     "^\\[([^\\:]+)\\:([0-9]+)\\]\\ ";
 
+/** Contents of the workspace style. */
+typedef struct {
+    /** Workspace name. */
+    char            name[32];
+    /** Background color. */
+    uint32_t        color;
+} wlmaker_workspace_style_t;
+
+/** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
+static const wlmcfg_desc_t wlmaker_workspace_style_desc[] = {
+    WLMCFG_DESC_CHARBUF(
+        "Name", true, wlmaker_workspace_style_t, name, 32, NULL),
+    WLMCFG_DESC_ARGB32(
+        "Color", false, wlmaker_workspace_style_t, color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /* ------------------------------------------------------------------------- */
 /**
  * Wraps the wlr_log calls on bs_log.
@@ -183,24 +200,26 @@ bool create_workspaces(
             break;
         }
 
-        const char *name_ptr = wlmcfg_dict_get_string_value(dict_ptr, "Name");
-        if (NULL == name_ptr) {
-            bs_log(BS_ERROR, "\"Name\" not found in \"Workspaces\" element");
+        wlmaker_workspace_style_t s = {};
+        if (!wlmcfg_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
+            bs_log(BS_ERROR,
+                   "Failed to decode dict element %zu in \"Workspace\"",
+                   i);
             rv = false;
             break;
         }
 
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-            name_ptr, server_ptr->env_ptr);
+            s.name, server_ptr->env_ptr);
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
-                   name_ptr, server_ptr->env_ptr);
+                   s.name, server_ptr->env_ptr);
             rv = false;
             break;
         }
 
         wlmaker_background_t *background_ptr = wlmaker_background_create(
-            server_ptr->env_ptr);
+            s.color, server_ptr->env_ptr);
         if (NULL == background_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
                    server_ptr->env_ptr);

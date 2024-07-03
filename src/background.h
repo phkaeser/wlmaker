@@ -32,9 +32,14 @@ typedef struct _wlmaker_background_t wlmaker_background_t;
 /**
  * Creates a background, derived from a @ref wlmtk_panel_t.
  *
+ * @param color
+ * @param env_ptr
+ *
  * @return A handle for the background, or NULL on error.
  */
-wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr);
+wlmaker_background_t *wlmaker_background_create(
+    uint32_t color,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the background.
