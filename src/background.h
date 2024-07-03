@@ -20,6 +20,8 @@
 #ifndef __BACKGROUND_H__
 #define __BACKGROUND_H__
 
+#include "toolkit/toolkit.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -32,7 +34,7 @@ typedef struct _wlmaker_background_t wlmaker_background_t;
  *
  * @return A handle for the background, or NULL on error.
  */
-wlmaker_background_t *wlmaker_background_create(void);
+wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the background.
@@ -40,6 +42,9 @@ wlmaker_background_t *wlmaker_background_create(void);
  * @param background_ptr
  */
 void wlmaker_background_destroy(wlmaker_background_t *background_ptr);
+
+/** Returns a pointer to @ref wlmaker_backgound_t::super_panel. */
+wlmtk_panel_t *wlmaker_background_panel(wlmaker_background_t *background_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

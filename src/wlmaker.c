@@ -33,6 +33,7 @@
 #include "conf/plist.h"
 
 #include "action.h"
+#include "background.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
@@ -197,6 +198,22 @@ bool create_workspaces(
             rv = false;
             break;
         }
+
+        wlmaker_background_t *background_ptr = wlmaker_background_create(
+            server_ptr->env_ptr);
+        if (NULL == background_ptr) {
+            bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
+                   server_ptr->env_ptr);
+            rv = false;
+            break;
+        }
+
+        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+            workspace_ptr,
+            WLMTK_WORKSPACE_LAYER_BACKGROUND);
+        wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmaker_background_panel(background_ptr));
 
         wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
     }
