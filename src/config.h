@@ -140,6 +140,17 @@ extern const wlmaker_config_theme_t wlmaker_config_theme;
  */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
 
+/**
+ * Loads the state for wlmaker.
+ *
+ * Behaviour is similar to @ref wlmaker_config_load.
+ *
+ * @param fname_ptr
+ *
+ * @return A dict object or NULL on error.
+ */
+wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr);
+
 extern const wlmcfg_desc_t wlmaker_config_style_desc[];
 
 /** Unit test cases. */

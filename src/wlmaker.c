@@ -43,6 +43,8 @@
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
+/** Will hold the value of --state_file. */
+static char *wlmaker_arg_state_file_ptr = NULL;
 /** Will hold the value of --style_file. */
 static char *wlmaker_arg_style_file_ptr = NULL;
 
@@ -65,6 +67,13 @@ static const bs_arg_t wlmaker_args[] = {
         "a built-in configuration.",
         NULL,
         &wlmaker_arg_config_file_ptr),
+    BS_ARG_STRING(
+        "state_file",
+        "Optional: Path to a state file, with state of workspaces, dock and "
+        "clips configured. If not provided, wlmaker will scan default paths "
+        "for a state file, or fall back to a built-in default.",
+        NULL,
+        &wlmaker_arg_state_file_ptr),
     BS_ARG_STRING(
         "style_file",
         "Optional: Path to a style (\"theme\") file. If not provided, wlmaker "
@@ -191,6 +200,14 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
+    wlmcfg_dict_t *state_dict_ptr = wlmaker_state_load(
+        wlmaker_arg_state_file_ptr);
+    if (NULL != wlmaker_arg_state_file_ptr) free(wlmaker_arg_state_file_ptr);
+    if (NULL == state_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize state.\n");
+        return EXIT_FAILURE;
+    }
+
     wlmaker_server_t *server_ptr = wlmaker_server_create(
         config_dict_ptr, &wlmaker_server_options);
     wlmcfg_dict_unref(config_dict_ptr);
@@ -241,8 +258,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             }
         }
 
-        dock_ptr = wlmaker_dock_create(server_ptr, &server_ptr->style);
-        clip_ptr = wlmaker_clip_create(server_ptr, &server_ptr->style);
+        dock_ptr = wlmaker_dock_create(
+            server_ptr, state_dict_ptr, &server_ptr->style);
+        clip_ptr = wlmaker_clip_create(
+            server_ptr, state_dict_ptr, &server_ptr->style);
         task_list_ptr = wlmaker_task_list_create(server_ptr, &server_ptr->style);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");

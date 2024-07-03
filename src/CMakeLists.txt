@@ -80,9 +80,9 @@ EmbedBinary_ADD_LIBRARY(
   "${PROJECT_SOURCE_DIR}/etc/wlmaker.plist")
 
 EmbedBinary_ADD_LIBRARY(
-  embedded_dock_state
-  "default_dock_state"
-  "${PROJECT_SOURCE_DIR}/etc/dock.plist")
+  embedded_state
+  "default_state"
+  "${PROJECT_SOURCE_DIR}/etc/wlmaker-state.plist")
 
 EmbedBinary_ADD_LIBRARY(
   embedded_style
@@ -95,7 +95,7 @@ ADD_DEPENDENCIES(
   conf
   toolkit
   embedded_configuration
-  embedded_dock_state
+  embedded_state
   embedded_style
   wlmaker_lib)
 
@@ -105,7 +105,7 @@ TARGET_LINK_LIBRARIES(
   conf
   toolkit
   embedded_configuration
-  embedded_dock_state
+  embedded_state
   embedded_style
   wlmaker_protocols
   PkgConfig::CAIRO

@@ -46,6 +46,7 @@ extern "C" {
  */
 wlmaker_dock_t *wlmaker_dock_create(
     wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr);
 
 /**

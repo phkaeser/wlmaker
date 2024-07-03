@@ -23,7 +23,6 @@
 #include <limits.h>
 
 #include "toolkit/toolkit.h"
-#include "default_dock_state.h"
 
 /* == Declarations ========================================================= */
 
@@ -144,6 +143,7 @@ static const char *lookup_paths[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_clip_t *wlmaker_clip_create(
     wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_clip_t *clip_ptr = logged_calloc(1, sizeof(wlmaker_clip_t));
@@ -164,21 +164,14 @@ wlmaker_clip_t *wlmaker_clip_create(
         return NULL;
     }
 
-
     parse_args args = {};
-    wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_default_dock_state_data,
-        embedded_binary_default_dock_state_size);
-    BS_ASSERT(NULL != object_ptr);
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
-        wlmcfg_dict_from_object(object_ptr), "Clip");
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(state_dict_ptr, "Clip");
     if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "No 'Clip' dict found in configuration.");
+        bs_log(BS_ERROR, "No 'Clip' dict found in state.");
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
     wlmcfg_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
-    wlmcfg_object_unref(object_ptr);
 
     clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
