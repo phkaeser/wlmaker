@@ -59,6 +59,9 @@ static void _wlmtk_root_switch_to_workspace(
 static void _wlmtk_root_set_workspace_extents(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static void _wlmtk_root_enumerate_workspaces(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static void _wlmtk_root_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -240,6 +243,8 @@ void wlmtk_root_add_workspace(
     bs_dllist_push_back(
         &root_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
+    wlmtk_workspace_set_details(
+        workspace_ptr, bs_dllist_size(&root_ptr->workspaces));
     wlmtk_workspace_set_root(workspace_ptr, root_ptr);
     wlmtk_workspace_set_extents(workspace_ptr, &root_ptr->extents);
 
@@ -269,6 +274,12 @@ void wlmtk_root_remove_workspace(
             root_ptr,
             wlmtk_workspace_from_dlnode(root_ptr->workspaces.head_ptr));
     }
+
+    int index = 0;
+    bs_dllist_for_each(
+        &root_ptr->workspaces,
+        _wlmtk_root_enumerate_workspaces,
+        &index);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -443,6 +454,19 @@ void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
     wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Callback for bs_dllist_for_each: Enumerates the workspace. */
+void _wlmtk_root_enumerate_workspaces(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    int *index_ptr = ud_ptr;
+    wlmtk_workspace_set_details(
+        wlmtk_workspace_from_dlnode(dlnode_ptr),
+        *index_ptr);
+    *index_ptr += 1;
 }
 
 /* ------------------------------------------------------------------------- */

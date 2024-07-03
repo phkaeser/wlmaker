@@ -336,6 +336,14 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_set_details(
+    wlmtk_workspace_t *workspace_ptr,
+    int index)
+{
+    workspace_ptr->index = index;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_get_details(
     wlmtk_workspace_t *workspace_ptr,
     const char **name_ptr_ptr,
@@ -1066,9 +1074,10 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     const char *name_ptr;
     int index;
+    wlmtk_workspace_set_details(workspace_ptr, 42);
     wlmtk_workspace_get_details(workspace_ptr, &name_ptr, &index);
     BS_TEST_VERIFY_STREQ(test_ptr, "test", name_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, index);
+    BS_TEST_VERIFY_EQ(test_ptr, 42, index);
 
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_container_destroy_fake_parent(fake_parent_ptr);

@@ -71,6 +71,16 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Sets or updates workspace details.
+ *
+ * @param workspace_ptr
+ * @param index
+ */
+void wlmtk_workspace_set_details(
+    wlmtk_workspace_t *workspace_ptr,
+    int index);
+
+/**
  * Retrieves the naming details of this workspace.
  *
  * @param workspace_ptr
