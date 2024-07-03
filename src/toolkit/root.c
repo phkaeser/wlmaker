@@ -240,6 +240,15 @@ void wlmtk_root_add_workspace(
     wlmtk_container_add_element(
         &root_ptr->container,
         wlmtk_workspace_element(workspace_ptr));
+
+    // Keep the curtain on top.
+    wlmtk_container_remove_element(
+        &root_ptr->container,
+        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
+    wlmtk_container_add_element(
+        &root_ptr->container,
+        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
+
     bs_dllist_push_back(
         &root_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
@@ -366,7 +375,18 @@ bool wlmtk_root_unlock(
     wlmtk_element_set_visible(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         false);
+
     wl_signal_emit(&root_ptr->events.unlock_event, NULL);
+
+    // TODO(kaeser@gubbe.ch): Handle re-establishing keyboard focus better.
+    wlmtk_workspace_t *workspace_ptr = root_ptr->current_workspace_ptr;
+    if (NULL != wlmtk_workspace_get_activated_window(workspace_ptr)) {
+        wlmtk_element_t *el_ptr = wlmtk_window_element(
+            wlmtk_workspace_get_activated_window(workspace_ptr));
+        wlmtk_container_update_keyboard_focus(
+            el_ptr->parent_container_ptr, el_ptr);
+    }
+
     return true;
 }
 
