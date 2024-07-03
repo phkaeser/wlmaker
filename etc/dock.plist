@@ -20,5 +20,16 @@
   Clip = {
     Edge = BOTTOM;
     Anchor = RIGHT;
-  }
+  };
+  Workspaces = (
+    {
+        Name = Main;
+    },
+    {
+        Name = Secondary;
+    },
+    {
+        Name = Tertiary;
+    },
+  );
 }
