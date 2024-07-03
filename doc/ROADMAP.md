@@ -129,7 +129,6 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Bugfixes
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
-  * Fix bug: When switching workspace, pointer state appears to be reset.
   * [done] Add commandline flag to enable/disable XWayland start.
   * [done] Verify startup on console works.
 
@@ -186,9 +185,16 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Migrate implementation to wlmtk.
   * [done]Key combination configurable in the config file.
 
+* [done] Build & compile off released dependency versions.
+
 ## Plan for 0.4
 
 **Focus**: Add menus & make it ready for  "Early-Access".
+
+* Thorough tests of both pointer and keyboard state.
+  * Fix bug: When switching workspace, pointer state appears to be reset.
+  * Issue found when killing saylock that keyboard focus is incorrect.
+  * Re-activate workspace & windows after lock.
 
 * Menu, based on toolkit.
   * Available as window menu in windows.
@@ -197,8 +203,6 @@ Support for visual effects to improve usability, but not for pure show.
   * Menu with submenus.
   * Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
-
-* Build & compile off dependency versions found in recent distros (libwlroot, ...).
 
 * Screensaver support.
   * Magic corner to lock immediately.
