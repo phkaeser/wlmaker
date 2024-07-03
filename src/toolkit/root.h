@@ -44,6 +44,10 @@ typedef struct {
 
     /** Triggers whenever @ref wlmtk_root_unlock succeeds. */
     struct wl_signal          unlock_event;
+    /** Triggers when a window is mapped to a workspace. */
+    struct wl_signal          window_mapped;
+    /** Triggers when a window is unmapped from a workspace. */
+    struct wl_signal          window_unmapped;
 } wlmtk_root_events_t;
 
 /**

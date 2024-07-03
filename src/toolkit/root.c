@@ -122,6 +122,8 @@ wlmtk_root_t *wlmtk_root_create(
 
     wl_signal_init(&root_ptr->events.workspace_changed);
     wl_signal_init(&root_ptr->events.unlock_event);
+    wl_signal_init(&root_ptr->events.window_mapped);
+    wl_signal_init(&root_ptr->events.window_unmapped);
     return root_ptr;
 }
 
@@ -612,7 +614,6 @@ typedef struct {
     /** Will be set to the `data_ptr` arg of the callback. */
     wlmtk_workspace_t         *workspace_ptr;
 } _wlmtk_root_test_workspace_t;
-
 
 /** Test helper callback for @ref wlmtk_root_events_t::workspace_changed. */
 static void _wlmtk_root_test_workspace_changed_handler(
