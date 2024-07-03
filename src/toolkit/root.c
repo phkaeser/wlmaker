@@ -631,6 +631,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 50, root_ptr->extents.height);
 
     wlmtk_root_destroy(root_ptr);
+    free(wlr_scene_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -679,6 +680,7 @@ void test_workspaces(bs_test_t *test_ptr)
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
 
     wlmtk_root_destroy(root_ptr);
+    free(wlr_scene_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -740,6 +742,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fake_element_ptr->element);
 
     wlmtk_root_destroy(root_ptr);
+    free(wlr_scene_ptr);
 }
 
 /* == End of root.c ======================================================== */
