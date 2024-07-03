@@ -137,14 +137,15 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Implement ext-session-lock-v1 protocol.
   * [done] Verify screen lock works with eg. swaylock.
   * [done] Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
+  * Verify this still works after the to-toolkit move.
 
-* Configuration file support
+* [done] Configuration file support
   * [done] Pick or implement parser for configuration file.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
   * [done] Configurable key combinations for basic window actions (minimize, ...).
   * [done] File for visual style (theme): decoration style, background.
-  * File to define workspaces and dock, falling back to default if not provided.
+  * [done] File to define workspaces and dock, falling back to default if not provided.
   * [done] Include at least one additional theme.
 
 * [done] Theme details
