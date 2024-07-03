@@ -43,7 +43,7 @@ wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr);
  */
 void wlmaker_background_destroy(wlmaker_background_t *background_ptr);
 
-/** Returns a pointer to @ref wlmaker_backgound_t::super_panel. */
+/** Returns a pointer to @ref wlmaker_background_t::super_panel. */
 wlmtk_panel_t *wlmaker_background_panel(wlmaker_background_t *background_ptr);
 
 #ifdef __cplusplus

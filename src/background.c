@@ -26,6 +26,7 @@
 
 /** Background state. */
 struct _wlmaker_background_t {
+    /** The background is a panel. */
     wlmtk_panel_t             super_panel;
 };
 
@@ -95,6 +96,7 @@ wlmtk_panel_t *wlmaker_background_panel(wlmaker_background_t *background_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy. Dtor for the background. */
 void _wlmaker_background_element_destroy(
     wlmtk_element_t *element_ptr)
 {
@@ -106,6 +108,7 @@ void _wlmaker_background_element_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_panel_vmt_t::request_size. Updates the panel size. */
 uint32_t _wlmaker_background_request_size(
     wlmtk_panel_t *panel_ptr,
     int width,
