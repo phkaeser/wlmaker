@@ -44,7 +44,7 @@ typedef struct {
 
     /** Triggers whenever @ref wlmtk_root_unlock succeeds. */
     struct wl_signal          unlock_event;
-} wlmtk_root_signals_t;
+} wlmtk_root_events_t;
 
 /**
  * Creates the root element.
@@ -66,13 +66,13 @@ wlmtk_root_t *wlmtk_root_create(
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
 
 /**
- * Gets the set of signals available in root. To bind listeners to.
+ * Gets the set of events available in root. To bind listeners to.
  *
  * @param root_ptr
  *
- * @return Pointer to @ref wlmtk_root_t::signals.
+ * @return Pointer to @ref wlmtk_root_t::events.
  */
-wlmtk_root_signals_t *wlmtk_root_signals(wlmtk_root_t *root_ptr);
+wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
 
 /**
  * Sets the extents of root (and all workspaces thereof).

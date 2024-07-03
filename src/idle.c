@@ -49,7 +49,7 @@ struct _wlmaker_idle_monitor_t {
     /** Lists registered inhibitors: @ref wlmaker_idle_inhibitor_t::dlnode. */
     bs_dllist_t               idle_inhibitors;
 
-    /** Listener for @ref wlmtk_root_signals_t::unlock_event. */
+    /** Listener for @ref wlmtk_root_events_t::unlock_event. */
     struct wl_listener        unlock_listener;
 
     /** The wlroots idle inhibit manager. */
@@ -244,7 +244,7 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
     wlmtk_root_t *root_ptr = idle_monitor_ptr->server_ptr->root_ptr;
     idle_monitor_ptr->locked = true;
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_signals(root_ptr)->unlock_event,
+        &wlmtk_root_events(root_ptr)->unlock_event,
         &idle_monitor_ptr->unlock_listener,
         _wlmaker_idle_monitor_handle_unlock);
     return 0;
@@ -372,7 +372,7 @@ static void _wlmaker_idle_monitor_handle_new_inhibitor(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handler for @ref wlmtk_root_signals_t::unlock_event. Re-arms the timer.
+ * Handler for @ref wlmtk_root_events_t::unlock_event. Re-arms the timer.
  *
  * @param listener_ptr
  * @param data_ptr            unused.

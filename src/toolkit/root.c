@@ -36,8 +36,8 @@ struct _wlmtk_root_t {
     /** Extents to be used by root. */
     struct wlr_box            extents;
 
-    /** Signals availalbe of the root. */
-    wlmtk_root_signals_t      signals;
+    /** Events availabe of the root. */
+    wlmtk_root_events_t       events;
 
     /** Whether the root is currently locked. */
     bool                      locked;
@@ -120,8 +120,8 @@ wlmtk_root_t *wlmtk_root_create(
         &root_ptr->container,
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
 
-    wl_signal_init(&root_ptr->signals.workspace_changed);
-    wl_signal_init(&root_ptr->signals.unlock_event);
+    wl_signal_init(&root_ptr->events.workspace_changed);
+    wl_signal_init(&root_ptr->events.unlock_event);
     return root_ptr;
 }
 
@@ -148,9 +148,9 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_root_signals_t *wlmtk_root_signals(wlmtk_root_t *root_ptr)
+wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr)
 {
-    return &root_ptr->signals;
+    return &root_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -353,7 +353,7 @@ bool wlmtk_root_unlock(
     wlmtk_element_set_visible(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         false);
-    wl_signal_emit(&root_ptr->signals.unlock_event, NULL);
+    wl_signal_emit(&root_ptr->events.unlock_event, NULL);
     return true;
 }
 
@@ -397,6 +397,8 @@ void _wlmtk_root_switch_to_workspace(
     wlmtk_root_t *root_ptr,
     wlmtk_workspace_t *workspace_ptr)
 {
+    if (root_ptr->current_workspace_ptr == workspace_ptr) return;
+
     if (NULL == workspace_ptr) {
         root_ptr->current_workspace_ptr = NULL;
     } else {
@@ -412,7 +414,9 @@ void _wlmtk_root_switch_to_workspace(
             wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
     }
 
-    // FIXME: emit signal - workspace changed.
+    wl_signal_emit(
+        &root_ptr->events.workspace_changed,
+        root_ptr->current_workspace_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -601,6 +605,25 @@ const bs_test_case_t wlmtk_root_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** Helper struct for listeners in tests. */
+typedef struct {
+    /** Listener. */
+    struct wl_listener        listener;
+    /** Will be set to the `data_ptr` arg of the callback. */
+    wlmtk_workspace_t         *workspace_ptr;
+} _wlmtk_root_test_workspace_t;
+
+
+/** Test helper callback for @ref wlmtk_root_events_t::workspace_changed. */
+static void _wlmtk_root_test_workspace_changed_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    _wlmtk_root_test_workspace_t *test_ws_ptr = BS_CONTAINER_OF(
+        listener_ptr, _wlmtk_root_test_workspace_t, listener);
+    test_ws_ptr->workspace_ptr = data_ptr;
+}
+
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */
 void test_create_destroy(bs_test_t *test_ptr)
@@ -611,7 +634,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
 
     BS_TEST_VERIFY_EQ(
-        test_ptr, &root_ptr->signals, wlmtk_root_signals(root_ptr));
+        test_ptr, &root_ptr->events, wlmtk_root_events(root_ptr));
 
     struct wlr_box extents = { .width = 100, .height = 50 };
     wlmtk_root_set_extents(root_ptr, &extents);
@@ -633,6 +656,12 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
 
+    _wlmtk_root_test_workspace_t test_ws = {};
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_root_events(root_ptr)->workspace_changed,
+        &test_ws.listener,
+        _wlmtk_root_test_workspace_changed_handler);
+
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
     wlmtk_root_add_workspace(root_ptr, ws1_ptr);
@@ -641,6 +670,8 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_element(ws1_ptr)->visible);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, ws1_ptr, test_ws.workspace_ptr);
 
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
@@ -661,12 +692,17 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_element(ws2_ptr)->visible);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, ws2_ptr, test_ws.workspace_ptr);
 
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
     wlmtk_workspace_destroy(ws2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, NULL, test_ws.workspace_ptr);
 
+    wlmtk_util_disconnect_listener(&test_ws.listener);
     wlmtk_root_destroy(root_ptr);
     free(wlr_scene_ptr);
 }
