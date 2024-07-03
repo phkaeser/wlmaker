@@ -293,7 +293,7 @@ static const char *_wlmaker_config_fname_ptrs[] = {
 /* ------------------------------------------------------------------------- */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
 {
-    // If a file was provided, we try onl that.
+    // If a file was provided, we try only that.
     if (NULL != fname_ptr) {
         return _wlmaker_config_from_plist(fname_ptr);
     }
