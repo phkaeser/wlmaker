@@ -26,10 +26,10 @@
         Name = Main;
     },
     {
-        Name = Secondary;
+        Name = Second;
     },
     {
-        Name = Tertiary;
+        Name = Third;
     },
   );
 }
