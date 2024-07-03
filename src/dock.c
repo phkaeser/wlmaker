@@ -25,7 +25,7 @@
 
 #include "config.h"
 #include "launcher.h"
-#include "default_dock_state.h"
+#include "default_state.h"
 
 /* == Declarations ========================================================= */
 
@@ -37,7 +37,7 @@ struct _wlmaker_dock_t {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
 
-    /** Listens for when the workspace changed. */
+    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
 };
 
@@ -84,6 +84,7 @@ const wlmcfg_desc_t _wlmaker_dock_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_dock_t *wlmaker_dock_create(
     wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmaker_dock_t));
@@ -91,12 +92,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     dock_ptr->server_ptr = server_ptr;
 
     parse_args args = {};
-    wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_default_dock_state_data,
-        embedded_binary_default_dock_state_size);
-    BS_ASSERT(NULL != object_ptr);
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
-        wlmcfg_dict_from_object(object_ptr), "Dock");
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(state_dict_ptr, "Dock");
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "No 'Dock' dict found in configuration.");
         wlmaker_dock_destroy(dock_ptr);
@@ -115,7 +111,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         true);
 
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(server_ptr);
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -144,14 +140,13 @@ wlmaker_dock_t *wlmaker_dock_create(
             wlmaker_launcher_tile(launcher_ptr));
     }
     // FIXME: This is leaky.
-    wlmcfg_object_unref(object_ptr);
     if (NULL != args.launchers_array_ptr) {
         wlmcfg_array_unref(args.launchers_array_ptr);
         args.launchers_array_ptr = NULL;
     }
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->workspace_changed,
+        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &dock_ptr->workspace_changed_listener,
         _wlmaker_dock_handle_workspace_changed);
 
@@ -205,7 +200,7 @@ void _wlmaker_dock_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(dock_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(dock_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 
@@ -230,17 +225,31 @@ const bs_test_case_t wlmaker_dock_test_cases[] = {
 /** Tests ctor and dtor; to help fix leaks. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_fake_workspace_t *fw_ptr = BS_ASSERT_NOTNULL(
-        wlmtk_fake_workspace_create(1024, 768));
-    wlmaker_server_t server = { .fake_wlmtk_workspace_ptr = fw_ptr };
-    wlmaker_config_style_t style = {};
-    wl_signal_init(&server.workspace_changed);
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws_ptr);
 
-    wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, &style);
+    wlmaker_server_t server = { .root_ptr = root_ptr };
+    wlmaker_config_style_t style = {};
+
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_create_object_from_plist_data(
+            embedded_binary_default_state_data,
+            embedded_binary_default_state_size));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, dict_ptr, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
-    wlmtk_fake_workspace_destroy(fw_ptr);
+    wlmcfg_dict_unref(dict_ptr);
+    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+    wlmtk_root_destroy(root_ptr);
 }
 
 /* == End of dock.c ======================================================== */

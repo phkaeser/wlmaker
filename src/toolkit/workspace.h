@@ -25,6 +25,7 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 #include "container.h"
 #include "panel.h"
+#include "root.h"
 #include "window.h"
 
 #ifdef __cplusplus
@@ -52,18 +53,15 @@ typedef enum {
 /**
  * Creates a workspace.
  *
- * TODO(kaeser@gubbe.ch): Consider replacing the interface with a container,
- * and permit a "toplevel" container that will be at the server level.
- *
+ * @param name_ptr
  * @param env_ptr
- * @param wlr_scene_tree_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
-    wlmtk_env_t *env_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
+    const char *name_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the workspace. Will destroy any stil-contained element.
@@ -73,18 +71,26 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Sets signals for window events.
- *
- * TODO(kaeser@gubbe.ch): Remove this, once migrated to an event registry.
+ * Sets or updates workspace details.
  *
  * @param workspace_ptr
- * @param mapped_event_ptr
- * @param unmapped_event_ptr
+ * @param index
  */
-void wlmtk_workspace_set_signals(
+void wlmtk_workspace_set_details(
     wlmtk_workspace_t *workspace_ptr,
-    struct wl_signal *mapped_event_ptr,
-    struct wl_signal *unmapped_event_ptr);
+    int index);
+
+/**
+ * Retrieves the naming details of this workspace.
+ *
+ * @param workspace_ptr
+ * @param name_ptr_ptr
+ * @param index_ptr
+ */
+void wlmtk_workspace_get_details(
+    wlmtk_workspace_t *workspace_ptr,
+    const char **name_ptr_ptr,
+    int *index_ptr);
 
 /**
  * Sets (or updates) the extents of the workspace.
@@ -173,58 +179,6 @@ void wlmtk_workspace_window_to_fullscreen(
     bool fullscreen);
 
 /**
- * Handles a motion event.
- *
- * TODO(kaeser@gubbe.ch): Move this to the server, and have the workspace's
- * motion handling dealt with the element's pointer_motion method.
- *
- * @param workspace_ptr
- * @param x
- * @param y
- * @param time_msec
- *
- * @return Whether there was an element under the pointer.
- */
-bool wlmtk_workspace_motion(
-    wlmtk_workspace_t *workspace_ptr,
-    double x,
-    double y,
-    uint32_t time_msec);
-
-/**
- * Handles a button event: Translates to button down/up/click/dblclick events.
- *
- * Each button activity (button pressed or released) will directly trigger a
- * corresponding BUTTON_DOWN or BUTTON_UP event. Depending on timing and
- * motion, a "released" event may also triccer a CLICK, DOUBLE_CLICK or
- * DRAG event.
- * These events will be forwarded to the event currently having pointer focus.
- *
- * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events. Also, move
- * this code into the server and make it well tested.
- *
- * @param workspace_ptr
- * @param event_ptr
- *
- * @return Whether the button was consumed.
- */
-bool wlmtk_workspace_button(
-    wlmtk_workspace_t *workspace_ptr,
-    const struct wlr_pointer_button_event *event_ptr);
-
-/**
- * Handles an axis event.
- *
- * @param workspace_ptr
- * @param wlr_pointer_axis_event_ptr
- *
- * @return Whether the axis event was consumed.
- */
-bool wlmtk_workspace_axis(
-    wlmtk_workspace_t *workspace_ptr,
-    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
-
-/**
  * Initiates a 'move' for the window.
  *
  * @param workspace_ptr
@@ -285,25 +239,35 @@ void wlmtk_workspace_raise_window(
 /** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
 wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);
 
+/** @return pointer to the anchor @ref wlmtk_root_t of `workspace_ptr`. */
+wlmtk_root_t *wlmtk_workspace_get_root(wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Sets the anchor @ref wlmtk_root_t of `workspace_ptr`.
+ *
+ * @protected Must only be called from @ref wlmtk_root_t.
+ *
+ * @param workspace_ptr
+ * @param root_ptr
+ */
+void wlmtk_workspace_set_root(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_root_t *root_ptr);
+
+/** @return Pointer to @ref wlmtk_workspace_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_workspace(
+    wlmtk_workspace_t *workspace_ptr);
+
+/** @return Poitner to the @ref wlmtk_workspace_t of the `dlnode_ptr`. */
+wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
+    bs_dllist_node_t *dlnode_ptr);
+
 /** Fake workspace: A real workspace, but with a fake parent. For testing. */
 typedef struct {
     /** The workspace. */
     wlmtk_workspace_t         *workspace_ptr;
     /** The (fake) parent container. */
     wlmtk_container_t         *fake_parent_ptr;
-    /** Signal for when a window is mapped. */
-    struct wl_signal          window_mapped_event;
-    /** Signal for when a window is unmapped. */
-    struct wl_signal          window_unmapped_event;
-
-    /** Listener for when the window is mapped. */
-    struct wl_listener        window_mapped_listener;
-    /** Listener for when the window is unmapped. */
-    struct wl_listener        window_unmapped_listener;
-    /** Reports whether window_mapped_listener was invoked. */
-    bool                      window_mapped_listener_invoked;
-    /** Reports whether window_unmapped_listener was invoked. */
-    bool                      window_unmapped_listener_invoked;
 } wlmtk_fake_workspace_t;
 
 /** Creates a fake workspace with specified extents. */

@@ -20,5 +20,18 @@
   Clip = {
     Edge = BOTTOM;
     Anchor = RIGHT;
-  }
+  };
+  Workspaces = (
+    {
+        Name = Main;
+    },
+    {
+        Name = Second;
+    },
+    {
+        Name = Third;
+        // Color is optional here, overrides the style's BackgroundColor.
+        Color = "argb32:ff508050";
+    },
+  );
 }

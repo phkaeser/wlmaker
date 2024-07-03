@@ -23,7 +23,6 @@
 #include <limits.h>
 
 #include "toolkit/toolkit.h"
-#include "default_dock_state.h"
 
 /* == Declarations ========================================================= */
 
@@ -61,7 +60,7 @@ struct _wlmaker_clip_t {
     /** Whether the 'next' button had been pressed. */
     bool                      next_button_pressed;
 
-    /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
+    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
 
     /** The clip's style. */
@@ -144,6 +143,7 @@ static const char *lookup_paths[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_clip_t *wlmaker_clip_create(
     wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_clip_t *clip_ptr = logged_calloc(1, sizeof(wlmaker_clip_t));
@@ -164,21 +164,14 @@ wlmaker_clip_t *wlmaker_clip_create(
         return NULL;
     }
 
-
     parse_args args = {};
-    wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_default_dock_state_data,
-        embedded_binary_default_dock_state_size);
-    BS_ASSERT(NULL != object_ptr);
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
-        wlmcfg_dict_from_object(object_ptr), "Clip");
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(state_dict_ptr, "Clip");
     if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "No 'Clip' dict found in configuration.");
+        bs_log(BS_ERROR, "No 'Clip' dict found in state.");
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
     wlmcfg_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
-    wlmcfg_object_unref(object_ptr);
 
     clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
@@ -211,7 +204,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_buffer_element(&clip_ptr->overlay_buffer), true);
 
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(server_ptr);
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     wlmtk_layer_add_panel(
@@ -244,10 +237,11 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_buffer_element(&clip_ptr->overlay_buffer));
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->workspace_changed,
+        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
 
+    server_ptr->clip_dock_ptr = clip_ptr->wlmtk_dock_ptr;
     bs_log(BS_INFO, "Created clip %p", clip_ptr);
     return clip_ptr;
 }
@@ -255,6 +249,10 @@ wlmaker_clip_t *wlmaker_clip_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 {
+    if (NULL != clip_ptr->server_ptr) {
+        clip_ptr->server_ptr->clip_dock_ptr = NULL;
+    }
+
     wlmtk_util_disconnect_listener(&clip_ptr->workspace_changed_listener);
 
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
@@ -321,10 +319,10 @@ bool _wlmaker_clip_pointer_axis(
 
     if (0 > wlr_pointer_axis_event_ptr->delta_discrete) {
         // Scroll wheel "up" -> next.
-        wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
+        wlmtk_root_switch_to_next_workspace(clip_ptr->server_ptr->root_ptr);
     } else if (0 < wlr_pointer_axis_event_ptr->delta_discrete) {
         // Scroll wheel "down" -> next.
-        wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
+        wlmtk_root_switch_to_previous_workspace(clip_ptr->server_ptr->root_ptr);
     }
     return true;
 }
@@ -369,11 +367,13 @@ bool _wlmaker_clip_pointer_button(
         if (clip_ptr->pointer_inside_next_button &&
             clip_ptr->next_button_pressed) {
             clip_ptr->next_button_pressed = false;
-            wlmaker_server_switch_to_next_workspace(clip_ptr->server_ptr);
+            wlmtk_root_switch_to_next_workspace(
+                clip_ptr->server_ptr->root_ptr);
         } else if (clip_ptr->pointer_inside_prev_button &&
                    clip_ptr->prev_button_pressed) {
             clip_ptr->prev_button_pressed = false;
-            wlmaker_server_switch_to_previous_workspace(clip_ptr->server_ptr);
+            wlmtk_root_switch_to_previous_workspace(
+                clip_ptr->server_ptr->root_ptr);
         }
         break;
 
@@ -470,9 +470,9 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
 
     int index = 0;
     const char *name_ptr = NULL;
-    wlmaker_workspace_get_details(
-        wlmaker_server_get_current_workspace(clip_ptr->server_ptr),
-        &index, &name_ptr);
+    wlmtk_workspace_get_details(
+        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr),
+        &name_ptr, &index);
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
@@ -696,7 +696,7 @@ struct wlr_buffer *_wlmaker_clip_create_tile(
  * clip to the new workspace.
  *
  * @param listener_ptr
- * @param data_ptr            Points to the new `wlmaker_workspace_t`.
+ * @param data_ptr            Points to the new `wlmtk_workspace_t`.
  */
 void _wlmaker_clip_handle_workspace_changed(
     struct wl_listener *listener_ptr,
@@ -708,7 +708,7 @@ void _wlmaker_clip_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *wlmtk_workspace_ptr =
-        wlmaker_server_get_current_wlmtk_workspace(clip_ptr->server_ptr);
+        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         wlmtk_workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 

@@ -247,9 +247,14 @@ bool _wlmtk_surface_init(
  */
 void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
 {
+    if (NULL != surface_ptr->wlr_scene_tree_ptr) {
+        wlmtk_util_disconnect_listener(
+            &surface_ptr->wlr_scene_tree_node_destroy_listener);
+    }
+
     if (NULL != surface_ptr->wlr_surface_ptr) {
         surface_ptr->wlr_surface_ptr = NULL;
-        wl_list_remove(&surface_ptr->surface_commit_listener.link);
+        wlmtk_util_disconnect_listener(&surface_ptr->surface_commit_listener);
     }
 
     wlmtk_element_fini(&surface_ptr->super_element);

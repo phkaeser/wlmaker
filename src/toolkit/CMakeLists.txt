@@ -29,12 +29,14 @@ SET(PUBLIC_HEADER_FILES
   image.h
   input.h
   layer.h
+  lock.h
   panel.h
   popup.h
   primitives.h
   rectangle.h
   resizebar.h
   resizebar_area.h
+  root.h
   style.h
   surface.h
   tile.h
@@ -62,12 +64,14 @@ TARGET_SOURCES(toolkit PRIVATE
   gfxbuf.c
   image.c
   layer.c
+  lock.c
   panel.c
   popup.c
   primitives.c
   rectangle.c
   resizebar.c
   resizebar_area.c
+  root.c
   style.c
   surface.c
   tile.c

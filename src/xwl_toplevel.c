@@ -128,12 +128,11 @@ void _xwl_toplevel_handle_surface_map(
     wlmaker_xwl_toplevel_t *xwl_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_toplevel_t, surface_map_listener);
 
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        xwl_toplevel_ptr->server_ptr);
+    wlmtk_workspace_t *workspace_ptr =
+        wlmtk_root_get_current_workspace(
+            xwl_toplevel_ptr->server_ptr->root_ptr);
 
-    wlmtk_workspace_map_window(
-        wlmaker_workspace_wlmtk(workspace_ptr),
-        xwl_toplevel_ptr->window_ptr);
+    wlmtk_workspace_map_window(workspace_ptr, xwl_toplevel_ptr->window_ptr);
     wlmtk_window_set_position(xwl_toplevel_ptr->window_ptr, 40, 30);
 }
 

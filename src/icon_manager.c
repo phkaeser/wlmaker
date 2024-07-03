@@ -44,6 +44,11 @@ struct _wlmaker_icon_manager_t {
 
 /** State of a toplevel icon. */
 struct _wlmaker_toplevel_icon_t {
+    /** The icon is also a toolkit tile. */
+    wlmtk_tile_t              super_tile;
+    /** The surface element, being the content of the tile. */
+    wlmtk_surface_t           *content_surface_ptr;
+
     /** Back-link to the client requesting the toplevel. */
     struct wl_client          *wl_client_ptr;
     /** Back-link to the icon manager. */
@@ -63,13 +68,10 @@ struct _wlmaker_toplevel_icon_t {
     /** Serial that needs to be acknowledged. */
     uint32_t                  pending_serial;
 
-    /** Tile container where the DockApp is contained. */
-    wlmaker_tile_container_t  *tile_container_ptr;
-    /** DockApp tile, camouflaged as iconified. */
-    wlmaker_dockapp_iconified_t *dai_ptr;
-
     /** Listener for the `commit` event of `wlr_surface_ptr`. */
     struct wl_listener        surface_commit_listener;
+    /** Listener for the `destroy` event of `wlr_surface_ptr`. */
+    struct wl_listener        surface_destroy_listener;
 };
 
 static wlmaker_icon_manager_t *icon_manager_from_resource(
@@ -114,6 +116,12 @@ static void handle_icon_ack_configure(
 static void handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void _wlmaker_toplevel_icon_element_destroy(
+    wlmtk_element_t *element_ptr);
 
 /* == Data ================================================================= */
 
@@ -129,6 +137,11 @@ static const struct zwlmaker_toplevel_icon_v1_interface
 toplevel_icon_v1_implementation = {
     .destroy = handle_resource_destroy,
     .ack_configure = handle_icon_ack_configure,
+};
+
+/** The icon's extension to @ref wlmtk_element_t virtual method table. */
+static const wlmtk_element_vmt_t _wlmaker_toplevel_icon_element_vmt = {
+    .destroy = _wlmaker_toplevel_icon_element_destroy,
 };
 
 /* == Exported methods ===================================================== */
@@ -345,37 +358,50 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
         toplevel_icon_ptr,
         toplevel_icon_resource_destroy);
 
+    if (!wlmtk_tile_init(
+            &toplevel_icon_ptr->super_tile,
+            &icon_manager_ptr->server_ptr->style.tile,
+            icon_manager_ptr->server_ptr->env_ptr)) {
+        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
+        &_wlmaker_toplevel_icon_element_vmt);
+    wlmtk_element_set_visible(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
+        true);
+    wlmtk_dock_add_tile(
+        icon_manager_ptr->server_ptr->clip_dock_ptr,
+        &toplevel_icon_ptr->super_tile);
+
+    toplevel_icon_ptr->content_surface_ptr = wlmtk_surface_create(
+        wlr_surface_ptr,
+        icon_manager_ptr->server_ptr->env_ptr);
+    if (NULL == toplevel_icon_ptr->content_surface_ptr) {
+        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr),
+        true);
+
+    // Hack: Connect this listener after wlmtk_surface creation, so that the
+    // surface knows it's size before added...
     wlmtk_util_connect_listener_signal(
         &toplevel_icon_ptr->wlr_surface_ptr->events.commit,
         &toplevel_icon_ptr->surface_commit_listener,
         handle_surface_commit);
+    wlmtk_util_connect_listener_signal(
+        &toplevel_icon_ptr->wlr_surface_ptr->events.destroy,
+        &toplevel_icon_ptr->surface_destroy_listener,
+        handle_surface_destroy);
 
-    // TODO(kaeser@gubbe.ch): Should catch 'map' and 'unmap', and create or
-    // destroy the icon accordingly.
-    toplevel_icon_ptr->dai_ptr = wlmaker_dockapp_iconified_create(
-        icon_manager_ptr->server_ptr);
-    if (NULL == toplevel_icon_ptr->dai_ptr) {
-        wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
-        return NULL;
-    }
-    wlmaker_dockapp_iconified_attach(
-        toplevel_icon_ptr->dai_ptr,
-        wlr_surface_ptr);
-
-    // TODO(kaeser@gubbe.ch): If the toplevel is already mapped, we may want
-    // to pick the same workspace for showing the icon. Similar, the icon
-    // may need to move along as the toplevel switches workspaces.
-    // This needs an update, once the interfaces get more stable.
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        icon_manager_ptr->server_ptr);
-    toplevel_icon_ptr->tile_container_ptr =
-        wlmaker_workspace_get_tile_container(workspace_ptr);
-    wlmaker_tile_container_add(
-        toplevel_icon_ptr->tile_container_ptr,
-        wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
-
-    bs_log(BS_DEBUG, "created toplevel icon %p for toplevel %p, surface %p",
-           toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr);
+    bs_log(BS_INFO,
+           "created toplevel icon %p for toplevel %p, surface %p, "
+           "wlmtk surface %p",
+           toplevel_icon_ptr, wlr_xdg_toplevel_ptr, wlr_surface_ptr,
+           toplevel_icon_ptr->content_surface_ptr);
 
     return toplevel_icon_ptr;
 }
@@ -389,18 +415,14 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 void wlmaker_toplevel_icon_destroy(
     wlmaker_toplevel_icon_t *toplevel_icon_ptr)
 {
-    bs_log(BS_DEBUG, "Destroying toplevel icon %p", toplevel_icon_ptr);
+    bs_log(BS_INFO, "Destroying toplevel icon %p", toplevel_icon_ptr);
+
+    _wlmaker_toplevel_icon_element_destroy(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile));
+    wlmtk_tile_fini(&toplevel_icon_ptr->super_tile);
 
     // Note: Not destroying toplevel_icon_ptr->resource, since that causes
     // cycles...
-
-    if (NULL != toplevel_icon_ptr->dai_ptr) {
-        wlmaker_tile_container_remove(
-            toplevel_icon_ptr->tile_container_ptr,
-            wlmaker_iconified_from_dockapp(toplevel_icon_ptr->dai_ptr));
-        wlmaker_dockapp_iconified_destroy(toplevel_icon_ptr->dai_ptr);
-        toplevel_icon_ptr->dai_ptr = NULL;
-    }
 
     free(toplevel_icon_ptr);
 }
@@ -482,6 +504,62 @@ void handle_surface_commit(
             1,
             "Commit non-NULL buffer without configure sequence.");
         return;
+    }
+
+    wlmtk_tile_set_content(
+        &toplevel_icon_ptr->super_tile,
+        wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles when the surface is destroyed. */
+static void handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_toplevel_icon_t, surface_destroy_listener);
+    _wlmaker_toplevel_icon_element_destroy(
+        wlmtk_tile_element(&toplevel_icon_ptr->super_tile));
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Destructor of the icon's corresponding tile element.
+ *
+ * This is a hack: The `wlmaker_toplevel_icon_t` is owned by the wl_resource
+ * and must only be freed when that dtor is caller. But, the element dtor may
+ * be called on wlmaker shutdown, when eg. an icon app is still running.
+ * So, for that case, we just detach the icon here.
+ *
+ * Leaving as is, since the icon model will need to be revamped anyway, to
+ * line up with the new XDG icon protocol.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_toplevel_icon_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_toplevel_icon_t,
+        super_tile.super_container.super_element);
+
+    if (NULL != toplevel_icon_ptr->content_surface_ptr) {
+
+        wlmtk_util_disconnect_listener(
+            &toplevel_icon_ptr->surface_destroy_listener);
+        wlmtk_util_disconnect_listener(
+            &toplevel_icon_ptr->surface_commit_listener);
+
+        wlmtk_tile_set_content(&toplevel_icon_ptr->super_tile, NULL);
+        wlmtk_surface_destroy(toplevel_icon_ptr->content_surface_ptr);
+        toplevel_icon_ptr->content_surface_ptr = NULL;
+    }
+
+    if (wlmtk_tile_element(&toplevel_icon_ptr->super_tile
+            )->parent_container_ptr) {
+        wlmtk_dock_remove_tile(
+            toplevel_icon_ptr->icon_manager_ptr->server_ptr->clip_dock_ptr,
+            &toplevel_icon_ptr->super_tile);
     }
 }
 

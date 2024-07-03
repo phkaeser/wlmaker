@@ -91,11 +91,14 @@ bool wlmcfg_decode_dict(
 
         wlmcfg_object_t *obj_ptr = wlmcfg_dict_get(
             dict_ptr, iter_desc_ptr->key_ptr);
-        if (NULL == obj_ptr && iter_desc_ptr->required) {
-            bs_log(BS_ERROR, "Key \"%s\" not found in dict %p.",
-                   iter_desc_ptr->key_ptr, dict_ptr);
-            wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
-            return false;
+        if (NULL == obj_ptr) {
+            if (iter_desc_ptr->required) {
+                bs_log(BS_ERROR, "Key \"%s\" not found in dict %p.",
+                       iter_desc_ptr->key_ptr, dict_ptr);
+                wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
+                return false;
+            }
+            continue;
         }
 
         bool rv = false;
@@ -682,11 +685,25 @@ void test_decode_argb32(bs_test_t *test_ptr)
 {
     wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_string(
         "\"argb32:01020304\"");
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, obj_ptr);
 
     uint32_t argb32;
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_argb32(obj_ptr, &argb32));
     BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, argb32);
+    wlmcfg_object_unref(obj_ptr);
+
+    obj_ptr = wlmcfg_create_object_from_plist_string(
+        "{c=\"argb32:ffa0b0c0\"}");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, obj_ptr);
+    _test_value_t v;
+    wlmcfg_desc_t desc[] = {
+        WLMCFG_DESC_ARGB32("c", false, _test_value_t , v_argb32, 0x01020304),
+        WLMCFG_DESC_ARGB32("d", false, _test_value_t , v_argb32, 0x01020304),
+        WLMCFG_DESC_SENTINEL()
+    };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmcfg_decode_dict(wlmcfg_dict_from_object(obj_ptr), desc, &v));
     wlmcfg_object_unref(obj_ptr);
 }
 

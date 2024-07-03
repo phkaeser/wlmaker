@@ -130,20 +130,22 @@ Support for visual effects to improve usability, but not for pure show.
 * Bugfixes
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
   * Fix bug: When switching workspace, pointer state appears to be reset.
-  * [done] Add commandline flag to enabnle/disable XWayland start.
+  * [done] Add commandline flag to enable/disable XWayland start.
+  * [done] Verify startup on console works.
 
 * [done] Screensaver support.
   * [done] Implement ext-session-lock-v1 protocol.
   * [done] Verify screen lock works with eg. swaylock.
   * [done] Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
+  * Verify this still works after the to-toolkit move.
 
-* Configuration file support
+* [done] Configuration file support
   * [done] Pick or implement parser for configuration file.
   * [done] File for basic configuration: Keyboard map & config, auto-started apps.
   * [done] Configure idle monitor and screensaver command via config file.
   * [done] Configurable key combinations for basic window actions (minimize, ...).
   * [done] File for visual style (theme): decoration style, background.
-  * File to define workspaces and dock, falling back to default if not provided.
+  * [done] File to define workspaces and dock, falling back to default if not provided.
   * [done] Include at least one additional theme.
 
 * [done] Theme details
@@ -160,10 +162,10 @@ Support for visual effects to improve usability, but not for pure show.
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
 
-* Multiple workspaces, based on toolkit.
-  * Remove the earlier non-toolkit code.
-  * Background color for separate workspaces, configured in state.
-  * Default background color, picked up from style file.
+* [done] Multiple workspaces, based on toolkit.
+  * [done] Remove the earlier non-toolkit code.
+  * [done] Background color for separate workspaces, configured in state.
+  * [done] Default background color, picked up from style file.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.

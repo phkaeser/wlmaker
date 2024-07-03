@@ -54,8 +54,6 @@ static void handle_seat_request_set_cursor(
     void *data_ptr);
 
 static void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec);
-static void update_under_cursor_view(wlmaker_cursor_t *cursor_ptr,
-                                     wlmaker_view_t *view_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -132,7 +130,6 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
         &cursor_ptr->seat_request_set_cursor_listener,
         handle_seat_request_set_cursor);
 
-    wl_signal_init(&cursor_ptr->button_release_event);
     return cursor_ptr;
 }
 
@@ -245,53 +242,9 @@ void handle_button(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed;
-    wlmtk_button_event_t event = {};
-    event.button = wlr_pointer_button_event_ptr->button;
-    event.time_msec = wlr_pointer_button_event_ptr->time_msec;
-    consumed = wlmtk_element_pointer_button(
-        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
-        &event);
-    if (consumed) return;
-
-    consumed = wlmtk_workspace_button(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
+    wlmtk_root_pointer_button(
+        cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_button_event_ptr);
-
-    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
-    // Remove it, once we're fully on toolkit.
-    if (consumed) return;
-
-    // Notify the client with pointer focus that a button press has occurred.
-    wlr_seat_pointer_notify_button(
-        cursor_ptr->server_ptr->wlr_seat_ptr,
-        wlr_pointer_button_event_ptr->time_msec,
-        wlr_pointer_button_event_ptr->button,
-        wlr_pointer_button_event_ptr->state);
-
-    // Let the view take action on the button press.
-    struct wlr_surface *wlr_surface_ptr;
-    double rel_x, rel_y;
-    wlmaker_view_t *view_ptr = wlmaker_view_at(
-        cursor_ptr->server_ptr,
-        cursor_ptr->wlr_cursor_ptr->x,
-        cursor_ptr->wlr_cursor_ptr->y,
-        &wlr_surface_ptr,
-        &rel_x,
-        &rel_y);
-    if (NULL != view_ptr) {
-        wlmaker_view_handle_button(
-            view_ptr,
-            cursor_ptr->wlr_cursor_ptr->x,
-            cursor_ptr->wlr_cursor_ptr->y,
-            wlr_pointer_button_event_ptr);
-    }
-    update_under_cursor_view(cursor_ptr, view_ptr);
-
-    if (wlr_pointer_button_event_ptr->state == WLR_BUTTON_RELEASED) {
-        wl_signal_emit(&cursor_ptr->button_release_event, data_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -310,46 +263,9 @@ void handle_axis(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
-    bool consumed;
-    consumed = wlmtk_element_pointer_axis(
-        wlmaker_root_element(cursor_ptr->server_ptr->root_ptr),
+    wlmtk_root_pointer_axis(
+        cursor_ptr->server_ptr->root_ptr,
         wlr_pointer_axis_event_ptr);
-    if (consumed) return;
-
-    consumed = wlmtk_workspace_axis(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
-        wlr_pointer_axis_event_ptr);
-    // TODO(kaeser@gubbe.ch): The code below is for the pre-toolkit version.
-    // Remove it, once we're fully on toolkit.
-    if (consumed) return;
-
-    /* Notify the client with pointer focus of the axis event. */
-    wlr_seat_pointer_notify_axis(
-        cursor_ptr->server_ptr->wlr_seat_ptr,
-        wlr_pointer_axis_event_ptr->time_msec,
-        wlr_pointer_axis_event_ptr->orientation,
-        wlr_pointer_axis_event_ptr->delta,
-        wlr_pointer_axis_event_ptr->delta_discrete,
-        wlr_pointer_axis_event_ptr->source);
-
-    // Let the view take action on the button press.
-    struct wlr_surface *wlr_surface_ptr;
-    double rel_x, rel_y;
-    wlmaker_view_t *view_ptr = wlmaker_view_at(
-        cursor_ptr->server_ptr,
-        cursor_ptr->wlr_cursor_ptr->x,
-        cursor_ptr->wlr_cursor_ptr->y,
-        &wlr_surface_ptr,
-        &rel_x,
-        &rel_y);
-    if (NULL != view_ptr) {
-        wlmaker_view_handle_axis(
-            view_ptr,
-            cursor_ptr->wlr_cursor_ptr->x,
-            cursor_ptr->wlr_cursor_ptr->y,
-            wlr_pointer_axis_event_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -414,34 +330,11 @@ void handle_seat_request_set_cursor(
  */
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
-    wlmtk_workspace_motion(
-        wlmaker_workspace_wlmtk(wlmaker_server_get_current_workspace(
-                                    cursor_ptr->server_ptr)),
+    wlmtk_root_pointer_motion(
+        cursor_ptr->server_ptr->root_ptr,
         cursor_ptr->wlr_cursor_ptr->x,
         cursor_ptr->wlr_cursor_ptr->y,
         time_msec);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Updates which view currently has "cursor focus". This is used to notify the
- * view when the cursor exits it's region.
- *
- * @param cursor_ptr
- * @param view_ptr
- */
-void update_under_cursor_view(wlmaker_cursor_t *cursor_ptr,
-                              wlmaker_view_t *view_ptr)
-{
-    // Nothing to do if ther was no change.
-    if (cursor_ptr->under_cursor_view_ptr == view_ptr) return;
-
-    // Otherwise: Send a 'LEAVE' notification to the former view
-    if (NULL != cursor_ptr->under_cursor_view_ptr) {
-        wlmaker_view_cursor_leave(cursor_ptr->under_cursor_view_ptr);
-    }
-
-    cursor_ptr->under_cursor_view_ptr = view_ptr;
 }
 
 /* == End of cursor.c ====================================================== */

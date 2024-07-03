@@ -66,12 +66,12 @@ struct _wlmaker_task_list_t {
 static void _wlmaker_task_list_refresh(
     wlmaker_task_list_t *task_list_ptr);
 static struct wlr_buffer *create_wlr_buffer(
-    wlmaker_workspace_t *workspace_ptr,
+    wlmtk_workspace_t *workspace_ptr,
     wlmaker_config_task_list_style_t *style_ptr);
 static void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
     wlmaker_config_task_list_style_t *style_ptr,
-    wlmaker_workspace_t *workspace_ptr);
+    wlmtk_workspace_t *workspace_ptr);
 static void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
     wlmtk_style_font_t *font_style_ptr,
@@ -157,11 +157,11 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         _wlmaker_task_list_handle_task_list_disabled);
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->window_mapped_event,
+        &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
         &task_list_ptr->window_mapped_listener,
         _wlmaker_task_list_handle_window_mapped);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->window_unmapped_event,
+        &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
         &task_list_ptr->window_unmapped_listener,
         _wlmaker_task_list_handle_window_unmapped);
 
@@ -197,8 +197,8 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
  */
 void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
 {
-    wlmaker_workspace_t *workspace_ptr = wlmaker_server_get_current_workspace(
-        task_list_ptr->server_ptr);
+    wlmtk_workspace_t *workspace_ptr =
+        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
         workspace_ptr, &task_list_ptr->style);
@@ -217,7 +217,7 @@ void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
  *     (tasks), or NULL on error.
  */
 struct wlr_buffer *create_wlr_buffer(
-    wlmaker_workspace_t *workspace_ptr,
+    wlmtk_workspace_t *workspace_ptr,
     wlmaker_config_task_list_style_t *style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
@@ -247,18 +247,15 @@ struct wlr_buffer *create_wlr_buffer(
 void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
     wlmaker_config_task_list_style_t *style_ptr,
-    wlmaker_workspace_t *workspace_ptr)
+    wlmtk_workspace_t *workspace_ptr)
 {
     wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
 
     // Not tied to a workspace? We're done, all set.
     if (NULL == workspace_ptr) return;
 
-    wlmtk_workspace_t *wlmtk_workspace_ptr = wlmaker_workspace_wlmtk(
-        workspace_ptr);
-
     const bs_dllist_t *windows_ptr = wlmtk_workspace_get_windows_dllist(
-        wlmtk_workspace_ptr);
+        workspace_ptr);
     // No windows at all? Done here.
     if (bs_dllist_empty(windows_ptr)) return;
 
@@ -266,7 +263,7 @@ void _wlmaker_task_list_draw_into_cairo(
     bs_dllist_node_t *centered_dlnode_ptr = windows_ptr->head_ptr;
     bs_dllist_node_t *active_dlnode_ptr = windows_ptr->head_ptr;
     while (NULL != active_dlnode_ptr &&
-           wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr) !=
+           wlmtk_workspace_get_activated_window(workspace_ptr) !=
            wlmtk_window_from_dlnode(active_dlnode_ptr)) {
         active_dlnode_ptr = active_dlnode_ptr->next_ptr;
     }
@@ -424,8 +421,8 @@ void _wlmaker_task_list_handle_task_list_enabled(
         return;
     }
 
-    wlmtk_workspace_t *workspace_ptr = wlmaker_workspace_wlmtk(
-        wlmaker_server_get_current_workspace(task_list_ptr->server_ptr));
+    wlmtk_workspace_t *workspace_ptr =
+        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
     wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);

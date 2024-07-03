@@ -1,0 +1,33 @@
+{
+   <cairo_fontconfig1>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   fun:FcPatternDuplicate
+   obj:/usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0
+   obj:/usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0
+   fun:cairo_toy_font_face_create
+   fun:cairo_select_font_face
+   fun:_wlmaker_clip_update_overlay
+   fun:wlmaker_clip_create
+   fun:main
+}
+{
+   <cairo_fontconfig2>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so.1.8.10
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so.1.8.10
+   obj:/usr/lib/x86_64-linux-gnu/libexpat.so.1.8.10
+   fun:XML_ParseBuffer
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+   obj:/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.0
+}

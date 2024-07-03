@@ -40,12 +40,14 @@ extern "C" {
  * Creates the Clip. Needs the server to be up with workspaces running.
  *
  * @param server_ptr
+ * @param state_dict_ptr
  * @param style_ptr
  *
  * @return Pointer to the Clip handle, or NULL on error.
  */
 wlmaker_clip_t *wlmaker_clip_create(
     wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr);
 
 /**

@@ -1,5 +1,6 @@
 // Style oriented on Window Maker's default.
 {
+  BackgroundColor = "argb32:ff505080";
   Dock = {
     Margin = {
       Width = 1;

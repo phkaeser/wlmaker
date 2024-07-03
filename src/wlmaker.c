@@ -33,6 +33,7 @@
 #include "conf/plist.h"
 
 #include "action.h"
+#include "background.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
@@ -43,6 +44,8 @@
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
+/** Will hold the value of --state_file. */
+static char *wlmaker_arg_state_file_ptr = NULL;
 /** Will hold the value of --style_file. */
 static char *wlmaker_arg_style_file_ptr = NULL;
 
@@ -66,6 +69,13 @@ static const bs_arg_t wlmaker_args[] = {
         NULL,
         &wlmaker_arg_config_file_ptr),
     BS_ARG_STRING(
+        "state_file",
+        "Optional: Path to a state file, with state of workspaces, dock and "
+        "clips configured. If not provided, wlmaker will scan default paths "
+        "for a state file, or fall back to a built-in default.",
+        NULL,
+        &wlmaker_arg_state_file_ptr),
+    BS_ARG_STRING(
         "style_file",
         "Optional: Path to a style (\"theme\") file. If not provided, wlmaker "
         "will use a built-in default style.",
@@ -82,6 +92,23 @@ static regex_t                wlmaker_wlr_log_regex;
 /** Regular expression string for extracting file & line no. from wlr_log. */
 static const char             *wlmaker_wlr_log_regex_string =
     "^\\[([^\\:]+)\\:([0-9]+)\\]\\ ";
+
+/** Contents of the workspace style. */
+typedef struct {
+    /** Workspace name. */
+    char            name[32];
+    /** Background color. */
+    uint32_t        color;
+} wlmaker_workspace_style_t;
+
+/** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
+static const wlmcfg_desc_t wlmaker_workspace_style_desc[] = {
+    WLMCFG_DESC_CHARBUF(
+        "Name", true, wlmaker_workspace_style_t, name, 32, NULL),
+    WLMCFG_DESC_ARGB32(
+        "Color", false, wlmaker_workspace_style_t, color, 0),
+    WLMCFG_DESC_SENTINEL()
+};
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -144,13 +171,76 @@ bool start_subprocess(const char *cmdline_ptr)
         return false;
     }
     if (!bs_subprocess_start(sp_ptr)) {
-        bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\".",
+        bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\"",
                cmdline_ptr);
         return false;
     }
     // Push to stack. Ignore errors: We'll keep it running untracked.
     bs_ptr_stack_push(&wlmaker_subprocess_stack, sp_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates workspaces as configured in the state dict. */
+bool create_workspaces(
+    wlmcfg_dict_t *state_dict_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    wlmcfg_array_t *array_ptr = wlmcfg_dict_get_array(
+        state_dict_ptr, "Workspaces");
+    if (NULL == array_ptr) return false;
+
+    bool rv = true;
+    for (size_t i = 0; i < wlmcfg_array_size(array_ptr); ++i) {
+        wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_array_at(array_ptr, i));
+        if (NULL == dict_ptr) {
+            bs_log(BS_ERROR, "Array element in \"Workspaces\" is not a dict");
+            rv = false;
+            break;
+        }
+
+        wlmaker_workspace_style_t s;
+        if (!wlmcfg_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
+            bs_log(BS_ERROR,
+                   "Failed to decode dict element %zu in \"Workspace\"",
+                   i);
+            rv = false;
+            break;
+        }
+
+        wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+            s.name, server_ptr->env_ptr);
+        if (NULL == workspace_ptr) {
+            bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
+                   s.name, server_ptr->env_ptr);
+            rv = false;
+            break;
+        }
+
+        if (s.color == 0) {
+            s.color = server_ptr->style.background_color;
+        }
+        wlmaker_background_t *background_ptr = wlmaker_background_create(
+            s.color, server_ptr->env_ptr);
+        if (NULL == background_ptr) {
+            bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
+                   server_ptr->env_ptr);
+            rv = false;
+            break;
+        }
+
+        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
+            workspace_ptr,
+            WLMTK_WORKSPACE_LAYER_BACKGROUND);
+        wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmaker_background_panel(background_ptr));
+
+        wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
+    }
+
+    return rv;
 }
 
 /* == Main program ========================================================= */
@@ -191,6 +281,14 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
+    wlmcfg_dict_t *state_dict_ptr = wlmaker_state_load(
+        wlmaker_arg_state_file_ptr);
+    if (NULL != wlmaker_arg_state_file_ptr) free(wlmaker_arg_state_file_ptr);
+    if (NULL == state_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize state.\n");
+        return EXIT_FAILURE;
+    }
+
     wlmaker_server_t *server_ptr = wlmaker_server_create(
         config_dict_ptr, &wlmaker_server_options);
     wlmcfg_dict_unref(config_dict_ptr);
@@ -224,6 +322,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
+    if (!create_workspaces(state_dict_ptr, server_ptr)) {
+        return EXIT_FAILURE;
+    }
+
     rv = EXIT_SUCCESS;
     if (wlr_backend_start(server_ptr->wlr_backend_ptr)) {
         bs_log(BS_INFO, "Starting Wayland compositor for server %p at %s ...",
@@ -241,8 +343,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             }
         }
 
-        dock_ptr = wlmaker_dock_create(server_ptr, &server_ptr->style);
-        clip_ptr = wlmaker_clip_create(server_ptr, &server_ptr->style);
+        dock_ptr = wlmaker_dock_create(
+            server_ptr, state_dict_ptr, &server_ptr->style);
+        clip_ptr = wlmaker_clip_create(
+            server_ptr, state_dict_ptr, &server_ptr->style);
         task_list_ptr = wlmaker_task_list_create(server_ptr, &server_ptr->style);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
@@ -267,6 +371,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
     bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
+    wlmcfg_dict_unref(state_dict_ptr);
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }

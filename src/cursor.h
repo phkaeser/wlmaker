@@ -24,7 +24,6 @@
 typedef struct _wlmaker_cursor_t wlmaker_cursor_t;
 
 #include "server.h"
-#include "view.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,12 +52,6 @@ struct _wlmaker_cursor_t {
 
     /** Listener for the `request_set_cursor` event of `wlr_seat`. */
     struct wl_listener        seat_request_set_cursor_listener;
-
-    /** The view that is currently active and under the cursor. */
-    wlmaker_view_t            *under_cursor_view_ptr;
-
-    /** wlmaker internal: catch 'release' events of cursors. */
-    struct wl_signal          button_release_event;
 };
 
 /**

@@ -23,6 +23,8 @@
 #include <libbase/libbase.h>
 #include <wayland-server-core.h>
 
+#include "toolkit/toolkit.h"
+
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/render/allocator.h>
@@ -59,14 +61,11 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "keyboard.h"
 #include "layer_shell.h"
 #include "lock_mgr.h"
-#include "root.h"
-#include "view.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
 #include "xdg_decoration.h"
 #include "xdg_shell.h"
 #include "xwl.h"
-#include "workspace.h"
 
 #include "conf/model.h"
 #include "toolkit/toolkit.h"
@@ -112,15 +111,6 @@ struct _wlmaker_server_t {
     struct wlr_scene          *wlr_scene_ptr;
     /** The scene output layout. */
     struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
-    /**
-     * Another scene graph, not connected to any output.
-     *
-     * We're using this graph's scene tree for "parking" scene nodes when they
-     * are not part of a workspace.
-     *
-     * TODO(kaeser@gubbe.ch): Consider whether this is actually needed.
-     */
-    struct wlr_scene          *void_wlr_scene_ptr;
 
     /** Listener for `new_output` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_output_listener;
@@ -167,18 +157,7 @@ struct _wlmaker_server_t {
     wlmtk_env_t               *env_ptr;
 
     /** The root element. */
-    wlmaker_root_t            *root_ptr;
-    /** The current workspace. */
-    wlmaker_workspace_t       *current_workspace_ptr;
-    /** List of all workspaces. */
-    bs_dllist_t               workspaces;
-    /** Fake workspace, injectable for tests. */
-    wlmtk_fake_workspace_t    *fake_wlmtk_workspace_ptr;
-    /**
-     * Signal: Raised when the current workspace is changed.
-     * Data: Pointer to the new `wlmaker_workspace_t`.
-     */
-    struct wl_signal          workspace_changed;
+    wlmtk_root_t              *root_ptr;
     /** Whether the task list is currently shown. */
     bool                      task_list_enabled;
     /** Signal: When the task list is enabled. (to be shown) */
@@ -201,18 +180,9 @@ struct _wlmaker_server_t {
     struct wl_signal          window_created_event;
     /** Signal: Triggered whenever a window is destroyed. */
     struct wl_signal          window_destroyed_event;
-    /**
-     * Signal: Triggered whenever a window is mapped.
-     *
-     * The signal is raised right after the window was mapped.
-     */
-    struct wl_signal          window_mapped_event;
-    /**
-     * Signal: Triggered whenever a window is unmapped.
-     *
-     * The signal is raised right after the window was unmapped.
-     */
-    struct wl_signal          window_unmapped_event;
+
+    /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
+    wlmtk_dock_t              *clip_dock_ptr;
 
     /** The current configuration style. */
     wlmaker_config_style_t    style;
@@ -307,40 +277,6 @@ bool wlmaker_keyboard_process_bindings(
     wlmaker_server_t *server_ptr,
     xkb_keysym_t keysym,
     uint32_t modifiers);
-
-/**
- * Returns the currently active workspace.
- *
- * @param server_ptr
- *
- * @return Pointer to the `wlmaker_workspace_t` currently active.
- */
-wlmaker_workspace_t *wlmaker_server_get_current_workspace(
-    wlmaker_server_t *server_ptr);
-
-/**
- * Returns the currently active workspace.
- *
- * @param server_ptr
- *
- * @return Pointer to the `wlmtk_workspace_t` currently active.
- */
-wlmtk_workspace_t *wlmaker_server_get_current_wlmtk_workspace(
-    wlmaker_server_t *server_ptr);
-
-/**
- * Switches to the next workspace.
- *
- * @param server_ptr
- */
-void wlmaker_server_switch_to_next_workspace(wlmaker_server_t *server_ptr);
-
-/**
- * Switches to the previous workspace.
- *
- * @param server_ptr
- */
-void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr);
 
 /**
  * Activates the task list.

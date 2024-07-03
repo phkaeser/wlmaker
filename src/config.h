@@ -63,6 +63,8 @@ typedef struct {
 
 /** Style information. Replaces @ref wlmaker_config_theme_t. */
 typedef struct {
+    /** Background color, unless overriden in "Workspace" state. */
+    uint32_t                  background_color;
     /** The tile. */
     wlmtk_tile_style_t        tile;
     /** Dock optics: Margin. */
@@ -84,10 +86,6 @@ typedef struct {
 
     /** Fill style of a tile. */
     wlmtk_style_fill_t        tile_fill;
-    /** File style of the title element of an iconified. */
-    wlmtk_style_fill_t        iconified_title_fill;
-    /** Color of the iconified's title. */
-    uint32_t                  iconified_title_color;
 
     /** Fill style of the menu's background. */
     wlmtk_style_fill_t        menu_fill;
@@ -108,14 +106,6 @@ typedef struct {
     uint32_t                  menu_item_selected_text_color;
 } wlmaker_config_theme_t;
 
-/** Configuration for a workspace. */
-typedef struct {
-    /** Name of the workspace. NULL indicates this is a sentinel element. */
-    const char                *name_ptr;
-    /** Workspace's background color, as 8888 RGBA. */
-    uint32_t                  color;
-} wlmaker_config_workspace_t;
-
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
 
@@ -125,7 +115,6 @@ extern const wlmaker_config_decoration_t config_decoration;
 
 extern const uint32_t wlmaker_config_window_drag_modifiers;
 
-extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
 extern const wlmaker_config_theme_t wlmaker_config_theme;
 
 /**
@@ -143,6 +132,17 @@ extern const wlmaker_config_theme_t wlmaker_config_theme;
  *     @ref wlmcfg_object_unref.
  */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
+
+/**
+ * Loads the state for wlmaker.
+ *
+ * Behaviour is similar to @ref wlmaker_config_load.
+ *
+ * @param fname_ptr
+ *
+ * @return A dict object or NULL on error.
+ */
+wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr);
 
 extern const wlmcfg_desc_t wlmaker_config_style_desc[];
 

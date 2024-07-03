@@ -17,31 +17,22 @@ INCLUDE(EmbedBinary)
 
 SET(PUBLIC_HEADER_FILES
   action.h
+  background.h
   clip.h
   config.h
   cursor.h
-  decorations.h
   dock.h
   icon_manager.h
-  iconified.h
   idle.h
-  interactive.h
   keyboard.h
   layer_panel.h
   layer_shell.h
   launcher.h
   lock_mgr.h
-  menu.h
-  menu_item.h
   output.h
-  root.h
   server.h
   subprocess_monitor.h
   task_list.h
-  tile_container.h
-  tile.h
-  view.h
-  workspace.h
   xdg_decoration.h
   xdg_popup.h
   xdg_shell.h
@@ -54,31 +45,22 @@ SET(PUBLIC_HEADER_FILES
 ADD_LIBRARY(wlmaker_lib STATIC)
 TARGET_SOURCES(wlmaker_lib PRIVATE
   action.c
+  background.c
   clip.c
   config.c
   cursor.c
-  decorations.c
   dock.c
   icon_manager.c
-  iconified.c
   idle.c
-  interactive.c
   keyboard.c
   launcher.c
   layer_panel.c
   layer_shell.c
   lock_mgr.c
-  menu.c
-  menu_item.c
   output.c
-  root.c
   server.c
   subprocess_monitor.c
   task_list.c
-  tile.c
-  tile_container.c
-  view.c
-  workspace.c
   xdg_decoration.c
   xdg_popup.c
   xdg_shell.c
@@ -100,9 +82,9 @@ EmbedBinary_ADD_LIBRARY(
   "${PROJECT_SOURCE_DIR}/etc/wlmaker.plist")
 
 EmbedBinary_ADD_LIBRARY(
-  embedded_dock_state
-  "default_dock_state"
-  "${PROJECT_SOURCE_DIR}/etc/dock.plist")
+  embedded_state
+  "default_state"
+  "${PROJECT_SOURCE_DIR}/etc/wlmaker-state.plist")
 
 EmbedBinary_ADD_LIBRARY(
   embedded_style
@@ -115,7 +97,7 @@ ADD_DEPENDENCIES(
   conf
   toolkit
   embedded_configuration
-  embedded_dock_state
+  embedded_state
   embedded_style
   wlmaker_lib)
 
@@ -125,7 +107,7 @@ TARGET_LINK_LIBRARIES(
   conf
   toolkit
   embedded_configuration
-  embedded_dock_state
+  embedded_state
   embedded_style
   wlmaker_protocols
   PkgConfig::CAIRO

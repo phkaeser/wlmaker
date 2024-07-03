@@ -76,15 +76,6 @@ static void handle_destroy_input_device(
 static void handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void set_extents(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static void arrange_views(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static void wlmaker_server_switch_to_workspace(
-    wlmaker_server_t *server_ptr,
-    wlmaker_workspace_t *workspace_ptr);
 
 /* == Data ================================================================= */
 
@@ -115,15 +106,11 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    wl_signal_init(&server_ptr->workspace_changed);
-
     wl_signal_init(&server_ptr->task_list_enabled_event);
     wl_signal_init(&server_ptr->task_list_disabled_event);
 
     wl_signal_init(&server_ptr->window_created_event);
     wl_signal_init(&server_ptr->window_destroyed_event);
-    wl_signal_init(&server_ptr->window_mapped_event);
-    wl_signal_init(&server_ptr->window_unmapped_event);
 
     // Prepare display and socket.
     server_ptr->wl_display_ptr = wl_display_create();
@@ -220,13 +207,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->void_wlr_scene_ptr = wlr_scene_create();
-    if (NULL == server_ptr->void_wlr_scene_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     server_ptr->cursor_ptr = wlmaker_cursor_create(server_ptr);
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
@@ -243,44 +223,9 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    // TODO(kaeser@gubbe.ch): Create the workspaces depending on configuration.
-    int workspace_idx = 0;
-    const wlmaker_config_workspace_t *workspace_config_ptr;
-    for (workspace_config_ptr = &wlmaker_config_workspaces[0];
-         NULL != workspace_config_ptr->name_ptr;
-         ++workspace_config_ptr, ++workspace_idx) {
-        wlmaker_workspace_t *workspace_ptr = wlmaker_workspace_create(
-            server_ptr,
-            workspace_config_ptr->color,
-            workspace_idx + 1,
-            workspace_config_ptr->name_ptr);
-        if (NULL == workspace_ptr) {
-            bs_log(BS_ERROR,
-                   "Failed wlmaker_workspace_create(%p, %"PRIx32", %d, \"%s\")",
-                   server_ptr,
-                   workspace_config_ptr->color,
-                   workspace_idx + 1,
-                   workspace_config_ptr->name_ptr);
-            wlmaker_server_destroy(server_ptr);
-            return NULL;
-        }
-        bs_dllist_push_back(&server_ptr->workspaces,
-                            wlmaker_dlnode_from_workspace(workspace_ptr));
-        wlmaker_workspace_set_enabled(workspace_ptr, workspace_idx == 0);
-    }
-    if (0 == workspace_idx) {
-        bs_log(BS_ERROR, "No workspaces configured.");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-    server_ptr->current_workspace_ptr = wlmaker_workspace_from_dlnode(
-        server_ptr->workspaces.head_ptr);
-    BS_ASSERT(NULL != server_ptr->current_workspace_ptr);
-
     // Root element.
-    server_ptr->root_ptr = wlmaker_root_create(
+    server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr,
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
@@ -383,7 +328,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_seat_ptr
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
-    // * server_ptr->void_wlr_scene_ptr
     {
         bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
         while (NULL != dlnode_ptr) {
@@ -431,14 +375,13 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->root_ptr) {
-        wlmaker_root_destroy(server_ptr->root_ptr);
+        wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
     }
 
-    bs_dllist_node_t *dlnode_ptr;
-    while (NULL != (dlnode_ptr = server_ptr->workspaces.head_ptr)) {
-        bs_dllist_remove(&server_ptr->workspaces, dlnode_ptr);
-        wlmaker_workspace_destroy(wlmaker_workspace_from_dlnode(dlnode_ptr));
+    if (NULL != server_ptr->lock_mgr_ptr) {
+        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
+        server_ptr->lock_mgr_ptr = NULL;
     }
 
     if (NULL != server_ptr->env_ptr) {
@@ -469,11 +412,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->idle_monitor_ptr) {
         wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
         server_ptr->idle_monitor_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->lock_mgr_ptr) {
-        wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
-        server_ptr->lock_mgr_ptr = NULL;
     }
 
     if (NULL != server_ptr->wlr_allocator_ptr) {
@@ -520,54 +458,6 @@ void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-wlmaker_workspace_t *wlmaker_server_get_current_workspace(
-    wlmaker_server_t *server_ptr)
-{
-    return server_ptr->current_workspace_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmaker_server_get_current_wlmtk_workspace(
-    wlmaker_server_t *server_ptr)
-{
-    if (NULL != server_ptr->fake_wlmtk_workspace_ptr) {
-        return server_ptr->fake_wlmtk_workspace_ptr->workspace_ptr;
-    }
-    return wlmaker_workspace_wlmtk(
-        wlmaker_server_get_current_workspace(server_ptr));
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_server_switch_to_next_workspace(wlmaker_server_t *server_ptr)
-{
-    bs_dllist_node_t *dlnode_ptr = wlmaker_dlnode_from_workspace(
-        server_ptr->current_workspace_ptr);
-    if (NULL == dlnode_ptr->next_ptr) {
-        dlnode_ptr = server_ptr->workspaces.head_ptr;
-    } else {
-        dlnode_ptr = dlnode_ptr->next_ptr;
-    }
-    wlmaker_workspace_t *workspace_ptr = wlmaker_workspace_from_dlnode(
-        dlnode_ptr);
-    wlmaker_server_switch_to_workspace(server_ptr, workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_server_switch_to_previous_workspace(wlmaker_server_t *server_ptr)
-{
-    bs_dllist_node_t *dlnode_ptr = wlmaker_dlnode_from_workspace(
-        server_ptr->current_workspace_ptr);
-    if (NULL == dlnode_ptr->prev_ptr) {
-        dlnode_ptr = server_ptr->workspaces.tail_ptr;
-    } else {
-        dlnode_ptr = dlnode_ptr->prev_ptr;
-    }
-    wlmaker_workspace_t *workspace_ptr = wlmaker_workspace_from_dlnode(
-        dlnode_ptr);
-    wlmaker_server_switch_to_workspace(server_ptr, workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr)
 {
     server_ptr->task_list_enabled = true;
@@ -582,13 +472,12 @@ void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr)
     server_ptr->task_list_enabled = false;
     wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
 
-    wlmaker_workspace_t *workspace_ptr =
-        wlmaker_server_get_current_workspace(server_ptr);
-    wlmtk_workspace_t *wlmtk_ptr = wlmaker_workspace_wlmtk(workspace_ptr);
+    wlmtk_workspace_t *workspace_ptr =
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_window_t *window_ptr =
-        wlmtk_workspace_get_activated_window(wlmtk_ptr);
+        wlmtk_workspace_get_activated_window(workspace_ptr);
     if (NULL != window_ptr) {
-        wlmtk_workspace_raise_window(wlmtk_ptr, window_ptr);
+        wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
     }
 }
 
@@ -829,62 +718,7 @@ void handle_output_layout_change(
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
-
-    bs_dllist_for_each(&server_ptr->workspaces, set_extents, &extents);
-    bs_dllist_for_each(&server_ptr->workspaces, arrange_views, NULL);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to set extents of the workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr
- */
-void set_extents(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
-{
-    struct wlr_box *extents_ptr = ud_ptr;
-    wlmaker_workspace_set_extents(
-        wlmaker_workspace_from_dlnode(dlnode_ptr), extents_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to arrange views in a workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr
- */
-void arrange_views(bs_dllist_node_t *dlnode_ptr, __UNUSED__ void *ud_ptr)
-{
-    wlmaker_workspace_arrange_views(wlmaker_workspace_from_dlnode(dlnode_ptr));
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Switches the current workspace to `workspace_ptr`.
- *
- * Note: `workspace_ptr` must be contained in `workspaces` of `server_ptr`.
- *
- * @param server_ptr
- * @param workspace_ptr
- */
-void wlmaker_server_switch_to_workspace(
-    wlmaker_server_t *server_ptr,
-    wlmaker_workspace_t *workspace_ptr)
-{
-    // Anything to do at all?
-    if (workspace_ptr == server_ptr->current_workspace_ptr) return;
-
-    BS_ASSERT(bs_dllist_contains(
-                  &server_ptr->workspaces,
-                  wlmaker_dlnode_from_workspace(workspace_ptr)));
-
-    wlmaker_workspace_set_enabled(server_ptr->current_workspace_ptr, false);
-    server_ptr->current_workspace_ptr = workspace_ptr;
-    wlmaker_workspace_set_enabled(server_ptr->current_workspace_ptr, true);
-    wl_signal_emit(&server_ptr->workspace_changed,
-                   server_ptr->current_workspace_ptr);
+    wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
 }
 
 /* == Unit tests =========================================================== */
