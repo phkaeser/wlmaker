@@ -28,6 +28,9 @@
 struct _wlmaker_background_t {
     /** The background is a panel. */
     wlmtk_panel_t             super_panel;
+
+    /** Initial implementation: The background is a uni-color rectangle. */
+    wlmtk_rectangle_t         *rectangle_ptr;
 };
 
 static void _wlmaker_background_element_destroy(
@@ -77,12 +80,37 @@ wlmaker_background_t *wlmaker_background_create(wlmtk_env_t *env_ptr)
     wlmtk_panel_extend(&background_ptr->super_panel,
                        &_wlmaker_background_panel_vmt);
 
+    background_ptr->rectangle_ptr = wlmtk_rectangle_create(
+        env_ptr, 0, 0, 0xff406080);
+    if (NULL == background_ptr->rectangle_ptr) {
+        wlmaker_background_destroy(background_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_rectangle_element(background_ptr->rectangle_ptr),
+        true);
+    wlmtk_container_add_element(
+        &background_ptr->super_panel.super_container,
+        wlmtk_rectangle_element(background_ptr->rectangle_ptr));
+
+    wlmtk_element_set_visible(
+        wlmtk_panel_element(&background_ptr->super_panel),
+        true);
     return background_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_background_destroy(wlmaker_background_t *background_ptr)
 {
+    if (NULL != background_ptr->rectangle_ptr) {
+        wlmtk_container_remove_element(
+            &background_ptr->super_panel.super_container,
+            wlmtk_rectangle_element(background_ptr->rectangle_ptr));
+
+        wlmtk_rectangle_destroy(background_ptr->rectangle_ptr);
+        background_ptr->rectangle_ptr = NULL;
+    }
+
     wlmtk_panel_fini(&background_ptr->super_panel);
     free(background_ptr);
 }
@@ -117,7 +145,7 @@ uint32_t _wlmaker_background_request_size(
     wlmaker_background_t *background_ptr = BS_CONTAINER_OF(
         panel_ptr, wlmaker_background_t, super_panel);
 
-    bs_log(BS_INFO, "FIXME: panel requestd %d x %d", width, height);
+    wlmtk_rectangle_set_size(background_ptr->rectangle_ptr, width, height);
 
     wlmtk_panel_commit(
         &background_ptr->super_panel, 0, &_wlmaker_background_panel_position);
