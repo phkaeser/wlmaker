@@ -162,10 +162,10 @@ Support for visual effects to improve usability, but not for pure show.
 * [done] Support `layer_shell`, based on toolkit.
   * [done] XDG Popups.
 
-* Multiple workspaces, based on toolkit.
+* [done] Multiple workspaces, based on toolkit.
   * [done] Remove the earlier non-toolkit code.
-  * Background color for separate workspaces, configured in state.
-  * Default background color, picked up from style file.
+  * [done] Background color for separate workspaces, configured in state.
+  * [done] Default background color, picked up from style file.
   * [done] Navigate via keys (ctrl-window-alt-arrows, configurable in plist).
 
 * [done] Dock, visible across workspaces, based on toolkit.

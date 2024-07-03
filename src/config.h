@@ -63,6 +63,8 @@ typedef struct {
 
 /** Style information. Replaces @ref wlmaker_config_theme_t. */
 typedef struct {
+    /** Background color, unless overriden in "Workspace" state. */
+    uint32_t                  background_color;
     /** The tile. */
     wlmtk_tile_style_t        tile;
     /** Dock optics: Margin. */

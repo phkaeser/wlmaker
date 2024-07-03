@@ -1,5 +1,6 @@
 // Following the 'Debian' theme of Window Maker.
 {
+  BackgroundColor = "argb32:ff77aac4";
   Dock = {
     Margin = {
       Width = 1;

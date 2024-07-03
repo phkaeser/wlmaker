@@ -256,6 +256,8 @@ static const wlmcfg_desc_t _wlmaker_clip_style_desc[] = {
 
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
+    WLMCFG_DESC_ARGB32(
+        "BackgroundColor", true, wlmaker_config_style_t, background_color, 0),
     WLMCFG_DESC_DICT(
         "Tile", true, wlmaker_config_style_t, tile,
         _wlmaker_config_tile_style_desc),

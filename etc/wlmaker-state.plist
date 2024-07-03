@@ -24,15 +24,14 @@
   Workspaces = (
     {
         Name = Main;
-        Color = "argb32:ff406080";
     },
     {
         Name = Second;
-        Color = "argb32:ff608040";
     },
     {
         Name = Third;
-        Color = "argb32:ff804060";
+        // Color is optional here, overrides the style's BackgroundColor.
+        Color = "argb32:ff508050";
     },
   );
 }

@@ -200,7 +200,7 @@ bool create_workspaces(
             break;
         }
 
-        wlmaker_workspace_style_t s = {};
+        wlmaker_workspace_style_t s;
         if (!wlmcfg_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
             bs_log(BS_ERROR,
                    "Failed to decode dict element %zu in \"Workspace\"",
@@ -218,6 +218,9 @@ bool create_workspaces(
             break;
         }
 
+        if (s.color == 0) {
+            s.color = server_ptr->style.background_color;
+        }
         wlmaker_background_t *background_ptr = wlmaker_background_create(
             s.color, server_ptr->env_ptr);
         if (NULL == background_ptr) {
@@ -291,10 +294,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
-    if (!create_workspaces(state_dict_ptr, server_ptr)) {
-        return EXIT_FAILURE;
-    }
-
     // TODO: Should be loaded from file, if given in the config. Or on the
     // commandline.
     wlmcfg_dict_t *style_dict_ptr = NULL;
@@ -320,6 +319,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         wlmcfg_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
     if (NULL == action_handle_ptr) {
         bs_log(BS_ERROR, "Failed to bind keys.");
+        return EXIT_FAILURE;
+    }
+
+    if (!create_workspaces(state_dict_ptr, server_ptr)) {
         return EXIT_FAILURE;
     }
 
