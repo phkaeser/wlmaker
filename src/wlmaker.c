@@ -237,7 +237,6 @@ bool create_workspaces(
         wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
     }
 
-    wlmcfg_array_unref(array_ptr);
     return rv;
 }
 
@@ -369,6 +368,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
     bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
+    wlmcfg_dict_unref(state_dict_ptr);
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }
