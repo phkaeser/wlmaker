@@ -137,7 +137,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Implement ext-session-lock-v1 protocol.
   * [done] Verify screen lock works with eg. swaylock.
   * [done] Implement timer for lock, and support zwp_idle_inhibit_manager_v1 to inhibit.
-  * Verify this still works after the to-toolkit move.
+  * [done] Verify this still works after the to-toolkit move.
 
 * [done] Configuration file support
   * [done] Pick or implement parser for configuration file.
