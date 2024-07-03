@@ -34,6 +34,14 @@ struct wlr_scene;
 extern "C" {
 #endif  // __cplusplus
 
+typedef struct {
+    /**
+     * Signal: Raised when the current workspace is changed.
+     * Data: Pointer to the new `wlmaker_workspace_t`.
+     */
+    struct wl_signal          workspace_changed;
+} wlmtk_root_signals_t;
+
 /**
  * Creates the root element.
  *
@@ -52,6 +60,15 @@ wlmtk_root_t *wlmtk_root_create(
  * @param root_ptr
  */
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
+
+/**
+ * Gets the set of signals available in root. To bind listeners to.
+ *
+ * @param root_ptr
+ *
+ * @return Pointer to @ref wlmtk_root_t::signals.
+ */
+wlmtk_root_signals_t *wlmtk_root_signals(wlmtk_root_t *root_ptr);
 
 /**
  * Sets the extents of root (and all workspaces thereof).

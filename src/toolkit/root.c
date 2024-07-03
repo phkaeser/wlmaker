@@ -36,6 +36,9 @@ struct _wlmtk_root_t {
     /** Extents to be used by root. */
     struct wlr_box            extents;
 
+    /** Signals availalbe of the root. */
+    wlmtk_root_signals_t      signals;
+
     /** Whether the root is currently locked. */
     bool                      locked;
     /** Reference to the lock, see @ref wlmtk_root_lock. */
@@ -144,6 +147,12 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
     wlmtk_container_fini(&root_ptr->container);
 
     free(root_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_root_signals_t *wlmtk_root_signals(wlmtk_root_t *root_ptr)
+{
+    return &root_ptr->signals;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -593,14 +602,36 @@ bool _wlmtk_root_element_keyboard_event(
 
 /* == Unit tests =========================================================== */
 
+static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_root_test_cases[] = {
+    { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "pointer_button", test_pointer_button },
     { 0, NULL, NULL }
 };
+
+/* ------------------------------------------------------------------------- */
+/** Exercises ctor and dtor. */
+void test_create_destroy(bs_test_t *test_ptr)
+{
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &root_ptr->signals, wlmtk_root_signals(root_ptr));
+
+    struct wlr_box extents = { .width = 100, .height = 50 };
+    wlmtk_root_set_extents(root_ptr, &extents);
+    BS_TEST_VERIFY_EQ(test_ptr, 100, root_ptr->extents.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 50, root_ptr->extents.height);
+
+    wlmtk_root_destroy(root_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Exercises workspace adding and removal. */
