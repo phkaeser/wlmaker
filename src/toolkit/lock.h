@@ -24,6 +24,7 @@
 typedef struct _wlmtk_lock_t wlmtk_lock_t;
 
 #include "element.h"
+#include "root.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,13 +36,15 @@ struct wlr_session_lock_v1;
 /**
  * Creates a session lock handle.
  *
- * @param env_ptr
  * @param wlr_session_lock_v1_ptr
+ * @param root_ptr
+ * @param env_ptr
  *
  * @return The lock handle or NULL on error.
  */
 wlmtk_lock_t *wlmtk_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
+    wlmtk_root_t *root_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
