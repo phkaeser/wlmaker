@@ -34,12 +34,16 @@ struct wlr_scene;
 extern "C" {
 #endif  // __cplusplus
 
+/** Signals available for the @ref wlmtk_root_t class. */
 typedef struct {
     /**
      * Signal: Raised when the current workspace is changed.
      * Data: Pointer to the new `wlmaker_workspace_t`.
      */
     struct wl_signal          workspace_changed;
+
+    /** Triggers whenever @ref wlmtk_root_unlock succeeds. */
+    struct wl_signal          unlock_event;
 } wlmtk_root_signals_t;
 
 /**
@@ -229,12 +233,6 @@ void wlmtk_root_lock_unreference(
 void wlmtk_root_set_lock_surface(
     wlmtk_root_t *root_ptr,
     wlmtk_surface_t *surface_ptr);
-
-/** Connects a listener and handler to @ref wlmtk_root_t::unlock_event. */
-void wlmtk_root_connect_unlock_signal(
-    wlmtk_root_t *root_ptr,
-    struct wl_listener *listener_ptr,
-    wl_notify_func_t handler);
 
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
