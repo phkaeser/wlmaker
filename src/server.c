@@ -232,26 +232,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    const wlmaker_config_workspace_t *workspace_config_ptr;
-    for (workspace_config_ptr = &wlmaker_config_workspaces[0];
-         NULL != workspace_config_ptr->name_ptr;
-         ++workspace_config_ptr) {
-        wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-            workspace_config_ptr->name_ptr,
-            server_ptr->env_ptr);
-
-        if (NULL == workspace_ptr) {
-            bs_log(BS_ERROR,
-                   "Failed wlmtk_workspace_create(%s, %p)",
-                   workspace_config_ptr->name_ptr,
-                server_ptr->env_ptr);
-            wlmaker_server_destroy(server_ptr);
-            return NULL;
-        }
-        wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
-    }
-
-
     // Session lock manager.
     server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
     if (NULL == server_ptr->lock_mgr_ptr) {

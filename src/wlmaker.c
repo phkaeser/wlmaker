@@ -153,13 +153,56 @@ bool start_subprocess(const char *cmdline_ptr)
         return false;
     }
     if (!bs_subprocess_start(sp_ptr)) {
-        bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\".",
+        bs_log(BS_ERROR, "Failed bs_subprocess_start for \"%s\"",
                cmdline_ptr);
         return false;
     }
     // Push to stack. Ignore errors: We'll keep it running untracked.
     bs_ptr_stack_push(&wlmaker_subprocess_stack, sp_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates workspaces as configured in the state dict. */
+bool create_workspaces(
+    wlmcfg_dict_t *state_dict_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    wlmcfg_array_t *array_ptr = wlmcfg_dict_get_array(
+        state_dict_ptr, "Workspaces");
+    if (NULL == array_ptr) return false;
+
+    bool rv = true;
+    for (size_t i = 0; i < wlmcfg_array_size(array_ptr); ++i) {
+        wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+            wlmcfg_array_at(array_ptr, i));
+        if (NULL == dict_ptr) {
+            bs_log(BS_ERROR, "Array element in \"Workspaces\" is not a dict");
+            rv = false;
+            break;
+        }
+
+        const char *name_ptr = wlmcfg_dict_get_string_value(dict_ptr, "Name");
+        if (NULL == name_ptr) {
+            bs_log(BS_ERROR, "\"Name\" not found in \"Workspaces\" element");
+            rv = false;
+            break;
+        }
+
+        wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+            name_ptr, server_ptr->env_ptr);
+        if (NULL == workspace_ptr) {
+            bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
+                   name_ptr, server_ptr->env_ptr);
+            rv = false;
+            break;
+        }
+
+        wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
+    }
+
+    wlmcfg_array_unref(array_ptr);
+    return rv;
 }
 
 /* == Main program ========================================================= */
@@ -212,6 +255,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         config_dict_ptr, &wlmaker_server_options);
     wlmcfg_dict_unref(config_dict_ptr);
     if (NULL == server_ptr) return EXIT_FAILURE;
+
+    if (!create_workspaces(state_dict_ptr, server_ptr)) {
+        return EXIT_FAILURE;
+    }
 
     // TODO: Should be loaded from file, if given in the config. Or on the
     // commandline.

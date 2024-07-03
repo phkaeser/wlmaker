@@ -104,14 +104,6 @@ typedef struct {
     uint32_t                  menu_item_selected_text_color;
 } wlmaker_config_theme_t;
 
-/** Configuration for a workspace. */
-typedef struct {
-    /** Name of the workspace. NULL indicates this is a sentinel element. */
-    const char                *name_ptr;
-    /** Workspace's background color, as 8888 RGBA. */
-    uint32_t                  color;
-} wlmaker_config_workspace_t;
-
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
 
@@ -121,7 +113,6 @@ extern const wlmaker_config_decoration_t config_decoration;
 
 extern const uint32_t wlmaker_config_window_drag_modifiers;
 
-extern const wlmaker_config_workspace_t wlmaker_config_workspaces[];
 extern const wlmaker_config_theme_t wlmaker_config_theme;
 
 /**

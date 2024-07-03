@@ -40,6 +40,7 @@ extern "C" {
  * Creates the Dock handle. Needs the server to be up with workspaces running.
  *
  * @param server_ptr
+ * @param state_dict_ptr
  * @param style_ptr
  *
  * @return Pointer to the Dock handle, or NULL on error.

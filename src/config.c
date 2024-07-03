@@ -61,14 +61,6 @@ const wlmaker_config_decoration_t config_decoration =
 const uint32_t wlmaker_config_window_drag_modifiers =
     WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;
 
-/** Workspaces to configure. So far: Just the titles. */
-const wlmaker_config_workspace_t wlmaker_config_workspaces[] = {
-    { .name_ptr = "Main", .color = 0xff402020 },
-    { .name_ptr = "Other", .color = 0xff182060 },
-    { .name_ptr = "Last", .color = 0xff186020 },
-    { .name_ptr = NULL } // sentinel.
-};
-
 /** Visual theme. */
 const wlmaker_config_theme_t  wlmaker_config_theme = {
     .window_margin_color = 0xff000000,  // Pich black, opaque.
