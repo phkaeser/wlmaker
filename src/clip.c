@@ -61,7 +61,7 @@ struct _wlmaker_clip_t {
     /** Whether the 'next' button had been pressed. */
     bool                      next_button_pressed;
 
-    /** Listener for the `workspace_changed` signal by `wlmaker_server_t`. */
+    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
 
     /** The clip's style. */
@@ -244,7 +244,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_buffer_element(&clip_ptr->overlay_buffer));
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->workspace_changed,
+        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
 

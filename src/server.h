@@ -158,11 +158,6 @@ struct _wlmaker_server_t {
 
     /** The root element. */
     wlmtk_root_t              *root_ptr;
-    /**
-     * Signal: Raised when the current workspace is changed.
-     * Data: Pointer to the new `wlmaker_workspace_t`.
-     */
-    struct wl_signal          workspace_changed;
     /** Whether the task list is currently shown. */
     bool                      task_list_enabled;
     /** Signal: When the task list is enabled. (to be shown) */

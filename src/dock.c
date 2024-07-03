@@ -37,7 +37,7 @@ struct _wlmaker_dock_t {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
 
-    /** Listens for when the workspace changed. */
+    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
 };
 
@@ -151,7 +151,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->workspace_changed,
+        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &dock_ptr->workspace_changed_listener,
         _wlmaker_dock_handle_workspace_changed);
 
@@ -240,7 +240,6 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     wlmaker_server_t server = { .root_ptr = root_ptr };
     wlmaker_config_style_t style = {};
-    wl_signal_init(&server.workspace_changed);
 
     wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);

@@ -106,8 +106,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    wl_signal_init(&server_ptr->workspace_changed);
-
     wl_signal_init(&server_ptr->task_list_enabled_event);
     wl_signal_init(&server_ptr->task_list_disabled_event);
 
