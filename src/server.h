@@ -180,18 +180,6 @@ struct _wlmaker_server_t {
     struct wl_signal          window_created_event;
     /** Signal: Triggered whenever a window is destroyed. */
     struct wl_signal          window_destroyed_event;
-    /**
-     * Signal: Triggered whenever a window is mapped.
-     *
-     * The signal is raised right after the window was mapped.
-     */
-    struct wl_signal          window_mapped_event;
-    /**
-     * Signal: Triggered whenever a window is unmapped.
-     *
-     * The signal is raised right after the window was unmapped.
-     */
-    struct wl_signal          window_unmapped_event;
 
     /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
     wlmtk_dock_t              *clip_dock_ptr;

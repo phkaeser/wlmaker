@@ -157,11 +157,11 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         _wlmaker_task_list_handle_task_list_disabled);
 
     wlmtk_util_connect_listener_signal(
-        &server_ptr->window_mapped_event,
+        &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
         &task_list_ptr->window_mapped_listener,
         _wlmaker_task_list_handle_window_mapped);
     wlmtk_util_connect_listener_signal(
-        &server_ptr->window_unmapped_event,
+        &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
         &task_list_ptr->window_unmapped_listener,
         _wlmaker_task_list_handle_window_unmapped);
 
