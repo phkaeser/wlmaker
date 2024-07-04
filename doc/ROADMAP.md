@@ -211,7 +211,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
-  * Screenshots included. (can we script these?)
+  * [done] Screenshots included.
   
 * Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
@@ -361,6 +361,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
 * Provide binary package of wlmaker.
 * Run github workflows to build with GCC and Clang, x86_64 and arm64, and Linux + *BSD.
+* Look into whether the screenshots can be scripted.
 
 ## Non-Goals
 
