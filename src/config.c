@@ -94,7 +94,9 @@ const wlmaker_config_theme_t  wlmaker_config_theme = {
 static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
     WLMCFG_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),
     WLMCFG_ENUM("HGRADIENT", WLMTK_STYLE_COLOR_HGRADIENT),
+    WLMCFG_ENUM("VGRADIENT", WLMTK_STYLE_COLOR_VGRADIENT),
     WLMCFG_ENUM("DGRADIENT", WLMTK_STYLE_COLOR_DGRADIENT),
+    WLMCFG_ENUM("ADGRADIENT", WLMTK_STYLE_COLOR_ADGRADIENT),
     WLMCFG_ENUM_SENTINEL()
 };
 
@@ -409,16 +411,26 @@ bool _wlmaker_config_decode_fill_style(
             dict_ptr,
             _wlmaker_config_style_color_solid_desc,
             &fill_ptr->param.solid);
-    case WLMTK_STYLE_COLOR_DGRADIENT:
-        return wlmcfg_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_gradient_desc,
-            &fill_ptr->param.dgradient);
     case WLMTK_STYLE_COLOR_HGRADIENT:
         return wlmcfg_decode_dict(
             dict_ptr,
             _wlmaker_config_style_color_gradient_desc,
             &fill_ptr->param.hgradient);
+    case WLMTK_STYLE_COLOR_VGRADIENT:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_gradient_desc,
+            &fill_ptr->param.vgradient);
+    case WLMTK_STYLE_COLOR_DGRADIENT:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_gradient_desc,
+            &fill_ptr->param.dgradient);
+    case WLMTK_STYLE_COLOR_ADGRADIENT:
+        return wlmcfg_decode_dict(
+            dict_ptr,
+            _wlmaker_config_style_color_gradient_desc,
+            &fill_ptr->param.adgradient);
     default:
         bs_log(BS_ERROR, "Unhandled fill type %d", fill_ptr->type);
         return false;
