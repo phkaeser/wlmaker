@@ -16,7 +16,7 @@ Key features:
 Wayland Maker is in early development stage. Highlights for current version (0.3):
 
 * *new:* Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
-* *new:* Configurable through plist text files: [base configuration](etc/wlaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
+* *new:* Configurable through plist text files: [base configuration](etc/wlmaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
 * *new:* wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
