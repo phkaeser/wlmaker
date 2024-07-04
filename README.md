@@ -11,6 +11,8 @@ Key features:
 * Easy to use, lightweight, low gimmicks and fast.
 * Dock and clip, to be extended for dockable apps.
 
+![Screenshot of wlmaker running in a window](doc/wlmaker-default-screenshot.png)
+
 ### Current status
 
 Wayland Maker is in early development stage. Highlights for current version (0.3):
