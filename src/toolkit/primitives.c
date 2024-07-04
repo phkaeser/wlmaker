@@ -89,6 +89,27 @@ void wlmaker_primitives_cairo_fill_at(
             cairo_pattern_ptr, 1, r, g, b, alpha);
         break;
 
+    case WLMTK_STYLE_COLOR_ADGRADIENT: {
+        // Some geometry needed to compute the destination point for cairo's
+        // interpolation. It is on the line that crosses the bottom-right
+        // corner and lies parallel to the top-right -> bottom-left diaginal;
+        // and on a perpendicular intersection from the top-left corner.
+        double x = 2 * height * height * width /
+            BS_MAX(1.0, width * width + height * height);
+        double y = 2 * height * width * width /
+            BS_MAX(1.0, width * width + height * height);
+        cairo_pattern_ptr = cairo_pattern_create_linear(0, 0, x, y);
+        bs_gfxbuf_argb8888_to_floats(
+            fill_ptr->param.dgradient.from, &r, &g, &b, &alpha);
+        cairo_pattern_add_color_stop_rgba(
+            cairo_pattern_ptr, 0, r, g, b, alpha);
+        bs_gfxbuf_argb8888_to_floats(
+            fill_ptr->param.dgradient.to, &r, &g, &b, &alpha);
+        cairo_pattern_add_color_stop_rgba(
+            cairo_pattern_ptr, 1, r, g, b, alpha);
+    }
+        break;
+
     default:
         bs_log(BS_FATAL, "Unsupported fill_type %d", fill_ptr->type);
         BS_ABORT();
@@ -285,7 +306,7 @@ void test_fill(bs_test_t *test_ptr)
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_vgradient.png");
 
-    // Diagonal fill.
+    // Diagonal fill, cairo style.
     wlmtk_style_fill_t fill_dgradient = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
@@ -293,6 +314,15 @@ void test_fill(bs_test_t *test_ptr)
     wlmaker_primitives_cairo_fill(cairo_ptr, &fill_dgradient);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_dgradient.png");
+
+    // Diagonal fill, Window Maker styile.
+    wlmtk_style_fill_t fill_adgradient = {
+        .type = WLMTK_STYLE_COLOR_ADGRADIENT,
+        .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
+    };
+    wlmaker_primitives_cairo_fill(cairo_ptr, &fill_adgradient);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, gfxbuf_ptr, "toolkit/primitive_fill_adgradient.png");
 
     cairo_destroy(cairo_ptr);
     bs_gfxbuf_destroy(gfxbuf_ptr);

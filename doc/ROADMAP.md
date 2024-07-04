@@ -301,7 +301,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Workspace configuration.
   * Background.
   * Theme.
-    * Look into swapping the diagonal gradient to follow window maker style (not cairo).
+    * [done] Added ADGRADIENT fill style, aligned with Window Maker's diagonal.
   * Auto-started applications.
 
 * Configurable keyboard map.

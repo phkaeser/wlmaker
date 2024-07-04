@@ -35,9 +35,24 @@ typedef enum {
     WLMTK_STYLE_COLOR_HGRADIENT,
     /** Vertical color gradient. */
     WLMTK_STYLE_COLOR_VGRADIENT,
-    /** Diagonal color gradient, top-left to bottom-right. */
-    WLMTK_STYLE_COLOR_DGRADIENT
-    // TODO(kaeser@gubbe.ch): Add VGRADIENT.
+    /**
+     * Diagonal color gradient, Cairo style.
+     *
+     * Colors are interpolated from top-left to bottom-right corner. Areas of
+     * equal color value are arranged perpendicular to that diagonal.
+     * This produces a smooth color flow across all rectangle edges.
+     */
+    WLMTK_STYLE_COLOR_DGRADIENT,
+    /**
+     * Alternative diagonal color gradient, Window Maker style.
+     *
+     * Colors are interpolated from top-left to bottom-right corner. Areas of
+     * equal color value are aligned with the other diagonal -- from top-right
+     * to bottom-left.
+     * This may produce a steep gradient along the thin axis of long & thin
+     * rectangles, but is similar to what Window Maker uses.
+     */
+    WLMTK_STYLE_COLOR_ADGRADIENT,
 } wlmtk_style_fill_type_t;
 
 /** Specifies the color for a solid fill. */
@@ -68,6 +83,8 @@ typedef struct {
         wlmtk_style_color_gradient_data_t vgradient;
         /** Diagonal color gradient. */
         wlmtk_style_color_gradient_data_t dgradient;
+        /** Alternative diagonal color gradient. */
+        wlmtk_style_color_gradient_data_t adgradient;
     } param;
 } wlmtk_style_fill_t;
 
