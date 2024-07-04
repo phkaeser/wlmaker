@@ -15,11 +15,13 @@ Key features:
 
 Wayland Maker is in early development stage. Highlights for current version (0.3):
 
+* *new:* Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
+* *new:* Configurable through plist text files: [base configuration](etc/wlaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
+* *new:* wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
   Use `--start_xwayland` argument to enable XWayland, it's off by default.
-* Appearance, workspaces, dock, keyboard configurable via plist text files.
 * A prototype DockApp (`apps/wlmclock`).
 
 For further details, see the [roadmap](doc/ROADMAP.md).
@@ -27,9 +29,10 @@ For further details, see the [roadmap](doc/ROADMAP.md).
 Protocol support:
 
 * `xdg-decoration-unstable-v1`: Implemented & tested.
-* `ext-session-lock-v1`: Implemented & tested.
-* `xdg-shell`: Largely implemented & tested.
-* `idle-inhibit-unstable-v1`: Implemented, untested.
+* `ext_session_lock_v1`: Implemented & tested.
+* `wlr_layer_shell_unstable_v1`: Implemented & tested.
+* `xdg_shell`: Largely implemented & tested.
+* `idle_inhibit_unstable_v1`: Implemented, untested.
 
 ### Build & use it!
 
