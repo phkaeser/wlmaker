@@ -39,6 +39,8 @@ typedef struct _wlmtk_lock_surface_t wlmtk_lock_surface_t;
 struct _wlmtk_lock_t {
     /** The wlroots session lock. */
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr;
+    /** The root this lock is applied for. */
+    wlmtk_root_t              *root_ptr;
 
     /** List of surfaces, via @ref wlmtk_lock_surface_t::dlnode. */
     bs_dllist_t               lock_surfaces;
@@ -110,11 +112,13 @@ static void _wlmtk_lock_surface_handle_surface_commit(
 /* ------------------------------------------------------------------------- */
 wlmtk_lock_t *wlmtk_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
+    wlmtk_root_t *root_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_lock_t *lock_ptr = logged_calloc(1, sizeof(wlmtk_lock_t));
     if (NULL == lock_ptr) return NULL;
     lock_ptr->wlr_session_lock_v1_ptr = wlr_session_lock_v1_ptr;
+    lock_ptr->root_ptr = root_ptr;
 
     if (!wlmtk_container_init(&lock_ptr->container, env_ptr)) {
         wlmtk_lock_destroy(lock_ptr);
@@ -148,10 +152,7 @@ void wlmtk_lock_destroy(wlmtk_lock_t *lock_ptr)
     wl_list_remove(&lock_ptr->unlock_listener.link);
     wl_list_remove(&lock_ptr->new_surface_listener.link);
 
-    // FIXME
-    /* wlmaker_root_lock_unreference( */
-    /*     lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
-    /*     lock_ptr); */
+    wlmtk_root_lock_unreference(lock_ptr->root_ptr, lock_ptr);
     wlmtk_container_fini(&lock_ptr->container);
 
     free(lock_ptr);
@@ -208,26 +209,21 @@ void _wlmtk_lock_report_surface_locked(
     /* if (bs_dllist_size(&lock_ptr->lock_surfaces) < */
     /*     bs_dllist_size(&lock_ptr->lock_mgr_ptr->server_ptr->outputs)) return; */
 
-    // FIXME
-    /* if (!wlmaker_root_lock( */
-    /*         lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
-    /*         lock_ptr)) { */
-    /*     wl_resource_post_error( */
-    /*         lock_surface_ptr->wlr_session_lock_surface_v1_ptr->resource, */
-    /*         WL_DISPLAY_ERROR_INVALID_METHOD, */
-    /*         "Failed wlmaker_root_lock(%p, %p): Already locked?", */
-    /*         lock_ptr->lock_mgr_ptr->server_ptr, */
-    /*         lock_ptr); */
-    /*     return; */
-    /* } */
+    if (!wlmtk_root_lock(lock_ptr->root_ptr, lock_ptr)) {
+        wl_resource_post_error(
+            lock_surface_ptr->wlr_session_lock_surface_v1_ptr->resource,
+            WL_DISPLAY_ERROR_INVALID_METHOD,
+            "Failed wlmtk_root_lock(%p, %p): Already locked?",
+            lock_ptr->root_ptr, lock_ptr);
+        return;
+    }
 
     __UNUSED__ wlmtk_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
         lock_ptr->lock_surfaces.head_ptr, wlmtk_lock_surface_t, dlnode);
 
-    // FIXME
-    /* wlmaker_root_set_lock_surface( */
-    /*     lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
-    /*     first_surface_ptr->wlmtk_surface_ptr); */
+    wlmtk_root_set_lock_surface(
+        lock_ptr->root_ptr,
+        first_surface_ptr->wlmtk_surface_ptr);
 
     // Root is locked. Send confirmation to the client.
     wlr_session_lock_v1_send_locked(lock_ptr->wlr_session_lock_v1_ptr);
@@ -281,10 +277,7 @@ void _wlmtk_lock_handle_unlock(
     __UNUSED__ wlmtk_lock_t *lock_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_lock_t, unlock_listener);
 
-    // FIXME
-    /* wlmtk_root_unlock( */
-    /*     lock_ptr->lock_mgr_ptr->server_ptr->root_ptr, */
-    /*     lock_ptr); */
+    wlmtk_root_unlock(lock_ptr->root_ptr, lock_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

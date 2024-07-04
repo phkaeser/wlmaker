@@ -42,6 +42,9 @@ struct _wlmaker_lock_mgr_t {
     struct wl_listener        destroy_listener;
 };
 
+static void _wlmaker_lock_mgr_handle_new_lock(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmaker_lock_mgr_handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -67,6 +70,10 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
     }
 
     wlmtk_util_connect_listener_signal(
+        &lock_mgr_ptr->wlr_session_lock_manager_v1_ptr->events.new_lock,
+        &lock_mgr_ptr->new_lock_listener,
+        _wlmaker_lock_mgr_handle_new_lock);
+    wlmtk_util_connect_listener_signal(
         &lock_mgr_ptr->wlr_session_lock_manager_v1_ptr->events.destroy,
         &lock_mgr_ptr->destroy_listener,
         _wlmaker_lock_mgr_handle_destroy);
@@ -87,6 +94,43 @@ void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr)
 
 /* == Local (static) methods =============================================== */
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `new_lock` signal of `wlr_session_lock_manager_v1`: creates
+ * the corresponding lock.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_lock_mgr_handle_new_lock(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_lock_mgr_t *lock_mgr_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_lock_mgr_t, new_lock_listener);
+    struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr = data_ptr;
+
+    wlmtk_lock_t *lock_ptr = wlmtk_lock_create(
+        wlr_session_lock_v1_ptr,
+        lock_mgr_ptr->server_ptr->root_ptr,
+        lock_mgr_ptr->server_ptr->env_ptr);
+    if (NULL == lock_ptr) {
+        wl_resource_post_error(
+            wlr_session_lock_v1_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmt_lock_create(%p, %p, %p)",
+            wlr_session_lock_v1_ptr,
+            lock_mgr_ptr->server_ptr->root_ptr,
+            lock_mgr_ptr->server_ptr->env_ptr);
+        bs_log(BS_WARNING, "Failed wlmt_lock_create(%p, %p, %p)",
+               wlr_session_lock_v1_ptr,
+               lock_mgr_ptr->server_ptr->root_ptr,
+               lock_mgr_ptr->server_ptr->env_ptr);
+        return;
+    }
+
+    bs_log(BS_INFO, "Lock manager %p: New lock %p", lock_mgr_ptr, lock_ptr);
+}
 /* ------------------------------------------------------------------------- */
 /**
  * Handler for the `destroy` signal of `wlr_session_lock_manager_v1`: Cleans
