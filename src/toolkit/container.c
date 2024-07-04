@@ -242,6 +242,12 @@ void wlmtk_container_remove_element(
 
     wlmtk_container_update_layout(container_ptr);
     wlmtk_container_update_pointer_focus(container_ptr);
+    // TODO(kaeser@gube.ch): Test this -- when the container becomes empty, it
+    // seems to happen the focus isn't cleared.
+    if (bs_dllist_empty(&container_ptr->elements)) {
+        container_ptr->pointer_focus_element_ptr = NULL;
+        container_ptr->keyboard_focus_element_ptr = NULL;
+    }
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
     BS_ASSERT(element_ptr != container_ptr->keyboard_focus_element_ptr);
 }
@@ -291,8 +297,10 @@ void wlmtk_container_update_keyboard_focus(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr)
 {
-    // Guard clause: Nothing to do.
-    if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
+    // TODO(kaeser@gubbech): Re-establish guard clause: Nothing to do.
+    // Disabled, because keyboard focus re-establishement is not all done
+    // well after screen lock. Needs a bigger revamp.
+    // if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
 
     if (NULL != element_ptr) {
         BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
