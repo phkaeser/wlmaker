@@ -212,6 +212,9 @@ Support for visual effects to improve usability, but not for pure show.
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
   * Screenshots included. (can we script these?)
+  
+* Update build system to use libraries from the base system rather than
+  the `dependencies/` subdirectory, if versions are avaialble.
 
 ## Plan for 0.5
 
