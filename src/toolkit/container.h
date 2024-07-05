@@ -199,6 +199,29 @@ void wlmtk_container_update_keyboard_focus(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr);
 
+void wlmtk_container_set_keyboard_focus_element(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
+ * (Re-)enables keyboard focus for this container.
+ *
+ * If `enabled` is set: If an element had keyboard focus earlier (and was not
+ * removed since), this will set keyboard focus for that element. Will return
+ * false if no such element is available.
+ * If `enabled` is false: If there is an element currently having keyboard
+ * focus, will disable focus there, but remember that element for a potential
+ * next call to this method with `enabled` set.
+ *
+ * @param container_ptr
+ * @param enabled
+ *
+ * @return See above.
+ */
+bool wlmtk_container_enable_keyboard_focus(
+    wlmtk_container_t *container_ptr,
+    bool enabled);
+
 /**
  * Updates the layout of the container.
  *
