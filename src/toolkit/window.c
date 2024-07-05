@@ -1187,7 +1187,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_set_title(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
     wlmtk_window_set_title(fw_ptr->window_ptr, "Title");
     BS_TEST_VERIFY_STREQ(
@@ -1209,7 +1209,7 @@ void test_set_title(bs_test_t *test_ptr)
 void test_request_close(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
     wlmtk_window_request_close(fw_ptr->window_ptr);
     BS_TEST_VERIFY_TRUE(
@@ -1224,7 +1224,7 @@ void test_request_close(bs_test_t *test_ptr)
 void test_set_activated(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
     wlmtk_window_set_activated(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
@@ -1239,12 +1239,12 @@ void test_set_activated(bs_test_t *test_ptr)
 /** Tests enabling and disabling server-side decoration. */
 void test_server_side_decorated(bs_test_t *test_ptr)
 {
-    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
-    BS_ASSERT(NULL != fws_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
@@ -1284,10 +1284,10 @@ void test_server_side_decorated(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
 
     wlmtk_fake_window_destroy(fw_ptr);
-    wlmtk_fake_workspace_destroy(fws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1296,13 +1296,13 @@ void test_maximize(bs_test_t *test_ptr)
 {
     struct wlr_box box;
 
-    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
-    BS_ASSERT(NULL != fws_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
     // Window must be mapped to get maximized: Need workspace dimensions.
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
@@ -1362,9 +1362,9 @@ void test_maximize(bs_test_t *test_ptr)
     // Or just move on?
     // Window Maker keeps maximization, but it's ... odd.
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
-    wlmtk_fake_workspace_destroy(fws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1373,19 +1373,19 @@ void test_fullscreen(bs_test_t *test_ptr)
 {
     struct wlr_box box;
 
-    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
-    BS_ASSERT(NULL != fws_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
-        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
+        wlmtk_workspace_get_activated_window(ws_ptr));
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
@@ -1418,7 +1418,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
-        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
+        wlmtk_workspace_get_activated_window(ws_ptr));
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
@@ -1445,16 +1445,16 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
-        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
+        wlmtk_workspace_get_activated_window(ws_ptr));
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
 
-    wlmtk_fake_workspace_destroy(fws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1463,18 +1463,17 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 {
     struct wlr_box box;
 
-    wlmtk_fake_workspace_t *fws_ptr = wlmtk_fake_workspace_create(1024, 768);
-    BS_ASSERT(NULL != fws_ptr);
-
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
-    BS_ASSERT(NULL != fw_ptr);
-    wlmtk_workspace_map_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         fw_ptr->window_ptr,
-        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
+        wlmtk_workspace_get_activated_window(ws_ptr));
 
     // Request fullscreen. Does not take immediate effect.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
@@ -1491,16 +1490,16 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
 
-    wlmtk_workspace_unmap_window(fws_ptr->workspace_ptr, fw_ptr->window_ptr);
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
-        wlmtk_workspace_get_activated_window(fws_ptr->workspace_ptr));
+        wlmtk_workspace_get_activated_window(ws_ptr));
 
     wlmtk_fake_window_destroy(fw_ptr);
 
-    wlmtk_fake_workspace_destroy(fws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1508,7 +1507,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 void test_fake(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fake_window_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_window_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
 }
 
