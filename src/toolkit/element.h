@@ -217,6 +217,8 @@ struct _wlmtk_element_t {
     uint32_t                  last_pointer_time_msec;
     /** Whether the pointer is currently within the element's bounds. */
     bool                      pointer_inside;
+
+    bool                      keyboard_focus_enabled;
 };
 
 /**
@@ -435,6 +437,20 @@ static inline bool wlmtk_element_keyboard_event(
         element_ptr, wlr_keyboard_key_event_ptr,
         key_syms, key_syms_count, modifiers);
 }
+
+/**
+ * Sets keyboard focus for this element.
+ *
+ * Does not propagate this upwards! See also container. FIXME.
+ *
+ * @param element_ptr
+ * @param enabled
+ *
+ * @return true if this element accepts keyboard focus.
+ */
+bool wlmtk_element_set_keyboard_focus(
+    wlmtk_container_t *container_ptr,
+    bool enabled);
 
 /**
  * Virtual method: Calls the dtor of the element's implementation.

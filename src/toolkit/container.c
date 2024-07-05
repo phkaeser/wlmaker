@@ -318,6 +318,28 @@ void wlmtk_container_update_keyboard_focus(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_container_set_keyboard_focus_element(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(container_ptr->super_element.keyboard_focus_enabled);
+    if (NULL != element_ptr) {
+        BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
+    }
+    if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
+    container_ptr->keyboard_focus_element_ptr = element_ptr;
+
+    // Propagate to parent containers.
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_element_t *parent_kbfocus_element_ptr =
+            (NULL == element_ptr) ? NULL : &container_ptr->super_element;
+        wlmtk_container_update_keyboard_focus(
+            container_ptr->super_element.parent_container_ptr,
+            parent_kbfocus_element_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr)
 {

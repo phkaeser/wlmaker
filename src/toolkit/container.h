@@ -190,6 +190,8 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
 /**
  * Updates the container's keyboard focus to be at `element_ptr`.
  *
+ * TODO(kaeser@gubbe.ch): Remove this method.
+ *
  * @param container_ptr
  * @param element_ptr         The element that will get keyboard focus. Must
  *                            be contained in @ref wlmtk_container_t::elements.
@@ -199,28 +201,17 @@ void wlmtk_container_update_keyboard_focus(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr);
 
+/**
+ * Reports `element_ptr` as having keyboard focus, and registers it as such in
+ * this container. Will propagate @ref wlmtk_container_t::super_element to
+ * this container's parent as element having keyboard focus.
+ *
+ * @param container_ptr
+ * @param element_ptr
+ */
 void wlmtk_container_set_keyboard_focus_element(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr);
-
-/**
- * (Re-)enables keyboard focus for this container.
- *
- * If `enabled` is set: If an element had keyboard focus earlier (and was not
- * removed since), this will set keyboard focus for that element. Will return
- * false if no such element is available.
- * If `enabled` is false: If there is an element currently having keyboard
- * focus, will disable focus there, but remember that element for a potential
- * next call to this method with `enabled` set.
- *
- * @param container_ptr
- * @param enabled
- *
- * @return See above.
- */
-bool wlmtk_container_enable_keyboard_focus(
-    wlmtk_container_t *container_ptr,
-    bool enabled);
 
 /**
  * Updates the layout of the container.
