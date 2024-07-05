@@ -13,6 +13,22 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+INCLUDE(EmbedBinary)
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_configuration
+  "default_configuration"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_state
+  "default_state"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-state.plist")
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_style
+  "style_default"
+  "${CMAKE_CURRENT_SOURCE_DIR}/style-default.plist")
 
 # Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
 # with what GNUstep expects. Optional.

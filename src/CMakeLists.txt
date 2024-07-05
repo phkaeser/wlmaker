@@ -13,7 +13,6 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-INCLUDE(EmbedBinary)
 
 SET(PUBLIC_HEADER_FILES
   action.h
@@ -75,21 +74,6 @@ SET_TARGET_PROPERTIES(
   wlmaker_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
-
-EmbedBinary_ADD_LIBRARY(
-  embedded_configuration
-  "default_configuration"
-  "${PROJECT_SOURCE_DIR}/etc/wlmaker.plist")
-
-EmbedBinary_ADD_LIBRARY(
-  embedded_state
-  "default_state"
-  "${PROJECT_SOURCE_DIR}/etc/wlmaker-state.plist")
-
-EmbedBinary_ADD_LIBRARY(
-  embedded_style
-  "style_default"
-  "${PROJECT_SOURCE_DIR}/etc/style-default.plist")
 
 ADD_DEPENDENCIES(
   wlmaker_lib
