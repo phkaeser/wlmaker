@@ -156,10 +156,11 @@ const bs_test_case_t wlmtk_layer_test_cases[] = {
 /** Exercises the panel add & remove methods. */
 void test_add_remove(bs_test_t *test_ptr)
 {
-    wlmtk_layer_t *layer_ptr = BS_ASSERT_NOTNULL(wlmtk_layer_create(NULL));
-    wlmtk_fake_workspace_t *fake_workspace_ptr = BS_ASSERT_NOTNULL(
-        wlmtk_fake_workspace_create(1024, 768));
-    wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
+    wlmtk_layer_set_workspace(layer_ptr, ws_ptr);
 
     wlmtk_panel_positioning_t pos = {
         .desired_width = 100,
@@ -188,18 +189,19 @@ void test_add_remove(bs_test_t *test_ptr)
     wlmtk_fake_panel_destroy(fake_panel_ptr);
 
     wlmtk_layer_set_workspace(layer_ptr, NULL);
-    wlmtk_fake_workspace_destroy(fake_workspace_ptr);
     wlmtk_layer_destroy(layer_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests panel layout with multiple panels. */
 void test_layout(bs_test_t *test_ptr)
 {
-    wlmtk_layer_t *layer_ptr = BS_ASSERT_NOTNULL(wlmtk_layer_create(NULL));
-    wlmtk_fake_workspace_t *fake_workspace_ptr = BS_ASSERT_NOTNULL(
-        wlmtk_fake_workspace_create(1024, 768));
-    wlmtk_layer_set_workspace(layer_ptr, fake_workspace_ptr->workspace_ptr);
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
+    wlmtk_layer_set_workspace(layer_ptr, ws_ptr);
 
     // Adds a left-bounded panel with an exclusive zone.
     wlmtk_panel_positioning_t pos = {
@@ -251,8 +253,8 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_fake_panel_destroy(fp1_ptr);
 
     wlmtk_layer_set_workspace(layer_ptr, NULL);
-    wlmtk_fake_workspace_destroy(fake_workspace_ptr);
     wlmtk_layer_destroy(layer_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* == End of layer.c ======================================================= */

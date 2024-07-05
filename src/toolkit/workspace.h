@@ -262,18 +262,19 @@ bs_dllist_node_t *wlmtk_dlnode_from_workspace(
 wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr);
 
-/** Fake workspace: A real workspace, but with a fake parent. For testing. */
-typedef struct {
-    /** The workspace. */
-    wlmtk_workspace_t         *workspace_ptr;
-    /** The (fake) parent container. */
-    wlmtk_container_t         *fake_parent_ptr;
-} wlmtk_fake_workspace_t;
-
-/** Creates a fake workspace with specified extents. */
-wlmtk_fake_workspace_t *wlmtk_fake_workspace_create(int width, int height);
-/** Destroys the fake workspace. */
-void wlmtk_fake_workspace_destroy(wlmtk_fake_workspace_t *fake_workspace_ptr);
+/**
+ * Creates a workspace with defined extents, suitably for tests.
+ *
+ * @param width
+ * @param height
+ * @param env_ptr
+ *
+ * @return A pointer to a @ref wlmtk_workspace_t or NULL on error.
+ */
+wlmtk_workspace_t *wlmtk_workspace_create_for_test(
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];
