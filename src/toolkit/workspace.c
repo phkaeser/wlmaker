@@ -691,6 +691,21 @@ wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_workspace_t, dlnode);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_workspace_t *wlmtk_workspace_create_for_test(
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create("test", env_ptr);
+    if (NULL == workspace_ptr) return NULL;
+
+    struct wlr_box extents = { .width = width, .height = height };
+    wlmtk_workspace_set_extents(workspace_ptr, &extents);
+
+    return workspace_ptr;
+}
+
 /* == Fake workspace methods, useful for tests ============================= */
 
 /* ------------------------------------------------------------------------- */

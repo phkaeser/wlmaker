@@ -262,6 +262,12 @@ bs_dllist_node_t *wlmtk_dlnode_from_workspace(
 wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr);
 
+wlmtk_workspace_t *wlmtk_workspace_create_for_test(
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr);
+
+
 /** Fake workspace: A real workspace, but with a fake parent. For testing. */
 typedef struct {
     /** The workspace. */
