@@ -15,7 +15,7 @@
         CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";
         Icon = "firefox-48x48.png";
       }
-    )
+    );
   };
   Clip = {
     Edge = BOTTOM;
@@ -34,4 +34,4 @@
         Color = "argb32:ff508050";
     },
   );
-}
+} 

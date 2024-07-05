@@ -212,7 +212,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
   * [done] Screenshots included.
-  
+
 * Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
 
@@ -295,14 +295,13 @@ Support for visual effects to improve usability, but not for pure show.
   * Window menu.
   * Application ID (from XDG shell and/or X11).
 
-* Configuration file, for:
-  * Application launchers of the dock.
-  * Application launchers for the clip.
-  * Workspace configuration.
-  * Background.
+* Configuration file and parser:
+  * Permit dock and clip to save state to configuration files.
+  * Support different background styles (fill, image).
+  * Make semicolon-after-value required, for consistency with GNUstep.
   * Theme.
     * [done] Added ADGRADIENT fill style, aligned with Window Maker's diagonal.
-  * Auto-started applications.
+    * Adds support for textures as fill (tiled, scaled, maximized, centered, filled?)
 
 * Configurable keyboard map.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)

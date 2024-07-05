@@ -6,14 +6,14 @@
       Model = "pc105";
       Layout = "ch";
       Variant = "de_nodeadkeys";
-      Options = ""
+      Options = "";
     };
     Repeat = {
       // Delay before initiating repeats, in milliseconds.
       Delay = 300;
       // Repeats per second.
-      Rate = 25
-    }
+      Rate = 25;
+    };
   };
   KeyBindings = {
     "Ctrl+Alt+Logo+Q" = Quit;
@@ -34,10 +34,10 @@
   };
   ScreenLock = {
     IdleSeconds = 300;
-    Command = "/usr/bin/swaylock"
+    Command = "/usr/bin/swaylock";
   };
   // Optional array: Commands to start once wlmaker is running.
   Autostart = (
     "/usr/bin/foot"
-  )
+  );
 }
