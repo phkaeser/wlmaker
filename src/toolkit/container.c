@@ -29,6 +29,8 @@
 
 /* == Declarations ========================================================= */
 
+static void _wlmtk_container_element_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr, void *ud_ptr);
 static struct wlr_scene_node *_wlmtk_container_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
@@ -149,13 +151,10 @@ wlmtk_container_vmt_t wlmtk_container_extend(
 /* ------------------------------------------------------------------------- */
 void wlmtk_container_fini(wlmtk_container_t *container_ptr)
 {
-    bs_dllist_node_t *dlnode_ptr;
-    while (NULL != (dlnode_ptr = container_ptr->elements.head_ptr)) {
-        wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
-        wlmtk_container_remove_element(container_ptr, element_ptr);
-        BS_ASSERT(container_ptr->elements.head_ptr != dlnode_ptr);
-        wlmtk_element_destroy(element_ptr);
-    }
+    bs_dllist_for_each(
+        &container_ptr->elements,
+        _wlmtk_container_element_dlnode_destroy,
+        container_ptr);
 
     // For containers created with wlmtk_container_init_attached(): We also
     // need to remove references to the WLR scene tree.
@@ -346,6 +345,18 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Calls dtor for @ref wlmtk_element_t at `dlnode_ptr` in `ud_ptr`. */
+void _wlmtk_container_element_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+    wlmtk_container_t *container_ptr = ud_ptr;
+
+    wlmtk_container_remove_element(container_ptr, element_ptr);
+    wlmtk_element_destroy(element_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
