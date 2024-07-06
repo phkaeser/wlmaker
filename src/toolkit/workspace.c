@@ -411,6 +411,7 @@ void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled)
 {
     if (workspace_ptr->enabled == enabled) return;
 
+    workspace_ptr->enabled = enabled;
     if (!enabled) {
         wlmtk_workspace_activate_window(workspace_ptr, NULL);
     } else {
@@ -418,7 +419,6 @@ void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled)
             workspace_ptr,
             workspace_ptr->formerly_activated_window_ptr);
     }
-    workspace_ptr->enabled = enabled;
     bs_log(BS_WARNING, "FIXME: Enabled workspace %p to %d",
            workspace_ptr, enabled);
 }
@@ -465,6 +465,7 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     }
     if (workspace_ptr->formerly_activated_window_ptr == window_ptr) {
         workspace_ptr->formerly_activated_window_ptr = NULL;
+        need_activation = true;
     }
 
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
@@ -616,9 +617,11 @@ void wlmtk_workspace_activate_window(
     }
 
     if (NULL != window_ptr) {
-        wlmtk_window_set_activated(window_ptr, true);
+        if (workspace_ptr->enabled) {
+            wlmtk_window_set_activated(window_ptr, true);
+            workspace_ptr->activated_window_ptr = window_ptr;
+        }
         workspace_ptr->formerly_activated_window_ptr = window_ptr;
-        workspace_ptr->activated_window_ptr = window_ptr;
     }
 }
 
@@ -729,6 +732,7 @@ wlmtk_workspace_t *wlmtk_workspace_create_for_test(
 
     struct wlr_box extents = { .width = width, .height = height };
     wlmtk_workspace_set_extents(workspace_ptr, &extents);
+    wlmtk_workspace_enable(workspace_ptr, true);
 
     return workspace_ptr;
 }
@@ -981,6 +985,7 @@ static void test_map_unmap(bs_test_t *test_ptr);
 static void test_move(bs_test_t *test_ptr);
 static void test_unmap_during_move(bs_test_t *test_ptr);
 static void test_resize(bs_test_t *test_ptr);
+static void test_enable(bs_test_t *test_ptr);
 static void test_activate(bs_test_t *test_ptr);
 static void test_activate_cycling(bs_test_t *test_ptr);
 
@@ -990,6 +995,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "move", test_move },
     { 1, "unmap_during_move", test_unmap_during_move },
     { 1, "resize", test_resize },
+    { 1, "enable", test_enable } ,
     { 1, "activate", test_activate },
     { 1, "activate_cycling", test_activate_cycling },
     { 0, NULL, NULL }
@@ -1277,6 +1283,61 @@ void test_resize(bs_test_t *test_ptr)
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests enabling or disabling the workspace. */
+void test_enable(bs_test_t *test_ptr)
+{
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, false);
+
+    // Map while disabled: Not activated.
+    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
+    wlmtk_workspace_map_window(ws_ptr, fw1_ptr->window_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+
+    // Enable: Activates the earlier-mapped window.
+    wlmtk_workspace_enable(ws_ptr, true);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+
+    // Disable: De-activate the window
+    wlmtk_workspace_enable(ws_ptr, false);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+
+    // Maps another window, while de-activated: Also don't activate.
+    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
+    wlmtk_workspace_map_window(ws_ptr, fw2_ptr->window_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
+
+    // Enable: Activates the window just mapped before.
+    wlmtk_workspace_enable(ws_ptr, true);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw2_ptr->window_ptr));
+
+    // Unmaps while de-activated. Enabling after should still activate fw1.
+    wlmtk_workspace_enable(ws_ptr, false);
+    wlmtk_workspace_unmap_window(ws_ptr, fw2_ptr->window_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+    wlmtk_workspace_enable(ws_ptr, true);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_window_is_activated(fw1_ptr->window_ptr));
+
+    wlmtk_workspace_unmap_window(ws_ptr, fw1_ptr->window_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
 
