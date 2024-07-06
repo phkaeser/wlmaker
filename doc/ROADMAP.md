@@ -193,8 +193,8 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Thorough tests of both pointer and keyboard state.
   * Fix bug: When switching workspace, pointer state appears to be reset.
-  * Issue found when killing saylock that keyboard focus is incorrect.
-  * Re-activate workspace & windows after lock.
+  * [done] Issue found when killing saylock that keyboard focus is incorrect.
+  * [done] Re-activate workspace & windows after lock.
 
 * Menu, based on toolkit.
   * Available as window menu in windows.

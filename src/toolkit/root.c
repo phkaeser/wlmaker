@@ -340,6 +340,8 @@ bool wlmtk_root_lock(
         return false;
     }
 
+    wlmtk_workspace_enable(root_ptr->current_workspace_ptr, false);
+
     wlmtk_rectangle_set_size(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width, root_ptr->extents.height);
@@ -378,15 +380,7 @@ bool wlmtk_root_unlock(
 
     wl_signal_emit(&root_ptr->events.unlock_event, NULL);
 
-    // TODO(kaeser@gubbe.ch): Handle re-establishing keyboard focus better.
-    wlmtk_workspace_t *workspace_ptr = root_ptr->current_workspace_ptr;
-    if (NULL != wlmtk_workspace_get_activated_window(workspace_ptr)) {
-        wlmtk_element_t *el_ptr = wlmtk_window_element(
-            wlmtk_workspace_get_activated_window(workspace_ptr));
-        wlmtk_container_set_keyboard_focus_element(
-            el_ptr->parent_container_ptr, el_ptr);
-    }
-
+    wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
     return true;
 }
 
@@ -441,10 +435,12 @@ void _wlmtk_root_switch_to_workspace(
             wlmtk_element_set_visible(
                 wlmtk_workspace_element(root_ptr->current_workspace_ptr),
                 false);
+            wlmtk_workspace_enable(root_ptr->current_workspace_ptr, false);
         }
         root_ptr->current_workspace_ptr = workspace_ptr;
         wlmtk_element_set_visible(
             wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
+        wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
     }
 
     wl_signal_emit(

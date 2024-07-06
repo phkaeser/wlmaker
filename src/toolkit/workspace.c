@@ -51,6 +51,7 @@ struct _wlmtk_workspace_t {
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
 
+    bool                      enabled;
     /** Container that holds the windows, ie. the window layer. */
     wlmtk_container_t         window_container;
     /** Container that holds the fullscreen elements. Should have only one. */
@@ -61,6 +62,8 @@ struct _wlmtk_workspace_t {
 
     /** The activated window. */
     wlmtk_window_t            *activated_window_ptr;
+    /** The most recent activated window, if none is activated now. */
+    wlmtk_window_t            *formerly_activated_window_ptr;
 
     /** The grabbed window. */
     wlmtk_window_t            *grabbed_window_ptr;
@@ -403,6 +406,23 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled)
+{
+    if (workspace_ptr->enabled == enabled) return;
+
+    if (!enabled) {
+        wlmtk_workspace_activate_window(workspace_ptr, NULL);
+    } else {
+        wlmtk_workspace_activate_window(
+            workspace_ptr,
+            workspace_ptr->formerly_activated_window_ptr);
+    }
+    workspace_ptr->enabled = enabled;
+    bs_log(BS_WARNING, "FIXME: Enabled workspace %p to %d",
+           workspace_ptr, enabled);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr)
 {
@@ -441,6 +461,9 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     if (workspace_ptr->activated_window_ptr == window_ptr) {
         wlmtk_workspace_activate_window(workspace_ptr, NULL);
         need_activation = true;
+    }
+    if (workspace_ptr->formerly_activated_window_ptr == window_ptr) {
+        workspace_ptr->formerly_activated_window_ptr = NULL;
     }
 
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
@@ -586,11 +609,14 @@ void wlmtk_workspace_activate_window(
 
     if (NULL != workspace_ptr->activated_window_ptr) {
         wlmtk_window_set_activated(workspace_ptr->activated_window_ptr, false);
+        workspace_ptr->formerly_activated_window_ptr =
+            workspace_ptr->activated_window_ptr;
         workspace_ptr->activated_window_ptr = NULL;
     }
 
     if (NULL != window_ptr) {
         wlmtk_window_set_activated(window_ptr, true);
+        workspace_ptr->formerly_activated_window_ptr = window_ptr;
         workspace_ptr->activated_window_ptr = window_ptr;
     }
 }
