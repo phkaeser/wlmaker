@@ -122,6 +122,18 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Enabled or disables the workspace.
+ *
+ * An enabled workspace can have keyboard focus and activated windows. When
+ * re-enabling a workspace, the formerly activated window will get re-activated
+ * and re-gains keyboard focus.
+ *
+ * @param workspace_ptr
+ * @param enabled
+ */
+void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled);
+
+/**
  * Maps the window: Adds it to the workspace container and makes it visible.
  *
  * @param workspace_ptr

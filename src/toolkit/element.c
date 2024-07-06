@@ -51,6 +51,7 @@ static void _wlmtk_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_element_pointer_leave(
     wlmtk_element_t *element_ptr);
+static void _wlmtk_element_keyboard_blur(wlmtk_element_t *element_ptr);
 static bool _wlmtk_element_keyboard_event(
     wlmtk_element_t *element_ptr,
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
@@ -72,6 +73,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .pointer_axis = _wlmtk_element_pointer_axis,
     .pointer_enter = _wlmtk_element_pointer_enter,
     .pointer_leave = _wlmtk_element_pointer_leave,
+    .keyboard_blur = _wlmtk_element_keyboard_blur,
     .keyboard_event = _wlmtk_element_keyboard_event,
 };
 
@@ -127,6 +129,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->pointer_leave) {
         element_ptr->vmt.pointer_leave = element_vmt_ptr->pointer_leave;
+    }
+    if (NULL != element_vmt_ptr->keyboard_blur) {
+        element_ptr->vmt.keyboard_blur = element_vmt_ptr->keyboard_blur;
     }
     if (NULL != element_vmt_ptr->keyboard_event) {
         element_ptr->vmt.keyboard_event = element_vmt_ptr->keyboard_event;
@@ -358,6 +363,13 @@ void _wlmtk_element_pointer_leave(__UNUSED__ wlmtk_element_t *element_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handler for losing keyboard focus. Nothing for default impl. */
+void _wlmtk_element_keyboard_blur(__UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing.
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for keyboard events. By default: Nothing is handled. */
 bool _wlmtk_element_keyboard_event(
     __UNUSED__ wlmtk_element_t *element_ptr,
@@ -419,6 +431,8 @@ static void fake_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void fake_pointer_leave(
     wlmtk_element_t *element_ptr);
+static void fake_keyboard_blur(
+    wlmtk_element_t *element_ptr);
 static bool fake_keyboard_event(
     wlmtk_element_t *element_ptr,
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
@@ -437,6 +451,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .pointer_axis = fake_pointer_axis,
     .pointer_enter = fake_pointer_enter,
     .pointer_leave = fake_pointer_leave,
+    .keyboard_blur = fake_keyboard_blur,
     .keyboard_event = fake_keyboard_event,
 };
 
@@ -456,6 +471,17 @@ wlmtk_fake_element_t *wlmtk_fake_element_create(void)
         &fake_element_ptr->element, &fake_element_vmt);
 
     return fake_element_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
+{
+    fake_element_ptr->has_keyboard_focus = true;
+    if (NULL != fake_element_ptr->element.parent_container_ptr) {
+        wlmtk_container_set_keyboard_focus_element(
+            fake_element_ptr->element.parent_container_ptr,
+            &fake_element_ptr->element);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -590,6 +616,15 @@ void fake_pointer_leave(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Registers losing keyboard focus. */
+void fake_keyboard_blur(wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->has_keyboard_focus = false;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles 'keyboard_event' events for the fake element. */
 bool fake_keyboard_event(
     wlmtk_element_t *element_ptr,
@@ -614,6 +649,7 @@ static void test_get_pointer_area(bs_test_t *test_ptr);
 static void test_pointer_motion_leave(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
+static void test_keyboard_focus(bs_test_t *test_ptr);
 static void test_keyboard_event(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
@@ -625,6 +661,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "pointer_motion_leave", test_pointer_motion_leave },
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_axis", test_pointer_axis },
+    { 1, "keyboard_focus", test_keyboard_focus },
     { 1, "keyboard_event", test_keyboard_event },
     { 0, NULL, NULL }
 };
@@ -662,7 +699,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
 
     // Setting a parent with a tree must create & attach the node there.
     wlmtk_container_t *parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != parent_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, parent_ptr);
     wlmtk_element_set_visible(&element, true);
     wlmtk_element_set_parent_container(&element, parent_ptr);
     BS_TEST_VERIFY_EQ(
@@ -673,7 +710,7 @@ void test_set_parent_container(bs_test_t *test_ptr)
 
     // Resetting the parent must also re-attach the node.
     wlmtk_container_t *other_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != other_parent_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, other_parent_ptr);
     wlmtk_element_set_parent_container(&element, other_parent_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -712,7 +749,7 @@ void test_set_get_position(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 20, y);
 
     wlmtk_container_t *fake_parent_ptr = wlmtk_container_create_fake_parent();
-    BS_ASSERT(NULL != fake_parent_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_parent_ptr);
     wlmtk_element_set_parent_container(&element, fake_parent_ptr);
 
     BS_TEST_VERIFY_EQ(test_ptr, 10, element.wlr_scene_node_ptr->x);
@@ -792,7 +829,7 @@ void test_get_pointer_area(bs_test_t *test_ptr)
 void test_pointer_motion_leave(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    BS_ASSERT(NULL != fake_element_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -831,7 +868,7 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
 void test_pointer_button(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    BS_ASSERT(NULL != fake_element_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
 
     wlmtk_button_event_t event = {};
     BS_TEST_VERIFY_TRUE(
@@ -847,7 +884,7 @@ void test_pointer_button(bs_test_t *test_ptr)
 void test_pointer_axis(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    BS_ASSERT(NULL != fake_element_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
 
     struct wlr_pointer_axis_event event = {};
     BS_TEST_VERIFY_TRUE(
@@ -859,11 +896,26 @@ void test_pointer_axis(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Exercises keyboard grab & blur methods. */
+void test_keyboard_focus(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
+
+    wlmtk_fake_element_grab_keyboard(fake_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->has_keyboard_focus);
+    wlmtk_element_keyboard_blur(&fake_element_ptr->element);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->has_keyboard_focus);
+
+    wlmtk_element_destroy(&fake_element_ptr->element);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Exercises "keyboard_event" method. */
 void test_keyboard_event(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
-    BS_ASSERT(NULL != fake_element_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
 
     struct wlr_keyboard_key_event event = {};
     BS_TEST_VERIFY_TRUE(
