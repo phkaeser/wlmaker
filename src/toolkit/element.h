@@ -142,6 +142,14 @@ struct _wlmtk_element_vmt_t {
     void (*pointer_leave)(wlmtk_element_t *element_ptr);
 
     /**
+     * Blurs (de-activates) keyboard focus for the element. Propagates to child
+     * elements, where available.
+     *
+     * @param element_ptr
+     */
+    void (*keyboard_blur)(wlmtk_element_t *element_ptr);
+
+    /**
      * Handler for keyboard events.
      *
      * @param element_ptr
@@ -217,8 +225,6 @@ struct _wlmtk_element_t {
     uint32_t                  last_pointer_time_msec;
     /** Whether the pointer is currently within the element's bounds. */
     bool                      pointer_inside;
-
-    bool                      keyboard_focus_enabled;
 };
 
 /**
@@ -438,19 +444,12 @@ static inline bool wlmtk_element_keyboard_event(
         key_syms, key_syms_count, modifiers);
 }
 
-/**
- * Sets keyboard focus for this element.
- *
- * Does not propagate this upwards! See also container. FIXME.
- *
- * @param element_ptr
- * @param enabled
- *
- * @return true if this element accepts keyboard focus.
- */
-bool wlmtk_element_set_keyboard_focus(
-    wlmtk_container_t *container_ptr,
-    bool enabled);
+/** Calls @ref wlmtk_element_vmt_t::keyboard_blur. */
+static inline void wlmtk_element_keyboard_blur(
+    wlmtk_element_t *element_ptr)
+{
+    element_ptr->vmt.keyboard_blur(element_ptr);
+}
 
 /**
  * Virtual method: Calls the dtor of the element's implementation.
@@ -489,6 +488,8 @@ typedef struct {
     wlmtk_button_event_t      pointer_button_event;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_axis() was called. */
     bool                      pointer_axis_called;
+    /** Whether the fake element has keyboare focus. */
+    bool                      has_keyboard_focus;
     /** Indicates that @ref wlmtk_element_vmt_t::keyboard_event() was called. */
     bool                      keyboard_event_called;
 
@@ -504,6 +505,14 @@ typedef struct {
  *     @ref wlmtk_fake_element_t::element as argument.
  */
 wlmtk_fake_element_t *wlmtk_fake_element_create(void);
+
+/**
+ * Sets @ref wlmtk_fake_element_t::has_keyboard_focus and calls @ref
+ * wlmtk_element_keyboard_grab_protected.
+ *
+ * @param fake_element_ptr
+ */
+void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
