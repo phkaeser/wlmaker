@@ -419,8 +419,6 @@ void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled)
             workspace_ptr,
             workspace_ptr->formerly_activated_window_ptr);
     }
-    bs_log(BS_WARNING, "FIXME: Enabled workspace %p to %d",
-           workspace_ptr, enabled);
 }
 
 /* ------------------------------------------------------------------------- */
