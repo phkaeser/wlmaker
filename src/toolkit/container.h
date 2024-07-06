@@ -188,20 +188,6 @@ void wlmtk_container_raise_element_to_top(
 void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
 
 /**
- * Updates the container's keyboard focus to be at `element_ptr`.
- *
- * TODO(kaeser@gubbe.ch): Remove this method.
- *
- * @param container_ptr
- * @param element_ptr         The element that will get keyboard focus. Must
- *                            be contained in @ref wlmtk_container_t::elements.
- *                            A value of NULL clears the focus.
- */
-void wlmtk_container_update_keyboard_focus(
-    wlmtk_container_t *container_ptr,
-    wlmtk_element_t *element_ptr);
-
-/**
  * Reports `element_ptr` as having keyboard focus, and registers it as such in
  * this container. Will propagate @ref wlmtk_container_t::super_element to
  * this container's parent as element having keyboard focus.

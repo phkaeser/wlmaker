@@ -158,17 +158,19 @@ void wlmtk_surface_set_activated(
                 wlr_keyboard_ptr->keycodes,
                 wlr_keyboard_ptr->num_keycodes,
                 &wlr_keyboard_ptr->modifiers);
+
         }
-        wlmtk_container_update_keyboard_focus(
-            surface_ptr->super_element.parent_container_ptr,
-            &surface_ptr->super_element);
+        if (NULL != surface_ptr->super_element.parent_container_ptr) {
+            wlmtk_container_set_keyboard_focus_element(
+                surface_ptr->super_element.parent_container_ptr,
+                &surface_ptr->super_element);
+        }
     } else {
         if (wlr_seat_ptr->keyboard_state.focused_surface ==
             surface_ptr->wlr_surface_ptr) {
             wlr_seat_keyboard_clear_focus(wlr_seat_ptr);
-            wlmtk_container_update_keyboard_focus(
-                surface_ptr->super_element.parent_container_ptr,
-                NULL);
+            wlmtk_container_set_keyboard_focus_element(
+                surface_ptr->super_element.parent_container_ptr, NULL);
         }
     }
 

@@ -383,7 +383,7 @@ bool wlmtk_root_unlock(
     if (NULL != wlmtk_workspace_get_activated_window(workspace_ptr)) {
         wlmtk_element_t *el_ptr = wlmtk_window_element(
             wlmtk_workspace_get_activated_window(workspace_ptr));
-        wlmtk_container_update_keyboard_focus(
+        wlmtk_container_set_keyboard_focus_element(
             el_ptr->parent_container_ptr, el_ptr);
     }
 

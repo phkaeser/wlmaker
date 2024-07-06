@@ -239,7 +239,7 @@ void wlmtk_container_remove_element(
         container_ptr->left_button_element_ptr = NULL;
     }
     if (container_ptr->keyboard_focus_element_ptr == element_ptr) {
-        wlmtk_container_update_keyboard_focus(container_ptr, NULL);
+        wlmtk_container_set_keyboard_focus_element(container_ptr, NULL);
     }
 
     wlmtk_container_update_layout(container_ptr);
@@ -285,31 +285,6 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr)
             container_ptr->super_element.last_pointer_x,
             container_ptr->super_element.last_pointer_y,
             container_ptr->super_element.last_pointer_time_msec);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_container_update_keyboard_focus(
-    wlmtk_container_t *container_ptr,
-    wlmtk_element_t *element_ptr)
-{
-    // TODO(kaeser@gubbech): Re-establish guard clause: Nothing to do.
-    // Disabled, because keyboard focus re-establishement is not all done
-    // well after screen lock. Needs a bigger revamp.
-    // if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
-
-    if (NULL != element_ptr) {
-        BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
-    }
-    container_ptr->keyboard_focus_element_ptr = element_ptr;
-
-    // Propagate to parent containers.
-    if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_element_t *parent_kbfocus_element_ptr =
-            (NULL == element_ptr) ? NULL : &container_ptr->super_element;
-        wlmtk_container_update_keyboard_focus(
-            container_ptr->super_element.parent_container_ptr,
-            parent_kbfocus_element_ptr);
     }
 }
 
@@ -1648,14 +1623,14 @@ void test_keyboard_event(bs_test_t *test_ptr)
         wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_event_called);
 
-    wlmtk_container_update_keyboard_focus(&container, &fe_ptr->element);
+    wlmtk_fake_element_grab_keyboard(fe_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
     BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_event_called);
 
     fe_ptr->keyboard_event_called = false;
-    wlmtk_container_update_keyboard_focus(&container, NULL);
+    wlmtk_container_set_keyboard_focus_element(&container, NULL);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
