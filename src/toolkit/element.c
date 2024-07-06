@@ -896,6 +896,7 @@ void test_pointer_axis(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Exercises keyboard grab & blur methods. */
 void test_keyboard_focus(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();

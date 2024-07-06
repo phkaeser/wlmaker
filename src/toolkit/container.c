@@ -602,6 +602,7 @@ void _wlmtk_container_element_pointer_enter(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::keyboard_blur. Blurs all children. */
 void _wlmtk_container_element_keyboard_blur(wlmtk_element_t *element_ptr)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(

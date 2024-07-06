@@ -51,6 +51,7 @@ struct _wlmtk_workspace_t {
     /** Current FSM state. */
     wlmtk_fsm_t               fsm;
 
+    /** Whether this workspace is enabled, ie. can have activated windows. */
     bool                      enabled;
     /** Container that holds the windows, ie. the window layer. */
     wlmtk_container_t         window_container;

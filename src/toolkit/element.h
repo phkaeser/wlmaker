@@ -508,7 +508,7 @@ wlmtk_fake_element_t *wlmtk_fake_element_create(void);
 
 /**
  * Sets @ref wlmtk_fake_element_t::has_keyboard_focus and calls @ref
- * wlmtk_element_keyboard_grab_protected.
+ * wlmtk_container_set_keyboard_focus_element for the parent (if set).
  *
  * @param fake_element_ptr
  */
