@@ -43,6 +43,8 @@
 #include "image.h"
 #include "input.h"
 #include "lock.h"
+#include "menu.h"
+#include "menu_item.h"
 #include "panel.h"
 #include "popup.h"
 #include "rectangle.h"
