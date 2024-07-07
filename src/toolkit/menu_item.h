@@ -20,6 +20,8 @@
 #ifndef __WLMTK_MENU_ITEM_H__
 #define __WLMTK_MENU_ITEM_H__
 
+#include <libbase/libbase.h>
+
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
 
@@ -44,6 +46,16 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(wlmtk_env_t *env_ptr);
  * @param menu_item_ptr
  */
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
+
+/** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
+    wlmtk_menu_item_t *menu_item_ptr);
+
+/** Returns the base @ref wlmtk_menu_item_t from `dlnode_ptr`. */
+wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_menu_item_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
