@@ -20,10 +20,11 @@
 #ifndef __WLMTK_MENU_H__
 #define __WLMTK_MENU_H__
 
-#include "env.h"
-
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
+
+#include "env.h"
+#include "menu_item.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,26 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr);
  */
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
 
+/**
+ * Adds a menu item to the menu.
+ *
+ * @param menu_ptr
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
+                         wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Removes a menu item from the menu.
+ *
+ * @param menu_ptr
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
+                            wlmtk_menu_item_t *menu_item_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_menu_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

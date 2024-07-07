@@ -25,6 +25,7 @@
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
 
+#include "element.h"
 #include "env.h"
 
 #ifdef __cplusplus
@@ -53,6 +54,9 @@ bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
 
 /** Returns the base @ref wlmtk_menu_item_t from `dlnode_ptr`. */
 wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+
+/** Returns a pointer to the superclass @ref wlmtk_element_t. */
+wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_item_test_cases[];

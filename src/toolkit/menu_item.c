@@ -29,7 +29,7 @@ struct _wlmtk_menu_item_t {
     /** A menu item is a buffer. */
     wlmtk_buffer_t            super_buffer;
 
-    /** List node. */
+    /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
 };
 
@@ -72,6 +72,12 @@ wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr)
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_menu_item_t, dlnode);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr)
+{
+    return wlmtk_buffer_element(&menu_item_ptr->super_buffer);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
@@ -96,6 +102,11 @@ void test_ctor_dtor(bs_test_t *test_ptr)
         test_ptr,
         menu_item_ptr,
         wlmtk_menu_item_from_dlnode(dlnode_ptr));
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &menu_item_ptr->super_buffer.super_element,
+        wlmtk_menu_item_element(menu_item_ptr));
 
     wlmtk_menu_item_destroy(menu_item_ptr);
 }

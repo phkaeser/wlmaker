@@ -29,6 +29,9 @@
 struct _wlmtk_menu_t {
     /** Derived from a box, holding menu items. */
     wlmtk_box_t               super_box;
+
+    /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
+    bs_dllist_t               items;
 };
 
 /* == Data ================================================================= */
@@ -63,8 +66,55 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
     free(menu_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
+                         wlmtk_menu_item_t *menu_item_ptr)
+{
+    bs_dllist_push_back(
+        &menu_ptr->items,
+        wlmtk_dlnode_from_menu_item(menu_item_ptr));
+    wlmtk_box_add_element_back(
+        &menu_ptr->super_box,
+        wlmtk_menu_item_element(menu_item_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
+                            wlmtk_menu_item_t *menu_item_ptr)
+{
+    wlmtk_box_remove_element(
+        &menu_ptr->super_box,
+        wlmtk_menu_item_element(menu_item_ptr));
+    bs_dllist_remove(
+        &menu_ptr->items,
+        wlmtk_dlnode_from_menu_item(menu_item_ptr));
+}
+
 /* == Local (static) methods =============================================== */
 
 /* == Unit tests =========================================================== */
+
+static void test_add_remove(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_menu_test_cases[] = {
+    { 1, "add_remove", test_add_remove },
+    { 0, NULL, NULL }
+};
+
+
+/* ------------------------------------------------------------------------- */
+/** Tests adding and removing menu items. */
+void test_add_remove(bs_test_t *test_ptr)
+{
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+
+    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
+    wlmtk_menu_add_item(menu_ptr, menu_item_ptr);
+    wlmtk_menu_remove_item(menu_ptr, menu_item_ptr);
+
+    wlmtk_menu_destroy(menu_ptr);
+}
 
 /* == End of menu.c ======================================================== */
