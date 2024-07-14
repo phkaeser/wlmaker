@@ -192,9 +192,10 @@ Support for visual effects to improve usability, but not for pure show.
 **Focus**: Add menus & make it ready for  "Early-Access".
 
 * Thorough tests of both pointer and keyboard state.
-  * Fix bug: When switching workspace, pointer state appears to be reset.
   * [done] Issue found when killing saylock that keyboard focus is incorrect.
   * [done] Re-activate workspace & windows after lock.
+  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * Fix bug: When switching workspace, pointer state appears to be reset.
 
 * Menu, based on toolkit.
   * Available as window menu in windows.
@@ -215,6 +216,10 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
+  * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
+
+* Misc
+  * Expose the decoration manager configurables through the config file.
 
 ## Plan for 0.5
 
