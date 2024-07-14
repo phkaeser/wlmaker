@@ -74,31 +74,51 @@ wlmaker_output_t *wlmaker_output_create(
             output_ptr->wlr_output_ptr,
             output_ptr->wlr_allocator_ptr,
             output_ptr->wlr_renderer_ptr)) {
-        bs_log(BS_ERROR, "Failed wlr_output_init_renderer()");
+        bs_log(BS_ERROR, "Failed wlr_output_init_renderer() on %s",
+               output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
+    wlr_output_enable(output_ptr->wlr_output_ptr, true);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
-        struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(output_ptr->wlr_output_ptr);
+        struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
+            output_ptr->wlr_output_ptr);
+        bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
+               mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
         wlr_output_set_mode(output_ptr->wlr_output_ptr, mode_ptr);
+    } else {
+        bs_log(BS_INFO, "No modes available on %s",
+               output_ptr->wlr_output_ptr->name);
     }
 
-    // Enable the output and commit.
-    wlr_output_enable(output_ptr->wlr_output_ptr, true);
-    if (!wlr_output_commit(output_ptr->wlr_output_ptr)) {
-        bs_log(BS_ERROR, "Failed wlr_output_commit()");
+    if (!wlr_output_test(output_ptr->wlr_output_ptr)) {
+        bs_log(BS_ERROR, "Failed wlr_output_test() on %s",
+               output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
 
+    // Enable the output and commit.
+    if (!wlr_output_commit(output_ptr->wlr_output_ptr)) {
+        bs_log(BS_ERROR, "Failed wlr_output_commit() on %s",
+               output_ptr->wlr_output_ptr->name);
+        wlmaker_output_destroy(output_ptr);
+        return NULL;
+    }
+
+    bs_log(BS_INFO, "Created output %s", output_ptr->wlr_output_ptr->name);
     return output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_output_destroy(wlmaker_output_t *output_ptr)
 {
+    if (NULL != output_ptr->wlr_output_ptr) {
+        bs_log(BS_INFO, "Destroy output %s", output_ptr->wlr_output_ptr->name);
+    }
+
     wl_list_remove(&output_ptr->output_request_state_listener.link);
     wl_list_remove(&output_ptr->output_frame_listener.link);
     wl_list_remove(&output_ptr->output_destroy_listener.link);
