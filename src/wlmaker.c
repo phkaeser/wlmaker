@@ -52,6 +52,15 @@ static char *wlmaker_arg_style_file_ptr = NULL;
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {};
 
+/** Log levels. */
+static const bs_arg_enum_table_t wlmaker_log_levels[] = {
+    { .name_ptr = "DEBUG", BS_DEBUG },
+    { .name_ptr = "INFO", BS_INFO },
+    { .name_ptr = "WARNING", BS_WARNING },
+    { .name_ptr = "ERROR", BS_ERROR },
+    { .name_ptr = NULL },
+};
+
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
 #if defined(WLMAKER_HAVE_XWAYLAND)
@@ -81,6 +90,12 @@ static const bs_arg_t wlmaker_args[] = {
         "will use a built-in default style.",
         NULL,
         &wlmaker_arg_style_file_ptr),
+    BS_ARG_ENUM(
+        "log_level",
+        "Log level to apply. One of DEBUG, INFO, WARNING, ERROR.",
+        "INFO",
+        &wlmaker_log_levels[0],
+        (int*)&bs_log_severity),
     BS_ARG_SENTINEL()
 };
 
@@ -264,8 +279,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
-    bs_log_severity = BS_INFO;
-
+    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
 
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
