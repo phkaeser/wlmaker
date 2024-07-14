@@ -68,6 +68,9 @@ The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
 # Debugging issues
 
+> [!NOTE] Run `wlmaker` with the `--log_level=DEBUG` argument to get more
+> verbose debug information.
+
 1. `wlmaker` fails with an *ERROR* log of `Could not initialize renderer`.
 
     This indicates that `wlroots` was unable to pick a suitable renderer. For
