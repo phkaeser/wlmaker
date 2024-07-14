@@ -32,6 +32,9 @@ Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 
 ## Option 3: Run as wayland session
 
+> [!NOTE] As of 2024-07-14, this appears to work only with Wayland-only display
+> managers. `gdm3` has been found to work, but `lightdm` did not.
+
 > [!IMPORTANT]
 > It is not recommended to run wlmaker as your main compositor. This approach
 > will not work if dependencies are not all operating correctly, and is hardest
