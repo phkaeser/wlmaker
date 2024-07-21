@@ -238,6 +238,23 @@ void wlmaker_primitives_draw_window_title(
     const char *title_ptr,
     uint32_t color)
 {
+    wlmaker_primitives_draw_text(
+        cairo_ptr,
+        6, 2 + font_style_ptr->size,
+        font_style_ptr,
+        color,
+        title_ptr ? title_ptr : "Unnamed");
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_primitives_draw_text(
+    cairo_t *cairo_ptr,
+    int x,
+    int y,
+    const wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
+    const char *text_ptr)
+{
     cairo_save(cairo_ptr);
     cairo_select_font_face(
         cairo_ptr,
@@ -247,8 +264,9 @@ void wlmaker_primitives_draw_window_title(
     cairo_set_font_size(cairo_ptr, font_style_ptr->size);
     cairo_set_source_argb8888(cairo_ptr, color);
 
-    cairo_move_to(cairo_ptr, 6, 2 + font_style_ptr->size);
-    cairo_show_text(cairo_ptr, title_ptr ? title_ptr : "Unnamed");
+    cairo_move_to(cairo_ptr, x, y);
+    cairo_show_text(cairo_ptr, text_ptr);
+
     cairo_restore(cairo_ptr);
 }
 
@@ -259,6 +277,7 @@ static void test_close(bs_test_t *test_ptr);
 static void test_close_large(bs_test_t *test_ptr);
 static void test_minimize(bs_test_t *test_ptr);
 static void test_minimize_large(bs_test_t *test_ptr);
+static void test_text(bs_test_t *test_ptr);
 static void test_window_title(bs_test_t *test_ptr);
 
 /** Unit tests. */
@@ -268,6 +287,7 @@ const bs_test_case_t   wlmaker_primitives_test_cases[] = {
     { 1, "close_large", test_close_large },
     { 1, "minimize", test_minimize },
     { 1, "minimize_large", test_minimize_large },
+    { 1, "text", test_text },
     { 1, "window_title", test_window_title },
     { 0, NULL, NULL }
 };
@@ -383,6 +403,28 @@ void test_minimize_large(bs_test_t *test_ptr)
     wlmaker_primitives_draw_minimize_icon(cairo_ptr, 50, 0xffffffff);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, gfxbuf_ptr, "toolkit/primitive_minimize_icon_large.png");
+
+    cairo_destroy(cairo_ptr);
+    bs_gfxbuf_destroy(gfxbuf_ptr);
+}
+
+/** Verifies drawing a text. */
+void test_text(bs_test_t *test_ptr)
+{
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(80, 20);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, gfxbuf_ptr);
+    cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, cairo_ptr);
+
+    static const wlmtk_style_font_t font_style = {
+        .face = "Helvetica",
+        .weight = WLMTK_FONT_WEIGHT_BOLD,
+        .size = 14,
+    };
+    wlmaker_primitives_draw_text(
+        cairo_ptr, 8, 15, &font_style, 0xffc0d0e0, "Test Text");
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, gfxbuf_ptr, "toolkit/primitive_text.png");
 
     cairo_destroy(cairo_ptr);
     bs_gfxbuf_destroy(gfxbuf_ptr);
