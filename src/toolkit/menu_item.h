@@ -74,6 +74,16 @@ struct _wlmtk_menu_item_t {
     /** Width of the item element, in pixels. */
     int                       width;
 
+    /** Texture buffer holding the item in enabled state. */
+    struct wlr_buffer         *enabled_wlr_buffer_ptr;
+    /** Texture buffer holding the item in highlighted state. */
+    struct wlr_buffer         *highlighted_wlr_buffer_ptr;
+    /** Texture buffer holding the item in disabled state. */
+    struct wlr_buffer         *disabled_wlr_buffer_ptr;
+
+    /** State of the menu item. */
+    wlmtk_menu_item_state_t   state;
+
     /** Style of the menu item. */
     wlmtk_menu_item_style_t   style;
 };

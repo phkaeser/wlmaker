@@ -25,6 +25,13 @@
 
 /* == Declarations ========================================================= */
 
+static bool _wlmtk_menu_item_redraw(
+    wlmtk_menu_item_t *menu_item_ptr);
+static void _wlmtk_menu_item_apply_state(wlmtk_menu_item_t *menu_item_ptr);
+static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_item_state_t state);
+
 /* == Data ================================================================= */
 
 /* == Exported methods ===================================================== */
@@ -72,6 +79,10 @@ void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
         menu_item_ptr->text_ptr = NULL;
     }
 
+    wlr_buffer_drop_nullify(&menu_item_ptr->enabled_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(&menu_item_ptr->highlighted_wlr_buffer_ptr);
+    wlr_buffer_drop_nullify(&menu_item_ptr->disabled_wlr_buffer_ptr);
+
     wlmtk_buffer_fini(&menu_item_ptr->super_buffer);
 }
 
@@ -86,8 +97,7 @@ bool wlmtk_menu_item_set_text(
     if (NULL != menu_item_ptr->text_ptr) free(menu_item_ptr->text_ptr);
     menu_item_ptr->text_ptr = new_text_ptr;
 
-    // FIXME: Trigger redraw.
-    return true;
+    return _wlmtk_menu_item_redraw(menu_item_ptr);
 }
 
 /* -------------------------------------------------------------------------*/
@@ -110,6 +120,59 @@ wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Redraws the buffers for the menu item. Also updates the buffer state. */
+bool _wlmtk_menu_item_redraw(wlmtk_menu_item_t *menu_item_ptr)
+{
+    struct wlr_buffer *e, *h, *d;
+
+    e = _wlmtk_menu_item_create_buffer(menu_item_ptr, MENU_ITEM_ENABLED);
+    h = _wlmtk_menu_item_create_buffer(menu_item_ptr, MENU_ITEM_HIGHLIGHTED);
+    d = _wlmtk_menu_item_create_buffer(menu_item_ptr, MENU_ITEM_DISABLED);
+
+    if (NULL == e || NULL == d || NULL == h) {
+        wlr_buffer_drop_nullify(&e);
+        wlr_buffer_drop_nullify(&h);
+        wlr_buffer_drop_nullify(&d);
+        return false;
+    }
+
+    wlr_buffer_drop_nullify(&menu_item_ptr->enabled_wlr_buffer_ptr);
+    menu_item_ptr->enabled_wlr_buffer_ptr = e;
+    wlr_buffer_drop_nullify(&menu_item_ptr->highlighted_wlr_buffer_ptr);
+    menu_item_ptr->highlighted_wlr_buffer_ptr = h;
+    wlr_buffer_drop_nullify(&menu_item_ptr->disabled_wlr_buffer_ptr);
+    menu_item_ptr->disabled_wlr_buffer_ptr = d;
+
+    _wlmtk_menu_item_apply_state(menu_item_ptr);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Applies the state: Sets the parent buffer's content accordingly. */
+void _wlmtk_menu_item_apply_state(wlmtk_menu_item_t *menu_item_ptr)
+{
+    switch (menu_item_ptr->state) {
+    case MENU_ITEM_ENABLED:
+        wlmtk_buffer_set(&menu_item_ptr->super_buffer,
+                         menu_item_ptr->enabled_wlr_buffer_ptr);
+        break;
+
+    case MENU_ITEM_HIGHLIGHTED:
+        wlmtk_buffer_set(&menu_item_ptr->super_buffer,
+                         menu_item_ptr->highlighted_wlr_buffer_ptr);
+        break;
+
+    case MENU_ITEM_DISABLED:
+        wlmtk_buffer_set(&menu_item_ptr->super_buffer,
+                         menu_item_ptr->disabled_wlr_buffer_ptr);
+        break;
+
+    default:
+        bs_log(BS_FATAL, "Unhandled state %d", menu_item_ptr->state);
+    }
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -169,11 +232,11 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 /* == Unit tests =========================================================== */
 
 static void test_ctor_dtor(bs_test_t *test_ptr);
-static void test_buffer(bs_test_t *test_ptr);
+static void test_buffers(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "ctor_dtor", test_ctor_dtor },
-    { 1, "buffer", test_buffer },
+    { 1, "buffers", test_buffers },
     { 0, NULL, NULL }
 };
 
@@ -204,7 +267,7 @@ void test_ctor_dtor(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Exercises drawing. */
-void test_buffer(bs_test_t *test_ptr)
+void test_buffers(bs_test_t *test_ptr)
 {
     static const wlmtk_menu_item_style_t style = {
         .fill = {
@@ -228,32 +291,19 @@ void test_buffer(bs_test_t *test_ptr)
     menu_item_ptr->width = 80;
     wlmtk_menu_item_set_text(menu_item_ptr, "Menu item");
 
-    struct wlr_buffer *wlr_buffer_ptr;
-    bs_gfxbuf_t *gfxbuf_ptr;
+    bs_gfxbuf_t *g;
 
-    wlr_buffer_ptr = _wlmtk_menu_item_create_buffer(
-        menu_item_ptr, MENU_ITEM_ENABLED);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
-    gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(menu_item_ptr->enabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
-        test_ptr, gfxbuf_ptr, "toolkit/menu_item_enabled.png");
-    wlr_buffer_drop(wlr_buffer_ptr);
+        test_ptr, g, "toolkit/menu_item_enabled.png");
 
-    wlr_buffer_ptr = _wlmtk_menu_item_create_buffer(
-        menu_item_ptr, MENU_ITEM_HIGHLIGHTED);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
-    gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(menu_item_ptr->highlighted_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
-        test_ptr, gfxbuf_ptr, "toolkit/menu_item_highlighted.png");
-    wlr_buffer_drop(wlr_buffer_ptr);
+        test_ptr, g, "toolkit/menu_item_highlighted.png");
 
-    wlr_buffer_ptr = _wlmtk_menu_item_create_buffer(
-        menu_item_ptr, MENU_ITEM_DISABLED);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
-    gfxbuf_ptr = bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(menu_item_ptr->disabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
-        test_ptr, gfxbuf_ptr, "toolkit/menu_item_disabled.png");
-    wlr_buffer_drop(wlr_buffer_ptr);
+        test_ptr, g, "toolkit/menu_item_disabled.png");
 
     wlmtk_menu_item_destroy(menu_item_ptr);
 }
