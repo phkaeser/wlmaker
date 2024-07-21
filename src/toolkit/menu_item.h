@@ -24,14 +24,42 @@
 
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
+/** Forward declaration: Style of a menu item. */
+typedef struct _wlmtk_menu_item_style_t wlmtk_menu_item_style_t;
 
 #include "buffer.h"
 #include "element.h"
 #include "env.h"
+#include "style.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** States a menu item can be in. */
+typedef enum {
+    MENU_ITEM_ENABLED,
+    MENU_ITEM_HIGHLIGHTED,
+    MENU_ITEM_DISABLED
+} wlmtk_menu_item_state_t;
+
+/** Menu item style. */
+struct _wlmtk_menu_item_style_t {
+    /** Fill style. */
+    wlmtk_style_fill_t        fill;
+    /** Fill style when disabled. */
+    wlmtk_style_fill_t        highlighted_fill;
+    /** Style of the font used in the menu item. */
+    wlmtk_style_font_t        font;
+    /** Height of the menu item, in pixels. */
+    uint64_t                  height;
+    /** Text color. */
+    uint32_t                  enabled_text_color;
+    /** Text color when highlighted. */
+    uint32_t                  highlighted_text_color;
+    /** Text color when disabled. */
+    uint32_t                  disabled_text_color;
+};
 
 /** State of a menu item. */
 struct _wlmtk_menu_item_t {
@@ -40,6 +68,14 @@ struct _wlmtk_menu_item_t {
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
+
+    /** Text to be shown for the menu item. */
+    char                      *text_ptr;
+    /** Width of the item element, in pixels. */
+    int                       width;
+
+    /** Style of the menu item. */
+    wlmtk_menu_item_style_t   style;
 };
 
 /**
@@ -75,6 +111,16 @@ bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
  * @param menu_item_ptr
  */
 void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Sets or updates the text for the menu item.
+ *
+ * @param menu_item_ptr
+ * @param text_ptr
+ */
+bool wlmtk_menu_item_set_text(
+    wlmtk_menu_item_t *menu_item_ptr,
+    const char *text_ptr);
 
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
