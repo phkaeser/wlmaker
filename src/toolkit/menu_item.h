@@ -48,6 +48,24 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(wlmtk_env_t *env_ptr);
  */
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
 
+/**
+ * Initializes the menu item.
+ *
+ * @param menu_item_ptr
+ * @param env_ptr
+ *
+ * @return true iff the initialization succeeded.
+ */
+bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
+                          wlmtk_env_t *env_ptr);
+
+/**
+ * Un-initializes the menu item.
+ *
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
+
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr);

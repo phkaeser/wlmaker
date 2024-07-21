@@ -44,19 +44,38 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(wlmtk_env_t *env_ptr)
         1, sizeof(wlmtk_menu_item_t));
     if (NULL == menu_item_ptr) return NULL;
 
-    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
+    if (!wlmtk_menu_item_init(menu_item_ptr, env_ptr)) {
         wlmtk_menu_item_destroy(menu_item_ptr);
         return NULL;
     }
-
     return menu_item_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
-    wlmtk_buffer_fini(&menu_item_ptr->super_buffer);
+    wlmtk_menu_item_fini(menu_item_ptr);
     free(menu_item_ptr);
+}
+
+/* -------------------------------------------------------------------------*/
+bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
+                          wlmtk_env_t *env_ptr)
+{
+    memset(menu_item_ptr, 0, sizeof(wlmtk_menu_item_t));
+
+    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
+        wlmtk_menu_item_fini(menu_item_ptr);
+        return false;
+    }
+
+    return true;
+}
+
+/* -------------------------------------------------------------------------*/
+void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
+{
+    wlmtk_buffer_fini(&menu_item_ptr->super_buffer);
 }
 
 /* -------------------------------------------------------------------------*/
