@@ -25,12 +25,22 @@
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
 
+#include "buffer.h"
 #include "element.h"
 #include "env.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** State of a menu item. */
+struct _wlmtk_menu_item_t {
+    /** A menu item is a buffer. */
+    wlmtk_buffer_t            super_buffer;
+
+    /** List node, within @ref wlmtk_menu_t::items. */
+    bs_dllist_node_t          dlnode;
+};
 
 /**
  * Create a menu item.

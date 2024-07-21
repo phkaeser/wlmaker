@@ -20,18 +20,7 @@
 
 #include "menu_item.h"
 
-#include "buffer.h"
-
 /* == Declarations ========================================================= */
-
-/** State of a menu item. */
-struct _wlmtk_menu_item_t {
-    /** A menu item is a buffer. */
-    wlmtk_buffer_t            super_buffer;
-
-    /** List node, within @ref wlmtk_menu_t::items. */
-    bs_dllist_node_t          dlnode;
-};
 
 /* == Data ================================================================= */
 
