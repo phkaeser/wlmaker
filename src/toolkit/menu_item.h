@@ -66,6 +66,9 @@ struct _wlmtk_menu_item_t {
     /** A menu item is a buffer. */
     wlmtk_buffer_t            super_buffer;
 
+    /** The superclass' @ref wlmtk_element_t virtual method table. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
 
@@ -80,6 +83,9 @@ struct _wlmtk_menu_item_t {
     struct wlr_buffer         *highlighted_wlr_buffer_ptr;
     /** Texture buffer holding the item in disabled state. */
     struct wlr_buffer         *disabled_wlr_buffer_ptr;
+
+    /** Whether the item is enabled. */
+    bool                      enabled;
 
     /** State of the menu item. */
     wlmtk_menu_item_state_t   state;
