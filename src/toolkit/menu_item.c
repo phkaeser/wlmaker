@@ -369,13 +369,25 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_menu_item_set_text(menu_item_ptr, "Menu item");
 
     BS_TEST_VERIFY_EQ(test_ptr, MENU_ITEM_ENABLED, menu_item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        menu_item_ptr->super_buffer.wlr_buffer_ptr,
+        menu_item_ptr->enabled_wlr_buffer_ptr);
 
     wlmtk_element_t *e = wlmtk_menu_item_element(menu_item_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
     BS_TEST_VERIFY_EQ(test_ptr, MENU_ITEM_HIGHLIGHTED, menu_item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        menu_item_ptr->super_buffer.wlr_buffer_ptr,
+        menu_item_ptr->highlighted_wlr_buffer_ptr);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 2));
     BS_TEST_VERIFY_EQ(test_ptr, MENU_ITEM_ENABLED, menu_item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        menu_item_ptr->super_buffer.wlr_buffer_ptr,
+        menu_item_ptr->enabled_wlr_buffer_ptr);
 
     wlmtk_menu_item_destroy(menu_item_ptr);
 }
