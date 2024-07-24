@@ -138,6 +138,16 @@ bool wlmtk_menu_item_set_text(
     wlmtk_menu_item_t *menu_item_ptr,
     const char *text_ptr);
 
+/**
+ * Sets whether the menu item is enabled or disabled.
+ *
+ * @param menu_item_ptr
+ * @param enabled
+ */
+void wlmtk_menu_item_set_enabled(
+    wlmtk_menu_item_t *menu_item_ptr,
+    bool enabled);
+
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr);
