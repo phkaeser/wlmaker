@@ -37,6 +37,11 @@ static void element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
+static bool _wlmtk_buffer_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec);
 static void handle_wlr_scene_buffer_node_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -47,6 +52,7 @@ static void handle_wlr_scene_buffer_node_destroy(
 static const wlmtk_element_vmt_t buffer_element_vmt = {
     .create_scene_node = element_create_scene_node,
     .get_dimensions = element_get_dimensions,
+    .pointer_motion = _wlmtk_buffer_element_pointer_motion,
 };
 
 /* == Exported methods ===================================================== */
@@ -174,6 +180,38 @@ void element_get_dimensions(
 
     if (NULL != right_ptr) *right_ptr = buffer_ptr->wlr_buffer_ptr->width;
     if (NULL != bottom_ptr) *bottom_ptr = buffer_ptr->wlr_buffer_ptr->height;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implementation of the element's motion method: Calls the parent's
+ * implementation, and tiggers @ref wlmtk_element_vmt_t::enter, respectively
+ * @ref wlmtk_element_vmt_t::leave, if (x, y) is within the buffer.
+ *
+ * @param element_ptr
+ * @param x
+ * @param y
+ * @param time_msec
+ *
+ * @return true if (x, y) is within the buffer's dimensions.
+ */
+bool _wlmtk_buffer_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x,
+    double y,
+    uint32_t time_msec)
+{
+    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_buffer_t, super_element);
+
+    if (x < 0 || x >= buffer_ptr->wlr_buffer_ptr->width ||
+        y < 0 || y >= buffer_ptr->wlr_buffer_ptr->height) {
+        x = NAN;
+        y = NAN;
+    }
+
+    return buffer_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
 }
 
 /* ------------------------------------------------------------------------- */
