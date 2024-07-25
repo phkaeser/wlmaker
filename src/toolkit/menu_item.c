@@ -32,6 +32,9 @@ static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
 
+static bool _wlmtk_menu_item_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
 static void _wlmtk_menu_item_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_menu_item_element_pointer_leave(
@@ -41,6 +44,7 @@ static void _wlmtk_menu_item_element_pointer_leave(
 
 /** Virtual method table for the menu item's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
+    .pointer_button = _wlmtk_menu_item_element_pointer_button,
     .pointer_enter = _wlmtk_menu_item_element_pointer_enter,
     .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
 };
@@ -86,6 +90,20 @@ bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
     menu_item_ptr->enabled = true;
     menu_item_ptr->state = MENU_ITEM_ENABLED;
     return true;
+}
+
+/* -------------------------------------------------------------------------*/
+wlmtk_menu_item_vmt_t wlmtk_menu_item_extend(
+    wlmtk_menu_item_t *menu_item_ptr,
+    const wlmtk_menu_item_vmt_t *menu_item_vmt_ptr)
+{
+    wlmtk_menu_item_vmt_t orig_vmt = menu_item_ptr->vmt;
+
+    if (NULL != menu_item_vmt_ptr->clicked) {
+        menu_item_ptr->vmt.clicked = menu_item_vmt_ptr->clicked;
+    }
+
+    return orig_vmt;
 }
 
 /* -------------------------------------------------------------------------*/
@@ -269,6 +287,27 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Checks if the button event is a click, and calls the handler. */
+bool _wlmtk_menu_item_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
+
+
+    if (button_event_ptr->button != BTN_LEFT) return false;
+    if (WLMTK_BUTTON_CLICK != button_event_ptr->type) return false;
+    if (MENU_ITEM_HIGHLIGHTED != menu_item_ptr->state) return false;
+
+    if (NULL != menu_item_ptr->vmt.clicked) {
+        menu_item_ptr->vmt.clicked(menu_item_ptr);
+    }
+    // Note: We consider this accepted even if there's no 'clicked' handler.
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles when the pointer enters the element: Highlights, if enabled. */
 void _wlmtk_menu_item_element_pointer_enter(
     wlmtk_element_t *element_ptr)
@@ -387,6 +426,8 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
     wlmtk_element_t *e = wlmtk_menu_item_element(menu_item_ptr);
+    wlmtk_button_event_t lbtn_ev = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
     menu_item_ptr->style = _wlmtk_menu_item_test_style;
     menu_item_ptr->width = 80;
@@ -398,6 +439,9 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         menu_item_ptr->super_buffer.wlr_buffer_ptr,
         menu_item_ptr->enabled_wlr_buffer_ptr);
+
+    // Click event. Not passed, since not highlighted.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Disable it, verify texture and state.
     wlmtk_menu_item_set_enabled(menu_item_ptr, false);
@@ -422,6 +466,8 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         menu_item_ptr->super_buffer.wlr_buffer_ptr,
         menu_item_ptr->highlighted_wlr_buffer_ptr);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Pointer moves outside: disabled.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 2));

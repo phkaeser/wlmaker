@@ -24,6 +24,8 @@
 
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
+/** Forward declaration: Virtual method table of the menu item. */
+typedef struct _wlmtk_menu_item_vmt_t wlmtk_menu_item_vmt_t;
 /** Forward declaration: Style of a menu item. */
 typedef struct _wlmtk_menu_item_style_t wlmtk_menu_item_style_t;
 
@@ -61,13 +63,20 @@ struct _wlmtk_menu_item_style_t {
     uint32_t                  disabled_text_color;
 };
 
+/** Virtual method table for the menu item. */
+struct _wlmtk_menu_item_vmt_t {
+    /** Abstract: Called when the menu item is clicked. */
+    void (*clicked)(wlmtk_menu_item_t *menu_item_ptr);
+};
+
 /** State of a menu item. */
 struct _wlmtk_menu_item_t {
     /** A menu item is a buffer. */
     wlmtk_buffer_t            super_buffer;
-
     /** The superclass' @ref wlmtk_element_t virtual method table. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
+    /** The menu item's virtual method table. */
+    wlmtk_menu_item_vmt_t     vmt;
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
@@ -120,6 +129,18 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
  */
 bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
                           wlmtk_env_t *env_ptr);
+
+/**
+ * Extends the menu item's virtual methods.
+ *
+ * @param menu_item_ptr
+ * @param menu_item_vmt_ptr
+ *
+ * @return The previous virtual method table.
+ */
+wlmtk_menu_item_vmt_t wlmtk_menu_item_extend(
+    wlmtk_menu_item_t *menu_item_ptr,
+    const wlmtk_menu_item_vmt_t *menu_item_vmt_ptr);
 
 /**
  * Un-initializes the menu item.
