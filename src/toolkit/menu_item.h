@@ -179,6 +179,21 @@ wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 /** Returns a pointer to the superclass @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
 
+/** Fake menu item, useful for unit tests. */
+typedef struct {
+    /** State of the menu item. */
+    wlmtk_menu_item_t         menu_item;
+    /** Original VMT. */
+    wlmtk_menu_item_vmt_t     orig_vmt;
+    /** Whether @ref wlmtk_menu_item_vmt_t::clicked was called. */
+    bool                      clicked_called;
+} wlmtk_fake_menu_item_t;
+
+/** Ctor for the fake menu item. */
+wlmtk_fake_menu_item_t *wlmtk_fake_menu_item_create(void);
+/** Dtor for the fake menu item. */
+void wlmtk_fake_menu_item_destroy(wlmtk_fake_menu_item_t *fake_menu_item_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_item_test_cases[];
 
