@@ -104,22 +104,6 @@ struct _wlmtk_menu_item_t {
 };
 
 /**
- * Create a menu item.
- *
- * @param env_ptr
- *
- * @return Pointer to the menu item, or NULL on error.
- */
-wlmtk_menu_item_t *wlmtk_menu_item_create(wlmtk_env_t *env_ptr);
-
-/**
- * Destroys the menu item.
- *
- * @param menu_item_ptr
- */
-void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
-
-/**
  * Initializes the menu item.
  *
  * @param menu_item_ptr

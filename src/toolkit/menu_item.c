@@ -51,27 +51,6 @@ static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
 
 /* == Exported methods ===================================================== */
 
-/* ------------------------------------------------------------------------- */
-wlmtk_menu_item_t *wlmtk_menu_item_create(wlmtk_env_t *env_ptr)
-{
-    wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
-        1, sizeof(wlmtk_menu_item_t));
-    if (NULL == menu_item_ptr) return NULL;
-
-    if (!wlmtk_menu_item_init(menu_item_ptr, env_ptr)) {
-        wlmtk_menu_item_destroy(menu_item_ptr);
-        return NULL;
-    }
-    return menu_item_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
-{
-    wlmtk_menu_item_fini(menu_item_ptr);
-    free(menu_item_ptr);
-}
-
 /* -------------------------------------------------------------------------*/
 bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
                           wlmtk_env_t *env_ptr)

@@ -127,11 +127,11 @@ void test_add_remove(bs_test_t *test_ptr)
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
-    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
-    wlmtk_menu_add_item(menu_ptr, menu_item_ptr);
-    wlmtk_menu_remove_item(menu_ptr, menu_item_ptr);
-    wlmtk_menu_item_destroy(menu_item_ptr);
+    wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, &fi_ptr->menu_item);
+    wlmtk_menu_add_item(menu_ptr, &fi_ptr->menu_item);
+    wlmtk_menu_remove_item(menu_ptr, &fi_ptr->menu_item);
+    wlmtk_fake_menu_item_destroy(fi_ptr);
 
     wlmtk_menu_destroy(menu_ptr);
 }
