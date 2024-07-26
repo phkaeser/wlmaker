@@ -79,6 +79,12 @@ static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
 static void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmtk_surface_handle_surface_map(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_surface_handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmtk_surface_commit_size(
     wlmtk_surface_t *surface_ptr,
@@ -237,6 +243,14 @@ bool _wlmtk_surface_init(
             &wlr_surface_ptr->events.commit,
             &surface_ptr->surface_commit_listener,
             _wlmtk_surface_handle_surface_commit);
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.map,
+            &surface_ptr->surface_map_listener,
+            _wlmtk_surface_handle_surface_map);
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.unmap,
+            &surface_ptr->surface_unmap_listener,
+            _wlmtk_surface_handle_surface_unmap);
     }
     return true;
 }
@@ -257,6 +271,8 @@ void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
     if (NULL != surface_ptr->wlr_surface_ptr) {
         surface_ptr->wlr_surface_ptr = NULL;
         wlmtk_util_disconnect_listener(&surface_ptr->surface_commit_listener);
+        wlmtk_util_disconnect_listener(&surface_ptr->surface_map_listener);
+        wlmtk_util_disconnect_listener(&surface_ptr->surface_unmap_listener);
     }
 
     wlmtk_element_fini(&surface_ptr->super_element);
@@ -621,6 +637,39 @@ void _wlmtk_surface_handle_surface_commit(
         surface_ptr->wlr_surface_ptr->current.width,
         surface_ptr->wlr_surface_ptr->current.height);
 }
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the `surface_map` signal: Makes the surface visible.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_surface_handle_surface_map(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, surface_map_listener);
+    wlmtk_element_set_visible(wlmtk_surface_element(surface_ptr), true);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the `surface_unmap` signal: Makes the surface invisible.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_surface_handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, surface_unmap_listener);
+    wlmtk_element_set_visible( wlmtk_surface_element(surface_ptr), false);
+}
+
 
 /* ------------------------------------------------------------------------- */
 /**

@@ -45,13 +45,11 @@ struct _wlmtk_popup_t {
     /** And the popup container. Popups can contain child popups. */
     wlmtk_container_t         popup_container;
 
+    /** The contained element. */
+    wlmtk_element_t           *element_ptr;
+
     /** The contained surface. */
     wlmtk_surface_t           *surface_ptr;
-
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_map_listener;
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_unmap_listener;
 };
 
 /**
