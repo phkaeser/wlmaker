@@ -28,7 +28,7 @@
 bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_surface_t *surface_ptr)
+    wlmtk_element_t *element_ptr)
 {
     memset(popup_ptr, 0, sizeof(wlmtk_popup_t));
     if (!wlmtk_container_init(&popup_ptr->super_container, env_ptr)) {
@@ -44,8 +44,8 @@ bool wlmtk_popup_init(
         &popup_ptr->popup_container.super_element);
     wlmtk_element_set_visible(&popup_ptr->popup_container.super_element, true);
 
-    if (NULL != surface_ptr) {
-        popup_ptr->element_ptr = wlmtk_surface_element(surface_ptr);
+    if (NULL != element_ptr) {
+        popup_ptr->element_ptr = element_ptr;
         wlmtk_container_add_element(
             &popup_ptr->super_container,
             popup_ptr->element_ptr);

@@ -25,7 +25,6 @@ typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"
 #include "env.h"
-#include "surface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,14 +53,14 @@ struct _wlmtk_popup_t {
  *
  * @param popup_ptr
  * @param env_ptr
- * @param surface_ptr
+ * @param element_ptr
  *
  * @return true on success.
  */
 bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_surface_t *surface_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Un-initializes the popup. Will remove it from the parent container.
