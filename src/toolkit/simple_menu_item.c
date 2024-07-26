@@ -77,6 +77,13 @@ void wlmtk_simple_menu_item_destroy(
     free(simple_menu_item_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_item_t *wlmtk_simple_menu_item_menu_item(
+    wlmtk_simple_menu_item_t *simple_menu_item_ptr)
+{
+    return &simple_menu_item_ptr->super_menu_item;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

@@ -24,6 +24,7 @@
 typedef struct _wlmtk_simple_menu_item_t wlmtk_simple_menu_item_t;
 
 #include "env.h"
+#include "menu_item.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,10 @@ wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
  * @param simple_menu_item_ptr
  */
 void wlmtk_simple_menu_item_destroy(
+    wlmtk_simple_menu_item_t *simple_menu_item_ptr);
+
+/** Gets pointer to the superclass @ref wlmtk_menu_item_t. */
+wlmtk_menu_item_t *wlmtk_simple_menu_item_menu_item(
     wlmtk_simple_menu_item_t *simple_menu_item_ptr);
 
 #ifdef __cplusplus
