@@ -47,11 +47,7 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr)
     wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
     if (NULL == menu_ptr) return NULL;
 
-    if (!wlmtk_box_init(
-            &menu_ptr->super_box,
-            env_ptr,
-            WLMTK_BOX_VERTICAL,
-            &style)) {
+    if (!wlmtk_menu_init(menu_ptr, env_ptr)) {
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
@@ -62,8 +58,30 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 {
-    wlmtk_box_fini(&menu_ptr->super_box);
+    wlmtk_menu_fini(menu_ptr);
     free(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr)
+{
+    memset(menu_ptr, 0, sizeof(wlmtk_menu_t));
+    if (!wlmtk_box_init(
+            &menu_ptr->super_box,
+            env_ptr,
+            WLMTK_BOX_VERTICAL,
+            &style)) {
+        wlmtk_menu_fini(menu_ptr);
+        return false;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
+{
+    wlmtk_box_fini(&menu_ptr->super_box);
 }
 
 /* ------------------------------------------------------------------------- */

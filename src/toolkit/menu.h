@@ -47,6 +47,23 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr);
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
 
 /**
+ * Initializes the menu.
+ *
+ * @param menu_ptr
+ * @param env_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr);
+
+/**
+ * Uninitializes the menu.
+ *
+ * @param menu_ptr
+ */
+void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
+
+/**
  * Adds a menu item to the menu.
  *
  * @param menu_ptr
