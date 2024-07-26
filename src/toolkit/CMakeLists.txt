@@ -40,6 +40,7 @@ SET(PUBLIC_HEADER_FILES
   resizebar.h
   resizebar_area.h
   root.h
+  simple_menu_item.h
   style.h
   surface.h
   tile.h
@@ -78,6 +79,7 @@ TARGET_SOURCES(toolkit PRIVATE
   resizebar.c
   resizebar_area.c
   root.c
+  simple_menu_item.c
   style.c
   surface.c
   tile.c
