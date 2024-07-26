@@ -34,8 +34,8 @@ extern "C" {
 /**
  * State of a popup.
  *
- * A popup contains a @ref wlmtk_surface_t, and may contain further popups.
- * These further popups will be stacked above the principal surface, in order
+ * A popup contains a @ref wlmtk_element_t, and may contain further popups.
+ * These further popups will be stacked above the principal element, in order
  * of them being added.
  */
 struct _wlmtk_popup_t {
@@ -47,9 +47,6 @@ struct _wlmtk_popup_t {
 
     /** The contained element. */
     wlmtk_element_t           *element_ptr;
-
-    /** The contained surface. */
-    wlmtk_surface_t           *surface_ptr;
 };
 
 /**

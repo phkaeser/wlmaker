@@ -46,7 +46,6 @@ bool wlmtk_popup_init(
 
     if (NULL != surface_ptr) {
         popup_ptr->element_ptr = wlmtk_surface_element(surface_ptr);
-        popup_ptr->surface_ptr = surface_ptr;
         wlmtk_container_add_element(
             &popup_ptr->super_container,
             popup_ptr->element_ptr);
@@ -69,7 +68,6 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
             &popup_ptr->super_container,
             popup_ptr->element_ptr);
         popup_ptr->element_ptr = NULL;
-        popup_ptr->surface_ptr = NULL;
     }
 
     if (popup_ptr->popup_container.super_element.parent_container_ptr) {
