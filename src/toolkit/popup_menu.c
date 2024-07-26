@@ -45,6 +45,8 @@ wlmtk_popup_menu_t *wlmtk_popup_menu_create(wlmtk_env_t *env_ptr)
         wlmtk_popup_menu_destroy(popup_menu_ptr);
         return NULL;
     }
+    wlmtk_element_set_visible(
+        wlmtk_menu_element(&popup_menu_ptr->menu), true);
 
     if (!wlmtk_popup_init(&popup_menu_ptr->super_popup,
                           env_ptr,
@@ -68,6 +70,12 @@ void wlmtk_popup_menu_destroy(wlmtk_popup_menu_t *popup_menu_ptr)
 wlmtk_popup_t *wlmtk_popup_menu_popup(wlmtk_popup_menu_t *popup_menu_ptr)
 {
     return &popup_menu_ptr->super_popup;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *wlmtk_popup_menu_menu(wlmtk_popup_menu_t *popup_menu_ptr)
+{
+    return &popup_menu_ptr->menu;
 }
 
 /* == Local (static) methods =============================================== */

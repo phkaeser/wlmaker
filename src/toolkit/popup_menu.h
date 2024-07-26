@@ -24,6 +24,7 @@
 typedef struct _wlmtk_popup_menu_t wlmtk_popup_menu_t;
 
 #include "env.h"
+#include "menu.h"
 #include "popup.h"
 
 #ifdef __cplusplus
@@ -48,6 +49,9 @@ void wlmtk_popup_menu_destroy(wlmtk_popup_menu_t *popup_menu_ptr);
 
 /** Returns pointer to the popup menu's @ref wlmtk_popup_t superclass. */
 wlmtk_popup_t *wlmtk_popup_menu_popup(wlmtk_popup_menu_t *popup_menu_ptr);
+
+/** Returns the contained @ref wlmtk_menu_t. */
+wlmtk_menu_t *wlmtk_popup_menu_menu(wlmtk_popup_menu_t *popup_menu_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
