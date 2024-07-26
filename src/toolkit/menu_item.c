@@ -276,15 +276,15 @@ bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
 
-
     if (button_event_ptr->button != BTN_LEFT) return false;
-    if (WLMTK_BUTTON_CLICK != button_event_ptr->type) return false;
-    if (MENU_ITEM_HIGHLIGHTED != menu_item_ptr->state) return false;
 
-    if (NULL != menu_item_ptr->vmt.clicked) {
+    if (WLMTK_BUTTON_CLICK == button_event_ptr->type &&
+        MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
+        NULL != menu_item_ptr->vmt.clicked) {
         menu_item_ptr->vmt.clicked(menu_item_ptr);
     }
-    // Note: We consider this accepted even if there's no 'clicked' handler.
+
+    // Note: All left button events are accepted.
     return true;
 }
 
@@ -485,7 +485,7 @@ void test_pointer(bs_test_t *test_ptr)
         item.enabled_wlr_buffer_ptr);
 
     // Click event. Not passed, since not highlighted.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Disable it, verify texture and state.
     wlmtk_menu_item_set_enabled(&item, false);
@@ -544,13 +544,13 @@ void test_clicked(bs_test_t *test_ptr)
 
     // Pointer enters outside, click does not trigger.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
     // Pointer enters again. Element disabled, will not trigger.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
     wlmtk_menu_item_set_enabled(&fi_ptr->menu_item, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
     // Element enabled, triggers.
@@ -559,7 +559,7 @@ void test_clicked(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
 
-    // Right button: No trigger.
+    // Right button: No trigger, not accepted.
     b.button = BTN_RIGHT;
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
@@ -567,13 +567,13 @@ void test_clicked(bs_test_t *test_ptr)
     // Left button, but not a CLICK event: No trigger.
     b.button = BTN_LEFT;
     b.type = WLMTK_BUTTON_DOWN;
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
     // Left button, a double-click event: No trigger.
     b.button = BTN_LEFT;
     b.type = WLMTK_BUTTON_DOUBLE_CLICK;
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
     wlmtk_fake_menu_item_destroy(fi_ptr);
