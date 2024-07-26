@@ -318,11 +318,17 @@ void _wlmtk_menu_item_element_pointer_leave(
 
 /* == Fake menu item implementation ======================================== */
 
+static void _wlmtk_fake_menu_item_element_destroy(
+    wlmtk_element_t *element_ptr);
 static void _wlmtk_fake_menu_item_clicked(wlmtk_menu_item_t *menu_item_ptr);
 
 /** Virtual method table for the fake menu item. */
 static const wlmtk_menu_item_vmt_t _wlmtk_fake_menu_item_vmt = {
     .clicked = _wlmtk_fake_menu_item_clicked
+};
+/** Virtual method table for the fake menu item's element superclass. */
+static const wlmtk_element_vmt_t _wlmtk_fake_menu_item_element_vmt = {
+    .destroy = _wlmtk_fake_menu_item_element_destroy
 };
 
 /* ------------------------------------------------------------------------- */
@@ -338,6 +344,9 @@ wlmtk_fake_menu_item_t *wlmtk_fake_menu_item_create(void)
     }
     fake_menu_item_ptr->orig_vmt = wlmtk_menu_item_extend(
         &fake_menu_item_ptr->menu_item, &_wlmtk_fake_menu_item_vmt);
+    wlmtk_element_extend(
+        wlmtk_menu_item_element(&fake_menu_item_ptr->menu_item),
+        &_wlmtk_fake_menu_item_element_vmt);
 
     return fake_menu_item_ptr;
 }
@@ -347,6 +356,16 @@ void wlmtk_fake_menu_item_destroy(wlmtk_fake_menu_item_t *fake_menu_item_ptr)
 {
     wlmtk_menu_item_fini(&fake_menu_item_ptr->menu_item);
     free(fake_menu_item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Dtor: Implements @ref wlmtk_element_vmt_t::destroy. */
+void _wlmtk_fake_menu_item_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_menu_item_t *fake_menu_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_menu_item_t,
+        menu_item.super_buffer.super_element);
+    wlmtk_fake_menu_item_destroy(fake_menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

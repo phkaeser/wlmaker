@@ -34,6 +34,10 @@ struct _wlmtk_menu_t {
     bs_dllist_t               items;
 };
 
+static void _wlmtk_menu_eliminate_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
 /* == Data ================================================================= */
 
 /** Style. TODO(kaeser@gubbe.ch): Make a parameter. */
@@ -60,6 +64,10 @@ bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
 {
+    bs_dllist_for_each(
+        &menu_ptr->items,
+        _wlmtk_menu_eliminate_item,
+        menu_ptr);
     wlmtk_box_fini(&menu_ptr->super_box);
 }
 
@@ -89,6 +97,17 @@ void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
 
 /* == Local (static) methods =============================================== */
 
+/* ------------------------------------------------------------------------- */
+/** Callback for bs_dllist_for_each: Removes item from items, destroys it. */
+void _wlmtk_menu_eliminate_item(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_from_dlnode(dlnode_ptr);
+    wlmtk_menu_t *menu_ptr = ud_ptr;
+
+    wlmtk_menu_remove_item(menu_ptr, item_ptr);
+    wlmtk_element_destroy(wlmtk_menu_item_element(item_ptr));
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_add_remove(bs_test_t *test_ptr);
@@ -107,11 +126,15 @@ void test_add_remove(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_init(&menu, NULL));
 
     wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, &fi_ptr->menu_item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
     wlmtk_menu_add_item(&menu, &fi_ptr->menu_item);
     wlmtk_menu_remove_item(&menu, &fi_ptr->menu_item);
     wlmtk_fake_menu_item_destroy(fi_ptr);
 
+    // Adds another item. Must be destroyed during cleanup.
+    fi_ptr = wlmtk_fake_menu_item_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    wlmtk_menu_add_item(&menu, &fi_ptr->menu_item);
     wlmtk_menu_fini(&menu);
 }
 
