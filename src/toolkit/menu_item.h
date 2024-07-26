@@ -106,6 +106,8 @@ struct _wlmtk_menu_item_t {
 /**
  * Initializes the menu item.
  *
+ * Note: Menu items are created as visible elements.
+ *
  * @param menu_item_ptr
  * @param env_ptr
  *

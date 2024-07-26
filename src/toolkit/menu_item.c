@@ -68,6 +68,8 @@ bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
 
     menu_item_ptr->enabled = true;
     menu_item_ptr->state = MENU_ITEM_ENABLED;
+
+    wlmtk_element_set_visible(wlmtk_menu_item_element(menu_item_ptr), true);
     return true;
 }
 
