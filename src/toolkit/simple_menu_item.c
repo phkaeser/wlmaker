@@ -80,7 +80,7 @@ void wlmtk_simple_menu_item_destroy(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_elemnt_vmt_t::destroy. Wraps to local dtor. */
+/** Implements @ref wlmtk_element_vmt_t::destroy. Wraps to local dtor. */
 void _wlmtk_simple_menu_item_element_destroy(
     wlmtk_element_t *element_ptr)
 {
