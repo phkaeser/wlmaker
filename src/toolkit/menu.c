@@ -42,27 +42,6 @@ static const wlmtk_margin_style_t style = {};
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr)
-{
-    wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
-    if (NULL == menu_ptr) return NULL;
-
-    if (!wlmtk_menu_init(menu_ptr, env_ptr)) {
-        wlmtk_menu_destroy(menu_ptr);
-        return NULL;
-    }
-
-    return menu_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
-{
-    wlmtk_menu_fini(menu_ptr);
-    free(menu_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr)
 {
     memset(menu_ptr, 0, sizeof(wlmtk_menu_t));
@@ -124,16 +103,16 @@ const bs_test_case_t wlmtk_menu_test_cases[] = {
 /** Tests adding and removing menu items. */
 void test_add_remove(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_menu_t menu;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_init(&menu, NULL));
 
     wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, &fi_ptr->menu_item);
-    wlmtk_menu_add_item(menu_ptr, &fi_ptr->menu_item);
-    wlmtk_menu_remove_item(menu_ptr, &fi_ptr->menu_item);
+    wlmtk_menu_add_item(&menu, &fi_ptr->menu_item);
+    wlmtk_menu_remove_item(&menu, &fi_ptr->menu_item);
     wlmtk_fake_menu_item_destroy(fi_ptr);
 
-    wlmtk_menu_destroy(menu_ptr);
+    wlmtk_menu_fini(&menu);
 }
 
 /* == End of menu.c ======================================================== */

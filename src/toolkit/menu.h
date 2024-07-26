@@ -31,22 +31,6 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates the menu.
- *
- * @param env_ptr
- *
- * @return Pointer to the menu handle, or NULL on error.
- */
-wlmtk_menu_t *wlmtk_menu_create(wlmtk_env_t *env_ptr);
-
-/**
- * Destroys the menu.
- *
- * @param menu_ptr
- */
-void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
-
-/**
  * Initializes the menu.
  *
  * @param menu_ptr
