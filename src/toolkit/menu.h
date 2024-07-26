@@ -23,12 +23,22 @@
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
+#include "box.h"
 #include "env.h"
 #include "menu_item.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** State of the menu. */
+struct _wlmtk_menu_t {
+    /** Derived from a box, holding menu items. */
+    wlmtk_box_t               super_box;
+
+    /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
+    bs_dllist_t               items;
+};
 
 /**
  * Initializes the menu.
@@ -46,6 +56,9 @@ bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr);
  * @param menu_ptr
  */
 void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
+
+/** @return pointer to the menu's @ref wlmtk_element_t superclass. */
+wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.

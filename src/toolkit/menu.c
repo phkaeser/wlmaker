@@ -20,19 +20,9 @@
 
 #include "menu.h"
 
-#include "box.h"
 #include "style.h"
 
 /* == Declarations ========================================================= */
-
-/** State of the menu. */
-struct _wlmtk_menu_t {
-    /** Derived from a box, holding menu items. */
-    wlmtk_box_t               super_box;
-
-    /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
-    bs_dllist_t               items;
-};
 
 static void _wlmtk_menu_eliminate_item(
     bs_dllist_node_t *dlnode_ptr,
@@ -69,6 +59,12 @@ void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
         _wlmtk_menu_eliminate_item,
         menu_ptr);
     wlmtk_box_fini(&menu_ptr->super_box);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
+{
+    return wlmtk_box_element(&menu_ptr->super_box);
 }
 
 /* ------------------------------------------------------------------------- */
