@@ -231,8 +231,37 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "Item" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_menu_item_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmtk_menu_item_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_CUSTOM(
+        "HighlightedFill", true, wlmtk_menu_item_style_t, highlighted_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmtk_menu_item_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "EnabledTextColor", true, wlmtk_menu_item_style_t,
+        enabled_text_color, 0),
+    WLMCFG_DESC_ARGB32(
+        "HighlightedTextColor", true, wlmtk_menu_item_style_t,
+        highlighted_text_color, 0),
+    WLMCFG_DESC_ARGB32(
+        "DisabledTextColor", true, wlmtk_menu_item_style_t,
+        disabled_text_color, 0),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_resizebar_style_t, height, 20),
+    // FIXME: BezelWidth
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Descriptor for decoding the "Menu" dictionary. */
 static const wlmcfg_desc_t _wlmaker_config_menu_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Item", true, wlmtk_menu_style_t, item,
+        _wlmaker_config_menu_item_style_desc),
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_menu_style_t, margin,
         _wlmaker_config_margin_style_desc),

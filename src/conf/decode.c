@@ -158,6 +158,8 @@ bool wlmcfg_decode_dict(
         }
 
         if (!rv) {
+            bs_log(BS_ERROR, "Failed to decode key \"%s\"",
+                   iter_desc_ptr->key_ptr);
             wlmcfg_decoded_destroy(desc_ptr, dest_ptr);
             return false;
         }
