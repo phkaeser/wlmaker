@@ -30,20 +30,21 @@ static void _wlmtk_menu_eliminate_item(
 
 /* == Data ================================================================= */
 
-/** Style. TODO(kaeser@gubbe.ch): Make a parameter. */
-static const wlmtk_margin_style_t style = {};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr)
+bool wlmtk_menu_init(
+    wlmtk_menu_t *menu_ptr,
+    const wlmtk_menu_style_t *style_ptr,
+    wlmtk_env_t *env_ptr)
 {
     memset(menu_ptr, 0, sizeof(wlmtk_menu_t));
+    menu_ptr->style = *style_ptr;
     if (!wlmtk_box_init(
             &menu_ptr->super_box,
             env_ptr,
             WLMTK_BOX_VERTICAL,
-            &style)) {
+            &menu_ptr->style.margin)) {
         wlmtk_menu_fini(menu_ptr);
         return false;
     }
@@ -119,7 +120,8 @@ const bs_test_case_t wlmtk_menu_test_cases[] = {
 void test_add_remove(bs_test_t *test_ptr)
 {
     wlmtk_menu_t menu;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_init(&menu, NULL));
+    wlmtk_menu_style_t s = {};
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_init(&menu, &s, NULL));
 
     wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);

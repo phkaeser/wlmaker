@@ -216,6 +216,7 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
@@ -233,7 +234,8 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_set_window(content_ptr, window_ptr);
 
     // FIXME: This is a temporary hack to bring up a window menu.
-    window_ptr->window_menu_ptr = wlmtk_popup_menu_create(env_ptr);
+    window_ptr->window_menu_ptr = wlmtk_popup_menu_create(
+        menu_style_ptr, env_ptr);
     wlmtk_simple_menu_item_t *i1_ptr = wlmtk_simple_menu_item_create(
         "Item 1", env_ptr);
     wlmtk_simple_menu_item_t *i2_ptr = wlmtk_simple_menu_item_create(
@@ -1199,10 +1201,11 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_window_style_t style = {};
+    wlmtk_window_style_t s = {};
+    wlmtk_menu_style_t ms = {};
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &style, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, &ms, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 

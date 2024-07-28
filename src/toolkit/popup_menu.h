@@ -34,11 +34,14 @@ extern "C" {
 /**
  * Creates a popup menu.
  *
+ * @param style_ptr
  * @param env_ptr
  *
  * @return Pointer to the popup menu handle or NULL on error.
  */
-wlmtk_popup_menu_t *wlmtk_popup_menu_create(wlmtk_env_t *env_ptr);
+wlmtk_popup_menu_t *wlmtk_popup_menu_create(
+    const wlmtk_menu_style_t *style_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the popup menu.

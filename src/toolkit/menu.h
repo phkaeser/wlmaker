@@ -22,6 +22,8 @@
 
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
+/** Forward declaration: Menu style. */
+typedef struct _wlmtk_menu_style_t wlmtk_menu_style_t;
 
 #include "box.h"
 #include "env.h"
@@ -31,10 +33,17 @@ typedef struct _wlmtk_menu_t wlmtk_menu_t;
 extern "C" {
 #endif  // __cplusplus
 
+struct _wlmtk_menu_style_t {
+    wlmtk_margin_style_t      margin;
+    wlmtk_menu_item_style_t   item;
+};
+
 /** State of the menu. */
 struct _wlmtk_menu_t {
     /** Derived from a box, holding menu items. */
     wlmtk_box_t               super_box;
+
+    wlmtk_menu_style_t        style;
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
     bs_dllist_t               items;
@@ -48,7 +57,10 @@ struct _wlmtk_menu_t {
  *
  * @return true on success.
  */
-bool wlmtk_menu_init(wlmtk_menu_t *menu_ptr, wlmtk_env_t *env_ptr);
+bool wlmtk_menu_init(
+    wlmtk_menu_t *menu_ptr,
+    const wlmtk_menu_style_t *style_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Uninitializes the menu.

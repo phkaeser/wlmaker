@@ -35,13 +35,15 @@ struct _wlmtk_popup_menu_t {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_popup_menu_t *wlmtk_popup_menu_create(wlmtk_env_t *env_ptr)
+wlmtk_popup_menu_t *wlmtk_popup_menu_create(
+    const wlmtk_menu_style_t *style_ptr,
+    wlmtk_env_t *env_ptr)
 {
     wlmtk_popup_menu_t *popup_menu_ptr = logged_calloc(
         1, sizeof(wlmtk_popup_menu_t));
     if (NULL == popup_menu_ptr) return NULL;
 
-    if (!wlmtk_menu_init(&popup_menu_ptr->menu, env_ptr)) {
+    if (!wlmtk_menu_init(&popup_menu_ptr->menu, style_ptr, env_ptr)) {
         wlmtk_popup_menu_destroy(popup_menu_ptr);
         return NULL;
     }

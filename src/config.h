@@ -71,6 +71,8 @@ typedef struct {
     wlmtk_dock_style_t        dock;
     /** Window style. */
     wlmtk_window_style_t      window;
+    /** Menu style. */
+    wlmtk_menu_style_t        menu;
     /** Clip style. */
     wlmaker_config_clip_style_t clip;
     /** Task list style. */
