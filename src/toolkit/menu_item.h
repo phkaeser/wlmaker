@@ -111,12 +111,15 @@ struct _wlmtk_menu_item_t {
  * Note: Menu items are created as visible elements.
  *
  * @param menu_item_ptr
+ * @param style_ptr
  * @param env_ptr
  *
  * @return true iff the initialization succeeded.
  */
-bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
-                          wlmtk_env_t *env_ptr);
+bool wlmtk_menu_item_init(
+    wlmtk_menu_item_t *menu_item_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Extends the menu item's virtual methods.

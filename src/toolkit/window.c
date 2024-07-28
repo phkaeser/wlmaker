@@ -237,9 +237,9 @@ wlmtk_window_t *wlmtk_window_create(
     window_ptr->window_menu_ptr = wlmtk_popup_menu_create(
         menu_style_ptr, env_ptr);
     wlmtk_simple_menu_item_t *i1_ptr = wlmtk_simple_menu_item_create(
-        "Item 1", env_ptr);
+        "Item 1", &menu_style_ptr->item, env_ptr);
     wlmtk_simple_menu_item_t *i2_ptr = wlmtk_simple_menu_item_create(
-        "Item 2", env_ptr);
+        "Item 2", &menu_style_ptr->item, env_ptr);
     wlmtk_menu_add_item(
         wlmtk_popup_menu_menu(window_ptr->window_menu_ptr),
         wlmtk_simple_menu_item_menu_item(i1_ptr));

@@ -38,27 +38,10 @@ static const wlmtk_element_vmt_t _wlmtk_simple_menu_item_element_vmt = {
 
 /* == Exported methods ===================================================== */
 
-/** FIXME: Style definition used for unit tests. */
-static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
-    .fill = {
-        .type = WLMTK_STYLE_COLOR_DGRADIENT,
-        .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
-    },
-    .highlighted_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffc0d0e0 } }
-    },
-    .font = { .face = "Helvetica", .size = 14 },
-    .height = 24,
-    .enabled_text_color = 0xfff0f060,
-    .highlighted_text_color = 0xff204080,
-    .disabled_text_color = 0xff807060,
-};
-
-
 /* ------------------------------------------------------------------------- */
 wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
     const char *text_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_simple_menu_item_t *simple_menu_item_ptr = logged_calloc(
@@ -67,6 +50,7 @@ wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
 
     if (!wlmtk_menu_item_init(
             &simple_menu_item_ptr->super_menu_item,
+            style_ptr,
             env_ptr)) {
         wlmtk_simple_menu_item_destroy(simple_menu_item_ptr);
         return NULL;
@@ -78,7 +62,6 @@ wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
         &_wlmtk_simple_menu_item_element_vmt);
 
     // FIXME - set better.
-    simple_menu_item_ptr->super_menu_item.style = _wlmtk_menu_item_test_style;
     simple_menu_item_ptr->super_menu_item.width = 80;
 
     if (!wlmtk_menu_item_set_text(

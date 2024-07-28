@@ -34,12 +34,14 @@ extern "C" {
  * Creates a simple menu item.
  *
  * @param text_ptr
+ * @param style_ptr
  * @param env_ptr
  *
  * @return Pointer to the simple menu item state.
  */
 wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
     const char *text_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

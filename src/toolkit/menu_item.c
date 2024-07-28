@@ -49,13 +49,33 @@ static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
     .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
 };
 
+/** Style definition used for unit tests. */
+static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
+    .fill = {
+        .type = WLMTK_STYLE_COLOR_DGRADIENT,
+        .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
+    },
+    .highlighted_fill = {
+        .type = WLMTK_STYLE_COLOR_SOLID,
+        .param = { .solid = { .color = 0xffc0d0e0 } }
+    },
+    .font = { .face = "Helvetica", .size = 14 },
+    .height = 24,
+    .enabled_text_color = 0xfff0f060,
+    .highlighted_text_color = 0xff204080,
+    .disabled_text_color = 0xff807060,
+};
+
 /* == Exported methods ===================================================== */
 
 /* -------------------------------------------------------------------------*/
-bool wlmtk_menu_item_init(wlmtk_menu_item_t *menu_item_ptr,
-                          wlmtk_env_t *env_ptr)
+bool wlmtk_menu_item_init(
+    wlmtk_menu_item_t *menu_item_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_env_t *env_ptr)
 {
     memset(menu_item_ptr, 0, sizeof(wlmtk_menu_item_t));
+    menu_item_ptr->style = *style_ptr;
 
     if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
         wlmtk_menu_item_fini(menu_item_ptr);
@@ -340,7 +360,10 @@ wlmtk_fake_menu_item_t *wlmtk_fake_menu_item_create(void)
         1, sizeof(wlmtk_fake_menu_item_t));
     if (NULL == fake_menu_item_ptr) return NULL;
 
-    if (!wlmtk_menu_item_init(&fake_menu_item_ptr->menu_item, NULL)) {
+    if (!wlmtk_menu_item_init(
+            &fake_menu_item_ptr->menu_item,
+            &_wlmtk_menu_item_test_style,
+            NULL)) {
         wlmtk_fake_menu_item_destroy(fake_menu_item_ptr);
         return NULL;
     }
@@ -394,29 +417,14 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-/** Style definition used for unit tests. */
-static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
-    .fill = {
-        .type = WLMTK_STYLE_COLOR_DGRADIENT,
-        .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
-    },
-    .highlighted_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffc0d0e0 } }
-    },
-    .font = { .face = "Helvetica", .size = 14 },
-    .height = 24,
-    .enabled_text_color = 0xfff0f060,
-    .highlighted_text_color = 0xff204080,
-    .disabled_text_color = 0xff807060,
-};
-
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown and a few accessors. */
 void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_item_init(&item, NULL));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(&item);
     BS_TEST_VERIFY_EQ(test_ptr, dlnode_ptr, &item.dlnode);
@@ -440,9 +448,10 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_buffers(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_item_init(&item, NULL));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
 
-    item.style = _wlmtk_menu_item_test_style;
     item.width = 80;
     wlmtk_menu_item_set_text(&item, "Menu item");
 
@@ -468,7 +477,9 @@ void test_buffers(bs_test_t *test_ptr)
 void test_pointer(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_item_init(&item, NULL));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
     wlmtk_element_t *e = wlmtk_menu_item_element(&item);
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };

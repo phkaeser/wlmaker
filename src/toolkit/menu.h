@@ -33,8 +33,11 @@ typedef struct _wlmtk_menu_style_t wlmtk_menu_style_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Style definition for the menu. */
 struct _wlmtk_menu_style_t {
+    /** Margin. */
     wlmtk_margin_style_t      margin;
+    /** Item's style. */
     wlmtk_menu_item_style_t   item;
 };
 
@@ -42,7 +45,7 @@ struct _wlmtk_menu_style_t {
 struct _wlmtk_menu_t {
     /** Derived from a box, holding menu items. */
     wlmtk_box_t               super_box;
-
+    /** Style of the menu. */
     wlmtk_menu_style_t        style;
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
@@ -53,6 +56,7 @@ struct _wlmtk_menu_t {
  * Initializes the menu.
  *
  * @param menu_ptr
+ * @param style_ptr
  * @param env_ptr
  *
  * @return true on success.
