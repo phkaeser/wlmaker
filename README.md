@@ -46,6 +46,11 @@ Protocol support:
 * Once compiled, see the [these instructions](doc/RUN.md) on how to run
   Wayland Maker in a window or standalone, and to configure it for your needs.
 
+* Alternatively, use a pre-built package:
+
+  * Debian: https://packages.debian.org/sid/wlmaker
+  * FreeBSD: https://www.freshports.org/x11-wm/wlmaker/
+
 > [!NOTE]
 > `wlmaker` is still in early development, so it's not recommended to use it as
 > your primary compositor.
