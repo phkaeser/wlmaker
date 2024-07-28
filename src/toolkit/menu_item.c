@@ -61,6 +61,7 @@ static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
     },
     .font = { .face = "Helvetica", .size = 14 },
     .height = 24,
+    .bezel_width = 1,
     .enabled_text_color = 0xfff0f060,
     .highlighted_text_color = 0xff204080,
     .disabled_text_color = 0xff807060,
@@ -275,7 +276,8 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     }
 
     wlmaker_primitives_cairo_fill(cairo_ptr, fill_ptr);
-
+    wlmaker_primitives_draw_bezel(
+        cairo_ptr, menu_item_ptr->style.bezel_width, true);
     wlmaker_primitives_draw_text(
         cairo_ptr,
         4, 4 + menu_item_ptr->style.font.size,
