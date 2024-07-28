@@ -67,6 +67,12 @@
       Color = "argb32:ff000000";
     };
   };
+  Menu = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+  };
   TaskList = {
     Fill = {
       Color = "argb32:c0202020";

@@ -231,6 +231,14 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "Menu" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_menu_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_menu_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Descriptor for decoding the "TaskList" dictionary. */
 static const wlmcfg_desc_t _wlmaker_task_list_style_desc[] = {
     WLMCFG_DESC_CUSTOM(
@@ -269,6 +277,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Window", true, wlmaker_config_style_t, window,
         _wlmaker_config_window_style_desc),
+    WLMCFG_DESC_DICT(
+        "Menu", true, wlmaker_config_style_t, menu,
+        _wlmaker_config_menu_style_desc),
     WLMCFG_DESC_DICT(
         "TaskList", true, wlmaker_config_style_t, task_list,
         _wlmaker_task_list_style_desc),
