@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=WLMClock
+GenericName="Wayland Maker Clock dockapp"
+Comment="Display date and time"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmclock
+Type=Application
+Categories=Utility;Clock;
+Keywords=clock;dockapp;wlmaker
