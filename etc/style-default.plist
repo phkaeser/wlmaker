@@ -46,7 +46,7 @@
       Font = {
         Face = Helvetica;
         Weight = Bold;
-        Size = 15;
+        Size = 14;
       };
     };
     ResizeBar = {
@@ -84,14 +84,14 @@
       };
       Font = {
         Face = Helvetica;
-        Weight = Bold;
-        Size = 15;
+        Weight = Normal;
+        Size = 14;
       };
       EnabledTextColor = "argb32:ff000000";
       HighlightedTextColor = "argb32:ff000000";
       DisabledTextColor = "argb32:ff808080";
-      Height = 20;
-      BezelWidth = 2;
+      Height = 22;
+      BezelWidth = 1;
     };
   };
   TaskList = {

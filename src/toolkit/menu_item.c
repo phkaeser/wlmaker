@@ -280,7 +280,7 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
         cairo_ptr, menu_item_ptr->style.bezel_width, true);
     wlmaker_primitives_draw_text(
         cairo_ptr,
-        4, 4 + menu_item_ptr->style.font.size,
+        6, 2 + menu_item_ptr->style.font.size,
         &menu_item_ptr->style.font,
         color,
         text_ptr);
