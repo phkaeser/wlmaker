@@ -38,7 +38,7 @@ static const wlmtk_element_vmt_t _wlmtk_simple_menu_item_element_vmt = {
 
 /* == Exported methods ===================================================== */
 
-/** Style definition used for unit tests. */
+/** FIXME: Style definition used for unit tests. */
 static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
     .fill = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
