@@ -212,7 +212,7 @@ static const wlmcfg_desc_t _wlmaker_config_window_resize_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "CornerWidth", true, wlmtk_resizebar_style_t, corner_width, 1),
     WLMCFG_DESC_SENTINEL()
- };
+};
 
 /** Descriptor for decoding the "Window" dictionary. */
 static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
