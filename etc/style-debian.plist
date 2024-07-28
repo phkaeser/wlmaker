@@ -92,6 +92,7 @@
       HighlightedTextColor = "argb32:ff000000";
       DisabledTextColor = "argb32:ff808080";
       Height = 20;
+      BezelWidth = 2;
     };
   };
   TaskList = {

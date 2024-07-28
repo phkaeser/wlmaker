@@ -252,8 +252,9 @@ static const wlmcfg_desc_t _wlmaker_config_menu_item_style_desc[] = {
         "DisabledTextColor", true, wlmtk_menu_item_style_t,
         disabled_text_color, 0),
     WLMCFG_DESC_UINT64(
-        "Height", true, wlmtk_resizebar_style_t, height, 20),
-    // FIXME: BezelWidth
+        "Height", true, wlmtk_menu_item_style_t, height, 20),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_menu_item_style_t, bezel_width, 1),
     WLMCFG_DESC_SENTINEL()
 };
 

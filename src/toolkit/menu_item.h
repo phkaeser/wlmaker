@@ -55,6 +55,8 @@ struct _wlmtk_menu_item_style_t {
     wlmtk_style_font_t        font;
     /** Height of the menu item, in pixels. */
     uint64_t                  height;
+    /** Width of the bezel, in pixels. */
+    uint64_t                  bezel_width;
     /** Text color. */
     uint32_t                  enabled_text_color;
     /** Text color when highlighted. */
