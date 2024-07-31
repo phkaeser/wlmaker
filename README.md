@@ -48,8 +48,7 @@ Protocol support:
 
 * Alternatively, use a pre-built package:
 
-  * Debian: https://packages.debian.org/sid/wlmaker
-  * FreeBSD: https://www.freshports.org/x11-wm/wlmaker/
+  [![Packaging status](https://repology.org/badge/vertical-allrepos/wlmaker.svg)](https://repology.org/project/wlmaker/versions)
 
 > [!NOTE]
 > `wlmaker` is still in early development, so it's not recommended to use it as
