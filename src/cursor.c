@@ -78,19 +78,21 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
                                     server_ptr->wlr_output_layout_ptr);
 
     cursor_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_create(
-        config_xcursor_theme_name,
-        config_xcursor_theme_size);
+        server_ptr->style.cursor.name_ptr,
+        server_ptr->style.cursor.size);
     if (NULL == cursor_ptr->wlr_xcursor_manager_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_create(%s, %"PRIu32")",
-               config_xcursor_theme_name, config_xcursor_theme_size);
+        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_create(%s, %"PRIu64")",
+               server_ptr->style.cursor.name_ptr,
+               server_ptr->style.cursor.size);
         wlmaker_cursor_destroy(cursor_ptr);
         return NULL;
     }
     if (!wlr_xcursor_manager_load(cursor_ptr->wlr_xcursor_manager_ptr,
                                   config_output_scale)) {
 
-        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_load() for %s, %"PRIu32,
-               config_xcursor_theme_name, config_xcursor_theme_size);
+        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_load() for %s, %"PRIu64,
+               server_ptr->style.cursor.name_ptr,
+               server_ptr->style.cursor.size);
         wlmaker_cursor_destroy(cursor_ptr);
         return NULL;
     }

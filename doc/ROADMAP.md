@@ -219,7 +219,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
 
 * Misc
-  * Expose the decoration manager configurables through the config file.
+  * [done] Expose the decoration manager configurables through the config file.
 
 ## Plan for 0.5
 
@@ -307,6 +307,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Theme.
     * [done] Added ADGRADIENT fill style, aligned with Window Maker's diagonal.
     * Adds support for textures as fill (tiled, scaled, maximized, centered, filled?)
+    * Add drag-modifier option, to configure when a drag makes a window move.
 
 * Configurable keyboard map.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)
