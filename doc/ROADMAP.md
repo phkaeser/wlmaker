@@ -219,7 +219,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
 
 * Misc
-  * Expose the decoration manager configurables through the config file.
+  * [done] Expose the decoration manager configurables through the config file.
 
 ## Plan for 0.5
 

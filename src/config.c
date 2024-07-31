@@ -53,10 +53,6 @@ const uint32_t config_xcursor_theme_size = 24;
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
 
-/** Whether to always request server-side decorations. */
-const wlmaker_config_decoration_t config_decoration =
-    WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER;
-
 /** Modifiers for moving the window with the cursor. */
 const uint32_t wlmaker_config_window_drag_modifiers =
     WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;

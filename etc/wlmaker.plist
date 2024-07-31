@@ -15,6 +15,10 @@
       Rate = 25;
     };
   };
+  // Configuration for XDG decoration protocol: Server or client-side?
+  Decoration = {
+    Mode = SuggestServer;
+  };
   KeyBindings = {
     "Ctrl+Alt+Logo+Q" = Quit;
     "Ctrl+Alt+Logo+L" = LockScreen;
