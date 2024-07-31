@@ -61,6 +61,14 @@ typedef struct {
     uint32_t                  text_color;
 } wlmaker_config_clip_style_t;
 
+/** Style of the cursor. */
+typedef struct {
+    /** Name of the XCursor theme to use. */
+    char                      *name_ptr;
+    /** Size, when non-scaled. */
+    uint64_t                  size;
+} wlmaker_config_cursor_style_t;
+
 /** Style information. */
 typedef struct {
     /** Background color, unless overriden in "Workspace" state. */
@@ -75,10 +83,9 @@ typedef struct {
     wlmaker_config_clip_style_t clip;
     /** Task list style. */
     wlmaker_config_task_list_style_t task_list;
+    /** Cursor style. */
+    wlmaker_config_cursor_style_t cursor;
 } wlmaker_config_style_t;
-
-extern const char *config_xcursor_theme_name;
-extern const uint32_t config_xcursor_theme_size;
 
 extern const float config_output_scale;
 

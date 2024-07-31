@@ -44,12 +44,6 @@ static bool _wlmaker_config_decode_fill_style(
 
 /* == Data ================================================================= */
 
-/** Name of the xcursor theme. NULL picks the default. */
-const char *config_xcursor_theme_name = NULL;
-
-/** Base size for the xcursor theme (when scale==1.0). */
-const uint32_t config_xcursor_theme_size = 24;
-
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
 
@@ -219,6 +213,15 @@ static const wlmcfg_desc_t _wlmaker_clip_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "Cursor" dictionary. */
+static const wlmcfg_desc_t _wlmaker_cursor_style_desc[] = {
+    WLMCFG_DESC_STRING(
+        "Name", true, wlmaker_config_cursor_style_t, name_ptr, "default"),
+    WLMCFG_DESC_UINT64(
+        "Size", true, wlmaker_config_cursor_style_t, size, 24),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_ARGB32(
@@ -238,6 +241,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Clip", true, wlmaker_config_style_t, clip,
         _wlmaker_clip_style_desc),
+    WLMCFG_DESC_DICT(
+        "Cursor", true, wlmaker_config_style_t, cursor,
+        _wlmaker_cursor_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -480,7 +486,7 @@ void test_file(bs_test_t *test_ptr)
 void test_style_file(bs_test_t *test_ptr)
 {
     wlmcfg_dict_t *dict_ptr;
-    wlmaker_config_style_t config_style;
+    wlmaker_config_style_t config_style = {};
 
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
