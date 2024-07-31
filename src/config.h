@@ -61,7 +61,7 @@ typedef struct {
     uint32_t                  text_color;
 } wlmaker_config_clip_style_t;
 
-/** Style information. Replaces @ref wlmaker_config_theme_t. */
+/** Style information. */
 typedef struct {
     /** Background color, unless overriden in "Workspace" state. */
     uint32_t                  background_color;
@@ -77,35 +77,6 @@ typedef struct {
     wlmaker_config_task_list_style_t task_list;
 } wlmaker_config_style_t;
 
-/** The theme. */
-typedef struct {
-    /** Color of the window margin. */
-    uint32_t                  window_margin_color;
-    /** Width of the window margin, in pixels. */
-    uint32_t                  window_margin_width;
-
-    /** Fill style of a tile. */
-    wlmtk_style_fill_t        tile_fill;
-
-    /** Fill style of the menu's background. */
-    wlmtk_style_fill_t        menu_fill;
-    /** Color of the menu's margin and padding. */
-    uint32_t                  menu_margin_color;
-    /** Width of the menu's margin. */
-    uint32_t                  menu_margin_width;
-    /** Width of the paddin between menu elements. In `menu_margin_color. */
-    uint32_t                  menu_padding_width;
-
-    /** Fill style of a menu item when enabled. */
-    wlmtk_style_fill_t        menu_item_enabled_fill;
-    /** Text color of menu item when enabled. */
-    uint32_t                  menu_item_enabled_text_color;
-    /** Fill style of a menu item when selected. */
-    wlmtk_style_fill_t        menu_item_selected_fill;
-    /** Text color of menu item when selected. */
-    uint32_t                  menu_item_selected_text_color;
-} wlmaker_config_theme_t;
-
 extern const char *config_xcursor_theme_name;
 extern const uint32_t config_xcursor_theme_size;
 
@@ -114,8 +85,6 @@ extern const float config_output_scale;
 extern const wlmaker_config_decoration_t config_decoration;
 
 extern const uint32_t wlmaker_config_window_drag_modifiers;
-
-extern const wlmaker_config_theme_t wlmaker_config_theme;
 
 /**
  * Loads the configuration for wlmaker.

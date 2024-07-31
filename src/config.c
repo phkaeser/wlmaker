@@ -61,35 +61,6 @@ const wlmaker_config_decoration_t config_decoration =
 const uint32_t wlmaker_config_window_drag_modifiers =
     WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;
 
-/** Visual theme. */
-const wlmaker_config_theme_t  wlmaker_config_theme = {
-    .window_margin_color = 0xff000000,  // Pich black, opaque.
-    .window_margin_width = 1,
-
-    .tile_fill = {
-        .type = WLMTK_STYLE_COLOR_DGRADIENT,
-        .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
-    },
-    .menu_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xffc2c0c5, .to = 0xff828085 }}
-    },
-    .menu_margin_color = 0xff000000,  // Pitch black, opaque.
-    .menu_margin_width = 1,
-    .menu_padding_width = 1,
-
-    .menu_item_enabled_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0x00000000 }}  // Transparent.
-    },
-    .menu_item_enabled_text_color = 0xff000000,  // Black, opaque.
-    .menu_item_selected_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffffffff }}  // White, opaque..
-    },
-    .menu_item_selected_text_color = 0xff000000,  // Black, opaque.
-};
-
 /** Plist decoding descriptor of the fill type. */
 static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
     WLMCFG_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),
