@@ -393,7 +393,7 @@ void test_keybindings_parse(bs_test_t *test_ptr)
     // Modifier.
     BS_TEST_VERIFY_TRUE(
         test_ptr, _wlmaker_keybindings_parse("Ctrl+Logo+Q", &m, &ks));
-    BS_TEST_VERIFY_EQ(test_ptr, WLR_MODIFIER_CTRL |  WLR_MODIFIER_LOGO, m);
+    BS_TEST_VERIFY_EQ(test_ptr, WLR_MODIFIER_CTRL | WLR_MODIFIER_LOGO, m);
     BS_TEST_VERIFY_EQ(test_ptr, XKB_KEY_Q, ks);
 
     // Test some fancier keys.
