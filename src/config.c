@@ -53,10 +53,6 @@ const uint32_t config_xcursor_theme_size = 24;
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
 
-/** Modifiers for moving the window with the cursor. */
-const uint32_t wlmaker_config_window_drag_modifiers =
-    WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;
-
 /** Plist decoding descriptor of the fill type. */
 static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
     WLMCFG_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),

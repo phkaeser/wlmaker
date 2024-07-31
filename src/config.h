@@ -82,8 +82,6 @@ extern const uint32_t config_xcursor_theme_size;
 
 extern const float config_output_scale;
 
-extern const uint32_t wlmaker_config_window_drag_modifiers;
-
 /**
  * Loads the configuration for wlmaker.
  *

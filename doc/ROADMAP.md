@@ -307,6 +307,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Theme.
     * [done] Added ADGRADIENT fill style, aligned with Window Maker's diagonal.
     * Adds support for textures as fill (tiled, scaled, maximized, centered, filled?)
+    * Add drag-modifier option, to configure when a drag makes a window move.
 
 * Configurable keyboard map.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)
