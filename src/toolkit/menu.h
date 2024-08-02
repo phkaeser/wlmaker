@@ -25,6 +25,7 @@ typedef struct _wlmtk_menu_t wlmtk_menu_t;
 /** Forward declaration: Menu style. */
 typedef struct _wlmtk_menu_style_t wlmtk_menu_style_t;
 
+#include "bordered.h"
 #include "box.h"
 #include "env.h"
 #include "menu_item.h"
@@ -37,14 +38,18 @@ extern "C" {
 struct _wlmtk_menu_style_t {
     /** Margin. */
     wlmtk_margin_style_t      margin;
+    /** Border. */
+    wlmtk_margin_style_t      border;
     /** Item's style. */
     wlmtk_menu_item_style_t   item;
 };
 
 /** State of the menu. */
 struct _wlmtk_menu_t {
-    /** Derived from a box, holding menu items. */
-    wlmtk_box_t               super_box;
+    /** Derived from a @ref wlmtk_bordered_t. */
+    wlmtk_bordered_t          super_bordered;
+    /** Contains a box, holding menu items. */
+    wlmtk_box_t               box;
     /** Style of the menu. */
     wlmtk_menu_style_t        style;
 

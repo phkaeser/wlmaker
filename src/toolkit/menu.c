@@ -40,11 +40,22 @@ bool wlmtk_menu_init(
 {
     memset(menu_ptr, 0, sizeof(wlmtk_menu_t));
     menu_ptr->style = *style_ptr;
+
     if (!wlmtk_box_init(
-            &menu_ptr->super_box,
+            &menu_ptr->box,
             env_ptr,
             WLMTK_BOX_VERTICAL,
             &menu_ptr->style.margin)) {
+        wlmtk_menu_fini(menu_ptr);
+        return false;
+    }
+    wlmtk_element_set_visible(wlmtk_box_element(&menu_ptr->box), true);
+
+    if (!wlmtk_bordered_init(
+            &menu_ptr->super_bordered,
+            env_ptr,
+            wlmtk_box_element(&menu_ptr->box),
+            &menu_ptr->style.border)) {
         wlmtk_menu_fini(menu_ptr);
         return false;
     }
@@ -59,13 +70,14 @@ void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
         &menu_ptr->items,
         _wlmtk_menu_eliminate_item,
         menu_ptr);
-    wlmtk_box_fini(&menu_ptr->super_box);
+    wlmtk_bordered_fini(&menu_ptr->super_bordered);
+    wlmtk_box_fini(&menu_ptr->box);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
 {
-    return wlmtk_box_element(&menu_ptr->super_box);
+    return wlmtk_bordered_element(&menu_ptr->super_bordered);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -76,7 +88,7 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
         &menu_ptr->items,
         wlmtk_dlnode_from_menu_item(menu_item_ptr));
     wlmtk_box_add_element_back(
-        &menu_ptr->super_box,
+        &menu_ptr->box,
         wlmtk_menu_item_element(menu_item_ptr));
 }
 
@@ -85,7 +97,7 @@ void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr)
 {
     wlmtk_box_remove_element(
-        &menu_ptr->super_box,
+        &menu_ptr->box,
         wlmtk_menu_item_element(menu_item_ptr));
     bs_dllist_remove(
         &menu_ptr->items,
