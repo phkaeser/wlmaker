@@ -1137,7 +1137,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_root_remove_workspace(root_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_root_destroy(root_ptr);
-    free(wlr_scene_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* ------------------------------------------------------------------------- */
