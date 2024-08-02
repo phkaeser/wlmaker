@@ -73,6 +73,10 @@
       Width = 1;
       Color = "argb32:ff000000";
     };
+    Border = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
     Item = {
       Fill = {
         From = "argb32:ffa6a6b6";

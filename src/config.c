@@ -266,6 +266,9 @@ static const wlmcfg_desc_t _wlmaker_config_menu_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_menu_style_t, margin,
         _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Border", true, wlmtk_menu_style_t, border,
+        _wlmaker_config_margin_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
