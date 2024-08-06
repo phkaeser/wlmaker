@@ -21,6 +21,7 @@
 #include "xdg_shell.h"
 
 #include "toolkit/toolkit.h"
+#include "xdg_popup.h"
 #include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>
@@ -29,6 +30,12 @@
 /* == Declarations ========================================================= */
 
 static void handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_new_toplevel(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_new_popup(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void handle_new_surface(
@@ -57,6 +64,14 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
         &xdg_shell_ptr->new_surface_listener,
         handle_new_surface);
     wlmtk_util_connect_listener_signal(
+        &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_toplevel,
+        &xdg_shell_ptr->new_toplevel_listener,
+        handle_new_toplevel);
+    wlmtk_util_connect_listener_signal(
+        &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_popup,
+        &xdg_shell_ptr->new_popup_listener,
+        handle_new_popup);
+    wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.destroy,
         &xdg_shell_ptr->destroy_listener,
         handle_destroy);
@@ -68,6 +83,8 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
 void wlmaker_xdg_shell_destroy(wlmaker_xdg_shell_t *xdg_shell_ptr)
 {
     wl_list_remove(&xdg_shell_ptr->destroy_listener.link);
+    wl_list_remove(&xdg_shell_ptr->new_popup_listener.link);
+    wl_list_remove(&xdg_shell_ptr->new_toplevel_listener.link);
     wl_list_remove(&xdg_shell_ptr->new_surface_listener.link);
     free(xdg_shell_ptr);
 }
@@ -88,6 +105,47 @@ void handle_destroy(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_xdg_shell_t, destroy_listener);
 
     wlmaker_xdg_shell_destroy(xdg_shell_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `new_toplevel` signal raised by `wlr_xdg_shell`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_new_toplevel(struct wl_listener *listener_ptr,
+                    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_toplevel_listener);
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = data_ptr;
+
+    bs_log(BS_ERROR, "FIXME: New toplevel %p for shell %p",
+           wlr_xdg_toplevel_ptr, xdg_shell_ptr);
+
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `new_popup` signal raised by `wlr_xdg_shell`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void handle_new_popup(struct wl_listener *listener_ptr,
+                    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    __UNUSED__ wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = wlmaker_xdg_popup_create(
+        wlr_xdg_popup_ptr, xdg_shell_ptr->server_ptr->env_ptr);
+
+    // FIXME: Find parent from wlr_xdg_popop_ptr->parent, and attach there.
+    bs_log(BS_ERROR, "FIXME: New popup %p for shell %p",
+           wlr_xdg_popup_ptr, xdg_shell_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
