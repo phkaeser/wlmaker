@@ -138,7 +138,8 @@ wlmaker_server_t *wlmaker_server_create(
 
     // Auto-create the wlroots backend. Can be X11 or direct.
     server_ptr->wlr_backend_ptr = wlr_backend_autocreate(
-        server_ptr->wl_display_ptr, NULL  /* struct wlr_session */);
+        wl_display_get_event_loop(server_ptr->wl_display_ptr),
+        NULL  /* struct wlr_session */);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
         wlmaker_server_destroy(server_ptr);
@@ -180,7 +181,8 @@ wlmaker_server_t *wlmaker_server_create(
     }
 
     // The output layout.
-    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create();
+    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        server_ptr->wl_display_ptr);
     if (NULL == server_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_create()");
         wlmaker_server_destroy(server_ptr);
@@ -637,7 +639,7 @@ void handle_new_input_device(struct wl_listener *listener_ptr, void *data_ptr)
 
     case WLR_INPUT_DEVICE_POINTER:
     case WLR_INPUT_DEVICE_TOUCH:
-    case WLR_INPUT_DEVICE_TABLET_TOOL:
+    case WLR_INPUT_DEVICE_TABLET_PAD:
         wlmaker_cursor_attach_input_device(
             server_ptr->cursor_ptr,
             wlr_input_device_ptr);

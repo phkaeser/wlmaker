@@ -215,8 +215,8 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
         element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
     // Only consider vertical wheel moves.
-    if (WLR_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
-        WLR_AXIS_ORIENTATION_VERTICAL !=
+    if (WL_POINTER_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
+        WL_POINTER_AXIS_VERTICAL_SCROLL !=
         wlr_pointer_axis_event_ptr->orientation) {
         return false;
     }
@@ -402,8 +402,8 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     struct wlr_pointer_axis_event axis_event = {
-        .source = WLR_AXIS_SOURCE_WHEEL,
-        .orientation = WLR_AXIS_ORIENTATION_VERTICAL,
+        .source = WL_POINTER_AXIS_SOURCE_WHEEL,
+        .orientation = WL_POINTER_AXIS_VERTICAL_SCROLL,
         .delta = -0.01
     };
 
@@ -428,7 +428,7 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     // Axis from another source: Ignored.
-    axis_event.source = WLR_AXIS_SOURCE_FINGER;
+    axis_event.source = WL_POINTER_AXIS_SOURCE_FINGER;
     axis_event.delta = -0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
     BS_TEST_VERIFY_FALSE(

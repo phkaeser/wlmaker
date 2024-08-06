@@ -199,12 +199,12 @@ bool wlmtk_root_pointer_button(
     // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
     event.time_msec = event_ptr->time_msec;
-    if (WLR_BUTTON_PRESSED == event_ptr->state) {
+    if (WL_POINTER_BUTTON_STATE_PRESSED == event_ptr->state) {
         event.type = WLMTK_BUTTON_DOWN;
         return wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
 
-    } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
+    } else if (WL_POINTER_BUTTON_STATE_RELEASED == event_ptr->state) {
         event.type = WLMTK_BUTTON_UP;
         wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
@@ -773,7 +773,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     // Verify that a button down event is passed.
     struct wlr_pointer_button_event wlr_pointer_button_event = {
         .button = 42,
-        .state = WLR_BUTTON_PRESSED,
+        .state = WL_POINTER_BUTTON_STATE_PRESSED,
         .time_msec = 4321,
     };
     BS_TEST_VERIFY_TRUE(
@@ -791,7 +791,7 @@ void test_pointer_button(bs_test_t *test_ptr)
         sizeof(wlmtk_button_event_t));
 
     // The button up event should trigger a click.
-    wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
+    wlr_pointer_button_event.state = WL_POINTER_BUTTON_STATE_RELEASED;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));

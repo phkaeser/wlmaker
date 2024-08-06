@@ -500,7 +500,7 @@ bool _wlmtk_surface_element_pointer_button(
             button_event_ptr->time_msec,
             button_event_ptr->button,
             (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
-            WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+            WL_POINTER_BUTTON_STATE_PRESSED : WL_POINTER_BUTTON_STATE_RELEASED);
         return true;
     }
     return false;
@@ -537,7 +537,8 @@ bool _wlmtk_surface_element_pointer_axis(
         wlr_pointer_axis_event_ptr->orientation,
         wlr_pointer_axis_event_ptr->delta,
         wlr_pointer_axis_event_ptr->delta_discrete,
-        wlr_pointer_axis_event_ptr->source);
+        wlr_pointer_axis_event_ptr->source,
+        wlr_pointer_axis_event_ptr->relative_direction);
     return true;
 }
 

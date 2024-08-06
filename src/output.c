@@ -79,7 +79,9 @@ wlmaker_output_t *wlmaker_output_create(
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
-    wlr_output_enable(output_ptr->wlr_output_ptr, true);
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+    wlr_output_state_set_enabled(&state, true);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
@@ -87,13 +89,13 @@ wlmaker_output_t *wlmaker_output_create(
             output_ptr->wlr_output_ptr);
         bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
                mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
-        wlr_output_set_mode(output_ptr->wlr_output_ptr, mode_ptr);
+        wlr_output_state_set_mode(&state, mode_ptr);
     } else {
         bs_log(BS_INFO, "No modes available on %s",
                output_ptr->wlr_output_ptr->name);
     }
 
-    if (!wlr_output_test(output_ptr->wlr_output_ptr)) {
+    if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
         bs_log(BS_ERROR, "Failed wlr_output_test() on %s",
                output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
@@ -101,12 +103,13 @@ wlmaker_output_t *wlmaker_output_create(
     }
 
     // Enable the output and commit.
-    if (!wlr_output_commit(output_ptr->wlr_output_ptr)) {
+    if (!wlr_output_commit_state(output_ptr->wlr_output_ptr, &state)) {
         bs_log(BS_ERROR, "Failed wlr_output_commit() on %s",
                output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
+	wlr_output_state_finish(&state);
 
     bs_log(BS_INFO, "Created output %s", output_ptr->wlr_output_ptr->name);
     return output_ptr;
