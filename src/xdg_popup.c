@@ -94,7 +94,7 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         &wlmaker_xdg_popup_ptr->reposition_listener,
         handle_reposition);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_popup_ptr->base->events.destroy,
+        &wlr_xdg_popup_ptr->events.destroy,
         &wlmaker_xdg_popup_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(
@@ -114,6 +114,8 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
         &wlmaker_xdg_popup_ptr->destroy_listener);
     wlmtk_util_disconnect_listener(
         &wlmaker_xdg_popup_ptr->reposition_listener);
+    wlmtk_util_disconnect_listener(
+        &wlmaker_xdg_popup_ptr->surface_commit_listener);
 
     wlmtk_popup_fini(&wlmaker_xdg_popup_ptr->super_popup);
 
