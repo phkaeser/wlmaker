@@ -46,6 +46,10 @@ static const wlmtk_element_vmt_t _wlmaker_xdg_popup_element_vmt = {
     .destroy = _wlmaker_xdg_popup_element_destroy
 };
 
+static void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -64,6 +68,11 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
+
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->surface->events.commit,
+        &wlmaker_xdg_popup_ptr->surface_commit_listener,
+        handle_surface_commit);
 
     if (!wlmtk_popup_init(
             &wlmaker_xdg_popup_ptr->super_popup,
@@ -173,6 +182,22 @@ void handle_new_popup(
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles `commit` for the popup's surface. */
+void handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_popup_t, surface_commit_listener);
+
+    if (wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->base->initial_commit) {
+        // Initial commit: Ensure a configure is responded with.
+        wlr_xdg_surface_schedule_configure(
+            wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->base);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
