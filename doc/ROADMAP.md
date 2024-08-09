@@ -237,6 +237,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ### Features for further versions, not ordered by priority nor timeline.
 
+* wlroots handling
+  * Split xdg_surface off xdg_toplevel.
+  * Accept state changes (maximize, fullscreen, ...) also before being mapped.
+    Apply when mapping.
+  * Accept decoration requests before first commit. And forward them after
+    the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
+
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
