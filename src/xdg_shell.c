@@ -78,6 +78,8 @@ void wlmaker_xdg_shell_destroy(wlmaker_xdg_shell_t *xdg_shell_ptr)
     wl_list_remove(&xdg_shell_ptr->destroy_listener.link);
     wl_list_remove(&xdg_shell_ptr->new_popup_listener.link);
     wl_list_remove(&xdg_shell_ptr->new_toplevel_listener.link);
+    // Note: xdg_shell_ptr->wlr_xdg_shell_ptr is destroyed when the display
+    // is destroyed.
     free(xdg_shell_ptr);
 }
 
