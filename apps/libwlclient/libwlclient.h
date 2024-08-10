@@ -53,6 +53,8 @@ typedef struct {
     struct wl_shm             *wl_shm_ptr;
     /** The bound XDG wm_base interface. */
     struct xdg_wm_base        *xdg_wm_base_ptr;
+    /** The bound seat. */
+    struct wl_seat            *wl_seat_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
 
