@@ -28,6 +28,7 @@
 typedef struct _wlclient_t wlclient_t;
 
 #include "icon.h"
+#include "xdg_toplevel.h"
 
 #ifdef __cplusplus
 extern "C" {
