@@ -26,7 +26,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <wayland-client.h>
-#include <wayland-server-core.h>
 
 /* == Declarations ========================================================= */
 
