@@ -32,6 +32,23 @@ extern "C" {
 typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
 
 /**
+ * Creates a XDG toplevel.
+ *
+ * @param wlclient_ptr
+ *
+ * @return State of the toplevel or NULL on error.
+ */
+wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
+    wlclient_t *wlclient_ptr);
+
+/**
+ * Destroys the XDG toplevel.
+ *
+ * @param toplevel_ptr
+ */
+void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr);
+
+/**
  * Returns whether the XDG shell protocol is supported on the client.
  *
  * @param wlclient_ptr

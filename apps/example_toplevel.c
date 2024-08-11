@@ -35,10 +35,20 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_t *wlclient_ptr = wlclient_create("example_toplevel");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
-    if (!wlclient_xdg_supported(wlclient_ptr)) {
+    if (wlclient_xdg_supported(wlclient_ptr)) {
+        wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
+            wlclient_ptr);
+        if (NULL != toplevel_ptr) {
+            wlclient_run(wlclient_ptr);
+            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+        } else {
+            bs_log(BS_ERROR, "Failed wlclient_xdg_toplevel_create(%p)",
+                   wlclient_ptr);
+        }
+    } else {
         bs_log(BS_ERROR, "XDG shell is not supported.");
-        return EXIT_FAILURE;
     }
+
 
     wlclient_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
