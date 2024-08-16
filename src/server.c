@@ -256,6 +256,16 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    server_ptr->input_observation_manager_ptr =
+        wlmaker_input_observation_manager_create(
+            server_ptr->wl_display_ptr,
+            server_ptr->wlr_seat_ptr,
+            server_ptr->cursor_ptr->wlr_cursor_ptr);
+    if (NULL == server_ptr->input_observation_manager_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     if (server_ptr->options_ptr->start_xwayland) {
         server_ptr->xwl_ptr = wlmaker_xwl_create(server_ptr);
         if (NULL == server_ptr->xwl_ptr) {
@@ -328,6 +338,12 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->xwl_ptr) {
         wlmaker_xwl_destroy(server_ptr->xwl_ptr);
         server_ptr->xwl_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->input_observation_manager_ptr) {
+        wlmaker_input_observation_manager_destroy(
+            server_ptr->input_observation_manager_ptr);
+        server_ptr->input_observation_manager_ptr = NULL;
     }
 
     if (NULL != server_ptr->icon_manager_ptr) {

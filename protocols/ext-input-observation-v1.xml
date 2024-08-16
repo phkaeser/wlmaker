@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="ext_input_observation_v1">
+  <copyright>
+    Copyright 2024 Google LLC
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice (including the next
+    paragraph) shall be included in all copies or substantial portions of the
+    Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </copyright>
+
+  <interface name="ext_input_observation_manager_v1" version="1">
+    <description summary="Creates an Input Observation Manager">
+      This interface permits a privileged clients to register surfaces for
+      observing user input, surface does not have the input device's focus.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroys the Input Observation Manager">
+        Destroys the Input Observation Manager.
+      </description>
+    </request>
+
+    <request name="create_pointer_observer">
+      <description summary="Creates an observer for the given pointer and surface.">
+        Creates an observation instance for this pointer's position relative to
+        `surface`.
+      </description>
+      <arg name="id" type="new_id" interface="ext_input_position_observer_v1"/>
+      <arg name="pointer" type="object" interface="wl_pointer"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+  </interface>
+
+  <interface name="ext_input_position_observer_v1" version="1">
+    <description summary="Input Position Observer">
+      Permits observing the position of input devices with respect to the
+      associated surface.
+
+      Status of input devices will be shared only when the surface is
+      mapped. 
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroys the Input Observer.">
+        Destructor.
+      </description>
+    </request>
+
+    <event name="position">
+      <description summary="Reports the input device's position.">
+        Reports the input device's position relative to the surface.
+
+        If the compositor displays the surface more than once, it may
+        share the input device's position relative to each instance of the
+        surface, identified by the `instance` argument. The compositor
+        will issue a call for each displayed instance, and the client
+        may determine whether to act on any or all of the calls.
+
+        The position is reported relative to the surface's edge vectors, and
+        irrespective of whether the surface has input focus or whether the
+        device's position is in- or outside of the surface area.
+
+        The relative positions will be reported as signed 16:16 fixpoint
+        values. Positions within the surface will also be reported, with
+        values in the interval [0, 1) for both relative_x and relative_y.
+      </description>
+      <arg name="surface" type="object" interface="wl_surface"/>
+      <arg name="instance" type="uint"/>
+      <arg name="relative_x" type="int"/>
+      <arg name="relative_y" type="int"/>
+    </event>
+  </interface>
+
+</protocol>
