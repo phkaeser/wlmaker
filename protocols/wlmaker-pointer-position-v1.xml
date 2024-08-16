@@ -19,7 +19,7 @@
   <interface name="zwlmaker_pointer_position_v1" version="1">
     <description summary="Pointer Position">
       This interface permits clients to follow the pointer position relative
-      to a provided surface. 
+      to a provided surface.
     </description>
 
     <request name="destroy" type="destructor">
@@ -27,6 +27,26 @@
         Destroys the Pointer Positon handle..
       </description>
     </request>
+
+    <!-- FIXME:
+         * require that wl_seat capability has (or had) pointer.
+         * suggest that wl_seat capability clear should release the follow
+         * we'll want to receive position relative to the requested surface.
+         * define that the surface should outlive the follow.
+
+       why is it diffent than wl_pointer? We want to subscribe this for
+       specific wl_surface(s).
+
+       should follower creation relate to a specific seat? (.. yes?)
+
+       the position callback should permit to report on more than 1 mapped
+       instance of the surface. Via an additional instance parameter (?)
+       (eg. instance 1 of N)
+
+       Questions:
+       - have an "update instances" callback to report # of mapped surfaces?
+         (not required, we can do this on each call?)
+       -->
 
     <request name="follow">
       <description summary="Creates a new position follower object.">
