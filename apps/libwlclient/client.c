@@ -40,6 +40,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
+#include "wlmaker-pointer-position-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 
@@ -278,6 +279,8 @@ static const object_t objects[] = {
       offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
     { &zxdg_decoration_manager_v1_interface, 1,
       offsetof(wlclient_attributes_t, xdg_decoration_manager_ptr), NULL },
+    { &zwlmaker_pointer_position_v1_interface, 1,
+      offsetof(wlclient_attributes_t, pointer_position_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
 
 };
