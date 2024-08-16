@@ -256,6 +256,13 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    server_ptr->pointer_position_ptr = wlmaker_pointer_position_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->pointer_position_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     if (server_ptr->options_ptr->start_xwayland) {
         server_ptr->xwl_ptr = wlmaker_xwl_create(server_ptr);
         if (NULL == server_ptr->xwl_ptr) {
@@ -328,6 +335,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->xwl_ptr) {
         wlmaker_xwl_destroy(server_ptr->xwl_ptr);
         server_ptr->xwl_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->pointer_position_ptr) {
+        wlmaker_pointer_position_destroy(server_ptr->pointer_position_ptr);
+        server_ptr->pointer_position_ptr = NULL;
     }
 
     if (NULL != server_ptr->icon_manager_ptr) {
