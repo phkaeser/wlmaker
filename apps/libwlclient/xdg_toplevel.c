@@ -28,6 +28,7 @@
 #include "dblbuf.h"
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
+#include "wlmaker-pointer-position-v1-client-protocol.h"
 
 struct wl_array;
 struct xdg_surface;
@@ -50,6 +51,7 @@ struct _wlclient_xdg_toplevel_t {
     struct xdg_surface        *xdg_surface_ptr;
     /** The XDG toplevel. */
     struct xdg_toplevel       *xdg_toplevel_ptr;
+
     /** The XDG toplevel'ss decoration handle. */
     struct zxdg_toplevel_decoration_v1 *xdg_toplevel_decoration_v1_ptr;
 
@@ -64,6 +66,9 @@ struct _wlclient_xdg_toplevel_t {
     wlcl_dblbuf_ready_callback_t callback;
     /** Client-provied argument to @ref wlclient_xdg_toplevel_t::callback. */
     void                      *callback_ud_ptr;
+
+    /** Pointer position follower */
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -94,6 +99,12 @@ static void _xdg_toplevel_handle_wm_capabilities(
     struct xdg_toplevel *xdg_toplevel_ptr,
     struct wl_array *capabilities);
 
+static void _wlclient_follower_position(
+    void *data_ptr,
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    wl_fixed_t relative_x,
+    wl_fixed_t relative_y);
+
 /* == Data ================================================================= */
 
 /** Listeners for the XDG toplevel. */
@@ -113,6 +124,11 @@ static const struct xdg_surface_listener _wlclient_xdg_surface_listener = {
 static const struct zxdg_toplevel_decoration_v1_listener
 _wlc_xdg_toplevel_decoration_v1_listener = {
     .configure = _wlc_xdg_toplevel_decoration_v1_configure,
+};
+
+/** Listeners for the follower. */
+static const struct zwlmaker_pointer_position_follower_v1_listener _wlclient_follower_listener = {
+    .position = _wlclient_follower_position,
 };
 
 /* == Exported methods ===================================================== */
@@ -224,6 +240,24 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
             wlclient_attributes(wlclient_ptr)->app_id_ptr);
     }
 
+    if (NULL != wlclient_attributes(wlclient_ptr)->pointer_position_ptr) {
+        toplevel_ptr->follower_ptr = zwlmaker_pointer_position_v1_follow(
+            wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+            toplevel_ptr->wl_surface_ptr);
+        if (NULL == toplevel_ptr->follower_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed zwlmaker_pointer_position_v1_follow(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+                   toplevel_ptr->wl_surface_ptr);
+            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            return NULL;
+        }
+        zwlmaker_pointer_position_follower_v1_add_listener(
+            toplevel_ptr->follower_ptr,
+            &_wlclient_follower_listener,
+            toplevel_ptr);
+    }
+
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
     return toplevel_ptr;
 }
@@ -245,6 +279,12 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
     if (NULL != toplevel_ptr->dblbuf_ptr) {
         wlcl_dblbuf_destroy(toplevel_ptr->dblbuf_ptr);
         toplevel_ptr->dblbuf_ptr = NULL;
+    }
+
+    if (NULL != toplevel_ptr->follower_ptr) {
+        zwlmaker_pointer_position_follower_v1_destroy(
+            toplevel_ptr->follower_ptr);
+        toplevel_ptr->follower_ptr = NULL;
     }
 
     if (NULL != toplevel_ptr->wl_surface_ptr) {
@@ -386,6 +426,21 @@ void _xdg_toplevel_handle_wm_capabilities(
     __UNUSED__ struct wl_array *capabilities)
 {
     // Currently unused.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Callback for when a `position` event is received. */
+void _wlclient_follower_position(
+    void *data_ptr,
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    wl_fixed_t relative_x,
+    wl_fixed_t relative_y)
+{
+    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+
+    bs_log(BS_INFO,
+           "_wlclient_follower_position(%p, %p, %"PRIx32", %"PRIx32")",
+           toplevel_ptr, follower_ptr, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */
