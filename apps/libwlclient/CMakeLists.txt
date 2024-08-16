@@ -44,6 +44,11 @@ WaylandProtocol_ADD(
   BASE_NAME wlmaker-icon-unstable-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
   SIDE client)
+WaylandProtocol_ADD(
+  SOURCES
+  BASE_NAME wlmaker-pointer-position-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-pointer-position-v1.xml"
+  SIDE client)
 
 TARGET_SOURCES(libwlclient PRIVATE ${SOURCES})
 

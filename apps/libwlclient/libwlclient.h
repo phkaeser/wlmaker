@@ -58,6 +58,8 @@ typedef struct {
     struct wl_seat            *wl_seat_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
+    /** The bound pointer position. */
+    struct zwlmaker_pointer_position_v1 *pointer_position_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
