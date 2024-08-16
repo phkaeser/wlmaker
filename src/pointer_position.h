@@ -22,6 +22,9 @@
 
 /** Forward declaration: Pointer position handle. */
 typedef struct _wlmaker_pointer_position_t wlmaker_pointer_position_t ;
+/** Forward declaration: Follower object. */
+typedef struct _wlmaker_pointer_position_follow_t
+wlmaker_pointer_position_follow_t;
 
 #include "server.h"
 

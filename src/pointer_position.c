@@ -22,6 +22,10 @@
 
 #include "wlmaker-pointer-position-v1-server-protocol.h"
 
+#define WLR_USE_UNSTABLE
+#include "wlr/types/wlr_compositor.h"
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 /** State of the pointer position extension. */
@@ -30,14 +34,28 @@ struct _wlmaker_pointer_position_t {
     struct wl_global          *wl_global_ptr;
 };
 
+struct _wlmaker_pointer_position_follow_t {
+};
+
+static wlmaker_pointer_position_t *pointer_position_from_resource(
+    struct wl_resource *wl_resource_ptr);
+
 static void bind_pointer_position(
     struct wl_client *wl_client_ptr,
     void *data_ptr,
     uint32_t version,
     uint32_t id);
+
 static void handle_resource_destroy(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
+static void pointer_position_handle_follow(
+    struct wl_client *client,
+    struct wl_resource *resource,
+    uint32_t id,
+    struct wl_resource *surface);
+
+static wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_create(void);
 
 /* ========================================================================= */
 
@@ -45,6 +63,7 @@ static void handle_resource_destroy(
 static const struct zwlmaker_pointer_position_v1_interface
 pointer_position_v1_implementation = {
     .destroy = handle_resource_destroy,
+    .follow = pointer_position_handle_follow,
 };
 
 /* == Exported methods ===================================================== */
@@ -84,6 +103,24 @@ void wlmaker_pointer_position_destroy(wlmaker_pointer_position_t *ppos_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns the toplevel pointer position from the resource, with type check.
+ *
+ * @param wl_resource_ptr
+ *
+ * @return Pointer to the @ref wlmaker_pointer_position_t.
+ */
+wlmaker_pointer_position_t *pointer_position_from_resource(
+    struct wl_resource *wl_resource_ptr)
+{
+    BS_ASSERT(wl_resource_instance_of(
+                  wl_resource_ptr,
+                  &zwlmaker_pointer_position_v1_interface,
+                  &pointer_position_v1_implementation));
+    return wl_resource_get_user_data(wl_resource_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -131,6 +168,46 @@ void handle_resource_destroy(
     struct wl_resource *wl_resource_ptr)
 {
     wl_resource_destroy(wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a new position follower object.
+ *
+ * @param wl_client_ptr
+ * @param wl_resource_ptr
+ * @param id
+ * @param surface
+ */
+void pointer_position_handle_follow(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    __UNUSED__ uint32_t id,
+    struct wl_resource *surface)
+{
+    __UNUSED__ wlmaker_pointer_position_t *ppos_ptr = pointer_position_from_resource(
+        wl_resource_ptr);
+
+    __UNUSED__ struct wlr_surface *wlr_surface_ptr =
+        wlr_surface_from_resource(surface);
+
+    wlmaker_pointer_position_follow_t *follow_ptr =
+        wlmaker_pointer_position_follow_create();
+    if (NULL == follow_ptr) {
+        wl_client_post_no_memory(wl_client_ptr);
+        return;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Ctor for the follow. */
+wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_create(void)
+{
+    wlmaker_pointer_position_follow_t *follow_ptr = logged_calloc(
+        1, sizeof(wlmaker_pointer_position_follow_t));
+    if (NULL == follow_ptr) return NULL;
+
+    return follow_ptr;
 }
 
 /* == End of pointer_position.c ============================================ */
