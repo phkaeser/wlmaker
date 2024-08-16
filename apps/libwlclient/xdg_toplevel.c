@@ -22,6 +22,7 @@
 
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
+#include "wlmaker-pointer-position-v1-client-protocol.h"
 
 #include "buffer.h"
 
@@ -38,6 +39,9 @@ struct _wlclient_xdg_toplevel_t {
     struct xdg_surface        *xdg_surface_ptr;
     /** The XDG toplevel. */
     struct xdg_toplevel       *xdg_toplevel_ptr;
+
+    /** Pointer position follower */
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -45,11 +49,22 @@ static void _wlclient_xdg_surface_configure(
     struct xdg_surface *xdg_surface,
     uint32_t serial);
 
+static void _wlclient_follower_position(
+    void *data_ptr,
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    wl_fixed_t relative_x,
+    wl_fixed_t relative_y);
+
 /* == Data ================================================================= */
 
 /** Listeners for the XDG surface. */
 static const struct xdg_surface_listener _wlclient_xdg_surface_listener = {
     .configure = _wlclient_xdg_surface_configure,
+};
+
+/** Listeners for the follower. */
+static const struct zwlmaker_pointer_position_follower_v1_listener _wlclient_follower_listener = {
+    .position = _wlclient_follower_position,
 };
 
 /* == Exported methods ===================================================== */
@@ -95,6 +110,24 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         return NULL;
     }
 
+    if (NULL != wlclient_attributes(wlclient_ptr)->pointer_position_ptr) {
+        toplevel_ptr->follower_ptr = zwlmaker_pointer_position_v1_follow(
+            wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+            toplevel_ptr->wl_surface_ptr);
+        if (NULL == toplevel_ptr->follower_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed zwlmaker_pointer_position_v1_follow(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+                   toplevel_ptr->wl_surface_ptr);
+            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            return NULL;
+        }
+        zwlmaker_pointer_position_follower_v1_add_listener(
+            toplevel_ptr->follower_ptr,
+            &_wlclient_follower_listener,
+            toplevel_ptr);
+    }
+
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
     return toplevel_ptr;
 }
@@ -102,6 +135,12 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
 /* ------------------------------------------------------------------------- */
 void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
 {
+    if (NULL != toplevel_ptr->follower_ptr) {
+        zwlmaker_pointer_position_follower_v1_destroy(
+            toplevel_ptr->follower_ptr);
+        toplevel_ptr->follower_ptr = NULL;
+    }
+
     if (NULL != toplevel_ptr->wl_surface_ptr) {
         wl_surface_destroy(toplevel_ptr->wl_surface_ptr);
         toplevel_ptr->wl_surface_ptr = NULL;
@@ -151,6 +190,21 @@ void _wlclient_xdg_surface_configure(
     wlclient_buffer_attach_to_surface_and_commit(
         buffer_ptr,
         toplevel_ptr->wl_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Callback for when a `position` event is received. */
+void _wlclient_follower_position(
+    void *data_ptr,
+    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    wl_fixed_t relative_x,
+    wl_fixed_t relative_y)
+{
+    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+
+    bs_log(BS_INFO,
+           "_wlclient_follower_position(%p, %p, %"PRIx32", %"PRIx32")",
+           toplevel_ptr, follower_ptr, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */

@@ -32,7 +32,7 @@
       <description summary="Creates a new position follower object.">
         Creates a new follower instance associated with the provided surface.
       </description>
-      <arg name="id" type="new_id" interface="zwlmaker_pointer_position_v1"/>
+      <arg name="id" type="new_id" interface="zwlmaker_pointer_position_follower_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
