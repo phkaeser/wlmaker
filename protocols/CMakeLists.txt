@@ -28,6 +28,12 @@ WaylandProtocol_ADD(
   PROTOCOL_FILE wlmaker-icon-unstable-v1.xml
   SIDE server)
 
+WaylandProtocol_ADD(
+  SOURCES
+  BASE_NAME ext-input-observation-v1
+  PROTOCOL_FILE ext-input-observation-v1.xml
+  SIDE server)
+
 PKG_GET_VARIABLE(WAYLAND_PROTOCOLDIR wayland-protocols pkgdatadir)
 # Needing XDG Shell, since the toplevel icon protocol refers to it.
 WaylandProtocol_ADD(

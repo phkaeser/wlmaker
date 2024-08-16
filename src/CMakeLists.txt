@@ -42,10 +42,11 @@ SET(PUBLIC_HEADER_FILES
   dock.h
   icon_manager.h
   idle.h
+  input_observation.h
   keyboard.h
+  launcher.h
   layer_panel.h
   layer_shell.h
-  launcher.h
   lock_mgr.h
   root_menu.h
   server.h
@@ -74,6 +75,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   dock.c
   icon_manager.c
   idle.c
+  input_observation.c
   keyboard.c
   launcher.c
   layer_panel.c
@@ -84,11 +86,11 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   subprocess_monitor.c
   task_list.c
   tl_menu.c
+  x11_cursor.xpm
   xdg_decoration.c
   xdg_popup.c
   xdg_shell.c
   xdg_toplevel.c
-  x11_cursor.xpm
   xwl.c
   xwl_content.c
   xwl_popup.c

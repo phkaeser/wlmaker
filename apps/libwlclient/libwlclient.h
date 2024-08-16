@@ -59,10 +59,14 @@ typedef struct {
     struct xdg_wm_base        *xdg_wm_base_ptr;
     /** The bound seat. */
     struct wl_seat            *wl_seat_ptr;
+    /** Pointer state, if & when the seat has the capability. */
+    struct wl_pointer         *wl_pointer_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
     /** The bound XDG decoration manager. NULL if not supported. */
     struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
+    /** The bound Input Observation. */
+    struct ext_input_observation_manager_v1 *input_observation_manager_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
