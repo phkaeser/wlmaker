@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wlmaker_pointer_position_v1">
+  <copyright>
+    Copyright 2024 Google LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+  </copyright>
+
+  <interface name="zwlmaker_pointer_position_v1" version="1">
+    <description summary="Pointer Position">
+      This interface permits clients to follow the pointer position relative
+      to a provided surface. 
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroy the Pointer Position">
+        Destroys the Pointer Positon handle..
+      </description>
+    </request>
+
+    <request name="follow">
+      <description summary="Creates a new position follower object.">
+        Creates a new follower instance associated with the provided surface.
+      </description>
+      <arg name="id" type="new_id" interface="zwlmaker_pointer_position_v1"/>
+      <arg name="surface" type="object" interface="wl_surface"/>
+    </request>
+
+  </interface>
+
+  <interface name="zwlmaker_pointer_position_follower_v1" version="1">
+    <description summary="Pointer Position Follower">
+      Reports pointer position.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="Destroys the Pointer Position Follower">
+        Destructor.
+      </description>
+    </request>
+
+    <event name="position">
+      <description summary="Reports the pointer position.">
+        Reports the pointer position
+      </description>
+      <arg name="relative_x" type="fixed" />
+      <arg name="relative_y" type="fixed" />
+    </event>
+
+    <!-- TODO(kaeser@gubbe.ch): Define error codes and handling -->
+
+  </interface>
+
+</protocol>
