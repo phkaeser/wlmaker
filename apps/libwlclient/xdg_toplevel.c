@@ -90,7 +90,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         toplevel_ptr->xdg_surface_ptr);
     if (NULL == toplevel_ptr->xdg_toplevel_ptr) {
         bs_log(BS_ERROR, "Failed xdg_surface_get_toplevel(%p)",
-               toplevel_ptr->wl_surface_ptr);
+               toplevel_ptr->xdg_surface_ptr);
         wlclient_xdg_toplevel_destroy(toplevel_ptr);
         return NULL;
     }
