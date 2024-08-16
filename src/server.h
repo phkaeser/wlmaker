@@ -63,6 +63,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "lock_mgr.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
+#include "pointer_position.h"
 #include "xdg_decoration.h"
 #include "xdg_shell.h"
 #include "xwl.h"
@@ -141,6 +142,8 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
+    /** Pointer position. */
+    wlmaker_pointer_position_t *pointer_position_ptr;
     /**
      * XWayland interface. Will be set only if compiled with XWayland, through
      * WLMAKER_HAVE_XWAYLAND defined.
