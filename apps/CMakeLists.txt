@@ -16,8 +16,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 ADD_SUBDIRECTORY(libwlclient)
 ADD_SUBDIRECTORY(primitives)
+
 ADD_EXECUTABLE(wlmclock wlmclock.c)
 TARGET_INCLUDE_DIRECTORIES(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(wlmclock libwlclient primitives m)
 
+ADD_EXECUTABLE(example_toplevel example_toplevel.c)
+TARGET_INCLUDE_DIRECTORIES(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+TARGET_LINK_LIBRARIES(example_toplevel libwlclient)
+
 INSTALL(TARGETS wlmclock DESTINATION bin)
+INSTALL(TARGETS example_toplevel DESTINATION bin)
