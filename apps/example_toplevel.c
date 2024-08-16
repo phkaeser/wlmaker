@@ -49,7 +49,6 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         bs_log(BS_ERROR, "XDG shell is not supported.");
     }
 
-
     wlclient_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
