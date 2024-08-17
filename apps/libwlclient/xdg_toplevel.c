@@ -240,14 +240,14 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
             wlclient_attributes(wlclient_ptr)->app_id_ptr);
     }
 
-    if (NULL != wlclient_attributes(wlclient_ptr)->pointer_position_ptr) {
-        toplevel_ptr->follower_ptr = zwlmaker_pointer_position_v1_follow(
-            wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+    if (NULL != wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr) {
+        toplevel_ptr->follower_ptr = zwlmaker_pointer_tracking_v1_follow(
+            wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr,
             toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->follower_ptr) {
             bs_log(BS_ERROR,
-                   "Failed zwlmaker_pointer_position_v1_follow(%p, %p)",
-                   wlclient_attributes(wlclient_ptr)->pointer_position_ptr,
+                   "Failed zwlmaker_pointer_tracking_v1_follow(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr,
                    toplevel_ptr->wl_surface_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;
