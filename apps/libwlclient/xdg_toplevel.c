@@ -67,8 +67,8 @@ struct _wlclient_xdg_toplevel_t {
     /** Client-provied argument to @ref wlclient_xdg_toplevel_t::callback. */
     void                      *callback_ud_ptr;
 
-    /** Pointer position follower */
-    struct zwlmaker_pointer_position_follower_v1 *follower_ptr;
+    /** Pointer position tracker */
+    struct zwlmaker_pointer_tracker_v1 *tracker_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -99,9 +99,9 @@ static void _xdg_toplevel_handle_wm_capabilities(
     struct xdg_toplevel *xdg_toplevel_ptr,
     struct wl_array *capabilities);
 
-static void _wlclient_follower_position(
+static void _wlclient_tracker_position(
     void *data_ptr,
-    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    struct zwlmaker_pointer_tracker_v1 *tracker_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y);
 
@@ -126,9 +126,10 @@ _wlc_xdg_toplevel_decoration_v1_listener = {
     .configure = _wlc_xdg_toplevel_decoration_v1_configure,
 };
 
-/** Listeners for the follower. */
-static const struct zwlmaker_pointer_position_follower_v1_listener _wlclient_follower_listener = {
-    .position = _wlclient_follower_position,
+/** Listeners for the Pointer position Tracker. */
+static const struct zwlmaker_pointer_tracker_v1_listener
+_wlclient_tracker_listener = {
+    .position = _wlclient_tracker_position,
 };
 
 /* == Exported methods ===================================================== */
@@ -241,20 +242,20 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     }
 
     if (NULL != wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr) {
-        toplevel_ptr->follower_ptr = zwlmaker_pointer_tracking_v1_follow(
+        toplevel_ptr->tracker_ptr = zwlmaker_pointer_tracking_v1_track(
             wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr,
             toplevel_ptr->wl_surface_ptr);
-        if (NULL == toplevel_ptr->follower_ptr) {
+        if (NULL == toplevel_ptr->tracker_ptr) {
             bs_log(BS_ERROR,
-                   "Failed zwlmaker_pointer_tracking_v1_follow(%p, %p)",
+                   "Failed zwlmaker_pointer_tracking_v1_track(%p, %p)",
                    wlclient_attributes(wlclient_ptr)->pointer_tracking_ptr,
                    toplevel_ptr->wl_surface_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;
         }
-        zwlmaker_pointer_position_follower_v1_add_listener(
-            toplevel_ptr->follower_ptr,
-            &_wlclient_follower_listener,
+        zwlmaker_pointer_tracker_v1_add_listener(
+            toplevel_ptr->tracker_ptr,
+            &_wlclient_tracker_listener,
             toplevel_ptr);
     }
 
@@ -281,10 +282,10 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
         toplevel_ptr->dblbuf_ptr = NULL;
     }
 
-    if (NULL != toplevel_ptr->follower_ptr) {
-        zwlmaker_pointer_position_follower_v1_destroy(
-            toplevel_ptr->follower_ptr);
-        toplevel_ptr->follower_ptr = NULL;
+    if (NULL != toplevel_ptr->tracker_ptr) {
+        zwlmaker_pointer_tracker_v1_destroy(
+            toplevel_ptr->tracker_ptr);
+        toplevel_ptr->tracker_ptr = NULL;
     }
 
     if (NULL != toplevel_ptr->wl_surface_ptr) {
@@ -430,17 +431,17 @@ void _xdg_toplevel_handle_wm_capabilities(
 
 /* ------------------------------------------------------------------------- */
 /** Callback for when a `position` event is received. */
-void _wlclient_follower_position(
+void _wlclient_tracker_position(
     void *data_ptr,
-    struct zwlmaker_pointer_position_follower_v1 *follower_ptr,
+    struct zwlmaker_pointer_tracker_v1 *tracker_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
 
     bs_log(BS_INFO,
-           "_wlclient_follower_position(%p, %p, %"PRIx32", %"PRIx32")",
-           toplevel_ptr, follower_ptr, relative_x, relative_y);
+           "_wlclient_tracker_position(%p, %p, %"PRIx32", %"PRIx32")",
+           toplevel_ptr, tracker_ptr, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */
