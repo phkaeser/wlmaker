@@ -40,7 +40,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
-#include "wlmaker-pointer-position-v1-client-protocol.h"
+#include "wlmaker-pointer-tracking-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 

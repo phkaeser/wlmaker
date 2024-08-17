@@ -20,7 +20,7 @@
 
 #include "pointer_position.h"
 
-#include "wlmaker-pointer-position-v1-server-protocol.h"
+#include "wlmaker-pointer-tracking-v1-server-protocol.h"
 
 #define WLR_USE_UNSTABLE
 #include "wlr/types/wlr_compositor.h"
