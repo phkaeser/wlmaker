@@ -102,6 +102,7 @@ static void _xdg_toplevel_handle_wm_capabilities(
 static void _wlclient_tracker_position(
     void *data_ptr,
     struct zwlmaker_pointer_tracker_v1 *tracker_ptr,
+    struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y);
 
@@ -257,6 +258,8 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
             toplevel_ptr->tracker_ptr,
             &_wlclient_tracker_listener,
             toplevel_ptr);
+        bs_log(BS_INFO, "Created pointer tracker %p for wl_surface %p",
+               toplevel_ptr->tracker_ptr, toplevel_ptr->wl_surface_ptr);
     }
 
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
@@ -434,14 +437,15 @@ void _xdg_toplevel_handle_wm_capabilities(
 void _wlclient_tracker_position(
     void *data_ptr,
     struct zwlmaker_pointer_tracker_v1 *tracker_ptr,
+    struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
 
     bs_log(BS_INFO,
-           "_wlclient_tracker_position(%p, %p, %"PRIx32", %"PRIx32")",
-           toplevel_ptr, tracker_ptr, relative_x, relative_y);
+           "_wlclient_tracker_position(%p, %p, %p, %"PRIx32", %"PRIx32")",
+           toplevel_ptr, tracker_ptr, wl_surface_ptr, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */

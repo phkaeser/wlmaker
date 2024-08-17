@@ -38,6 +38,8 @@ struct _wlmaker_pointer_tracking_t {
 struct _wlmaker_pointer_tracker_t {
     /** The corresponding resource. */
     struct wl_resource        *wl_resource_ptr;
+    /** The surface it tracks. */
+    struct wlr_surface        *wlr_surface_ptr;
 };
 
 static wlmaker_pointer_tracking_t *pointer_tracking_from_resource(
@@ -64,7 +66,8 @@ static wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
     wlmaker_pointer_tracking_t *tracking_ptr,
     uint32_t id,
-    int version);
+    int version,
+    struct wlr_surface *wlr_surface_ptr);
 static void wlmaker_pointer_tracker_resource_destroy(
     struct wl_resource *wl_resource_ptr);
 static void wlmaker_pointer_tracker_destroy(
@@ -207,14 +210,15 @@ void pointer_tracking_handle_track(
     wlmaker_pointer_tracking_t *tracking_ptr = pointer_tracking_from_resource(
         wl_resource_ptr);
 
-    __UNUSED__ struct wlr_surface *wlr_surface_ptr =
+    struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(surface_wl_resource_ptr);
 
     wlmaker_pointer_tracker_t *tracker_ptr = wlmaker_pointer_tracker_create(
         wl_client_ptr,
             tracking_ptr,
             id,
-            wl_resource_get_version(wl_resource_ptr));
+        wl_resource_get_version(wl_resource_ptr),
+        wlr_surface_ptr);
     if (NULL == tracker_ptr) {
         wl_client_post_no_memory(wl_client_ptr);
         return;
@@ -227,11 +231,13 @@ wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
     __UNUSED__ wlmaker_pointer_tracking_t *tracking_ptr,
     uint32_t id,
-    int version)
+    int version,
+    struct wlr_surface *wlr_surface_ptr)
 {
     wlmaker_pointer_tracker_t *tracker_ptr = logged_calloc(
         1, sizeof(wlmaker_pointer_tracker_t));
     if (NULL == tracker_ptr) return NULL;
+    tracker_ptr->wlr_surface_ptr = wlr_surface_ptr;
 
     tracker_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
@@ -250,6 +256,13 @@ wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
         &pointer_tracker_v1_implementation,
         tracker_ptr,
         wlmaker_pointer_tracker_resource_destroy);
+
+    if (false) {
+        zwlmaker_pointer_tracker_v1_send_position(
+            tracker_ptr->wl_resource_ptr,
+            wlr_surface_ptr->resource,
+            1, 2);
+    }
 
     return tracker_ptr;
 }
