@@ -40,6 +40,8 @@ struct _wlmaker_pointer_tracker_t {
     struct wl_resource        *wl_resource_ptr;
     /** The surface it tracks. */
     struct wlr_surface        *wlr_surface_ptr;
+    // FIXME: Subscribe to the destroy listener of the surface. We will want
+    // to destroy the tracker if the surface disappears.
 };
 
 static wlmaker_pointer_tracking_t *pointer_tracking_from_resource(
