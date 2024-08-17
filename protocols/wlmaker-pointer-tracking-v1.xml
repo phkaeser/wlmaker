@@ -48,23 +48,28 @@
          (not required, we can do this on each call?)
        -->
 
-    <request name="follow">
-      <description summary="Creates a new position follower object.">
-        Creates a new follower instance associated with the provided surface.
+    <request name="track">
+      <description summary="Creates a new position tracker.">
+        Creates a new tracker instance associated with the provided surface.
       </description>
-      <arg name="id" type="new_id" interface="zwlmaker_pointer_position_follower_v1"/>
+      <arg name="id" type="new_id" interface="zwlmaker_pointer_tracker_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
   </interface>
 
-  <interface name="zwlmaker_pointer_position_follower_v1" version="1">
-    <description summary="Pointer Position Follower">
-      Reports pointer position.
+  <interface name="zwlmaker_pointer_tracker_v1" version="1">
+    <description summary="Pointer position tracker">
+      Reports the pointer's position relative to the provided surface.
+
+      The position is reported also beyond the surface's area, and also when
+      the surface does not have pointer focus. If the surface is mapped more
+      than once, the compositor may report the position relative to each
+      mapped instance of the surface.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Pointer Position Follower">
+      <description summary="Destroys the Pointer position tracker">
         Destructor.
       </description>
     </request>

@@ -34,8 +34,8 @@ struct _wlmaker_pointer_tracking_t {
     struct wl_global          *wl_global_ptr;
 };
 
-/** State of a follower. */
-struct _wlmaker_pointer_position_follow_t {
+/** State of a tracker. */
+struct _wlmaker_pointer_tracker_t {
     /** The corresponding resource. */
     struct wl_resource        *wl_resource_ptr;
 };
@@ -52,23 +52,23 @@ static void bind_pointer_tracking(
 static void handle_resource_destroy(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
-static void pointer_tracking_handle_follow(
+static void pointer_tracking_handle_track(
     struct wl_client *client,
     struct wl_resource *resource,
     uint32_t id,
     struct wl_resource *surface);
 
-static wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_from_resource(
+static wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_from_resource(
     struct wl_resource *wl_resource_ptr);
-static wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_create(
+static wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
     wlmaker_pointer_tracking_t *ppos_ptr,
     uint32_t id,
     int version);
-static void wlmaker_pointer_position_follow_resource_destroy(
+static void wlmaker_pointer_tracker_resource_destroy(
     struct wl_resource *wl_resource_ptr);
-static void wlmaker_pointer_position_follow_destroy(
-    wlmaker_pointer_position_follow_t *follow_ptr);
+static void wlmaker_pointer_tracker_destroy(
+    wlmaker_pointer_tracker_t *tracker_ptr);
 
 /* ========================================================================= */
 
@@ -76,12 +76,12 @@ static void wlmaker_pointer_position_follow_destroy(
 static const struct zwlmaker_pointer_tracking_v1_interface
 pointer_tracking_v1_implementation = {
     .destroy = handle_resource_destroy,
-    .follow = pointer_tracking_handle_follow,
+    .track = pointer_tracking_handle_track,
 };
 
-/** Implementation of the pointer position follower. */
-static const struct zwlmaker_pointer_position_follower_v1_interface
-pointer_position_follower_v1_implementation = {
+/** Implementation of the pointer (position) tracker. */
+static const struct zwlmaker_pointer_tracker_v1_interface
+pointer_tracker_v1_implementation = {
     .destroy = handle_resource_destroy,
 };
 
@@ -191,14 +191,14 @@ void handle_resource_destroy(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Creates a new tracking follower object.
+ * Creates a new pointer tracker, associated with the provided surface.
  *
  * @param wl_client_ptr
  * @param wl_resource_ptr
  * @param id
  * @param surface
  */
-void pointer_tracking_handle_follow(
+void pointer_tracking_handle_track(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
     __UNUSED__ uint32_t id,
@@ -210,78 +210,76 @@ void pointer_tracking_handle_follow(
     __UNUSED__ struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(surface);
 
-    wlmaker_pointer_position_follow_t *follow_ptr =
-        wlmaker_pointer_position_follow_create(
+    wlmaker_pointer_tracker_t *tracker_ptr = wlmaker_pointer_tracker_create(
             wl_client_ptr,
             ppos_ptr,
             id,
             wl_resource_get_version(wl_resource_ptr));
-    if (NULL == follow_ptr) {
+    if (NULL == tracker_ptr) {
         wl_client_post_no_memory(wl_client_ptr);
         return;
     }
 }
 
 /* ------------------------------------------------------------------------- */
-/** Ctor for the follow. */
-wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_create(
+/** Ctor for the tracker. */
+wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
     __UNUSED__ wlmaker_pointer_tracking_t *ppos_ptr,
     uint32_t id,
     int version)
 {
-    wlmaker_pointer_position_follow_t *follow_ptr = logged_calloc(
-        1, sizeof(wlmaker_pointer_position_follow_t));
-    if (NULL == follow_ptr) return NULL;
+    wlmaker_pointer_tracker_t *tracker_ptr = logged_calloc(
+        1, sizeof(wlmaker_pointer_tracker_t));
+    if (NULL == tracker_ptr) return NULL;
 
-    follow_ptr->wl_resource_ptr = wl_resource_create(
+    tracker_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
-        &zwlmaker_pointer_position_follower_v1_interface,
+        &zwlmaker_pointer_tracker_v1_interface,
         version,
         id);
-    if (NULL == follow_ptr->wl_resource_ptr) {
+    if (NULL == tracker_ptr->wl_resource_ptr) {
         bs_log(BS_ERROR, "Failed wl_resource_create(%p, %p, %d, %"PRIu32")",
-               wl_client_ptr, &zwlmaker_pointer_position_follower_v1_interface,
+               wl_client_ptr, &zwlmaker_pointer_tracker_v1_interface,
                version, id);
-        wlmaker_pointer_position_follow_destroy(follow_ptr);
+        wlmaker_pointer_tracker_destroy(tracker_ptr);
         return NULL;
     }
     wl_resource_set_implementation(
-        follow_ptr->wl_resource_ptr,
-        &pointer_position_follower_v1_implementation,
-        follow_ptr,
-        wlmaker_pointer_position_follow_resource_destroy);
+        tracker_ptr->wl_resource_ptr,
+        &pointer_tracker_v1_implementation,
+        tracker_ptr,
+        wlmaker_pointer_tracker_resource_destroy);
 
-    return follow_ptr;
+    return tracker_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Dtor, from the resource. */
-void wlmaker_pointer_position_follow_resource_destroy(
+void wlmaker_pointer_tracker_resource_destroy(
     struct wl_resource *wl_resource_ptr)
 {
-    wlmaker_pointer_position_follow_t *follow_ptr =
-        wlmaker_pointer_position_follow_from_resource(wl_resource_ptr);
-    wlmaker_pointer_position_follow_destroy(follow_ptr);
+    wlmaker_pointer_tracker_t *tracker_ptr =
+        wlmaker_pointer_tracker_from_resource(wl_resource_ptr);
+    wlmaker_pointer_tracker_destroy(tracker_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Dtor. */
-void wlmaker_pointer_position_follow_destroy(
-    wlmaker_pointer_position_follow_t *follow_ptr)
+void wlmaker_pointer_tracker_destroy(wlmaker_pointer_tracker_t *tracker_ptr)
 {
-    free(follow_ptr);
+    free(tracker_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Type-safe conversion from resource to follower. */
-wlmaker_pointer_position_follow_t *wlmaker_pointer_position_follow_from_resource(
+/** Type-safe conversion from resource to tracker. */
+wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_from_resource(
     struct wl_resource *wl_resource_ptr)
 {
     BS_ASSERT(wl_resource_instance_of(
                   wl_resource_ptr,
-                  &zwlmaker_pointer_position_follower_v1_interface,
-                  &pointer_position_follower_v1_implementation));
+                  &zwlmaker_pointer_tracker_v1_interface,
+                  &pointer_tracker_v1_implementation));
     return wl_resource_get_user_data(wl_resource_ptr);
 }
 

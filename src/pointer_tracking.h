@@ -21,10 +21,9 @@
 #define __POINTER_TRACKING_H__
 
 /** Forward declaration: Pointer tracking handle. */
-typedef struct _wlmaker_pointer_tracking_t wlmaker_pointer_tracking_t ;
-/** Forward declaration: Follower object. */
-typedef struct _wlmaker_pointer_position_follow_t
-wlmaker_pointer_position_follow_t;
+typedef struct _wlmaker_pointer_tracking_t wlmaker_pointer_tracking_t;
+/** Forward declaration: Tracker object. */
+typedef struct _wlmaker_pointer_tracker_t wlmaker_pointer_tracker_t;
 
 #include "server.h"
 
