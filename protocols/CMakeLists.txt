@@ -25,8 +25,8 @@ WaylandProtocol_ADD(
 
 WaylandProtocol_ADD(
   SOURCES
-  BASE_NAME wlmaker-pointer-position-v1
-  PROTOCOL_FILE wlmaker-pointer-position-v1.xml
+  BASE_NAME wlmaker-pointer-tracking-v1
+  PROTOCOL_FILE wlmaker-pointer-tracking-v1.xml
   SIDE server)
 
 PKG_GET_VARIABLE(WAYLAND_PROTOCOLDIR wayland-protocols pkgdatadir)
