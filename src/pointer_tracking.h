@@ -45,9 +45,10 @@ wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
 /**
  * Destroys the pointer tracking.
  *
- * @param ppos_ptr
+ * @param tracking_ptr
  */
-void wlmaker_pointer_tracking_destroy(wlmaker_pointer_tracking_t *ppos_ptr);
+void wlmaker_pointer_tracking_destroy(
+    wlmaker_pointer_tracking_t *tracking_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

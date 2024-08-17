@@ -62,7 +62,7 @@ static wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_from_resource(
     struct wl_resource *wl_resource_ptr);
 static wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
-    wlmaker_pointer_tracking_t *ppos_ptr,
+    wlmaker_pointer_tracking_t *tracking_ptr,
     uint32_t id,
     int version);
 static void wlmaker_pointer_tracker_resource_destroy(
@@ -91,34 +91,34 @@ pointer_tracker_v1_implementation = {
 wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
     struct wl_display *wl_display_ptr)
 {
-    wlmaker_pointer_tracking_t *ppos_ptr = logged_calloc(
+    wlmaker_pointer_tracking_t *tracking_ptr = logged_calloc(
         1, sizeof(wlmaker_pointer_tracking_t));
-    if (NULL == ppos_ptr) return NULL;
+    if (NULL == tracking_ptr) return NULL;
 
-    ppos_ptr->wl_global_ptr = wl_global_create(
+    tracking_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
         &zwlmaker_pointer_tracking_v1_interface,
         1,
-        ppos_ptr,
+        tracking_ptr,
         bind_pointer_tracking);
-    if (NULL == ppos_ptr->wl_global_ptr) {
+    if (NULL == tracking_ptr->wl_global_ptr) {
         bs_log(BS_ERROR, "Failed wl_global_create");
-        wlmaker_pointer_tracking_destroy(ppos_ptr);
+        wlmaker_pointer_tracking_destroy(tracking_ptr);
         return NULL;
     }
 
-    return ppos_ptr;
+    return tracking_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_pointer_tracking_destroy(wlmaker_pointer_tracking_t *ppos_ptr)
+void wlmaker_pointer_tracking_destroy(wlmaker_pointer_tracking_t *tracking_ptr)
 {
-    if (NULL != ppos_ptr->wl_global_ptr) {
-        wl_global_destroy(ppos_ptr->wl_global_ptr);
-        ppos_ptr->wl_global_ptr = NULL;
+    if (NULL != tracking_ptr->wl_global_ptr) {
+        wl_global_destroy(tracking_ptr->wl_global_ptr);
+        tracking_ptr->wl_global_ptr = NULL;
     }
 
-    free(ppos_ptr);
+    free(tracking_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -165,12 +165,12 @@ void bind_pointer_tracking(
         wl_client_post_no_memory(wl_client_ptr);
         return;
     }
-   wlmaker_pointer_tracking_t *ppos_ptr = data_ptr;
+   wlmaker_pointer_tracking_t *tracking_ptr = data_ptr;
 
     wl_resource_set_implementation(
         wl_resource_ptr,
         &pointer_tracking_v1_implementation,  // implementation.
-        ppos_ptr,  // data
+        tracking_ptr,  // data
         NULL);  // dtor. We don't have an explicit one.
 
 }
@@ -196,23 +196,23 @@ void handle_resource_destroy(
  * @param wl_client_ptr
  * @param wl_resource_ptr
  * @param id
- * @param surface
+ * @param surface_wl_resource_ptr Resource handle of the surface.
  */
 void pointer_tracking_handle_track(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
-    __UNUSED__ uint32_t id,
-    struct wl_resource *surface)
+    uint32_t id,
+    struct wl_resource *surface_wl_resource_ptr)
 {
-    __UNUSED__ wlmaker_pointer_tracking_t *ppos_ptr = pointer_tracking_from_resource(
+    wlmaker_pointer_tracking_t *tracking_ptr = pointer_tracking_from_resource(
         wl_resource_ptr);
 
     __UNUSED__ struct wlr_surface *wlr_surface_ptr =
-        wlr_surface_from_resource(surface);
+        wlr_surface_from_resource(surface_wl_resource_ptr);
 
     wlmaker_pointer_tracker_t *tracker_ptr = wlmaker_pointer_tracker_create(
-            wl_client_ptr,
-            ppos_ptr,
+        wl_client_ptr,
+            tracking_ptr,
             id,
             wl_resource_get_version(wl_resource_ptr));
     if (NULL == tracker_ptr) {
@@ -225,7 +225,7 @@ void pointer_tracking_handle_track(
 /** Ctor for the tracker. */
 wlmaker_pointer_tracker_t *wlmaker_pointer_tracker_create(
     struct wl_client *wl_client_ptr,
-    __UNUSED__ wlmaker_pointer_tracking_t *ppos_ptr,
+    __UNUSED__ wlmaker_pointer_tracking_t *tracking_ptr,
     uint32_t id,
     int version)
 {
