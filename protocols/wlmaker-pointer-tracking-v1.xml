@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="wlmaker_pointer_position_v1">
+<protocol name="wlmaker_pointer_tracking_v1">
   <copyright>
     Copyright 2024 Google LLC
 
@@ -16,15 +16,15 @@
     limitations under the License.
   </copyright>
 
-  <interface name="zwlmaker_pointer_position_v1" version="1">
-    <description summary="Pointer Position">
-      This interface permits clients to follow the pointer position relative
-      to a provided surface.
+  <interface name="zwlmaker_pointer_tracking_v1" version="1">
+    <description summary="Pointer Tracking">
+      This interface permits surfaces to track the pointer posiiton relative to
+      the provided surface.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroy the Pointer Position">
-        Destroys the Pointer Positon handle..
+      <description summary="Destroy the Pointer Tracking">
+        Destroys the Pointer Tracking handle.
       </description>
     </request>
 

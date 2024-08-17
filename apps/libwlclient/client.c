@@ -198,8 +198,8 @@ static const object_t objects[] = {
       offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
       offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
-    { &zwlmaker_pointer_position_v1_interface, 1,
-      offsetof(wlclient_attributes_t, pointer_position_ptr), NULL },
+    { &zwlmaker_pointer_tracking_v1_interface, 1,
+      offsetof(wlclient_attributes_t, pointer_tracking_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
 };
 

@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file pointer_position.h
+ * @file pointer_tracking.h
  *
  * @copyright
  * Copyright 2024 Google LLC
@@ -17,11 +17,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __POINTER_POSITION_H__
-#define __POINTER_POSITION_H__
+#ifndef __POINTER_TRACKING_H__
+#define __POINTER_TRACKING_H__
 
-/** Forward declaration: Pointer position handle. */
-typedef struct _wlmaker_pointer_position_t wlmaker_pointer_position_t ;
+/** Forward declaration: Pointer tracking handle. */
+typedef struct _wlmaker_pointer_tracking_t wlmaker_pointer_tracking_t ;
 /** Forward declaration: Follower object. */
 typedef struct _wlmaker_pointer_position_follow_t
 wlmaker_pointer_position_follow_t;
@@ -33,26 +33,26 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a pointer position.
+ * Creates a pointer tracking.
  *
  * @param wl_display_ptr
  *
- * @return The handle of the pointer position or NULL on error. Must be
- *     destroyed by calling @ref wlmaker_pointer_position_destroy.
+ * @return The handle of the pointer tracking or NULL on error. Must be
+ *     destroyed by calling @ref wlmaker_pointer_tracking_destroy.
  */
-wlmaker_pointer_position_t *wlmaker_pointer_position_create(
+wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
     struct wl_display *wl_display_ptr);
 
 /**
- * Destroys the pointer position.
+ * Destroys the pointer tracking.
  *
  * @param ppos_ptr
  */
-void wlmaker_pointer_position_destroy(wlmaker_pointer_position_t *ppos_ptr);
+void wlmaker_pointer_tracking_destroy(wlmaker_pointer_tracking_t *ppos_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __POINTER_POSITION_H__ */
-/* == End of pointer_position.h ============================================ */
+#endif /* __POINTER_TRACKING_H__ */
+/* == End of pointer_tracking.h ============================================ */

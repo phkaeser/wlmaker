@@ -29,7 +29,7 @@ SET(PUBLIC_HEADER_FILES
   launcher.h
   lock_mgr.h
   output.h
-  pointer_position.h
+  pointer_tracking.h
   server.h
   subprocess_monitor.h
   task_list.h
@@ -58,7 +58,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   layer_shell.c
   lock_mgr.c
   output.c
-  pointer_position.c
+  pointer_tracking.c
   server.c
   subprocess_monitor.c
   task_list.c

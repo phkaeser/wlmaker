@@ -301,9 +301,9 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->pointer_position_ptr = wlmaker_pointer_position_create(
+    server_ptr->pointer_tracking_ptr = wlmaker_pointer_tracking_create(
         server_ptr->wl_display_ptr);
-    if (NULL == server_ptr->pointer_position_ptr) {
+    if (NULL == server_ptr->pointer_tracking_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -355,9 +355,9 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->xwl_ptr = NULL;
     }
 
-    if (NULL != server_ptr->pointer_position_ptr) {
-        wlmaker_pointer_position_destroy(server_ptr->pointer_position_ptr);
-        server_ptr->pointer_position_ptr = NULL;
+    if (NULL != server_ptr->pointer_tracking_ptr) {
+        wlmaker_pointer_tracking_destroy(server_ptr->pointer_tracking_ptr);
+        server_ptr->pointer_tracking_ptr = NULL;
     }
 
     if (NULL != server_ptr->icon_manager_ptr) {
