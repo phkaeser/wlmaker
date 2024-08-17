@@ -76,8 +76,16 @@
 
     <event name="position">
       <description summary="Reports the pointer position.">
-        Reports the pointer position
+        Reports the current pointer positoin relative to the surface.
+
+        The position is reported relative to the surface's edge vectors, and
+        irrespective of whether the surface has pointer focus or whether the
+        pointer is in- our outside of the surface area.
+
+        Positions within the surface will report values in the interval
+        [0, 1) for both relative_x and relative_y.
       </description>
+      <arg name="surface" type="object" interface="wl_surface"/>
       <arg name="relative_x" type="fixed" />
       <arg name="relative_y" type="fixed" />
     </event>
