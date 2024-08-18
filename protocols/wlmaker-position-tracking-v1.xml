@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="wlmaker_pointer_tracking_v1">
+<protocol name="wlmaker_position_tracking_v1">
   <copyright>
     Copyright 2024 Google LLC
 
@@ -16,15 +16,15 @@
     limitations under the License.
   </copyright>
 
-  <interface name="zwlmaker_pointer_tracking_v1" version="1">
-    <description summary="Pointer Tracking">
-      This interface permits surfaces to track the pointer posiiton relative to
-      the provided surface.
+  <interface name="zwlmaker_position_tracking_v1" version="1">
+    <description summary="Position Tracking">
+      This interface permits surfaces to track the position of the pointer
+      relative to the provided surface.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroy the Pointer Tracking">
-        Destroys the Pointer Tracking handle.
+      <description summary="Destroy the Position Tracking">
+        Destroys the Position Tracking handle.
       </description>
     </request>
 
@@ -56,13 +56,13 @@
         WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
         WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
-      <arg name="id" type="new_id" interface="zwlmaker_pointer_tracker_v1"/>
+      <arg name="id" type="new_id" interface="zwlmaker_position_tracker_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
   </interface>
 
-  <interface name="zwlmaker_pointer_tracker_v1" version="1">
+  <interface name="zwlmaker_position_tracker_v1" version="1">
     <description summary="Pointer position tracker">
       Reports the pointer's position relative to the provided surface.
 

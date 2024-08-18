@@ -46,8 +46,8 @@ WaylandProtocol_ADD(
   SIDE client)
 WaylandProtocol_ADD(
   SOURCES
-  BASE_NAME wlmaker-pointer-tracking-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-pointer-tracking-v1.xml"
+  BASE_NAME wlmaker-position-tracking-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-position-tracking-v1.xml"
   SIDE client)
 
 TARGET_SOURCES(libwlclient PRIVATE ${SOURCES})

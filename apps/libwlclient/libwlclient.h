@@ -59,7 +59,7 @@ typedef struct {
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
     /** The bound Pointer Tracking. */
-    struct zwlmaker_pointer_tracking_v1 *pointer_tracking_ptr;
+    struct zwlmaker_position_tracking_v1 *position_tracking_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
