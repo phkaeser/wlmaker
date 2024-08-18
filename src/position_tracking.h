@@ -36,13 +36,15 @@ extern "C" {
  *
  * @param wl_display_ptr
  * @param wlr_seat_ptr
+ * @param wlr_cursor_ptr
  *
  * @return The handle of the position tracking or NULL on error. Must be
  *     destroyed by calling @ref wlmaker_position_tracking_destroy.
  */
 wlmaker_position_tracking_t *wlmaker_position_tracking_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_seat *wlr_seat_ptr);
+    struct wlr_seat *wlr_seat_ptr,
+    struct wlr_cursor *wlr_cursor_ptr);
 
 /**
  * Destroys the position tracking.

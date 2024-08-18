@@ -24,6 +24,7 @@
 
 #define WLR_USE_UNSTABLE
 #include "wlr/types/wlr_compositor.h"
+#include "wlr/types/wlr_cursor.h"
 #include "wlr/types/wlr_seat.h"
 #undef WLR_USE_UNSTABLE
 
@@ -35,6 +36,8 @@ struct _wlmaker_position_tracking_t {
     struct wl_global          *wl_global_ptr;
     /** Link to the wlroots' implementation of wl_seat. */
     struct wlr_seat           *wlr_seat_ptr;
+    /** Link to the wlroots' cursor implementation. */
+    struct wlr_cursor         *wlr_cursor_ptr;
 };
 
 /** State of a tracker. */
@@ -43,8 +46,13 @@ struct _wlmaker_position_tracker_t {
     struct wl_resource        *wl_resource_ptr;
     /** The surface it tracks. */
     struct wlr_surface        *wlr_surface_ptr;
-    // FIXME: Subscribe to the destroy listener of the surface. We will want
-    // to destroy the tracker if the surface disappears.
+    /** Link to the wlroots' cursor implementation. */
+    struct wlr_cursor         *wlr_cursor_ptr;
+
+    /** Listener for `destroy` event of the `wlr_surface_ptr`. */
+    struct wl_listener        surface_destroy_listener;
+    /** Listener for `frame` event of struct wlr_cursor. */
+    struct wl_listener        cursor_frame_listener;
 };
 
 static wlmaker_position_tracking_t *position_tracking_from_resource(
@@ -78,6 +86,13 @@ static void wlmaker_position_tracker_resource_destroy(
 static void wlmaker_position_tracker_destroy(
     wlmaker_position_tracker_t *tracker_ptr);
 
+static void _wlmaker_position_tracker_handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_position_tracker_handle_cursor_frame(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* ========================================================================= */
 
 /** Implementation of the position tracking. */
@@ -98,12 +113,14 @@ position_tracker_v1_implementation = {
 /* ------------------------------------------------------------------------- */
 wlmaker_position_tracking_t *wlmaker_position_tracking_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_seat *wlr_seat_ptr)
+    struct wlr_seat *wlr_seat_ptr,
+    struct wlr_cursor *wlr_cursor_ptr)
 {
     wlmaker_position_tracking_t *tracking_ptr = logged_calloc(
         1, sizeof(wlmaker_position_tracking_t));
     if (NULL == tracking_ptr) return NULL;
     tracking_ptr->wlr_seat_ptr = wlr_seat_ptr;
+    tracking_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
 
     tracking_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
@@ -250,7 +267,7 @@ void position_tracking_handle_track_pointer(
 /** Ctor for the tracker. */
 wlmaker_position_tracker_t *wlmaker_position_tracker_create(
     struct wl_client *wl_client_ptr,
-    __UNUSED__ wlmaker_position_tracking_t *tracking_ptr,
+    wlmaker_position_tracking_t *tracking_ptr,
     uint32_t id,
     int version,
     struct wlr_surface *wlr_surface_ptr)
@@ -259,6 +276,7 @@ wlmaker_position_tracker_t *wlmaker_position_tracker_create(
         1, sizeof(wlmaker_position_tracker_t));
     if (NULL == tracker_ptr) return NULL;
     tracker_ptr->wlr_surface_ptr = wlr_surface_ptr;
+    tracker_ptr->wlr_cursor_ptr = tracking_ptr->wlr_cursor_ptr;
 
     tracker_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
@@ -278,12 +296,14 @@ wlmaker_position_tracker_t *wlmaker_position_tracker_create(
         tracker_ptr,
         wlmaker_position_tracker_resource_destroy);
 
-    if (false) {
-        zwlmaker_position_tracker_v1_send_position(
-            tracker_ptr->wl_resource_ptr,
-            wlr_surface_ptr->resource,
-            1, 2);
-    }
+    wlmtk_util_connect_listener_signal(
+        &tracker_ptr->wlr_surface_ptr->events.destroy,
+        &tracker_ptr->surface_destroy_listener,
+        _wlmaker_position_tracker_handle_surface_destroy);
+    wlmtk_util_connect_listener_signal(
+        &tracker_ptr->wlr_cursor_ptr->events.frame,
+        &tracker_ptr->cursor_frame_listener,
+        _wlmaker_position_tracker_handle_cursor_frame);
 
     return tracker_ptr;
 }
@@ -302,6 +322,8 @@ void wlmaker_position_tracker_resource_destroy(
 /** Dtor. */
 void wlmaker_position_tracker_destroy(wlmaker_position_tracker_t *tracker_ptr)
 {
+    wlmtk_util_disconnect_listener(&tracker_ptr->cursor_frame_listener);
+    wlmtk_util_disconnect_listener(&tracker_ptr->surface_destroy_listener);
     free(tracker_ptr);
 }
 
@@ -315,6 +337,35 @@ wlmaker_position_tracker_t *wlmaker_position_tracker_from_resource(
                   &zwlmaker_position_tracker_v1_interface,
                   &position_tracker_v1_implementation));
     return wl_resource_get_user_data(wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles surface destruction: Destroy the tracker. */
+static void _wlmaker_position_tracker_handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_position_tracker_t *tracker_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_position_tracker_t, surface_destroy_listener);
+    wl_resource_destroy(tracker_ptr->wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles cursor frame events: Sends the current pointer position. */
+void _wlmaker_position_tracker_handle_cursor_frame(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_position_tracker_t *tracker_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_position_tracker_t, cursor_frame_listener);
+
+    int32_t x = tracker_ptr->wlr_cursor_ptr->x * 256.0;
+    int32_t y = tracker_ptr->wlr_cursor_ptr->y * 256.0;
+
+    zwlmaker_position_tracker_v1_send_position(
+        tracker_ptr->wl_resource_ptr,
+        tracker_ptr->wlr_surface_ptr->resource,
+        x, y);
 }
 
 /* == End of position_tracking.c =========================================== */
