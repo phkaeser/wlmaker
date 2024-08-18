@@ -237,7 +237,9 @@ bool _wlmtk_surface_init(
             &wlr_surface_ptr->events.commit,
             &surface_ptr->surface_commit_listener,
             _wlmtk_surface_handle_surface_commit);
+        surface_ptr->wlr_surface_ptr->data = surface_ptr;
     }
+
     return true;
 }
 
@@ -255,6 +257,7 @@ void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
     }
 
     if (NULL != surface_ptr->wlr_surface_ptr) {
+        surface_ptr->wlr_surface_ptr->data = NULL;
         surface_ptr->wlr_surface_ptr = NULL;
         wlmtk_util_disconnect_listener(&surface_ptr->surface_commit_listener);
     }
