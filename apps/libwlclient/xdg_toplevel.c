@@ -113,7 +113,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     }
 
     if (NULL != wlclient_attributes(wlclient_ptr)->position_tracking_ptr) {
-        toplevel_ptr->tracker_ptr = zwlmaker_position_tracking_v1_track(
+        toplevel_ptr->tracker_ptr = zwlmaker_position_tracking_v1_track_pointer(
             wlclient_attributes(wlclient_ptr)->position_tracking_ptr,
             toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->tracker_ptr) {

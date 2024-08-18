@@ -18,7 +18,7 @@
 
   <interface name="zwlmaker_position_tracking_v1" version="1">
     <description summary="Position Tracking">
-      This interface permits surfaces to track the position of the pointer
+      This interface permits surfaces to track the position of input devices
       relative to the provided surface.
     </description>
 
@@ -29,7 +29,6 @@
     </request>
 
     <!-- FIXME:
-         * require that wl_seat capability has (or had) pointer.
          * suggest that wl_seat capability clear should release the follow
          * we'll want to receive position relative to the requested surface.
          * define that the surface should outlive the follow.
@@ -48,9 +47,9 @@
          (not required, we can do this on each call?)
        -->
 
-    <request name="track">
-      <description summary="Creates a new position tracker.">
-        Creates a new tracker instance associated with the provided surface.
+    <request name="track_pointer">
+      <description summary="Creates a tracker for the pointer.">
+        Creates a tracker instance for pointer position relative to `surface`.
 
         The seat associated with the surface must have (or had)
         WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
@@ -60,31 +59,33 @@
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
+    <!-- TODO(kaeser@gubbe.ch): Add "track_touch" method. -->
+
   </interface>
 
   <interface name="zwlmaker_position_tracker_v1" version="1">
-    <description summary="Pointer position tracker">
-      Reports the pointer's position relative to the provided surface.
+    <description summary="Position tracker">
+      Reports an input device's position relative to the provided surface.
 
       The position is reported also beyond the surface's area, and also when
-      the surface does not have pointer focus. If the surface is mapped more
-      than once, the compositor may report the position relative to each
-      mapped instance of the surface.
+      the surface does not have focus. If the surface is mapped more than once,
+      the compositor may report the position relative to each mapped instance
+      of the surface.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Pointer position tracker">
+      <description summary="Destroys the position tracker">
         Destructor.
       </description>
     </request>
 
     <event name="position">
-      <description summary="Reports the pointer position.">
-        Reports the current pointer positoin relative to the surface.
+      <description summary="Reports the input device's position.">
+        Reports the input device's position relative to the surface.
 
         The position is reported relative to the surface's edge vectors, and
-        irrespective of whether the surface has pointer focus or whether the
-        pointer is in- our outside of the surface area.
+        irrespective of whether the surface has input focus or whether the
+        device's position is in- our outside of the surface area.
 
         Positions within the surface will report values in the interval
         [0, 1) for both relative_x and relative_y.
