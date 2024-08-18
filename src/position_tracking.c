@@ -23,8 +23,10 @@
 #include "wlmaker-position-tracking-v1-server-protocol.h"
 
 #define WLR_USE_UNSTABLE
+#include "wlr/types/wlr_buffer.h"
 #include "wlr/types/wlr_compositor.h"
 #include "wlr/types/wlr_cursor.h"
+#include "wlr/types/wlr_scene.h"
 #include "wlr/types/wlr_seat.h"
 #undef WLR_USE_UNSTABLE
 
@@ -359,10 +361,25 @@ void _wlmaker_position_tracker_handle_cursor_frame(
     wlmaker_position_tracker_t *tracker_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_position_tracker_t, cursor_frame_listener);
 
-    // FIXME: Determine position of the surface, and compute relative position
-    // to it.
-    int32_t x = tracker_ptr->wlr_cursor_ptr->x * 256.0;
-    int32_t y = tracker_ptr->wlr_cursor_ptr->y * 256.0;
+    // Guard clause: No wlmtk surface or no scene means it's not fully mapped.
+    wlmtk_surface_t *surface_ptr = tracker_ptr->wlr_surface_ptr->data;
+    if (NULL == surface_ptr ||
+        NULL == surface_ptr->wlr_scene_tree_ptr) return;
+
+    // Get coordinates. Returns false if not all parents rae enabled.
+    int node_x, node_y;
+    if (!wlr_scene_node_coords(
+            &surface_ptr->wlr_scene_tree_ptr->node, &node_x, &node_y)) return;
+
+    // Then, compute the cursor position, relative to the surface dimenions.
+    // Note: This assumes the surface remains aligned to X/Y axes.
+    int width, height;
+    wlmtk_surface_get_size(surface_ptr, &width, &height);
+
+    int32_t x = 256.0 * (double)(
+        tracker_ptr->wlr_cursor_ptr->x - node_x) / width;
+    int32_t y = 256.0 * (double)(
+        tracker_ptr->wlr_cursor_ptr->y - node_y) / height;
 
     zwlmaker_position_tracker_v1_send_position(
         tracker_ptr->wl_resource_ptr,
