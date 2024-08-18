@@ -59,7 +59,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "idle.h"  // IWYU pragma: keep
 #include "layer_shell.h"  // IWYU pragma: keep
 #include "lock_mgr.h"  // IWYU pragma: keep
-#include "pointer_tracking.h"
+#include "position_tracking.h"
 #include "root_menu.h"  // IWYU pragma: keep
 #include "subprocess_monitor.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
@@ -125,8 +125,8 @@ struct _wlmaker_server_t {
     wlmbe_backend_t           *backend_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
-    /** Pointer tracking. */
-    wlmaker_pointer_tracking_t *pointer_tracking_ptr;
+    /** Position tracking. */
+    wlmaker_position_tracking_t *position_tracking_ptr;
     /**
      * XWayland interface. Will be set only if compiled with XWayland, through
      * WLMAKER_HAVE_XWAYLAND defined.

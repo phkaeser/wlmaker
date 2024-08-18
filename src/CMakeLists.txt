@@ -47,7 +47,7 @@ SET(PUBLIC_HEADER_FILES
   layer_panel.h
   layer_shell.h
   lock_mgr.h
-  pointer_tracking.h
+  position_tracking.h
   root_menu.h
   server.h
   subprocess_monitor.h
@@ -80,7 +80,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   layer_panel.c
   layer_shell.c
   lock_mgr.c
-  pointer_tracking.c
+  position_tracking.c
   root_menu.c
   server.c
   subprocess_monitor.c

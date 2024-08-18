@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file pointer_tracking.h
+ * @file position_tracking.h
  *
  * @copyright
  * Copyright 2024 Google LLC
@@ -17,13 +17,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __POINTER_TRACKING_H__
-#define __POINTER_TRACKING_H__
+#ifndef __POSITION_TRACKING_H__
+#define __POSITION_TRACKING_H__
 
-/** Forward declaration: Pointer tracking handle. */
-typedef struct _wlmaker_pointer_tracking_t wlmaker_pointer_tracking_t;
+/** Forward declaration: Position tracking handle. */
+typedef struct _wlmaker_position_tracking_t wlmaker_position_tracking_t;
 /** Forward declaration: Tracker object. */
-typedef struct _wlmaker_pointer_tracker_t wlmaker_pointer_tracker_t;
+typedef struct _wlmaker_position_tracker_t wlmaker_position_tracker_t;
 
 #include "server.h"
 
@@ -32,29 +32,29 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a pointer tracking.
+ * Creates a position tracking.
  *
  * @param wl_display_ptr
  * @param wlr_seat_ptr
  *
- * @return The handle of the pointer tracking or NULL on error. Must be
- *     destroyed by calling @ref wlmaker_pointer_tracking_destroy.
+ * @return The handle of the position tracking or NULL on error. Must be
+ *     destroyed by calling @ref wlmaker_position_tracking_destroy.
  */
-wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
+wlmaker_position_tracking_t *wlmaker_position_tracking_create(
     struct wl_display *wl_display_ptr,
     struct wlr_seat *wlr_seat_ptr);
 
 /**
- * Destroys the pointer tracking.
+ * Destroys the position tracking.
  *
  * @param tracking_ptr
  */
-void wlmaker_pointer_tracking_destroy(
-    wlmaker_pointer_tracking_t *tracking_ptr);
+void wlmaker_position_tracking_destroy(
+    wlmaker_position_tracking_t *tracking_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __POINTER_TRACKING_H__ */
-/* == End of pointer_tracking.h ============================================ */
+#endif /* __POSITION_TRACKING_H__ */
+/* == End of position_tracking.h =========================================== */
