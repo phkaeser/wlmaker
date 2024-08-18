@@ -374,15 +374,16 @@ void _wlmaker_position_tracker_handle_cursor_frame(
     int width, height;
     wlmtk_surface_get_size(surface_ptr, &width, &height);
 
-    int32_t x = 256.0 * (double)(
+    // Translate to 24:8 fixpoint and bound to range.
+    double x = 256.0 * (double)(
         tracker_ptr->wlr_cursor_ptr->x - node_x) / width;
-    int32_t y = 256.0 * (double)(
+    double y = 256.0 * (double)(
         tracker_ptr->wlr_cursor_ptr->y - node_y) / height;
-
     zwlmaker_position_tracker_v1_send_position(
         tracker_ptr->wl_resource_ptr,
         tracker_ptr->wlr_surface_ptr->resource,
-        x, y);
+        BS_MAX(INT32_MIN, BS_MIN(INT32_MAX, x)),
+        BS_MAX(INT32_MIN, BS_MIN(INT32_MAX, y)));
 }
 
 /* == End of position_tracking.c =========================================== */
