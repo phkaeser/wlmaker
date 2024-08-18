@@ -51,6 +51,10 @@
     <request name="track">
       <description summary="Creates a new position tracker.">
         Creates a new tracker instance associated with the provided surface.
+
+        The seat associated with the surface must have (or had)
+        WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
+        WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
       <arg name="id" type="new_id" interface="zwlmaker_pointer_tracker_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
