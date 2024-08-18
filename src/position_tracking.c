@@ -359,6 +359,8 @@ void _wlmaker_position_tracker_handle_cursor_frame(
     wlmaker_position_tracker_t *tracker_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_position_tracker_t, cursor_frame_listener);
 
+    // FIXME: Determine position of the surface, and compute relative position
+    // to it.
     int32_t x = tracker_ptr->wlr_cursor_ptr->x * 256.0;
     int32_t y = tracker_ptr->wlr_cursor_ptr->y * 256.0;
 
