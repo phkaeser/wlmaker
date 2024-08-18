@@ -59,7 +59,7 @@ static void bind_position_tracking(
 static void handle_resource_destroy(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
-static void position_tracking_handle_track(
+static void position_tracking_handle_track_pointer(
     struct wl_client *client,
     struct wl_resource *resource,
     uint32_t id,
@@ -84,7 +84,7 @@ static void wlmaker_position_tracker_destroy(
 static const struct zwlmaker_position_tracking_v1_interface
 position_tracking_v1_implementation = {
     .destroy = handle_resource_destroy,
-    .track = position_tracking_handle_track,
+    .track_pointer = position_tracking_handle_track_pointer,
 };
 
 /** Implementation of the position (position) tracker. */
@@ -201,7 +201,7 @@ void handle_resource_destroy(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Creates a new position tracker, associated with the provided surface.
+ * Creates a position tracker for pointer, associated with the surface.
  *
  * Requires that @ref wlmaker_position_tracking_t::wlr_seat_ptr is set and has
  * the `WL_SEAT_CAPABILITY_POINTER` capability.
@@ -211,7 +211,7 @@ void handle_resource_destroy(
  * @param id
  * @param surface_wl_resource_ptr Resource handle of the surface.
  */
-void position_tracking_handle_track(
+void position_tracking_handle_track_pointer(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
     uint32_t id,
