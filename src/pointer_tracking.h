@@ -35,12 +35,14 @@ extern "C" {
  * Creates a pointer tracking.
  *
  * @param wl_display_ptr
+ * @param wlr_seat_ptr
  *
  * @return The handle of the pointer tracking or NULL on error. Must be
  *     destroyed by calling @ref wlmaker_pointer_tracking_destroy.
  */
 wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
-    struct wl_display *wl_display_ptr);
+    struct wl_display *wl_display_ptr,
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Destroys the pointer tracking.

@@ -24,6 +24,7 @@
 
 #define WLR_USE_UNSTABLE
 #include "wlr/types/wlr_compositor.h"
+#include "wlr/types/wlr_seat.h"
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -32,6 +33,8 @@
 struct _wlmaker_pointer_tracking_t {
     /** The global holding the pointer tracking's interface. */
     struct wl_global          *wl_global_ptr;
+    /** Link to the wlroots' implementation of wl_seat. */
+    struct wlr_seat           *wlr_seat_ptr;
 };
 
 /** State of a tracker. */
@@ -94,11 +97,13 @@ pointer_tracker_v1_implementation = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_pointer_tracking_t *wlmaker_pointer_tracking_create(
-    struct wl_display *wl_display_ptr)
+    struct wl_display *wl_display_ptr,
+    struct wlr_seat *wlr_seat_ptr)
 {
     wlmaker_pointer_tracking_t *tracking_ptr = logged_calloc(
         1, sizeof(wlmaker_pointer_tracking_t));
     if (NULL == tracking_ptr) return NULL;
+    tracking_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     tracking_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
@@ -198,6 +203,9 @@ void handle_resource_destroy(
 /**
  * Creates a new pointer tracker, associated with the provided surface.
  *
+ * Requires that @ref wlmaker_pointer_tracking_t::wlr_seat_ptr is set and has
+ * the `WL_SEAT_CAPABILITY_POINTER` capability.
+ *
  * @param wl_client_ptr
  * @param wl_resource_ptr
  * @param id
@@ -211,6 +219,17 @@ void pointer_tracking_handle_track(
 {
     wlmaker_pointer_tracking_t *tracking_ptr = pointer_tracking_from_resource(
         wl_resource_ptr);
+
+    // Guard clause: We require the pointer capability to be (or have been)
+    // present for the seat.
+    if (!(tracking_ptr->wlr_seat_ptr->accumulated_capabilities &
+          WL_SEAT_CAPABILITY_POINTER)) {
+        wl_resource_post_error(
+            wl_resource_ptr,
+            WL_DISPLAY_ERROR_INVALID_METHOD,
+            "Missing pointer capability on seat");
+        return;
+    }
 
     struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(surface_wl_resource_ptr);
