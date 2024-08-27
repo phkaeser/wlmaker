@@ -66,6 +66,10 @@ The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style.
 
+* As of now, Wayland Maker does not (yet) support scaling outputs. As a
+  workaround, you can configure the style with larger decorations & fonts,
+  as is done in [etc/style-debian.plist](../etc/style-debian.plist).
+
 # Debugging issues
 
 > [!NOTE] Run `wlmaker` with the `--log_level=DEBUG` argument to get more
