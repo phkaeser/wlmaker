@@ -100,6 +100,9 @@ struct _wlmtk_workspace_t {
     wlmtk_layer_t             *top_layer_ptr;
     /** Overlay layer. */
     wlmtk_layer_t             *overlay_layer_ptr;
+
+    /** Copy of the tile's style, for dimensions; */
+    wlmtk_tile_style_t        tile_style;
 };
 
 static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
@@ -177,11 +180,13 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_workspace_create(
     const char *name_ptr,
+    const wlmtk_tile_style_t *tile_style_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
         logged_calloc(1, sizeof(wlmtk_workspace_t));
     if (NULL == workspace_ptr) return NULL;
+    workspace_ptr->tile_style = *tile_style_ptr;
     workspace_ptr->name_ptr = logged_strdup(name_ptr);
     if (NULL == workspace_ptr->name_ptr) {
         wlmtk_workspace_destroy(workspace_ptr);
@@ -389,8 +394,10 @@ struct wlr_box wlmtk_workspace_get_maximize_extents(
     struct wlr_box box = {
         .x = workspace_ptr->x1,
         .y = workspace_ptr->y1,
-        .width = workspace_ptr->x2 - workspace_ptr->x1 - 64,
-        .height = workspace_ptr->y2 - workspace_ptr->y1 - 64 };
+        .width = (workspace_ptr->x2 - workspace_ptr->x1 -
+                  workspace_ptr->tile_style.size),
+        .height = (workspace_ptr->y2 - workspace_ptr->y1 -
+                   workspace_ptr->tile_style.size) };
     return box;
 }
 
@@ -725,7 +732,9 @@ wlmtk_workspace_t *wlmtk_workspace_create_for_test(
     int height,
     wlmtk_env_t *env_ptr)
 {
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create("test", env_ptr);
+    static const wlmtk_tile_style_t ts = { .size = 64 };
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        "test", &ts, env_ptr);
     if (NULL == workspace_ptr) return NULL;
 
     struct wlr_box extents = { .width = width, .height = height };
@@ -1035,11 +1044,17 @@ static void _wlmtk_workspace_test_handle_window_unmapped(
     tl_ptr->window_unmapped_handler_invoked = true;
 }
 
+/** Tile style used in tests. */
+static const wlmtk_tile_style_t _wlmtk_workspace_test_tile_style = {
+    .size = 64
+};
+
 /* ------------------------------------------------------------------------- */
 /** Exercises workspace create & destroy methods. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create("test", NULL);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
@@ -1082,7 +1097,8 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create("test", NULL);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
     wlmtk_root_add_workspace(root_ptr, workspace_ptr);
 

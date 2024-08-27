@@ -225,7 +225,7 @@ bool create_workspaces(
         }
 
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-            s.name, server_ptr->env_ptr);
+            s.name, &server_ptr->style.tile, server_ptr->env_ptr);
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
                    s.name, server_ptr->env_ptr);

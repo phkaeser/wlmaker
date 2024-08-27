@@ -196,6 +196,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Re-activate workspace & windows after lock.
   * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Fix bug: When switching workspace, pointer state appears to be reset.
+  * Fix bug: Particularly when using large decorations, there is resize jitter.
 
 * Menu, based on toolkit.
   * Available as window menu in windows.
@@ -218,11 +219,14 @@ Support for visual effects to improve usability, but not for pure show.
   the `dependencies/` subdirectory, if versions are avaialble.
   * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
 
-* Misc
-  * [done] Expose the decoration manager configurables through the config file.
-  * Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) (#99)
+* Support different output scale & transformations
+  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) (#99)
   * Add commandline arguments to configure size of window (#98)
   * Add option to specify an output transformation (#97)
+  * Scale icons to tile size.
+
+* Misc
+  * [done] Expose the decoration manager configurables through the config file.
 
 ## Plan for 0.5
 
