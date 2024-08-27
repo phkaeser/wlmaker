@@ -703,7 +703,8 @@ void test_workspaces(bs_test_t *test_ptr)
         &test_ws.listener,
         _wlmtk_root_test_workspace_changed_handler);
 
-    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", NULL);
+    static const wlmtk_tile_style_t tstyle = {};
+    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
     wlmtk_root_add_workspace(root_ptr, ws1_ptr);
     BS_TEST_VERIFY_EQ(
@@ -714,7 +715,7 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, ws1_ptr, test_ws.workspace_ptr);
 
-    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", NULL);
+    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_root_add_workspace(root_ptr, ws2_ptr);
     BS_TEST_VERIFY_EQ(
