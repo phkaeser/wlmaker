@@ -176,7 +176,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-    launcher_ptr->image_ptr = wlmtk_image_create(path_ptr, env_ptr);
+    launcher_ptr->image_ptr = wlmtk_image_create_scaled(path_ptr, 96, 96, env_ptr);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;

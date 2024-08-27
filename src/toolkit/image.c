@@ -60,6 +60,53 @@ wlmtk_image_t *wlmtk_image_create(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_image_t *wlmtk_image_create_scaled(
+    const char *image_path_ptr,
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr)
+{
+    wlmtk_image_t *image_ptr = logged_calloc(1, sizeof(wlmtk_image_t));
+    if (NULL == image_ptr) return NULL;
+
+    if (!wlmtk_buffer_init(&image_ptr->super_buffer, env_ptr)) {
+        wlmtk_image_destroy(image_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        wlmtk_image_element(image_ptr),
+        &_wlmtk_image_element_vmt);
+
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        width, height);
+    if (NULL == wlr_buffer_ptr) {
+        wlmtk_image_destroy(image_ptr);
+        return NULL;
+    }
+
+    cairo_surface_t *icon_surface_ptr = cairo_image_surface_create_from_png(
+        image_path_ptr);
+    // Set scale as cairo_image_surface_get_width
+    cairo_surface_set_device_scale(
+        icon_surface_ptr,
+        (double)cairo_image_surface_get_width(icon_surface_ptr) / width,
+        (double)cairo_image_surface_get_height(icon_surface_ptr) / height);
+    // FIXME: Error handling.
+    cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
+
+    cairo_set_source_surface(cairo_ptr, icon_surface_ptr, 0, 0);
+    cairo_rectangle(cairo_ptr, 0, 0, width, height);
+    cairo_fill(cairo_ptr);
+    cairo_stroke(cairo_ptr);
+
+
+    wlmtk_buffer_set(&image_ptr->super_buffer, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
+
+    return image_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_image_destroy(wlmtk_image_t *image_ptr)
 {
     wlmtk_buffer_fini(&image_ptr->super_buffer);
