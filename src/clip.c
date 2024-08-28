@@ -220,7 +220,11 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
-    clip_ptr->image_ptr = wlmtk_image_create(path_ptr, server_ptr->env_ptr);
+    clip_ptr->image_ptr = wlmtk_image_create_scaled(
+        path_ptr,
+        clip_ptr->super_tile.style.content_size,
+        clip_ptr->super_tile.style.content_size,
+        server_ptr->env_ptr);
     if (NULL == clip_ptr->image_ptr) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
