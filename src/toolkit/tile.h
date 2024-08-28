@@ -37,6 +37,8 @@ typedef struct {
     wlmtk_style_fill_t        fill;
     /** Size of the tile, in pixels. Tiles are of quadratic shape. */
     uint64_t                  size;
+    /** Content size of what's in the tile, in pixels. */
+    uint64_t                  content_size;
     /** Width of the bezel. */
     uint64_t                  bezel_width;
 } wlmtk_tile_style_t;

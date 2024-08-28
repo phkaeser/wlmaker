@@ -13,6 +13,7 @@
   };
   Tile = {
     Size = 128;
+    ContentSize = 96;
     BezelWidth = 4;
     Fill = {
       From = "argb32:ffa6a6b6";
