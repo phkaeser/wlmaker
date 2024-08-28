@@ -18,7 +18,9 @@ struct _wlmtk_image_t {
 };
 
 struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
-    const char *path_ptr);
+    const char *path_ptr,
+    int width,
+    int height);
 
 static void _wlmtk_image_element_destroy(wlmtk_element_t *element_ptr);
 
@@ -36,6 +38,16 @@ wlmtk_image_t *wlmtk_image_create(
     const char *image_path_ptr,
     wlmtk_env_t *env_ptr)
 {
+    return wlmtk_image_create_scaled(image_path_ptr, 0, 0, env_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_image_t *wlmtk_image_create_scaled(
+    const char *image_path_ptr,
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr)
+{
     wlmtk_image_t *image_ptr = logged_calloc(1, sizeof(wlmtk_image_t));
     if (NULL == image_ptr) return NULL;
 
@@ -48,7 +60,8 @@ wlmtk_image_t *wlmtk_image_create(
         &_wlmtk_image_element_vmt);
 
     struct wlr_buffer *wlr_buffer_ptr =
-        _wlmtk_image_create_wlr_buffer_from_image(image_path_ptr);
+        _wlmtk_image_create_wlr_buffer_from_image(
+            image_path_ptr, width, height);
     if (NULL == wlr_buffer_ptr) {
         wlmtk_image_destroy(image_ptr);
         return NULL;
@@ -80,11 +93,17 @@ wlmtk_element_t *wlmtk_image_element(wlmtk_image_t *image_ptr)
  * size.
  *
  * @param path_ptr
+ * @param width               Desired width of the image. 0 0r negative to use
+ *                            the image's native width.
+ * @param height              Desired height of the image. 0 0r negative to use
+ *                            the image's native height.
  *
  * @return the wlr_buffer or NULL on error.
  */
 struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
-    const char *path_ptr)
+    const char *path_ptr,
+    int width,
+    int height)
 {
     cairo_surface_t *icon_surface_ptr = cairo_image_surface_create_from_png(
         path_ptr);
@@ -102,8 +121,14 @@ struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
         return NULL;
     }
 
-    int w = cairo_image_surface_get_width(icon_surface_ptr);
-    int h = cairo_image_surface_get_height(icon_surface_ptr);
+    int w = width;
+    if (0 >= w) {
+        w = cairo_image_surface_get_width(icon_surface_ptr);
+    }
+    int h = height;
+    if (0 >= h) {
+        h = cairo_image_surface_get_height(icon_surface_ptr);
+    }
 
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(w, h);
     if (NULL == wlr_buffer_ptr) {
@@ -116,6 +141,11 @@ struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
         cairo_surface_destroy(icon_surface_ptr);
         return NULL;
     }
+
+    cairo_surface_set_device_scale(
+        icon_surface_ptr,
+        (double)cairo_image_surface_get_width(icon_surface_ptr) / w,
+        (double)cairo_image_surface_get_height(icon_surface_ptr) / h);
 
     cairo_set_source_surface(cairo_ptr, icon_surface_ptr, 0, 0);
     cairo_rectangle(cairo_ptr, 0, 0, w, h);

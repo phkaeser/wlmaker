@@ -93,6 +93,8 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "Size", true, wlmtk_tile_style_t, size, 64),
     WLMCFG_DESC_UINT64(
+        "ContentSize", true, wlmtk_tile_style_t, content_size, 48),
+    WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
     WLMCFG_DESC_CUSTOM(
         "Fill", true, wlmtk_tile_style_t, fill,
