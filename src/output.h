@@ -59,6 +59,9 @@ struct _wlmaker_output_t {
     struct wl_listener        output_frame_listener;
     /** Listener for `request_state` signals raised by `wlr_output`. */
     struct wl_listener        output_request_state_listener;
+
+    /** Default transformation for the output(s). */
+    enum wl_output_transform  transformation;
 };
 
 /**

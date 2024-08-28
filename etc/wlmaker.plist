@@ -44,4 +44,7 @@
   Autostart = (
     "/usr/bin/foot"
   );
+  Output = {
+    Transformation = Normal;
+  };
 }
