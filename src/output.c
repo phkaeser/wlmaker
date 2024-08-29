@@ -149,7 +149,6 @@ wlmaker_output_t *wlmaker_output_create(
                "'%s'. Overriding to 'Normal'.", name_ptr);
         output_ptr->transformation = WL_OUTPUT_TRANSFORM_NORMAL;
     }
-    wlr_output_state_set_transform(&state, output_ptr->transformation);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
