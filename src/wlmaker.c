@@ -48,6 +48,10 @@ static char *wlmaker_arg_config_file_ptr = NULL;
 static char *wlmaker_arg_state_file_ptr = NULL;
 /** Will hold the value of --style_file. */
 static char *wlmaker_arg_style_file_ptr = NULL;
+/** Will hold the value of --height. */
+static uint32_t wlmaker_arg_height = 0;
+/** Will hold the value of --width. */
+static uint32_t wlmaker_arg_width = 0;
 
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {};
@@ -96,6 +100,20 @@ static const bs_arg_t wlmaker_args[] = {
         "INFO",
         &wlmaker_log_levels[0],
         (int*)&bs_log_severity),
+    BS_ARG_UINT32(
+        "height",
+        "Desired output height. Applies when running in windowed mode, and "
+        "only if --width is set, too. Set to 0 for using the output's "
+        "preferred dimensions.",
+        0, 0, UINT32_MAX,
+        &wlmaker_arg_height),
+    BS_ARG_UINT32(
+        "width",
+        "Desired output width. Applies when running in windowed mode, and "
+        "only if --height is set, too. Set to 0 for using the output's "
+        "preferred dimensions.",
+        0, 0, UINT32_MAX,
+        &wlmaker_arg_width),
     BS_ARG_SENTINEL()
 };
 
