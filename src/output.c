@@ -59,6 +59,7 @@ static const wlmcfg_desc_t _wlmaker_output_config_desc[] = {
     WLMCFG_DESC_ENUM("Transformation", true, wlmaker_output_t, transformation,
                      WL_OUTPUT_TRANSFORM_NORMAL,
                      _wlmaker_output_transformation_desc),
+    WLMCFG_DESC_DOUBLE("Scale", true, wlmaker_output_t, scale, 1.0),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -129,6 +130,7 @@ wlmaker_output_t *wlmaker_output_create(
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, true);
     wlr_output_state_set_transform(&state, output_ptr->transformation);
+    wlr_output_state_set_scale(&state, output_ptr->scale);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {

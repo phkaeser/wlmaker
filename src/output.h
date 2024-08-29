@@ -62,6 +62,8 @@ struct _wlmaker_output_t {
 
     /** Default transformation for the output(s). */
     enum wl_output_transform  transformation;
+    /** Default scaling factor to use for the output(s). */
+    double                    scale;
 };
 
 /**
