@@ -365,31 +365,6 @@ bool _wlmcfg_decode_int64(wlmcfg_object_t *obj_ptr, int64_t *int64_ptr)
     return bs_strconvert_int64(value_ptr, int64_ptr, 10);
 }
 
-
-#include <errno.h>
-#include <ctype.h>
-bool bs_strconvert_double(
-    const char *string_ptr,
-    double *value_ptr)
-{
-    char *invalid_ptr = NULL;
-    errno = 0;
-    double tmp_value = strtod(string_ptr, &invalid_ptr);
-    if (0 != errno) {
-        bs_log(BS_ERROR | BS_ERRNO, "Failed strtod(\"%s\", %p)",
-               string_ptr, &invalid_ptr);
-        return false;
-    }
-    if ('\0' != *invalid_ptr && !isspace(*invalid_ptr)) {
-        bs_log(BS_ERROR, "Failed strtod(\"%s\", %p) at \"%s\"",
-               string_ptr, &invalid_ptr, invalid_ptr);
-        return false;
-    }
-
-    *value_ptr = tmp_value;
-    return true;
-}
-
 /* ------------------------------------------------------------------------- */
 /** Decodes a floating point number. */
 bool _wlmcfg_decode_double(wlmcfg_object_t *obj_ptr, double *double_ptr)
