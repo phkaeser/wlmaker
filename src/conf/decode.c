@@ -42,6 +42,9 @@ static bool _wlmcfg_decode_uint64(
 static bool _wlmcfg_decode_int64(
     wlmcfg_object_t *obj_ptr,
     int64_t *int64_ptr);
+static bool _wlmcfg_decode_double(
+    wlmcfg_object_t *obj_ptr,
+    double *double_ptr);
 static bool _wlmcfg_decode_argb32(
     wlmcfg_object_t *obj_ptr,
     uint32_t *argb32_ptr);
@@ -112,6 +115,11 @@ bool wlmcfg_decode_dict(
             rv = _wlmcfg_decode_int64(
                 obj_ptr,
                 BS_VALUE_AT(int64_t, dest_ptr, iter_desc_ptr->field_offset));
+            break;
+        case WLMCFG_TYPE_DOUBLE:
+            rv = _wlmcfg_decode_double(
+                obj_ptr,
+                BS_VALUE_AT(double, dest_ptr, iter_desc_ptr->field_offset));
             break;
         case WLMCFG_TYPE_ARGB32:
             rv = _wlmcfg_decode_argb32(
@@ -264,6 +272,11 @@ bool _wlmcfg_init_defaults(const wlmcfg_desc_t *desc_ptr,
                 iter_desc_ptr->v.v_int64.default_value;
             break;
 
+        case WLMCFG_TYPE_DOUBLE:
+            *BS_VALUE_AT(double, dest_ptr, iter_desc_ptr->field_offset) =
+                iter_desc_ptr->v.v_double.default_value;
+            break;
+
         case WLMCFG_TYPE_ARGB32:
             *BS_VALUE_AT(uint32_t, dest_ptr, iter_desc_ptr->field_offset) =
                 iter_desc_ptr->v.v_argb32.default_value;
@@ -350,6 +363,42 @@ bool _wlmcfg_decode_int64(wlmcfg_object_t *obj_ptr, int64_t *int64_ptr)
     const char *value_ptr = wlmcfg_string_value(string_ptr);
     if (NULL == value_ptr) return false;
     return bs_strconvert_int64(value_ptr, int64_ptr, 10);
+}
+
+
+#include <errno.h>
+#include <ctype.h>
+bool bs_strconvert_double(
+    const char *string_ptr,
+    double *value_ptr)
+{
+    char *invalid_ptr = NULL;
+    errno = 0;
+    double tmp_value = strtod(string_ptr, &invalid_ptr);
+    if (0 != errno) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed strtod(\"%s\", %p)",
+               string_ptr, &invalid_ptr);
+        return false;
+    }
+    if ('\0' != *invalid_ptr && !isspace(*invalid_ptr)) {
+        bs_log(BS_ERROR, "Failed strtod(\"%s\", %p) at \"%s\"",
+               string_ptr, &invalid_ptr, invalid_ptr);
+        return false;
+    }
+
+    *value_ptr = tmp_value;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Decodes a floating point number. */
+bool _wlmcfg_decode_double(wlmcfg_object_t *obj_ptr, double *double_ptr)
+{
+    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(obj_ptr);
+    if (NULL == string_ptr) return false;
+    const char *value_ptr = wlmcfg_string_value(string_ptr);
+    if (NULL == value_ptr) return false;
+    return bs_strconvert_double(value_ptr, double_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -484,6 +533,7 @@ typedef struct {
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
     uint64_t                  v_uint64;
     int64_t                   v_int64;
+    double                    v_double;
     uint32_t                  v_argb32;
     bool                      v_bool;
     int                       v_enum;
@@ -512,6 +562,7 @@ static const wlmcfg_desc_t _wlmcfg_decode_test_subdesc[] = {
 static const wlmcfg_desc_t _wlmcfg_decode_test_desc[] = {
     WLMCFG_DESC_UINT64("u64", true, _test_value_t, v_uint64, 1234),
     WLMCFG_DESC_INT64("i64", true, _test_value_t, v_int64, -1234),
+    WLMCFG_DESC_DOUBLE("d", true, _test_value_t, v_double, 3.14),
     WLMCFG_DESC_ARGB32("argb32", true, _test_value_t, v_argb32, 0x01020304),
     WLMCFG_DESC_BOOL("bool", true, _test_value_t, v_bool, true),
     WLMCFG_DESC_ENUM("enum", true, _test_value_t, v_enum, 3, _test_enum_desc),
@@ -612,6 +663,7 @@ void test_decode_dict(bs_test_t *test_ptr)
     const char *plist_string_ptr = ("{"
                                     "u64 = \"100\";"
                                     "i64 = \"-101\";"
+                                    "d = \"-1.414\";"
                                     "argb32 = \"argb32:0204080c\";"
                                     "bool = Disabled;"
                                     "enum = enum1;"
@@ -630,6 +682,7 @@ void test_decode_dict(bs_test_t *test_ptr)
         wlmcfg_decode_dict(dict_ptr, _wlmcfg_decode_test_desc, &val));
     BS_TEST_VERIFY_EQ(test_ptr, 100, val.v_uint64);
     BS_TEST_VERIFY_EQ(test_ptr, -101, val.v_int64);
+    BS_TEST_VERIFY_EQ(test_ptr, -1.414, val.v_double);
     BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, val.v_argb32);
     BS_TEST_VERIFY_EQ(test_ptr, false, val.v_bool);
     BS_TEST_VERIFY_EQ(test_ptr, 1, val.v_enum);
@@ -676,6 +729,13 @@ void test_decode_number(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_int64(obj_ptr, &i64));
     BS_TEST_VERIFY_EQ(test_ptr, -1234, i64);
+    wlmcfg_object_unref(obj_ptr);
+
+    double d;
+    obj_ptr = wlmcfg_create_object_from_plist_string("\"3.14\"");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, obj_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmcfg_decode_double(obj_ptr, &d));
+    BS_TEST_VERIFY_EQ(test_ptr, 3.14, d);
     wlmcfg_object_unref(obj_ptr);
 }
 
