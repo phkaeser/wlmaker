@@ -64,6 +64,7 @@ static const wlmcfg_desc_t _wlmaker_output_config_desc[] = {
     WLMCFG_DESC_ENUM("Transformation", true, wlmaker_output_t, transformation,
                      WL_OUTPUT_TRANSFORM_NORMAL,
                      _wlmaker_output_transformation_desc),
+    WLMCFG_DESC_DOUBLE("Scale", true, wlmaker_output_t, scale, 1.0),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -135,6 +136,7 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_output_state state;
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, true);
+    wlr_output_state_set_scale(&state, output_ptr->scale);
 
     // Issue #97: Found that X11 and transformations do not translate
     // cursor coordinates well. Force it to 'Normal'.
