@@ -27,6 +27,11 @@
 
 #include <libbase/libbase.h>
 
+/// Use wlroots non-stable API.
+#define WLR_USE_UNSTABLE
+#include <wlr/backend/x11.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 static void handle_output_destroy(struct wl_listener *listener_ptr,
@@ -70,6 +75,8 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    uint32_t width,
+    uint32_t height,
     wlmaker_server_t *server_ptr)
 {
     wlmaker_output_t *output_ptr = logged_calloc(1, sizeof(wlmaker_output_t));
@@ -128,7 +135,20 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_output_state state;
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, true);
-    wlr_output_state_set_transform(&state, output_ptr->transformation);
+
+    // Issue #97: Found that X11 and transformations do not translate
+    // cursor coordinates well. Force it to 'Normal'.
+    if (wlr_output_is_x11(wlr_output_ptr) &&
+        output_ptr->transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
+        const char *name_ptr = "Unknown";
+        wlmcfg_enum_value_to_name(
+            _wlmaker_output_transformation_desc,
+            output_ptr->transformation,
+            &name_ptr);
+        bs_log(BS_WARNING, "Found X11 backend with Output.Transformation "
+               "'%s'. Overriding to 'Normal'.", name_ptr);
+        output_ptr->transformation = WL_OUTPUT_TRANSFORM_NORMAL;
+    }
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
@@ -140,6 +160,12 @@ wlmaker_output_t *wlmaker_output_create(
     } else {
         bs_log(BS_INFO, "No modes available on %s",
                output_ptr->wlr_output_ptr->name);
+    }
+
+    if (wlr_output_is_x11(wlr_output_ptr) && 0 < width && 0 < height) {
+        bs_log(BS_INFO, "Overriding output dimensions to %"PRIu32"x%"PRIu32,
+               width, height);
+        wlr_output_state_set_custom_mode(&state, width, height, 0);
     }
 
     if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {

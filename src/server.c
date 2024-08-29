@@ -596,6 +596,8 @@ void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
         server_ptr->wlr_allocator_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
+        server_ptr->options_ptr->width,
+        server_ptr->options_ptr->height,
         server_ptr);
     if (NULL == output_ptr) {
         bs_log(BS_INFO, "Failed wlmaker_output_create for server %p",

@@ -222,8 +222,8 @@ Support for visual effects to improve usability, but not for pure show.
 * Support different output scale & transformations
   * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) (#99)
   * [done] Scale icons to tile size.
-  * Add commandline arguments to configure size of window (#98)
-  * Add option to specify an output transformation (#97)
+  * [done] Add option to specify an output transformation (#97). Note: Will not work well in X11 window mode.
+  * [done] Add commandline arguments to configure size of window (#98)
 
 * Misc
   * [done] Expose the decoration manager configurables through the config file.
