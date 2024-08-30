@@ -285,8 +285,8 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading configuration from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading configuration from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
@@ -319,8 +319,8 @@ wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading state from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading state from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
