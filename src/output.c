@@ -151,6 +151,16 @@ wlmaker_output_t *wlmaker_output_create(
                "'%s'. Overriding to 'Normal'.", name_ptr);
         output_ptr->transformation = WL_OUTPUT_TRANSFORM_NORMAL;
     }
+    wlr_output_state_set_transform(&state, output_ptr->transformation);
+
+    const char *transformation_name_ptr = "Unknown";
+    wlmcfg_enum_value_to_name(
+        _wlmaker_output_transformation_desc,
+        output_ptr->transformation,
+        &transformation_name_ptr);
+    bs_log(BS_INFO, "Configured transformation '%s' and scale %.2f on %s",
+           transformation_name_ptr, output_ptr->scale,
+           output_ptr->wlr_output_ptr->name);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
