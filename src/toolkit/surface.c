@@ -499,11 +499,11 @@ bool _wlmtk_surface_element_pointer_button(
         enum wl_pointer_button_state state =
             (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
             WL_POINTER_BUTTON_STATE_PRESSED : WL_POINTER_BUTTON_STATE_RELEASED;
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
         enum wlr_button_state state =
             (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
             WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED;
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         wlr_seat_pointer_notify_button(
             wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
             button_event_ptr->time_msec,
@@ -548,7 +548,7 @@ bool _wlmtk_surface_element_pointer_axis(
         wlr_pointer_axis_event_ptr->source
 #if WLR_VERSION_NUM >= (18 << 8)
         , wlr_pointer_axis_event_ptr->relative_direction
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         );
     return true;
 }

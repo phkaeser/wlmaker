@@ -140,9 +140,9 @@ wlmaker_server_t *wlmaker_server_create(
     server_ptr->wlr_backend_ptr = wlr_backend_autocreate(
 #if WLR_VERSION_NUM >= (18 << 8)
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
         server_ptr->wl_display_ptr,
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         NULL  /* struct wlr_session */);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
@@ -188,7 +188,7 @@ wlmaker_server_t *wlmaker_server_create(
     server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
 #if WLR_VERSION_MAJOR >= 18
         server_ptr->wl_display_ptr
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         );
     if (NULL == server_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_create()");

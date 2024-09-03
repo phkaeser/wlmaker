@@ -20,7 +20,6 @@
 
 #include "root.h"
 
-#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
@@ -203,18 +202,18 @@ bool wlmtk_root_pointer_button(
     switch (event_ptr->state) {
 #if WLR_VERSION_NUM >= (18 << 8)
     case WL_POINTER_BUTTON_STATE_PRESSED:
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
     case WLR_BUTTON_PRESSED:
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_DOWN;
         return wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
 
 #if WLR_VERSION_NUM >= (18 << 8)
     case WL_POINTER_BUTTON_STATE_RELEASED:
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
     case WLR_BUTTON_RELEASED:
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_UP;
         wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
@@ -788,9 +787,9 @@ void test_pointer_button(bs_test_t *test_ptr)
         .button = 42,
 #if WLR_VERSION_NUM >= (18 << 8)
         .state = WL_POINTER_BUTTON_STATE_PRESSED,
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
         .state = WLR_BUTTON_PRESSED,
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         .time_msec = 4321,
     };
     BS_TEST_VERIFY_TRUE(
@@ -812,7 +811,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlr_pointer_button_event.state = WL_POINTER_BUTTON_STATE_RELEASED;
 #else  // WLR_VERSION_NUM >= (18 << 8)
     wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));

@@ -96,9 +96,9 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     wlmtk_util_connect_listener_signal(
 #if WLR_VERSION_NUM >= (18 << 8)
         &wlr_xdg_popup_ptr->events.destroy,
-#else
+#else // WLR_VERSION_NUM >= (18 << 8)
         &wlr_xdg_popup_ptr->base->events.destroy,
-#endif
+#endif // WLR_VERSION_NUM >= (18 << 8)
         &wlmaker_xdg_popup_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(
