@@ -1343,6 +1343,7 @@ void test_enable(bs_test_t *test_ptr)
     // Unmaps while de-activated. Enabling after should still activate fw1.
     wlmtk_workspace_enable(ws_ptr, false);
     wlmtk_workspace_unmap_window(ws_ptr, fw2_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw2_ptr);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_window_is_activated(fw1_ptr->window_ptr));
@@ -1352,6 +1353,7 @@ void test_enable(bs_test_t *test_ptr)
         wlmtk_window_is_activated(fw1_ptr->window_ptr));
 
     wlmtk_workspace_unmap_window(ws_ptr, fw1_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
 
