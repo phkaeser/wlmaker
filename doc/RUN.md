@@ -66,6 +66,14 @@ The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style.
 
+* To make Wayland Maker look well on a high-resolution screen, you can either
+  set the `Output` `Scale` in [etc/wlmaker.plist](../etc/wlmaker.plist) (and
+  use `--config_file=...`). This will scale all surfaces.
+
+  Or, you can configure the style with larger decorations & fonts, as is done
+  in [etc/style-debian.plist](../etc/style-debian.plist). This will not scale
+  application surfaces.
+
 # Debugging issues
 
 > [!NOTE] Run `wlmaker` with the `--log_level=DEBUG` argument to get more

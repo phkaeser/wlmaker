@@ -222,7 +222,11 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &xdg_tl_surface_ptr->super_content.client.gid);
 
     wlmtk_util_connect_listener_signal(
+#if WLR_VERSION_NUM >= (18 << 8)
         &wlr_xdg_toplevel_ptr->events.destroy,
+#else // WLR_VERSION_NUM >= (18 << 8)
+        &wlr_xdg_toplevel_ptr->base->events.destroy,
+#endif // WLR_VERSION_NUM >= (18 << 8)
         &xdg_tl_surface_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(

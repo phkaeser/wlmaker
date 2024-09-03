@@ -138,7 +138,11 @@ wlmaker_server_t *wlmaker_server_create(
 
     // Auto-create the wlroots backend. Can be X11 or direct.
     server_ptr->wlr_backend_ptr = wlr_backend_autocreate(
+#if WLR_VERSION_NUM >= (18 << 8)
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
+#else
+        server_ptr->wl_display_ptr,
+#endif
         NULL  /* struct wlr_session */);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
@@ -182,7 +186,10 @@ wlmaker_server_t *wlmaker_server_create(
 
     // The output layout.
     server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
-        server_ptr->wl_display_ptr);
+#if WLR_VERSION_MAJOR >= 18
+        server_ptr->wl_display_ptr
+#endif
+        );
     if (NULL == server_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_create()");
         wlmaker_server_destroy(server_ptr);
@@ -598,6 +605,8 @@ void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
         server_ptr->wlr_allocator_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
+        server_ptr->options_ptr->width,
+        server_ptr->options_ptr->height,
         server_ptr);
     if (NULL == output_ptr) {
         bs_log(BS_INFO, "Failed wlmaker_output_create for server %p",

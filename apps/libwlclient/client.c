@@ -39,6 +39,8 @@ struct _wlclient_t {
 
     /** Registry singleton for the above connection. */
     struct wl_registry        *wl_registry_ptr;
+    /** Pointer state, if & when the seat has the capability. */
+    struct wl_pointer         *wl_pointer_ptr;
 
     /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
     bs_dllist_t               timers;
@@ -70,6 +72,8 @@ typedef struct {
     uint32_t                  desired_version;
     /** Offset of the bound interface, relative to `wlclient_t`. */
     size_t                    bound_ptr_offset;
+    /** Additional setup for this wayland object. */
+    void (*setup)(wlclient_t *client_ptr);
 } object_t;
 
 static void wl_to_bs_log(
@@ -95,6 +99,65 @@ static wlclient_timer_t *wlc_timer_create(
 static void wlc_timer_destroy(
     wlclient_timer_t *timer_ptr);
 
+static void wlc_seat_setup(wlclient_t *client_ptr);
+static void wlc_seat_handle_capabilities(
+    void *data_ptr,
+    struct wl_seat *wl_seat_ptr,
+    uint32_t capabilities);
+static void wlc_seat_handle_name(
+    void *data_ptr,
+    struct wl_seat *wl_seat_ptr,
+    const char *name_ptr);
+
+static void wlc_pointer_handle_enter(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t serial,
+    struct wl_surface *surface,
+    wl_fixed_t surface_x,
+    wl_fixed_t surface_y);
+static void wlc_pointer_handle_leave(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t serial,
+    struct wl_surface *surface);
+static void wlc_pointer_handle_motion(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t time,
+    wl_fixed_t surface_x,
+    wl_fixed_t surface_y);
+static void wlc_pointer_handle_button(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t serial,
+    uint32_t time,
+    uint32_t button,
+    uint32_t state);
+static void wlc_pointer_handle_axis(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t time,
+    uint32_t axis,
+    wl_fixed_t value);
+static void wlc_pointer_handle_frame(
+    void *data,
+    struct wl_pointer *wl_pointer);
+static void wlc_pointer_handle_axis_source(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t axis_source);
+static void wlc_pointer_handle_axis_stop(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t time,
+    uint32_t axis);
+static void wlc_pointer_handle_axis_discrete(
+    void *data,
+    struct wl_pointer *wl_pointer,
+    uint32_t axis,
+    int32_t discrete);
+
 /* == Data ================================================================= */
 
 /** Listener for the registry, taking note of registry updates. */
@@ -103,17 +166,38 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = handle_global_remove,
 };
 
+/** Listeners for the seat. */
+static const struct wl_seat_listener wlc_seat_listener = {
+    .capabilities = wlc_seat_handle_capabilities,
+    .name = wlc_seat_handle_name,
+};
+
+/** Listeners for the pointer. */
+static const struct wl_pointer_listener wlc_pointer_listener = {
+    .enter = wlc_pointer_handle_enter,
+    .leave = wlc_pointer_handle_leave,
+    .motion = wlc_pointer_handle_motion,
+    .button = wlc_pointer_handle_button,
+    .axis = wlc_pointer_handle_axis,
+    .frame = wlc_pointer_handle_frame,
+    .axis_source = wlc_pointer_handle_axis_source,
+    .axis_stop = wlc_pointer_handle_axis_stop,
+    .axis_discrete = wlc_pointer_handle_axis_discrete,
+};
+
 /** List of wayland objects we want to bind to. */
 static const object_t objects[] = {
     { &wl_compositor_interface, 4,
-      offsetof(wlclient_attributes_t, wl_compositor_ptr) },
+      offsetof(wlclient_attributes_t, wl_compositor_ptr), NULL },
     { &wl_shm_interface, 1,
-      offsetof(wlclient_attributes_t, wl_shm_ptr) },
+      offsetof(wlclient_attributes_t, wl_shm_ptr), NULL },
     { &xdg_wm_base_interface, 1,
-      offsetof(wlclient_attributes_t, xdg_wm_base_ptr) },
+      offsetof(wlclient_attributes_t, xdg_wm_base_ptr), NULL },
+    { &wl_seat_interface, 7,
+      offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
-      offsetof(wlclient_attributes_t, icon_manager_ptr) },
-    { NULL, 0, 0 }  // sentinel.
+      offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
+    { NULL, 0, 0, NULL }  // sentinel.
 };
 
 /* == Exported methods ===================================================== */
@@ -425,6 +509,8 @@ void handle_global_announce(
             bound_ptr;
         bs_log(BS_DEBUG, "Bound interface %s to %p",
                interface_name_ptr, bound_ptr);
+
+        if (NULL != object_ptr->setup) object_ptr->setup(data_ptr);
     }
 }
 
@@ -498,6 +584,159 @@ wlclient_timer_t *wlc_timer_create(
 void wlc_timer_destroy(wlclient_timer_t *timer_ptr)
 {
     free(timer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Set up the seat: Registers the client's seat listeners. */
+void wlc_seat_setup(wlclient_t *client_ptr)
+{
+    wl_seat_add_listener(
+        client_ptr->attributes.wl_seat_ptr,
+        &wlc_seat_listener,
+        client_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles the seat's capability updates.
+ *
+ * Un-/Registers listeners for the pointer, if the capability is available.
+ *
+ * @param data_ptr
+ * @param wl_seat_ptr
+ * @param capabilities
+ */
+void wlc_seat_handle_capabilities(
+    void *data_ptr,
+    struct wl_seat *wl_seat_ptr,
+    uint32_t capabilities)
+{
+    wlclient_t *client_ptr = data_ptr;
+
+    bool supports_pointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
+    if (supports_pointer && NULL == client_ptr->wl_pointer_ptr) {
+        client_ptr->wl_pointer_ptr = wl_seat_get_pointer(wl_seat_ptr);
+        wl_pointer_add_listener(
+            client_ptr->wl_pointer_ptr,
+            &wlc_pointer_listener,
+            client_ptr);
+    } else if (!supports_pointer && NULL != client_ptr->wl_pointer_ptr) {
+        wl_pointer_release(client_ptr->wl_pointer_ptr);
+        client_ptr->wl_pointer_ptr = NULL;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the unique identifier callback. */
+void wlc_seat_handle_name(
+    void *data_ptr,
+    struct wl_seat *wl_seat_ptr,
+    const char *name_ptr)
+{
+    bs_log(BS_DEBUG, "Client %p bound to seat %p: %s",
+           data_ptr, wl_seat_ptr, name_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the client obtains pointer focus. */
+void wlc_pointer_handle_enter(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ struct wl_surface *surface,
+    __UNUSED__ wl_fixed_t surface_x,
+    __UNUSED__ wl_fixed_t surface_y)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the client looses pointer focus. */
+void wlc_pointer_handle_leave(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ struct wl_surface *surface)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon pointer motion. */
+void wlc_pointer_handle_motion(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t time,
+    __UNUSED__ wl_fixed_t surface_x,
+    __UNUSED__ wl_fixed_t surface_y)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon pointer button events. */
+void wlc_pointer_handle_button(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ uint32_t time,
+    __UNUSED__ uint32_t button,
+    __UNUSED__ uint32_t state)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon axis events. */
+void wlc_pointer_handle_axis(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t time,
+    __UNUSED__ uint32_t axis,
+    __UNUSED__ wl_fixed_t value)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon frame events. */
+void wlc_pointer_handle_frame(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon axis source events. */
+void wlc_pointer_handle_axis_source(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t axis_source)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Axis stop events. */
+void wlc_pointer_handle_axis_stop(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t time,
+    __UNUSED__ uint32_t axis)
+{
+    /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called upon axis click events. */
+void wlc_pointer_handle_axis_discrete(
+    __UNUSED__ void *data,
+    __UNUSED__ struct wl_pointer *wl_pointer,
+    __UNUSED__ uint32_t axis,
+    __UNUSED__ int32_t discrete)
+{
+    /* Currently nothing done. */
 }
 
 /* == End of client.c ====================================================== */

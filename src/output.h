@@ -59,6 +59,11 @@ struct _wlmaker_output_t {
     struct wl_listener        output_frame_listener;
     /** Listener for `request_state` signals raised by `wlr_output`. */
     struct wl_listener        output_request_state_listener;
+
+    /** Default transformation for the output(s). */
+    enum wl_output_transform  transformation;
+    /** Default scaling factor to use for the output(s). */
+    double                    scale;
 };
 
 /**
@@ -68,6 +73,8 @@ struct _wlmaker_output_t {
  * @param wlr_allocator_ptr
  * @param wlr_renderer_ptr
  * @param wlr_scene_ptr
+ * @param width
+ * @param height
  * @param server_ptr
  *
  * @return The output device handle or NULL on error.
@@ -77,6 +84,8 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    uint32_t width,
+    uint32_t height,
     wlmaker_server_t *server_ptr);
 
 /**

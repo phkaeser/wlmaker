@@ -27,6 +27,11 @@
 
 #include <libbase/libbase.h>
 
+/// Use wlroots non-stable API.
+#define WLR_USE_UNSTABLE
+#include <wlr/backend/x11.h>
+#undef WLR_USE_UNSTABLE
+
 /* == Declarations ========================================================= */
 
 static void handle_output_destroy(struct wl_listener *listener_ptr,
@@ -36,6 +41,33 @@ static void handle_output_frame(struct wl_listener *listener_ptr,
 static void handle_request_state(struct wl_listener *listener_ptr,
                                  void *data_ptr);
 
+/* == Data ================================================================= */
+
+/** Name of the plist dict describing the (default) output configuration. */
+static const char *_wlmaker_output_dict_name = "Output";
+
+/** Descriptor for output transformations. */
+static const wlmcfg_enum_desc_t _wlmaker_output_transformation_desc[] = {
+    WLMCFG_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
+    WLMCFG_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
+    WLMCFG_ENUM("Rotate180", WL_OUTPUT_TRANSFORM_180),
+    WLMCFG_ENUM("Rotate270", WL_OUTPUT_TRANSFORM_270),
+    WLMCFG_ENUM("Flip", WL_OUTPUT_TRANSFORM_FLIPPED),
+    WLMCFG_ENUM("FlipAndRotate90", WL_OUTPUT_TRANSFORM_FLIPPED_90),
+    WLMCFG_ENUM("FlipAndRotate180", WL_OUTPUT_TRANSFORM_FLIPPED_180),
+    WLMCFG_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
+    WLMCFG_ENUM_SENTINEL(),
+};
+
+/** Descriptor for the output configuration. */
+static const wlmcfg_desc_t _wlmaker_output_config_desc[] = {
+    WLMCFG_DESC_ENUM("Transformation", true, wlmaker_output_t, transformation,
+                     WL_OUTPUT_TRANSFORM_NORMAL,
+                     _wlmaker_output_transformation_desc),
+    WLMCFG_DESC_DOUBLE("Scale", true, wlmaker_output_t, scale, 1.0),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /* == Exported Methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -44,6 +76,8 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    uint32_t width,
+    uint32_t height,
     wlmaker_server_t *server_ptr)
 {
     wlmaker_output_t *output_ptr = logged_calloc(1, sizeof(wlmaker_output_t));
@@ -53,6 +87,25 @@ wlmaker_output_t *wlmaker_output_create(
     output_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_ptr->server_ptr = server_ptr;
+
+    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
+        server_ptr->config_dict_ptr, _wlmaker_output_dict_name);
+    if (NULL == output_dict_ptr) {
+        bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_output_dict_name);
+        wlmaker_output_destroy(output_ptr);
+        return NULL;
+    }
+    bool decoded = wlmcfg_decode_dict(
+        output_dict_ptr,
+        _wlmaker_output_config_desc,
+        output_ptr);
+    wlmcfg_dict_unref(output_dict_ptr);
+    if (!decoded) {
+        bs_log(BS_ERROR, "Failed to decode '%s' dict",
+               _wlmaker_output_dict_name);
+        wlmaker_output_destroy(output_ptr);
+        return NULL;
+    }
 
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
@@ -79,9 +132,35 @@ wlmaker_output_t *wlmaker_output_create(
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
+
     struct wlr_output_state state;
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, true);
+    wlr_output_state_set_scale(&state, output_ptr->scale);
+
+    // Issue #97: Found that X11 and transformations do not translate
+    // cursor coordinates well. Force it to 'Normal'.
+    if (wlr_output_is_x11(wlr_output_ptr) &&
+        output_ptr->transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
+        const char *name_ptr = "Unknown";
+        wlmcfg_enum_value_to_name(
+            _wlmaker_output_transformation_desc,
+            output_ptr->transformation,
+            &name_ptr);
+        bs_log(BS_WARNING, "Found X11 backend with Output.Transformation "
+               "'%s'. Overriding to 'Normal'.", name_ptr);
+        output_ptr->transformation = WL_OUTPUT_TRANSFORM_NORMAL;
+    }
+    wlr_output_state_set_transform(&state, output_ptr->transformation);
+
+    const char *transformation_name_ptr = "Unknown";
+    wlmcfg_enum_value_to_name(
+        _wlmaker_output_transformation_desc,
+        output_ptr->transformation,
+        &transformation_name_ptr);
+    bs_log(BS_INFO, "Configured transformation '%s' and scale %.2f on %s",
+           transformation_name_ptr, output_ptr->scale,
+           output_ptr->wlr_output_ptr->name);
 
     // Set modes for backends that have them.
     if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
@@ -95,21 +174,29 @@ wlmaker_output_t *wlmaker_output_create(
                output_ptr->wlr_output_ptr->name);
     }
 
+    if (wlr_output_is_x11(wlr_output_ptr) && 0 < width && 0 < height) {
+        bs_log(BS_INFO, "Overriding output dimensions to %"PRIu32"x%"PRIu32,
+               width, height);
+        wlr_output_state_set_custom_mode(&state, width, height, 0);
+    }
+
     if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
-        bs_log(BS_ERROR, "Failed wlr_output_test() on %s",
+        bs_log(BS_ERROR, "Failed wlr_output_test_state() on %s",
                output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
+        wlr_output_state_finish(&state);
         return NULL;
     }
 
     // Enable the output and commit.
-    if (!wlr_output_commit_state(output_ptr->wlr_output_ptr, &state)) {
-        bs_log(BS_ERROR, "Failed wlr_output_commit() on %s",
+    bool rv = wlr_output_commit_state(output_ptr->wlr_output_ptr, &state);
+    wlr_output_state_finish(&state);
+    if (!rv) {
+        bs_log(BS_ERROR, "Failed wlr_output_commit_state() on %s",
                output_ptr->wlr_output_ptr->name);
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
-	wlr_output_state_finish(&state);
 
     bs_log(BS_INFO, "Created output %s", output_ptr->wlr_output_ptr->name);
     return output_ptr;

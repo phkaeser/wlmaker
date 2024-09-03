@@ -41,6 +41,9 @@ struct _wlmaker_xdg_shell_t {
     /** XDG Shell handler. */
     struct wlr_xdg_shell      *wlr_xdg_shell_ptr;
 
+    /** Listener for the `new_surface` signal raised by `wlr_xdg_shell`. */
+    struct wl_listener        new_surface_listener;
+
     /** Listener for the `new_toplevel` signal raised by `wlr_xdg_shell`. */
     struct wl_listener        new_toplevel_listener;
     /** Listener for the `new_popup` signal raised by `wlr_xdg_shell`. */

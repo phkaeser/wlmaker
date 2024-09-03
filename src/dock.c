@@ -229,7 +229,8 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", 0);
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_root_add_workspace(root_ptr, ws_ptr);
 

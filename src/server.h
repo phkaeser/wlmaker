@@ -78,6 +78,10 @@ extern "C" {
 typedef struct {
     /** Whether to start XWayland. */
     bool                      start_xwayland;
+    /** Preferred output height, for windowed mode. */
+    uint32_t                  height;
+    /** Preferred output width, for windowed mode. */
+    uint32_t                  width;
 } wlmaker_server_options_t;
 
 /** State of the Wayland server. */
