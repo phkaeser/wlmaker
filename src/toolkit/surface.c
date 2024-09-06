@@ -24,6 +24,7 @@
 #include "gfxbuf.h"
 #include "util.h"
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>

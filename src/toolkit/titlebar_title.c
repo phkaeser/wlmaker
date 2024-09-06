@@ -25,6 +25,7 @@
 #include "primitives.h"
 #include "window.h"
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
@@ -216,7 +217,7 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
 
     // Only consider vertical wheel moves.
     if (
-#if WLR_VERSION_MAJOR >= 18
+#if WLR_VERSION_NUM >= (18 << 8)
         WL_POINTER_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
         WL_POINTER_AXIS_VERTICAL_SCROLL !=
         wlr_pointer_axis_event_ptr->orientation
@@ -411,7 +412,7 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     struct wlr_pointer_axis_event axis_event = {
-#if WLR_VERSION_MAJOR >= 18
+#if WLR_VERSION_NUM >= (18 << 8)
         .source = WL_POINTER_AXIS_SOURCE_WHEEL,
         .orientation = WL_POINTER_AXIS_VERTICAL_SCROLL,
 #else // WLR_VERSION_NUM >= (18 << 8)
@@ -442,7 +443,7 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     // Axis from another source: Ignored.
-#if WLR_VERSION_MAJOR >= 18
+#if WLR_VERSION_NUM >= (18 << 8)
     axis_event.source = WL_POINTER_AXIS_SOURCE_FINGER;
 #else // WLR_VERSION_NUM >= (18 << 8)
     axis_event.source = WLR_AXIS_SOURCE_FINGER;

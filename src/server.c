@@ -26,6 +26,7 @@
 
 #include <libbase/libbase.h>
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
@@ -186,7 +187,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     // The output layout.
     server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
-#if WLR_VERSION_MAJOR >= 18
+#if WLR_VERSION_NUM >= (18 << 8)
         server_ptr->wl_display_ptr
 #endif // WLR_VERSION_NUM >= (18 << 8)
         );
