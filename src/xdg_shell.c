@@ -27,6 +27,8 @@
 #include <libbase/libbase.h>
 #include <limits.h>
 
+#include <wlr/version.h>
+
 /* == Declarations ========================================================= */
 
 static void handle_destroy(

@@ -22,6 +22,8 @@
 
 #include "xdg_popup.h"
 
+#include <wlr/version.h>
+
 /* == Declarations ========================================================= */
 
 /** State of the content for an XDG toplevel surface. */
