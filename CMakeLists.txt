@@ -57,7 +57,8 @@ PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
 # XWayland considered optional.
 PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
 
-# With wlroots 0.18, the package name includes the major/minor version.
+# We aim to support wlroots 0.17 and 0.18. With wlroots 0.18, the package name
+# includes the major/minor version, so we need this extra check.
 PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
 IF(WLROOTS_FOUND)
   MESSAGE(STATUS "Found wlroots-0.18, will be using that version.")
