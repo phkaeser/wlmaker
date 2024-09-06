@@ -24,6 +24,7 @@
 #include "gfxbuf.h"
 #include "util.h"
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
@@ -495,12 +496,20 @@ bool _wlmtk_surface_element_pointer_button(
     // We're only forwarding PRESSED & RELEASED events.
     if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
         WLMTK_BUTTON_UP == button_event_ptr->type) {
+#if WLR_VERSION_NUM >= (18 << 8)
+        enum wl_pointer_button_state state =
+            (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
+            WL_POINTER_BUTTON_STATE_PRESSED : WL_POINTER_BUTTON_STATE_RELEASED;
+#else // WLR_VERSION_NUM >= (18 << 8)
+        enum wlr_button_state state =
+            (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
+            WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED;
+#endif // WLR_VERSION_NUM >= (18 << 8)
         wlr_seat_pointer_notify_button(
             wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
             button_event_ptr->time_msec,
             button_event_ptr->button,
-            (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
-            WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED);
+            state);
         return true;
     }
     return false;
@@ -537,7 +546,11 @@ bool _wlmtk_surface_element_pointer_axis(
         wlr_pointer_axis_event_ptr->orientation,
         wlr_pointer_axis_event_ptr->delta,
         wlr_pointer_axis_event_ptr->delta_discrete,
-        wlr_pointer_axis_event_ptr->source);
+        wlr_pointer_axis_event_ptr->source
+#if WLR_VERSION_NUM >= (18 << 8)
+        , wlr_pointer_axis_event_ptr->relative_direction
+#endif // WLR_VERSION_NUM >= (18 << 8)
+        );
     return true;
 }
 

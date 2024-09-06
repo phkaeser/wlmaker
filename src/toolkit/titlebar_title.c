@@ -25,6 +25,7 @@
 #include "primitives.h"
 #include "window.h"
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
@@ -215,9 +216,16 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
         element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
     // Only consider vertical wheel moves.
-    if (WLR_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
-        WLR_AXIS_ORIENTATION_VERTICAL !=
-        wlr_pointer_axis_event_ptr->orientation) {
+    if (
+#if WLR_VERSION_NUM >= (18 << 8)
+        WL_POINTER_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
+        WL_POINTER_AXIS_VERTICAL_SCROLL !=
+        wlr_pointer_axis_event_ptr->orientation
+#else // WLR_VERSION_NUM >= (18 << 8)
+        WLR_AXIS_SOURCE_WHEEL != wlr_pointer_axis_event_ptr->source ||
+        WLR_AXIS_ORIENTATION_VERTICAL !=wlr_pointer_axis_event_ptr->orientation
+#endif // WLR_VERSION_NUM >= (18 << 8)
+        ) {
         return false;
     }
 
@@ -404,8 +412,13 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     struct wlr_pointer_axis_event axis_event = {
+#if WLR_VERSION_NUM >= (18 << 8)
+        .source = WL_POINTER_AXIS_SOURCE_WHEEL,
+        .orientation = WL_POINTER_AXIS_VERTICAL_SCROLL,
+#else // WLR_VERSION_NUM >= (18 << 8)
         .source = WLR_AXIS_SOURCE_WHEEL,
         .orientation = WLR_AXIS_ORIENTATION_VERTICAL,
+#endif // WLR_VERSION_NUM >= (18 << 8)
         .delta = -0.01
     };
 
@@ -430,7 +443,11 @@ void test_shade(bs_test_t *test_ptr)
         wlmtk_window_is_shaded(fake_window_ptr->window_ptr));
 
     // Axis from another source: Ignored.
+#if WLR_VERSION_NUM >= (18 << 8)
+    axis_event.source = WL_POINTER_AXIS_SOURCE_FINGER;
+#else // WLR_VERSION_NUM >= (18 << 8)
     axis_event.source = WLR_AXIS_SOURCE_FINGER;
+#endif // WLR_VERSION_NUM >= (18 << 8)
     axis_event.delta = -0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
     BS_TEST_VERIFY_FALSE(

@@ -217,7 +217,10 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
-  * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
+  * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
+  * Have github actions compile on trixie, using the host library.
+  * Have github actions compile not just 0.17, but also 0.18.
+  * Verify if that & libdrm update works with lightdm.
 
 * Support different output scale & transformations
   * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) (#99)
@@ -243,6 +246,13 @@ Support for visual effects to improve usability, but not for pure show.
 * Drag-n-drop of icons into & from dock & clip.
 
 ### Features for further versions, not ordered by priority nor timeline.
+
+* wlroots handling
+  * Split xdg_surface off xdg_toplevel.
+  * Accept state changes (maximize, fullscreen, ...) also before being mapped.
+    Apply when mapping.
+  * Accept decoration requests before first commit. And forward them after
+    the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
 
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
