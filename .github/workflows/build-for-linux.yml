@@ -2,14 +2,12 @@ name: Build for Linux
 
 on:
   push:
-    branches: [ "main", "trixie"]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "trixie" ]
+    branches: [ "main" ]
 
 env:
   INSTALL_PATH: "${HOME}/wlmaker"
-  INSTALL_LIBRARY_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  INSTALL_PKGCONFIG_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/wlmaker/share/pkgconfig/"
 
 jobs:
   build_matrix:
