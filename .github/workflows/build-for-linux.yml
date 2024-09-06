@@ -2,9 +2,9 @@ name: Build for Linux
 
 on:
   push:
-    branches: [ "main" "trixie"]
+    branches: [ "main", "trixie"]
   pull_request:
-    branches: [ "main" "trixie" ]
+    branches: [ "main", "trixie" ]
 
 env:
   INSTALL_PATH: "${HOME}/wlmaker"
