@@ -60,13 +60,10 @@ PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
 # We aim to support wlroots 0.17 and 0.18. With wlroots 0.18, the package name
 # includes the major/minor version, so we need this extra check.
 PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
-IF(WLROOTS_FOUND)
-  MESSAGE(STATUS "Found wlroots-0.18, will be using that version.")
-ELSE(WLROOTS_FOUND)
-  # wlroots 0.17 and earlier. Supported, as this is on Debian trixie.
+IF(NOT WLROOTS_FOUND)
+  # If that wasn't found, we'll resort to the (recent) 0.17.4 version.
   PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17.4)
-  MESSAGE(STATUS "Found wlroots version ${WLROOTS_VERSION}.")
-ENDIF(WLROOTS_FOUND)
+ENDIF(NOT WLROOTS_FOUND)
 
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)

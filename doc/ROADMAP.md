@@ -189,13 +189,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.4
 
-**Focus**: Add menus & make it ready for  "Early-Access".
+**Focus**: Add menus & make it ready for "Early-Access".
 
 * Thorough tests of both pointer and keyboard state.
   * [done] Issue found when killing saylock that keyboard focus is incorrect.
   * [done] Re-activate workspace & windows after lock.
-  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Fix bug: When switching workspace, pointer state appears to be reset.
+  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Fix bug: Particularly when using large decorations, there is resize jitter.
 
 * Menu, based on toolkit.
@@ -219,17 +219,18 @@ Support for visual effects to improve usability, but not for pure show.
   the `dependencies/` subdirectory, if versions are avaialble.
   * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
   * [done] Have github actions compile on trixie, using the host library.
-  * Have github actions compile not just 0.17, but also 0.18.
+  * [done] Have github actions compile not just 0.17, but also 0.18.
   * Verify if that & libdrm update works with lightdm.
 
 * Support different output scale & transformations
-  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) (#99)
+  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
   * [done] Scale icons to tile size.
-  * [done] Add option to specify an output transformation (#97). Note: Will not work well in X11 window mode.
-  * [done] Add commandline arguments to configure size of window (#98)
+  * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
+  * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
 
 * Misc
   * [done] Expose the decoration manager configurables through the config file.
+  * Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
 ## Plan for 0.5
 
