@@ -220,7 +220,8 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
   * [done] Have github actions compile on trixie, using the host library.
   * [done] Have github actions compile not just 0.17, but also 0.18.
-  * Verify if that & libdrm update works with lightdm.
+  * [done] Verify if that & libdrm update works with lightdm. It
+    [does not](https://github.com/canonical/lightdm/issues/267).
 
 * Support different output scale & transformations
   * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
