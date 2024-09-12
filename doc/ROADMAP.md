@@ -219,7 +219,7 @@ Support for visual effects to improve usability, but not for pure show.
   the `dependencies/` subdirectory, if versions are avaialble.
   * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
   * [done] Have github actions compile on trixie, using the host library.
-  * Have github actions compile not just 0.17, but also 0.18.
+  * [done] Have github actions compile not just 0.17, but also 0.18.
   * Verify if that & libdrm update works with lightdm.
 
 * Support different output scale & transformations

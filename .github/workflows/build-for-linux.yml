@@ -1,4 +1,4 @@
-name: Build for Linux
+name: Build for Linux (Trixie, pre-compiled libwlroots-dev)
 
 on:
   push:
@@ -28,53 +28,26 @@ jobs:
           cmake \
           doxygen \
           flex \
-          foot \
+          gcc \
           git \
-          glslang-dev \
-          glslang-tools \
-          gnustep-base-runtime \
-          graphviz \
           libcairo2-dev \
-          libgbm-dev \
-          libinput-dev \
           libncurses-dev \
-          libseat-dev \
-          libudev-dev \
-          libvulkan-dev \
-          libwayland-dev \
           libwlroots-dev \
-          libxcb-composite0-dev \
-          libxcb-dri3-dev \
-          libxcb-ewmh-dev \
-          libxcb-icccm4-dev \
-          libxcb-present-dev \
-          libxcb-render-util0-dev \
-          libxcb-res0-dev \
-          libxcb-xinput-dev \
-          libxkbcommon-dev \
-          libxml2-dev \
-          meson \
+          pkg-config \
           plantuml \
-          seatd \
-          wayland-protocols \
-          xmlto \
-          xsltproc \
           xwayland
     
-    - name: Checkout code including submodule dependencies.
+    - name: Checkout code, including git submodules.
       uses: actions/checkout@v3
       with:
-        submodules: recursive
-
-    - name: Configure and build submodule dependencies.
-      run: |
-        export CC="${{ matrix.compiler }}"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} dependencies/ -B dependencies/build/
+        # Not using 'recursive' prevents fetching extra submodules below
+        # dependencies/. These are only needed to build wlroots from source.
+        submodules: true
 
     - name: Configure wlmaker through CMake.
       run: |
         export CC="${{ matrix.compiler }}"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build/
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -Dconfig_DOXYGEN_CRITICAL=ON -B build/
 
     - name: Build wlmaker.
       run: |
@@ -84,6 +57,6 @@ jobs:
     - name: Build documentation.
       run: cmake --build build/ --target doc
 
-    - name: Run all tests
+    - name: Run all tests.
       run: |
         ctest --test-dir build/ --build-run-dir build/ -V
