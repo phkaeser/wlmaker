@@ -44,51 +44,8 @@ static bool _wlmaker_config_decode_fill_style(
 
 /* == Data ================================================================= */
 
-/** Name of the xcursor theme. NULL picks the default. */
-const char *config_xcursor_theme_name = NULL;
-
-/** Base size for the xcursor theme (when scale==1.0). */
-const uint32_t config_xcursor_theme_size = 24;
-
 /** Overall scale of output. */
 const float config_output_scale = 1.0;
-
-/** Whether to always request server-side decorations. */
-const wlmaker_config_decoration_t config_decoration =
-    WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER;
-
-/** Modifiers for moving the window with the cursor. */
-const uint32_t wlmaker_config_window_drag_modifiers =
-    WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO;
-
-/** Visual theme. */
-const wlmaker_config_theme_t  wlmaker_config_theme = {
-    .window_margin_color = 0xff000000,  // Pich black, opaque.
-    .window_margin_width = 1,
-
-    .tile_fill = {
-        .type = WLMTK_STYLE_COLOR_DGRADIENT,
-        .param = { .hgradient = { .from = 0xffa6a6b6,.to = 0xff515561 }}
-    },
-    .menu_fill = {
-        .type = WLMTK_STYLE_COLOR_HGRADIENT,
-        .param = { .hgradient = { .from = 0xffc2c0c5, .to = 0xff828085 }}
-    },
-    .menu_margin_color = 0xff000000,  // Pitch black, opaque.
-    .menu_margin_width = 1,
-    .menu_padding_width = 1,
-
-    .menu_item_enabled_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0x00000000 }}  // Transparent.
-    },
-    .menu_item_enabled_text_color = 0xff000000,  // Black, opaque.
-    .menu_item_selected_fill = {
-        .type = WLMTK_STYLE_COLOR_SOLID,
-        .param = { .solid = { .color = 0xffffffff }}  // White, opaque..
-    },
-    .menu_item_selected_text_color = 0xff000000,  // Black, opaque.
-};
 
 /** Plist decoding descriptor of the fill type. */
 static const wlmcfg_enum_desc_t _wlmaker_config_fill_type_desc[] = {
@@ -135,6 +92,8 @@ static const wlmcfg_desc_t _wlmaker_config_style_color_gradient_desc[] = {
 static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "Size", true, wlmtk_tile_style_t, size, 64),
+    WLMCFG_DESC_UINT64(
+        "ContentSize", true, wlmtk_tile_style_t, content_size, 48),
     WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
     WLMCFG_DESC_CUSTOM(
@@ -297,6 +256,15 @@ static const wlmcfg_desc_t _wlmaker_clip_style_desc[] = {
     WLMCFG_DESC_SENTINEL()
 };
 
+/** Descriptor for decoding the "Cursor" dictionary. */
+static const wlmcfg_desc_t _wlmaker_cursor_style_desc[] = {
+    WLMCFG_DESC_STRING(
+        "Name", true, wlmaker_config_cursor_style_t, name_ptr, "default"),
+    WLMCFG_DESC_UINT64(
+        "Size", true, wlmaker_config_cursor_style_t, size, 24),
+    WLMCFG_DESC_SENTINEL()
+};
+
 /** Desciptor for decoding the style information from a plist. */
 const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_ARGB32(
@@ -319,6 +287,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Clip", true, wlmaker_config_style_t, clip,
         _wlmaker_clip_style_desc),
+    WLMCFG_DESC_DICT(
+        "Cursor", true, wlmaker_config_style_t, cursor,
+        _wlmaker_cursor_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -358,8 +329,8 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading configuration from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading configuration from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
@@ -392,8 +363,8 @@ wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading state from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading state from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
@@ -561,7 +532,7 @@ void test_file(bs_test_t *test_ptr)
 void test_style_file(bs_test_t *test_ptr)
 {
     wlmcfg_dict_t *dict_ptr;
-    wlmaker_config_style_t config_style;
+    wlmaker_config_style_t config_style = {};
 
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"

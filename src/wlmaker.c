@@ -50,7 +50,20 @@ static char *wlmaker_arg_state_file_ptr = NULL;
 static char *wlmaker_arg_style_file_ptr = NULL;
 
 /** Startup options for the server. */
-static wlmaker_server_options_t wlmaker_server_options = {};
+static wlmaker_server_options_t wlmaker_server_options = {
+    .start_xwayland = false,
+    .height = 0,
+    .width = 0,
+};
+
+/** Log levels. */
+static const bs_arg_enum_table_t wlmaker_log_levels[] = {
+    { .name_ptr = "DEBUG", BS_DEBUG },
+    { .name_ptr = "INFO", BS_INFO },
+    { .name_ptr = "WARNING", BS_WARNING },
+    { .name_ptr = "ERROR", BS_ERROR },
+    { .name_ptr = NULL },
+};
 
 /** Log levels. */
 static const bs_arg_enum_table_t wlmaker_log_levels[] = {
@@ -96,6 +109,20 @@ static const bs_arg_t wlmaker_args[] = {
         "INFO",
         &wlmaker_log_levels[0],
         (int*)&bs_log_severity),
+    BS_ARG_UINT32(
+        "height",
+        "Desired output height. Applies when running in windowed mode, and "
+        "only if --width is set, too. Set to 0 for using the output's "
+        "preferred dimensions.",
+        0, 0, UINT32_MAX,
+        &wlmaker_server_options.height),
+    BS_ARG_UINT32(
+        "width",
+        "Desired output width. Applies when running in windowed mode, and "
+        "only if --height is set, too. Set to 0 for using the output's "
+        "preferred dimensions.",
+        0, 0, UINT32_MAX,
+        &wlmaker_server_options.width),
     BS_ARG_SENTINEL()
 };
 
@@ -225,7 +252,7 @@ bool create_workspaces(
         }
 
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-            s.name, server_ptr->env_ptr);
+            s.name, &server_ptr->style.tile, server_ptr->env_ptr);
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
                    s.name, server_ptr->env_ptr);

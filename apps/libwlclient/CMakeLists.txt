@@ -16,7 +16,24 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 INCLUDE(WaylandProtocol)
 
 ADD_LIBRARY(libwlclient STATIC)
-SET(SOURCES libwlclient.h client.c buffer.h buffer.c icon.h icon.c)
+
+SET(PUBLIC_HEADER_FILES
+  buffer.h
+  icon.h
+  libwlclient.h
+  xdg_toplevel.h
+)
+SET_TARGET_PROPERTIES(
+  libwlclient PROPERTIES
+  VERSION 1.0
+  PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
+
+SET(SOURCES
+  buffer.c
+  client.c
+  icon.c
+  xdg_toplevel.c
+)
 WaylandProtocol_ADD(
   SOURCES
   BASE_NAME xdg-shell
@@ -27,7 +44,9 @@ WaylandProtocol_ADD(
   BASE_NAME wlmaker-icon-unstable-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
   SIDE client)
+
 TARGET_SOURCES(libwlclient PRIVATE ${SOURCES})
+
 TARGET_INCLUDE_DIRECTORIES(
   libwlclient PRIVATE
   ${WAYLAND_INCLUDE_DIRS}

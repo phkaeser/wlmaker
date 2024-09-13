@@ -1,6 +1,10 @@
 // Following the 'Debian' theme of Window Maker.
 {
   BackgroundColor = "argb32:ff77aac4";
+  Cursor = {
+    Name = default;
+    Size = 48;
+  };
   Dock = {
     Margin = {
       Width = 1;
@@ -8,8 +12,9 @@
     };
   };
   Tile = {
-    Size = 64;
-    BezelWidth = 2;
+    Size = 128;
+    ContentSize = 96;
+    BezelWidth = 4;
     Fill = {
       From = "argb32:ffa6a6b6";
       To = "argb32:ff515561";
@@ -20,7 +25,7 @@
     Font = {
       Face = Helvetica;
       Weight = Bold;
-      Size = 12;
+      Size = 24;
     };
     TextColor = "argb32:ff000000";
   };
@@ -38,8 +43,8 @@
         Type = ADGRADIENT;
       };
       BlurredTextColor = "argb32:ff000000";
-      Height = 22;
-      BezelWidth = 1;
+      Height = 44;
+      BezelWidth = 3;
       Margin = {
         Width = 1;
         Color = "argb32:ff000000" ;
@@ -55,9 +60,9 @@
         Color = "argb32:ffc2c0c5";
         Type = SOLID;
       };
-      Height = 7;
-      BezelWidth = 1;
-      CornerWidth = 29;
+      Height = 14;
+      BezelWidth = 2;
+      CornerWidth = 58;
     };
     Border = {
       Width = 1;
@@ -107,7 +112,7 @@
     Font = {
       Face = Helvetica;
       Weight = Bold;
-      Size = 18;
+      Size = 36;
     };
     TextColor = "argb32:ffffffff";
   };

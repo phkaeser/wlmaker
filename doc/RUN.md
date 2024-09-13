@@ -32,7 +32,8 @@ Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 
 ## Option 3: Run as wayland session
 
-> [!NOTE] As of 2024-07-14, this appears to work only with Wayland-only display
+> [!NOTE]
+> As of 2024-07-14, this appears to work only with Wayland-only display
 > managers. `gdm3` has been found to work, but `lightdm` did not.
 
 > [!IMPORTANT]
@@ -66,10 +67,19 @@ The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style.
 
+* To make Wayland Maker look well on a high-resolution screen, you can either
+  set the `Output` `Scale` in [etc/wlmaker.plist](../etc/wlmaker.plist) (and
+  use `--config_file=...`). This will scale all surfaces.
+
+  Or, you can configure the style with larger decorations & fonts, as is done
+  in [etc/style-debian.plist](../etc/style-debian.plist). This will not scale
+  application surfaces.
+
 # Debugging issues
 
-> [!NOTE] Run `wlmaker` with the `--log_level=DEBUG` argument to get more
-> verbose debug information.
+> [!NOTE]
+> Run `wlmaker` with the `--log_level=DEBUG` argument to get more verbose debug
+> information.
 
 1. `wlmaker` fails with an *ERROR* log of `Could not initialize renderer`.
 

@@ -1,6 +1,10 @@
 // Style oriented on Window Maker's default.
 {
   BackgroundColor = "argb32:ff505080";
+  Cursor = {
+    Name = default;
+    Size = 24;
+  };
   Dock = {
     Margin = {
       Width = 1;
@@ -9,6 +13,7 @@
   };
   Tile = {
     Size = 64;
+    ContentSize = 48;
     BezelWidth = 2;
     Fill = {
       From = "argb32:ffa6a6b6";

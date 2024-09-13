@@ -189,13 +189,14 @@ Support for visual effects to improve usability, but not for pure show.
 
 ## Plan for 0.4
 
-**Focus**: Add menus & make it ready for  "Early-Access".
+**Focus**: Add menus & make it ready for "Early-Access".
 
 * Thorough tests of both pointer and keyboard state.
   * [done] Issue found when killing saylock that keyboard focus is incorrect.
   * [done] Re-activate workspace & windows after lock.
-  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Fix bug: When switching workspace, pointer state appears to be reset.
+  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * Fix bug: Particularly when using large decorations, there is resize jitter.
 
 * Menu, based on toolkit.
   * Available as window menu in windows.
@@ -216,10 +217,21 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
-  * Upgrade to wlroots 0.18. Verify if that & libdrm update works with lightdm.
+  * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
+  * [done] Have github actions compile on trixie, using the host library.
+  * [done] Have github actions compile not just 0.17, but also 0.18.
+  * [done] Verify if that & libdrm update works with lightdm. It
+    [does not](https://github.com/canonical/lightdm/issues/267).
+
+* Support different output scale & transformations
+  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
+  * [done] Scale icons to tile size.
+  * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
+  * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
 
 * Misc
-  * Expose the decoration manager configurables through the config file.
+  * [done] Expose the decoration manager configurables through the config file.
+  * Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
 ## Plan for 0.5
 
@@ -236,6 +248,13 @@ Support for visual effects to improve usability, but not for pure show.
 * Drag-n-drop of icons into & from dock & clip.
 
 ### Features for further versions, not ordered by priority nor timeline.
+
+* wlroots handling
+  * Split xdg_surface off xdg_toplevel.
+  * Accept state changes (maximize, fullscreen, ...) also before being mapped.
+    Apply when mapping.
+  * Accept decoration requests before first commit. And forward them after
+    the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
 
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
@@ -290,6 +309,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Show icon from XDG desktop entry.
   * For running apps, consider showing the surface on the tile.
   * Configuration menu: Commandline, and further settings.
+  * Use SVG as principal icon format, and scale without quality loss.
 
 * A logo and info panel.
 
@@ -307,6 +327,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Theme.
     * [done] Added ADGRADIENT fill style, aligned with Window Maker's diagonal.
     * Adds support for textures as fill (tiled, scaled, maximized, centered, filled?)
+    * Add drag-modifier option, to configure when a drag makes a window move.
 
 * Configurable keyboard map.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)

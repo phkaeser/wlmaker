@@ -20,6 +20,7 @@
 
 #include "root.h"
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
@@ -199,12 +200,21 @@ bool wlmtk_root_pointer_button(
     // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
     event.time_msec = event_ptr->time_msec;
-    if (WLR_BUTTON_PRESSED == event_ptr->state) {
+    switch (event_ptr->state) {
+#if WLR_VERSION_NUM >= (18 << 8)
+    case WL_POINTER_BUTTON_STATE_PRESSED:
+#else // WLR_VERSION_NUM >= (18 << 8)
+    case WLR_BUTTON_PRESSED:
+#endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_DOWN;
         return wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
 
-    } else if (WLR_BUTTON_RELEASED == event_ptr->state) {
+#if WLR_VERSION_NUM >= (18 << 8)
+    case WL_POINTER_BUTTON_STATE_RELEASED:
+#else // WLR_VERSION_NUM >= (18 << 8)
+    case WLR_BUTTON_RELEASED:
+#endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_UP;
         wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
@@ -212,6 +222,8 @@ bool wlmtk_root_pointer_button(
         return wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
 
+    default:
+        break;
     }
 
     bs_log(BS_WARNING,
@@ -683,7 +695,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 50, root_ptr->extents.height);
 
     wlmtk_root_destroy(root_ptr);
-    free(wlr_scene_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -703,7 +715,8 @@ void test_workspaces(bs_test_t *test_ptr)
         &test_ws.listener,
         _wlmtk_root_test_workspace_changed_handler);
 
-    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", NULL);
+    static const wlmtk_tile_style_t tstyle = {};
+    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
     wlmtk_root_add_workspace(root_ptr, ws1_ptr);
     BS_TEST_VERIFY_EQ(
@@ -714,7 +727,7 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, ws1_ptr, test_ws.workspace_ptr);
 
-    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", NULL);
+    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_root_add_workspace(root_ptr, ws2_ptr);
     BS_TEST_VERIFY_EQ(
@@ -745,7 +758,7 @@ void test_workspaces(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_listener(&test_ws.listener);
     wlmtk_root_destroy(root_ptr);
-    free(wlr_scene_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -773,7 +786,11 @@ void test_pointer_button(bs_test_t *test_ptr)
     // Verify that a button down event is passed.
     struct wlr_pointer_button_event wlr_pointer_button_event = {
         .button = 42,
+#if WLR_VERSION_NUM >= (18 << 8)
+        .state = WL_POINTER_BUTTON_STATE_PRESSED,
+#else // WLR_VERSION_NUM >= (18 << 8)
         .state = WLR_BUTTON_PRESSED,
+#endif // WLR_VERSION_NUM >= (18 << 8)
         .time_msec = 4321,
     };
     BS_TEST_VERIFY_TRUE(
@@ -791,7 +808,11 @@ void test_pointer_button(bs_test_t *test_ptr)
         sizeof(wlmtk_button_event_t));
 
     // The button up event should trigger a click.
+#if WLR_VERSION_NUM >= (18 << 8)
+    wlr_pointer_button_event.state = WL_POINTER_BUTTON_STATE_RELEASED;
+#else  // WLR_VERSION_NUM >= (18 << 8)
     wlr_pointer_button_event.state = WLR_BUTTON_RELEASED;
+#endif // WLR_VERSION_NUM >= (18 << 8)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));
@@ -807,7 +828,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fake_element_ptr->element);
 
     wlmtk_root_destroy(root_ptr);
-    free(wlr_scene_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* == End of root.c ======================================================== */

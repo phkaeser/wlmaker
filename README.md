@@ -46,6 +46,10 @@ Protocol support:
 * Once compiled, see the [these instructions](doc/RUN.md) on how to run
   Wayland Maker in a window or standalone, and to configure it for your needs.
 
+* Alternatively, use a pre-built package:
+
+  [![Packaging status](https://repology.org/badge/vertical-allrepos/wlmaker.svg)](https://repology.org/project/wlmaker/versions)
+
 > [!NOTE]
 > `wlmaker` is still in early development, so it's not recommended to use it as
 > your primary compositor.

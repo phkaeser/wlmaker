@@ -37,6 +37,8 @@ struct _wlmaker_xdg_decoration_manager_t {
     wlmaker_server_t          *server_ptr;
     /** The wlroots XDG decoration manager. */
     struct wlr_xdg_decoration_manager_v1* wlr_xdg_decoration_manager_v1_ptr;
+    /** Operation mode for the decoration manager. */
+    wlmaker_config_decoration_t mode;
 
     /** Listener for `new_toplevel_decoration`. */
     struct wl_listener        new_toplevel_decoration_listener;
@@ -48,6 +50,8 @@ struct _wlmaker_xdg_decoration_manager_t {
 typedef struct {
     /** Points to the wlroots `wlr_xdg_toplevel_decoration_v1`. */
     struct wlr_xdg_toplevel_decoration_v1 *wlr_xdg_toplevel_decoration_v1_ptr;
+    /** Back-link to the decoration manager. */
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr;
 
     /** Listener for `request_mode` of `wlr_xdg_toplevel_decoration_v1`. */
     struct wl_listener        request_mode_listener;
@@ -63,6 +67,7 @@ static void handle_destroy(
     void *data_ptr);
 
 static wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr,
     struct wlr_xdg_toplevel_decoration_v1 *wlr_xdg_toplevel_decoration_v1_ptr);
 static void wlmaker_xdg_decoration_destroy(
     wlmaker_xdg_decoration_t *decoration_ptr);
@@ -73,6 +78,28 @@ static void handle_decoration_request_mode(
 static void handle_decoration_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+/* == Data ================================================================= */
+
+/** Plist descriptor of decoration mode. @see wlmaker_config_decoration_t. */
+static const wlmcfg_enum_desc_t _wlmaker_config_decoration_desc[] = {
+    WLMCFG_ENUM("SuggestClient", WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT),
+    WLMCFG_ENUM("SuggestServer", WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER),
+    WLMCFG_ENUM("EnforceClient", WLMAKER_CONFIG_DECORATION_ENFORCE_CLIENT),
+    WLMCFG_ENUM("EnforceServer", WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER),
+    WLMCFG_ENUM_SENTINEL()
+};
+
+/** Plist descriptor of the 'Decoration' dict contents. */
+static const wlmcfg_desc_t _wlmaker_xdg_decoration_config_desc[] = {
+    WLMCFG_DESC_ENUM("Mode", true, wlmaker_xdg_decoration_manager_t, mode,
+                     WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER,
+                     _wlmaker_config_decoration_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Name of the top-level dict holding the decoration manager's config. */
+static const char *_wlmaker_xdg_decoration_dict_name = "Decoration";
 
 /* == Exported methods ===================================================== */
 
@@ -88,6 +115,25 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
     decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr =
         wlr_xdg_decoration_manager_v1_create(server_ptr->wl_display_ptr);
     if (NULL == decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr) {
+        wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
+        return NULL;
+    }
+
+    wlmcfg_dict_t *decoration_dict_ptr = wlmcfg_dict_get_dict(
+        server_ptr->config_dict_ptr, _wlmaker_xdg_decoration_dict_name);
+    if (NULL == decoration_dict_ptr) {
+        bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_xdg_decoration_dict_name);
+        wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
+        return NULL;
+    }
+    bool decoded = wlmcfg_decode_dict(
+        decoration_dict_ptr,
+        _wlmaker_xdg_decoration_config_desc,
+        decoration_manager_ptr);
+    wlmcfg_dict_unref(decoration_dict_ptr);
+    if (!decoded) {
+        bs_log(BS_ERROR, "Failed to decode '%s' dict",
+               _wlmaker_xdg_decoration_dict_name);
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
         return NULL;
     }
@@ -129,13 +175,17 @@ void wlmaker_xdg_decoration_manager_destroy(
  * @param data_ptr            Points to `wlr_xdg_toplevel_decoration_v1`.
  */
 void handle_new_toplevel_decoration(
-    __UNUSED__ struct wl_listener *listener_ptr,
+    struct wl_listener *listener_ptr,
     void *data_ptr)
 {
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_manager_t,
+        new_toplevel_decoration_listener);
     struct wlr_xdg_toplevel_decoration_v1
         *wlr_xdg_toplevel_decoration_v1_ptr = data_ptr;
 
     wlmaker_xdg_decoration_t *decoration_ptr = wlmaker_xdg_decoration_create(
+        decoration_manager_ptr,
         wlr_xdg_toplevel_decoration_v1_ptr);
     if (NULL == decoration_ptr) return;
 
@@ -164,16 +214,19 @@ static void handle_destroy(
 /**
  * Creates a decoration handle.
  *
+ * @param decoration_manager_ptr
  * @param wlr_xdg_toplevel_decoration_v1_ptr
  *
  * @returns The decoration handle or NULL on error.
  */
 wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
+    wlmaker_xdg_decoration_manager_t *decoration_manager_ptr,
     struct wlr_xdg_toplevel_decoration_v1 *wlr_xdg_toplevel_decoration_v1_ptr)
 {
     wlmaker_xdg_decoration_t *decoration_ptr = logged_calloc(
         1, sizeof(wlmaker_xdg_decoration_t));
     if (NULL == decoration_ptr) return NULL;
+    decoration_ptr->decoration_manager_ptr = decoration_manager_ptr;
     decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr =
         wlr_xdg_toplevel_decoration_v1_ptr;
 
@@ -221,7 +274,7 @@ void handle_decoration_request_mode(
 
     enum wlr_xdg_toplevel_decoration_v1_mode mode =
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode;
-    switch (config_decoration) {
+    switch (decoration_ptr->decoration_manager_ptr->mode) {
     case WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT:
         if (WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_NONE == mode) {
             mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
@@ -244,7 +297,7 @@ void handle_decoration_request_mode(
 
     default:
         bs_log(BS_FATAL, "Unhandled config_decoration value %d",
-               config_decoration);
+               decoration_ptr->decoration_manager_ptr->mode);
         BS_ABORT();
     }
 

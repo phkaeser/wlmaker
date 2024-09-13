@@ -22,6 +22,8 @@
 
 #include "xdg_popup.h"
 
+#include <wlr/version.h>
+
 /* == Declarations ========================================================= */
 
 /** State of the content for an XDG toplevel surface. */
@@ -35,10 +37,10 @@ typedef struct {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
 
-    /** The corresponding wlroots XDG surface. */
-    struct wlr_xdg_surface    *wlr_xdg_surface_ptr;
+    /** The corresponding wlroots XDG toplevel. */
+    struct wlr_xdg_toplevel   *wlr_xdg_toplevel_ptr;
 
-    /** Listener for the `destroy` signal of the `wlr_xdg_surface::events`. */
+    /** Listener for the `destroy` signal of the `wlr_xdg_toplevel::events`. */
     struct wl_listener        destroy_listener;
     /** Listener for the `new_popup` signal of the `wlr_xdg_surface`. */
     struct wl_listener        new_popup_listener;
@@ -70,7 +72,7 @@ typedef struct {
 } xdg_toplevel_surface_t;
 
 static xdg_toplevel_surface_t *xdg_toplevel_surface_create(
-    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr);
 static void xdg_toplevel_surface_destroy(
     xdg_toplevel_surface_t *xdg_tl_surface_ptr);
@@ -149,11 +151,11 @@ const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
-    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr)
 {
     xdg_toplevel_surface_t *surface_ptr = xdg_toplevel_surface_create(
-        wlr_xdg_surface_ptr, server_ptr);
+        wlr_xdg_toplevel_ptr, server_ptr);
     if (NULL == surface_ptr) return NULL;
 
     wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
@@ -178,28 +180,29 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
 /* ------------------------------------------------------------------------- */
 /** Creates a @ref xdg_toplevel_surface_t. */
 xdg_toplevel_surface_t *xdg_toplevel_surface_create(
-    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr)
 {
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = logged_calloc(
         1, sizeof(xdg_toplevel_surface_t));
     if (NULL == xdg_tl_surface_ptr) return NULL;
+    if (NULL == wlr_xdg_toplevel_ptr->base) return NULL;
 
     // Note: Content needs the committed size before the surface triggers a
     // layout update. This is... hacky.
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->surface->events.commit,
+        &wlr_xdg_toplevel_ptr->base->surface->events.commit,
         &xdg_tl_surface_ptr->surface_commit_listener,
         handle_surface_commit);
 
     xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
-        wlr_xdg_surface_ptr->surface,
+        wlr_xdg_toplevel_ptr->base->surface,
         server_ptr->env_ptr);
     if (NULL == xdg_tl_surface_ptr->surface_ptr) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
     }
-    xdg_tl_surface_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
+    xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     xdg_tl_surface_ptr->server_ptr = server_ptr;
 
     if (!wlmtk_content_init(
@@ -222,11 +225,15 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &xdg_tl_surface_ptr->super_content.client.gid);
 
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->events.destroy,
+#if WLR_VERSION_NUM >= (18 << 8)
+        &wlr_xdg_toplevel_ptr->events.destroy,
+#else // WLR_VERSION_NUM >= (18 << 8)
+        &wlr_xdg_toplevel_ptr->base->events.destroy,
+#endif // WLR_VERSION_NUM >= (18 << 8)
         &xdg_tl_surface_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->events.new_popup,
+        &wlr_xdg_toplevel_ptr->base->events.new_popup,
         &xdg_tl_surface_ptr->new_popup_listener,
         handle_new_popup);
 
@@ -240,43 +247,43 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         handle_surface_unmap);
 
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_maximize,
+        &wlr_xdg_toplevel_ptr->events.request_maximize,
         &xdg_tl_surface_ptr->toplevel_request_maximize_listener,
         handle_toplevel_request_maximize);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_fullscreen,
+        &wlr_xdg_toplevel_ptr->events.request_fullscreen,
         &xdg_tl_surface_ptr->toplevel_request_fullscreen_listener,
         handle_toplevel_request_fullscreen);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_minimize,
+        &wlr_xdg_toplevel_ptr->events.request_minimize,
         &xdg_tl_surface_ptr->toplevel_request_minimize_listener,
         handle_toplevel_request_minimize);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_move,
+        &wlr_xdg_toplevel_ptr->events.request_move,
         &xdg_tl_surface_ptr->toplevel_request_move_listener,
         handle_toplevel_request_move);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_resize,
+        &wlr_xdg_toplevel_ptr->events.request_resize,
         &xdg_tl_surface_ptr->toplevel_request_resize_listener,
         handle_toplevel_request_resize);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.request_show_window_menu,
+        &wlr_xdg_toplevel_ptr->events.request_show_window_menu,
         &xdg_tl_surface_ptr->toplevel_request_show_window_menu_listener,
         handle_toplevel_request_show_window_menu);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.set_parent,
+        &wlr_xdg_toplevel_ptr->events.set_parent,
         &xdg_tl_surface_ptr->toplevel_set_parent_listener,
         handle_toplevel_set_parent);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.set_title,
+        &wlr_xdg_toplevel_ptr->events.set_title,
         &xdg_tl_surface_ptr->toplevel_set_title_listener,
         handle_toplevel_set_title);
     wlmtk_util_connect_listener_signal(
-        &wlr_xdg_surface_ptr->toplevel->events.set_app_id,
+        &wlr_xdg_toplevel_ptr->events.set_app_id,
         &xdg_tl_surface_ptr->toplevel_set_app_id_listener,
         handle_toplevel_set_app_id);
 
-    xdg_tl_surface_ptr->wlr_xdg_surface_ptr->data =
+    xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->data =
         &xdg_tl_surface_ptr->super_content;
 
     return xdg_tl_surface_ptr;
@@ -323,7 +330,7 @@ uint32_t content_request_maximized(
         content_ptr, xdg_toplevel_surface_t, super_content);
 
     return wlr_xdg_toplevel_set_maximized(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, maximized);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr, maximized);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -336,7 +343,7 @@ uint32_t content_request_fullscreen(
         content_ptr, xdg_toplevel_surface_t, super_content);
 
     return wlr_xdg_toplevel_set_fullscreen(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, fullscreen);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr, fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -358,7 +365,7 @@ uint32_t content_request_size(
         content_ptr, xdg_toplevel_surface_t, super_content);
 
     return wlr_xdg_toplevel_set_size(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, width, height);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr, width, height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -373,7 +380,7 @@ void content_request_close(wlmtk_content_t *content_ptr)
         content_ptr, xdg_toplevel_surface_t, super_content);
 
     wlr_xdg_toplevel_send_close(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -391,7 +398,7 @@ void content_set_activated(
         content_ptr, xdg_toplevel_surface_t, super_content);
 
     wlr_xdg_toplevel_set_activated(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel, activated);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr, activated);
 
     wlmtk_surface_set_activated(xdg_tl_surface_ptr->surface_ptr, activated);
 }
@@ -515,22 +522,28 @@ void handle_surface_commit(
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, xdg_toplevel_surface_t, surface_commit_listener);
 
-    if (NULL == xdg_tl_surface_ptr->wlr_xdg_surface_ptr) return;
-    BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_surface_ptr->role ==
+    if (xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->initial_commit) {
+        // Initial commit: Ensure a configure is responded with.
+        wlr_xdg_surface_schedule_configure(
+            xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
+    }
+
+    if (NULL == xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr) return;
+    BS_ASSERT(xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->role ==
               WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
     wlmtk_content_commit(
         &xdg_tl_surface_ptr->super_content,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.geometry.height,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->current.configure_serial);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.width,
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.height,
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->current.configure_serial);
 
     wlmtk_window_commit_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.maximized);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->current.maximized);
     wlmtk_window_commit_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->current.fullscreen);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->current.fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -557,7 +570,7 @@ void handle_toplevel_request_maximize(
     // may not have been sent throught @ref wlmtk_window_request_maximized,
     // hence adding an explicit `ack_configure` here.
     wlr_xdg_surface_schedule_configure(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -585,7 +598,7 @@ void handle_toplevel_request_fullscreen(
     // may not have been sent throught @ref wlmtk_window_request_maximized,
     // hence adding an explicit `ack_configure` here.
     wlr_xdg_surface_schedule_configure(
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->base);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -686,7 +699,7 @@ void handle_toplevel_set_parent(
         toplevel_set_parent_listener);
 
     // TODO(kaeser@gubbe.ch): Implement.
-    bs_log(BS_WARNING, "Unimplemented: set_parent_menu for XDG toplevel %p",
+    bs_log(BS_WARNING, "Unimplemented: set_parent for XDG toplevel %p",
            xdg_tl_surface_ptr);
 }
 
@@ -708,7 +721,7 @@ void handle_toplevel_set_title(
 
     wlmtk_window_set_title(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        xdg_tl_surface_ptr->wlr_xdg_surface_ptr->toplevel->title);
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->title);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -728,7 +741,7 @@ void handle_toplevel_set_app_id(
         toplevel_set_app_id_listener);
 
     // TODO(kaeser@gubbe.ch): Implement.
-    bs_log(BS_WARNING, "Unimplemented: set_parent_menu for XDG toplevel %p",
+    bs_log(BS_WARNING, "Unimplemented: set_app_id for XDG toplevel %p",
            xdg_tl_surface_ptr);
 }
 

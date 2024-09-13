@@ -23,8 +23,6 @@
 #include "buffer.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 
-#include <wayland-server-core.h>
-
 /* == Declarations ========================================================= */
 
 /** State of the icon. */

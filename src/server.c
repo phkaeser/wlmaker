@@ -26,6 +26,7 @@
 
 #include <libbase/libbase.h>
 
+#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
@@ -138,7 +139,12 @@ wlmaker_server_t *wlmaker_server_create(
 
     // Auto-create the wlroots backend. Can be X11 or direct.
     server_ptr->wlr_backend_ptr = wlr_backend_autocreate(
-        server_ptr->wl_display_ptr, NULL  /* struct wlr_session */);
+#if WLR_VERSION_NUM >= (18 << 8)
+        wl_display_get_event_loop(server_ptr->wl_display_ptr),
+#else // WLR_VERSION_NUM >= (18 << 8)
+        server_ptr->wl_display_ptr,
+#endif // WLR_VERSION_NUM >= (18 << 8)
+        NULL  /* struct wlr_session */);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
         wlmaker_server_destroy(server_ptr);
@@ -180,7 +186,11 @@ wlmaker_server_t *wlmaker_server_create(
     }
 
     // The output layout.
-    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create();
+    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+#if WLR_VERSION_NUM >= (18 << 8)
+        server_ptr->wl_display_ptr
+#endif // WLR_VERSION_NUM >= (18 << 8)
+        );
     if (NULL == server_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_create()");
         wlmaker_server_destroy(server_ptr);
@@ -596,6 +606,8 @@ void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
         server_ptr->wlr_allocator_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
+        server_ptr->options_ptr->width,
+        server_ptr->options_ptr->height,
         server_ptr);
     if (NULL == output_ptr) {
         bs_log(BS_INFO, "Failed wlmaker_output_create for server %p",
@@ -637,7 +649,7 @@ void handle_new_input_device(struct wl_listener *listener_ptr, void *data_ptr)
 
     case WLR_INPUT_DEVICE_POINTER:
     case WLR_INPUT_DEVICE_TOUCH:
-    case WLR_INPUT_DEVICE_TABLET_TOOL:
+    case WLR_INPUT_DEVICE_TABLET_PAD:
         wlmaker_cursor_attach_input_device(
             server_ptr->cursor_ptr,
             wlr_input_device_ptr);

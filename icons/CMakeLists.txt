@@ -19,4 +19,5 @@ INSTALL(FILES
   clip-48x48.png
   firefox-48x48.png
   terminal-48x48.png
+  wlmclock-64x64.png
   DESTINATION share/icons/wlmaker)

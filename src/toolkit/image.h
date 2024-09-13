@@ -45,6 +45,22 @@ wlmtk_image_t *wlmtk_image_create(
     wlmtk_env_t *env_ptr);
 
 /**
+ * Creates a toolkit image, scaled while preserving aspect ratio.
+ *
+ * @param image_path_ptr
+ * @param width
+ * @param height
+ * @param env_ptr
+ *
+ * @return Pointer to the toolkit image or NULL on error.
+ */
+wlmtk_image_t *wlmtk_image_create_scaled(
+    const char *image_path_ptr,
+    int width,
+    int height,
+    wlmtk_env_t *env_ptr);
+
+/**
  * Destroys the toolkit image.
  *
  * @param image_ptr
