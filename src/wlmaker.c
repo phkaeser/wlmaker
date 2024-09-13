@@ -65,15 +65,6 @@ static const bs_arg_enum_table_t wlmaker_log_levels[] = {
     { .name_ptr = NULL },
 };
 
-/** Log levels. */
-static const bs_arg_enum_table_t wlmaker_log_levels[] = {
-    { .name_ptr = "DEBUG", BS_DEBUG },
-    { .name_ptr = "INFO", BS_INFO },
-    { .name_ptr = "WARNING", BS_WARNING },
-    { .name_ptr = "ERROR", BS_ERROR },
-    { .name_ptr = NULL },
-};
-
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
 #if defined(WLMAKER_HAVE_XWAYLAND)
