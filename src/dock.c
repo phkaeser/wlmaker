@@ -21,7 +21,7 @@
 #include "dock.h"
 
 #include <wlr/util/edges.h>
-#include <toolkit/toolkit.h>
+#include "toolkit/toolkit.h"
 
 #include "config.h"
 #include "launcher.h"
