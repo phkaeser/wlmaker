@@ -26,6 +26,7 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 #include "container.h"
 #include "panel.h"
 #include "root.h"
+#include "tile.h"
 #include "window.h"
 
 #ifdef __cplusplus
@@ -54,6 +55,7 @@ typedef enum {
  * Creates a workspace.
  *
  * @param name_ptr
+ * @param tile_style_ptr
  * @param env_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
@@ -61,6 +63,7 @@ typedef enum {
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
     const char *name_ptr,
+    const wlmtk_tile_style_t *tile_style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

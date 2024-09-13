@@ -51,11 +51,19 @@ PKG_CHECK_MODULES(
   wayland-protocols>=1.32
   wayland-server>=1.22.91)
 PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
-PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17.4)
 PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
+
 # XWayland considered optional.
 PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
+
+# We aim to support wlroots 0.17 and 0.18. With wlroots 0.18, the package name
+# includes the major/minor version, so we need this extra check.
+PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
+IF(NOT WLROOTS_FOUND)
+  # If that wasn't found, we'll resort to the (recent) 0.17.4 version.
+  PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots>=0.17.4)
+ENDIF(NOT WLROOTS_FOUND)
 
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)

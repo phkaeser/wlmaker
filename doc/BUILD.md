@@ -1,9 +1,17 @@
 # Build Wayland Maker
 
-## Install required packages
-
 Wayland Maker is developed and tested on Debian, hence we're using package
-names and versions as found on that distribution. You need to run:
+names and versions as found on that distribution. The code is aimed to
+compile well on **Debian Trixie** using pre-compiled libraries; with detailed
+build intructions just below.
+
+For compiling on **Debian Bookworm**, further dependencies need to be
+compiled, built and installed. This is described
+[further below](BUILD.md#build-on-debian-bookworm-stable).
+
+## Build on Debian Trixie
+
+### Install required packages
 
 ```
 apt-get install -y \
@@ -12,49 +20,54 @@ apt-get install -y \
   cmake \
   doxygen \
   flex \
-  foot \
+  gcc \
   git \
-  glslang-dev \
-  glslang-tools \
-  graphviz \
   libcairo2-dev \
-  libgbm-dev \
-  libinput-dev \
   libncurses-dev \
-  libseat-dev \
-  libudev-dev \
-  libvulkan-dev \
-  libwayland-dev \
-  libxcb-composite0-dev \
-  libxcb-dri3-dev \
-  libxcb-ewmh-dev \
-  libxcb-icccm4-dev \
-  libxcb-present-dev \
-  libxcb-render-util0-dev \
-  libxcb-res0-dev \
-  libxcb-xinput-dev \
-  libxkbcommon-dev \
-  libxml2-dev \
-  meson \
+  libwlroots-dev \
+  pkg-config \
   plantuml \
-  seatd \
-  wayland-protocols \
-  xmlto \
-  xsltproc \
   xwayland
 ```
 
-See the [github build workflow](../.github/workflows/build-for-linux.yml) as reference.
+See the [github build workflow](../.github/workflows/build-for-linux.yml)
+as reference.
 
-## Get Wayland Maker
+### Get Wayland Maker
+
+```
+git clone https://github.com/phkaeser/wlmaker.git
+(cd wlmaker && git submodule update --init submodules/)
+```
+
+Run the commands below from the directory you cloned the source into.
+
+### Configure, build and install Wayland Maker
+
+Wayland Maker and tools will be installed to `${HOME}/.local`:
+
+```bash
+cmake -DCMAKE_INSTALL_PREFIX="${HOME}/.local" -B build/
+(cd build && make && make install)
+```
+
+That's it! Now up to the [running instructions]!
+
+
+## Build on Debian Bookworm (stable)
+
+On **Debian Bookworm**, further dependencies need to be configured,
+built & installed. See the [github build workflow for
+Bookworm](../.github/workflows/build-for-bookworm-wlroots-018.yml) as reference
+and for the list of packages.
+
+### Get Wayland Maker
 
 ```
 git clone https://github.com/phkaeser/wlmaker.git
 ```
 
-Run the commands below from the directory you cloned the source into.
-
-## Get, build and install dependencies
+### Get, build and install dependencies
 
 Wayland Maker is still in development and is depending on a set of rapidly
 evolving libraries. To keep the API between code and dependencies synchronized,

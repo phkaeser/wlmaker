@@ -220,7 +220,11 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
-    clip_ptr->image_ptr = wlmtk_image_create(path_ptr, server_ptr->env_ptr);
+    clip_ptr->image_ptr = wlmtk_image_create_scaled(
+        path_ptr,
+        clip_ptr->super_tile.style.content_size,
+        clip_ptr->super_tile.style.content_size,
+        server_ptr->env_ptr);
     if (NULL == clip_ptr->image_ptr) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
@@ -487,10 +491,16 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
         wlmtk_style_font_weight_cairo_from_wlmtk(clip_ptr->style.font.weight));
     cairo_set_font_size(cairo_ptr, clip_ptr->style.font.size);
     cairo_set_source_argb8888(cairo_ptr, clip_ptr->style.text_color);
-    cairo_move_to(cairo_ptr, 4, 2 + clip_ptr->style.font.size);
+    cairo_move_to(
+        cairo_ptr,
+        clip_ptr->style.font.size * 4 / 12,
+        clip_ptr->style.font.size * 2 / 12 + clip_ptr->style.font.size);
     cairo_show_text(cairo_ptr, name_ptr);
 
-    cairo_move_to(cairo_ptr, 50, 56);
+    cairo_move_to(
+        cairo_ptr,
+        clip_ptr->super_tile.style.size - clip_ptr->style.font.size * 14 / 12,
+        clip_ptr->super_tile.style.size - clip_ptr->style.font.size * 8 / 12);
     char buf[10];
     snprintf(buf, sizeof(buf), "%d", index);
     cairo_show_text(cairo_ptr, buf);

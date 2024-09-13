@@ -349,9 +349,11 @@ void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
-    if (window_ptr->shaded) return;
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
+    // We don't permit maximizing unmapped windows. Don't know the extents.
+    if (NULL == workspace_ptr) maximized = false;
 
-    BS_ASSERT(NULL != wlmtk_window_get_workspace(window_ptr));
+    if (window_ptr->shaded) return;
     if (window_ptr->maximized == maximized) return;
     if (window_ptr->fullscreen) return;
 
@@ -359,8 +361,7 @@ void wlmtk_window_request_maximized(
 
     struct wlr_box box;
     if (maximized) {
-        box = wlmtk_workspace_get_maximize_extents(
-            wlmtk_window_get_workspace(window_ptr));
+        box = wlmtk_workspace_get_maximize_extents(workspace_ptr);
     } else {
         box = window_ptr->organic_size;
     }

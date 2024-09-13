@@ -176,7 +176,11 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-    launcher_ptr->image_ptr = wlmtk_image_create(path_ptr, env_ptr);
+    launcher_ptr->image_ptr = wlmtk_image_create_scaled(
+        path_ptr,
+        launcher_ptr->super_tile.style.content_size,
+        launcher_ptr->super_tile.style.content_size,
+        env_ptr);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -287,16 +291,16 @@ struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
         r, g, b, alpha);
     cairo_set_source(cairo_ptr, cairo_pattern_ptr);
     cairo_pattern_destroy(cairo_pattern_ptr);
-    cairo_rectangle(cairo_ptr, 0, s - 12, s, 12);
+    cairo_rectangle(cairo_ptr, 0, s - 12 * s / 64, s, 12 * s / 64);
     cairo_fill(cairo_ptr);
     cairo_stroke(cairo_ptr);
 
     cairo_select_font_face(cairo_ptr, "Helvetica",
                            CAIRO_FONT_SLANT_NORMAL,
                            CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cairo_ptr, 10.0);
+    cairo_set_font_size(cairo_ptr, 10.0 * s / 64.0);
     cairo_set_source_argb8888(cairo_ptr, 0xffffffff);
-    cairo_move_to(cairo_ptr, 4, s - 2);
+    cairo_move_to(cairo_ptr, 4 * s / 64, s - 2 * s / 64);
     cairo_show_text(cairo_ptr, status_ptr);
 
     cairo_destroy(cairo_ptr);

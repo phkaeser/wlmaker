@@ -55,6 +55,7 @@ typedef struct {
 typedef enum {
     WLMCFG_TYPE_UINT64,
     WLMCFG_TYPE_INT64,
+    WLMCFG_TYPE_DOUBLE,
     WLMCFG_TYPE_ARGB32,
     WLMCFG_TYPE_BOOL,
     WLMCFG_TYPE_ENUM,
@@ -75,6 +76,12 @@ typedef struct {
     /** The default value, if not in the dict. */
     uint64_t                   default_value;
 } wlmcfg_desc_uint64_t;
+
+/** A floating point value. */
+typedef struct {
+    /** The default value, if not in the dict. */
+    double                    default_value;
+} wlmcfg_desc_double_t;
 
 /** A color, encoded as string in format 'argb32:aarrggbb'. */
 typedef struct {
@@ -134,6 +141,7 @@ struct _wlmcfg_desc_t {
     union {
         wlmcfg_desc_int64_t   v_int64;
         wlmcfg_desc_uint64_t  v_uint64;
+        wlmcfg_desc_double_t  v_double;
         wlmcfg_desc_argb32_t  v_argb32;
         wlmcfg_desc_bool_t    v_bool;
         wlmcfg_desc_enum_t    v_enum;
@@ -163,6 +171,15 @@ struct _wlmcfg_desc_t {
         .required = _required,                                          \
         .field_offset = offsetof(_base, _field),                        \
         .v.v_int64.default_value = _default                             \
+    }
+
+/** Descriptor for a floating point value. */
+#define WLMCFG_DESC_DOUBLE(_key, _required, _base, _field, _default) {  \
+        .type = WLMCFG_TYPE_DOUBLE,                                     \
+        .key_ptr = (_key),                                              \
+        .required = _required,                                          \
+        .field_offset = offsetof(_base, _field),                        \
+        .v.v_double.default_value = _default                            \
     }
 
 /** Descriptor for an ARGB32 value. */

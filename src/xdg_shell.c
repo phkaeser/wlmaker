@@ -21,19 +21,32 @@
 #include "xdg_shell.h"
 
 #include "toolkit/toolkit.h"
+#include "xdg_popup.h"
 #include "xdg_toplevel.h"
 
 #include <libbase/libbase.h>
 #include <limits.h>
+
+#include <wlr/version.h>
 
 /* == Declarations ========================================================= */
 
 static void handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+#if WLR_VERSION_NUM >= (18 << 8)
+static void handle_new_toplevel(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_new_popup(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+#else  // WLR_VERSION_NUM >= (18 << )8
 static void handle_new_surface(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+#endif // WLR_VERSION_NUM >= (18 << 8)
 
 /* == Exported methods ===================================================== */
 
@@ -52,10 +65,21 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
+#if WLR_VERSION_NUM >= (18 << 8)
+    wlmtk_util_connect_listener_signal(
+        &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_toplevel,
+        &xdg_shell_ptr->new_toplevel_listener,
+        handle_new_toplevel);
+    wlmtk_util_connect_listener_signal(
+        &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_popup,
+        &xdg_shell_ptr->new_popup_listener,
+        handle_new_popup);
+#else // WLR_VERSION_NUM >= (18 << 8)
     wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.new_surface,
         &xdg_shell_ptr->new_surface_listener,
         handle_new_surface);
+#endif // WLR_VERSION_NUM >= (18 << 8)
     wlmtk_util_connect_listener_signal(
         &xdg_shell_ptr->wlr_xdg_shell_ptr->events.destroy,
         &xdg_shell_ptr->destroy_listener,
@@ -68,7 +92,14 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
 void wlmaker_xdg_shell_destroy(wlmaker_xdg_shell_t *xdg_shell_ptr)
 {
     wl_list_remove(&xdg_shell_ptr->destroy_listener.link);
+#if WLR_VERSION_NUM >= (18 << 8)
+    wl_list_remove(&xdg_shell_ptr->new_popup_listener.link);
+    wl_list_remove(&xdg_shell_ptr->new_toplevel_listener.link);
+#else // WLR_VERSION_NUM >= (18 << 8)
     wl_list_remove(&xdg_shell_ptr->new_surface_listener.link);
+#endif // WLR_VERSION_NUM >= (18 << 8)
+    // Note: xdg_shell_ptr->wlr_xdg_shell_ptr is destroyed when the display
+    // is destroyed.
     free(xdg_shell_ptr);
 }
 
@@ -90,18 +121,63 @@ void handle_destroy(struct wl_listener *listener_ptr,
     wlmaker_xdg_shell_destroy(xdg_shell_ptr);
 }
 
+#if WLR_VERSION_NUM >= (18 << 8)
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `new_toplevel` signal raised by `wlr_xdg_shell`.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to the new struct wlr_xdg_toplevel.
+ */
+void handle_new_toplevel(struct wl_listener *listener_ptr,
+                         void *data_ptr)
+{
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_toplevel_listener);
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = data_ptr;
+
+    wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
+        wlr_xdg_toplevel_ptr, xdg_shell_ptr->server_ptr);
+
+    // TODO(kaeser@gubbe.ch): Handle errors.
+    bs_log(BS_INFO, "XDG shell: Toolkit window %p for toplevel %p",
+           window_ptr, wlr_xdg_toplevel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Event handler for the `new_popup` signal raised by `wlr_xdg_shell`.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to the new struct wlr_xdg_popup.
+ */
+void handle_new_popup(struct wl_listener *listener_ptr,
+                      void *data_ptr)
+{
+    wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_shell_t, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
+
+    if (NULL == wlr_xdg_popup_ptr->parent) {
+        bs_log(BS_WARNING,
+               "Unimplemented: XDG shell %p: Creating popup %p without parent",
+               xdg_shell_ptr, wlr_xdg_popup_ptr);
+    }
+}
+
+#else // WLR_VERSION_NUM >= (18 << 8)
+
 /* ------------------------------------------------------------------------- */
 /**
  * Event handler for the `new_surface` signal raised by `wlr_xdg_shell`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
+  *
+  * @param listener_ptr
+  * @param data_ptr
+  */
 void handle_new_surface(struct wl_listener *listener_ptr,
                         void *data_ptr)
 {
     struct wlr_xdg_surface *wlr_xdg_surface_ptr;
-
     wlmaker_xdg_shell_t *xdg_shell_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_shell_t, new_surface_listener);
     wlr_xdg_surface_ptr = data_ptr;
@@ -115,9 +191,8 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         break;
 
     case WLR_XDG_SURFACE_ROLE_TOPLEVEL:;
-
         wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
-            wlr_xdg_surface_ptr, xdg_shell_ptr->server_ptr);
+            wlr_xdg_surface_ptr->toplevel, xdg_shell_ptr->server_ptr);
         bs_log(BS_INFO, "XDG shell: Toolkit window %p for surface %p",
                window_ptr, wlr_xdg_surface_ptr);
         break;
@@ -126,5 +201,7 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         bs_log(BS_ERROR, "Unhandled role: %d", wlr_xdg_surface_ptr->role);
     }
 }
+
+#endif // WLR_VERSION_NUM >= (18 << 8)
 
 /* == End of xdg_shell.c =================================================== */

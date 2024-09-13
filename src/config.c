@@ -93,6 +93,8 @@ static const wlmcfg_desc_t _wlmaker_config_tile_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "Size", true, wlmtk_tile_style_t, size, 64),
     WLMCFG_DESC_UINT64(
+        "ContentSize", true, wlmtk_tile_style_t, content_size, 48),
+    WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
     WLMCFG_DESC_CUSTOM(
         "Fill", true, wlmtk_tile_style_t, fill,
@@ -283,8 +285,8 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading configuration from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading configuration from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.
@@ -317,8 +319,8 @@ wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr)
         // If we get here, there was a resolved item at the path. A load
         // failure indicates an issue with an existing file, and we should
         // fali here.
-        bs_log(BS_INFO, "Loading state from \"%s\"", *fname_ptr_ptr);
-        return _wlmaker_config_from_plist(*fname_ptr_ptr);
+        bs_log(BS_INFO, "Loading state from \"%s\"", path_ptr);
+        return _wlmaker_config_from_plist(path_ptr);
     }
 
     // Hardcoded configuration. Failing to load that is an error.

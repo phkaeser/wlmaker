@@ -57,6 +57,16 @@ bool icon_callback(
 {
     bs_gfxbuf_clear(gfxbuf_ptr, 0);
 
+    if (gfxbuf_ptr->width != gfxbuf_ptr->height) {
+        bs_log(BS_ERROR, "Requiring a square buffer, width %u != height %u",
+               gfxbuf_ptr->width, gfxbuf_ptr->height);
+        return false;
+    }
+
+    unsigned width = gfxbuf_ptr->width;
+    unsigned outer = 4 * gfxbuf_ptr->width / 64;
+    unsigned inner = 5 * gfxbuf_ptr->width / 64;
+
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
     if (NULL == cairo_ptr) {
         bs_log(BS_ERROR, "Failed cairo_create_from_bs_gfxbuf(%p)", gfxbuf_ptr);
@@ -69,10 +79,14 @@ bool icon_callback(
     BS_ASSERT(NULL != pattern_ptr);
     cairo_set_source(cairo_ptr, pattern_ptr);
     cairo_pattern_destroy(pattern_ptr);
-    cairo_rectangle(cairo_ptr, 5, 46, 54, 14);
+    cairo_rectangle(
+        cairo_ptr,
+        outer + 1, width - 18, width - 2 * outer - 2, 14);
     cairo_fill(cairo_ptr);
 
-    wlm_primitives_draw_bezel_at(cairo_ptr, 4, 45, 56, 15, 1.0, false);
+    wlm_primitives_draw_bezel_at(
+        cairo_ptr,
+        outer, width - 19, width - 2 * outer, 15, 1.0, false);
 
     struct timeval tv;
     if (0 != gettimeofday(&tv, NULL)) {
@@ -87,32 +101,40 @@ bool icon_callback(
         wlm_cairo_7segment_display_digit(
             cairo_ptr,
             &wlm_cairo_7segment_param_8x12,
-            6 + i * 8 + (i / 2) * 2, 58,
+            width / 2 - 26 + i * 8 + (i / 2) * 2,
+            width - 6,
             color_led,
             color_off,
             time_buf[i] - '0');
     }
 
     cairo_set_source_argb8888(cairo_ptr, color_led);
-    cairo_rectangle(cairo_ptr, 22, 50, 1, 1.25);
-    cairo_rectangle(cairo_ptr, 22, 54, 1, 1.25);
-    cairo_rectangle(cairo_ptr, 40, 50, 1, 1.25);
-    cairo_rectangle(cairo_ptr, 40, 54, 1, 1.25);
+    cairo_rectangle(cairo_ptr, width / 2 - 10, width - 14, 1, 1.25);
+    cairo_rectangle(cairo_ptr, width / 2 - 10, width - 10, 1, 1.25);
+    cairo_rectangle(cairo_ptr, width / 2 + 8, width - 14, 1, 1.25);
+    cairo_rectangle(cairo_ptr, width / 2 + 8, width - 10, 1, 1.25);
     cairo_fill(cairo_ptr);
 
-    wlm_primitives_draw_bezel_at(cairo_ptr, 4, 4, 56, 41, 1.0, false);
-
-    cairo_set_source_argb8888(cairo_ptr, color_background);
-    cairo_rectangle(cairo_ptr, 5, 5, 54, 39);
-    cairo_fill(cairo_ptr);
 
     // Draws a clock face, with small ticks every hour.
-    double center_x = 31.5;
-    double center_y = 24.5;
-    double radius = 19;
+    double center_x = 31.5 * width / 64.0;
+    double center_y = 24.5 * width / 64.0;
+    double radius = 19 * width / 64.0;
+
+    wlm_primitives_draw_bezel_at(
+        cairo_ptr,
+        outer, outer,
+        width - 2 * outer, 41.0 * width / 64.0,
+        inner - outer, false);
+    cairo_set_source_argb8888(cairo_ptr, color_background);
+    cairo_rectangle(
+        cairo_ptr,
+        inner, inner,
+        width - 2 * inner, 39.0 * width / 64.0);
+    cairo_fill(cairo_ptr);
+
     cairo_set_source_argb8888(cairo_ptr, color_led);
     for (int i = 0; i < 12; ++i) {
-
         // ... and larer ticks every 3 hours.
         double ratio = 0.9;
         if (i % 3 == 0) {

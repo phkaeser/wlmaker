@@ -492,7 +492,8 @@ void handle_surface_commit(
             toplevel_icon_ptr->icon_manager_ptr->wl_display_ptr);
         zwlmaker_toplevel_icon_v1_send_configure(
             toplevel_icon_ptr->wl_resource_ptr,
-            64, 64,
+            toplevel_icon_ptr->super_tile.style.size,
+            toplevel_icon_ptr->super_tile.style.size,
             toplevel_icon_ptr->pending_serial);
         return;
     }
