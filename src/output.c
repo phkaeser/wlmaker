@@ -132,7 +132,6 @@ wlmaker_output_t *wlmaker_output_create(
         wlmaker_output_destroy(output_ptr);
         return NULL;
     }
-    wlr_output_enable(output_ptr->wlr_output_ptr, true);
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);

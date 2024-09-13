@@ -51,7 +51,7 @@
       Font = {
         Face = Helvetica;
         Weight = Bold;
-        Size = 14;
+        Size = 15;
       };
     };
     ResizeBar = {
