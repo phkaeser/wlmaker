@@ -101,11 +101,12 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::XKBCOMMON)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_lib PUBLIC
+  # Keep wlroots first -- multiple versions may interfere (#117).
+  ${WLROOTS_INCLUDE_DIRS}
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
   ${WAYLAND_INCLUDE_DIRS}
-  ${WLROOTS_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
 )
