@@ -46,7 +46,7 @@
       BezelWidth = 1;
       Margin = {
         Width = 1;
-        Color = "argb32:ff000000" ;
+        Color = "argb32:ff000000";
       };
       Font = {
         Face = Helvetica;
