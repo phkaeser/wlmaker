@@ -105,6 +105,8 @@ struct _wlmaker_server_t {
     struct wlr_allocator      *wlr_allocator_ptr;
     /** wlroots backend. */
     struct wlr_backend        *wlr_backend_ptr;
+    /** wlroots session. Populated from wlr_backend_autocreate(). */
+    struct wlr_session        *wlr_session_ptr;
     /** wlroots output layout helper. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
     /** wlroots renderer. */

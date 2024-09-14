@@ -144,7 +144,7 @@ wlmaker_server_t *wlmaker_server_create(
 #else // WLR_VERSION_NUM >= (18 << 8)
         server_ptr->wl_display_ptr,
 #endif // WLR_VERSION_NUM >= (18 << 8)
-        NULL  /* struct wlr_session */);
+        &server_ptr->wlr_session_ptr);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
         wlmaker_server_destroy(server_ptr);
@@ -532,6 +532,13 @@ bool wlmaker_keyboard_process_bindings(
     xkb_keysym_t keysym,
     uint32_t modifiers)
 {
+    if (bs_will_log(BS_DEBUG)) {
+        char keysym_name[128] = {};
+        xkb_keysym_get_name(keysym, keysym_name, sizeof(keysym_name));
+        bs_log(BS_DEBUG, "Process key '%s' (sym %d, modifiers %"PRIx32")",
+               keysym_name, keysym, modifiers);
+    }
+
     for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = dlnode_ptr->next_ptr) {
