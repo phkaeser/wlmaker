@@ -6,14 +6,55 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  INSTALL_PATH: "${HOME}/wlmaker"
-
 jobs:
   build_matrix:
     strategy:
       matrix:
         compiler: [ "gcc", "clang" ]
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
+
+    steps:
+    - name: Install package dependencies.
+      run: |
+        apt-get update
+        apt-get install -y \
+          bison \
+          clang \
+          cmake \
+          flex \
+          gcc \
+          git \
+          libcairo2-dev \
+          libncurses-dev \
+          libwlroots-dev \
+          pkg-config \
+          plantuml \
+          xwayland
+
+    - name: Checkout code, including git submodules.
+      uses: actions/checkout@v3
+      with:
+        # Not using 'recursive' prevents fetching extra submodules below
+        # dependencies/. These are only needed to build wlroots from source.
+        submodules: true
+
+    - name: Configure wlmaker through CMake.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake -B build/
+
+    - name: Build wlmaker.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake --build build/
+
+    - name: Run all tests.
+      run: |
+        ctest --test-dir build/ --build-run-dir build/ -V
+
+  generate_doc:
     runs-on: ubuntu-latest
     container:
       image: debian:trixie
@@ -36,27 +77,16 @@ jobs:
           pkg-config \
           plantuml \
           xwayland
-    
+
     - name: Checkout code, including git submodules.
       uses: actions/checkout@v3
       with:
-        # Not using 'recursive' prevents fetching extra submodules below
-        # dependencies/. These are only needed to build wlroots from source.
         submodules: true
 
-    - name: Configure wlmaker through CMake.
+    - name: Configure wlmaker through CMake, with doxygen.
       run: |
-        export CC="${{ matrix.compiler }}"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -Dconfig_DOXYGEN_CRITICAL=ON -B build/
-
-    - name: Build wlmaker.
-      run: |
-        export CC="${{ matrix.compiler }}"
-        cmake --build build/
+        cmake -Dconfig_DOXYGEN_CRITICAL=ON -B build/
 
     - name: Build documentation.
       run: cmake --build build/ --target doc
-
-    - name: Run all tests.
-      run: |
-        ctest --test-dir build/ --build-run-dir build/ -V
+      
