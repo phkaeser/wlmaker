@@ -67,7 +67,7 @@ static void bind_input_observer(
 static void handle_resource_destroy(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
-static void input_observer_handle_track_pointer(
+static void input_observer_handle_pointer_position(
     struct wl_client *client,
     struct wl_resource *resource,
     uint32_t id,
@@ -99,11 +99,11 @@ static void _wlmaker_position_tracker_handle_cursor_frame(
 static const struct ext_input_observer_v1_interface
 input_observer_v1_implementation = {
     .destroy = handle_resource_destroy,
-    .track_pointer = input_observer_handle_track_pointer,
+    .pointer_position = input_observer_handle_pointer_position,
 };
 
 /** Implementation of the position (position) tracker. */
-static const struct zwlmaker_position_tracker_v1_interface
+static const struct ext_input_position_observer_v1_interface
 position_tracker_v1_implementation = {
     .destroy = handle_resource_destroy,
 };
@@ -228,7 +228,7 @@ void handle_resource_destroy(
  * @param id
  * @param surface_wl_resource_ptr Resource handle of the surface.
  */
-void input_observer_handle_track_pointer(
+void input_observer_handle_pointer_position(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
     uint32_t id,
@@ -280,12 +280,12 @@ wlmaker_position_tracker_t *wlmaker_position_tracker_create(
 
     tracker_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
-        &zwlmaker_position_tracker_v1_interface,
+        &ext_input_position_observer_v1_interface,
         version,
         id);
     if (NULL == tracker_ptr->wl_resource_ptr) {
         bs_log(BS_ERROR, "Failed wl_resource_create(%p, %p, %d, %"PRIu32")",
-               wl_client_ptr, &zwlmaker_position_tracker_v1_interface,
+               wl_client_ptr, &ext_input_position_observer_v1_interface,
                version, id);
         wlmaker_position_tracker_destroy(tracker_ptr);
         return NULL;
@@ -334,7 +334,7 @@ wlmaker_position_tracker_t *wlmaker_position_tracker_from_resource(
 {
     BS_ASSERT(wl_resource_instance_of(
                   wl_resource_ptr,
-                  &zwlmaker_position_tracker_v1_interface,
+                  &ext_input_position_observer_v1_interface,
                   &position_tracker_v1_implementation));
     return wl_resource_get_user_data(wl_resource_ptr);
 }
@@ -379,7 +379,7 @@ void _wlmaker_position_tracker_handle_cursor_frame(
         tracker_ptr->wlr_cursor_ptr->x - node_x) / width;
     double y = 256.0 * (double)(
         tracker_ptr->wlr_cursor_ptr->y - node_y) / height;
-    zwlmaker_position_tracker_v1_send_position(
+    ext_input_position_observer_v1_send_position(
         tracker_ptr->wl_resource_ptr,
         tracker_ptr->wlr_surface_ptr->resource,
         BS_MAX(INT32_MIN, BS_MIN(INT32_MAX, x)),
