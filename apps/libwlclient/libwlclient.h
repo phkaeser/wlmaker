@@ -63,8 +63,8 @@ typedef struct {
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
     /** The bound XDG decoration manager. NULL if not supported. */
     struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
-    /** The bound Pointer Tracking. */
-    struct zwlmaker_position_tracking_v1 *position_tracking_ptr;
+    /** The bound Input Observer. */
+    struct ext_input_observer_v1 *input_observer_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;

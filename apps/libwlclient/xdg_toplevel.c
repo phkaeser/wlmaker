@@ -26,9 +26,9 @@
 #include <wayland-client-protocol.h>
 
 #include "dblbuf.h"
+#include "input-observer-v1-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
-#include "wlmaker-position-tracking-v1-client-protocol.h"
 
 struct wl_array;
 struct xdg_surface;
@@ -242,14 +242,14 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
             wlclient_attributes(wlclient_ptr)->app_id_ptr);
     }
 
-    if (NULL != wlclient_attributes(wlclient_ptr)->position_tracking_ptr) {
-        toplevel_ptr->tracker_ptr = zwlmaker_position_tracking_v1_track_pointer(
-            wlclient_attributes(wlclient_ptr)->position_tracking_ptr,
+    if (NULL != wlclient_attributes(wlclient_ptr)->input_observer_ptr) {
+        toplevel_ptr->tracker_ptr = ext_input_observer_v1_track_pointer(
+            wlclient_attributes(wlclient_ptr)->input_observer_ptr,
             toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->tracker_ptr) {
             bs_log(BS_ERROR,
-                   "Failed zwlmaker_position_tracking_v1_track(%p, %p)",
-                   wlclient_attributes(wlclient_ptr)->position_tracking_ptr,
+                   "Failed ext_input_observer_v1_track(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->input_observer_ptr,
                    toplevel_ptr->wl_surface_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;
