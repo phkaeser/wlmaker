@@ -68,7 +68,7 @@ struct _wlclient_xdg_toplevel_t {
     void                      *callback_ud_ptr;
 
     /** Pointer position tracker */
-    struct zwlmaker_position_tracker_v1 *tracker_ptr;
+    struct ext_input_position_observer_v1 *position_observer_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -101,7 +101,7 @@ static void _xdg_toplevel_handle_wm_capabilities(
 
 static void _wlclient_tracker_position(
     void *data_ptr,
-    struct zwlmaker_position_tracker_v1 *tracker_ptr,
+    struct ext_input_position_observer_v1 *position_observer_ptr,
     struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y);
@@ -127,8 +127,8 @@ _wlc_xdg_toplevel_decoration_v1_listener = {
     .configure = _wlc_xdg_toplevel_decoration_v1_configure,
 };
 
-/** Listeners for the Pointer position Tracker. */
-static const struct zwlmaker_position_tracker_v1_listener
+/** Listeners for the Pointer positioon Tracker. */
+static const struct ext_input_position_observer_v1_listener
 _wlclient_tracker_listener = {
     .position = _wlclient_tracker_position,
 };
@@ -243,10 +243,10 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     }
 
     if (NULL != wlclient_attributes(wlclient_ptr)->input_observer_ptr) {
-        toplevel_ptr->tracker_ptr = ext_input_observer_v1_track_pointer(
+        toplevel_ptr->position_observer_ptr = ext_input_observer_v1_pointer_position(
             wlclient_attributes(wlclient_ptr)->input_observer_ptr,
             toplevel_ptr->wl_surface_ptr);
-        if (NULL == toplevel_ptr->tracker_ptr) {
+        if (NULL == toplevel_ptr->position_observer_ptr) {
             bs_log(BS_ERROR,
                    "Failed ext_input_observer_v1_track(%p, %p)",
                    wlclient_attributes(wlclient_ptr)->input_observer_ptr,
@@ -254,12 +254,12 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;
         }
-        zwlmaker_position_tracker_v1_add_listener(
-            toplevel_ptr->tracker_ptr,
+        ext_input_position_observer_v1_add_listener(
+            toplevel_ptr->position_observer_ptr,
             &_wlclient_tracker_listener,
             toplevel_ptr);
         bs_log(BS_INFO, "Created pointer tracker %p for wl_surface %p",
-               toplevel_ptr->tracker_ptr, toplevel_ptr->wl_surface_ptr);
+               toplevel_ptr->position_observer_ptr, toplevel_ptr->wl_surface_ptr);
     }
 
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
@@ -285,10 +285,10 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
         toplevel_ptr->dblbuf_ptr = NULL;
     }
 
-    if (NULL != toplevel_ptr->tracker_ptr) {
-        zwlmaker_position_tracker_v1_destroy(
-            toplevel_ptr->tracker_ptr);
-        toplevel_ptr->tracker_ptr = NULL;
+    if (NULL != toplevel_ptr->position_observer_ptr) {
+        ext_input_position_observer_v1_destroy(
+            toplevel_ptr->position_observer_ptr);
+        toplevel_ptr->position_observer_ptr = NULL;
     }
 
     if (NULL != toplevel_ptr->wl_surface_ptr) {
@@ -436,7 +436,7 @@ void _xdg_toplevel_handle_wm_capabilities(
 /** Callback for when a `position` event is received. */
 void _wlclient_tracker_position(
     void *data_ptr,
-    struct zwlmaker_position_tracker_v1 *tracker_ptr,
+    struct ext_input_position_observer_v1 *position_observer_ptr,
     struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y)
@@ -445,7 +445,7 @@ void _wlclient_tracker_position(
 
     bs_log(BS_INFO,
            "_wlclient_tracker_position(%p, %p, %p, %"PRIx32", %"PRIx32")",
-           toplevel_ptr, tracker_ptr, wl_surface_ptr, relative_x, relative_y);
+           toplevel_ptr, position_observer_ptr, wl_surface_ptr, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */

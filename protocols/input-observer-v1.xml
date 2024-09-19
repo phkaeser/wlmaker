@@ -17,14 +17,14 @@
   </copyright>
 
   <interface name="ext_input_observer_v1" version="1">
-    <description summary="Position Tracking">
-      This interface permits surfaces to track the position of input devices
-      relative to the provided surface.
+    <description summary="Creates an Input Observer">
+      This interface permits a surface to observe user input, even when the
+      surface does not have the input device's focus.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroy the Position Tracking">
-        Destroys the Position Tracking handle.
+      <description summary="Destroys the Input Observer">
+        Destroys the Input Observer.
       </description>
     </request>
 
@@ -47,24 +47,25 @@
          (not required, we can do this on each call?)
        -->
 
-    <request name="track_pointer">
-      <description summary="Creates a tracker for the pointer.">
-        Creates a tracker instance for pointer position relative to `surface`.
+    <request name="pointer_position">
+      <description summary="Creates an observer for the pointer position.">
+        Creates a position observer instance for pointer position relative to
+        `surface`.
 
         The seat associated with the surface must have (or had)
         WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
         WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
-      <arg name="id" type="new_id" interface="zwlmaker_position_tracker_v1"/>
+      <arg name="id" type="new_id" interface="ext_input_position_observer_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
-    <!-- TODO(kaeser@gubbe.ch): Add "track_touch" method. -->
+    <!-- TODO(kaeser@gubbe.ch): Add "touch_position" method. -->
 
   </interface>
 
-  <interface name="zwlmaker_position_tracker_v1" version="1">
-    <description summary="Position tracker">
+  <interface name="ext_input_position_observer_v1" version="1">
+    <description summary="Position Observer">
       Reports an input device's position relative to the provided surface.
 
       The position is reported also beyond the surface's area, and also when
@@ -74,7 +75,7 @@
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the position tracker">
+      <description summary="Destroys the Position Observer">
         Destructor.
       </description>
     </request>
@@ -85,17 +86,16 @@
 
         The position is reported relative to the surface's edge vectors, and
         irrespective of whether the surface has input focus or whether the
-        device's position is in- our outside of the surface area.
+        device's position is in- or outside of the surface area.
 
-        Positions within the surface will report values in the interval
-        [0, 1) for both relative_x and relative_y.
+        The relative positions will be reported as signed 16:16 fixpoint
+        values. Positions within the surface will also be reported, with
+        values in the interval [0, 1) for both relative_x and relative_y.
       </description>
       <arg name="surface" type="object" interface="wl_surface"/>
-      <arg name="relative_x" type="fixed" />
-      <arg name="relative_y" type="fixed" />
+      <arg name="relative_x" type="int" />
+      <arg name="relative_y" type="int" />
     </event>
-
-    <!-- TODO(kaeser@gubbe.ch): Define error codes and handling -->
 
   </interface>
 
