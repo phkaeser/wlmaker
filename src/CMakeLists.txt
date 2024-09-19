@@ -23,13 +23,13 @@ SET(PUBLIC_HEADER_FILES
   dock.h
   icon_manager.h
   idle.h
+  input_observer.h
   keyboard.h
   layer_panel.h
   layer_shell.h
   launcher.h
   lock_mgr.h
   output.h
-  position_tracking.h
   server.h
   subprocess_monitor.h
   task_list.h
@@ -52,13 +52,13 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   dock.c
   icon_manager.c
   idle.c
+  input_observer.c
   keyboard.c
   launcher.c
   layer_panel.c
   layer_shell.c
   lock_mgr.c
   output.c
-  position_tracking.c
   server.c
   subprocess_monitor.c
   task_list.c

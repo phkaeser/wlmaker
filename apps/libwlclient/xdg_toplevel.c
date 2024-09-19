@@ -112,14 +112,14 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         return NULL;
     }
 
-    if (NULL != wlclient_attributes(wlclient_ptr)->position_tracking_ptr) {
-        toplevel_ptr->tracker_ptr = zwlmaker_position_tracking_v1_track_pointer(
-            wlclient_attributes(wlclient_ptr)->position_tracking_ptr,
+    if (NULL != wlclient_attributes(wlclient_ptr)->input_observer_ptr) {
+        toplevel_ptr->tracker_ptr = ext_input_observer_v1_track_pointer(
+            wlclient_attributes(wlclient_ptr)->input_observer_ptr,
             toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->tracker_ptr) {
             bs_log(BS_ERROR,
-                   "Failed zwlmaker_position_tracking_v1_track(%p, %p)",
-                   wlclient_attributes(wlclient_ptr)->position_tracking_ptr,
+                   "Failed ext_input_observer_v1_track(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->input_observer_ptr,
                    toplevel_ptr->wl_surface_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;

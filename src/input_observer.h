@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file position_tracking.h
+ * @file input_observer.h
  *
  * @copyright
  * Copyright 2024 Google LLC
@@ -17,11 +17,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __POSITION_TRACKING_H__
-#define __POSITION_TRACKING_H__
+#ifndef __INPUT_OBSERVER_H__
+#define __INPUT_OBSERVER_H__
 
-/** Forward declaration: Position tracking handle. */
-typedef struct _wlmaker_position_tracking_t wlmaker_position_tracking_t;
+/** Forward declaration: Input observer handle. */
+typedef struct _wlmaker_input_observer_t wlmaker_input_observer_t;
 /** Forward declaration: Tracker object. */
 typedef struct _wlmaker_position_tracker_t wlmaker_position_tracker_t;
 
@@ -32,31 +32,31 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a position tracking.
+ * Creates an input observer.
  *
  * @param wl_display_ptr
  * @param wlr_seat_ptr
  * @param wlr_cursor_ptr
  *
- * @return The handle of the position tracking or NULL on error. Must be
- *     destroyed by calling @ref wlmaker_position_tracking_destroy.
+ * @return The handle of the input observer or NULL on error. Must be
+ *     destroyed by calling @ref wlmaker_input_observer_destroy.
  */
-wlmaker_position_tracking_t *wlmaker_position_tracking_create(
+wlmaker_input_observer_t *wlmaker_input_observer_create(
     struct wl_display *wl_display_ptr,
     struct wlr_seat *wlr_seat_ptr,
     struct wlr_cursor *wlr_cursor_ptr);
 
 /**
- * Destroys the position tracking.
+ * Destroys the input observer.
  *
  * @param tracking_ptr
  */
-void wlmaker_position_tracking_destroy(
-    wlmaker_position_tracking_t *tracking_ptr);
+void wlmaker_input_observer_destroy(
+    wlmaker_input_observer_t *tracking_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __POSITION_TRACKING_H__ */
-/* == End of position_tracking.h =========================================== */
+#endif /* __INPUT_OBSERVER_H__ */
+/* == End of input_observer.h ============================================== */
