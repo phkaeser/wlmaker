@@ -47,8 +47,8 @@
          (not required, we can do this on each call?)
        -->
 
-    <request name="pointer_position">
-      <description summary="Creates an observation for the pointer position.">
+    <request name="create_observer">
+      <description summary="Creates an observer for the surface.">
         Creates a position observation instance for pointer position relative to
         `surface`.
 
@@ -56,7 +56,7 @@
         WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
         WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
-      <arg name="id" type="new_id" interface="ext_input_position_observation_v1"/>
+      <arg name="id" type="new_id" interface="ext_input_observer_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
@@ -64,8 +64,8 @@
 
   </interface>
 
-  <interface name="ext_input_position_observation_v1" version="1">
-    <description summary="Position Observation">
+  <interface name="ext_input_observer_v1" version="1">
+    <description summary="Input Observer">
       Reports an input device's position relative to the provided surface.
 
       The position is reported also beyond the surface's area, and also when
@@ -75,14 +75,14 @@
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Position Observation">
+      <description summary="Destroys the Input Observer ">
         Destructor.
       </description>
     </request>
 
-    <event name="position">
-      <description summary="Reports the input device's position.">
-        Reports the input device's position relative to the surface.
+    <event name="pointer_position">
+      <description summary="Reports the pointer position.">
+        Reports the pointer position relative to the surface.
 
         The position is reported relative to the surface's edge vectors, and
         irrespective of whether the surface has input focus or whether the

@@ -22,8 +22,8 @@
 
 /** Forward declaration: Input observation manager handle. */
 typedef struct _wlmaker_input_observation_manager_t wlmaker_input_observation_manager_t;
-/** Forward declaration: Tracker object. */
-typedef struct _wlmaker_position_tracker_t wlmaker_position_tracker_t;
+/** Forward declaration: Observer handle. */
+typedef struct _wlmaker_input_observer_t wlmaker_input_observer_t;
 
 #include "server.h"
 
@@ -39,7 +39,7 @@ extern "C" {
  * @param wlr_cursor_ptr
  *
  * @return The handle of the input observation or NULL on error. Must be
- *     destroyed by calling @ref wlmaker_input_observation_destroy.
+ *     destroyed by calling @ref wlmaker_input_observation_manager_destroy.
  */
 wlmaker_input_observation_manager_t *wlmaker_input_observation_manager_create(
     struct wl_display *wl_display_ptr,
