@@ -56,7 +56,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "corner.h"  // IWYU pragma: keep
 #include "cursor.h"  // IWYU pragma: keep
 #include "icon_manager.h"  // IWYU pragma: keep
-#include "input_observer.h"
+#include "input_observation.h"
 #include "idle.h"  // IWYU pragma: keep
 #include "layer_shell.h"  // IWYU pragma: keep
 #include "lock_mgr.h"  // IWYU pragma: keep
@@ -125,8 +125,8 @@ struct _wlmaker_server_t {
     wlmbe_backend_t           *backend_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
-    /** Input observer. */
-    wlmaker_input_observer_t  *input_observer_ptr;
+    /** Input observation. */
+    wlmaker_input_observation_manager_t *input_observation_manager_ptr;
     /**
      * XWayland interface. Will be set only if compiled with XWayland, through
      * WLMAKER_HAVE_XWAYLAND defined.

@@ -42,7 +42,7 @@ SET(PUBLIC_HEADER_FILES
   dock.h
   icon_manager.h
   idle.h
-  input_observer.h
+  input_observation.h
   keyboard.h
   launcher.h
   layer_panel.h
@@ -75,7 +75,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   dock.c
   icon_manager.c
   idle.c
-  input_observer.c
+  input_observation.c
   keyboard.c
   launcher.c
   layer_panel.c
