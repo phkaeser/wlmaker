@@ -25,8 +25,8 @@ WaylandProtocol_ADD(
 
 WaylandProtocol_ADD(
   SOURCES
-  BASE_NAME input-observer-v1
-  PROTOCOL_FILE input-observer-v1.xml
+  BASE_NAME input-observation-v1
+  PROTOCOL_FILE input-observation-v1.xml
   SIDE server)
 
 PKG_GET_VARIABLE(WAYLAND_PROTOCOLDIR wayland-protocols pkgdatadir)

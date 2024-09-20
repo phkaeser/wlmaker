@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="ext_input_observer_v1">
+<protocol name="ext_input_observation_v1">
   <copyright>
     Copyright 2024 Google LLC
 
@@ -16,15 +16,15 @@
     limitations under the License.
   </copyright>
 
-  <interface name="ext_input_observer_v1" version="1">
-    <description summary="Creates an Input Observer">
+  <interface name="ext_input_observation_manager_v1" version="1">
+    <description summary="Creates an Input Observation Manager">
       This interface permits a surface to observe user input, even when the
       surface does not have the input device's focus.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Input Observer">
-        Destroys the Input Observer.
+      <description summary="Destroys the Input Observation Manager">
+        Destroys the Input Observation Manager.
       </description>
     </request>
 
@@ -48,15 +48,15 @@
        -->
 
     <request name="pointer_position">
-      <description summary="Creates an observer for the pointer position.">
-        Creates a position observer instance for pointer position relative to
+      <description summary="Creates an observation for the pointer position.">
+        Creates a position observation instance for pointer position relative to
         `surface`.
 
         The seat associated with the surface must have (or had)
         WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
         WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
-      <arg name="id" type="new_id" interface="ext_input_position_observer_v1"/>
+      <arg name="id" type="new_id" interface="ext_input_position_observation_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
@@ -64,8 +64,8 @@
 
   </interface>
 
-  <interface name="ext_input_position_observer_v1" version="1">
-    <description summary="Position Observer">
+  <interface name="ext_input_position_observation_v1" version="1">
+    <description summary="Position Observation">
       Reports an input device's position relative to the provided surface.
 
       The position is reported also beyond the surface's area, and also when
@@ -75,7 +75,7 @@
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Position Observer">
+      <description summary="Destroys the Position Observation">
         Destructor.
       </description>
     </request>

@@ -22,7 +22,7 @@
 
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
-#include "input-observer-v1-client-protocol.h"
+#include "input-observation-v1-client-protocol.h"
 
 #include "buffer.h"
 
@@ -41,7 +41,7 @@ struct _wlclient_xdg_toplevel_t {
     struct xdg_toplevel       *xdg_toplevel_ptr;
 
     /** Pointer position tracker */
-    struct ext_input_position_observer_v1 *position_observer_ptr;
+    struct ext_input_position_observation_v1 *position_observer_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -51,7 +51,7 @@ static void _wlclient_xdg_surface_configure(
 
 static void _wlclient_tracker_position(
     void *data_ptr,
-    struct ext_input_position_observer_v1 *position_observer_ptr,
+    struct ext_input_position_observation_v1 *position_observer_ptr,
     struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y);
@@ -64,7 +64,7 @@ static const struct xdg_surface_listener _wlclient_xdg_surface_listener = {
 };
 
 /** Listeners for the Pointer positioon Tracker. */
-static const struct ext_input_position_observer_v1_listener
+static const struct ext_input_position_observation_v1_listener
 _wlclient_tracker_listener = {
     .position = _wlclient_tracker_position,
 };
@@ -112,19 +112,19 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         return NULL;
     }
 
-    if (NULL != wlclient_attributes(wlclient_ptr)->input_observer_ptr) {
-        toplevel_ptr->position_observer_ptr = ext_input_observer_v1_pointer_position(
-            wlclient_attributes(wlclient_ptr)->input_observer_ptr,
+    if (NULL != wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr) {
+        toplevel_ptr->position_observer_ptr = ext_input_observation_manager_v1_pointer_position(
+            wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr,
             toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->position_observer_ptr) {
             bs_log(BS_ERROR,
-                   "Failed ext_input_observer_v1_track(%p, %p)",
-                   wlclient_attributes(wlclient_ptr)->input_observer_ptr,
+                   "Failed ext_input_observation_v1_pointer_position(%p, %p)",
+                   wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr,
                    toplevel_ptr->wl_surface_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
             return NULL;
         }
-        ext_input_position_observer_v1_add_listener(
+        ext_input_position_observation_v1_add_listener(
             toplevel_ptr->position_observer_ptr,
             &_wlclient_tracker_listener,
             toplevel_ptr);
@@ -140,7 +140,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
 void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
 {
     if (NULL != toplevel_ptr->position_observer_ptr) {
-        ext_input_position_observer_v1_destroy(
+        ext_input_position_observation_v1_destroy(
             toplevel_ptr->position_observer_ptr);
         toplevel_ptr->position_observer_ptr = NULL;
     }
@@ -200,7 +200,7 @@ void _wlclient_xdg_surface_configure(
 /** Callback for when a `position` event is received. */
 void _wlclient_tracker_position(
     void *data_ptr,
-    struct ext_input_position_observer_v1 *position_observer_ptr,
+    struct ext_input_position_observation_v1 *position_observer_ptr,
     struct wl_surface *wl_surface_ptr,
     wl_fixed_t relative_x,
     wl_fixed_t relative_y)
