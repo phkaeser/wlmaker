@@ -28,7 +28,6 @@ jobs:
           bison \
           clang \
           cmake \
-          doxygen \
           flex \
           foot \
           git \
@@ -82,7 +81,7 @@ jobs:
         export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -Dconfig_DOXYGEN_CRITICAL=ON -B build/
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} -B build/
 
     - name: Build wlmaker.
       run: |
@@ -90,9 +89,6 @@ jobs:
         export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
         export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
         cmake --build build/
-
-    - name: Build documentation.
-      run: cmake --build build/ --target doc
 
     - name: Run all tests.
       run: |

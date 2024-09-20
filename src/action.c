@@ -28,6 +28,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 #define WLR_USE_UNSTABLE
+#include <wlr/backend/session.h>
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
 
@@ -67,6 +68,9 @@ static bool _wlmaker_keybindings_bind_item(
 
 static bool _wlmaker_action_bound_callback(
     const wlmaker_key_combo_t *binding_ptr);
+static void _wlmaker_action_switch_to_vt(
+    wlmaker_server_t *server_ptr,
+    unsigned vt_num);
 
 /* == Data ================================================================= */
 
@@ -102,6 +106,19 @@ static const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
     WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
     WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
+
+    WLMCFG_ENUM("SwitchToVT1", WLMAKER_ACTION_SWITCH_TO_VT1),
+    WLMCFG_ENUM("SwitchToVT2", WLMAKER_ACTION_SWITCH_TO_VT2),
+    WLMCFG_ENUM("SwitchToVT3", WLMAKER_ACTION_SWITCH_TO_VT3),
+    WLMCFG_ENUM("SwitchToVT4", WLMAKER_ACTION_SWITCH_TO_VT4),
+    WLMCFG_ENUM("SwitchToVT5", WLMAKER_ACTION_SWITCH_TO_VT5),
+    WLMCFG_ENUM("SwitchToVT6", WLMAKER_ACTION_SWITCH_TO_VT6),
+    WLMCFG_ENUM("SwitchToVT7", WLMAKER_ACTION_SWITCH_TO_VT7),
+    WLMCFG_ENUM("SwitchToVT8", WLMAKER_ACTION_SWITCH_TO_VT8),
+    WLMCFG_ENUM("SwitchToVT9", WLMAKER_ACTION_SWITCH_TO_VT9),
+    WLMCFG_ENUM("SwitchToVT10", WLMAKER_ACTION_SWITCH_TO_VT10),
+    WLMCFG_ENUM("SwitchToVT11", WLMAKER_ACTION_SWITCH_TO_VT11),
+    WLMCFG_ENUM("SwitchToVT12", WLMAKER_ACTION_SWITCH_TO_VT12),
 
     WLMCFG_ENUM_SENTINEL(),
 };
@@ -218,6 +235,25 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             wlmtk_window_request_maximized(
                 window_ptr, !wlmtk_window_is_maximized(window_ptr));
         }
+        break;
+
+    case WLMAKER_ACTION_SWITCH_TO_VT1:
+    case WLMAKER_ACTION_SWITCH_TO_VT2:
+    case WLMAKER_ACTION_SWITCH_TO_VT3:
+    case WLMAKER_ACTION_SWITCH_TO_VT4:
+    case WLMAKER_ACTION_SWITCH_TO_VT5:
+    case WLMAKER_ACTION_SWITCH_TO_VT6:
+    case WLMAKER_ACTION_SWITCH_TO_VT7:
+    case WLMAKER_ACTION_SWITCH_TO_VT8:
+    case WLMAKER_ACTION_SWITCH_TO_VT9:
+    case WLMAKER_ACTION_SWITCH_TO_VT10:
+    case WLMAKER_ACTION_SWITCH_TO_VT11:
+    case WLMAKER_ACTION_SWITCH_TO_VT12:
+        // Enums are required to be defined consecutively, so we can compute
+        // the VT number from the action code.
+        _wlmaker_action_switch_to_vt(
+            server_ptr,
+            action - WLMAKER_ACTION_SWITCH_TO_VT1 + 1);
         break;
 
     default:
@@ -361,6 +397,31 @@ bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
         action_binding_ptr->handle_ptr->server_ptr,
         action_binding_ptr->action);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Switches to the given virtual terminal, if a wlroots session is available.
+ *
+ * Logs if wlr_session_change_vt() fails, but ignores the errors.
+ *
+ * @param server_ptr
+ * @param vt_num
+ */
+void _wlmaker_action_switch_to_vt(
+    wlmaker_server_t *server_ptr,
+    unsigned vt_num)
+{
+    // Guard clause: @ref wlmaker_server_t::session_ptr will be populated only
+    // if wlroots created a session, eg. when running from the terminal.
+    if (NULL == server_ptr->wlr_session_ptr) {
+        bs_log(BS_DEBUG, "_wlmaker_action_switch_to_vt: No session, ignored.");
+        return;
+    }
+
+    if (!wlr_session_change_vt(server_ptr->wlr_session_ptr, vt_num)) {
+        bs_log(BS_WARNING, "Failed wlr_session_change_vt(, %u)", vt_num);
+    }
 }
 
 /* == Unit tests =========================================================== */

@@ -229,9 +229,9 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
   * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
 
-* Misc
+* [done] Misc
   * [done] Expose the decoration manager configurables through the config file.
-  * Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
+  * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
 ## Plan for 0.5
 
