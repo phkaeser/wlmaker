@@ -386,6 +386,7 @@ void _wlmaker_input_observer_handle_cursor_frame(
     ext_input_position_observer_v1_send_position(
         tracker_ptr->wl_resource_ptr,
         tracker_ptr->wlr_surface_ptr->resource,
+        0,
         BS_MAX(INT32_MIN, BS_MIN(INT32_MAX, x)),
         BS_MAX(INT32_MIN, BS_MIN(INT32_MAX, y)));
 }

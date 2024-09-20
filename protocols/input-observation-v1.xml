@@ -28,25 +28,6 @@
       </description>
     </request>
 
-    <!-- FIXME:
-         * suggest that wl_seat capability clear should release the follow
-         * we'll want to receive position relative to the requested surface.
-         * define that the surface should outlive the follow.
-
-       why is it diffent than wl_pointer? We want to subscribe this for
-       specific wl_surface(s).
-
-       should follower creation relate to a specific seat? (.. yes?)
-
-       the position callback should permit to report on more than 1 mapped
-       instance of the surface. Via an additional instance parameter (?)
-       (eg. instance 1 of N)
-
-       Questions:
-       - have an "update instances" callback to report # of mapped surfaces?
-         (not required, we can do this on each call?)
-       -->
-
     <request name="create_observer">
       <description summary="Creates an observer for the surface.">
         Creates a position observation instance for pointer position relative to
@@ -59,23 +40,19 @@
       <arg name="id" type="new_id" interface="ext_input_observer_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
-
-    <!-- TODO(kaeser@gubbe.ch): Add "touch_position" method. -->
-
   </interface>
 
   <interface name="ext_input_observer_v1" version="1">
     <description summary="Input Observer">
-      Reports an input device's position relative to the provided surface.
+      Permits observing input devices with respect to the associated surface.
 
-      The position is reported also beyond the surface's area, and also when
-      the surface does not have focus. If the surface is mapped more than once,
-      the compositor may report the position relative to each mapped instance
-      of the surface.
+      Status of input devices will be shared only when the surface is
+      mapped. If the surface is destroyed, the server will destroy
+      any associated observer, too.
     </description>
 
     <request name="destroy" type="destructor">
-      <description summary="Destroys the Input Observer ">
+      <description summary="Destroys the Input Observer.">
         Destructor.
       </description>
     </request>
@@ -83,6 +60,10 @@
     <event name="pointer_position">
       <description summary="Reports the pointer position.">
         Reports the pointer position relative to the surface.
+
+        If the compositor displays the surface more than once, it may
+        share the pointer position relative to each instance of the
+        surface, identified by the `instance` argument. 
 
         The position is reported relative to the surface's edge vectors, and
         irrespective of whether the surface has input focus or whether the
@@ -93,10 +74,10 @@
         values in the interval [0, 1) for both relative_x and relative_y.
       </description>
       <arg name="surface" type="object" interface="wl_surface"/>
-      <arg name="relative_x" type="int" />
-      <arg name="relative_y" type="int" />
+      <arg name="instance" type="uint"/>
+      <arg name="relative_x" type="int"/>
+      <arg name="relative_y" type="int"/>
     </event>
-
   </interface>
 
 </protocol>
