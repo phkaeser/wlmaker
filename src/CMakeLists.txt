@@ -19,6 +19,7 @@ SET(PUBLIC_HEADER_FILES
   background.h
   clip.h
   config.h
+  corner.h
   cursor.h
   dock.h
   icon_manager.h
@@ -47,6 +48,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   background.c
   clip.c
   config.c
+  corner.c
   cursor.c
   dock.c
   icon_manager.c
