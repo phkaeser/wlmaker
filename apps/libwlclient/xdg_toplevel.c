@@ -53,8 +53,9 @@ static void _wlclient_input_observer_pointer_position(
     void *data_ptr,
     struct ext_input_observer_v1 *input_observer_ptr,
     struct wl_surface *wl_surface_ptr,
-    wl_fixed_t relative_x,
-    wl_fixed_t relative_y);
+    uint32_t instance,
+    int32_t relative_x,
+    int32_t relative_y);
 
 /* == Data ================================================================= */
 
@@ -203,14 +204,16 @@ void _wlclient_input_observer_pointer_position(
     void *data_ptr,
     struct ext_input_observer_v1 *input_observer_ptr,
     struct wl_surface *wl_surface_ptr,
-    wl_fixed_t relative_x,
-    wl_fixed_t relative_y)
+    uint32_t instance,
+    int32_t relative_x,
+    int32_t relative_y)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
 
-    bs_log(BS_INFO,
-           "_wlclient_input_observer_pointer_position(%p, %p, %p, %"PRIx32", %"PRIx32")",
-           toplevel_ptr, input_observer_ptr, wl_surface_ptr, relative_x, relative_y);
+    bs_log(BS_INFO, "_wlclient_input_observer_pointer_position"
+           "(%p, %p, %p,%"PRId32", %"PRIx32", %"PRIx32")",
+           toplevel_ptr, input_observer_ptr, wl_surface_ptr,
+           instance, relative_x, relative_y);
 }
 
 /* == End of xdg_toplevel.c ================================================== */
