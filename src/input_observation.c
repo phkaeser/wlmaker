@@ -41,7 +41,7 @@ struct _wlmaker_input_observation_manager_t {
 };
 
 /** State of a tracker. */
-struct _wlmaker_input_observer_t {
+struct _wlmaker_input_position_observer_t {
     /** The corresponding resource. */
     struct wl_resource        *wl_resource_ptr;
     /** The pointer it was set up for. */
@@ -69,31 +69,31 @@ static void bind_input_observation(
 static void handle_resource_destroy(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
-static void input_observation_manager_handle_create_observer(
+static void input_observation_manager_handle_create_pointer_observer(
     struct wl_client *client,
     struct wl_resource *resource,
     uint32_t id,
     struct wl_resource *pointer_wl_resource_ptr,
     struct wl_resource *surface);
 
-static wlmaker_input_observer_t *wlmaker_input_observer_from_resource(
+static wlmaker_input_position_observer_t *wlmaker_input_position_observer_from_resource(
     struct wl_resource *wl_resource_ptr);
-static wlmaker_input_observer_t *wlmaker_input_observer_create(
+static wlmaker_input_position_observer_t *wlmaker_input_position_observer_create(
     struct wl_client *wl_client_ptr,
     wlmaker_input_observation_manager_t *manager_ptr,
     uint32_t id,
     int version,
     struct wl_resource *pointer_wl_resource_ptr,
     struct wlr_surface *wlr_surface_ptr);
-static void wlmaker_input_observer_resource_destroy(
+static void wlmaker_input_position_observer_resource_destroy(
     struct wl_resource *wl_resource_ptr);
-static void wlmaker_input_observer_destroy(
-    wlmaker_input_observer_t *tracker_ptr);
+static void wlmaker_input_position_observer_destroy(
+    wlmaker_input_position_observer_t *tracker_ptr);
 
-static void _wlmaker_input_observer_handle_surface_destroy(
+static void _wlmaker_input_position_observer_handle_surface_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void _wlmaker_input_observer_handle_cursor_frame(
+static void _wlmaker_input_position_observer_handle_cursor_frame(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -103,12 +103,12 @@ static void _wlmaker_input_observer_handle_cursor_frame(
 static const struct ext_input_observation_manager_v1_interface
 input_observation_manager_v1_implementation = {
     .destroy = handle_resource_destroy,
-    .create_observer = input_observation_manager_handle_create_observer,
+    .create_pointer_observer = input_observation_manager_handle_create_pointer_observer,
 };
 
 /** Implementation of the position (position) tracker. */
-static const struct ext_input_observer_v1_interface
-input_observer_v1_implementation = {
+static const struct ext_input_position_observer_v1_interface
+input_position_observer_v1_implementation = {
     .destroy = handle_resource_destroy,
 };
 
@@ -233,7 +233,7 @@ void handle_resource_destroy(
  * @param id
  * @param surface_wl_resource_ptr Resource handle of the surface.
  */
-void input_observation_manager_handle_create_observer(
+void input_observation_manager_handle_create_pointer_observer(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
     uint32_t id,
@@ -256,7 +256,7 @@ void input_observation_manager_handle_create_observer(
 
     struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(surface_wl_resource_ptr);
-    wlmaker_input_observer_t *tracker_ptr = wlmaker_input_observer_create(
+    wlmaker_input_position_observer_t *tracker_ptr = wlmaker_input_position_observer_create(
         wl_client_ptr,
             manager_ptr,
             id,
@@ -271,7 +271,7 @@ void input_observation_manager_handle_create_observer(
 
 /* ------------------------------------------------------------------------- */
 /** Ctor for the tracker. */
-wlmaker_input_observer_t *wlmaker_input_observer_create(
+wlmaker_input_position_observer_t *wlmaker_input_position_observer_create(
     struct wl_client *wl_client_ptr,
     wlmaker_input_observation_manager_t *manager_ptr,
     uint32_t id,
@@ -279,8 +279,8 @@ wlmaker_input_observer_t *wlmaker_input_observer_create(
     struct wl_resource *pointer_wl_resource_ptr,
     struct wlr_surface *wlr_surface_ptr)
 {
-    wlmaker_input_observer_t *tracker_ptr = logged_calloc(
-        1, sizeof(wlmaker_input_observer_t));
+    wlmaker_input_position_observer_t *tracker_ptr = logged_calloc(
+        1, sizeof(wlmaker_input_position_observer_t));
     if (NULL == tracker_ptr) return NULL;
     tracker_ptr->pointer_wl_resource_ptr = pointer_wl_resource_ptr;
     tracker_ptr->wlr_surface_ptr = wlr_surface_ptr;
@@ -288,47 +288,47 @@ wlmaker_input_observer_t *wlmaker_input_observer_create(
 
     tracker_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
-        &ext_input_observer_v1_interface,
+        &ext_input_position_observer_v1_interface,
         version,
         id);
     if (NULL == tracker_ptr->wl_resource_ptr) {
         bs_log(BS_ERROR, "Failed wl_resource_create(%p, %p, %d, %"PRIu32")",
-               wl_client_ptr, &ext_input_observer_v1_interface,
+               wl_client_ptr, &ext_input_position_observer_v1_interface,
                version, id);
-        wlmaker_input_observer_destroy(tracker_ptr);
+        wlmaker_input_position_observer_destroy(tracker_ptr);
         return NULL;
     }
     wl_resource_set_implementation(
         tracker_ptr->wl_resource_ptr,
-        &input_observer_v1_implementation,
+        &input_position_observer_v1_implementation,
         tracker_ptr,
-        wlmaker_input_observer_resource_destroy);
+        wlmaker_input_position_observer_resource_destroy);
 
     wlmtk_util_connect_listener_signal(
         &tracker_ptr->wlr_surface_ptr->events.destroy,
         &tracker_ptr->surface_destroy_listener,
-        _wlmaker_input_observer_handle_surface_destroy);
+        _wlmaker_input_position_observer_handle_surface_destroy);
     wlmtk_util_connect_listener_signal(
         &tracker_ptr->wlr_cursor_ptr->events.frame,
         &tracker_ptr->cursor_frame_listener,
-        _wlmaker_input_observer_handle_cursor_frame);
+        _wlmaker_input_position_observer_handle_cursor_frame);
 
     return tracker_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Dtor, from the resource. */
-void wlmaker_input_observer_resource_destroy(
+void wlmaker_input_position_observer_resource_destroy(
     struct wl_resource *wl_resource_ptr)
 {
-    wlmaker_input_observer_t *tracker_ptr =
-        wlmaker_input_observer_from_resource(wl_resource_ptr);
-    wlmaker_input_observer_destroy(tracker_ptr);
+    wlmaker_input_position_observer_t *tracker_ptr =
+        wlmaker_input_position_observer_from_resource(wl_resource_ptr);
+    wlmaker_input_position_observer_destroy(tracker_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Dtor. */
-void wlmaker_input_observer_destroy(wlmaker_input_observer_t *tracker_ptr)
+void wlmaker_input_position_observer_destroy(wlmaker_input_position_observer_t *tracker_ptr)
 {
     wlmtk_util_disconnect_listener(&tracker_ptr->cursor_frame_listener);
     wlmtk_util_disconnect_listener(&tracker_ptr->surface_destroy_listener);
@@ -337,35 +337,35 @@ void wlmaker_input_observer_destroy(wlmaker_input_observer_t *tracker_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Type-safe conversion from resource to tracker. */
-wlmaker_input_observer_t *wlmaker_input_observer_from_resource(
+wlmaker_input_position_observer_t *wlmaker_input_position_observer_from_resource(
     struct wl_resource *wl_resource_ptr)
 {
     BS_ASSERT(wl_resource_instance_of(
                   wl_resource_ptr,
-                  &ext_input_observer_v1_interface,
-                  &input_observer_v1_implementation));
+                  &ext_input_position_observer_v1_interface,
+                  &input_position_observer_v1_implementation));
     return wl_resource_get_user_data(wl_resource_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Handles surface destruction: Destroy the tracker. */
-static void _wlmaker_input_observer_handle_surface_destroy(
+static void _wlmaker_input_position_observer_handle_surface_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_input_observer_t *tracker_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_input_observer_t, surface_destroy_listener);
+    wlmaker_input_position_observer_t *tracker_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_input_position_observer_t, surface_destroy_listener);
     wl_resource_destroy(tracker_ptr->wl_resource_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Handles cursor frame events: Sends the current pointer position. */
-void _wlmaker_input_observer_handle_cursor_frame(
+void _wlmaker_input_position_observer_handle_cursor_frame(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_input_observer_t *tracker_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_input_observer_t, cursor_frame_listener);
+    wlmaker_input_position_observer_t *tracker_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_input_position_observer_t, cursor_frame_listener);
 
     // Guard clause: No wlmtk surface or no scene means it's not fully mapped.
     wlmtk_surface_t *surface_ptr = tracker_ptr->wlr_surface_ptr->data;
@@ -391,7 +391,7 @@ void _wlmaker_input_observer_handle_cursor_frame(
         tracker_ptr->wlr_cursor_ptr->x - node_x) / width;
     double y = 256.0 * (double)(
         tracker_ptr->wlr_cursor_ptr->y - node_y) / height;
-    ext_input_observer_v1_send_pointer_position(
+    ext_input_position_observer_v1_send_position(
         tracker_ptr->wl_resource_ptr,
         tracker_ptr->wlr_surface_ptr->resource,
         0,

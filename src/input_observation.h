@@ -23,7 +23,7 @@
 /** Forward declaration: Input observation manager handle. */
 typedef struct _wlmaker_input_observation_manager_t wlmaker_input_observation_manager_t;
 /** Forward declaration: Observer handle. */
-typedef struct _wlmaker_input_observer_t wlmaker_input_observer_t;
+typedef struct _wlmaker_input_position_observer_t wlmaker_input_position_observer_t;
 
 #include "server.h"
 
