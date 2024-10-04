@@ -35,20 +35,21 @@
       </description>
     </request>
 
-    <request name="create_observer">
+    <request name="create_pointer_observer">
       <description summary="Creates an observer for the given pointer and surface.">
         Creates an observation instance for this pointer's position relative to
         `surface`.
       </description>
-      <arg name="id" type="new_id" interface="ext_input_observer_v1"/>
+      <arg name="id" type="new_id" interface="ext_input_position_observer_v1"/>
       <arg name="pointer" type="object" interface="wl_pointer"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
   </interface>
 
-  <interface name="ext_input_observer_v1" version="1">
-    <description summary="Input Observer">
-      Permits observing input devices with respect to the associated surface.
+  <interface name="ext_input_position_observer_v1" version="1">
+    <description summary="Input Position Observer">
+      Permits observing the position of input devices with respect to the
+      associated surface.
 
       Status of input devices will be shared only when the surface is
       mapped. 
@@ -60,12 +61,12 @@
       </description>
     </request>
 
-    <event name="pointer_position">
-      <description summary="Reports the pointer position.">
-        Reports the pointer position relative to the surface.
+    <event name="position">
+      <description summary="Reports the input device's position.">
+        Reports the input device's position relative to the surface.
 
         If the compositor displays the surface more than once, it may
-        share the pointer position relative to each instance of the
+        share the input device's position relative to each instance of the
         surface, identified by the `instance` argument. The compositor
         will issue a call for each displayed instance, and the client
         may determine whether to act on any or all of the calls.
