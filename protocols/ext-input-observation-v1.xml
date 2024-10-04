@@ -36,11 +36,12 @@
     </request>
 
     <request name="create_observer">
-      <description summary="Creates an observer for the surface.">
-        Creates a position observation instance for pointer position relative to
+      <description summary="Creates an observer for the given pointer and surface.">
+        Creates an observation instance for this pointer's position relative to
         `surface`.
       </description>
       <arg name="id" type="new_id" interface="ext_input_observer_v1"/>
+      <arg name="pointer" type="object" interface="wl_pointer"/>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
   </interface>

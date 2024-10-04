@@ -46,6 +46,8 @@ struct _wlmaker_input_observation_manager_t {
 struct _wlmaker_input_observer_t {
     /** The corresponding resource. */
     struct wl_resource        *wl_resource_ptr;
+    /** The pointer it was set up for. */
+    struct wl_resource        *pointer_wl_resource_ptr;
     /** The surface it tracks. */
     struct wlr_surface        *wlr_surface_ptr;
     /** Link to the wlroots' cursor implementation. */
@@ -73,6 +75,7 @@ static void input_observation_manager_handle_create_observer(
     struct wl_client *client,
     struct wl_resource *resource,
     uint32_t id,
+    struct wl_resource *pointer_wl_resource_ptr,
     struct wl_resource *surface);
 
 static wlmaker_input_observer_t *wlmaker_input_observer_from_resource(
@@ -82,6 +85,7 @@ static wlmaker_input_observer_t *wlmaker_input_observer_create(
     wlmaker_input_observation_manager_t *manager_ptr,
     uint32_t id,
     int version,
+    struct wl_resource *pointer_wl_resource_ptr,
     struct wlr_surface *wlr_surface_ptr);
 static void wlmaker_input_observer_resource_destroy(
     struct wl_resource *wl_resource_ptr);
@@ -235,6 +239,7 @@ void input_observation_manager_handle_create_observer(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr,
     uint32_t id,
+    struct wl_resource *pointer_wl_resource_ptr,
     struct wl_resource *surface_wl_resource_ptr)
 {
     wlmaker_input_observation_manager_t *manager_ptr =
@@ -253,12 +258,12 @@ void input_observation_manager_handle_create_observer(
 
     struct wlr_surface *wlr_surface_ptr =
         wlr_surface_from_resource(surface_wl_resource_ptr);
-
     wlmaker_input_observer_t *tracker_ptr = wlmaker_input_observer_create(
         wl_client_ptr,
             manager_ptr,
             id,
         wl_resource_get_version(wl_resource_ptr),
+        pointer_wl_resource_ptr,
         wlr_surface_ptr);
     if (NULL == tracker_ptr) {
         wl_client_post_no_memory(wl_client_ptr);
@@ -273,11 +278,13 @@ wlmaker_input_observer_t *wlmaker_input_observer_create(
     wlmaker_input_observation_manager_t *manager_ptr,
     uint32_t id,
     int version,
+    struct wl_resource *pointer_wl_resource_ptr,
     struct wlr_surface *wlr_surface_ptr)
 {
     wlmaker_input_observer_t *tracker_ptr = logged_calloc(
         1, sizeof(wlmaker_input_observer_t));
     if (NULL == tracker_ptr) return NULL;
+    tracker_ptr->pointer_wl_resource_ptr = pointer_wl_resource_ptr;
     tracker_ptr->wlr_surface_ptr = wlr_surface_ptr;
     tracker_ptr->wlr_cursor_ptr = manager_ptr->wlr_cursor_ptr;
 
@@ -367,6 +374,10 @@ void _wlmaker_input_observer_handle_cursor_frame(
     wlmtk_surface_t *surface_ptr = tracker_ptr->wlr_surface_ptr->data;
     if (NULL == surface_ptr ||
         NULL == surface_ptr->wlr_scene_tree_ptr) return;
+
+    // TODO(kaeser@gubbe.ch): For a lower-level implementation, we should
+    // only send if the pointer is from the given seat.
+    // See wlr_seat_client_from_pointer_resource().
 
     // Get coordinates. Returns false if not all parents rae enabled.
     int node_x, node_y;
