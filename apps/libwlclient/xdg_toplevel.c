@@ -117,6 +117,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         toplevel_ptr->input_observer_ptr =
             ext_input_observation_manager_v1_create_observer(
                 wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr,
+                wlclient_attributes(wlclient_ptr)->wl_pointer_ptr,
                 toplevel_ptr->wl_surface_ptr);
         if (NULL == toplevel_ptr->input_observer_ptr) {
             bs_log(BS_ERROR,

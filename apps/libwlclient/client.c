@@ -40,8 +40,6 @@ struct _wlclient_t {
 
     /** Registry singleton for the above connection. */
     struct wl_registry        *wl_registry_ptr;
-    /** Pointer state, if & when the seat has the capability. */
-    struct wl_pointer         *wl_pointer_ptr;
 
     /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
     bs_dllist_t               timers;
@@ -290,6 +288,12 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
         wlclient_destroy(wlclient_ptr);
         return NULL;
     }
+
+    // Hack: Somehow this propagates the protool far enough for getting
+    // the pointer registered.
+    wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
+    wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
+    wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
 
     return wlclient_ptr;
 }
@@ -617,15 +621,17 @@ void wlc_seat_handle_capabilities(
     wlclient_t *client_ptr = data_ptr;
 
     bool supports_pointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
-    if (supports_pointer && NULL == client_ptr->wl_pointer_ptr) {
-        client_ptr->wl_pointer_ptr = wl_seat_get_pointer(wl_seat_ptr);
+    if (supports_pointer && NULL == client_ptr->attributes.wl_pointer_ptr) {
+        client_ptr->attributes.wl_pointer_ptr =
+            wl_seat_get_pointer(wl_seat_ptr);
         wl_pointer_add_listener(
-            client_ptr->wl_pointer_ptr,
+            client_ptr->attributes.wl_pointer_ptr,
             &wlc_pointer_listener,
             client_ptr);
-    } else if (!supports_pointer && NULL != client_ptr->wl_pointer_ptr) {
-        wl_pointer_release(client_ptr->wl_pointer_ptr);
-        client_ptr->wl_pointer_ptr = NULL;
+    } else if (!supports_pointer &&
+               NULL != client_ptr->attributes.wl_pointer_ptr) {
+        wl_pointer_release(client_ptr->attributes.wl_pointer_ptr);
+        client_ptr->attributes.wl_pointer_ptr = NULL;
     }
 }
 
