@@ -28,7 +28,7 @@
 
 #include <wayland-client.h>
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
-#include "input-observation-v1-client-protocol.h"
+#include "ext-input-observation-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 
 /* == Declarations ========================================================= */

@@ -22,7 +22,7 @@
 
 #include <wayland-client.h>
 #include "xdg-shell-client-protocol.h"
-#include "input-observation-v1-client-protocol.h"
+#include "ext-input-observation-v1-client-protocol.h"
 
 #include "buffer.h"
 
