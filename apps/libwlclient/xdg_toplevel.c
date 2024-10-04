@@ -26,7 +26,7 @@
 #include <wayland-client-protocol.h>
 
 #include "dblbuf.h"
-#include "input-observation-v1-client-protocol.h"
+#include "ext-input-observation-v1-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 

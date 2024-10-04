@@ -3,23 +3,30 @@
   <copyright>
     Copyright 2024 Google LLC
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
 
-    https://www.apache.org/licenses/LICENSE-2.0
+    The above copyright notice and this permission notice (including the next
+    paragraph) shall be included in all copies or substantial portions of the
+    Software.
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
   </copyright>
 
   <interface name="ext_input_observation_manager_v1" version="1">
     <description summary="Creates an Input Observation Manager">
-      This interface permits a surface to observe user input, even when the
-      surface does not have the input device's focus.
+      This interface permits a privileged clients to register surfaces for
+      observing user input, surface does not have the input device's focus.
     </description>
 
     <request name="destroy" type="destructor">
@@ -32,10 +39,6 @@
       <description summary="Creates an observer for the surface.">
         Creates a position observation instance for pointer position relative to
         `surface`.
-
-        The seat associated with the surface must have (or had)
-        WL_SEAT_CAPABILITY_POINTER capabilitiey. Otherwise,
-        WL_DISPLAY_ERROR_INVALID_METHOD is raised.
       </description>
       <arg name="id" type="new_id" interface="ext_input_observer_v1"/>
       <arg name="surface" type="object" interface="wl_surface"/>
@@ -47,8 +50,7 @@
       Permits observing input devices with respect to the associated surface.
 
       Status of input devices will be shared only when the surface is
-      mapped. If the surface is destroyed, the server will destroy
-      any associated observer, too.
+      mapped. 
     </description>
 
     <request name="destroy" type="destructor">
@@ -63,7 +65,9 @@
 
         If the compositor displays the surface more than once, it may
         share the pointer position relative to each instance of the
-        surface, identified by the `instance` argument. 
+        surface, identified by the `instance` argument. The compositor
+        will issue a call for each displayed instance, and the client
+        may determine whether to act on any or all of the calls.
 
         The position is reported relative to the surface's edge vectors, and
         irrespective of whether the surface has input focus or whether the

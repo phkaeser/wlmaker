@@ -20,7 +20,7 @@
 
 #include "input_observation.h"
 
-#include "input-observer-v1-server-protocol.h"
+#include "ext-input-observation-v1-server-protocol.h"
 
 #define WLR_USE_UNSTABLE
 #include "wlr/types/wlr_buffer.h"
