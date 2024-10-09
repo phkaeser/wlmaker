@@ -20,6 +20,8 @@
 
 #include "corner.h"
 
+#include <wlr/util/edges.h>
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #undef WLR_USE_UNSTABLE
@@ -43,11 +45,14 @@ struct _wlmaker_corner_t {
     /** Current extents of the output, cached for convience. */
     struct wlr_box            extents;
 
-    /** The cursor's current corner, if any. */
+    /** The cursor's current corner. 0 if not currently in a corner. */
     unsigned                  current_corner;
 };
 
 static void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr);
+static void _wlmaker_corner_occupy(
+    wlmaker_corner_t *corner_ptr,
+    unsigned position);
 static void _wlmaker_corner_update_layout(
     wlmaker_corner_t *corner_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
@@ -95,7 +100,37 @@ void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr)
 /** Clears the hot-corner tracking and activation. */
 void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
 {
+    if (0 == corner_ptr->current_corner) return;
+
+    bs_log(BS_WARNING, "FIXME: Clearing corner %d", corner_ptr->current_corner);
     corner_ptr->current_corner = 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Starts occupatoin of a corner.
+ *
+ * @param corner_ptr
+ * @param position
+ *
+ */
+void _wlmaker_corner_occupy(
+    wlmaker_corner_t *corner_ptr,
+    unsigned position)
+{
+    // guard clauses: Ignore non-positions and if re-occupying same corner.
+    if (0 == position) return;
+    if (position == corner_ptr->current_corner) return;
+
+    // A different corner? First clear an existing corner.
+    if (position != corner_ptr->current_corner &&
+        0 != corner_ptr->current_corner) {
+        _wlmaker_corner_clear(corner_ptr);
+    }
+
+    // Occupy: Register event timer.
+    corner_ptr->current_corner = position;
+    bs_log(BS_WARNING, "FIXME: Occupy corner %d", corner_ptr->current_corner);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -130,22 +165,27 @@ void _wlmaker_corner_evaluate(
     wlmaker_cursor_get_position(corner_ptr->cursor_ptr, &x, &y);
 
     struct wlr_box *extents_ptr = &corner_ptr->extents;
-    unsigned position = 0;
+    unsigned position = WLR_EDGE_NONE;
     if (floor(x) == extents_ptr->x) {
-        position |= 1;
+        position |= WLR_EDGE_LEFT;
     } else if (floor(x) == extents_ptr->x + extents_ptr->width) {
-        position |= 2;
+        position |= WLR_EDGE_RIGHT;
     }
     if (floor(y) == extents_ptr->y) {
-        position |= 4;
+        position |= WLR_EDGE_TOP;
     } else if (floor(y) == extents_ptr->y + extents_ptr->height) {
-        position |= 8;
+        position |= WLR_EDGE_RIGHT;
     }
 
-    // FIXME: We want two bits set..!
-    if (0 == position) {
+    switch (position) {
+    case WLR_EDGE_TOP | WLR_EDGE_LEFT:
+    case WLR_EDGE_TOP | WLR_EDGE_RIGHT:
+    case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+    case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+        _wlmaker_corner_occupy(corner_ptr, position);
+        break;
+    default:
         _wlmaker_corner_clear(corner_ptr);
-        return;
     }
 
     // OK: We are in a corner. If this is the same we already have: No-op.
