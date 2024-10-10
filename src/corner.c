@@ -208,14 +208,9 @@ void _wlmaker_corner_evaluate(
     default:
         _wlmaker_corner_clear(corner_ptr);
     }
-
-    // OK: We are in a corner. If this is the same we already have: No-op.
-    if (position == corner_ptr->current_corner) return;
-
-    // Reset the timer and store positoin.
-    corner_ptr->current_corner = position;
 }
 
+/* ------------------------------------------------------------------------- */
 /**
  * Handles `change` events of `struct wlr_output_layout`.
  *
