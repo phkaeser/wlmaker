@@ -326,6 +326,19 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    server_ptr->corner_ptr = wlmaker_corner_create(
+        server_ptr,
+        server_ptr->cursor_ptr,
+        server_ptr->wlr_output_layout_ptr);
+    if (NULL == server_ptr->corner_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p)",
+               server_ptr,
+               server_ptr->cursor_ptr,
+            server_ptr->wlr_output_layout_ptr);
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     return server_ptr;
 }
 
@@ -346,6 +359,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
             dlnode_ptr = dlnode_ptr->next_ptr;
             wlmaker_server_unbind_key(server_ptr, key_binding_ptr);
         }
+    }
+
+    if (NULL != server_ptr->corner_ptr) {
+        wlmaker_corner_destroy(server_ptr->corner_ptr);
+        server_ptr->corner_ptr = NULL;
     }
 
     if (NULL != server_ptr->monitor_ptr) {

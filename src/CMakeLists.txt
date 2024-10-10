@@ -89,6 +89,7 @@ ADD_DEPENDENCIES(
 
 TARGET_LINK_LIBRARIES(
   wlmaker_lib
+  m
   base
   conf
   toolkit

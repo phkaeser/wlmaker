@@ -59,6 +59,9 @@ static void _wlmaker_corner_update_layout(
 static void _wlmaker_corner_evaluate(
     wlmaker_corner_t *corner_ptr);
 
+static void _wlmaker_corner_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmaker_corner_handle_position_updated(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -68,12 +71,13 @@ static void _wlmaker_corner_handle_position_updated(
 /* ------------------------------------------------------------------------- */
 wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_server_t *server_ptr,
-    wlmaker_cursor_t *cursor_ptr)
+    wlmaker_cursor_t *cursor_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmaker_corner_t *corner_ptr = logged_calloc(1, sizeof(wlmaker_corner_t));
     if (NULL == corner_ptr) return NULL;
     corner_ptr->server_ptr = server_ptr;
-    server_ptr->cursor_ptr = cursor_ptr;
+    corner_ptr->cursor_ptr = cursor_ptr;
 
     // handle layout update: store the layout. Trigger evaluation.
     //
@@ -87,8 +91,12 @@ wlmaker_corner_t *wlmaker_corner_create(
 
     _wlmaker_corner_update_layout(
         corner_ptr,
-        server_ptr->wlr_output_layout_ptr);
+        wlr_output_layout_ptr);
 
+    wlmtk_util_connect_listener_signal(
+        &wlr_output_layout_ptr->events.change,
+        &corner_ptr->output_layout_change_listener,
+        _wlmaker_corner_handle_output_layout_change);
     wlmtk_util_connect_listener_signal(
         &cursor_ptr->position_updated,
         &corner_ptr->cursor_position_updated_listener,
@@ -102,6 +110,8 @@ void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr)
 {
     wlmtk_util_disconnect_listener(
         &corner_ptr->cursor_position_updated_listener);
+    wlmtk_util_disconnect_listener(
+        &corner_ptr->output_layout_change_listener);
     free(corner_ptr);
 }
 
@@ -204,6 +214,28 @@ void _wlmaker_corner_evaluate(
 
     // Reset the timer and store positoin.
     corner_ptr->current_corner = position;
+}
+
+/**
+ * Handles `change` events of `struct wlr_output_layout`.
+ *
+ * Will recompute the output's layout settings and re-evaluate the current
+ * cursor position.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_corner_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_corner_t *corner_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_corner_t, output_layout_change_listener);
+    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
+
+    _wlmaker_corner_update_layout(
+        corner_ptr,
+        wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

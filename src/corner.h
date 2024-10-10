@@ -20,26 +20,29 @@
 #ifndef __CORNER_H__
 #define __CORNER_H__
 
+/** Forward declaration: State of hot corner monitor. */
+typedef struct _wlmaker_corner_t wlmaker_corner_t;
+
+#include "cursor.h"
 #include "server.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration: State of hot corner monitor. */
-typedef struct _wlmaker_corner_t wlmaker_corner_t;
-
 /**
  * Creates the hot-corner handler.
  *
  * @param server_ptr
  * @param cursor_ptr
+ * @param wlr_output_layout_ptr
  *
  * @return Pointer to the hot-corner monitor.
  */
 wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_server_t *server_ptr,
-    wlmaker_cursor_t *cursor_ptr);
+    wlmaker_cursor_t *cursor_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Destroys the hot-corner handler.
