@@ -39,8 +39,8 @@ struct _wlmaker_corner_t {
     /** Listener for `change` signals raised by `wlr_output_layout`. */
     struct wl_listener        output_layout_change_listener;
 
-    /** Listener for when the cursor is moved. */
-    struct wl_listener        cursor_motion_listener;
+    /** Listener for when the cursor positoin was updated. */
+    struct wl_listener        cursor_position_updated_listener;
 
     /** Current extents of the output, cached for convience. */
     struct wlr_box            extents;
@@ -58,6 +58,10 @@ static void _wlmaker_corner_update_layout(
     struct wlr_output_layout *wlr_output_layout_ptr);
 static void _wlmaker_corner_evaluate(
     wlmaker_corner_t *corner_ptr);
+
+static void _wlmaker_corner_handle_position_updated(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -85,12 +89,19 @@ wlmaker_corner_t *wlmaker_corner_create(
         corner_ptr,
         server_ptr->wlr_output_layout_ptr);
 
+    wlmtk_util_connect_listener_signal(
+        &cursor_ptr->position_updated,
+        &corner_ptr->cursor_position_updated_listener,
+        _wlmaker_corner_handle_position_updated);
+
     return corner_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &corner_ptr->cursor_position_updated_listener);
     free(corner_ptr);
 }
 
@@ -193,6 +204,27 @@ void _wlmaker_corner_evaluate(
 
     // Reset the timer and store positoin.
     corner_ptr->current_corner = position;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles @ref wlmaker_cursor_t::position_updated signal callbacks.
+ *
+ * e-evaluates the cursor position with respect to the output's corners, and
+ * will trigger configured actions.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_corner_handle_position_updated(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_corner_t *corner_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_corner_t, cursor_position_updated_listener);
+    __UNUSED__ struct wlr_cursor *wlr_cursor_ptr = data_ptr;
+
+    _wlmaker_corner_evaluate(corner_ptr);
 }
 
 /* == End of corner.c ====================================================== */
