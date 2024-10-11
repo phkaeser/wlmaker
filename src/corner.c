@@ -185,6 +185,8 @@ void _wlmaker_corner_occupy(
     // Occupy: Register event timer.
     corner_ptr->current_corner = position;
     bs_log(BS_WARNING, "FIXME: Occupy corner %d", corner_ptr->current_corner);
+
+    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 100);
 }
 
 /* ------------------------------------------------------------------------- */
