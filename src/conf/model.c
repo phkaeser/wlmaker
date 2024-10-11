@@ -198,6 +198,7 @@ wlmcfg_object_t *wlmcfg_dict_get(
     wlmcfg_dict_t *dict_ptr,
     const char *key_ptr)
 {
+    if (NULL == dict_ptr) return NULL;
     bs_avltree_node_t *node_ptr = bs_avltree_lookup(
         dict_ptr->tree_ptr, key_ptr);
     if (NULL == node_ptr) return NULL;

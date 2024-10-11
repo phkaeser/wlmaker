@@ -33,18 +33,20 @@ extern "C" {
 /**
  * Creates the hot-corner handler.
  *
- * @param server_ptr
+ * @param hot_corner_config_dict_ptr
  * @param wl_event_loop_ptr
- * @param cursor_ptr
  * @param wlr_output_layout_ptr
+ * @param cursor_ptr
+ * @param server_ptr
  *
  * @return Pointer to the hot-corner monitor.
  */
 wlmaker_corner_t *wlmaker_corner_create(
-    wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *hot_corner_config_dict_ptr,
     struct wl_event_loop *wl_event_loop_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmaker_cursor_t *cursor_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the hot-corner handler.

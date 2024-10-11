@@ -327,15 +327,18 @@ wlmaker_server_t *wlmaker_server_create(
     }
 
     server_ptr->corner_ptr = wlmaker_corner_create(
-        server_ptr,
+        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->cursor_ptr,
-        server_ptr->wlr_output_layout_ptr);
+        server_ptr);
     if (NULL == server_ptr->corner_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p)",
-               server_ptr,
+        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
+               wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
+               wl_display_get_event_loop(server_ptr->wl_display_ptr),
+               server_ptr->wlr_output_layout_ptr,
                server_ptr->cursor_ptr,
-            server_ptr->wlr_output_layout_ptr);
+               server_ptr);
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }

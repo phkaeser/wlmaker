@@ -150,25 +150,19 @@ static const wlmcfg_desc_t _wlmaker_corner_config_desc[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_corner_t *wlmaker_corner_create(
-    wlmaker_server_t *server_ptr,
+    wlmcfg_dict_t *hot_corner_config_dict_ptr,
     struct wl_event_loop *wl_event_loop_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmaker_cursor_t *cursor_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr)
+    wlmaker_server_t *server_ptr)
 {
     wlmaker_corner_t *corner_ptr = logged_calloc(1, sizeof(wlmaker_corner_t));
     if (NULL == corner_ptr) return NULL;
     corner_ptr->server_ptr = server_ptr;
     corner_ptr->cursor_ptr = cursor_ptr;
 
-    wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
-        server_ptr->config_dict_ptr, "HotCorner");
-    if (NULL == config_dict_ptr) {
-        bs_log(BS_ERROR, "No 'HotConfig' dict found in configuration.");
-        wlmaker_corner_destroy(corner_ptr);
-        return NULL;
-    }
     if (!wlmcfg_decode_dict(
-            config_dict_ptr,
+            hot_corner_config_dict_ptr,
             _wlmaker_corner_config_desc,
             corner_ptr)) {
         bs_log(BS_ERROR, "Failed to parse 'HotConfig' dict.");
