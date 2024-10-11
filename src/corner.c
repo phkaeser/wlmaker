@@ -48,8 +48,8 @@ struct _wlmaker_corner_t {
     /** Cursor that is tracked here. */
     wlmaker_cursor_t          *cursor_ptr;
 
-    /** Listener for `change` signals raised by `wlr_output_layout`. */
-    struct wl_listener        output_layout_change_listener;
+    /** Listener for @ref wlmaker_server_t::output_layout_changed_event. */
+    struct wl_listener        output_layout_changed_listener;
 
     /** Listener for when the cursor position was updated. */
     struct wl_listener        cursor_position_updated_listener;
@@ -100,13 +100,13 @@ static void _wlmaker_corner_occupy(
     unsigned position);
 static void _wlmaker_corner_update_layout(
     wlmaker_corner_t *corner_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
+    struct wlr_box *extents_ptr);
 static void _wlmaker_corner_evaluate(
     wlmaker_corner_t *corner_ptr);
 
 static int _wlmaker_corner_handle_timer(void *data_ptr);
 
-static void _wlmaker_corner_handle_output_layout_change(
+static void _wlmaker_corner_handle_output_layout_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_corner_handle_position_updated(
@@ -183,16 +183,16 @@ wlmaker_corner_t *wlmaker_corner_create(
         return NULL;
     }
 
+    struct wlr_box extents;
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
     corner_ptr->pointer_x = cursor_ptr->wlr_cursor_ptr->x;
     corner_ptr->pointer_y = cursor_ptr->wlr_cursor_ptr->y;
-    _wlmaker_corner_update_layout(
-        corner_ptr,
-        wlr_output_layout_ptr);
+    _wlmaker_corner_update_layout(corner_ptr, &extents);
 
     wlmtk_util_connect_listener_signal(
-        &wlr_output_layout_ptr->events.change,
-        &corner_ptr->output_layout_change_listener,
-        _wlmaker_corner_handle_output_layout_change);
+        &server_ptr->output_layout_changed_event,
+        &corner_ptr->output_layout_changed_listener,
+        _wlmaker_corner_handle_output_layout_changed);
     wlmtk_util_connect_listener_signal(
         &cursor_ptr->position_updated,
         &corner_ptr->cursor_position_updated_listener,
@@ -207,7 +207,7 @@ void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr)
     wlmtk_util_disconnect_listener(
         &corner_ptr->cursor_position_updated_listener);
     wlmtk_util_disconnect_listener(
-        &corner_ptr->output_layout_change_listener);
+        &corner_ptr->output_layout_changed_listener);
 
     if (NULL != corner_ptr->timer_event_source_ptr) {
         wl_event_source_remove(corner_ptr->timer_event_source_ptr);
@@ -283,16 +283,9 @@ void _wlmaker_corner_occupy(
 /** Updates the output extents. Triggers a re-evaluation. */
 void _wlmaker_corner_update_layout(
     wlmaker_corner_t *corner_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr)
+    struct wlr_box *extents_ptr)
 {
-    if (NULL == wlr_output_layout_ptr) {
-        _wlmaker_corner_clear(corner_ptr);
-        return;
-    }
-
-    wlr_output_layout_get_box(
-        wlr_output_layout_ptr, NULL, &corner_ptr->extents);
-
+    corner_ptr->extents = *extents_ptr;
     _wlmaker_corner_evaluate(corner_ptr);
 }
 
@@ -368,19 +361,17 @@ int _wlmaker_corner_handle_timer(void *data_ptr)
  * cursor position.
  *
  * @param listener_ptr
- * @param data_ptr
+ * @param data_ptr            Points to a struct wlr_box.
  */
-void _wlmaker_corner_handle_output_layout_change(
+void _wlmaker_corner_handle_output_layout_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
     wlmaker_corner_t *corner_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_corner_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
+        listener_ptr, wlmaker_corner_t, output_layout_changed_listener);
+    struct wlr_box *extents_ptr = data_ptr;
 
-    _wlmaker_corner_update_layout(
-        corner_ptr,
-        wlr_output_layout_ptr);
+    _wlmaker_corner_update_layout(corner_ptr, extents_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -433,21 +424,52 @@ void _wlmaker_corner_test(bs_test_t *test_ptr)
     struct wl_event_loop *wl_event_loop_ptr = wl_event_loop_create();
     struct wlr_output_layout output_layout = {};
     wl_list_init(&output_layout.outputs);
-    wl_signal_init(&output_layout.events.change);
     struct wlr_cursor wlr_cursor = {};
     wlmaker_cursor_t cursor = { .wlr_cursor_ptr = &wlr_cursor };
     wl_signal_init(&cursor.position_updated);
-    wlmaker_corner_t *corner_ptr = wlmaker_corner_create(
+    wlmaker_server_t server = {};
+    wl_signal_init(&server.output_layout_changed_event);
+    wlmaker_corner_t *c_ptr = wlmaker_corner_create(
         wlmcfg_dict_from_object(obj_ptr),
         wl_event_loop_ptr,
         &output_layout,
         &cursor,
-        NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, corner_ptr);
+        &server);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c_ptr);
 
-    BS_TEST_VERIFY_EQ(test_ptr, 500, corner_ptr->trigger_delay_msec);
+    BS_TEST_VERIFY_EQ(test_ptr, 500, c_ptr->trigger_delay_msec);
 
-    wlmaker_corner_destroy(corner_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 0, c_ptr->current_corner);
+
+    // Set dimensions. Pointer still at (0, 0), that's top-left.
+    struct wlr_box box = { .width = 640, .height = 480 };
+    wl_signal_emit(&server.output_layout_changed_event, &box);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT, c_ptr->current_corner);
+    BS_TEST_VERIFY_FALSE(test_ptr, c_ptr->corner_triggered);
+
+    // Move pointer to
+    wlr_cursor.x = 639;
+    wlr_cursor.y = 479;
+    wl_signal_emit(&cursor.position_updated, &wlr_cursor);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT, c_ptr->current_corner);
+    BS_TEST_VERIFY_FALSE(test_ptr, c_ptr->corner_triggered);
+
+    // Pretend the timer expired.
+    _wlmaker_corner_handle_timer(c_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, c_ptr->corner_triggered);
+
+    // Move pointer: Clears triggers.
+    wlr_cursor.x = 320;
+    wlr_cursor.y = 240;
+    wl_signal_emit(&cursor.position_updated, &wlr_cursor);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 0, c_ptr->current_corner);
+    BS_TEST_VERIFY_FALSE(test_ptr, c_ptr->corner_triggered);
+
+    wlmaker_corner_destroy(c_ptr);
     wl_event_loop_destroy(wl_event_loop_ptr);
     wlmcfg_object_unref(obj_ptr);
 }
