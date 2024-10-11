@@ -249,6 +249,7 @@ void wlmaker_idle_monitor_uninhibit(wlmaker_idle_monitor_t *idle_monitor_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
+/** Executes a lock, if not inhibited & timer has indeed expired. */
 void _wlmaker_idle_monitor_consider_locking(
     wlmaker_idle_monitor_t *idle_monitor_ptr)
 {

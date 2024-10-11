@@ -328,7 +328,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     server_ptr->corner_ptr = wlmaker_corner_create(
         server_ptr,
-        server_ptr->wl_display_ptr,
+        wl_display_get_event_loop(server_ptr->wl_display_ptr),
         server_ptr->cursor_ptr,
         server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->corner_ptr) {

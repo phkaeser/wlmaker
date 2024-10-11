@@ -34,7 +34,7 @@ extern "C" {
  * Creates the hot-corner handler.
  *
  * @param server_ptr
- * @param wl_display_ptr
+ * @param wl_event_loop_ptr
  * @param cursor_ptr
  * @param wlr_output_layout_ptr
  *
@@ -42,7 +42,7 @@ extern "C" {
  */
 wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_server_t *server_ptr,
-    struct wl_display *wl_display_ptr,
+    struct wl_event_loop *wl_event_loop_ptr,
     wlmaker_cursor_t *cursor_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 

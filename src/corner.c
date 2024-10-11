@@ -151,7 +151,7 @@ static const wlmcfg_desc_t _wlmaker_corner_config_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_server_t *server_ptr,
-    struct wl_display *wl_display_ptr,
+    struct wl_event_loop *wl_event_loop_ptr,
     wlmaker_cursor_t *cursor_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
@@ -177,12 +177,12 @@ wlmaker_corner_t *wlmaker_corner_create(
     }
 
     corner_ptr->timer_event_source_ptr = wl_event_loop_add_timer(
-        wl_display_get_event_loop(wl_display_ptr),
+        wl_event_loop_ptr,
         _wlmaker_corner_handle_timer,
         corner_ptr);
     if (NULL == corner_ptr->timer_event_source_ptr) {
         bs_log(BS_ERROR, "Failed wl_event_loop_add_timer(%p, %p, %p)",
-               wl_display_get_event_loop(wl_display_ptr),
+               wl_event_loop_ptr,
                _wlmaker_corner_handle_timer,
                corner_ptr);
         wlmaker_corner_destroy(corner_ptr);
