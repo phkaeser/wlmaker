@@ -91,11 +91,12 @@ static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
 };
 
 /** The actions that can be bound. */
-static const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
+const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
+    WLMCFG_ENUM("None", WLMAKER_ACTION_NONE),
     WLMCFG_ENUM("Quit", WLMAKER_ACTION_QUIT),
     WLMCFG_ENUM("LockScreen", WLMAKER_ACTION_LOCK_SCREEN),
     WLMCFG_ENUM("InhibitLockBegin", WLMAKER_ACTION_LOCK_INHIBIT_BEGIN),
-    WLMCFG_ENUM("InhibitLockEnd ", WLMAKER_ACTION_LOCK_INHIBIT_END),
+    WLMCFG_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
     WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
 
     WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
@@ -173,6 +174,9 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     wlmtk_window_t *window_ptr;
 
     switch (action) {
+    case WLMAKER_ACTION_NONE:
+        break;
+
     case WLMAKER_ACTION_QUIT:
         wl_display_terminate(server_ptr->wl_display_ptr);
         break;
