@@ -51,6 +51,9 @@ struct _wlmaker_corner_t {
     /** Pointer Y coordinate, rounded to pixel position. */
     int                       pointer_y;
 
+    /** Timer: Armed when the corner is occupied, triggers action. */
+    struct wl_event_source    *timer_event_source_ptr;
+
     /** The cursor's current corner. 0 if not currently in a corner. */
     unsigned                  current_corner;
 };
@@ -65,6 +68,8 @@ static void _wlmaker_corner_update_layout(
 static void _wlmaker_corner_evaluate(
     wlmaker_corner_t *corner_ptr);
 
+static int _wlmaker_corner_handle_timer(void *data_ptr);
+
 static void _wlmaker_corner_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -77,6 +82,7 @@ static void _wlmaker_corner_handle_position_updated(
 /* ------------------------------------------------------------------------- */
 wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_server_t *server_ptr,
+    struct wl_display *wl_display_ptr,
     wlmaker_cursor_t *cursor_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
@@ -94,6 +100,19 @@ wlmaker_corner_t *wlmaker_corner_create(
     //   - if in corner X: clear other timers, setup timer (if not done)
     // - it not in any corner:
     //   - clear all timers
+
+    corner_ptr->timer_event_source_ptr = wl_event_loop_add_timer(
+        wl_display_get_event_loop(wl_display_ptr),
+        _wlmaker_corner_handle_timer,
+        corner_ptr);
+    if (NULL == corner_ptr->timer_event_source_ptr) {
+        bs_log(BS_ERROR, "Failed wl_event_loop_add_timer(%p, %p, %p)",
+               wl_display_get_event_loop(wl_display_ptr),
+               _wlmaker_corner_handle_timer,
+               corner_ptr);
+        wlmaker_corner_destroy(corner_ptr);
+        return NULL;
+    }
 
     corner_ptr->pointer_x = cursor_ptr->wlr_cursor_ptr->x;
     corner_ptr->pointer_y = cursor_ptr->wlr_cursor_ptr->y;
@@ -120,6 +139,12 @@ void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr)
         &corner_ptr->cursor_position_updated_listener);
     wlmtk_util_disconnect_listener(
         &corner_ptr->output_layout_change_listener);
+
+    if (NULL != corner_ptr->timer_event_source_ptr) {
+        wl_event_source_remove(corner_ptr->timer_event_source_ptr);
+        corner_ptr->timer_event_source_ptr = NULL;
+    }
+
     free(corner_ptr);
 }
 
@@ -213,6 +238,13 @@ void _wlmaker_corner_evaluate(
     default:
         _wlmaker_corner_clear(corner_ptr);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+int _wlmaker_corner_handle_timer(void *data_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: Timer %p", data_ptr);
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
