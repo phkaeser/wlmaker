@@ -190,16 +190,16 @@ void _wlmaker_corner_evaluate(
         return;
     }
 
-    struct wlr_box *extents_ptr = &corner_ptr->extents;
+    struct wlr_box *e_ptr = &corner_ptr->extents;
     unsigned position = WLR_EDGE_NONE;
-    if (corner_ptr->pointer_x == extents_ptr->x) {
+    if (corner_ptr->pointer_x == e_ptr->x) {
         position |= WLR_EDGE_LEFT;
-    } else if (corner_ptr->pointer_x >= extents_ptr->x + extents_ptr->width - 1) {
+    } else if (corner_ptr->pointer_x >= e_ptr->x + e_ptr->width - 1) {
         position |= WLR_EDGE_RIGHT;
     }
-    if (corner_ptr->pointer_y == extents_ptr->y) {
+    if (corner_ptr->pointer_y == e_ptr->y) {
         position |= WLR_EDGE_TOP;
-    } else if (corner_ptr->pointer_y >= extents_ptr->y + extents_ptr->height - 1) {
+    } else if (corner_ptr->pointer_y >= e_ptr->y + e_ptr->height - 1) {
         position |= WLR_EDGE_BOTTOM;
     }
 
