@@ -29,7 +29,17 @@
 
 /* == Declarations ========================================================= */
 
-/** State of the hot-corner handler. */
+/**
+ * State of the hot-corner handler.
+ *
+ * The hot corner compoment tracks output layout and pointer position. When the
+ * pointer enters any of the 4 corners of the output's bounding rectangle, a
+ * timer with a 'cooldown' period is armed. If the pointer is moved before the
+ * cooldown expires, the timer is disarmed, and nothing happens.
+ *
+ * If the pointer stays in the corner until the timer fires, we do consider the
+ * corner as 'activated'.
+ */
 struct _wlmaker_corner_t {
     /** Back-link to server. Required to execute actions. */
     wlmaker_server_t          *server_ptr;
@@ -56,6 +66,12 @@ struct _wlmaker_corner_t {
 
     /** The cursor's current corner. 0 if not currently in a corner. */
     unsigned                  current_corner;
+    /**
+     * Tracks whether the corner was occoppied and the timer had fired.
+     *
+     * Required to trigger 'leave' actions when the corner is cleared.
+     */
+    bool                      corner_triggered;
 };
 
 static void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr);
@@ -158,6 +174,7 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
 
     // Disarms the timer.
     wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 0);
+    corner_ptr->corner_triggered = false;
     corner_ptr->current_corner = 0;
 }
 
@@ -242,10 +259,13 @@ void _wlmaker_corner_evaluate(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles timer callbacks: Sends 'enter' event and registers triggering. */
 int _wlmaker_corner_handle_timer(void *data_ptr)
 {
     wlmaker_corner_t *corner_ptr = data_ptr;
+
     bs_log(BS_ERROR, "FIXME: Timer for corner %d", corner_ptr->current_corner);
+    corner_ptr->corner_triggered = true;
     return 0;
 }
 
