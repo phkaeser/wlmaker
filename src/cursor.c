@@ -97,6 +97,8 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
         return NULL;
     }
 
+    wl_signal_init(&cursor_ptr->position_updated);
+
     // tinywl: wlr_cursor *only* displays an image on screen. It does not move
     // around when the pointer moves. However, we can attach input devices to
     // it, and it will generate aggregate events for all of them. In these
@@ -332,6 +334,11 @@ void handle_seat_request_set_cursor(
  */
 void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
 {
+    wl_signal_emit_mutable(
+        &cursor_ptr->position_updated,
+        cursor_ptr->wlr_cursor_ptr);
+
+    // TODO(kaeser@gubbe.ch): also make this an event-based callback.
     wlmtk_root_pointer_motion(
         cursor_ptr->server_ptr->root_ptr,
         cursor_ptr->wlr_cursor_ptr->x,

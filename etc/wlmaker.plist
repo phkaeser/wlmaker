@@ -51,6 +51,20 @@
     "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
     "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
   };
+  HotCorner = {
+    // Delay for the pointer occupying a corner before triggering 'Enter'.
+    TriggerDelay = 500;
+    // For each corner 'TopLeft', 'TopRight', 'BottomLeft' and 'BottomRight'
+    // there are 'Enter' and 'Leave' events that can be bound to an action.
+    TopLeftEnter = LockScreen;
+    TopLeftLeave = None;
+    TopRightEnter = InhibitLockBegin;
+    TopRightLeave = InhibitLockEnd;
+    BottomLeftEnter = None;
+    BottomLeftLeave = None;
+    BottomRightEnter = None;
+    BottomRightLeave = None;
+  };
   ScreenLock = {
     IdleSeconds = 300;
     Command = "/usr/bin/swaylock";

@@ -52,6 +52,17 @@ struct _wlmaker_cursor_t {
 
     /** Listener for the `request_set_cursor` event of `wlr_seat`. */
     struct wl_listener        seat_request_set_cursor_listener;
+
+    /**
+     * Signals when the cursor's position is updated.
+     *
+     * Will be called from @ref handle_motion and @ref handle_motion_absolute
+     * handlers, after issuing wlr_cursor_move(), respectively
+     * wlr_cursor_warp_absolute().
+     *
+     * Offers struct wlr_cursor as argument.
+     */
+    struct wl_signal          position_updated;
 };
 
 /**

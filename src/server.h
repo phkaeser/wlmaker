@@ -55,6 +55,7 @@ typedef struct _wlmaker_key_binding_t wlmaker_key_binding_t;
 typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 
 #include "config.h"
+#include "corner.h"
 #include "cursor.h"
 #include "idle.h"
 #include "output.h"
@@ -180,12 +181,18 @@ struct _wlmaker_server_t {
     /** Subprocess monitoring. */
     wlmaker_subprocess_monitor_t *monitor_ptr;
 
+    /** Montor & handler of 'hot corners'. */
+    wlmaker_corner_t          *corner_ptr;
+
     // TODO(kaeser@gubbe.ch): Move these events into a 'registry' struct, so
     // it can be more easily shared throughout the code.
     /** Signal: Triggered whenever a window is created. */
     struct wl_signal          window_created_event;
     /** Signal: Triggered whenever a window is destroyed. */
     struct wl_signal          window_destroyed_event;
+
+    /** Signal: Output dimensions changed. Parameter: struct wlr_box*. */
+    struct wl_signal          output_layout_changed_event;
 
     /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
     wlmtk_dock_t              *clip_dock_ptr;
