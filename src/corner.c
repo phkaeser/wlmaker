@@ -23,6 +23,7 @@
 #include <wlr/util/edges.h>
 
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output_layout.h>
 #undef WLR_USE_UNSTABLE
 
@@ -44,6 +45,11 @@ struct _wlmaker_corner_t {
 
     /** Current extents of the output, cached for convience. */
     struct wlr_box            extents;
+
+    /** Pointer X coordinate, rounded to pixel position. */
+    int                       pointer_x;
+    /** Pointer Y coordinate, rounded to pixel position. */
+    int                       pointer_y;
 
     /** The cursor's current corner. 0 if not currently in a corner. */
     unsigned                  current_corner;
@@ -89,6 +95,8 @@ wlmaker_corner_t *wlmaker_corner_create(
     // - it not in any corner:
     //   - clear all timers
 
+    corner_ptr->pointer_x = cursor_ptr->wlr_cursor_ptr->x;
+    corner_ptr->pointer_y = cursor_ptr->wlr_cursor_ptr->y;
     _wlmaker_corner_update_layout(
         corner_ptr,
         wlr_output_layout_ptr);
@@ -182,20 +190,17 @@ void _wlmaker_corner_evaluate(
         return;
     }
 
-    double x, y;
-    wlmaker_cursor_get_position(corner_ptr->cursor_ptr, &x, &y);
-
     struct wlr_box *extents_ptr = &corner_ptr->extents;
     unsigned position = WLR_EDGE_NONE;
-    if (floor(x) == extents_ptr->x) {
+    if (corner_ptr->pointer_x == extents_ptr->x) {
         position |= WLR_EDGE_LEFT;
-    } else if (floor(x) == extents_ptr->x + extents_ptr->width) {
+    } else if (corner_ptr->pointer_x >= extents_ptr->x + extents_ptr->width - 1) {
         position |= WLR_EDGE_RIGHT;
     }
-    if (floor(y) == extents_ptr->y) {
+    if (corner_ptr->pointer_y == extents_ptr->y) {
         position |= WLR_EDGE_TOP;
-    } else if (floor(y) == extents_ptr->y + extents_ptr->height) {
-        position |= WLR_EDGE_RIGHT;
+    } else if (corner_ptr->pointer_y >= extents_ptr->y + extents_ptr->height - 1) {
+        position |= WLR_EDGE_BOTTOM;
     }
 
     switch (position) {
@@ -249,7 +254,13 @@ void _wlmaker_corner_handle_position_updated(
 {
     wlmaker_corner_t *corner_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_corner_t, cursor_position_updated_listener);
-    __UNUSED__ struct wlr_cursor *wlr_cursor_ptr = data_ptr;
+    struct wlr_cursor *wlr_cursor_ptr = data_ptr;
+
+    // Optimization: Ignore updates that are moves within the same pixel.
+    if (corner_ptr->pointer_x == wlr_cursor_ptr->x &&
+        corner_ptr->pointer_y == wlr_cursor_ptr->y) return;
+    corner_ptr->pointer_x = wlr_cursor_ptr->x;
+    corner_ptr->pointer_y = wlr_cursor_ptr->y;
 
     _wlmaker_corner_evaluate(corner_ptr);
 }
