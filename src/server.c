@@ -112,6 +112,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     wl_signal_init(&server_ptr->window_created_event);
     wl_signal_init(&server_ptr->window_destroyed_event);
+    wl_signal_init(&server_ptr->output_layout_changed_event);
 
     // Prepare display and socket.
     server_ptr->wl_display_ptr = wl_display_create();
@@ -760,6 +761,9 @@ void handle_output_layout_change(
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
     wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
+
+    wl_signal_emit_mutable(&server_ptr->output_layout_changed_event,
+                           &extents);
 }
 
 /* == Unit tests =========================================================== */
