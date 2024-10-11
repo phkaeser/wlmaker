@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include "action.h"
 #include "corner.h"
 
 #include <wlr/util/edges.h>
@@ -174,7 +175,12 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
 
     // Disarms the timer.
     wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 0);
-    corner_ptr->corner_triggered = false;
+
+    if (corner_ptr->corner_triggered) {
+        bs_log(BS_ERROR, "FIXME: leave.");
+        wlmaker_action_execute(corner_ptr->server_ptr, WLMAKER_ACTION_LOCK_INHIBIT_END);
+        corner_ptr->corner_triggered = false;
+    }
     corner_ptr->current_corner = 0;
 }
 
@@ -266,6 +272,8 @@ int _wlmaker_corner_handle_timer(void *data_ptr)
 
     bs_log(BS_ERROR, "FIXME: Timer for corner %d", corner_ptr->current_corner);
     corner_ptr->corner_triggered = true;
+
+    wlmaker_action_execute(corner_ptr->server_ptr, WLMAKER_ACTION_LOCK_INHIBIT_BEGIN);
     return 0;
 }
 
