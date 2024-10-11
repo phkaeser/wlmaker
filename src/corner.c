@@ -156,7 +156,8 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
 {
     if (0 == corner_ptr->current_corner) return;
 
-    bs_log(BS_WARNING, "FIXME: Clearing corner %d", corner_ptr->current_corner);
+    // Disarms the timer.
+    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 0);
     corner_ptr->current_corner = 0;
 }
 
@@ -182,11 +183,9 @@ void _wlmaker_corner_occupy(
         _wlmaker_corner_clear(corner_ptr);
     }
 
-    // Occupy: Register event timer.
+    // Occupy: Store the active corner and (re-arm) event timer.
     corner_ptr->current_corner = position;
-    bs_log(BS_WARNING, "FIXME: Occupy corner %d", corner_ptr->current_corner);
-
-    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 100);
+    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 1000);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -245,7 +244,8 @@ void _wlmaker_corner_evaluate(
 /* ------------------------------------------------------------------------- */
 int _wlmaker_corner_handle_timer(void *data_ptr)
 {
-    bs_log(BS_ERROR, "FIXME: Timer %p", data_ptr);
+    wlmaker_corner_t *corner_ptr = data_ptr;
+    bs_log(BS_ERROR, "FIXME: Timer for corner %d", corner_ptr->current_corner);
     return 0;
 }
 
