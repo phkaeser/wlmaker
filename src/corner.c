@@ -40,7 +40,7 @@ struct _wlmaker_corner_t {
     /** Listener for `change` signals raised by `wlr_output_layout`. */
     struct wl_listener        output_layout_change_listener;
 
-    /** Listener for when the cursor positoin was updated. */
+    /** Listener for when the cursor position was updated. */
     struct wl_listener        cursor_position_updated_listener;
 
     /** Current extents of the output, cached for convience. */
@@ -137,7 +137,7 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Starts occupatoin of a corner.
+ * Starts occupation of a corner.
  *
  * @param corner_ptr
  * @param position
