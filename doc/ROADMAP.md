@@ -256,6 +256,10 @@ Support for visual effects to improve usability, but not for pure show.
   * Accept decoration requests before first commit. And forward them after
     the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
 
+* Full support for multiple outputs ([#122](https://github.com/phkaeser/wlmaker/issues/122))
+  * Permit layout configuration via third-party tool (eg. wlr-randr).
+  * Test & scope the changes required.
+
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
@@ -342,6 +346,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Compositor features
   * Bindable hotkeys.
   * Pointer position, to support apps like wmscreen or xeyes.
+  * Evaluate "snap layout" mechanism, for pre-arranged Window placement.
 
 * Internationalization and solid font support
   * Move from cairo toy interface to using pango proper.
