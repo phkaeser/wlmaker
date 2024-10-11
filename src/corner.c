@@ -180,7 +180,7 @@ void _wlmaker_corner_update_layout(
 }
 
 /* ------------------------------------------------------------------------- */
-/** (Re)evaluates the hot corner state. */
+/** (Re)evaluates hot corner state from layout extents and pointer position. */
 void _wlmaker_corner_evaluate(
     wlmaker_corner_t *corner_ptr)
 {
@@ -242,11 +242,12 @@ void _wlmaker_corner_handle_output_layout_change(
 /**
  * Handles @ref wlmaker_cursor_t::position_updated signal callbacks.
  *
- * e-evaluates the cursor position with respect to the output's corners, and
- * will trigger configured actions.
+ * Stores the pointer's position in @ref wlmaker_corner_t. If the position is
+ * different than before, triggers a re-evaluation of whether a corner is
+ * occupied.
  *
  * @param listener_ptr
- * @param data_ptr
+ * @param data_ptr            Points to a `struct wlr_cursor`.
  */
 void _wlmaker_corner_handle_position_updated(
     struct wl_listener *listener_ptr,
