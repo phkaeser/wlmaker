@@ -206,10 +206,10 @@ Support for visual effects to improve usability, but not for pure show.
   * Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
 
-* Screensaver support.
-  * Magic corner to lock immediately.
-  * Magic corner to inhibit locking.
-  * Configurable corners, timeout and visualization.
+* [done] Screensaver support.
+  * [done] Magic corner to lock immediately.
+  * [done] Magic corner to inhibit locking.
+  * [done] Configurable corners & timeout.
 
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
