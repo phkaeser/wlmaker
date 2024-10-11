@@ -29,7 +29,7 @@ extern "C" {
 /** wlmaker actions. Can be bound to keys. Also @see wlmaker_action_desc. */
 typedef enum {
     WLMAKER_ACTION_NONE,
-    
+
     WLMAKER_ACTION_QUIT,
     WLMAKER_ACTION_LOCK_SCREEN,
     WLMAKER_ACTION_LOCK_INHIBIT_BEGIN,
