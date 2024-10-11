@@ -73,6 +73,25 @@ struct _wlmaker_corner_t {
      * Required to trigger 'leave' actions when the corner is cleared.
      */
     bool                      corner_triggered;
+
+    /** Configuration: Wait time before triggering 'Enter',. */
+    uint64_t                  trigger_delay_msec;
+    /** Action when entering the top-left corner. */
+    wlmaker_action_t          top_left_enter_action;
+    /** Action when leaving the top-left corner. */
+    wlmaker_action_t          top_left_leave_action;
+    /** Action when entering the top-right corner. */
+    wlmaker_action_t          top_right_enter_action;
+    /** Action when leaving the top-right corner. */
+    wlmaker_action_t          top_right_leave_action;
+    /** Action when entering the bottom-left corner. */
+    wlmaker_action_t          bottom_left_enter_action;
+    /** Action when leaving the bottom-left corner. */
+    wlmaker_action_t          bottom_left_leave_action;
+    /** Action when entering the bottom-right corner. */
+    wlmaker_action_t          bottom_right_enter_action;
+    /** Action when leaving the bottom-right corner. */
+    wlmaker_action_t          bottom_right_leave_action;
 };
 
 static void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr);
@@ -93,6 +112,39 @@ static void _wlmaker_corner_handle_output_layout_change(
 static void _wlmaker_corner_handle_position_updated(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
+/* == Data ================================================================= */
+
+/** Descriptor for the 'HotConfig' config dictionary. */
+static const wlmcfg_desc_t _wlmaker_corner_config_desc[] = {
+    WLMCFG_DESC_UINT64(
+        "TriggerDelay", true, wlmaker_corner_t, trigger_delay_msec, 500),
+    WLMCFG_DESC_ENUM(
+        "TopLeftEnter", false, wlmaker_corner_t, top_left_enter_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "TopLeftLeave", false, wlmaker_corner_t, top_left_leave_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "TopRightEnter", false, wlmaker_corner_t, top_right_enter_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "TopRightLeave", false, wlmaker_corner_t, top_right_leave_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "BottomLeftEnter", false, wlmaker_corner_t, bottom_left_enter_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "BottomLeftLeave", false, wlmaker_corner_t, bottom_left_leave_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "BottomRightEnter", false, wlmaker_corner_t, bottom_right_enter_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_ENUM(
+        "BottomRightLeave", false, wlmaker_corner_t, bottom_right_leave_action,
+        WLMAKER_ACTION_NONE, wlmaker_action_desc),
+    WLMCFG_DESC_SENTINEL()
+};
 
 /* == Exported methods ===================================================== */
 
@@ -117,6 +169,22 @@ wlmaker_corner_t *wlmaker_corner_create(
     //   - if in corner X: clear other timers, setup timer (if not done)
     // - it not in any corner:
     //   - clear all timers
+
+    wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
+        server_ptr->config_dict_ptr, "HotCorner");
+    if (NULL == config_dict_ptr) {
+        bs_log(BS_ERROR, "No 'HotConfig' dict found in configuration.");
+        wlmaker_corner_destroy(corner_ptr);
+        return NULL;
+    }
+    if (!wlmcfg_decode_dict(
+            config_dict_ptr,
+            _wlmaker_corner_config_desc,
+            corner_ptr)) {
+        bs_log(BS_ERROR, "Failed to parse 'HotConfig' dict.");
+        wlmaker_corner_destroy(corner_ptr);
+        return NULL;
+    }
 
     corner_ptr->timer_event_source_ptr = wl_event_loop_add_timer(
         wl_display_get_event_loop(wl_display_ptr),
@@ -177,8 +245,23 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
     wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 0);
 
     if (corner_ptr->corner_triggered) {
-        bs_log(BS_ERROR, "FIXME: leave.");
-        wlmaker_action_execute(corner_ptr->server_ptr, WLMAKER_ACTION_LOCK_INHIBIT_END);
+        wlmaker_action_t action = WLMAKER_ACTION_NONE;
+        switch (corner_ptr->current_corner) {
+        case WLR_EDGE_TOP | WLR_EDGE_LEFT:
+            action = corner_ptr->top_left_leave_action;
+            break;
+        case WLR_EDGE_TOP | WLR_EDGE_RIGHT:
+            action = corner_ptr->top_right_leave_action;
+            break;
+        case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+            action = corner_ptr->bottom_right_leave_action;
+            break;
+        case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+            action = corner_ptr->bottom_left_leave_action;
+            break;
+        default: break;
+        }
+        wlmaker_action_execute(corner_ptr->server_ptr, action);
         corner_ptr->corner_triggered = false;
     }
     corner_ptr->current_corner = 0;
@@ -208,7 +291,8 @@ void _wlmaker_corner_occupy(
 
     // Occupy: Store the active corner and (re-arm) event timer.
     corner_ptr->current_corner = position;
-    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr, 1000);
+    wl_event_source_timer_update(corner_ptr->timer_event_source_ptr,
+                                 corner_ptr->trigger_delay_msec);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -270,10 +354,25 @@ int _wlmaker_corner_handle_timer(void *data_ptr)
 {
     wlmaker_corner_t *corner_ptr = data_ptr;
 
-    bs_log(BS_ERROR, "FIXME: Timer for corner %d", corner_ptr->current_corner);
     corner_ptr->corner_triggered = true;
 
-    wlmaker_action_execute(corner_ptr->server_ptr, WLMAKER_ACTION_LOCK_INHIBIT_BEGIN);
+    wlmaker_action_t action = WLMAKER_ACTION_NONE;
+    switch (corner_ptr->current_corner) {
+    case WLR_EDGE_TOP | WLR_EDGE_LEFT:
+        action = corner_ptr->top_left_enter_action;
+        break;
+    case WLR_EDGE_TOP | WLR_EDGE_RIGHT:
+        action = corner_ptr->top_right_enter_action;
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+        action = corner_ptr->bottom_right_enter_action;
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+        action = corner_ptr->bottom_left_enter_action;
+        break;
+    default: break;
+    }
+    wlmaker_action_execute(corner_ptr->server_ptr, action);
     return 0;
 }
 
