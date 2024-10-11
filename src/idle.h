@@ -54,13 +54,30 @@ void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr);
 void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr);
 
 /**
- * Executes the configured 'Command' for locking.
+ * Executes the configured 'Command' for locking. Overrides inhibits.
  *
  * @param idle_monitor_ptr
  *
  * @return true on success.
  */
 bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr);
+
+/**
+ * Inhibits locking: Increases inhibitor counter, which will prevent locking
+ * when the idle timer expires. @see wlmaker_idle_monitor_uninhibit for
+ * releasing the inhibitor.
+ *
+ * @param idle_monitor_ptr
+ */
+void wlmaker_idle_monitor_inhibit(wlmaker_idle_monitor_t *idle_monitor_ptr);
+
+/**
+ * Uninhibits locking: Decreases the counter. If 0, and no other inhibitors
+ * found, an expired idle timer will lock.
+ *
+ * @param idle_monitor_ptr
+ */
+void wlmaker_idle_monitor_uninhibit(wlmaker_idle_monitor_t *idle_monitor_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
