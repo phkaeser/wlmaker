@@ -160,16 +160,6 @@ wlmaker_corner_t *wlmaker_corner_create(
     corner_ptr->server_ptr = server_ptr;
     corner_ptr->cursor_ptr = cursor_ptr;
 
-    // handle layout update: store the layout. Trigger evaluation.
-    //
-    // re-evaluate position:
-    // - get current pointer position
-    // - get ouput layout. if dimension is 0: clear all corners, return.
-    // - for each corner X:
-    //   - if in corner X: clear other timers, setup timer (if not done)
-    // - it not in any corner:
-    //   - clear all timers
-
     wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
         server_ptr->config_dict_ptr, "HotCorner");
     if (NULL == config_dict_ptr) {
