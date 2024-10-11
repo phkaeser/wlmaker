@@ -55,6 +55,8 @@ wlmaker_corner_t *wlmaker_corner_create(
  */
 void wlmaker_corner_destroy(wlmaker_corner_t *corner_ptr);
 
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_corner_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

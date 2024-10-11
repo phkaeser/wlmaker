@@ -411,4 +411,45 @@ void _wlmaker_corner_handle_position_updated(
     _wlmaker_corner_evaluate(corner_ptr);
 }
 
+/* == Unit tests =========================================================== */
+
+static void _wlmaker_corner_test(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_corner_test_cases[] = {
+    { 1, "test", _wlmaker_corner_test },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Exercises the hot corner module. */
+void _wlmaker_corner_test(bs_test_t *test_ptr)
+{
+    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_string(
+        "{"
+        "TriggerDelay = 500;"
+        "}");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, obj_ptr);
+
+    struct wl_event_loop *wl_event_loop_ptr = wl_event_loop_create();
+    struct wlr_output_layout output_layout = {};
+    wl_list_init(&output_layout.outputs);
+    wl_signal_init(&output_layout.events.change);
+    struct wlr_cursor wlr_cursor = {};
+    wlmaker_cursor_t cursor = { .wlr_cursor_ptr = &wlr_cursor };
+    wl_signal_init(&cursor.position_updated);
+    wlmaker_corner_t *corner_ptr = wlmaker_corner_create(
+        wlmcfg_dict_from_object(obj_ptr),
+        wl_event_loop_ptr,
+        &output_layout,
+        &cursor,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, corner_ptr);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 500, corner_ptr->trigger_delay_msec);
+
+    wlmaker_corner_destroy(corner_ptr);
+    wl_event_loop_destroy(wl_event_loop_ptr);
+    wlmcfg_object_unref(obj_ptr);
+}
+
 /* == End of corner.c ====================================================== */
