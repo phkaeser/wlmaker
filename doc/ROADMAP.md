@@ -233,6 +233,11 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Expose the decoration manager configurables through the config file.
   * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
+* Bug fixes
+  * Investigate & fix handling of axis (touchpad) on tty.
+  * Fix wrong size for lock surface when Output scale != 1.0 on tty.
+  * Fix leak / double free with config_dict_ptr.
+
 ## Plan for 0.5
 
 * Support for dynamic output configurations.
