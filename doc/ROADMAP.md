@@ -235,7 +235,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Bug fixes
   * Investigate & fix handling of axis (touchpad) on tty.
-  * Fix wrong size for lock surface when Output scale != 1.0 on tty.
+  * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
   * [done] Fix leak / double free with config_dict_ptr.
 
 ## Plan for 0.5

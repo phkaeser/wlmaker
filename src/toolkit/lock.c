@@ -344,10 +344,13 @@ wlmtk_lock_surface_t *_wlmtk_lock_surface_create(
         &lock_surface_ptr->surface_commit_listener,
         _wlmtk_lock_surface_handle_surface_commit);
 
+    // We need computed & scaled output resolution for setting the lock
+    // surface's dimensions.
+    int w, h;
+    wlr_output_effective_resolution(
+        wlr_session_lock_surface_v1_ptr->output, &w, &h);
     lock_surface_ptr->configure_serial = wlr_session_lock_surface_v1_configure(
-        lock_surface_ptr->wlr_session_lock_surface_v1_ptr,
-        wlr_session_lock_surface_v1_ptr->output->width,
-        wlr_session_lock_surface_v1_ptr->output->height);
+        lock_surface_ptr->wlr_session_lock_surface_v1_ptr, w, h);
 
     return lock_surface_ptr;
 }
