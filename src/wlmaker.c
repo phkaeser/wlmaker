@@ -408,7 +408,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
     bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
-    // FIXME -- double-free..? wlmcfg_dict_unref(config_dict_ptr);
+    wlmcfg_dict_unref(config_dict_ptr);
     wlmcfg_dict_unref(state_dict_ptr);
     regfree(&wlmaker_wlr_log_regex);
     return rv;
