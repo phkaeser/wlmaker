@@ -88,8 +88,9 @@ wlmaker_output_t *wlmaker_output_create(
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_ptr->server_ptr = server_ptr;
 
-    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
-        server_ptr->config_dict_ptr, _wlmaker_output_dict_name);
+    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_ref(
+        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr,
+                             _wlmaker_output_dict_name));
     if (NULL == output_dict_ptr) {
         bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_output_dict_name);
         wlmaker_output_destroy(output_ptr);
