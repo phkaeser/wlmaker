@@ -234,7 +234,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
 * Bug fixes
-  * Investigate & fix handling of axis (touchpad) on tty.
+  * [done] Investigate & fix handling of axis (touchpad) on tty.
   * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
   * [done] Fix leak / double free with config_dict_ptr.
 
