@@ -105,7 +105,11 @@ void _wlmtk_simple_menu_item_element_destroy(
 /** Implements @ref wlmtk_menu_item_vmt_t::clicked for the simple menu item. */
 void _wlmtk_simple_menu_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
 {
-    bs_log(BS_WARNING, "FIXME: Clicked %p", menu_item_ptr);
+    wlmtk_simple_menu_item_t *simple_menu_item_ptr = BS_CONTAINER_OF(
+        menu_item_ptr, wlmtk_simple_menu_item_t, super_menu_item);
+    bs_log(BS_WARNING, "Unimplemented: Simple menu item '%s' clicked (%p)",
+           simple_menu_item_ptr->super_menu_item.text_ptr,
+           simple_menu_item_ptr);
 }
 
 /* == End of simple_menu_item.c ============================================ */
