@@ -171,7 +171,7 @@ static const wlmcfg_desc_t _wlmaker_config_window_resize_style_desc[] = {
     WLMCFG_DESC_UINT64(
         "CornerWidth", true, wlmtk_resizebar_style_t, corner_width, 1),
     WLMCFG_DESC_SENTINEL()
- };
+};
 
 /** Descriptor for decoding the "Window" dictionary. */
 static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
@@ -186,6 +186,49 @@ static const wlmcfg_desc_t _wlmaker_config_window_style_desc[] = {
         _wlmaker_config_margin_style_desc),
     WLMCFG_DESC_DICT(
         "Margin", true, wlmtk_window_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Descriptor for decoding the "Item" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_menu_item_style_desc[] = {
+    WLMCFG_DESC_CUSTOM(
+        "Fill", true, wlmtk_menu_item_style_t, fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_CUSTOM(
+        "HighlightedFill", true, wlmtk_menu_item_style_t, highlighted_fill,
+        _wlmaker_config_decode_fill_style, NULL, NULL),
+    WLMCFG_DESC_DICT(
+        "Font", true, wlmtk_menu_item_style_t, font,
+        _wlmaker_config_font_style_desc),
+    WLMCFG_DESC_ARGB32(
+        "EnabledTextColor", true, wlmtk_menu_item_style_t,
+        enabled_text_color, 0),
+    WLMCFG_DESC_ARGB32(
+        "HighlightedTextColor", true, wlmtk_menu_item_style_t,
+        highlighted_text_color, 0),
+    WLMCFG_DESC_ARGB32(
+        "DisabledTextColor", true, wlmtk_menu_item_style_t,
+        disabled_text_color, 0),
+    WLMCFG_DESC_UINT64(
+        "Height", true, wlmtk_menu_item_style_t, height, 20),
+    WLMCFG_DESC_UINT64(
+        "BezelWidth", true, wlmtk_menu_item_style_t, bezel_width, 1),
+    WLMCFG_DESC_UINT64(
+        "Width", true, wlmtk_menu_item_style_t, width, 80),
+    WLMCFG_DESC_SENTINEL()
+};
+
+/** Descriptor for decoding the "Menu" dictionary. */
+static const wlmcfg_desc_t _wlmaker_config_menu_style_desc[] = {
+    WLMCFG_DESC_DICT(
+        "Item", true, wlmtk_menu_style_t, item,
+        _wlmaker_config_menu_item_style_desc),
+    WLMCFG_DESC_DICT(
+        "Margin", true, wlmtk_menu_style_t, margin,
+        _wlmaker_config_margin_style_desc),
+    WLMCFG_DESC_DICT(
+        "Border", true, wlmtk_menu_style_t, border,
         _wlmaker_config_margin_style_desc),
     WLMCFG_DESC_SENTINEL()
 };
@@ -237,6 +280,9 @@ const wlmcfg_desc_t wlmaker_config_style_desc[] = {
     WLMCFG_DESC_DICT(
         "Window", true, wlmaker_config_style_t, window,
         _wlmaker_config_window_style_desc),
+    WLMCFG_DESC_DICT(
+        "Menu", true, wlmaker_config_style_t, menu,
+        _wlmaker_config_menu_style_desc),
     WLMCFG_DESC_DICT(
         "TaskList", true, wlmaker_config_style_t, task_list,
         _wlmaker_task_list_style_desc),

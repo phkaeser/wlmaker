@@ -22,20 +22,13 @@
 
 /* == Declarations ========================================================= */
 
-static void _wlmtk_popup_handle_surface_map(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void _wlmtk_popup_handle_surface_unmap(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_surface_t *surface_ptr)
+    wlmtk_element_t *element_ptr)
 {
     memset(popup_ptr, 0, sizeof(wlmtk_popup_t));
     if (!wlmtk_container_init(&popup_ptr->super_container, env_ptr)) {
@@ -51,20 +44,11 @@ bool wlmtk_popup_init(
         &popup_ptr->popup_container.super_element);
     wlmtk_element_set_visible(&popup_ptr->popup_container.super_element, true);
 
-    if (NULL != surface_ptr) {
+    if (NULL != element_ptr) {
+        popup_ptr->element_ptr = element_ptr;
         wlmtk_container_add_element(
             &popup_ptr->super_container,
-            wlmtk_surface_element(surface_ptr));
-        popup_ptr->surface_ptr = surface_ptr;
-
-        wlmtk_surface_connect_map_listener_signal(
-            surface_ptr,
-            &popup_ptr->surface_map_listener,
-            _wlmtk_popup_handle_surface_map);
-        wlmtk_surface_connect_unmap_listener_signal(
-            surface_ptr,
-            &popup_ptr->surface_unmap_listener,
-            _wlmtk_popup_handle_surface_unmap);
+            popup_ptr->element_ptr);
     }
 
     return true;
@@ -79,14 +63,11 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
             wlmtk_popup_element(popup_ptr));
     }
 
-    if (NULL != popup_ptr->surface_ptr) {
-        wlmtk_util_disconnect_listener(&popup_ptr->surface_unmap_listener);
-        wlmtk_util_disconnect_listener(&popup_ptr->surface_map_listener);
-
+    if (NULL != popup_ptr->element_ptr) {
         wlmtk_container_remove_element(
             &popup_ptr->super_container,
-            wlmtk_surface_element(popup_ptr->surface_ptr));
-        popup_ptr->surface_ptr = NULL;
+            popup_ptr->element_ptr);
+        popup_ptr->element_ptr = NULL;
     }
 
     if (popup_ptr->popup_container.super_element.parent_container_ptr) {
@@ -106,45 +87,5 @@ wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handles the `surface_map` signal of the `wlr_surface`: Makes the popup
- * visible.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _wlmtk_popup_handle_surface_map(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmtk_popup_t *popup_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_popup_t, surface_map_listener);
-
-    wlmtk_element_set_visible(
-        wlmtk_surface_element(popup_ptr->surface_ptr),
-        true);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handles the `surface_unmap` signal of the `wlr_surface`: Makes the popup
- * invisible.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _wlmtk_popup_handle_surface_unmap(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmtk_popup_t *popup_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_popup_t, surface_unmap_listener);
-
-    wlmtk_element_set_visible(
-        wlmtk_surface_element(popup_ptr->surface_ptr),
-        false);
-}
 
 /* == End of popup.c ======================================================= */

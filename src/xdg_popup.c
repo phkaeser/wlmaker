@@ -78,7 +78,7 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     if (!wlmtk_popup_init(
             &wlmaker_xdg_popup_ptr->super_popup,
             env_ptr,
-            wlmaker_xdg_popup_ptr->surface_ptr)) {
+            wlmtk_surface_element(wlmaker_xdg_popup_ptr->surface_ptr))) {
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }

@@ -1167,10 +1167,10 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_window_style_t style = {};
+    wlmtk_window_style_t s = {};
     wlmtk_content_t content;
     wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &style, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 

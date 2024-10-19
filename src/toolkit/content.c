@@ -536,7 +536,8 @@ void test_add_remove_wlmtk_popup(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_popup_init(&popup, NULL, &fs1_ptr->surface));
+        wlmtk_popup_init(&popup, NULL,
+                         wlmtk_surface_element(&fs1_ptr->surface)));
 
     wlmtk_element_set_visible(wlmtk_content_element(&content), true);
     wlmtk_element_set_visible(wlmtk_popup_element(&popup), true);
