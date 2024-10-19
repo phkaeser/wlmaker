@@ -161,7 +161,6 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     wlmtk_window_t *wlmtk_window_ptr = wlmtk_window_create(
         &surface_ptr->super_content,
         &server_ptr->style.window,
-        &server_ptr->style.menu,
         server_ptr->env_ptr);
     if (NULL == wlmtk_window_ptr) {
         xdg_toplevel_surface_destroy(surface_ptr);

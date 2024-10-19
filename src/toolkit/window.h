@@ -29,7 +29,6 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 #include "box.h"
 #include "content.h"
 #include "element.h"
-#include "menu.h"
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
@@ -57,7 +56,6 @@ typedef struct {
  *
  * @param env_ptr
  * @param style_ptr
- * @param menu_style_ptr
  * @param content_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
@@ -66,7 +64,6 @@ typedef struct {
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
