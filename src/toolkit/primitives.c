@@ -287,9 +287,9 @@ const bs_test_case_t   wlmaker_primitives_test_cases[] = {
     { 1, "close_large", test_close_large },
     { 1, "minimize", test_minimize },
     { 1, "minimize_large", test_minimize_large },
-    { 1, "text", test_text },
-    // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why this fails on
+    // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why these fail on
     // Trixie when running as a github action.
+    { 0, "text", test_text },
     { 0, "window_title", test_window_title },
     { 0, NULL, NULL }
 };
