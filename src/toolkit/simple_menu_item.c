@@ -61,8 +61,7 @@ wlmtk_simple_menu_item_t *wlmtk_simple_menu_item_create(
         wlmtk_menu_item_element(&simple_menu_item_ptr->super_menu_item),
         &_wlmtk_simple_menu_item_element_vmt);
 
-    // FIXME - set better.
-    simple_menu_item_ptr->super_menu_item.width = 80;
+    simple_menu_item_ptr->super_menu_item.width = style_ptr->width;
 
     if (!wlmtk_menu_item_set_text(
             &simple_menu_item_ptr->super_menu_item,

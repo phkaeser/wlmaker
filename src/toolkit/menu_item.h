@@ -63,6 +63,8 @@ struct _wlmtk_menu_item_style_t {
     uint32_t                  highlighted_text_color;
     /** Text color when disabled. */
     uint32_t                  disabled_text_color;
+    /** Width of the item. */
+    uint64_t                  width;
 };
 
 /** Virtual method table for the menu item. */

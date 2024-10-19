@@ -214,6 +214,8 @@ static const wlmcfg_desc_t _wlmaker_config_menu_item_style_desc[] = {
         "Height", true, wlmtk_menu_item_style_t, height, 20),
     WLMCFG_DESC_UINT64(
         "BezelWidth", true, wlmtk_menu_item_style_t, bezel_width, 1),
+    WLMCFG_DESC_UINT64(
+        "Width", true, wlmtk_menu_item_style_t, width, 80),
     WLMCFG_DESC_SENTINEL()
 };
 
