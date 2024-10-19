@@ -321,10 +321,10 @@ bool _wlmaker_clip_pointer_axis(
         element_ptr, wlmaker_clip_t,
         super_tile.super_container.super_element);
 
-    if (0 > wlr_pointer_axis_event_ptr->delta_discrete) {
+    if (0 > wlr_pointer_axis_event_ptr->delta) {
         // Scroll wheel "up" -> next.
         wlmtk_root_switch_to_next_workspace(clip_ptr->server_ptr->root_ptr);
-    } else if (0 < wlr_pointer_axis_event_ptr->delta_discrete) {
+    } else if (0 < wlr_pointer_axis_event_ptr->delta) {
         // Scroll wheel "down" -> next.
         wlmtk_root_switch_to_previous_workspace(clip_ptr->server_ptr->root_ptr);
     }

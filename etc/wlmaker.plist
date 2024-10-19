@@ -35,6 +35,35 @@
     "Ctrl+Alt+Logo+F" = WindowFullscreen;
     "Ctrl+Alt+Logo+M" = WindowMaximize;
 
+    // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
+    // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
+    // listed. Should determine how to handle that w/o modifiers.
+    "Ctrl+Alt+XF86Switch_VT_1" = SwitchToVT1;
+    "Ctrl+Alt+XF86Switch_VT_2" = SwitchToVT2;
+    "Ctrl+Alt+XF86Switch_VT_3" = SwitchToVT3;
+    "Ctrl+Alt+XF86Switch_VT_4" = SwitchToVT4;
+    "Ctrl+Alt+XF86Switch_VT_5" = SwitchToVT5;
+    "Ctrl+Alt+XF86Switch_VT_6" = SwitchToVT6;
+    "Ctrl+Alt+XF86Switch_VT_7" = SwitchToVT7;
+    "Ctrl+Alt+XF86Switch_VT_8" = SwitchToVT8;
+    "Ctrl+Alt+XF86Switch_VT_9" = SwitchToVT9;
+    "Ctrl+Alt+XF86Switch_VT_10" = SwitchToVT10;
+    "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
+    "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
+  };
+  HotCorner = {
+    // Delay for the pointer occupying a corner before triggering 'Enter'.
+    TriggerDelay = 500;
+    // For each corner 'TopLeft', 'TopRight', 'BottomLeft' and 'BottomRight'
+    // there are 'Enter' and 'Leave' events that can be bound to an action.
+    TopLeftEnter = LockScreen;
+    TopLeftLeave = None;
+    TopRightEnter = InhibitLockBegin;
+    TopRightLeave = InhibitLockEnd;
+    BottomLeftEnter = None;
+    BottomLeftLeave = None;
+    BottomRightEnter = None;
+    BottomRightLeave = None;
   };
   ScreenLock = {
     IdleSeconds = 300;

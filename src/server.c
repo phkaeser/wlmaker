@@ -112,6 +112,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     wl_signal_init(&server_ptr->window_created_event);
     wl_signal_init(&server_ptr->window_destroyed_event);
+    wl_signal_init(&server_ptr->output_layout_changed_event);
 
     // Prepare display and socket.
     server_ptr->wl_display_ptr = wl_display_create();
@@ -144,7 +145,7 @@ wlmaker_server_t *wlmaker_server_create(
 #else // WLR_VERSION_NUM >= (18 << 8)
         server_ptr->wl_display_ptr,
 #endif // WLR_VERSION_NUM >= (18 << 8)
-        NULL  /* struct wlr_session */);
+        &server_ptr->wlr_session_ptr);
     if (NULL == server_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
         wlmaker_server_destroy(server_ptr);
@@ -326,6 +327,23 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    server_ptr->corner_ptr = wlmaker_corner_create(
+        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
+        wl_display_get_event_loop(server_ptr->wl_display_ptr),
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->cursor_ptr,
+        server_ptr);
+    if (NULL == server_ptr->corner_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
+               wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
+               wl_display_get_event_loop(server_ptr->wl_display_ptr),
+               server_ptr->wlr_output_layout_ptr,
+               server_ptr->cursor_ptr,
+               server_ptr);
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     return server_ptr;
 }
 
@@ -346,6 +364,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
             dlnode_ptr = dlnode_ptr->next_ptr;
             wlmaker_server_unbind_key(server_ptr, key_binding_ptr);
         }
+    }
+
+    if (NULL != server_ptr->corner_ptr) {
+        wlmaker_corner_destroy(server_ptr->corner_ptr);
+        server_ptr->corner_ptr = NULL;
     }
 
     if (NULL != server_ptr->monitor_ptr) {
@@ -384,14 +407,19 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->wl_display_ptr = NULL;
     }
 
-    if (NULL != server_ptr->root_ptr) {
-        wlmtk_root_destroy(server_ptr->root_ptr);
-        server_ptr->root_ptr = NULL;
+    if (NULL != server_ptr->idle_monitor_ptr) {
+        wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
+        server_ptr->idle_monitor_ptr = NULL;
     }
 
     if (NULL != server_ptr->lock_mgr_ptr) {
         wlmaker_lock_mgr_destroy(server_ptr->lock_mgr_ptr);
         server_ptr->lock_mgr_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->root_ptr) {
+        wlmtk_root_destroy(server_ptr->root_ptr);
+        server_ptr->root_ptr = NULL;
     }
 
     if (NULL != server_ptr->env_ptr) {
@@ -417,11 +445,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->idle_monitor_ptr) {
-        wlmaker_idle_monitor_destroy(server_ptr->idle_monitor_ptr);
-        server_ptr->idle_monitor_ptr = NULL;
     }
 
     if (NULL != server_ptr->wlr_allocator_ptr) {
@@ -532,6 +555,13 @@ bool wlmaker_keyboard_process_bindings(
     xkb_keysym_t keysym,
     uint32_t modifiers)
 {
+    if (bs_will_log(BS_DEBUG)) {
+        char keysym_name[128] = {};
+        xkb_keysym_get_name(keysym, keysym_name, sizeof(keysym_name));
+        bs_log(BS_DEBUG, "Process key '%s' (sym %d, modifiers %"PRIx32")",
+               keysym_name, keysym, modifiers);
+    }
+
     for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = dlnode_ptr->next_ptr) {
@@ -731,6 +761,9 @@ void handle_output_layout_change(
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
     wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
+
+    wl_signal_emit_mutable(&server_ptr->output_layout_changed_event,
+                           &extents);
 }
 
 /* == Unit tests =========================================================== */

@@ -43,11 +43,18 @@ struct _wlmaker_idle_monitor_t {
     struct wl_event_loop      *wl_event_loop_ptr;
     /** The timer's event source. */
     struct wl_event_source    *timer_event_source_ptr;
+    /** Whether the timer expired. Reset in @ref wlmaker_idle_monitor_reset. */
+    bool                      timer_expired;
 
     /** Listener for `new_inhibitor` of wlr_idle_inhibit_manager_v1`. */
     struct wl_listener        new_inhibitor_listener;
     /** Lists registered inhibitors: @ref wlmaker_idle_inhibitor_t::dlnode. */
     bs_dllist_t               idle_inhibitors;
+    /**
+     * Counter for inhibits. Timer-triggered locks are taking effect only
+     * when inhibits == 0.
+     */
+    int                       inhibits;
 
     /** Listener for @ref wlmtk_root_events_t::unlock_event. */
     struct wl_listener        unlock_listener;
@@ -73,6 +80,8 @@ struct _wlmaker_idle_inhibitor_t {
     struct wl_listener        destroy_listener;
 };
 
+static void _wlmaker_idle_monitor_consider_locking(
+    wlmaker_idle_monitor_t *idle_monitor_ptr);
 static int _wlmaker_idle_monitor_timer(void *data_ptr);
 
 static int _wlmaker_idle_msec(wlmaker_idle_monitor_t *idle_monitor_ptr);
@@ -145,7 +154,6 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
         return NULL;
     }
 
-
     return monitor_ptr;
 }
 
@@ -180,6 +188,7 @@ void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr)
         idle_monitor_ptr->timer_event_source_ptr,
         _wlmaker_idle_msec(idle_monitor_ptr));
     BS_ASSERT(0 == rv);
+    idle_monitor_ptr->timer_expired = false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -223,7 +232,41 @@ bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr)
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmaker_idle_monitor_inhibit(wlmaker_idle_monitor_t *idle_monitor_ptr)
+{
+    ++idle_monitor_ptr->inhibits;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_idle_monitor_uninhibit(wlmaker_idle_monitor_t *idle_monitor_ptr)
+{
+    BS_ASSERT(0 < idle_monitor_ptr->inhibits);
+    --idle_monitor_ptr->inhibits;
+    _wlmaker_idle_monitor_consider_locking(idle_monitor_ptr);
+}
+
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Executes a lock, if not inhibited & timer has indeed expired. */
+void _wlmaker_idle_monitor_consider_locking(
+    wlmaker_idle_monitor_t *idle_monitor_ptr)
+{
+    // No locking if there's inhibitors or no expired timer.
+    if (0 < idle_monitor_ptr->inhibits ||
+        !idle_monitor_ptr->timer_expired) return;
+
+    // Lock. If there's a problem there => don't register for unlock.
+    if (!wlmaker_idle_monitor_lock(idle_monitor_ptr)) return;
+
+    wlmtk_root_t *root_ptr = idle_monitor_ptr->server_ptr->root_ptr;
+    idle_monitor_ptr->locked = true;
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_root_events(root_ptr)->unlock_event,
+        &idle_monitor_ptr->unlock_listener,
+        _wlmaker_idle_monitor_handle_unlock);
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -239,20 +282,14 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
 {
     wlmaker_idle_monitor_t *idle_monitor_ptr = data_ptr;
 
-    if (!wlmaker_idle_monitor_lock(idle_monitor_ptr)) return 0;
-
-    wlmtk_root_t *root_ptr = idle_monitor_ptr->server_ptr->root_ptr;
-    idle_monitor_ptr->locked = true;
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(root_ptr)->unlock_event,
-        &idle_monitor_ptr->unlock_listener,
-        _wlmaker_idle_monitor_handle_unlock);
+    idle_monitor_ptr->timer_expired = true;
+    _wlmaker_idle_monitor_consider_locking(idle_monitor_ptr);
     return 0;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
- * Returnss the idle timeout time in milliseconds.
+ * Returns the idle timeout time in milliseconds.
  *
  * @param idle_monitor_ptr
  *
@@ -304,14 +341,8 @@ bool _wlmaker_idle_monitor_add_inhibitor(
 
     bs_dllist_push_back(&idle_monitor_ptr->idle_inhibitors,
                         &idle_inhibitor_ptr->dlnode);
+    wlmaker_idle_monitor_inhibit(idle_monitor_ptr);
 
-    // Coming here: We know to have at least 1 inhibitor.
-    if (0 != wl_event_source_timer_update(
-            idle_monitor_ptr->timer_event_source_ptr, 0)) {
-        // Huh. Failed. We'll keep the inhibitor nonetheless. Yes?
-        bs_log(BS_WARNING, "Failed wl_event_source_timer_update(%p, 0)",
-               idle_monitor_ptr->timer_event_source_ptr);
-    }
     return true;
 }
 
@@ -329,13 +360,10 @@ void _wlmaker_idle_monitor_handle_destroy_inhibitor(
     wlmaker_idle_inhibitor_t *idle_inhibitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_idle_inhibitor_t, destroy_listener);
 
+    wlmaker_idle_monitor_uninhibit(idle_inhibitor_ptr->idle_monitor_ptr);
     bs_dllist_remove(
         &idle_inhibitor_ptr->idle_monitor_ptr->idle_inhibitors,
         &idle_inhibitor_ptr->dlnode);
-    if (bs_dllist_empty(
-            &idle_inhibitor_ptr->idle_monitor_ptr->idle_inhibitors)) {
-        wlmaker_idle_monitor_reset(idle_inhibitor_ptr->idle_monitor_ptr);
-    }
 
     wl_list_remove(&idle_inhibitor_ptr->destroy_listener.link);
     free(idle_inhibitor_ptr);

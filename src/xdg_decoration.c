@@ -119,8 +119,9 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
         return NULL;
     }
 
-    wlmcfg_dict_t *decoration_dict_ptr = wlmcfg_dict_get_dict(
-        server_ptr->config_dict_ptr, _wlmaker_xdg_decoration_dict_name);
+    wlmcfg_dict_t *decoration_dict_ptr = wlmcfg_dict_ref(
+        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr,
+                             _wlmaker_xdg_decoration_dict_name));
     if (NULL == decoration_dict_ptr) {
         bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_xdg_decoration_dict_name);
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);

@@ -429,6 +429,7 @@ bool _wlmcfg_decode_enum(
         }
     }
 
+    bs_log(BS_WARNING, "Failed to decode enum value '%s'.", value_ptr);
     return false;
 }
 

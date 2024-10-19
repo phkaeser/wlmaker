@@ -28,8 +28,12 @@ extern "C" {
 
 /** wlmaker actions. Can be bound to keys. Also @see wlmaker_action_desc. */
 typedef enum {
+    WLMAKER_ACTION_NONE,
+
     WLMAKER_ACTION_QUIT,
     WLMAKER_ACTION_LOCK_SCREEN,
+    WLMAKER_ACTION_LOCK_INHIBIT_BEGIN,
+    WLMAKER_ACTION_LOCK_INHIBIT_END,
     WLMAKER_ACTION_LAUNCH_TERMINAL,
 
     WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS,
@@ -42,9 +46,25 @@ typedef enum {
     WLMAKER_ACTION_WINDOW_LOWER,
     WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN,
     WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED,
+
+    // Note: Keep these numbered consecutively.
+    WLMAKER_ACTION_SWITCH_TO_VT1,
+    WLMAKER_ACTION_SWITCH_TO_VT2,
+    WLMAKER_ACTION_SWITCH_TO_VT3,
+    WLMAKER_ACTION_SWITCH_TO_VT4,
+    WLMAKER_ACTION_SWITCH_TO_VT5,
+    WLMAKER_ACTION_SWITCH_TO_VT6,
+    WLMAKER_ACTION_SWITCH_TO_VT7,
+    WLMAKER_ACTION_SWITCH_TO_VT8,
+    WLMAKER_ACTION_SWITCH_TO_VT9,
+    WLMAKER_ACTION_SWITCH_TO_VT10,
+    WLMAKER_ACTION_SWITCH_TO_VT11,
+    WLMAKER_ACTION_SWITCH_TO_VT12,
 } wlmaker_action_t;
 
 extern const char *wlmaker_action_config_dict_key;
+
+extern const wlmcfg_enum_desc_t wlmaker_action_desc[];
 
 /** Forward declaration: Handle for bound actions. */
 typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;

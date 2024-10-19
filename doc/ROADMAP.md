@@ -206,10 +206,10 @@ Support for visual effects to improve usability, but not for pure show.
   * Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
 
-* Screensaver support.
-  * Magic corner to lock immediately.
-  * Magic corner to inhibit locking.
-  * Configurable corners, timeout and visualization.
+* [done] Screensaver support.
+  * [done] Magic corner to lock immediately.
+  * [done] Magic corner to inhibit locking.
+  * [done] Configurable corners & timeout.
 
 * Documentation updates
   * Update README to reflect "early-access" vs. "early development".
@@ -229,9 +229,14 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
   * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
 
-* Misc
+* [done] Misc
   * [done] Expose the decoration manager configurables through the config file.
-  * Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
+  * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
+
+* Bug fixes
+  * [done] Investigate & fix handling of axis (touchpad) on tty.
+  * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
+  * [done] Fix leak / double free with config_dict_ptr.
 
 ## Plan for 0.5
 
@@ -255,6 +260,10 @@ Support for visual effects to improve usability, but not for pure show.
     Apply when mapping.
   * Accept decoration requests before first commit. And forward them after
     the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
+
+* Full support for multiple outputs ([#122](https://github.com/phkaeser/wlmaker/issues/122))
+  * Permit layout configuration via third-party tool (eg. wlr-randr).
+  * Test & scope the changes required.
 
 * Wayland protocol adherence.
   * Support XDG `wm_capabilities` and advertise the compositor features.
@@ -342,6 +351,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Compositor features
   * Bindable hotkeys.
   * Pointer position, to support apps like wmscreen or xeyes.
+  * Evaluate "snap layout" mechanism, for pre-arranged Window placement.
 
 * Internationalization and solid font support
   * Move from cairo toy interface to using pango proper.
