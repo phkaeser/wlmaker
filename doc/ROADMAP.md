@@ -5,127 +5,72 @@ Maker, and fully theme-able and configurable.
 
 Support for visual effects to improve usability, but not for pure show.
 
-## 0.1 - MVP milestone
+## Plan for 0.6
 
-### Features
+**Focus**: Multiple outputs.
 
-* [done] Support `xdg_shell`.
+* Support for dynamic output configurations.
+  * Multiple monitors, with output mirrored across.
+  * Per-monitor fractional scale.
 
-* [done] Support `layer_shell`.
+## Plan for 0.5
 
-* [done] Support window decoration protocol.
-  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
-  * [done] Window menu, with basic window actions (not required to adapt to state).
+**Focus**: Add root menu and window menu.
 
-* [done] Multiple workspaces
-  * [done] Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+* Menu, based on toolkit.
+  * Root menu.
+  * Available as window menu in windows.
+  * Available as (hardcoded) application menu.
+  * Menu with submenus.
+  * Window menu adapting to window state.
+    (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
 
-* [done] Dock, visible across workspaces.
-  * [done] Style similar to Window Maker.
-  * [done] With application launchers (hardcoded).
+* Bug fixes
+  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * Particularly when using large decorations, there is resize jitter.
+  * When switching workspace, pointer state appears to be reset.
 
-* [done] Clip
-  * [done] Display the current workspace.
-  * [done] Buttons to switch between workspaces.
+## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
 
-* [done] Application launchers
-  * [done] Display an icon.
-  * [done] Display application status (*starting*, *running*).
-  * [done] Configurable (in code).
+**Focus**: Make it ready for "Early-Access".
 
-* [done] Window actions
-  * [done] Move (drag via title bar, or window-alt-click)
-  * [done] Resize windows, including a resize bar.
-  * [done] Fullscreen windows.
-  * [done] Maximize windows.
-  * [done] Minimize (*iconify*) windows.
-  * [done] Roll up (*shade*) windows.
-  * [done] Raise window when activated.
+* [done] Thorough tests of both pointer and keyboard state.
+  * [done] Issue found when killing saylock that keyboard focus is incorrect.
+  * [done] Re-activate workspace & windows after lock.
 
-* [done] Visualization of iconified applications.
+* [done] Screensaver support.
+  * [done] Magic corner to lock immediately.
+  * [done] Magic corner to inhibit locking.
+  * [done] Configurable corners & timeout.
 
-* [done] Task list (window-alt-esc), cycling through windows.
+* [done] Documentation updates
+  * [done] Update README to reflect "early-access" vs. "early development".
+  * [done] Screenshots included.
 
-* [done] Auto-start of configured applications.
-  * [done] Configurable in code.
+* [done] Update build system to use libraries from the base system rather than
+  the `dependencies/` subdirectory, if versions are avaialble.
+  * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
+  * [done] Have github actions compile on trixie, using the host library.
+  * [done] Have github actions compile not just 0.17, but also 0.18.
+  * [done] Verify if that & libdrm update works with lightdm. It
+    [does not](https://github.com/canonical/lightdm/issues/267).
 
-* [done] Verify minimal application set to run:
-  * [done] Terminal: `foot`
-  * [done] Google Chrome
-  * [done] Mozilla Firefox
+* [done] Support different output scale & transformations
+  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
+  * [done] Scale icons to tile size.
+  * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
+  * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
 
-* [done] Works as a X11 window, Wayland client or standalone compositor.
+* [done] Misc
+  * [done] Expose the decoration manager configurables through the config file.
+  * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
-### Internals and code organization
+* [done] Bug fixes
+  * [done] Investigate & fix handling of axis (touchpad) on tty.
+  * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
+  * [done] Fix leak / double free with config_dict_ptr.
 
-* [done] git submodule for direct and critical dependencies.
-* [done] CMake as build system.
-* [done] `test` and `doc` targets.
-* [done] Published as open source.
-
-## Plan for 0.2
-
-* [done] Issues to fix:
-  * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
-  * [done] Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
-  * [done] Hide window border when not having server-side decoration.
-  * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
-  * [done] Fix resize issue with Chrome & Firefox: The content size and actual window size can differ, which led to jumpy resizes as get_size and request_size operations did not base on the same.
-  * [not reproducible] Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
-
-* [done] Experimental support for Dock Apps
-  * [done] Experimental wayland protocol for Apps to declare icon surfaces.
-  * [done] Surfaces will be shown in either tile container, clip or dock area,
-    depending from where the app was started.
-  * [done] Demo DockApps included (digital clock)
-
-* [done] Initial XWayland support
-  * [done] Cover enough functionality to support xterm
-  * [done] Enough functionality to support emacs in X11.
-    * [done] Support for child surfaces.
-    * [done] Positioning of popups
-    * [done] Ensure stacking order is respected and used.
-    * [done] Popups do not contribute to window extensions (no border hops)
-    * [done] Cursor set appropriately.
-    * [done] Set DISPLAY env variable appropriately.
-    * [done] Handling of modal windows: Should have decorations, stay on top.
-
-* [done] Configurable keyboard map (in code ~or commandline arg~)
-
-* Support `xdg_shell`, based on toolkit.
-  * [done] XDG Popups.
-  * [done] Move and Resize, compliant with asynchronous ops.
-  * [done] Maximize.
-  * [done] Set title.
-  * [done] fullscreen.
-  * [done] Fix positioning of popups.
-  * [regression, not supported] show window menu.
-
-* [done] Support window decoration protocol, based on toolkit.
-  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
-  * [done] No border shown when windows are not decorated (eg. chrome, firefox)
-
-* [done] Task List
-  * [done] Listing windows, rather than views.
-
-* [done] Window actions, based on toolkit.
-  * [done] Move ([done] drag via title bar, or [done] window-alt-click)
-  * [done] Resize windows, including a resize bar.
-  * [done] Fullscreen windows.
-  * [done] Maximize windows.
-  * [done] Roll up (*shade*) windows.
-  * [done] Raise window when activated.
-
-* [done] App Launcher: Update status for wlmtk_window_t, instead of
-  wlmaker_view_t.
-
-### Internals and code organization
-
-* [done] Design a toolkit and re-factor the codebase to make use of it.
-  * Ensure the main features (eg. all explicit actions and features above) are
-    tested.
-
-## Plan for 0.3
+## [0.3](https://github.com/phkaeser/wlmaker/releases/tag/v0.3)
 
 * Bugfixes
   * [done] Fix issue on fullscreen: The window border is kept, having the window off by 1 pixel.
@@ -187,64 +132,127 @@ Support for visual effects to improve usability, but not for pure show.
 
 * [done] Build & compile off released dependency versions.
 
-## Plan for 0.4
+## [0.2](https://github.com/phkaeser/wlmaker/releases/tag/v0.2)
 
-**Focus**: Add menus & make it ready for "Early-Access".
+* [done] Issues to fix:
+  * [done] Fix out-of-sync display of server-side decoration and window content when resizing.
+  * [done] Fix assertion crash when mouse is pressed, then moved to another toplevel, then released.
+  * [done] Hide window border when not having server-side decoration.
+  * [done] Fix issue with Chrome: Enabling "Use system title and boders" will pick a slightly small decoration.
+  * [done] Fix resize issue with Chrome & Firefox: The content size and actual window size can differ, which led to jumpy resizes as get_size and request_size operations did not base on the same.
+  * [not reproducible] Fix issue on resizing: When moving the mouse too quickly, focus is lost and the resizing stops.
 
-* Thorough tests of both pointer and keyboard state.
-  * [done] Issue found when killing saylock that keyboard focus is incorrect.
-  * [done] Re-activate workspace & windows after lock.
-  * Fix bug: When switching workspace, pointer state appears to be reset.
-  * Fix bug: resize-from-left jitter observed on the raspi or with gnome-terminal.
-  * Fix bug: Particularly when using large decorations, there is resize jitter.
+* [done] Experimental support for Dock Apps
+  * [done] Experimental wayland protocol for Apps to declare icon surfaces.
+  * [done] Surfaces will be shown in either tile container, clip or dock area,
+    depending from where the app was started.
+  * [done] Demo DockApps included (digital clock)
 
-* Menu, based on toolkit.
-  * Available as window menu in windows.
-  * Available as (hardcoded) application menu.
-  * Root menu.
-  * Menu with submenus.
-  * Window menu adapting to window state.
-    (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
+* [done] Initial XWayland support
+  * [done] Cover enough functionality to support xterm
+  * [done] Enough functionality to support emacs in X11.
+    * [done] Support for child surfaces.
+    * [done] Positioning of popups
+    * [done] Ensure stacking order is respected and used.
+    * [done] Popups do not contribute to window extensions (no border hops)
+    * [done] Cursor set appropriately.
+    * [done] Set DISPLAY env variable appropriately.
+    * [done] Handling of modal windows: Should have decorations, stay on top.
 
-* [done] Screensaver support.
-  * [done] Magic corner to lock immediately.
-  * [done] Magic corner to inhibit locking.
-  * [done] Configurable corners & timeout.
+* [done] Configurable keyboard map (in code ~or commandline arg~)
 
-* Documentation updates
-  * Update README to reflect "early-access" vs. "early development".
-  * [done] Screenshots included.
+* Support `xdg_shell`, based on toolkit.
+  * [done] XDG Popups.
+  * [done] Move and Resize, compliant with asynchronous ops.
+  * [done] Maximize.
+  * [done] Set title.
+  * [done] fullscreen.
+  * [done] Fix positioning of popups.
+  * [regression, not supported] show window menu.
 
-* Update build system to use libraries from the base system rather than
-  the `dependencies/` subdirectory, if versions are avaialble.
-  * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
-  * [done] Have github actions compile on trixie, using the host library.
-  * [done] Have github actions compile not just 0.17, but also 0.18.
-  * [done] Verify if that & libdrm update works with lightdm. It
-    [does not](https://github.com/canonical/lightdm/issues/267).
+* [done] Support window decoration protocol, based on toolkit.
+  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
+  * [done] No border shown when windows are not decorated (eg. chrome, firefox)
 
-* Support different output scale & transformations
-  * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
-  * [done] Scale icons to tile size.
-  * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
-  * [done] Add commandline arguments to configure size of window ([#98](https://github.com/phkaeser/wlmaker/issues/98))
+* [done] Task List
+  * [done] Listing windows, rather than views.
 
-* [done] Misc
-  * [done] Expose the decoration manager configurables through the config file.
-  * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
+* [done] Window actions, based on toolkit.
+  * [done] Move ([done] drag via title bar, or [done] window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * [done] Roll up (*shade*) windows.
+  * [done] Raise window when activated.
 
-* Bug fixes
-  * [done] Investigate & fix handling of axis (touchpad) on tty.
-  * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
-  * [done] Fix leak / double free with config_dict_ptr.
+* [done] App Launcher: Update status for wlmtk_window_t, instead of
+  wlmaker_view_t.
 
-## Plan for 0.5
+### Internals and code organization
 
-* Support for dynamic output configurations.
-  * Multiple monitors, with output mirrored across.
-  * Per-monitor fractional scale.
+* [done] Design a toolkit and re-factor the codebase to make use of it.
+  * Ensure the main features (eg. all explicit actions and features above) are
+    tested.
 
-## Pending
+## [0.1 - MVP milestone](https://github.com/phkaeser/wlmaker/releases/tag/v0.1)
+
+### Features
+
+* [done] Support `xdg_shell`.
+
+* [done] Support `layer_shell`.
+
+* [done] Support window decoration protocol.
+  * [done] Style of title bar, iconify and close buttons similar to Window Maker.
+  * [done] Window menu, with basic window actions (not required to adapt to state).
+
+* [done] Multiple workspaces
+  * [done] Navigate via keys (ctrl-window-alt-arrows, hardcoded).
+
+* [done] Dock, visible across workspaces.
+  * [done] Style similar to Window Maker.
+  * [done] With application launchers (hardcoded).
+
+* [done] Clip
+  * [done] Display the current workspace.
+  * [done] Buttons to switch between workspaces.
+
+* [done] Application launchers
+  * [done] Display an icon.
+  * [done] Display application status (*starting*, *running*).
+  * [done] Configurable (in code).
+
+* [done] Window actions
+  * [done] Move (drag via title bar, or window-alt-click)
+  * [done] Resize windows, including a resize bar.
+  * [done] Fullscreen windows.
+  * [done] Maximize windows.
+  * [done] Minimize (*iconify*) windows.
+  * [done] Roll up (*shade*) windows.
+  * [done] Raise window when activated.
+
+* [done] Visualization of iconified applications.
+
+* [done] Task list (window-alt-esc), cycling through windows.
+
+* [done] Auto-start of configured applications.
+  * [done] Configurable in code.
+
+* [done] Verify minimal application set to run:
+  * [done] Terminal: `foot`
+  * [done] Google Chrome
+  * [done] Mozilla Firefox
+
+* [done] Works as a X11 window, Wayland client or standalone compositor.
+
+### Internals and code organization
+
+* [done] git submodule for direct and critical dependencies.
+* [done] CMake as build system.
+* [done] `test` and `doc` targets.
+* [done] Published as open source.
+
+## Features and work items pending roadmap placement
 
 ### Major feature milestones
 
