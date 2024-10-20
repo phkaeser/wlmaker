@@ -30,11 +30,11 @@ Support for visual effects to improve usability, but not for pure show.
   * Particularly when using large decorations, there is resize jitter.
   * When switching workspace, pointer state appears to be reset.
 
-## Plan for 0.4
+## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
 
 **Focus**: Make it ready for "Early-Access".
 
-* Thorough tests of both pointer and keyboard state.
+* [done] Thorough tests of both pointer and keyboard state.
   * [done] Issue found when killing saylock that keyboard focus is incorrect.
   * [done] Re-activate workspace & windows after lock.
 
@@ -43,11 +43,11 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Magic corner to inhibit locking.
   * [done] Configurable corners & timeout.
 
-* Documentation updates
-  * Update README to reflect "early-access" vs. "early development".
+* [done] Documentation updates
+  * [done] Update README to reflect "early-access" vs. "early development".
   * [done] Screenshots included.
 
-* Update build system to use libraries from the base system rather than
+* [done] Update build system to use libraries from the base system rather than
   the `dependencies/` subdirectory, if versions are avaialble.
   * [done] Upgrade to wlroots 0.18. (support both 0.17 and 0.18 in code).
   * [done] Have github actions compile on trixie, using the host library.
@@ -55,7 +55,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Verify if that & libdrm update works with lightdm. It
     [does not](https://github.com/canonical/lightdm/issues/267).
 
-* Support different output scale & transformations
+* [done] Support different output scale & transformations
   * [done] Add a style file that has dimensions suitably for a Hi-Res screen (eg. Retina) ([#99](https://github.com/phkaeser/wlmaker/issues/99))
   * [done] Scale icons to tile size.
   * [done] Add option to specify an output transformation ([#97](https://github.com/phkaeser/wlmaker/issues/87)). Note: Will not work well in X11 window mode.
@@ -65,7 +65,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Expose the decoration manager configurables through the config file.
   * [done] Add support for switching virtual terminals ([#6](https://github.com/phkaeser/wlmaker/issues/6)).
 
-* Bug fixes
+* [done] Bug fixes
   * [done] Investigate & fix handling of axis (touchpad) on tty.
   * [done] Fix wrong size for lock surface when Output scale != 1.0 on tty.
   * [done] Fix leak / double free with config_dict_ptr.
