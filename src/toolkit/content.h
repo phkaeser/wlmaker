@@ -122,12 +122,13 @@ struct _wlmtk_content_t {
     // TODO(kaeser@gubbe.ch): Re-think whether this better be part of window?
     wlmtk_container_t         popup_container;
 
-    /** The principal surface of the content. */
-    wlmtk_surface_t           *surface_ptr;
+    /** The principal element of the content. */
+    wlmtk_element_t           *element_ptr;
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
 
-    /** The client connected to the @ref wlmtk_content_t::surface_ptr. */
+    /** The client connected to the @ref wlmtk_content_t. */
+    // TODO(kaeser@gubbe.ch): Should not be stored here & this way.
     wlmtk_util_client_t       client;
 
     /**
