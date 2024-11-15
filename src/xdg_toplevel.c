@@ -206,7 +206,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 
     if (!wlmtk_content_init(
             &xdg_tl_surface_ptr->super_content,
-            xdg_tl_surface_ptr->surface_ptr,
+            wlmtk_surface_element(xdg_tl_surface_ptr->surface_ptr),
             server_ptr->env_ptr)) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
