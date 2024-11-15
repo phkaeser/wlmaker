@@ -35,12 +35,26 @@ struct _wlmaker_root_menu_t {
     wlmtk_menu_t              menu;
     /** For now: One entry in the root menu, for 'Exit'. */
     wlmtk_simple_menu_item_t  *exit_item_ptr;
+
+    /** Back-link to the server. */
+    wlmaker_server_t          *server_ptr;
+};
+
+static void _wlmaker_root_menu_content_request_close(
+    wlmtk_content_t *content_ptr);
+
+/* == Data ================================================================= */
+
+/** Virtual method of the root menu's window content. */
+static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
+    .request_close = _wlmaker_root_menu_content_request_close
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_root_menu_t *wlmaker_root_menu_create(
+    wlmaker_server_t *server_ptr,
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr)
@@ -48,6 +62,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_root_menu_t *root_menu_ptr = logged_calloc(
         1, sizeof(wlmaker_root_menu_t));
     if (NULL == root_menu_ptr) return NULL;
+    root_menu_ptr->server_ptr = server_ptr;
+    root_menu_ptr->server_ptr->root_menu_ptr = root_menu_ptr;
 
     if (!wlmtk_menu_init(&root_menu_ptr->menu,
                          menu_style_ptr,
@@ -73,6 +89,9 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
     }
+    wlmtk_content_extend(
+        &root_menu_ptr->content,
+        &_wlmaker_root_menu_content_vmt);
     struct wlr_box box = wlmtk_element_get_dimensions_box(
         wlmtk_menu_element(&root_menu_ptr->menu));
     // TODO(kaeser@gubbe.ch): Should not be required. Also, the sequence
@@ -93,7 +112,9 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     wlmtk_window_set_title(root_menu_ptr->window_ptr, "Root Menu");
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
-    wlmtk_window_set_properties(root_menu_ptr->window_ptr, 0);
+    wlmtk_window_set_properties(
+        root_menu_ptr->window_ptr,
+        WLMTK_WINDOW_PROPERTY_CLOSABLE);
 
     return root_menu_ptr;
 }
@@ -101,6 +122,12 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 {
+    if (NULL != root_menu_ptr->server_ptr) {
+        BS_ASSERT(root_menu_ptr->server_ptr->root_menu_ptr == root_menu_ptr);
+        root_menu_ptr->server_ptr->root_menu_ptr = NULL;
+        root_menu_ptr->server_ptr = NULL;;
+    }
+
     if (NULL != root_menu_ptr->window_ptr) {
         // Unmap, in case it's not unmapped yet.
         wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
@@ -135,5 +162,15 @@ wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_content_vmt_t::request_close. Closes root menu. */
+void _wlmaker_root_menu_content_request_close(
+    wlmtk_content_t *content_ptr)
+{
+    wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_root_menu_t, content);
+    wlmaker_root_menu_destroy(root_menu_ptr);
+}
 
 /* == End of root_menu.c =================================================== */

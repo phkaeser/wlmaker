@@ -257,6 +257,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     case WLMAKER_ACTION_ROOT_MENU:
         if (NULL == server_ptr->root_menu_ptr) {
             server_ptr->root_menu_ptr = wlmaker_root_menu_create(
+                server_ptr,
                 &server_ptr->style.window,
                 &server_ptr->style.menu,
                 server_ptr->env_ptr);
