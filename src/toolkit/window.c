@@ -212,7 +212,8 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
 /** Default properties. Override by @ref wlmtk_window_set_properties. */
 static const uint32_t _wlmtk_window_default_properties =
     WLMTK_WINDOW_PROPERTY_RESIZABLE |
-    WLMTK_WINDOW_PROPERTY_ICONIFIABLE;
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
+    WLMTK_WINDOW_PROPERTY_CLOSABLE;
 
 /* == Exported methods ===================================================== */
 
@@ -310,6 +311,17 @@ void wlmtk_window_set_properties(
     if (window_ptr->properties == properties) return;
     window_ptr->properties = properties;
     _wlmtk_window_apply_decoration(window_ptr);
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        uint32_t properties = 0;
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+        }
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+        }
+        wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -846,6 +858,14 @@ void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
         window_ptr->super_bordered.super_container.super_element.env_ptr,
         window_ptr, &window_ptr->style.titlebar);
     BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+    uint32_t properties = 0;
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+    }
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+    }
+    wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
     wlmtk_titlebar_set_activated(
         window_ptr->titlebar_ptr, window_ptr->activated);
     wlmtk_element_set_visible(

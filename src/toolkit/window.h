@@ -56,7 +56,9 @@ typedef enum {
     /** Can be resized. Server-side decorations will show resize-bar. */
     WLMTK_WINDOW_PROPERTY_RESIZABLE = UINT32_C(1) << 0,
     /** Can be iconified. Server-side decorations include icnonify button. */
-    WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1,
+    /** Can be closed. Server-side decorations include close button. */
+    WLMTK_WINDOW_PROPERTY_CLOSABLE = UINT32_C(1) << 2
 } wlmtk_window_property_t;
 
 /**
