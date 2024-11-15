@@ -109,7 +109,19 @@ void wlmtk_content_set_surface(
     wlmtk_content_t *content_ptr,
     wlmtk_surface_t *surface_ptr)
 {
-    if (NULL == surface_ptr && NULL == content_ptr->element_ptr) return;
+    wlmtk_element_t *element_ptr = NULL;
+    if (NULL != surface_ptr) {
+        element_ptr = wlmtk_surface_element(surface_ptr);
+    }
+    wlmtk_content_set_element(content_ptr, element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_content_set_element(
+    wlmtk_content_t *content_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    if (NULL == element_ptr && NULL == content_ptr->element_ptr) return;
 
     if (NULL != content_ptr->element_ptr) {
         wlmtk_element_set_visible(content_ptr->element_ptr, false);
@@ -118,12 +130,12 @@ void wlmtk_content_set_surface(
         content_ptr->element_ptr = NULL;
     }
 
-    if (NULL != surface_ptr) {
+    if (NULL != element_ptr) {
         wlmtk_container_add_element(
             &content_ptr->super_container,
-            wlmtk_surface_element(surface_ptr));
-        content_ptr->element_ptr = wlmtk_surface_element(surface_ptr);
-        wlmtk_element_set_visible(content_ptr->element_ptr, true);
+            element_ptr);
+        content_ptr->element_ptr = element_ptr;
+        wlmtk_element_set_visible(element_ptr, true);
 
     }
 }

@@ -181,6 +181,16 @@ void wlmtk_content_set_surface(
     wlmtk_surface_t *surface_ptr);
 
 /**
+ * Sets or clears the content's element.
+ *
+ * @param content_ptr
+ * @param element_ptr         Element to set for the content, or NULL.
+ */
+void wlmtk_content_set_element(
+    wlmtk_content_t *content_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
  * Extends the content by specifying virtual methods.
  *
  * @param content_ptr
