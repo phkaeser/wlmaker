@@ -26,6 +26,14 @@ typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 #include "element.h"
 #include "primitives.h"
 
+/** Properties of the titlebar: Which buttons to show. */
+typedef enum {
+    /** Whether the 'iconify' button is shown. */
+    WLMTK_TITLEBAR_PROPERTY_ICONIFY = UINT32_C(1) << 0,
+    /** Whether the 'close' button is shown. */
+    WLMTK_TITLEBAR_PROPERTY_CLOSE = UINT32_C(1) << 1
+} wlmtk_titlebar_property_t;
+
 /** Style options for the titlebar. */
 typedef struct {
     /** Fill style for when the titlebar is focussed (activated). */
@@ -85,6 +93,16 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr);
 bool wlmtk_titlebar_set_width(
     wlmtk_titlebar_t *titlebar_ptr,
     unsigned width);
+
+/**
+ * Sets the properties of the title bar.
+ *
+ * @param titlebar_ptr
+ * @param properties          See @ref wlkmtk_titlebar_property_t.
+ */
+void wlmtk_titlebar_set_properties(
+    wlmtk_titlebar_t *titlebar_ptr,
+    uint32_t properties);
 
 /**
  * Sets whether the title bar is activated.
