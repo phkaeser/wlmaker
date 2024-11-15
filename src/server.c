@@ -350,6 +350,11 @@ wlmaker_server_t *wlmaker_server_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
 {
+    if (NULL != server_ptr->root_menu_ptr) {
+        wlmaker_root_menu_destroy(server_ptr->root_menu_ptr);
+        server_ptr->root_menu_ptr = NULL;
+    }
+
     // We don't destroy a few of the handlers, since wlroots will crash if
     // they are destroyed -- and apparently, wlroots cleans them up anyway.
     // These are:
