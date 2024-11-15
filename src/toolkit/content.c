@@ -61,7 +61,9 @@ bool wlmtk_content_init(
         &_wlmtk_content_element_vmt);
 
     if (NULL != surface_ptr) {
-        wlmtk_content_set_surface(content_ptr, surface_ptr);
+        wlmtk_content_set_element(
+            content_ptr,
+            wlmtk_surface_element(surface_ptr));
     }
 
     if (!wlmtk_container_init(&content_ptr->popup_container, env_ptr)) {
@@ -460,13 +462,15 @@ void test_set_clear_surface(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&content, NULL, NULL));
     BS_TEST_VERIFY_EQ(test_ptr, NULL, content.element_ptr);
 
-    wlmtk_content_set_surface(&content, &fs_ptr->surface);
+    wlmtk_content_set_element(
+        &content,
+        wlmtk_surface_element(&fs_ptr->surface));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         wlmtk_surface_element(&fs_ptr->surface),
         content.element_ptr);
 
-    wlmtk_content_set_surface(&content, NULL);
+    wlmtk_content_set_element(&content, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, content.element_ptr);
 
     wlmtk_content_fini(&content);
