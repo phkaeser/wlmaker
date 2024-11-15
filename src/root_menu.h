@@ -20,6 +20,8 @@
 #ifndef __WLMAKER_ROOT_MENU_H__
 #define __WLMAKER_ROOT_MENU_H__
 
+#include "toolkit/toolkit.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -30,9 +32,16 @@ typedef struct _wlmaker_root_menu_t wlmaker_root_menu_t;
 /**
  * Creates a root menu.
  *
+ * @param window_style_ptr
+ * @param menu_style_ptr
+ * @param env_ptr
+ *
  * @return Handle of the root menu, or NULL on error.
  */
-wlmaker_root_menu_t *wlmaker_root_menu_create(void);
+wlmaker_root_menu_t *wlmaker_root_menu_create(
+    const wlmtk_window_style_t *window_style_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the root menu.
@@ -40,6 +49,9 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(void);
  * @param root_menu_ptr
  */
 void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr);
+
+/** @return the window holding the root menu. */
+wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
