@@ -51,13 +51,13 @@ typedef struct {
     wlmtk_margin_style_t       margin;
 } wlmtk_window_style_t;
 
-/** Window attributes. */
+/** Window properties. */
 typedef enum {
     /** Can be resized. Server-side decorations will show resize-bar. */
-    WLMTK_WINDOW_RESIZABLE = UINT32_C(1) << 0,
+    WLMTK_WINDOW_PROPERTY_RESIZABLE = UINT32_C(1) << 0,
     /** Can be iconified. Server-side decorations include icnonify button. */
-    WLMTK_WINDOW_ICONIFIABLE = UINT32_C(1) << 1
-} wlmtk_window_attributes_t;
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1
+} wlmtk_window_property_t;
 
 /**
  * Creates a window for the given content.
@@ -142,14 +142,14 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated);
 
 /**
- * Sets the window's attributes.
+ * Sets the window's properties.
  *
  * @param window_ptr
- * @param attributes
+ * @param properties          See @ref wlmtk_window_property_t.
  */
-void wlmtk_window_set_attributes(
+void wlmtk_window_set_properties(
     wlmtk_window_t *window_ptr,
-    wlmtk_window_attributes_t attributes);
+    uint32_t properties);
 
 /**
  * Sets the title for the window.

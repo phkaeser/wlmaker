@@ -93,7 +93,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     wlmtk_window_set_title(root_menu_ptr->window_ptr, "Root Menu");
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
-    wlmtk_window_set_attributes(root_menu_ptr->window_ptr, 0);
+    wlmtk_window_set_properties(root_menu_ptr->window_ptr, 0);
 
     return root_menu_ptr;
 }

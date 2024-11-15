@@ -98,7 +98,7 @@ bool wlmtk_titlebar_set_width(
  * Sets the properties of the title bar.
  *
  * @param titlebar_ptr
- * @param properties          See @ref wlkmtk_titlebar_property_t.
+ * @param properties          See @ref wlmtk_titlebar_property_t.
  */
 void wlmtk_titlebar_set_properties(
     wlmtk_titlebar_t *titlebar_ptr,
