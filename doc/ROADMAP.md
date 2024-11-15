@@ -19,6 +19,10 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Menu, based on toolkit.
   * Root menu.
+    * Fix: extra borders shown in menu, not required.
+    * Fix: resize bar, not to be shown on the root menu.
+    * Fix: no close/maximize button on title bar.
+    * Fix: destroy on close, no crash on exit.
   * Available as window menu in windows.
   * Available as (hardcoded) application menu.
   * Menu with submenus.
