@@ -107,18 +107,6 @@ void wlmtk_content_fini(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_content_set_surface(
-    wlmtk_content_t *content_ptr,
-    wlmtk_surface_t *surface_ptr)
-{
-    wlmtk_element_t *element_ptr = NULL;
-    if (NULL != surface_ptr) {
-        element_ptr = wlmtk_surface_element(surface_ptr);
-    }
-    wlmtk_content_set_element(content_ptr, element_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmtk_content_set_element(
     wlmtk_content_t *content_ptr,
     wlmtk_element_t *element_ptr)
