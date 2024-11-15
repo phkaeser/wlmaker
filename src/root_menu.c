@@ -75,6 +75,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     struct wlr_box box = wlmtk_element_get_dimensions_box(
         wlmtk_menu_element(&root_menu_ptr->menu));
+    // TODO(kaeser@gubbe.ch): Should not be required. Also, the sequence
+    // of set_server_side_decorated and set_attributes is brittle.
     wlmtk_content_commit(
         &root_menu_ptr->content,
         box.width,
@@ -91,6 +93,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     wlmtk_window_set_title(root_menu_ptr->window_ptr, "Root Menu");
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
+    wlmtk_window_set_attributes(root_menu_ptr->window_ptr, 0);
 
     return root_menu_ptr;
 }
