@@ -102,6 +102,14 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
 void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 {
     if (NULL != root_menu_ptr->window_ptr) {
+        // Unmap, in case it's not unmapped yet.
+        wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
+            root_menu_ptr->window_ptr);
+        if (NULL != workspace_ptr) {
+            wlmtk_workspace_unmap_window(workspace_ptr,
+                                         root_menu_ptr->window_ptr);
+        }
+
         wlmtk_window_destroy(root_menu_ptr->window_ptr);
         root_menu_ptr->window_ptr = NULL;
     }
