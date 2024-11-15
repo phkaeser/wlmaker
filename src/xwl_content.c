@@ -370,9 +370,9 @@ void _xwl_content_handle_associate(
         bs_log(BS_FATAL, "Failed wlmtk_surface_create.");
         return;
     }
-    wlmtk_content_set_surface(
+    wlmtk_content_set_element(
         &xwl_content_ptr->content,
-        xwl_content_ptr->surface_ptr);
+        wlmtk_surface_element(xwl_content_ptr->surface_ptr));
     memset(&xwl_content_ptr->content, 0, sizeof(wlmtk_util_client_t));
     xwl_content_ptr->content.client.pid =
         xwl_content_ptr->wlr_xwayland_surface_ptr->pid;
@@ -441,7 +441,7 @@ void _xwl_content_handle_dissociate(
         xwl_content_ptr->xwl_popup_ptr = NULL;
     }
 
-    wlmtk_content_set_surface(&xwl_content_ptr->content, NULL);
+    wlmtk_content_set_element(&xwl_content_ptr->content, NULL);
     if (NULL != xwl_content_ptr->surface_ptr) {
         wlmtk_surface_destroy(xwl_content_ptr->surface_ptr);
         xwl_content_ptr->surface_ptr = NULL;
