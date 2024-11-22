@@ -35,8 +35,6 @@ struct _wlmaker_root_menu_t {
     wlmtk_content_t           content;
     /** The root menu base instance. */
     wlmtk_menu_t              menu;
-    /** For now: One entry in the root menu, for 'Exit'. */
-    wlmaker_action_item_t     *exit_item_ptr;
 
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
@@ -45,11 +43,22 @@ struct _wlmaker_root_menu_t {
 static void _wlmaker_root_menu_content_request_close(
     wlmtk_content_t *content_ptr);
 
+/** Temporary: Struct for defining a menu item for the root menu. */
+typedef struct {
+    const char                *text_ptr;
+    wlmaker_action_t          action;
+} wlmaker_root_menu_item_t;
+
 /* == Data ================================================================= */
 
 /** Virtual method of the root menu's window content. */
 static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
     .request_close = _wlmaker_root_menu_content_request_close
+};
+
+static const wlmaker_root_menu_item_t _wlmaker_root_menu_items[] = {
+    { "Exit", WLMAKER_ACTION_QUIT },
+    { NULL, 0 }  // Sentinel.
 };
 
 /* == Exported methods ===================================================== */
@@ -74,16 +83,23 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         return NULL;
     }
 
-    root_menu_ptr->exit_item_ptr = wlmaker_action_item_create(
-        "Exit", &menu_style_ptr->item,
-        WLMAKER_ACTION_QUIT, server_ptr, env_ptr);
-    if (NULL == root_menu_ptr->exit_item_ptr) {
-        wlmaker_root_menu_destroy(root_menu_ptr);
-        return NULL;
+    for (const wlmaker_root_menu_item_t *i_ptr = &_wlmaker_root_menu_items[0];
+         i_ptr->text_ptr != NULL;
+         ++i_ptr) {
+        wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
+            i_ptr->text_ptr,
+            &menu_style_ptr->item,
+            i_ptr->action,
+            server_ptr,
+            env_ptr);
+        if (NULL == action_item_ptr) {
+            wlmaker_root_menu_destroy(root_menu_ptr);
+            return NULL;
+        }
+        wlmtk_menu_add_item(
+            &root_menu_ptr->menu,
+            wlmaker_action_item_menu_item(action_item_ptr));
     }
-    wlmtk_menu_add_item(
-        &root_menu_ptr->menu,
-        wlmaker_action_item_menu_item(root_menu_ptr->exit_item_ptr));
 
     if (!wlmtk_content_init(
             &root_menu_ptr->content,
@@ -145,16 +161,7 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
     }
 
     wlmtk_content_fini(&root_menu_ptr->content);
-
-    if (NULL != root_menu_ptr->exit_item_ptr) {
-        wlmtk_menu_remove_item(
-            &root_menu_ptr->menu,
-            wlmaker_action_item_menu_item(root_menu_ptr->exit_item_ptr));
-        wlmaker_action_item_destroy(root_menu_ptr->exit_item_ptr);
-        root_menu_ptr->exit_item_ptr = NULL;
-    }
     wlmtk_menu_fini(&root_menu_ptr->menu);
-
     free(root_menu_ptr);
 }
 

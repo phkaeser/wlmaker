@@ -19,14 +19,20 @@ struct _wlmaker_action_item_t {
     wlmaker_server_t          *server_ptr;
 };
 
+static void _wlmaker_action_item_element_destroy(
+    wlmtk_element_t *element_ptr);
 static void _wlmaker_action_item_clicked(
     wlmtk_menu_item_t *menu_item_ptr);
 
 /* == Data ================================================================= */
 
-/** Virtual method table for the simple menu item. */
+/** Virtual method table for the action-triggering menu item. */
 static const wlmtk_menu_item_vmt_t _wlmaker_action_item_vmt = {
     .clicked = _wlmaker_action_item_clicked
+};
+/** Virtual method table for the menu item's element superclass. */
+static const wlmtk_element_vmt_t _wlmaker_action_item_element_vmt = {
+    .destroy = _wlmaker_action_item_element_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -55,6 +61,9 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     wlmtk_menu_item_extend(
         &action_item_ptr->super_menu_item,
         &_wlmaker_action_item_vmt);
+    wlmtk_element_extend(
+        wlmtk_menu_item_element(&action_item_ptr->super_menu_item),
+        &_wlmaker_action_item_element_vmt);
     // TODO(kaeser@gubbe.ch): Should not be required!
     action_item_ptr->super_menu_item.width = style_ptr->width;
 
@@ -83,6 +92,17 @@ wlmtk_menu_item_t *wlmaker_action_item_menu_item(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy: Routes to instance's dtor. */
+void _wlmaker_action_item_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_action_item_t,
+        super_menu_item.super_buffer.super_element);
+    wlmaker_action_item_destroy(action_item_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_menu_item_vmt_t::clicked. Triggers the action. */
