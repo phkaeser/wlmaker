@@ -155,21 +155,6 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
                                   wlmtk_window_t *window_ptr);
 
 /**
- * Hogs the focus for this window.
- *
- * Activates the window, and re-directs all upcoming input events to that
- * window. Ends then the window unmaps or is de-activated.
- *
- * @param workspace_ptr
- * @param window_ptr
- *
- * @return true if hogging succeeds, or false if not
- */
-void wlmtk_workspace_hog_window_focus(
-    wltmk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr);
-
-/**
  * Returns pointer to the @ref wlmtk_layer_t handle serving `layer`.
  *
  * @param workspace_ptr
