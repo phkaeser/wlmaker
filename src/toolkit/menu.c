@@ -27,6 +27,9 @@
 static void _wlmtk_menu_eliminate_item(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static void _wlmtk_menu_set_item_mode(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 /* == Data ================================================================= */
 
@@ -64,6 +67,18 @@ void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
+                         wlmtk_menu_mode_t mode)
+{
+    if (menu_ptr->mode == mode) return;
+    menu_ptr->mode = mode;
+    bs_dllist_for_each(
+        &menu_ptr->items,
+        _wlmtk_menu_set_item_mode,
+        menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
 {
     return wlmtk_box_element(&menu_ptr->super_box);
@@ -79,6 +94,7 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
     wlmtk_box_add_element_back(
         &menu_ptr->super_box,
         wlmtk_menu_item_element(menu_item_ptr));
+    wlmtk_menu_item_set_mode(menu_item_ptr, menu_ptr->mode);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -106,12 +122,28 @@ void _wlmtk_menu_eliminate_item(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     wlmtk_element_destroy(wlmtk_menu_item_element(item_ptr));
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for bs_dllist_for_each: Sets the menu mode for the item.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr
+ */
+void _wlmtk_menu_set_item_mode(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_menu_item_set_mode(
+        wlmtk_menu_item_from_dlnode(dlnode_ptr),
+        ((wlmtk_menu_t*)ud_ptr)->mode);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_add_remove(bs_test_t *test_ptr);
+static void test_set_mode(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_test_cases[] = {
     { 1, "add_remove", test_add_remove },
+    { 1, "set_mode", test_set_mode },
     { 0, NULL, NULL }
 };
 
@@ -134,6 +166,44 @@ void test_add_remove(bs_test_t *test_ptr)
     fi_ptr = wlmtk_fake_menu_item_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
     wlmtk_menu_add_item(&menu, &fi_ptr->menu_item);
+    wlmtk_menu_fini(&menu);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests setting the menu's mode. */
+void test_set_mode(bs_test_t *test_ptr)
+{
+    wlmtk_menu_t menu;
+    wlmtk_menu_style_t s = {};
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_menu_init(&menu, &s, NULL));
+
+    wlmtk_fake_menu_item_t *fi1_ptr = wlmtk_fake_menu_item_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi1_ptr);
+    wlmtk_menu_add_item(&menu, &fi1_ptr->menu_item);
+
+    // Setting the mode must propagate.
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_NORMAL, fi1_ptr->menu_item.mode);
+    wlmtk_menu_set_mode(&menu, WLMTK_MENU_MODE_RIGHTCLICK);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_RIGHTCLICK, fi1_ptr->menu_item.mode);
+
+    // A new item must get the mode applied.
+    wlmtk_fake_menu_item_t *fi2_ptr = wlmtk_fake_menu_item_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi2_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_NORMAL, fi2_ptr->menu_item.mode);
+    wlmtk_menu_add_item(&menu, &fi2_ptr->menu_item);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_RIGHTCLICK, fi2_ptr->menu_item.mode);
+
+    // Setting the mode must propagate to all.
+    wlmtk_menu_set_mode(&menu, WLMTK_MENU_MODE_NORMAL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_NORMAL, fi1_ptr->menu_item.mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_MODE_NORMAL, fi2_ptr->menu_item.mode);
+
     wlmtk_menu_fini(&menu);
 }
 

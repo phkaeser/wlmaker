@@ -45,6 +45,17 @@ typedef enum {
     MENU_ITEM_DISABLED
 } wlmtk_menu_item_state_t;
 
+/** Modes of the menu. */
+typedef enum {
+    /** Normal (window) mode of a menu: Left button click triggers items. */
+    WLMTK_MENU_MODE_NORMAL,
+    /**
+     * Right-click mode of menu: Menu is invoked while right button is pressed.
+     * Releasing the right button triggers items.
+     */
+    WLMTK_MENU_MODE_RIGHTCLICK
+} wlmtk_menu_mode_t;
+
 /** Menu item style. */
 struct _wlmtk_menu_item_style_t {
     /** Fill style. */
@@ -89,6 +100,8 @@ struct _wlmtk_menu_item_t {
     char                      *text_ptr;
     /** Width of the item element, in pixels. */
     int                       width;
+    /** Mode of the menu (and the item). */
+    wlmtk_menu_mode_t         mode;
 
     /** Texture buffer holding the item in enabled state. */
     struct wlr_buffer         *enabled_wlr_buffer_ptr;
@@ -141,6 +154,16 @@ wlmtk_menu_item_vmt_t wlmtk_menu_item_extend(
  * @param menu_item_ptr
  */
 void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Sets the menu's mode for this item.
+ *
+ * @param menu_item_ptr
+ * @param mode
+ */
+void wlmtk_menu_item_set_mode(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_mode_t mode);
 
 /**
  * Sets or updates the text for the menu item.

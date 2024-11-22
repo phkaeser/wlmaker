@@ -124,6 +124,14 @@ void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_item_set_mode(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_mode_t mode)
+{
+    menu_item_ptr->mode = mode;
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmtk_menu_item_set_text(
     wlmtk_menu_item_t *menu_item_ptr,
     const char *text_ptr)
@@ -298,12 +306,24 @@ bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
 
-    if (button_event_ptr->button != BTN_LEFT) return true;
-
-    if (WLMTK_BUTTON_CLICK == button_event_ptr->type &&
+    // Normal mode and a left click when highlighted: Trigger it!
+    if (WLMTK_MENU_MODE_NORMAL == menu_item_ptr->mode &&
+        BTN_LEFT == button_event_ptr->button &&
+        WLMTK_BUTTON_CLICK == button_event_ptr->type &&
         MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
         NULL != menu_item_ptr->vmt.clicked) {
         menu_item_ptr->vmt.clicked(menu_item_ptr);
+        return true;
+    }
+
+    // Right-click mode & releasing the right button when highlighted: Trigger!
+    if (WLMTK_MENU_MODE_RIGHTCLICK == menu_item_ptr->mode &&
+        BTN_RIGHT == button_event_ptr->button &&
+        WLMTK_BUTTON_UP == button_event_ptr->type &&
+        MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
+        NULL != menu_item_ptr->vmt.clicked) {
+        menu_item_ptr->vmt.clicked(menu_item_ptr);
+        return true;
     }
 
     // Note: All left button events are accepted.
@@ -410,6 +430,7 @@ static void test_init_fini(bs_test_t *test_ptr);
 static void test_buffers(bs_test_t *test_ptr);
 static void test_pointer(bs_test_t *test_ptr);
 static void test_clicked(bs_test_t *test_ptr);
+static void test_right_click(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -418,6 +439,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 0, "buffers", test_buffers },
     { 1, "pointer", test_pointer },
     { 1, "clicked", test_clicked },
+    { 1, "right_click", test_right_click },
     { 0, NULL, NULL }
 };
 
@@ -588,6 +610,50 @@ void test_clicked(bs_test_t *test_ptr)
     // Left button, a double-click event: No trigger.
     b.button = BTN_LEFT;
     b.type = WLMTK_BUTTON_DOUBLE_CLICK;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+
+    wlmtk_fake_menu_item_destroy(fi_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests button events in right-click mode. */
+void test_right_click(bs_test_t *test_ptr)
+{
+    wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    fi_ptr->menu_item.style = _wlmtk_menu_item_test_style;
+    fi_ptr->menu_item.width = 80;
+    wlmtk_menu_item_set_text(&fi_ptr->menu_item, "Menu item");
+    wlmtk_element_t *e = wlmtk_menu_item_element(&fi_ptr->menu_item);
+    wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
+    wlmtk_button_event_t bup = { .button = BTN_RIGHT, .type = WLMTK_BUTTON_UP };
+
+    // Pointer enters to highlight, click triggers.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
+    fi_ptr->clicked_called = false;
+
+    // Pointer remains inside, button-up does not trigger..
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &bup));
+    BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+
+    // Switch mode to right-click.
+    wlmtk_menu_item_set_mode(&fi_ptr->menu_item, WLMTK_MENU_MODE_RIGHTCLICK);
+
+    // Pointer remains inside, click is ignored.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+
+    // Pointer remains inside, button-up triggers.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &bup));
+    BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
+    fi_ptr->clicked_called = false;
+
+    // Pointer leaves, button-up does not trigger.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
