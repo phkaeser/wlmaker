@@ -48,6 +48,9 @@ typedef struct {
     struct wl_signal          window_mapped;
     /** Triggers when a window is unmapped from a workspace. */
     struct wl_signal          window_unmapped;
+
+    /** An unclaimed pointer event. Arg: @ref wlmtk_button_event_t. */
+    struct wl_signal          unclaimed_button_event;
 } wlmtk_root_events_t;
 
 /**

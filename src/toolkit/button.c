@@ -155,7 +155,7 @@ bool _wlmtk_button_element_pointer_button(
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_button_t, super_buffer.super_element);
 
-    if (button_event_ptr->button != BTN_LEFT) return false;
+    if (button_event_ptr->button != BTN_LEFT) return true;
 
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
@@ -386,8 +386,8 @@ void test_press_right(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
-    // Right button down: Not claimed, and remains released.
-    BS_TEST_VERIFY_FALSE(
+    // Right button down: Remains released, reports claimed.
+    BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(element_ptr, &event));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);

@@ -298,7 +298,7 @@ bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
 
-    if (button_event_ptr->button != BTN_LEFT) return false;
+    if (button_event_ptr->button != BTN_LEFT) return true;
 
     if (WLMTK_BUTTON_CLICK == button_event_ptr->type &&
         MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
@@ -574,9 +574,9 @@ void test_clicked(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
 
-    // Right button: No trigger, not accepted.
+    // Right button: No trigger, but button claimed.
     b.button = BTN_RIGHT;
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_button(e, &b));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
 
     // Left button, but not a CLICK event: No trigger.

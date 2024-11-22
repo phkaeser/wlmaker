@@ -128,6 +128,7 @@ wlmtk_root_t *wlmtk_root_create(
     wl_signal_init(&root_ptr->events.unlock_event);
     wl_signal_init(&root_ptr->events.window_mapped);
     wl_signal_init(&root_ptr->events.window_unmapped);
+    wl_signal_init(&root_ptr->events.unclaimed_button_event);
     return root_ptr;
 }
 
@@ -196,6 +197,7 @@ bool wlmtk_root_pointer_button(
     const struct wlr_pointer_button_event *event_ptr)
 {
     wlmtk_button_event_t event;
+    bool rv;
 
     // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
@@ -207,8 +209,9 @@ bool wlmtk_root_pointer_button(
     case WLR_BUTTON_PRESSED:
 #endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_DOWN;
-        return wlmtk_element_pointer_button(
+        rv = wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
+        break;
 
 #if WLR_VERSION_NUM >= (18 << 8)
     case WL_POINTER_BUTTON_STATE_RELEASED:
@@ -219,17 +222,21 @@ bool wlmtk_root_pointer_button(
         wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
         event.type = WLMTK_BUTTON_CLICK;
-        return wlmtk_element_pointer_button(
+        rv = wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
+        break;
 
     default:
-        break;
+        bs_log(BS_WARNING,
+               "Root %p: Unhandled state 0x%x for button 0x%x",
+               root_ptr, event_ptr->state, event_ptr->button);
+        return false;
     }
 
-    bs_log(BS_WARNING,
-           "Root %p: Unhandled state 0x%x for button 0x%x",
-           root_ptr, event_ptr->state, event_ptr->button);
-    return false;
+    if (!rv) {
+        wl_signal_emit(&root_ptr->events.unclaimed_button_event, &event);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
