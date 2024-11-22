@@ -11,6 +11,8 @@ typedef struct _wlmaker_action_item_t wlmaker_action_item_t;
 
 #include "toolkit/toolkit.h"
 
+#include "action.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -20,6 +22,8 @@ extern "C" {
  *
  * @param text_ptr
  * @param style_ptr
+ * @param action
+ * @param server_ptr
  * @param env_ptr
  *
  * @return Poitner to the menu item's handle or NULL on error.
@@ -27,6 +31,8 @@ extern "C" {
 wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
+    wlmaker_action_t action,
+    wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

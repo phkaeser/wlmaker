@@ -75,7 +75,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
 
     root_menu_ptr->exit_item_ptr = wlmaker_action_item_create(
-        "Exit", &menu_style_ptr->item, env_ptr);
+        "Exit", &menu_style_ptr->item,
+        WLMAKER_ACTION_QUIT, server_ptr, env_ptr);
     if (NULL == root_menu_ptr->exit_item_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;

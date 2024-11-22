@@ -12,6 +12,11 @@
 struct _wlmaker_action_item_t {
     /** Superclass: a menu item. */
     wlmtk_menu_item_t         super_menu_item;
+
+    /** Action to trigger when clicked. */
+    wlmaker_action_t          action;
+    /** Back-link to @ref wlmaker_server_t, for executing the action. */
+    wlmaker_server_t          *server_ptr;
 };
 
 static void _wlmaker_action_item_clicked(
@@ -30,11 +35,15 @@ static const wlmtk_menu_item_vmt_t _wlmaker_action_item_vmt = {
 wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
+    wlmaker_action_t action,
+    wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = logged_calloc(
         1, sizeof(wlmaker_action_item_t));
     if (NULL == action_item_ptr) return NULL;
+    action_item_ptr->action = action;
+    action_item_ptr->server_ptr = server_ptr;
 
     if (!wlmtk_menu_item_init(
             &action_item_ptr->super_menu_item,
@@ -81,9 +90,14 @@ void _wlmaker_action_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
         menu_item_ptr, wlmaker_action_item_t, super_menu_item);
-    bs_log(BS_WARNING, "Unimplemented: Action item '%s' clicked (%p)",
-           action_item_ptr->super_menu_item.text_ptr,
-           action_item_ptr);
+
+    wlmaker_action_execute(
+        action_item_ptr->server_ptr,
+        action_item_ptr->action);
+
+    if (NULL != action_item_ptr->server_ptr->root_menu_ptr) {
+        wlmaker_root_menu_destroy(action_item_ptr->server_ptr->root_menu_ptr);
+    }
 }
 
 /* == End of action_item.c ================================================== */
