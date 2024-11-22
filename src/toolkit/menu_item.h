@@ -40,9 +40,9 @@ extern "C" {
 
 /** States a menu item can be in. */
 typedef enum {
-    MENU_ITEM_ENABLED,
-    MENU_ITEM_HIGHLIGHTED,
-    MENU_ITEM_DISABLED
+    WLMTK_MENU_ITEM_ENABLED,
+    WLMTK_MENU_ITEM_HIGHLIGHTED,
+    WLMTK_MENU_ITEM_DISABLED
 } wlmtk_menu_item_state_t;
 
 /** Modes of the menu. */
