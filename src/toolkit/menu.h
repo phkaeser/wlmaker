@@ -52,6 +52,8 @@ struct _wlmtk_menu_t {
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
     bs_dllist_t               items;
+    /** Current mode of the menu. */
+    wlmtk_menu_mode_t         mode;
 };
 
 /**
@@ -74,6 +76,15 @@ bool wlmtk_menu_init(
  * @param menu_ptr
  */
 void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
+
+/**
+ * Sets the mode of the menu.
+ *
+ * @param menu_ptr
+ * @param mode
+ */
+void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
+                         wlmtk_menu_mode_t mode);
 
 /** @return pointer to the menu's @ref wlmtk_element_t superclass. */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);

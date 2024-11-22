@@ -124,6 +124,14 @@ void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_item_set_mode(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_mode_t mode)
+{
+    menu_item_ptr->mode = mode;
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmtk_menu_item_set_text(
     wlmtk_menu_item_t *menu_item_ptr,
     const char *text_ptr)
