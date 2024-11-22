@@ -465,3 +465,37 @@ Dock <|-- IconArea
   An "application" that is *iconified* will be shown in the icon area. This is
   irrespective of whether there is already an icon shown for that "application".
 
+### Input grab
+
+* See: https://wayland-book.com/seat.html
+* See: https://wayland.app/protocols/xdg-shell#xdg_popup:request:grab
+
+So, when a XDG popup requests a grab: From that moment on, the coresponding
+wlr_surface (and the related client) should keep receiving events. But not
+others. Once the grab is broken, the popup is supposed to be dismissed.
+
+So far, we been thinking of passing events from root element along the
+containers. On a grab, each container would lock the 'grabbing' element.
+(and inform the grab-holder when another element claims the grab; so
+would need a cancel_gab method).
+
+When the menu requests grab: we also want all pointer and input events
+going there. When the grab is broken => menu is to close.
+
+container_grab(c, element)  -> setup grab for element
+  -> will call to parent container as container_grab(parent_c, c.super_element)
+element_grab_cancel(element) -> cancel a held grab (this is FYI)
+
+
+For Keyboard:
+* we have that mechanism partly with container::keyboard_focus_element_ptr
+* we have keyboard routing through "set_keyboard_focus_element
+  (through wlmtk_surface_t in wlmtk_surface_:set_activated)
+
+For Pointer or Touch:
+* Not done (yet).
+
+=> HOWEVER: This will route *only* to the surface holding the grab.
+   (this would prevent cursor updates? That's actually how X11 chrome
+    popups/menus are working currently)
+   so... that's probably good/desired.
