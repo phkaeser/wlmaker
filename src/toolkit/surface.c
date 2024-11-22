@@ -526,9 +526,8 @@ bool _wlmtk_surface_element_pointer_button(
             button_event_ptr->time_msec,
             button_event_ptr->button,
             state);
-        return true;
     }
-    return false;
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
