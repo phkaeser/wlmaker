@@ -801,6 +801,10 @@ void _wlmaker_server_unclaimed_button_event_handler(
             server_ptr->env_ptr);
 
         if (NULL != server_ptr->root_menu_ptr) {
+            wlmtk_menu_set_mode(
+                wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
+                WLMTK_MENU_MODE_RIGHTCLICK);
+
             wlmtk_window_t *window_ptr = wlmaker_root_menu_window(
                 server_ptr->root_menu_ptr);
             wlmtk_workspace_t *workspace_ptr =

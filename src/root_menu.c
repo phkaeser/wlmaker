@@ -177,6 +177,12 @@ wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
     return root_menu_ptr->window_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *wlmaker_root_menu_menu(wlmaker_root_menu_t *root_menu_ptr)
+{
+    return &root_menu_ptr->menu;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

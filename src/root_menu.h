@@ -57,6 +57,9 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr);
 /** @return the window holding the root menu. */
 wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr);
 
+/** @return Pointer to @ref wlmtk_menu_t of the root menu. */
+wlmtk_menu_t *wlmaker_root_menu_menu(wlmaker_root_menu_t *root_menu_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
