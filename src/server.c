@@ -782,6 +782,7 @@ void handle_output_layout_change(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles unclaimed button events: Right 'down' opens root menu. */
 void _wlmaker_server_unclaimed_button_event_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr)
