@@ -21,6 +21,7 @@
 #include "action.h"
 
 #include "default_configuration.h"
+#include "root_menu.h"
 #include "server.h"
 #include "conf/decode.h"
 #include "conf/plist.h"
@@ -110,6 +111,8 @@ const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
     WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
 
+    WLMCFG_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
+
     WLMCFG_ENUM("SwitchToVT1", WLMAKER_ACTION_SWITCH_TO_VT1),
     WLMCFG_ENUM("SwitchToVT2", WLMAKER_ACTION_SWITCH_TO_VT2),
     WLMCFG_ENUM("SwitchToVT3", WLMAKER_ACTION_SWITCH_TO_VT3),
@@ -170,7 +173,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
 void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                             wlmaker_action_t action)
 {
-    wlmtk_workspace_t *wlmtk_workspace_ptr;
+    wlmtk_workspace_t *workspace_ptr;
     wlmtk_window_t *window_ptr;
 
     switch (action) {
@@ -232,9 +235,9 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN:
-        wlmtk_workspace_ptr = wlmtk_root_get_current_workspace(
+        workspace_ptr = wlmtk_root_get_current_workspace(
             server_ptr->root_ptr);
-        window_ptr = wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_fullscreen(
                 window_ptr, !wlmtk_window_is_fullscreen(window_ptr));
@@ -242,12 +245,34 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED:
-        wlmtk_workspace_ptr = wlmtk_root_get_current_workspace(
+        workspace_ptr = wlmtk_root_get_current_workspace(
             server_ptr->root_ptr);
-        window_ptr = wlmtk_workspace_get_activated_window(wlmtk_workspace_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(
                 window_ptr, !wlmtk_window_is_maximized(window_ptr));
+        }
+        break;
+
+    case WLMAKER_ACTION_ROOT_MENU:
+        if (NULL == server_ptr->root_menu_ptr) {
+            server_ptr->root_menu_ptr = wlmaker_root_menu_create(
+                server_ptr,
+                &server_ptr->style.window,
+                &server_ptr->style.menu,
+                server_ptr->env_ptr);
+        }
+
+        if (NULL == server_ptr->root_menu_ptr) break;
+
+        window_ptr = wlmaker_root_menu_window(server_ptr->root_menu_ptr);
+        workspace_ptr = wlmtk_window_get_workspace(window_ptr);
+        if (NULL == workspace_ptr) {
+            workspace_ptr = wlmtk_root_get_current_workspace(
+                server_ptr->root_ptr);
+            wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+        } else {
+            wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
         }
         break;
 

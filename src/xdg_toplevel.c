@@ -478,12 +478,12 @@ void handle_surface_map(
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, xdg_toplevel_surface_t, surface_map_listener);
 
-    wlmtk_workspace_t *wlmtk_workspace_ptr =
+    wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(
             xdg_tl_surface_ptr->server_ptr->root_ptr);
 
     wlmtk_workspace_map_window(
-        wlmtk_workspace_ptr,
+        workspace_ptr,
         xdg_tl_surface_ptr->super_content.window_ptr);
 }
 

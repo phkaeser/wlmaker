@@ -62,6 +62,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "keyboard.h"
 #include "layer_shell.h"
 #include "lock_mgr.h"
+#include "root_menu.h"
 #include "subprocess_monitor.h"
 #include "icon_manager.h"
 #include "xdg_decoration.h"
@@ -196,6 +197,9 @@ struct _wlmaker_server_t {
 
     /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
     wlmtk_dock_t              *clip_dock_ptr;
+
+    /** Root menu, when active. NULL when not invoked. */
+    wlmaker_root_menu_t       *root_menu_ptr;
 
     /** The current configuration style. */
     wlmaker_config_style_t    style;

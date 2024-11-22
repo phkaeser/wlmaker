@@ -105,6 +105,9 @@ struct _wlmtk_window_t {
     /** Pre-alloocated updates. */
     wlmtk_pending_update_t    pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
 
+    /** This window's properties. */
+    uint32_t                  properties;
+
     /** Organic size of the window, ie. when not maximized. */
     struct wlr_box            organic_size;
     /** Whether the window has been requested as maximized. */
@@ -206,6 +209,12 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
     .request_resize = _wlmtk_window_request_resize,
 };
 
+/** Default properties. Override by @ref wlmtk_window_set_properties. */
+static const uint32_t _wlmtk_window_default_properties =
+    WLMTK_WINDOW_PROPERTY_RESIZABLE |
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
+    WLMTK_WINDOW_PROPERTY_CLOSABLE;
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -292,6 +301,27 @@ void wlmtk_window_set_server_side_decorated(
     if (window_ptr->server_side_decorated == decorated) return;
     window_ptr->server_side_decorated = decorated;
     _wlmtk_window_apply_decoration(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_properties(
+    wlmtk_window_t *window_ptr,
+    uint32_t properties)
+{
+    if (window_ptr->properties == properties) return;
+    window_ptr->properties = properties;
+    _wlmtk_window_apply_decoration(window_ptr);
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        uint32_t properties = 0;
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+        }
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+        }
+        wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -658,7 +688,8 @@ bool _wlmtk_window_init(
     window_ptr->element_ptr = element_ptr;
 
     wlmtk_window_set_title(window_ptr, NULL);
-    _wlmtk_window_apply_decoration(window_ptr);
+    // Also triggers _wlmtk_window_apply_decoration(window_ptr).
+    wlmtk_window_set_properties(window_ptr, _wlmtk_window_default_properties);
 
     wlmtk_box_add_element_front(&window_ptr->box, element_ptr);
     wlmtk_element_set_visible(element_ptr, true);
@@ -827,6 +858,14 @@ void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
         window_ptr->super_bordered.super_container.super_element.env_ptr,
         window_ptr, &window_ptr->style.titlebar);
     BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+    uint32_t properties = 0;
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+    }
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+    }
+    wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
     wlmtk_titlebar_set_activated(
         window_ptr->titlebar_ptr, window_ptr->activated);
     wlmtk_element_set_visible(
@@ -878,7 +917,9 @@ void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr)
 /** Destroys the resizebar. */
 void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
 {
-    BS_ASSERT(!window_ptr->server_side_decorated || window_ptr->fullscreen);
+    BS_ASSERT(!window_ptr->server_side_decorated ||
+              window_ptr->fullscreen ||
+              !(window_ptr->properties & WLMTK_WINDOW_PROPERTY_RESIZABLE));
 
     if (NULL == window_ptr->resizebar_ptr) return;
 
@@ -897,12 +938,19 @@ void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
         _wlmtk_window_create_titlebar(window_ptr);
-        _wlmtk_window_create_resizebar(window_ptr);
     } else {
         bstyle.width = 0;
         _wlmtk_window_destroy_titlebar(window_ptr);
+    }
+
+    if (window_ptr->server_side_decorated &&
+        !window_ptr->fullscreen &&
+        (window_ptr->properties & WLMTK_WINDOW_PROPERTY_RESIZABLE)) {
+        _wlmtk_window_create_resizebar(window_ptr);
+    } else {
         _wlmtk_window_destroy_resizebar(window_ptr);
     }
+
     wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
 }
 
@@ -1045,8 +1093,9 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         return NULL;
     }
 
-    fake_window_state_ptr->fake_window.fake_content_ptr = wlmtk_fake_content_create(
-        fake_window_state_ptr->fake_window.fake_surface_ptr);
+    fake_window_state_ptr->fake_window.fake_content_ptr =
+        wlmtk_fake_content_create(
+            fake_window_state_ptr->fake_window.fake_surface_ptr);
     if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
@@ -1144,6 +1193,7 @@ static void test_set_title(bs_test_t *test_ptr);
 static void test_request_close(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
 static void test_server_side_decorated(bs_test_t *test_ptr);
+static void test_server_side_decorated_properties(bs_test_t *test_ptr);
 static void test_maximize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
@@ -1155,6 +1205,8 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "request_close", test_request_close },
     { 1, "set_activated", test_set_activated },
     { 1, "set_server_side_decorated", test_server_side_decorated },
+    { 1, "set_server_side_decorated_properties",
+      test_server_side_decorated_properties },
     { 1, "maximize", test_maximize },
     { 1, "fullscreen", test_fullscreen },
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
@@ -1290,6 +1342,37 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
 
+    wlmtk_fake_window_destroy(fw_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests server-side decoration depending on properties. */
+void test_server_side_decorated_properties(bs_test_t *test_ptr)
+{
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_properties(
+        fw_ptr->window_ptr,
+        WLMTK_WINDOW_PROPERTY_ICONIFIABLE);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_properties(
+        fw_ptr->window_ptr,
+        WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
