@@ -16,6 +16,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 SET(PUBLIC_HEADER_FILES
   action.h
+  action_item.h
   background.h
   clip.h
   config.h
@@ -46,6 +47,7 @@ SET(PUBLIC_HEADER_FILES
 ADD_LIBRARY(wlmaker_lib STATIC)
 TARGET_SOURCES(wlmaker_lib PRIVATE
   action.c
+  action_item.c
   background.c
   clip.c
   config.c
