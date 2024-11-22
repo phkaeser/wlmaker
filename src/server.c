@@ -806,6 +806,13 @@ void _wlmaker_server_unclaimed_button_event_handler(
             wlmtk_workspace_t *workspace_ptr =
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr);
             wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+
+            // TODO(kaeser@gubbe.ch): Keep the menu window's position entirely
+            // within the desktop area.
+            wlmtk_window_set_position(
+                window_ptr,
+                server_ptr->cursor_ptr->wlr_cursor_ptr->x,
+                server_ptr->cursor_ptr->wlr_cursor_ptr->y);
         }
     }
 }
