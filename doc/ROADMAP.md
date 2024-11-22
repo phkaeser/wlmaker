@@ -18,12 +18,13 @@ Support for visual effects to improve usability, but not for pure show.
 **Focus**: Add root menu and window menu.
 
 * Menu, based on toolkit.
-  * Root menu: Basic actions (quit, lock, next- or previous workspace).
+  * [done] Root menu: Basic actions (quit, lock, next- or previous workspace).
   * Available as window menu in windows.
   * Available as (hardcoded) application menu.
   * Menu with submenus.
   * Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
+  * Menu to work on right-button-down and invoke when right-button-release.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.

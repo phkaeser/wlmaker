@@ -94,7 +94,7 @@ wlmtk_menu_item_t *wlmaker_action_item_menu_item(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::destroy: Routes to instance's dtor. */
+/** Implements @ref wlmtk_element_vmt_t::destroy. Routes to instance's dtor. */
 void _wlmaker_action_item_element_destroy(
     wlmtk_element_t *element_ptr)
 {

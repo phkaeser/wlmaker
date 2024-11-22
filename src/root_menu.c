@@ -45,7 +45,9 @@ static void _wlmaker_root_menu_content_request_close(
 
 /** Temporary: Struct for defining a menu item for the root menu. */
 typedef struct {
+    /** Text to use in the root menu item. */
     const char                *text_ptr;
+    /** Action to be executed for that menu item. */
     wlmaker_action_t          action;
 } wlmaker_root_menu_item_t;
 
@@ -56,7 +58,11 @@ static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
     .request_close = _wlmaker_root_menu_content_request_close
 };
 
+/** Menu items in the root menu. */
 static const wlmaker_root_menu_item_t _wlmaker_root_menu_items[] = {
+    { "Previous Workspace", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS },
+    { "Next Workspace", WLMAKER_ACTION_WORKSPACE_TO_NEXT },
+    { "Lock", WLMAKER_ACTION_LOCK_SCREEN },
     { "Exit", WLMAKER_ACTION_QUIT },
     { NULL, 0 }  // Sentinel.
 };
