@@ -561,6 +561,12 @@ bool _wlmtk_container_element_pointer_button(
         element_ptr, wlmtk_container_t, super_element);
     bool accepted = false;
 
+    if (NULL != container_ptr->pointer_grab_element_ptr) {
+        return wlmtk_element_pointer_button(
+            container_ptr->pointer_grab_element_ptr,
+            button_event_ptr);
+    }
+
     // TODO: Generalize this for non-LEFT buttons.
     if (BTN_LEFT == button_event_ptr->button) {
 
@@ -635,6 +641,12 @@ bool _wlmtk_container_element_pointer_axis(
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
+
+    if (NULL != container_ptr->pointer_grab_element_ptr) {
+        return wlmtk_element_pointer_axis(
+            container_ptr->pointer_grab_element_ptr,
+            wlr_pointer_axis_event_ptr);
+    }
 
     if (NULL == container_ptr->pointer_focus_element_ptr) return false;
 
@@ -883,6 +895,7 @@ static void test_pointer_focus_layered(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
 static void test_pointer_grab(bs_test_t *test_ptr);
+static void test_pointer_grab_events(bs_test_t *test_ptr);
 static void test_keyboard_event(bs_test_t *test_ptr);
 static void test_keyboard_focus(bs_test_t *test_ptr);
 
@@ -898,6 +911,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_axis", test_pointer_axis },
     { 1, "pointer_grab", test_pointer_grab },
+    { 1, "pointer_grab_events", test_pointer_grab_events },
     { 1, "keyboard_event", test_keyboard_event },
     { 1, "keyboard_focus", test_keyboard_focus },
     { 0, NULL, NULL }
@@ -1677,6 +1691,54 @@ void test_pointer_grab(bs_test_t *test_ptr)
         container.pointer_grab_element_ptr);
 
     wlmtk_container_fini(&container);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that element with the pointer grab receives pointer events. */
+void test_pointer_grab_events(bs_test_t *test_ptr)
+{
+    wlmtk_container_t c;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_container_init(&c, NULL));
+
+    wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
+    wlmtk_element_set_visible(&fe1_ptr->element, true);
+    fe1_ptr->dimensions.width = 10;
+    fe1_ptr->dimensions.height = 10;
+    wlmtk_container_add_element(&c, &fe1_ptr->element);
+
+    wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
+    wlmtk_element_set_visible(&fe2_ptr->element, true);
+    wlmtk_element_set_position(&fe2_ptr->element, 10, 0);
+    fe2_ptr->dimensions.width = 10;
+    fe2_ptr->dimensions.height = 10;
+    wlmtk_container_add_element(&c, &fe2_ptr->element);
+
+    // Move pointer into first element: Must see 'enter' and 'motion'.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&c.super_element, 5, 5, 42));
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
+    fe1_ptr->pointer_motion_called = false;
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_enter_called);
+    fe1_ptr->pointer_enter_called = false;
+
+    // 2nd element grabs pointer. Axis and button events must go there.
+    wlmtk_container_pointer_grab(&c, &fe2_ptr->element);
+
+    wlmtk_button_event_t button_event = {
+        .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
+    };
+    wlmtk_element_pointer_button(&c.super_element, &button_event);
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_button_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_button_called);
+    struct wlr_pointer_axis_event axis_event = {};
+    wlmtk_element_pointer_axis(&c.super_element, &axis_event);
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_axis_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_axis_called);
+
+    wlmtk_container_fini(&c);
 }
 
 /* ------------------------------------------------------------------------- */
