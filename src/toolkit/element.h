@@ -147,6 +147,8 @@ struct _wlmtk_element_vmt_t {
      * Required to have an implementation by any element that requests a
      * pointer grab through @ref wlmtk_container_pointer_grab.
      *
+     * Private: Must only to be called by the parent container.
+     *
      * @param element_ptr
      */
     void (*pointer_grab_cancel)(wlmtk_element_t *element_ptr);

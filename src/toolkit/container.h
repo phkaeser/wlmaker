@@ -161,7 +161,9 @@ void wlmtk_container_add_element_atop(
 /**
  * Removes `element_ptr` from the container.
  *
- * Expects that `container_ptr` is `element_ptr`'s parent container.
+ * Expects that `container_ptr` is `element_ptr`'s parent container. In case
+ * `element_ptr` holds a pointer grab, @ref wlmtk_element_pointer_grab_cancel
+ * will be called.
  *
  * @param container_ptr
  * @param element_ptr
@@ -198,7 +200,7 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
  * the element holdint the pointer grab.
  *
  * @param container_ptr
- * @param element_ptr
+ * @param element_ptr         Must be a child of this container.
  */
 void wlmtk_container_pointer_grab(
     wlmtk_container_t *container_ptr,
@@ -212,7 +214,7 @@ void wlmtk_container_pointer_grab(
  * the parent container.
  *
  * @param container_ptr
- * @param element_ptr
+ * @param element_ptr         Must be a child of this container.
  */
 void wlmtk_container_pointer_grab_release(
     wlmtk_container_t *container_ptr,

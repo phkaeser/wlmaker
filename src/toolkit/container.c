@@ -238,12 +238,12 @@ void wlmtk_container_remove_element(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
 
-    if (container_ptr->left_button_element_ptr == element_ptr) {
-        container_ptr->left_button_element_ptr = NULL;
-    }
     if (container_ptr->pointer_grab_element_ptr == element_ptr) {
         _wlmtk_container_element_pointer_grab_cancel(
             &container_ptr->super_element);
+    }
+    if (container_ptr->left_button_element_ptr == element_ptr) {
+        container_ptr->left_button_element_ptr = NULL;
     }
     if (container_ptr->keyboard_focus_element_ptr == element_ptr) {
         wlmtk_container_set_keyboard_focus_element(container_ptr, NULL);
