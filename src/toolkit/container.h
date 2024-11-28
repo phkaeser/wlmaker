@@ -76,6 +76,8 @@ struct _wlmtk_container_t {
 
     /** Stores the element with current pointer focus. May be NULL. */
     wlmtk_element_t           *pointer_focus_element_ptr;
+    /** Stores the element with current pointer grab. May be NULL. */
+    wlmtk_element_t           *pointer_grab_element_ptr;
     /** Stores the element which received WLMTK_BUTTON_DOWN for BTN_LEFT. */
     wlmtk_element_t           *left_button_element_ptr;
     /** Stores the element with current keyboard focus. May be NULL. */
@@ -186,6 +188,36 @@ void wlmtk_container_raise_element_to_top(
  * @param container_ptr
  */
 void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
+
+/**
+ * Requests a pointer grab from `container_ptr` for `element_ptr`.
+ *
+ * Will cancel any existing grab held by elements other than `element_ptr`, and
+ * propagates the grab to the parent container.
+ * When a pointer grab is held, pointer events will be routed exclusively to
+ * the element holdint the pointer grab.
+ *
+ * @param container_ptr
+ * @param element_ptr
+ */
+void wlmtk_container_pointer_grab(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr);
+
+/**
+ * Releases a pointer grab in `container_ptr` held by `element_ptr`.
+ *
+ * If the grab is held by an element other than `element_ptr`, nothing is done.
+ * Otherwise, the pointer grab is released, and the release is propagated to
+ * the parent container.
+ *
+ * @param container_ptr
+ * @param element_ptr
+ */
+void wlmtk_container_pointer_grab_release(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr);
+
 
 /**
  * Reports `element_ptr` as having keyboard focus, and registers it as such in

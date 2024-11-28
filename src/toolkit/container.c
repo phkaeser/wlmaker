@@ -58,6 +58,8 @@ static bool _wlmtk_container_element_pointer_axis(
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 static void _wlmtk_container_element_pointer_enter(
     wlmtk_element_t *element_ptr);
+static void _wlmtk_container_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr);
 static void _wlmtk_container_element_keyboard_blur(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_container_element_keyboard_event(
@@ -86,6 +88,7 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .pointer_button = _wlmtk_container_element_pointer_button,
     .pointer_axis = _wlmtk_container_element_pointer_axis,
     .pointer_enter = _wlmtk_container_element_pointer_enter,
+    .pointer_grab_cancel = _wlmtk_container_element_pointer_grab_cancel,
     .keyboard_blur = _wlmtk_container_element_keyboard_blur,
     .keyboard_event = _wlmtk_container_element_keyboard_event,
 };
@@ -238,6 +241,10 @@ void wlmtk_container_remove_element(
     if (container_ptr->left_button_element_ptr == element_ptr) {
         container_ptr->left_button_element_ptr = NULL;
     }
+    if (container_ptr->pointer_grab_element_ptr == element_ptr) {
+        _wlmtk_container_element_pointer_grab_cancel(
+            &container_ptr->super_element);
+    }
     if (container_ptr->keyboard_focus_element_ptr == element_ptr) {
         wlmtk_container_set_keyboard_focus_element(container_ptr, NULL);
     }
@@ -285,6 +292,49 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr)
             container_ptr->super_element.last_pointer_x,
             container_ptr->super_element.last_pointer_y,
             container_ptr->super_element.last_pointer_time_msec);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_container_pointer_grab(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(NULL != element_ptr);
+    BS_ASSERT(container_ptr == element_ptr->parent_container_ptr);
+    // We only accept elements that have a grab_cancel method.
+    BS_ASSERT(NULL != element_ptr->vmt.pointer_grab_cancel);
+
+    if (container_ptr->pointer_grab_element_ptr == element_ptr) return;
+
+    // Cancel a currently-held grab.
+    _wlmtk_container_element_pointer_grab_cancel(
+        &container_ptr->super_element);
+
+    // Then, setup the grab.
+    container_ptr->pointer_grab_element_ptr = element_ptr;
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_pointer_grab(
+            container_ptr->super_element.parent_container_ptr,
+            &container_ptr->super_element);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_container_pointer_grab_release(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr)
+{
+    BS_ASSERT(NULL != element_ptr);
+    BS_ASSERT(container_ptr == element_ptr->parent_container_ptr);
+
+    if (container_ptr->pointer_grab_element_ptr != element_ptr) return;
+
+    container_ptr->pointer_grab_element_ptr = NULL;
+    if (NULL != container_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_pointer_grab_release(
+            container_ptr->super_element.parent_container_ptr,
+            &container_ptr->super_element);
     }
 }
 
@@ -602,6 +652,27 @@ void _wlmtk_container_element_pointer_enter(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::pointer_grab_cancel.
+ *
+ * Cancels an existing pointer grab.
+ *
+ * @param element_ptr
+ */
+void _wlmtk_container_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+
+    if (NULL == container_ptr->pointer_grab_element_ptr) return;
+
+    wlmtk_element_pointer_grab_cancel(
+        container_ptr->pointer_grab_element_ptr);
+    container_ptr->pointer_grab_element_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_element_vmt_t::keyboard_blur. Blurs all children. */
 void _wlmtk_container_element_keyboard_blur(wlmtk_element_t *element_ptr)
 {
@@ -811,6 +882,7 @@ static void test_pointer_focus_move(bs_test_t *test_ptr);
 static void test_pointer_focus_layered(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
+static void test_pointer_grab(bs_test_t *test_ptr);
 static void test_keyboard_event(bs_test_t *test_ptr);
 static void test_keyboard_focus(bs_test_t *test_ptr);
 
@@ -825,6 +897,7 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "pointer_focus_layered", test_pointer_focus_layered },
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_axis", test_pointer_axis },
+    { 1, "pointer_grab", test_pointer_grab },
     { 1, "keyboard_event", test_keyboard_event },
     { 1, "keyboard_focus", test_keyboard_focus },
     { 0, NULL, NULL }
@@ -1547,6 +1620,62 @@ void test_pointer_button(bs_test_t *test_ptr)
         container.left_button_element_ptr);
     wlmtk_element_destroy(&elem2_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
+    wlmtk_container_fini(&container);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests @ref wlmtk_container_pointer_grab and
+ * @ref wlmtk_container_pointer_grab_release.
+ */
+void test_pointer_grab(bs_test_t *test_ptr)
+{
+    wlmtk_container_t container;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_container_init(&container, NULL));
+
+    wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
+    wlmtk_container_add_element(&container, &fe1_ptr->element);
+
+    wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
+    wlmtk_container_add_element(&container, &fe2_ptr->element);
+
+    // Basic grab/release flow: Will not call pointer_grab_cancel().
+    wlmtk_container_pointer_grab(&container, &fe1_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &fe1_ptr->element,
+        container.pointer_grab_element_ptr);
+    wlmtk_container_pointer_grab_release(&container, &fe1_ptr->element);
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_grab_cancel_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        container.pointer_grab_element_ptr);
+
+    // Grab that is taken over by the other element: Must be cancelled.
+    wlmtk_container_pointer_grab(&container, &fe1_ptr->element);
+    wlmtk_container_pointer_grab(&container, &fe2_ptr->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_grab_cancel_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &fe2_ptr->element,
+        container.pointer_grab_element_ptr);
+
+    // When removing element with the grab: Call cancel first.
+    wlmtk_container_remove_element(&container, &fe2_ptr->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
+    wlmtk_element_destroy(&fe2_ptr->element);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        NULL,
+        container.pointer_grab_element_ptr);
+
     wlmtk_container_fini(&container);
 }
 

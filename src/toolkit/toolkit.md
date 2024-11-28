@@ -487,6 +487,11 @@ container_grab(c, element)  -> setup grab for element
 element_grab_cancel(element) -> cancel a held grab (this is FYI)
 
 
+void *wlmtk_container_pointer_grab(wlmtk_container_t *, wlmtk_element_t *);
+void wlmtk_container_pointer_grab_release(wlmtk_container_t *, wlmtk_element_t *);
+void wlmtk_element_pointer_grab_cancel(wlmtk_element_t *element_ptr);
+
+
 For Keyboard:
 * we have that mechanism partly with container::keyboard_focus_element_ptr
 * we have keyboard routing through "set_keyboard_focus_element
