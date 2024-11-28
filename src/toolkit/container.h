@@ -197,7 +197,7 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
  * Will cancel any existing grab held by elements other than `element_ptr`, and
  * propagates the grab to the parent container.
  * When a pointer grab is held, pointer events will be routed exclusively to
- * the element holdint the pointer grab.
+ * the element holding the pointer grab.
  *
  * @param container_ptr
  * @param element_ptr         Must be a child of this container.
