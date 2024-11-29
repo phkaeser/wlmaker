@@ -241,6 +241,11 @@ void wlmtk_container_remove_element(
     if (container_ptr->pointer_grab_element_ptr == element_ptr) {
         _wlmtk_container_element_pointer_grab_cancel(
             &container_ptr->super_element);
+        if (NULL != container_ptr->super_element.parent_container_ptr) {
+            wlmtk_container_pointer_grab_release(
+                container_ptr->super_element.parent_container_ptr,
+                &container_ptr->super_element);
+        }
     }
     if (container_ptr->left_button_element_ptr == element_ptr) {
         container_ptr->left_button_element_ptr = NULL;
@@ -1644,53 +1649,47 @@ void test_pointer_button(bs_test_t *test_ptr)
  */
 void test_pointer_grab(bs_test_t *test_ptr)
 {
-    wlmtk_container_t container;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmtk_container_init(&container, NULL));
+    wlmtk_container_t c, p;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_container_init(&c, NULL));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_container_init(&p, NULL));
+    wlmtk_container_add_element(&p, &c.super_element);
 
     wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
-    wlmtk_container_add_element(&container, &fe1_ptr->element);
+    wlmtk_container_add_element(&c, &fe1_ptr->element);
 
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
-    wlmtk_container_add_element(&container, &fe2_ptr->element);
+    wlmtk_container_add_element(&c, &fe2_ptr->element);
 
     // Basic grab/release flow: Will not call pointer_grab_cancel().
-    wlmtk_container_pointer_grab(&container, &fe1_ptr->element);
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        &fe1_ptr->element,
-        container.pointer_grab_element_ptr);
-    wlmtk_container_pointer_grab_release(&container, &fe1_ptr->element);
+    wlmtk_container_pointer_grab(&c, &fe1_ptr->element);
+    BS_TEST_VERIFY_EQ(test_ptr, &fe1_ptr->element, c.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, &c.super_element, p.pointer_grab_element_ptr);
+    wlmtk_container_pointer_grab_release(&c, &fe1_ptr->element);
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_grab_cancel_called);
     BS_TEST_VERIFY_FALSE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        NULL,
-        container.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, c.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, p.pointer_grab_element_ptr);
 
     // Grab that is taken over by the other element: Must be cancelled.
-    wlmtk_container_pointer_grab(&container, &fe1_ptr->element);
-    wlmtk_container_pointer_grab(&container, &fe2_ptr->element);
+    wlmtk_container_pointer_grab(&c, &fe1_ptr->element);
+    wlmtk_container_pointer_grab(&c, &fe2_ptr->element);
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_grab_cancel_called);
     BS_TEST_VERIFY_FALSE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        &fe2_ptr->element,
-        container.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, &fe2_ptr->element, c.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, &c.super_element, p.pointer_grab_element_ptr);
 
     // When removing element with the grab: Call cancel first.
-    wlmtk_container_remove_element(&container, &fe2_ptr->element);
+    wlmtk_container_remove_element(&c, &fe2_ptr->element);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_grab_cancel_called);
     wlmtk_element_destroy(&fe2_ptr->element);
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        NULL,
-        container.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ( test_ptr, NULL, c.pointer_grab_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, p.pointer_grab_element_ptr);
 
-    wlmtk_container_fini(&container);
+    wlmtk_container_remove_element(&p, &c.super_element);
+    wlmtk_container_fini(&p);
+    wlmtk_container_fini(&c);
 }
 
 /* ------------------------------------------------------------------------- */
