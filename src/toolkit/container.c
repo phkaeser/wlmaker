@@ -323,6 +323,13 @@ void wlmtk_container_pointer_grab(
             container_ptr->super_element.parent_container_ptr,
             &container_ptr->super_element);
     }
+
+    if (NULL != container_ptr->pointer_focus_element_ptr &&
+        container_ptr->pointer_focus_element_ptr != element_ptr) {
+        wlmtk_element_pointer_motion(
+            container_ptr->pointer_focus_element_ptr,
+            NAN, NAN, 0);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -340,6 +347,9 @@ void wlmtk_container_pointer_grab_release(
         wlmtk_container_pointer_grab_release(
             container_ptr->super_element.parent_container_ptr,
             &container_ptr->super_element);
+    } else {
+        // Re-trigger focus computation, from top-level.
+        wlmtk_container_update_pointer_focus(container_ptr);
     }
 }
 
@@ -773,6 +783,16 @@ bool update_pointer_focus_at(
     double y,
     uint32_t time_msec)
 {
+    if (NULL != container_ptr->pointer_grab_element_ptr) {
+        int x_pos, y_pos;
+        wlmtk_element_get_position(
+            container_ptr->pointer_grab_element_ptr, &x_pos, &y_pos);
+        wlmtk_element_pointer_motion(
+            container_ptr->pointer_grab_element_ptr,
+            x - x_pos, y - y_pos, time_msec);
+        return true;
+    }
+
     for (bs_dllist_node_t *dlnode_ptr = container_ptr->elements.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
@@ -1725,7 +1745,10 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
 
     // 2nd element grabs pointer. Axis and button events must go there.
     wlmtk_container_pointer_grab(&c, &fe2_ptr->element);
-
+    // 1st element must get notified to no longer have pointer focus.
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_leave_called);
+    fe1_ptr->pointer_motion_called = false;
+    fe1_ptr->pointer_leave_called = false;
     wlmtk_button_event_t button_event = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
     };
@@ -1736,6 +1759,40 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     wlmtk_element_pointer_axis(&c.super_element, &axis_event);
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_axis_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_axis_called);
+
+    // A motion within the 1st element: Trigger an out-of-area motion
+    // event to 2nd element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&c.super_element, 8, 5, 43));
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
+    fe2_ptr->pointer_motion_called = false;
+
+    // A motion into the 2nd element: Trigger motion and enter().
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&c.super_element, 13, 5, 43));
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
+    fe2_ptr->pointer_motion_called = false;
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_enter_called);
+    fe2_ptr->pointer_enter_called = false;
+
+    // A motion back into the 2nd element: Trigger motion and leave().
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&c.super_element, 8, 5, 43));
+    BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
+    fe2_ptr->pointer_motion_called = false;
+    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_leave_called);
+    fe2_ptr->pointer_leave_called = false;
+
+    // Second element releases the grab. 1st element must receive enter().
+    wlmtk_container_pointer_grab_release(&c, &fe2_ptr->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_enter_called);
 
     wlmtk_container_fini(&c);
 }
