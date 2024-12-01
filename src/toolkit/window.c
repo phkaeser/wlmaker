@@ -763,6 +763,21 @@ bool _wlmtk_window_element_pointer_button(
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
 
+    // In right-click mode: Any out-of-window action will close it.
+    // TODO(kaeser@gubbe.ch): This should be a specific window mode, and should
+    // have a handler method when leaving that mode (eg. left release within
+    // the window).
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_RIGHTCLICK) {
+        bool rv = window_ptr->orig_super_element_vmt.pointer_button(
+            element_ptr, button_event_ptr);
+        if (BTN_RIGHT == button_event_ptr->button &&
+            WLMTK_BUTTON_UP == button_event_ptr->type) {
+            wlmtk_window_request_close(window_ptr);
+            return true;
+        }
+        return rv;
+    }
+
     // Permit drag-move with the (hardcoded) modifier.
     // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
     // events, with corresponding modifiers. Do so, once added to toolkit.
