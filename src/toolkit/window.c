@@ -36,7 +36,7 @@
 #define WLMTK_WINDOW_MAX_PENDING 64
 
 /** Virtual method table for the window. */
-struct  _wlmtk_window_vmt_t {
+typedef struct {
     /** Destructor. */
     void (*destroy)(wlmtk_window_t *window_ptr);
     /** Virtual method for @ref wlmtk_window_request_minimize. */
@@ -46,7 +46,7 @@ struct  _wlmtk_window_vmt_t {
     /** Virtual method for @ref wlmtk_window_request_resize. */
     void (*request_resize)(wlmtk_window_t *window_ptr,
                            uint32_t edges);
-};
+} wlmtk_window_vmt_t;
 
 /** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
 typedef struct {

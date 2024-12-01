@@ -22,8 +22,6 @@
 
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
-/** Forward declaration: Virtual method table. */
-typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 
 #include "bordered.h"
 #include "box.h"
