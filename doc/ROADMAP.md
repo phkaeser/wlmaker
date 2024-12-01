@@ -20,7 +20,7 @@ Support for visual effects to improve usability, but not for pure show.
 * Menu, based on toolkit.
   * [done] Root menu: Basic actions (quit, lock, next- or previous workspace).
   * [done] Menu shown on right-button-down, items trigger on right-button-up.
-  * When invoked on unclaimed button, exits menu on button release.
+  * [done] When invoked on unclaimed button, exits menu on button release.
   * Available as window menu in windows.
   * Available as (hardcoded) application menu.
   * Menu with submenus.
