@@ -75,6 +75,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     bool right_click_mode,
+    wlmtk_workspace_t *workspace_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmaker_root_menu_t *root_menu_ptr = logged_calloc(
@@ -150,6 +151,14 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
     }
     wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
+
+    wlmtk_workspace_map_window(workspace_ptr, root_menu_ptr->window_ptr);
+    if (right_click_mode) {
+        wlmtk_container_pointer_grab(
+            wlmtk_window_element(root_menu_ptr->window_ptr)->parent_container_ptr,
+            wlmtk_window_element(root_menu_ptr->window_ptr));
+    }
+
 
     return root_menu_ptr;
 }

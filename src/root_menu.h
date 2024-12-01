@@ -38,6 +38,7 @@ extern "C" {
  * @param window_style_ptr
  * @param menu_style_ptr
  * @param env_ptr
+ * @param workspace_ptr
  * @param right_click_mode
  *
  * @return Handle of the root menu, or NULL on error.
@@ -47,6 +48,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     bool right_click_mode,
+    wlmtk_workspace_t *workspace_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
