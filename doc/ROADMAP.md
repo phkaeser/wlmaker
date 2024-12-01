@@ -32,6 +32,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
   * When switching workspace, pointer state appears to be reset.
+  * Verify handling of element motion() and button() return values.
 
 ## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
 
