@@ -180,6 +180,9 @@ void wlmtk_container_add_element(
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
     BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
 
+    // Before adding the element: Clear potentially set grabs in the child.
+    wlmtk_element_pointer_grab_cancel(element_ptr);
+
     bs_dllist_push_front(
         &container_ptr->elements,
         wlmtk_dlnode_from_element(element_ptr));
@@ -1681,6 +1684,8 @@ void test_pointer_grab(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
     wlmtk_container_add_element(&c, &fe2_ptr->element);
+    fe1_ptr->pointer_grab_cancel_called = false;
+    fe2_ptr->pointer_grab_cancel_called = false;
 
     // Basic grab/release flow: Will not call pointer_grab_cancel().
     wlmtk_container_pointer_grab(&c, &fe1_ptr->element);
