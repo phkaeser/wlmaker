@@ -130,6 +130,10 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     if (NULL != element_vmt_ptr->pointer_leave) {
         element_ptr->vmt.pointer_leave = element_vmt_ptr->pointer_leave;
     }
+    if (NULL != element_vmt_ptr->pointer_grab_cancel) {
+        element_ptr->vmt.pointer_grab_cancel =
+            element_vmt_ptr->pointer_grab_cancel;
+    }
     if (NULL != element_vmt_ptr->keyboard_blur) {
         element_ptr->vmt.keyboard_blur = element_vmt_ptr->keyboard_blur;
     }
@@ -431,6 +435,8 @@ static void fake_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void fake_pointer_leave(
     wlmtk_element_t *element_ptr);
+static void fake_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr);
 static void fake_keyboard_blur(
     wlmtk_element_t *element_ptr);
 static bool fake_keyboard_event(
@@ -451,6 +457,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .pointer_axis = fake_pointer_axis,
     .pointer_enter = fake_pointer_enter,
     .pointer_leave = fake_pointer_leave,
+    .pointer_grab_cancel = fake_pointer_grab_cancel,
     .keyboard_blur = fake_keyboard_blur,
     .keyboard_event = fake_keyboard_event,
 };
@@ -613,6 +620,16 @@ void fake_pointer_leave(
         element_ptr, wlmtk_fake_element_t, element);
     fake_element_ptr->orig_vmt.pointer_leave(element_ptr);
     fake_element_ptr->pointer_leave_called = true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Records calls to @ref wlmtk_element_vmt_t::pointer_grab_cancel. */
+void fake_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->pointer_grab_cancel_called = true;
 }
 
 /* ------------------------------------------------------------------------- */

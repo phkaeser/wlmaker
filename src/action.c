@@ -260,6 +260,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                 server_ptr,
                 &server_ptr->style.window,
                 &server_ptr->style.menu,
+                false,
                 server_ptr->env_ptr);
         }
 

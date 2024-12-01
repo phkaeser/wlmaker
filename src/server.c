@@ -798,18 +798,19 @@ void _wlmaker_server_unclaimed_button_event_handler(
             server_ptr,
             &server_ptr->style.window,
             &server_ptr->style.menu,
+            true,
             server_ptr->env_ptr);
 
         if (NULL != server_ptr->root_menu_ptr) {
-            wlmtk_menu_set_mode(
-                wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
-                WLMTK_MENU_MODE_RIGHTCLICK);
 
             wlmtk_window_t *window_ptr = wlmaker_root_menu_window(
                 server_ptr->root_menu_ptr);
             wlmtk_workspace_t *workspace_ptr =
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr);
             wlmtk_workspace_map_window(workspace_ptr, window_ptr);
+            wlmtk_container_pointer_grab(
+                wlmtk_window_element(window_ptr)->parent_container_ptr,
+                wlmtk_window_element(window_ptr));
 
             // TODO(kaeser@gubbe.ch): Keep the menu window's position entirely
             // within the desktop area.

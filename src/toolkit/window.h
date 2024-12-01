@@ -56,7 +56,14 @@ typedef enum {
     /** Can be iconified. Server-side decorations include icnonify button. */
     WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1,
     /** Can be closed. Server-side decorations include close button. */
-    WLMTK_WINDOW_PROPERTY_CLOSABLE = UINT32_C(1) << 2
+    WLMTK_WINDOW_PROPERTY_CLOSABLE = UINT32_C(1) << 2,
+
+    /**
+     * Kludge: a window that closes on right-click-release.
+     * The window's element must pointer_grab.
+     * TODO(kaeser@gubbe.ch): This should be... better.
+     */
+    WLMTK_WINDOW_PROPERTY_RIGHTCLICK = UINT32_C(1) << 3
 } wlmtk_window_property_t;
 
 /**

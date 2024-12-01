@@ -74,6 +74,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
+    bool right_click_mode,
     wlmtk_env_t *env_ptr)
 {
     wlmaker_root_menu_t *root_menu_ptr = logged_calloc(
@@ -87,6 +88,11 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
                          env_ptr)) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
+    }
+    if (right_click_mode) {
+        wlmtk_menu_set_mode(
+            wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
+            WLMTK_MENU_MODE_RIGHTCLICK);
     }
 
     for (const wlmaker_root_menu_item_t *i_ptr = &_wlmaker_root_menu_items[0];
@@ -137,9 +143,13 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     wlmtk_window_set_title(root_menu_ptr->window_ptr, "Root Menu");
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
-    wlmtk_window_set_properties(
-        root_menu_ptr->window_ptr,
-        WLMTK_WINDOW_PROPERTY_CLOSABLE);
+    uint32_t properties = 0;
+    if (right_click_mode) {
+        properties |= WLMTK_WINDOW_PROPERTY_RIGHTCLICK;
+    } else {
+        properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
+    }
+    wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
 
     return root_menu_ptr;
 }

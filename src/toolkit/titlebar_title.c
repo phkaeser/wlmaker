@@ -184,7 +184,7 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
-    if (button_event_ptr->button != BTN_LEFT) return true;
+    if (button_event_ptr->button != BTN_LEFT) return false;
 
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
