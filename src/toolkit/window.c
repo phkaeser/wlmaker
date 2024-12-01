@@ -771,7 +771,8 @@ bool _wlmtk_window_element_pointer_button(
         bool rv = window_ptr->orig_super_element_vmt.pointer_button(
             element_ptr, button_event_ptr);
         if (BTN_RIGHT == button_event_ptr->button &&
-            WLMTK_BUTTON_UP == button_event_ptr->type) {
+            WLMTK_BUTTON_UP == button_event_ptr->type &&
+            !rv) {
             wlmtk_window_request_close(window_ptr);
             return true;
         }
