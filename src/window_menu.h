@@ -36,11 +36,13 @@ extern "C" {
  *
  * @param server_ptr
  * @param window_ptr
+ * @param content_ptr
  * @param env_ptr
  */
 wlmaker_window_menu_t *wlmaker_window_menu_create(
     wlmaker_server_t *server_ptr,
     wlmtk_window_t *window_ptr,
+    wlmtk_content_t *content_ptr,
     wlmtk_env_t *env_ptr);
 
 #ifdef __cplusplus
