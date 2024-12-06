@@ -20,6 +20,7 @@
 
 #include "window.h"
 
+#include "popup_menu.h"
 #include "rectangle.h"
 #include "workspace.h"
 
@@ -94,6 +95,8 @@ struct _wlmtk_window_t {
     wlmtk_titlebar_t          *titlebar_ptr;
     /** Resizebar. */
     wlmtk_resizebar_t         *resizebar_ptr;
+    /** The popup menu forming the basis of the window menu. */
+    wlmtk_popup_menu_t        *popup_menu_ptr;
 
     /** Window title. Set through @ref wlmtk_window_set_title. */
     char                      *title_ptr;
@@ -221,6 +224,7 @@ static const uint32_t _wlmtk_window_default_properties =
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
@@ -236,6 +240,18 @@ wlmtk_window_t *wlmtk_window_create(
     }
     window_ptr->content_ptr = content_ptr;
     wlmtk_content_set_window(content_ptr, window_ptr);
+
+    // Create the window menu. It is kept hidden until invoked.
+    window_ptr->popup_menu_ptr = wlmtk_popup_menu_create(
+        menu_style_ptr,
+        env_ptr);
+    if (NULL == window_ptr->popup_menu_ptr) {
+        _wlmtk_window_fini(window_ptr);
+        return false;
+    }
+    wlmtk_content_add_wlmtk_popup(
+        window_ptr->content_ptr,
+        wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
 
     return window_ptr;
 }
@@ -510,6 +526,22 @@ bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_set_menu_enabled(
+    wlmtk_window_t *window_ptr,
+    bool enabled)
+{
+    wlmtk_element_set_visible(
+        wlmtk_popup_element(wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr)),
+        enabled);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr)
+{
+    return wlmtk_popup_menu_menu(window_ptr->popup_menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
     window_ptr->vmt.request_move(window_ptr);
@@ -704,6 +736,14 @@ bool _wlmtk_window_init(
  */
 void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
+    if (NULL != window_ptr->popup_menu_ptr) {
+        wlmtk_content_remove_wlmtk_popup(
+            window_ptr->content_ptr,
+            wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
+        wlmtk_popup_menu_destroy(window_ptr->popup_menu_ptr);
+        window_ptr->popup_menu_ptr = NULL;
+    }
+
     wlmtk_window_set_server_side_decorated(window_ptr, false);
 
     if (NULL != window_ptr->content_ptr) {
@@ -1236,12 +1276,13 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     wlmtk_window_style_t s = {};
+    wlmtk_menu_style_t ms = {};
     wlmtk_content_t content;
     wlmtk_content_init(
         &content,
         wlmtk_surface_element(&fake_surface_ptr->surface),
         NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, &ms, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 
