@@ -76,6 +76,9 @@ struct _wlmtk_window_t {
     /** Virtual method table. */
     wlmtk_window_vmt_t        vmt;
 
+    /** Events for this window. */
+    wlmtk_window_events_t     events;
+
     /** Box: In `super_bordered`, holds surface, title bar and resizebar. */
     wlmtk_box_t               box;
 

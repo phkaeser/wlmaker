@@ -37,6 +37,12 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Signals available for the @ref wlmtk_window_t class. */
+typedef struct {
+    /** Signals that the window state (maximize, iconify, ...) changed. */
+    struct wl_signal          state_changed;
+} wlmtk_window_events_t;
+
 /** Style options for the window. */
 typedef struct {
     /** The titlebar's style. */
@@ -80,6 +86,16 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
+
+/**
+ * Gets the set of events available to a window, for binding listeners.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to this window's @ref wlmtk_window_t::events.
+ */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the window.
