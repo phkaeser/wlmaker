@@ -251,6 +251,13 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr)
+{
+    return &window_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->super_bordered.super_container.super_element;
@@ -417,6 +424,7 @@ void wlmtk_window_commit_maximized(
     if (window_ptr->maximized == maximized) return;
 
     window_ptr->maximized = maximized;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -696,6 +704,8 @@ bool _wlmtk_window_init(
 
     wlmtk_box_add_element_front(&window_ptr->box, element_ptr);
     wlmtk_element_set_visible(element_ptr, true);
+
+    wl_signal_init(&window_ptr->events.state_changed);
     return true;
 }
 
@@ -1233,6 +1243,12 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+static bool _wlmtk_window_test_handle_state_changed_called;
+
+static void _wlmtk_window_test_handle_state_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* ------------------------------------------------------------------------- */
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
@@ -1401,11 +1417,17 @@ void test_server_side_decorated_properties(bs_test_t *test_ptr)
 void test_maximize(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    struct wl_listener listener;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
 
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1437,9 +1459,11 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Maximize.
+    _wlmtk_window_test_handle_state_changed_called = false;
     wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
@@ -1447,6 +1471,8 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     // A second commit: should not overwrite the organic dimension.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1455,6 +1481,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
@@ -1462,6 +1489,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // TODO(kaeser@gubbe.ch): Define what should happen when a maximized
     // window is moved. Should it lose maximization? Should it not move?
@@ -1469,6 +1497,7 @@ void test_maximize(bs_test_t *test_ptr)
     // Window Maker keeps maximization, but it's ... odd.
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_listener(&listener);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
@@ -1615,6 +1644,15 @@ void test_fake(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_window_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Reports a state change. */
+void _wlmtk_window_test_handle_state_changed(
+    __UNUSED__ struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    _wlmtk_window_test_handle_state_changed_called = true;
 }
 
 /* == End of window.c ====================================================== */
