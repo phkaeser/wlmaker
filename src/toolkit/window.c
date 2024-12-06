@@ -526,7 +526,7 @@ bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_set_menu_enabled(
+void wlmtk_window_menu_set_enabled(
     wlmtk_window_t *window_ptr,
     bool enabled)
 {
@@ -1175,6 +1175,16 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
     wlmtk_content_set_window(
         &fake_window_state_ptr->fake_window.fake_content_ptr->content,
         fake_window_state_ptr->fake_window.window_ptr);
+
+    wlmtk_menu_style_t ms = {};
+    fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr =
+        wlmtk_popup_menu_create(&ms, NULL);
+    wlmtk_content_add_wlmtk_popup(
+        fake_window_state_ptr->fake_window.window_ptr->content_ptr,
+        wlmtk_popup_menu_popup(
+            fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr));
+    fake_window_state_ptr->fake_window.popup_menu_ptr =
+        fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr;
 
     // Extend. We don't save the VMT, since it's for fake only.
     _wlmtk_window_extend(&fake_window_state_ptr->window,

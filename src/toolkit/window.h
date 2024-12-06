@@ -28,6 +28,7 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "content.h"
 #include "element.h"
 #include "menu.h"
+#include "popup_menu.h"
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
@@ -346,7 +347,7 @@ bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr);
  * @param window_ptr
  * @param enabled
  */
-void wlmtk_window_set_menu_enabled(
+void wlmtk_window_menu_set_enabled(
     wlmtk_window_t *window_ptr,
     bool enabled);
 
@@ -441,6 +442,8 @@ typedef struct {
     wlmtk_fake_surface_t      *fake_surface_ptr;
     /** Fake content, wraps the fake surface. */
     wlmtk_fake_content_t      *fake_content_ptr;
+    /** Hack: Direct link to window popup menu. */
+    wlmtk_popup_menu_t        *popup_menu_ptr;
 
     /** Whether @ref wlmtk_window_request_minimize was called. */
     bool                      request_minimize_called;
