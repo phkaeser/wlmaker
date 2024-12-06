@@ -1243,6 +1243,7 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** For testing: Tracks whether handle_state_change was called. */
 static bool _wlmtk_window_test_handle_state_changed_called;
 
 static void _wlmtk_window_test_handle_state_changed(
