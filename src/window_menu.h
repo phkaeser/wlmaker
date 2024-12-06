@@ -25,6 +25,8 @@
 /** Forward declaration: State of the window menu. */
 typedef struct _wlmaker_window_menu_t wlmaker_window_menu_t;
 
+#include "server.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -32,10 +34,14 @@ extern "C" {
 /**
  * Creates a window menu for the given window.
  *
+ * @param server_ptr
  * @param window_ptr
+ * @param env_ptr
  */
 wlmaker_window_menu_t *wlmaker_window_menu_create(
-    wlmtk_window_t *window_ptr);
+    wlmaker_server_t *server_ptr,
+    wlmtk_window_t *window_ptr,
+    wlmtk_env_t *env_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
