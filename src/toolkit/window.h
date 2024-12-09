@@ -39,7 +39,14 @@ extern "C" {
 
 /** Signals available for the @ref wlmtk_window_t class. */
 typedef struct {
-    /** Signals that the window state (maximize, iconify, ...) changed. */
+    /**
+     * Signals that the window state (maximize, iconify, ...) changed.
+     *
+     * Window state can be retrieved from:
+     * - @ref wlmtk_window_is_maximized
+     * - @ref wlmtk_window_is_fullscreen
+     * - @ref wlmtk_window_is_shaded
+     */
     struct wl_signal          state_changed;
 } wlmtk_window_events_t;
 
