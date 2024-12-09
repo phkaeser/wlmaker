@@ -489,6 +489,7 @@ void wlmtk_window_commit_fullscreen(
 
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1508,11 +1509,17 @@ void test_maximize(bs_test_t *test_ptr)
 void test_fullscreen(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    struct wl_listener listener;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
 
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1534,11 +1541,13 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->window_ptr->inorganic_sizing);
 
     // Request fullscreen. Does not take immediate effect.
+    _wlmtk_window_test_handle_state_changed_called = false;
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // Only after "commit", it will take effect.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1549,6 +1558,8 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
@@ -1563,6 +1574,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     // Request to end fullscreen. Not taking immediate effect.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // Takes effect after commit. We'll want the same position as before.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1582,14 +1594,16 @@ void test_fullscreen(bs_test_t *test_ptr)
         test_ptr,
         fw_ptr->window_ptr,
         wlmtk_workspace_get_activated_window(ws_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_listener(&listener);
     wlmtk_fake_window_destroy(fw_ptr);
-
     wlmtk_workspace_destroy(ws_ptr);
 }
 
