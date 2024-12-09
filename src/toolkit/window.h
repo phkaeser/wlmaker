@@ -39,6 +39,19 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Signals available for the @ref wlmtk_window_t class. */
+typedef struct {
+    /**
+     * Signals that the window state (maximize, iconify, ...) changed.
+     *
+     * Window state can be retrieved from:
+     * - @ref wlmtk_window_is_maximized
+     * - @ref wlmtk_window_is_fullscreen
+     * - @ref wlmtk_window_is_shaded
+     */
+    struct wl_signal          state_changed;
+} wlmtk_window_events_t;
+
 /** Style options for the window. */
 typedef struct {
     /** The titlebar's style. */
@@ -84,6 +97,16 @@ wlmtk_window_t *wlmtk_window_create(
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr);
+
+/**
+ * Gets the set of events available to a window, for binding listeners.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to this window's @ref wlmtk_window_t::events.
+ */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the window.
@@ -327,6 +350,7 @@ bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr);
  * Requests the window to be "shaded", ie. rolled-up to just the title bar.
  *
  * This is supported only for server-side decorated windows.
+ *
  * @param window_ptr
  * @param shaded
  */
