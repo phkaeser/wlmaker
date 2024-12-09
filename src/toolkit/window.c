@@ -519,6 +519,7 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
     }
 
     window_ptr->shaded = shaded;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1664,10 +1665,17 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 /** Verifies that window shading hides the element and raises signal. */
 void test_shade(bs_test_t *test_ptr)
 {
+    struct wl_listener listener;
+
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
 
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     // Shading only works on server-side-decorated windows.
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
@@ -1677,21 +1685,32 @@ void test_shade(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_content_element(&fw_ptr->fake_content_ptr->content)->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     wlmtk_window_request_shaded(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     // Shading not supported on client-side decoration. Must be disabled.
     wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
+
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     // Verify that 'shading' on client decorations does not do anything.
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
     wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
+    wlmtk_util_disconnect_listener(&listener);
     wlmtk_fake_window_destroy(fw_ptr);
 }
 
