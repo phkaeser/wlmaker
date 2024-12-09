@@ -76,6 +76,9 @@ struct _wlmtk_window_t {
     /** Virtual method table. */
     wlmtk_window_vmt_t        vmt;
 
+    /** Events for this window. */
+    wlmtk_window_events_t     events;
+
     /** Box: In `super_bordered`, holds surface, title bar and resizebar. */
     wlmtk_box_t               box;
 
@@ -248,6 +251,13 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr)
+{
+    return &window_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->super_bordered.super_container.super_element;
@@ -299,8 +309,14 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated)
 {
     if (window_ptr->server_side_decorated == decorated) return;
+
+    if (!decorated && wlmtk_window_is_shaded(window_ptr)) {
+        wlmtk_window_request_shaded(window_ptr, false);
+    }
+
     window_ptr->server_side_decorated = decorated;
     _wlmtk_window_apply_decoration(window_ptr);
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -414,6 +430,7 @@ void wlmtk_window_commit_maximized(
     if (window_ptr->maximized == maximized) return;
 
     window_ptr->maximized = maximized;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -478,6 +495,7 @@ void wlmtk_window_commit_fullscreen(
 
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -501,6 +519,7 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
     }
 
     window_ptr->shaded = shaded;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -693,6 +712,8 @@ bool _wlmtk_window_init(
 
     wlmtk_box_add_element_front(&window_ptr->box, element_ptr);
     wlmtk_element_set_visible(element_ptr, true);
+
+    wl_signal_init(&window_ptr->events.state_changed);
     return true;
 }
 
@@ -1213,6 +1234,7 @@ static void test_server_side_decorated_properties(bs_test_t *test_ptr);
 static void test_maximize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
+static void test_shade(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
@@ -1226,9 +1248,17 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "maximize", test_maximize },
     { 1, "fullscreen", test_fullscreen },
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
+    { 1, "shade", test_shade },
     { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
+
+/** For testing: Tracks whether handle_state_change was called. */
+static bool _wlmtk_window_test_handle_state_changed_called;
+
+static void _wlmtk_window_test_handle_state_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* ------------------------------------------------------------------------- */
 /** Tests setup and teardown. */
@@ -1398,11 +1428,17 @@ void test_server_side_decorated_properties(bs_test_t *test_ptr)
 void test_maximize(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    struct wl_listener listener;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
 
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1434,9 +1470,11 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
 
     // Maximize.
+    _wlmtk_window_test_handle_state_changed_called = false;
     wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
@@ -1444,6 +1482,8 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     // A second commit: should not overwrite the organic dimension.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1452,6 +1492,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
@@ -1459,6 +1500,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // TODO(kaeser@gubbe.ch): Define what should happen when a maximized
     // window is moved. Should it lose maximization? Should it not move?
@@ -1466,6 +1508,7 @@ void test_maximize(bs_test_t *test_ptr)
     // Window Maker keeps maximization, but it's ... odd.
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_listener(&listener);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
@@ -1475,11 +1518,17 @@ void test_maximize(bs_test_t *test_ptr)
 void test_fullscreen(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    struct wl_listener listener;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
 
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1501,11 +1550,13 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->window_ptr->inorganic_sizing);
 
     // Request fullscreen. Does not take immediate effect.
+    _wlmtk_window_test_handle_state_changed_called = false;
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // Only after "commit", it will take effect.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1516,6 +1567,8 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
@@ -1530,6 +1583,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     // Request to end fullscreen. Not taking immediate effect.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
 
     // Takes effect after commit. We'll want the same position as before.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1549,14 +1603,16 @@ void test_fullscreen(bs_test_t *test_ptr)
         test_ptr,
         fw_ptr->window_ptr,
         wlmtk_workspace_get_activated_window(ws_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_listener(&listener);
     wlmtk_fake_window_destroy(fw_ptr);
-
     wlmtk_workspace_destroy(ws_ptr);
 }
 
@@ -1606,12 +1662,74 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Verifies that window shading hides the element and raises signal. */
+void test_shade(bs_test_t *test_ptr)
+{
+    struct wl_listener listener;
+
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed,
+        &listener,
+        _wlmtk_window_test_handle_state_changed);
+
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    _wlmtk_window_test_handle_state_changed_called = false;
+
+    // Shading only works on server-side-decorated windows.
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
+
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_content_element(&fw_ptr->fake_content_ptr->content)->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
+
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
+
+    // Shading not supported on client-side decoration. Must be disabled.
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
+
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+    _wlmtk_window_test_handle_state_changed_called = false;
+
+    // Verify that 'shading' on client decorations does not do anything.
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmtk_window_test_handle_state_changed_called);
+
+    wlmtk_util_disconnect_listener(&listener);
+    wlmtk_fake_window_destroy(fw_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Tests fake window ctor and dtor. */
 void test_fake(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_window_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Reports a state change. */
+void _wlmtk_window_test_handle_state_changed(
+    __UNUSED__ struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    _wlmtk_window_test_handle_state_changed_called = true;
 }
 
 /* == End of window.c ====================================================== */
