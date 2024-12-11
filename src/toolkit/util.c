@@ -20,6 +20,12 @@
 
 #include "util.h"
 
+/* == Declarations ========================================================= */
+
+static void _wlmtk_util_test_listener_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -42,6 +48,52 @@ void wlmtk_util_disconnect_listener(
     wl_list_remove(&listener_ptr->link);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_connect_test_listener(
+    struct wl_signal *signal_ptr,
+    wlmtk_util_test_listener_t *test_listener_ptr)
+{
+    wlmtk_util_connect_listener_signal(
+        signal_ptr,
+        &test_listener_ptr->listener,
+        _wlmtk_util_test_listener_handler);
+    wlmtk_util_clear_test_listener(test_listener_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_disconnect_test_listener(
+    wlmtk_util_test_listener_t *test_listener_ptr)
+{
+    wlmtk_util_disconnect_listener(&test_listener_ptr->listener);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_clear_test_listener(
+    wlmtk_util_test_listener_t *test_listener_ptr)
+{
+    test_listener_ptr->calls = 0;
+    test_listener_ptr->last_data_ptr = NULL;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler to record a signal call into the @ref wlmtk_util_test_listener_t.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_util_test_listener_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_util_test_listener_t *test_listener_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_util_test_listener_t, listener);
+    ++test_listener_ptr->calls;
+    test_listener_ptr->last_data_ptr = data_ptr;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_listener(bs_test_t *test_ptr);
@@ -51,25 +103,12 @@ const bs_test_case_t wlmtk_util_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-/** Struct for testing listener code. */
-typedef struct {
-    /** Listener. */
-    struct wl_listener        listener;
-    /** Data. */
-    int                       data;
-} _wlmtk_util_listener;
-
-static void _wlmtk_util_listener_handler(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-
 /* ------------------------------------------------------------------------- */
 /** A test to verify listener handlers are called in order of subscription. */
 static void test_listener(bs_test_t *test_ptr)
 {
     struct wl_signal signal;
-    _wlmtk_util_listener l1 = {}, l2 = {};
-    int i = 0;
+    wlmtk_util_test_listener_t l1 = {}, l2 = {};
 
     wl_signal_init(&signal);
 
@@ -77,33 +116,21 @@ static void test_listener(bs_test_t *test_ptr)
     wlmtk_util_disconnect_listener(&l1.listener);
 
     // Second test: Connect, and verify signal is emitted and handled.
-    wlmtk_util_connect_listener_signal(
-        &signal, &l1.listener, _wlmtk_util_listener_handler);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, l1.data);
-    wl_signal_emit(&signal, &i);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l1.data);
+    wlmtk_util_connect_test_listener(&signal, &l1);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l1.calls);
+    wl_signal_emit(&signal, test_listener);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l1.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, test_listener, l1.last_data_ptr);
 
     // Third test: One more listener, and verify both handlers aacted.
-    wlmtk_util_connect_listener_signal(
-        &signal, &l2.listener, _wlmtk_util_listener_handler);
-    wl_signal_emit(&signal, &i);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, l1.data);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, l2.data);
+    wlmtk_util_connect_test_listener(&signal, &l2);
+    wl_signal_emit(&signal, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, l1.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l2.calls);
 
     // Cleanup.
-    wlmtk_util_disconnect_listener(&l2.listener);
-    wlmtk_util_disconnect_listener(&l1.listener);
-}
-
-/** Test handler for the listener. */
-void _wlmtk_util_listener_handler(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    _wlmtk_util_listener *wlmtk_util_listener_ptr = BS_CONTAINER_OF(
-        listener_ptr, _wlmtk_util_listener, listener);
-    int *i_ptr = data_ptr;
-    wlmtk_util_listener_ptr->data = ++(*i_ptr);
+    wlmtk_util_disconnect_test_listener(&l2);
+    wlmtk_util_disconnect_test_listener(&l1);
 }
 
 /* == End of util.c ======================================================== */
