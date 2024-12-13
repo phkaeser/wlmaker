@@ -145,6 +145,24 @@ void wlmaker_primitives_draw_window_title(
     const char *title_ptr,
     uint32_t color);
 
+/**
+ * Draws the text with given parameters into the `cairo_t` at (x, y).
+ *
+ * @param cairo_ptr
+ * @param x
+ * @param y
+ * @param font_style_ptr
+ * @param color
+ * @param text_ptr
+ */
+void wlmaker_primitives_draw_text(
+    cairo_t *cairo_ptr,
+    int x,
+    int y,
+    const wlmtk_style_font_t *font_style_ptr,
+    uint32_t color,
+    const char *text_ptr);
+
 /** Unit tests. */
 extern const bs_test_case_t   wlmaker_primitives_test_cases[];
 

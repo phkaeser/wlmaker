@@ -142,6 +142,18 @@ struct _wlmtk_element_vmt_t {
     void (*pointer_leave)(wlmtk_element_t *element_ptr);
 
     /**
+     * Cancels a held pointer grab.
+     *
+     * Required to have an implementation by any element that requests a
+     * pointer grab through @ref wlmtk_container_pointer_grab.
+     *
+     * Private: Must only to be called by the parent container.
+     *
+     * @param element_ptr
+     */
+    void (*pointer_grab_cancel)(wlmtk_element_t *element_ptr);
+
+    /**
      * Blurs (de-activates) keyboard focus for the element. Propagates to child
      * elements, where available.
      *
@@ -431,6 +443,15 @@ static inline bool wlmtk_element_pointer_axis(
         element_ptr, wlr_pointer_axis_event_ptr);
 }
 
+/** Calls optional @ref wlmtk_element_vmt_t::pointer_grab_cancel. */
+static inline void wlmtk_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr)
+{
+    if (NULL != element_ptr->vmt.pointer_grab_cancel) {
+        element_ptr->vmt.pointer_grab_cancel(element_ptr);
+    }
+}
+
 /** Calls @ref wlmtk_element_vmt_t::keyboard_event. */
 static inline bool wlmtk_element_keyboard_event(
     wlmtk_element_t *element_ptr,
@@ -488,6 +509,8 @@ typedef struct {
     wlmtk_button_event_t      pointer_button_event;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_axis() was called. */
     bool                      pointer_axis_called;
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_grab_cancel() was called. */
+    bool                      pointer_grab_cancel_called;
     /** Whether the fake element has keyboare focus. */
     bool                      has_keyboard_focus;
     /** Indicates that @ref wlmtk_element_vmt_t::keyboard_event() was called. */

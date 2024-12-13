@@ -22,8 +22,6 @@
 
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
-/** Forward declaration: Virtual method table. */
-typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 
 #include "bordered.h"
 #include "box.h"
@@ -39,6 +37,19 @@ typedef struct _wlmtk_window_vmt_t wlmtk_window_vmt_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Signals available for the @ref wlmtk_window_t class. */
+typedef struct {
+    /**
+     * Signals that the window state (maximize, iconify, ...) changed.
+     *
+     * Window state can be retrieved from:
+     * - @ref wlmtk_window_is_maximized
+     * - @ref wlmtk_window_is_fullscreen
+     * - @ref wlmtk_window_is_shaded
+     */
+    struct wl_signal          state_changed;
+} wlmtk_window_events_t;
+
 /** Style options for the window. */
 typedef struct {
     /** The titlebar's style. */
@@ -50,6 +61,23 @@ typedef struct {
     /** Style of the margins between titlebar, window and resizebar. */
     wlmtk_margin_style_t       margin;
 } wlmtk_window_style_t;
+
+/** Window properties. */
+typedef enum {
+    /** Can be resized. Server-side decorations will show resize-bar. */
+    WLMTK_WINDOW_PROPERTY_RESIZABLE = UINT32_C(1) << 0,
+    /** Can be iconified. Server-side decorations include icnonify button. */
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1,
+    /** Can be closed. Server-side decorations include close button. */
+    WLMTK_WINDOW_PROPERTY_CLOSABLE = UINT32_C(1) << 2,
+
+    /**
+     * Kludge: a window that closes on right-click-release.
+     * The window's element must pointer_grab.
+     * TODO(kaeser@gubbe.ch): This should be... better.
+     */
+    WLMTK_WINDOW_PROPERTY_RIGHTCLICK = UINT32_C(1) << 3
+} wlmtk_window_property_t;
 
 /**
  * Creates a window for the given content.
@@ -65,6 +93,16 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
+
+/**
+ * Gets the set of events available to a window, for binding listeners.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to this window's @ref wlmtk_window_t::events.
+ */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the window.
@@ -132,6 +170,16 @@ bool wlmtk_window_is_activated(wlmtk_window_t *window_ptr);
 void wlmtk_window_set_server_side_decorated(
     wlmtk_window_t *window_ptr,
     bool decorated);
+
+/**
+ * Sets the window's properties.
+ *
+ * @param window_ptr
+ * @param properties          See @ref wlmtk_window_property_t.
+ */
+void wlmtk_window_set_properties(
+    wlmtk_window_t *window_ptr,
+    uint32_t properties);
 
 /**
  * Sets the title for the window.
@@ -298,6 +346,7 @@ bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr);
  * Requests the window to be "shaded", ie. rolled-up to just the title bar.
  *
  * This is supported only for server-side decorated windows.
+ *
  * @param window_ptr
  * @param shaded
  */

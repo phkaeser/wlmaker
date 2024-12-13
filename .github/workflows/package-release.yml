@@ -1,0 +1,44 @@
+name: Create source package for release
+# Needing this, because wlmaker uses submodules, and github source package
+# creation will not include submodules -- and cannot be tuned for that.
+# See: https://github.com/phkaeser/wlmaker/issues/133
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  release:
+    types:
+      - published
+
+jobs:
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code, including required submodules.
+        uses: actions/checkout@v3
+        with:
+          # Not using 'recursive' prevents fetching extra submodules below
+          # dependencies/. These are only needed to build wlroots from source.
+          submodules: true
+
+      - name: Create source package.
+        run: |
+            export WLM_VERSION="$(echo "${{ github.ref }}" | sed "s/^refs\/tags\/v//")"
+            # Setup folder with package name, for apprropriate unpacking.
+            rm -rf "/tmp/wlmaker-${WLM_VERSION}"
+            cp -a "${PWD}" "/tmp/wlmaker-${WLM_VERSION}"
+            mv "/tmp/wlmaker-${WLM_VERSION}" .
+            tar -zcvf "wlmaker-${WLM_VERSION}.tar.gz" "wlmaker-${WLM_VERSION}"
+            echo "WLM_ARCHIVE=wlmaker-${WLM_VERSION}.tar.gz" >> "${GITHUB_ENV}"
+            echo "Created source archive wlmaker-${WLM_VERSION}.tar.gz."
+
+      - name: Upload source package.
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{env.WLM_ARCHIVE}}

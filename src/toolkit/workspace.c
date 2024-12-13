@@ -1008,42 +1008,6 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-/** Listeners for tests. */
-typedef struct {
-     /** Listener for when the window is mapped. */
-    struct wl_listener        window_mapped_listener;
-    /** Listener for when the window is unmapped. */
-    struct wl_listener        window_unmapped_listener;
-    /** Reports whether the handler was invoked. */
-    bool                      window_mapped_handler_invoked;
-    /** Reports whether the handler was invoked. */
-    bool                      window_unmapped_handler_invoked;
-} _wlmtk_workspace_test_listeners_t;
-
-/** Test handler for @ref wlmtk_root_events_t::window_mapped. */
-static void _wlmtk_workspace_test_handle_window_mapped(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    _wlmtk_workspace_test_listeners_t *tl_ptr = BS_CONTAINER_OF(
-        listener_ptr,
-        _wlmtk_workspace_test_listeners_t,
-        window_mapped_listener);
-    tl_ptr->window_mapped_handler_invoked = true;
-}
-
-/** Test handler for @ref wlmtk_root_events_t::window_unmapped. */
-static void _wlmtk_workspace_test_handle_window_unmapped(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    _wlmtk_workspace_test_listeners_t *tl_ptr = BS_CONTAINER_OF(
-        listener_ptr,
-        _wlmtk_workspace_test_listeners_t,
-        window_unmapped_listener);
-    tl_ptr->window_unmapped_handler_invoked = true;
-}
-
 /** Tile style used in tests. */
 static const wlmtk_tile_style_t _wlmtk_workspace_test_tile_style = {
     .size = 64
@@ -1102,15 +1066,11 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
     wlmtk_root_add_workspace(root_ptr, workspace_ptr);
 
-    _wlmtk_workspace_test_listeners_t test_listeners = {};
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(root_ptr)->window_mapped,
-        &test_listeners.window_mapped_listener,
-        _wlmtk_workspace_test_handle_window_mapped);
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(root_ptr)->window_unmapped,
-        &test_listeners.window_unmapped_listener,
-        _wlmtk_workspace_test_handle_window_unmapped);
+    wlmtk_util_test_listener_t mapped, unmapped;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_root_events(root_ptr)->window_mapped, &mapped);
+    wlmtk_util_connect_test_listener(
+        &wlmtk_root_events(root_ptr)->window_unmapped, &unmapped);
 
     bs_dllist_t *wdl_ptr = wlmtk_workspace_get_windows_dllist(workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
@@ -1130,8 +1090,7 @@ void test_map_unmap(bs_test_t *test_ptr)
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(wdl_ptr));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr, test_listeners.window_mapped_handler_invoked);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, mapped.calls);
 
     wlmtk_workspace_unmap_window(workspace_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(
@@ -1144,11 +1103,10 @@ void test_map_unmap(bs_test_t *test_ptr)
         fw_ptr->fake_surface_ptr->surface.super_element.wlr_scene_node_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_element(fw_ptr->window_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr, test_listeners.window_unmapped_handler_invoked);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, unmapped.calls);
 
-    wlmtk_util_disconnect_listener(&test_listeners.window_mapped_listener);
-    wlmtk_util_disconnect_listener(&test_listeners.window_unmapped_listener);
+    wlmtk_util_disconnect_test_listener(&mapped);
+    wlmtk_util_disconnect_test_listener(&unmapped);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_root_remove_workspace(root_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);

@@ -25,7 +25,6 @@ typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"
 #include "env.h"
-#include "surface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +33,8 @@ extern "C" {
 /**
  * State of a popup.
  *
- * A popup contains a @ref wlmtk_surface_t, and may contain further popups.
- * These further popups will be stacked above the principal surface, in order
+ * A popup contains a @ref wlmtk_element_t, and may contain further popups.
+ * These further popups will be stacked above the principal element, in order
  * of them being added.
  */
 struct _wlmtk_popup_t {
@@ -45,13 +44,8 @@ struct _wlmtk_popup_t {
     /** And the popup container. Popups can contain child popups. */
     wlmtk_container_t         popup_container;
 
-    /** The contained surface. */
-    wlmtk_surface_t           *surface_ptr;
-
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_map_listener;
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_unmap_listener;
+    /** The contained element. */
+    wlmtk_element_t           *element_ptr;
 };
 
 /**
@@ -59,14 +53,14 @@ struct _wlmtk_popup_t {
  *
  * @param popup_ptr
  * @param env_ptr
- * @param surface_ptr
+ * @param element_ptr
  *
  * @return true on success.
  */
 bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_surface_t *surface_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Un-initializes the popup. Will remove it from the parent container.

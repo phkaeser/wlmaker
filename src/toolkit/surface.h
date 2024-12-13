@@ -66,6 +66,10 @@ struct _wlmtk_surface_t {
 
     /** Listener for the `events.commit` signal of `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
+    /** Listener for the `map` signal of `wlr_surface`. */
+    struct wl_listener        surface_map_listener;
+    /** Listener for the `map` signal of `wlr_surface`. */
+    struct wl_listener        surface_unmap_listener;
 
     /** Whether this surface is activated, ie. has keyboard focus. */
     bool                      activated;

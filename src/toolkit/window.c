@@ -36,7 +36,7 @@
 #define WLMTK_WINDOW_MAX_PENDING 64
 
 /** Virtual method table for the window. */
-struct  _wlmtk_window_vmt_t {
+typedef struct {
     /** Destructor. */
     void (*destroy)(wlmtk_window_t *window_ptr);
     /** Virtual method for @ref wlmtk_window_request_minimize. */
@@ -46,7 +46,7 @@ struct  _wlmtk_window_vmt_t {
     /** Virtual method for @ref wlmtk_window_request_resize. */
     void (*request_resize)(wlmtk_window_t *window_ptr,
                            uint32_t edges);
-};
+} wlmtk_window_vmt_t;
 
 /** Pending positional updates for @ref wlmtk_window_t::content_ptr. */
 typedef struct {
@@ -76,6 +76,9 @@ struct _wlmtk_window_t {
     /** Virtual method table. */
     wlmtk_window_vmt_t        vmt;
 
+    /** Events for this window. */
+    wlmtk_window_events_t     events;
+
     /** Box: In `super_bordered`, holds surface, title bar and resizebar. */
     wlmtk_box_t               box;
 
@@ -104,6 +107,9 @@ struct _wlmtk_window_t {
     bs_dllist_t               available_updates;
     /** Pre-alloocated updates. */
     wlmtk_pending_update_t    pre_allocated_updates[WLMTK_WINDOW_MAX_PENDING];
+
+    /** This window's properties. */
+    uint32_t                  properties;
 
     /** Organic size of the window, ie. when not maximized. */
     struct wlr_box            organic_size;
@@ -206,6 +212,12 @@ static const wlmtk_window_vmt_t _wlmtk_window_vmt = {
     .request_resize = _wlmtk_window_request_resize,
 };
 
+/** Default properties. Override by @ref wlmtk_window_set_properties. */
+static const uint32_t _wlmtk_window_default_properties =
+    WLMTK_WINDOW_PROPERTY_RESIZABLE |
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
+    WLMTK_WINDOW_PROPERTY_CLOSABLE;
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -236,6 +248,13 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
     _wlmtk_window_fini(window_ptr);
     free(window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_window_events_t *wlmtk_window_events(
+    wlmtk_window_t *window_ptr)
+{
+    return &window_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -290,8 +309,35 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated)
 {
     if (window_ptr->server_side_decorated == decorated) return;
+
+    if (!decorated && wlmtk_window_is_shaded(window_ptr)) {
+        wlmtk_window_request_shaded(window_ptr, false);
+    }
+
     window_ptr->server_side_decorated = decorated;
     _wlmtk_window_apply_decoration(window_ptr);
+
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_set_properties(
+    wlmtk_window_t *window_ptr,
+    uint32_t properties)
+{
+    if (window_ptr->properties == properties) return;
+    window_ptr->properties = properties;
+    _wlmtk_window_apply_decoration(window_ptr);
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        uint32_t properties = 0;
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+        }
+        if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+            properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+        }
+        wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -384,6 +430,7 @@ void wlmtk_window_commit_maximized(
     if (window_ptr->maximized == maximized) return;
 
     window_ptr->maximized = maximized;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -448,6 +495,7 @@ void wlmtk_window_commit_fullscreen(
 
     wlmtk_workspace_window_to_fullscreen(
         wlmtk_window_get_workspace(window_ptr), window_ptr, fullscreen);
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -471,6 +519,7 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
     }
 
     window_ptr->shaded = shaded;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -658,10 +707,13 @@ bool _wlmtk_window_init(
     window_ptr->element_ptr = element_ptr;
 
     wlmtk_window_set_title(window_ptr, NULL);
-    _wlmtk_window_apply_decoration(window_ptr);
+    // Also triggers _wlmtk_window_apply_decoration(window_ptr).
+    wlmtk_window_set_properties(window_ptr, _wlmtk_window_default_properties);
 
     wlmtk_box_add_element_front(&window_ptr->box, element_ptr);
     wlmtk_element_set_visible(element_ptr, true);
+
+    wl_signal_init(&window_ptr->events.state_changed);
     return true;
 }
 
@@ -731,6 +783,22 @@ bool _wlmtk_window_element_pointer_button(
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
+
+    // In right-click mode: Any out-of-window action will close it.
+    // TODO(kaeser@gubbe.ch): This should be a specific window mode, and should
+    // have a handler method when leaving that mode (eg. left release within
+    // the window).
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_RIGHTCLICK) {
+        bool rv = window_ptr->orig_super_element_vmt.pointer_button(
+            element_ptr, button_event_ptr);
+        if (BTN_RIGHT == button_event_ptr->button &&
+            WLMTK_BUTTON_UP == button_event_ptr->type &&
+            !rv) {
+            wlmtk_window_request_close(window_ptr);
+            return true;
+        }
+        return rv;
+    }
 
     // Permit drag-move with the (hardcoded) modifier.
     // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
@@ -827,6 +895,14 @@ void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
         window_ptr->super_bordered.super_container.super_element.env_ptr,
         window_ptr, &window_ptr->style.titlebar);
     BS_ASSERT(NULL != window_ptr->titlebar_ptr);
+    uint32_t properties = 0;
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_ICONIFIABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_ICONIFY;
+    }
+    if (window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE) {
+        properties |= WLMTK_TITLEBAR_PROPERTY_CLOSE;
+    }
+    wlmtk_titlebar_set_properties(window_ptr->titlebar_ptr, properties);
     wlmtk_titlebar_set_activated(
         window_ptr->titlebar_ptr, window_ptr->activated);
     wlmtk_element_set_visible(
@@ -878,7 +954,9 @@ void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr)
 /** Destroys the resizebar. */
 void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
 {
-    BS_ASSERT(!window_ptr->server_side_decorated || window_ptr->fullscreen);
+    BS_ASSERT(!window_ptr->server_side_decorated ||
+              window_ptr->fullscreen ||
+              !(window_ptr->properties & WLMTK_WINDOW_PROPERTY_RESIZABLE));
 
     if (NULL == window_ptr->resizebar_ptr) return;
 
@@ -897,12 +975,19 @@ void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
         _wlmtk_window_create_titlebar(window_ptr);
-        _wlmtk_window_create_resizebar(window_ptr);
     } else {
         bstyle.width = 0;
         _wlmtk_window_destroy_titlebar(window_ptr);
+    }
+
+    if (window_ptr->server_side_decorated &&
+        !window_ptr->fullscreen &&
+        (window_ptr->properties & WLMTK_WINDOW_PROPERTY_RESIZABLE)) {
+        _wlmtk_window_create_resizebar(window_ptr);
+    } else {
         _wlmtk_window_destroy_resizebar(window_ptr);
     }
+
     wlmtk_bordered_set_style(&window_ptr->super_bordered, &bstyle);
 }
 
@@ -1045,8 +1130,9 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         return NULL;
     }
 
-    fake_window_state_ptr->fake_window.fake_content_ptr = wlmtk_fake_content_create(
-        fake_window_state_ptr->fake_window.fake_surface_ptr);
+    fake_window_state_ptr->fake_window.fake_content_ptr =
+        wlmtk_fake_content_create(
+            fake_window_state_ptr->fake_window.fake_surface_ptr);
     if (NULL == fake_window_state_ptr->fake_window.fake_content_ptr) {
         wlmtk_fake_window_destroy(&fake_window_state_ptr->fake_window);
         return NULL;
@@ -1144,9 +1230,11 @@ static void test_set_title(bs_test_t *test_ptr);
 static void test_request_close(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
 static void test_server_side_decorated(bs_test_t *test_ptr);
+static void test_server_side_decorated_properties(bs_test_t *test_ptr);
 static void test_maximize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
+static void test_shade(bs_test_t *test_ptr);
 static void test_fake(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_window_test_cases[] = {
@@ -1155,9 +1243,12 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "request_close", test_request_close },
     { 1, "set_activated", test_set_activated },
     { 1, "set_server_side_decorated", test_server_side_decorated },
+    { 1, "set_server_side_decorated_properties",
+      test_server_side_decorated_properties },
     { 1, "maximize", test_maximize },
     { 1, "fullscreen", test_fullscreen },
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
+    { 1, "shade", test_shade },
     { 1, "fake", test_fake },
     { 0, NULL, NULL }
 };
@@ -1167,10 +1258,13 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    wlmtk_window_style_t style = {};
+    wlmtk_window_style_t s = {};
     wlmtk_content_t content;
-    wlmtk_content_init(&content, &fake_surface_ptr->surface, NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &style, NULL);
+    wlmtk_content_init(
+        &content,
+        wlmtk_surface_element(&fake_surface_ptr->surface),
+        NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 
@@ -1292,15 +1386,50 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests server-side decoration depending on properties. */
+void test_server_side_decorated_properties(bs_test_t *test_ptr)
+{
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_properties(
+        fw_ptr->window_ptr,
+        WLMTK_WINDOW_PROPERTY_ICONIFIABLE);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_window_set_properties(
+        fw_ptr->window_ptr,
+        WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
+
+    wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Tests maximizing and un-maximizing a window. */
 void test_maximize(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    wlmtk_util_test_listener_t l;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_test_listener(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed, &l);
 
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1335,6 +1464,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.x);
@@ -1342,6 +1472,8 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 960, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 704, box.height);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
 
     // A second commit: should not overwrite the organic dimension.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1350,6 +1482,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
     wlmtk_fake_window_commit_size(fw_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
     wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 50, box.x);
@@ -1357,6 +1490,7 @@ void test_maximize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 200, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.height);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_maximized(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
     // TODO(kaeser@gubbe.ch): Define what should happen when a maximized
     // window is moved. Should it lose maximization? Should it not move?
@@ -1364,6 +1498,7 @@ void test_maximize(bs_test_t *test_ptr)
     // Window Maker keeps maximization, but it's ... odd.
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_test_listener(&l);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
 }
@@ -1373,11 +1508,15 @@ void test_maximize(bs_test_t *test_ptr)
 void test_fullscreen(bs_test_t *test_ptr)
 {
     struct wlr_box box;
+    wlmtk_util_test_listener_t l;
 
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+
+    wlmtk_util_connect_test_listener(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed, &l);
 
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1399,11 +1538,13 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fw_ptr->window_ptr->inorganic_sizing);
 
     // Request fullscreen. Does not take immediate effect.
+
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(fw_ptr->window_ptr->titlebar_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     // Only after "commit", it will take effect.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1414,6 +1555,8 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, box.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
@@ -1428,6 +1571,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     // Request to end fullscreen. Not taking immediate effect.
     wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_fullscreen(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     // Takes effect after commit. We'll want the same position as before.
     wlmtk_fake_window_commit_size(fw_ptr);
@@ -1447,14 +1591,15 @@ void test_fullscreen(bs_test_t *test_ptr)
         test_ptr,
         fw_ptr->window_ptr,
         wlmtk_workspace_get_activated_window(ws_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->window_ptr->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, fw_ptr->window_ptr->resizebar_ptr);
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
+    wlmtk_util_disconnect_test_listener(&l);
     wlmtk_fake_window_destroy(fw_ptr);
-
     wlmtk_workspace_destroy(ws_ptr);
 }
 
@@ -1501,6 +1646,57 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw_ptr);
 
     wlmtk_workspace_destroy(ws_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that window shading hides the element and raises signal. */
+void test_shade(bs_test_t *test_ptr)
+{
+    wlmtk_util_test_listener_t l;
+
+    wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
+    wlmtk_util_connect_test_listener(
+        &wlmtk_window_events(fw_ptr->window_ptr)->state_changed, &l);
+
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    // Shading only works on server-side-decorated windows.
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
+
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_content_element(&fw_ptr->fake_content_ptr->content)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+
+    // Shading not supported on client-side decoration. Must be disabled.
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+
+    // Verify that 'shading' on client decorations does not do anything.
+    wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, false);
+    wlmtk_window_request_shaded(fw_ptr->window_ptr, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(fw_ptr->window_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    wlmtk_util_disconnect_test_listener(&l);
+    wlmtk_fake_window_destroy(fw_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

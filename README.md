@@ -17,11 +17,16 @@ How it looks, running in a window using the default theme:
 
 ### Current status
 
-Wayland Maker is in early development stage. Highlights for current version (0.3):
+**Early access**: Wayland Maker provides basic functionality for using it on a single monitor. There will be bugs... reports are welcome! 
 
-* *new:* Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
-* *new:* Configurable through plist text files: [base configuration](etc/wlmaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
-* *new:* wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
+Highlights for current version ([0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)):
+
+* *new:* Configurable layout and scaling for the output.
+* *new:* Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
+* *new:* Ready to build with [wlroots 0.18](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
+* Configurable through plist text files: [base configuration](etc/wlmaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
+* wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
@@ -51,8 +56,8 @@ Protocol support:
   [![Packaging status](https://repology.org/badge/vertical-allrepos/wlmaker.svg)](https://repology.org/project/wlmaker/versions)
 
 > [!NOTE]
-> `wlmaker` is still in early development, so it's not recommended to use it as
-> your primary compositor.
+> `wlmaker` covers basic functionality for using it on a single monitor. Please
+> report bugs you find, and functionality you're missing.
 
 ## Contributing
 

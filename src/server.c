@@ -78,6 +78,10 @@ static void handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmaker_server_unclaimed_button_event_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 const uint32_t wlmaker_modifier_default_mask = (
@@ -242,6 +246,10 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_root_events(server_ptr->root_ptr)->unclaimed_button_event,
+        &server_ptr->unclaimed_button_event_listener,
+        _wlmaker_server_unclaimed_button_event_handler);
 
     // Session lock manager.
     server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
@@ -350,6 +358,11 @@ wlmaker_server_t *wlmaker_server_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
 {
+    if (NULL != server_ptr->root_menu_ptr) {
+        wlmaker_root_menu_destroy(server_ptr->root_menu_ptr);
+        server_ptr->root_menu_ptr = NULL;
+    }
+
     // We don't destroy a few of the handlers, since wlroots will crash if
     // they are destroyed -- and apparently, wlroots cleans them up anyway.
     // These are:
@@ -418,6 +431,8 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->root_ptr) {
+        wlmtk_util_disconnect_listener(
+            &server_ptr->unclaimed_button_event_listener);
         wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
     }
@@ -764,6 +779,37 @@ void handle_output_layout_change(
 
     wl_signal_emit_mutable(&server_ptr->output_layout_changed_event,
                            &extents);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles unclaimed button events: Right 'down' opens root menu. */
+void _wlmaker_server_unclaimed_button_event_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, unclaimed_button_event_listener);
+    wlmtk_button_event_t *button_event_ptr = data_ptr;
+
+    if (BTN_RIGHT == button_event_ptr->button &&
+        WLMTK_BUTTON_DOWN == button_event_ptr->type &&
+        NULL == server_ptr->root_menu_ptr) {
+        server_ptr->root_menu_ptr = wlmaker_root_menu_create(
+            server_ptr,
+            &server_ptr->style.window,
+            &server_ptr->style.menu,
+            true,
+            wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+            server_ptr->env_ptr);
+        if (NULL != server_ptr->root_menu_ptr) {
+            // TODO(kaeser@gubbe.ch): Keep the menu window's position entirely
+            // within the desktop area.
+            wlmtk_window_set_position(
+                wlmaker_root_menu_window(server_ptr->root_menu_ptr),
+                server_ptr->cursor_ptr->wlr_cursor_ptr->x,
+                server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+        }
+    }
 }
 
 /* == Unit tests =========================================================== */

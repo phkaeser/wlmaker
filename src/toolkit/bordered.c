@@ -120,6 +120,12 @@ void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
         bordered_ptr->western_border_rectangle_ptr, style_ptr->color);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_bordered_element(wlmtk_bordered_t *bordered_ptr)
+{
+    return &bordered_ptr->super_container.super_element;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -259,7 +265,6 @@ void test_rectangle_pos(bs_test_t *test_ptr, wlmtk_rectangle_t *rect_ptr,
     BS_TEST_VERIFY_EQ(test_ptr, height, y2 - y1);
 }
 
-
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown. */
 void test_init_fini(bs_test_t *test_ptr)
@@ -308,6 +313,5 @@ void test_init_fini(bs_test_t *test_ptr)
 
     wlmtk_element_destroy(&fe_ptr->element);
 }
-
 
 /* == End of bordered.c ==================================================== */

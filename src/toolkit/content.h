@@ -110,7 +110,7 @@ struct _wlmtk_content_vmt_t {
 
 /** State of window content. */
 struct _wlmtk_content_t {
-    /** Super class of the content: A container, holding surface & popups. */
+    /** Super class of the content: A container, holding element & popups. */
     wlmtk_container_t         super_container;
     /** Virtual method table of the content. */
     wlmtk_content_vmt_t       vmt;
@@ -122,12 +122,13 @@ struct _wlmtk_content_t {
     // TODO(kaeser@gubbe.ch): Re-think whether this better be part of window?
     wlmtk_container_t         popup_container;
 
-    /** The principal surface of the content. */
-    wlmtk_surface_t           *surface_ptr;
+    /** The principal element of the content. */
+    wlmtk_element_t           *element_ptr;
     /** The window this content belongs to. Set when creating the window. */
     wlmtk_window_t            *window_ptr;
 
-    /** The client connected to the @ref wlmtk_content_t::surface_ptr. */
+    /** The client connected to the @ref wlmtk_content_t. */
+    // TODO(kaeser@gubbe.ch): Should not be stored here & this way.
     wlmtk_util_client_t       client;
 
     /**
@@ -148,17 +149,17 @@ struct _wlmtk_content_t {
 };
 
 /**
- * Initializes the content with the given surface.
+ * Initializes the content with the given element.
  *
  * @param content_ptr
- * @param surface_ptr
+ * @param element_ptr
  * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_surface_t *surface_ptr,
+    wlmtk_element_t *element_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
@@ -170,14 +171,14 @@ void wlmtk_content_fini(
     wlmtk_content_t *content_ptr);
 
 /**
- * Sets or clears the content's surface.
+ * Sets or clears the content's element.
  *
  * @param content_ptr
- * @param surface_ptr         Surface to set for the content, or NULL.
+ * @param element_ptr         Element to set for the content, or NULL.
  */
-void wlmtk_content_set_surface(
+void wlmtk_content_set_element(
     wlmtk_content_t *content_ptr,
-    wlmtk_surface_t *surface_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Extends the content by specifying virtual methods.
@@ -242,7 +243,7 @@ void wlmtk_content_set_window(
     wlmtk_content_t *content_ptr,
     wlmtk_window_t *window_ptr);
 
-/** Gets size: Forwards to @ref wlmtk_surface_get_size. */
+/** Gets size: Returns size from earlier @ref wlmtk_content_commit. */
 void wlmtk_content_get_size(
     wlmtk_content_t *content_ptr,
     int *width_ptr,

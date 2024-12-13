@@ -128,6 +128,7 @@ wlmtk_root_t *wlmtk_root_create(
     wl_signal_init(&root_ptr->events.unlock_event);
     wl_signal_init(&root_ptr->events.window_mapped);
     wl_signal_init(&root_ptr->events.window_unmapped);
+    wl_signal_init(&root_ptr->events.unclaimed_button_event);
     return root_ptr;
 }
 
@@ -196,6 +197,7 @@ bool wlmtk_root_pointer_button(
     const struct wlr_pointer_button_event *event_ptr)
 {
     wlmtk_button_event_t event;
+    bool rv;
 
     // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
@@ -207,8 +209,9 @@ bool wlmtk_root_pointer_button(
     case WLR_BUTTON_PRESSED:
 #endif // WLR_VERSION_NUM >= (18 << 8)
         event.type = WLMTK_BUTTON_DOWN;
-        return wlmtk_element_pointer_button(
+        rv = wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
+        break;
 
 #if WLR_VERSION_NUM >= (18 << 8)
     case WL_POINTER_BUTTON_STATE_RELEASED:
@@ -219,17 +222,21 @@ bool wlmtk_root_pointer_button(
         wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
         event.type = WLMTK_BUTTON_CLICK;
-        return wlmtk_element_pointer_button(
+        rv = wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
+        break;
 
     default:
-        break;
+        bs_log(BS_WARNING,
+               "Root %p: Unhandled state 0x%x for button 0x%x",
+               root_ptr, event_ptr->state, event_ptr->button);
+        return false;
     }
 
-    bs_log(BS_WARNING,
-           "Root %p: Unhandled state 0x%x for button 0x%x",
-           root_ptr, event_ptr->state, event_ptr->button);
-    return false;
+    if (!rv) {
+        wl_signal_emit(&root_ptr->events.unclaimed_button_event, &event);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -659,24 +666,6 @@ const bs_test_case_t wlmtk_root_test_cases[] = {
     { 0, NULL, NULL }
 };
 
-/** Helper struct for listeners in tests. */
-typedef struct {
-    /** Listener. */
-    struct wl_listener        listener;
-    /** Will be set to the `data_ptr` arg of the callback. */
-    wlmtk_workspace_t         *workspace_ptr;
-} _wlmtk_root_test_workspace_t;
-
-/** Test helper callback for @ref wlmtk_root_events_t::workspace_changed. */
-static void _wlmtk_root_test_workspace_changed_handler(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    _wlmtk_root_test_workspace_t *test_ws_ptr = BS_CONTAINER_OF(
-        listener_ptr, _wlmtk_root_test_workspace_t, listener);
-    test_ws_ptr->workspace_ptr = data_ptr;
-}
-
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */
 void test_create_destroy(bs_test_t *test_ptr)
@@ -702,6 +691,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 /** Exercises workspace adding and removal. */
 void test_workspaces(bs_test_t *test_ptr)
 {
+    wlmtk_util_test_listener_t l;
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
@@ -709,11 +699,8 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
 
-    _wlmtk_root_test_workspace_t test_ws = {};
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(root_ptr)->workspace_changed,
-        &test_ws.listener,
-        _wlmtk_root_test_workspace_changed_handler);
+    wlmtk_util_connect_test_listener(
+        &wlmtk_root_events(root_ptr)->workspace_changed, &l);
 
     static const wlmtk_tile_style_t tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", &tstyle, NULL);
@@ -724,8 +711,8 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_element(ws1_ptr)->visible);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, ws1_ptr, test_ws.workspace_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1_ptr, l.last_data_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
@@ -746,17 +733,17 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_element(ws2_ptr)->visible);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, ws2_ptr, test_ws.workspace_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2_ptr, l.last_data_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, l.calls);
 
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
     wlmtk_workspace_destroy(ws2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
-    BS_TEST_VERIFY_EQ(
-        test_ptr, NULL, test_ws.workspace_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, l.last_data_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, l.calls);
 
-    wlmtk_util_disconnect_listener(&test_ws.listener);
+    wlmtk_util_disconnect_test_listener(&l);
     wlmtk_root_destroy(root_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }

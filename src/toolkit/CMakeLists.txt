@@ -30,8 +30,11 @@ SET(PUBLIC_HEADER_FILES
   input.h
   layer.h
   lock.h
+  menu.h
+  menu_item.h
   panel.h
   popup.h
+  popup_menu.h
   primitives.h
   rectangle.h
   resizebar.h
@@ -65,8 +68,11 @@ TARGET_SOURCES(toolkit PRIVATE
   image.c
   layer.c
   lock.c
+  menu.c
+  menu_item.c
   panel.c
   popup.c
+  popup_menu.c
   primitives.c
   rectangle.c
   resizebar.c
