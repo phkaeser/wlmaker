@@ -100,6 +100,8 @@ struct _wlmtk_window_t {
     wlmtk_resizebar_t         *resizebar_ptr;
     /** The popup menu forming the basis of the window menu. */
     wlmtk_popup_menu_t        *popup_menu_ptr;
+    /** Listener for then the popup menu requests to be closed. */
+    struct wl_listener        popup_menu_request_close_listener;
 
     /** Window title. Set through @ref wlmtk_window_set_title. */
     char                      *title_ptr;
@@ -198,6 +200,10 @@ static void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
 
+static void _wlmtk_window_popup_menu_request_close_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table for the window's element superclass. */
@@ -255,6 +261,10 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_add_wlmtk_popup(
         window_ptr->content_ptr,
         wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_popup_menu_events(window_ptr->popup_menu_ptr)->request_close,
+        &window_ptr->popup_menu_request_close_listener,
+        _wlmtk_window_popup_menu_request_close_handler);
 
     return window_ptr;
 }
@@ -310,6 +320,10 @@ void wlmtk_window_set_activated(
     wlmtk_content_set_activated(window_ptr->content_ptr, activated);
     if (NULL != window_ptr->titlebar_ptr) {
         wlmtk_titlebar_set_activated(window_ptr->titlebar_ptr, activated);
+    }
+
+    if (!activated) {
+        wlmtk_window_menu_set_enabled(window_ptr, false);
     }
 }
 
@@ -549,9 +563,33 @@ void wlmtk_window_menu_set_enabled(
     wlmtk_window_t *window_ptr,
     bool enabled)
 {
+    if (!window_ptr->activated) enabled = false;
+
+    // For convenience: Get the menu's element. Note: It must have a parent,
+    // since it's contained within the window.
+    wlmtk_element_t *menu_element_ptr = wlmtk_popup_element(
+        wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
+    BS_ASSERT(NULL != menu_element_ptr->parent_container_ptr);
+
     wlmtk_element_set_visible(
         wlmtk_popup_element(wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr)),
         enabled);
+
+    if (enabled) {
+        wlmtk_menu_set_mode(
+            wlmtk_popup_menu_menu(window_ptr->popup_menu_ptr),
+            WLMTK_MENU_MODE_RIGHTCLICK);
+        wlmtk_container_raise_element_to_top(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+        wlmtk_container_pointer_grab(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+    } else {
+        wlmtk_container_pointer_grab_release(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -758,6 +796,8 @@ bool _wlmtk_window_init(
 void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
     if (NULL != window_ptr->popup_menu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &window_ptr->popup_menu_request_close_listener);
         wlmtk_content_remove_wlmtk_popup(
             window_ptr->content_ptr,
             wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
@@ -822,7 +862,9 @@ bool _wlmtk_window_element_pointer_button(
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window_t, super_bordered.super_container.super_element);
+        element_ptr,
+        wlmtk_window_t,
+        super_bordered.super_container.super_element);
 
     // In right-click mode: Any out-of-window action will close it.
     // TODO(kaeser@gubbe.ch): This should be a specific window mode, and should
@@ -1138,6 +1180,17 @@ void _wlmtk_window_release_update(
 {
     bs_dllist_remove(&window_ptr->pending_updates, &update_ptr->dlnode);
     bs_dllist_push_front(&window_ptr->available_updates, &update_ptr->dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_popup_menu_events_t::request_close signals. */
+void _wlmtk_window_popup_menu_request_close_handler(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_window_t, popup_menu_request_close_listener);
+    wlmtk_window_menu_set_enabled(window_ptr, false);
 }
 
 /* == Implementation of the fake window ==================================== */
