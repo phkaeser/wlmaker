@@ -72,6 +72,14 @@ typedef struct {
     struct wl_listener        toplevel_set_app_id_listener;
 } xdg_toplevel_surface_t;
 
+/** Temporary: Struct for defining an item for the window menu. */
+typedef struct {
+    /** Text to use for the menu item. */
+    const char                *text_ptr;
+    /** Action to be executed for that menu item. */
+    wlmaker_action_t          action;
+} wlmaker_window_menu_item_t;
+
 static xdg_toplevel_surface_t *xdg_toplevel_surface_create(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr);
@@ -148,6 +156,13 @@ const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
     .set_activated = content_set_activated,
 };
 
+/** Menu items for the XDG toplevel's window menu. */
+static const wlmaker_window_menu_item_t _xdg_toplevel_menu_items[] = {
+    { "Maximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED },
+    { "Fullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN },
+    { NULL, 0 }  // Sentinel.
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -173,22 +188,24 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
            wlmtk_window_ptr, surface_ptr);
 
-    // FIXME: Create these.
-    // Maximize / Unmaximize
-    // Fullscreen  (if possible)
-    // Iconify
-    // Shade
-    // Move to workspace ...
-    // Close
-    wlmaker_action_item_t *ai_ptr = wlmaker_action_item_create(
-        "Text",
-        &server_ptr->style.menu.item,
-        0,
-        server_ptr,
-        server_ptr->env_ptr);
-    wlmtk_menu_add_item(
-        wlmtk_window_menu(wlmtk_window_ptr),
-        wlmaker_action_item_menu_item(ai_ptr));
+    for (const wlmaker_window_menu_item_t *i_ptr = &_xdg_toplevel_menu_items[0];
+         i_ptr->text_ptr != NULL;
+         ++i_ptr) {
+
+        wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
+            i_ptr->text_ptr,
+            &server_ptr->style.menu.item,
+            i_ptr->action,
+            server_ptr,
+            server_ptr->env_ptr);
+        if (NULL == action_item_ptr) {
+            wlmtk_window_destroy(wlmtk_window_ptr);
+            return NULL;
+        }
+        wlmtk_menu_add_item(
+            wlmtk_window_menu(wlmtk_window_ptr),
+            wlmaker_action_item_menu_item(action_item_ptr));
+    }
 
     return wlmtk_window_ptr;
 }
