@@ -398,6 +398,7 @@ void test_title(bs_test_t *test_ptr)
     fake_window_ptr->request_move_called = false;
 
     // Pressing the right button should enable the window menu.
+    wlmtk_window_set_activated(fake_window_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_popup_element(
