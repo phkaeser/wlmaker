@@ -143,4 +143,6 @@ bool _wlmtk_popup_menu_element_pointer_button(
     return rv;
 }
 
+// TODO(kaeser@gubbe.ch): Add tests.
+
 /* == End of popup_menu.c ================================================== */
