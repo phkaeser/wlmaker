@@ -30,6 +30,23 @@ struct _wlmtk_popup_menu_t {
     wlmtk_popup_t             super_popup;
     /** The contained menu. */
     wlmtk_menu_t              menu;
+
+    /** Events of the popup menu. */
+    wlmtk_popup_menu_events_t events;
+
+    /** The element's original virtual method table. */
+    wlmtk_element_vmt_t       orig_element_vmt;
+};
+
+static bool _wlmtk_popup_menu_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
+/* == Data ================================================================= */
+
+/** The superclass' element virtual method table. */
+static const wlmtk_element_vmt_t _wlmtk_popup_menu_element_vmt = {
+    .pointer_button = _wlmtk_popup_menu_element_pointer_button
 };
 
 /* == Exported methods ===================================================== */
@@ -56,7 +73,11 @@ wlmtk_popup_menu_t *wlmtk_popup_menu_create(
         wlmtk_popup_menu_destroy(popup_menu_ptr);
         return NULL;
     }
+    popup_menu_ptr->orig_element_vmt = wlmtk_element_extend(
+        wlmtk_popup_element(&popup_menu_ptr->super_popup),
+        &_wlmtk_popup_menu_element_vmt);
 
+    wl_signal_init(&popup_menu_ptr->events.request_close);
     return popup_menu_ptr;
 }
 
@@ -66,6 +87,13 @@ void wlmtk_popup_menu_destroy(wlmtk_popup_menu_t *popup_menu_ptr)
     wlmtk_popup_fini(&popup_menu_ptr->super_popup);
     wlmtk_menu_fini(&popup_menu_ptr->menu);
     free(popup_menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_popup_menu_events_t *wlmtk_popup_menu_events(
+    wlmtk_popup_menu_t *popup_menu_ptr)
+{
+    return &popup_menu_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -81,5 +109,38 @@ wlmtk_menu_t *wlmtk_popup_menu_menu(wlmtk_popup_menu_t *popup_menu_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * If the menu is in right-click mode, acts on right-button events and signals
+ * the menu to close.
+ *
+ * Implementation of @ref wlmtk_element_vmt_t::pointer_button.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return whether the button event was claimed.
+ */
+bool _wlmtk_popup_menu_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_popup_menu_t *popup_menu_ptr = BS_CONTAINER_OF(
+        element_ptr,
+        wlmtk_popup_menu_t,
+        super_popup.super_container.super_element);
+
+    bool rv = popup_menu_ptr->orig_element_vmt.pointer_button(
+        element_ptr, button_event_ptr);
+
+    if (WLMTK_MENU_MODE_RIGHTCLICK == popup_menu_ptr->menu.mode &&
+        BTN_RIGHT == button_event_ptr->button) {
+        wl_signal_emit(&popup_menu_ptr->events.request_close, NULL);
+        rv = true;
+    }
+
+    return rv;
+}
 
 /* == End of popup_menu.c ================================================== */

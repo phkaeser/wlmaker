@@ -31,6 +31,12 @@ typedef struct _wlmtk_popup_menu_t wlmtk_popup_menu_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Events of the popup menu. */
+typedef struct {
+    /** Popup menu requests to be closed. */
+    struct wl_signal          request_close;
+} wlmtk_popup_menu_events_t;
+
 /**
  * Creates a popup menu.
  *
@@ -49,6 +55,10 @@ wlmtk_popup_menu_t *wlmtk_popup_menu_create(
  * @param popup_menu_ptr
  */
 void wlmtk_popup_menu_destroy(wlmtk_popup_menu_t *popup_menu_ptr);
+
+/** @return Pointer to @ref wlmtk_popup_menu_t::events. */
+wlmtk_popup_menu_events_t *wlmtk_popup_menu_events(
+    wlmtk_popup_menu_t *popup_menu_ptr);
 
 /** Returns pointer to the popup menu's @ref wlmtk_popup_t superclass. */
 wlmtk_popup_t *wlmtk_popup_menu_popup(wlmtk_popup_menu_t *popup_menu_ptr);
