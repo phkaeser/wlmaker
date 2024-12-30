@@ -32,8 +32,8 @@
 
     "Alt+Logo+Up" = WindowRaise;
     "Alt+Logo+Down" = WindowLower;
-    "Ctrl+Alt+Logo+F" = WindowFullscreen;
-    "Ctrl+Alt+Logo+M" = WindowMaximize;
+    "Ctrl+Alt+Logo+F" = WindowToggleFullscreen;
+    "Ctrl+Alt+Logo+M" = WindowToggleMaximized;
 
     // TODO(kaeser@gubbe.ch): Swap with F12, to match Window Maker's behaviour.
     "Ctrl+Alt+Logo+R" = RootMenu;
