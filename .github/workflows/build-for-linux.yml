@@ -1,4 +1,4 @@
-name: Build for Linux (Trixie, pre-compiled libwlroots-dev)
+name: Build for Linux (Trixie, pre-compiled libwlroots-0.18-dev)
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           git \
           libcairo2-dev \
           libncurses-dev \
-          libwlroots-dev \
+          libwlroots-0.18-dev \
           pkg-config \
           plantuml \
           xwayland
@@ -73,7 +73,7 @@ jobs:
           git \
           libcairo2-dev \
           libncurses-dev \
-          libwlroots-dev \
+          libwlroots-0.18-dev \
           pkg-config \
           plantuml \
           xwayland
