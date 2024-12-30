@@ -108,8 +108,14 @@ const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
 
     WLMCFG_ENUM("WindowRaise", WLMAKER_ACTION_WINDOW_RAISE),
     WLMCFG_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
-    WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
-    WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
+    WLMCFG_ENUM("WindowToggleFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
+    WLMCFG_ENUM("WindowToggleMaximized", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
+
+    WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_MAXIMIZE),
+    WLMCFG_ENUM("WindowUnmaximize", WLMAKER_ACTION_WINDOW_UNMAXIMIZE),
+    WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_FULLSCREEN),
+    WLMCFG_ENUM("WindowShade", WLMAKER_ACTION_WINDOW_SHADE),
+    WLMCFG_ENUM("WindowUnshade", WLMAKER_ACTION_WINDOW_UNSHADE),
 
     WLMCFG_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
 
@@ -173,7 +179,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
 void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                             wlmaker_action_t action)
 {
-    wlmtk_workspace_t *workspace_ptr;
+    wlmtk_workspace_t *workspace_ptr, *next_workspace_ptr;
     wlmtk_window_t *window_ptr;
 
     switch (action) {
@@ -251,6 +257,86 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(
                 window_ptr, !wlmtk_window_is_maximized(window_ptr));
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_MAXIMIZE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_maximized(window_ptr, true);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_UNMAXIMIZE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_maximized(window_ptr, false);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_FULLSCREEN:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_fullscreen(window_ptr, true);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_SHADE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_shaded(window_ptr, true);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_UNSHADE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_shaded(window_ptr, false);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_TO_NEXT_WORKSPACE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        next_workspace_ptr = wlmtk_workspace_from_dlnode(
+            wlmtk_dlnode_from_workspace(workspace_ptr)->next_ptr);
+        if (NULL != window_ptr &&
+            NULL != next_workspace_ptr) {
+            wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+            wlmtk_workspace_map_window(next_workspace_ptr, window_ptr);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        next_workspace_ptr = wlmtk_workspace_from_dlnode(
+            wlmtk_dlnode_from_workspace(workspace_ptr)->prev_ptr);
+        if (NULL != window_ptr &&
+            NULL != next_workspace_ptr) {
+            wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+            wlmtk_workspace_map_window(next_workspace_ptr, window_ptr);
+        }
+        break;
+
+    case WLMAKER_ACTION_WINDOW_CLOSE:
+        workspace_ptr = wlmtk_root_get_current_workspace(
+            server_ptr->root_ptr);
+        window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
+        if (NULL != window_ptr) {
+            wlmtk_window_request_close(window_ptr);
         }
         break;
 

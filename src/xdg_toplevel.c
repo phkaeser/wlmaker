@@ -158,8 +158,14 @@ const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
 
 /** Menu items for the XDG toplevel's window menu. */
 static const wlmaker_window_menu_item_t _xdg_toplevel_menu_items[] = {
-    { "Maximize", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED },
+    { "Maximize", WLMAKER_ACTION_WINDOW_MAXIMIZE },
+    { "Unmaximize", WLMAKER_ACTION_WINDOW_UNMAXIMIZE },
     { "Fullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN },
+    { "Shade", WLMAKER_ACTION_WINDOW_SHADE },
+    { "Unshade", WLMAKER_ACTION_WINDOW_UNSHADE },
+    { "To prev. workspace", WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE },
+    { "To next workspace", WLMAKER_ACTION_WINDOW_TO_NEXT_WORKSPACE },
+    { "Close", WLMAKER_ACTION_WINDOW_CLOSE },
     { NULL, 0 }  // Sentinel.
 };
 
