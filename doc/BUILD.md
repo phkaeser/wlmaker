@@ -24,7 +24,7 @@ apt-get install -y \
   git \
   libcairo2-dev \
   libncurses-dev \
-  libwlroots-dev \
+  libwlroots-0.18-dev \
   pkg-config \
   plantuml \
   xwayland
