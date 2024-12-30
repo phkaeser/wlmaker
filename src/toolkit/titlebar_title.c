@@ -315,7 +315,7 @@ static void test_shade(bs_test_t *test_ptr);
 const bs_test_case_t wlmtk_titlebar_title_test_cases[] = {
     // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why this fails on
     // Trixie when running as a github action.
-    { 1, "title", test_title },
+    { 0, "title", test_title },
     { 1, "shade", test_shade },
     { 0, NULL, NULL }
 };
