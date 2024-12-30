@@ -27,6 +27,8 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "box.h"
 #include "content.h"
 #include "element.h"
+#include "menu.h"
+#include "popup_menu.h"
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
@@ -84,6 +86,7 @@ typedef enum {
  *
  * @param env_ptr
  * @param style_ptr
+ * @param menu_style_ptr
  * @param content_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
@@ -92,6 +95,7 @@ typedef enum {
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
@@ -362,6 +366,25 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded);
 bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr);
 
 /**
+ * Enables (shows) or disabled (hides) the window's menu.
+ *
+ * @param window_ptr
+ * @param enabled
+ */
+void wlmtk_window_menu_set_enabled(
+    wlmtk_window_t *window_ptr,
+    bool enabled);
+
+/**
+ * Returns a pointer to the window menu's state.
+ *
+ * @param window_ptr
+ *
+ * @return A pointer to the @ref wlmtk_menu_t of the window menu.
+ */
+wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr);
+
+/**
  * Returns the current position and size of the window.
  *
  * @param window_ptr
@@ -443,6 +466,8 @@ typedef struct {
     wlmtk_fake_surface_t      *fake_surface_ptr;
     /** Fake content, wraps the fake surface. */
     wlmtk_fake_content_t      *fake_content_ptr;
+    /** Hack: Direct link to window popup menu. */
+    wlmtk_popup_menu_t        *popup_menu_ptr;
 
     /** Whether @ref wlmtk_window_request_minimize was called. */
     bool                      request_minimize_called;

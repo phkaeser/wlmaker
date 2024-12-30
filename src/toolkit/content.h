@@ -120,6 +120,7 @@ struct _wlmtk_content_t {
 
     /** And the popup container. Contents can contain popups. */
     // TODO(kaeser@gubbe.ch): Re-think whether this better be part of window?
+    // To consider: positioning relative to window's content *is* desirable.
     wlmtk_container_t         popup_container;
 
     /** The principal element of the content. */

@@ -24,6 +24,7 @@
 #include "gfxbuf.h"
 #include "primitives.h"
 #include "window.h"
+#include "popup_menu.h"
 
 #include <wlr/version.h>
 #define WLR_USE_UNSTABLE
@@ -184,15 +185,16 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
-    if (button_event_ptr->button != BTN_LEFT) return false;
-
-    switch (button_event_ptr->type) {
-    case WLMTK_BUTTON_DOWN:
+    if (BTN_LEFT == button_event_ptr->button &&
+        WLMTK_BUTTON_DOWN == button_event_ptr->type) {
         wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
-        break;
+        return true;
+    }
 
-    default:  // Can be ignored.
-        break;
+    if (BTN_RIGHT == button_event_ptr->button &&
+        WLMTK_BUTTON_DOWN == button_event_ptr->type) {
+        wlmtk_window_menu_set_enabled(titlebar_title_ptr->window_ptr, true);
+        return true;
     }
 
     return true;
@@ -384,7 +386,7 @@ void test_title(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_blurred_short.png");
 
-    // Pressing a button should trigger a move.
+    // Pressing the left button should trigger a move.
     BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_move_called);
     wlmtk_button_event_t button = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
@@ -393,6 +395,25 @@ void test_title(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_button(element_ptr,  &button));
     BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_move_called);
+    fake_window_ptr->request_move_called = false;
+
+    // Pressing the right button should enable the window menu.
+    wlmtk_window_set_activated(fake_window_ptr->window_ptr, true);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_popup_element(
+            wlmtk_popup_menu_popup(
+                fake_window_ptr->popup_menu_ptr))->visible);
+    button.button = BTN_RIGHT;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(element_ptr,  &button));
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_move_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_popup_element(
+            wlmtk_popup_menu_popup(
+                fake_window_ptr->popup_menu_ptr))->visible);
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);
