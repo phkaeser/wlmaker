@@ -83,7 +83,6 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
             wlmaker_action_item_menu_item(action_item_ptr));
     }
 
-
     return tl_menu_ptr;
 }
 

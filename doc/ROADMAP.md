@@ -22,7 +22,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Menu shown on right-button-down, items trigger on right-button-up.
   * [done] When invoked on unclaimed button, exits menu on button release.
   * [done] Available as window menu in windows.
-  * Available also for X11 windows.
+  * [done] Available also for X11 windows.
   * Available as (hardcoded) application menu.
   * Menu with submenus.
   * Window menu adapting to window state.

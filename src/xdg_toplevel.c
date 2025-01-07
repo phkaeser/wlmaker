@@ -171,12 +171,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         xdg_toplevel_surface_destroy(surface_ptr);
         return NULL;
     }
-    wl_signal_emit(&server_ptr->window_created_event, wlmtk_window_ptr);
 
-    bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
-           wlmtk_window_ptr, surface_ptr);
-
-    // FIXME:
     surface_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmtk_window_ptr, server_ptr);
     if (NULL == surface_ptr->tl_menu_ptr) {
@@ -184,6 +179,9 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         return NULL;
     }
 
+    wl_signal_emit(&server_ptr->window_created_event, wlmtk_window_ptr);
+    bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
+           wlmtk_window_ptr, surface_ptr);
     return wlmtk_window_ptr;
 }
 
