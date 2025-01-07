@@ -21,6 +21,8 @@
 
 #include "xwl_toplevel.h"
 
+#include "tl_menu.h"
+
 /* == Declarations ========================================================= */
 
 /** State of a XWayland toplevel window. */
@@ -30,6 +32,9 @@ struct _wlmaker_xwl_toplevel_t {
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
+
+    /** The toplevel's window menu. */
+    wlmaker_tl_menu_t         *tl_menu_ptr;
 
     /** Listener for `map` event of the surface. */
     struct wl_listener        surface_map_listener;
@@ -66,6 +71,15 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
         return NULL;
     }
+
+    xwl_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
+        xwl_toplevel_ptr->window_ptr,
+        server_ptr);
+    if (NULL == xwl_toplevel_ptr->tl_menu_ptr) {
+        wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
+        return NULL;
+    }
+
     wl_signal_emit(&server_ptr->window_created_event,
                    xwl_toplevel_ptr->window_ptr);
 
@@ -97,6 +111,11 @@ void wlmaker_xwl_toplevel_destroy(
 
     wl_list_remove(&xwl_toplevel_ptr->surface_unmap_listener.link);
     wl_list_remove(&xwl_toplevel_ptr->surface_map_listener.link);
+
+    if (NULL != xwl_toplevel_ptr->tl_menu_ptr) {
+        wlmaker_tl_menu_destroy(xwl_toplevel_ptr->tl_menu_ptr);
+        xwl_toplevel_ptr->tl_menu_ptr = NULL;
+    }
 
     free(xwl_toplevel_ptr);
 }

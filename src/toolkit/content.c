@@ -60,8 +60,6 @@ bool wlmtk_content_init(
         &content_ptr->super_container.super_element,
         &_wlmtk_content_element_vmt);
 
-    wlmtk_content_set_element(content_ptr, element_ptr);
-
     if (!wlmtk_container_init(&content_ptr->popup_container, env_ptr)) {
         wlmtk_content_fini(content_ptr);
         return false;
@@ -72,6 +70,8 @@ bool wlmtk_content_init(
     wlmtk_element_set_visible(
         &content_ptr->popup_container.super_element,
         true);
+
+    wlmtk_content_set_element(content_ptr, element_ptr);
 
     return true;
 }
@@ -123,6 +123,10 @@ void wlmtk_content_set_element(
         content_ptr->element_ptr = element_ptr;
         wlmtk_element_set_visible(element_ptr, true);
 
+        // FIXME
+        wlmtk_container_raise_element_to_top(
+            &content_ptr->super_container,
+            &content_ptr->popup_container.super_element);
     }
 }
 

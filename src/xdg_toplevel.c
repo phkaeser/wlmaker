@@ -20,7 +20,7 @@
 
 #include "xdg_shell.h"
 
-#include "action_item.h"
+#include "tl_menu.h"
 #include "xdg_popup.h"
 
 #include <wlr/version.h>
@@ -40,6 +40,9 @@ typedef struct {
 
     /** The corresponding wlroots XDG toplevel. */
     struct wlr_xdg_toplevel   *wlr_xdg_toplevel_ptr;
+
+    /** The toplevel's window menu. */
+    wlmaker_tl_menu_t         *tl_menu_ptr;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_toplevel::events`. */
     struct wl_listener        destroy_listener;
@@ -71,14 +74,6 @@ typedef struct {
     /** Listener for `set_app_id` of `wlr_xdg_toplevel::events`. */
     struct wl_listener        toplevel_set_app_id_listener;
 } xdg_toplevel_surface_t;
-
-/** Temporary: Struct for defining an item for the window menu. */
-typedef struct {
-    /** Text to use for the menu item. */
-    const char                *text_ptr;
-    /** Action to be executed for that menu item. */
-    wlmaker_action_t          action;
-} wlmaker_window_menu_item_t;
 
 static xdg_toplevel_surface_t *xdg_toplevel_surface_create(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
@@ -156,19 +151,6 @@ const wlmtk_content_vmt_t     _xdg_toplevel_content_vmt = {
     .set_activated = content_set_activated,
 };
 
-/** Menu items for the XDG toplevel's window menu. */
-static const wlmaker_window_menu_item_t _xdg_toplevel_menu_items[] = {
-    { "Maximize", WLMAKER_ACTION_WINDOW_MAXIMIZE },
-    { "Unmaximize", WLMAKER_ACTION_WINDOW_UNMAXIMIZE },
-    { "Fullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN },
-    { "Shade", WLMAKER_ACTION_WINDOW_SHADE },
-    { "Unshade", WLMAKER_ACTION_WINDOW_UNSHADE },
-    { "To prev. workspace", WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE },
-    { "To next workspace", WLMAKER_ACTION_WINDOW_TO_NEXT_WORKSPACE },
-    { "Close", WLMAKER_ACTION_WINDOW_CLOSE },
-    { NULL, 0 }  // Sentinel.
-};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -189,30 +171,17 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         xdg_toplevel_surface_destroy(surface_ptr);
         return NULL;
     }
-    wl_signal_emit(&server_ptr->window_created_event, wlmtk_window_ptr);
 
-    bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
-           wlmtk_window_ptr, surface_ptr);
-
-    for (const wlmaker_window_menu_item_t *i_ptr = &_xdg_toplevel_menu_items[0];
-         i_ptr->text_ptr != NULL;
-         ++i_ptr) {
-
-        wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
-            i_ptr->text_ptr,
-            &server_ptr->style.menu.item,
-            i_ptr->action,
-            server_ptr,
-            server_ptr->env_ptr);
-        if (NULL == action_item_ptr) {
-            wlmtk_window_destroy(wlmtk_window_ptr);
-            return NULL;
-        }
-        wlmtk_menu_add_item(
-            wlmtk_window_menu(wlmtk_window_ptr),
-            wlmaker_action_item_menu_item(action_item_ptr));
+    surface_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
+        wlmtk_window_ptr, server_ptr);
+    if (NULL == surface_ptr->tl_menu_ptr) {
+        xdg_toplevel_surface_destroy(surface_ptr);
+        return NULL;
     }
 
+    wl_signal_emit(&server_ptr->window_created_event, wlmtk_window_ptr);
+    bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
+           wlmtk_window_ptr, surface_ptr);
     return wlmtk_window_ptr;
 }
 
@@ -350,6 +319,11 @@ void xdg_toplevel_surface_destroy(
     wl_list_remove(&xts_ptr->surface_unmap_listener.link);
     wl_list_remove(&xts_ptr->new_popup_listener.link);
     wl_list_remove(&xts_ptr->destroy_listener.link);
+
+    if (NULL != xdg_tl_surface_ptr->tl_menu_ptr) {
+        wlmaker_tl_menu_destroy(xdg_tl_surface_ptr->tl_menu_ptr);
+        xdg_tl_surface_ptr->tl_menu_ptr = NULL;
+    }
 
     wlmtk_content_fini(&xts_ptr->super_content);
 
