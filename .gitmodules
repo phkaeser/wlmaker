@@ -8,4 +8,4 @@
         url = https://github.com/wmww/gtk-layer-shell.git
 [submodule "dependencies"]
         path = dependencies
-        url = git@github.com:phkaeser/wlmaker-dependencies.git
+        url = https://github.com/phkaeser/wlmaker-dependencies.git
