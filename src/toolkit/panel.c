@@ -165,7 +165,6 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     if (0 == dims.width) {
         // Width not given. Protocol requires the anchor to be set on left &
         // right edges, and translates to full width (minus margins).
-        BS_ASSERT(anchor & WLR_EDGE_LEFT && anchor & WLR_EDGE_RIGHT);
         dims.x = max_dims.x + margin_left;
         dims.width = max_dims.width - margin_left - margin_right;
     } else if (anchor & WLR_EDGE_LEFT && !(anchor & WLR_EDGE_RIGHT)) {
@@ -183,7 +182,6 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     if (0 == dims.height) {
         // Height not given. Protocol requires the anchor to be set on top &
         // bottom edges, and translates to full height (minus margins).
-        BS_ASSERT(anchor & WLR_EDGE_TOP && anchor & WLR_EDGE_BOTTOM);
         dims.y = max_dims.y + margin_top;
         dims.height = max_dims.height - margin_top - margin_bottom;
     } else if (anchor & WLR_EDGE_TOP && !(anchor & WLR_EDGE_BOTTOM)) {

@@ -65,13 +65,11 @@ static void _wlmaker_layer_panel_destroy(
 
 static bool _wlmaker_layer_panel_apply_keyboard(
     wlmaker_layer_panel_t *layer_panel_ptr,
-    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity);
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity,
+    enum zwlr_layer_shell_v1_layer zwlr_layer);
 static bool _wlmaker_layer_panel_apply_layer(
     wlmaker_layer_panel_t *layer_panel_ptr,
     enum zwlr_layer_shell_v1_layer zwlr_layer);
-static void _wlmaker_layer_panel_set_positioning(
-    wlmtk_panel_positioning_t *positioning_ptr,
-    const struct wlr_layer_surface_v1_state *state_ptr);
 
 static uint32_t _wlmaker_layer_panel_request_size(
     wlmtk_panel_t *panel_ptr,
@@ -138,9 +136,7 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
     layer_panel_ptr->wlr_layer_surface_v1_ptr = wlr_layer_surface_v1_ptr;
     layer_panel_ptr->server_ptr = server_ptr;
 
-    wlmtk_panel_positioning_t pos;
-    _wlmaker_layer_panel_set_positioning(
-        &pos, &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending);
+    wlmtk_panel_positioning_t pos = {};
     if (!wlmtk_panel_init(
             &layer_panel_ptr->super_panel, &pos, server_ptr->env_ptr)) {
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
@@ -186,16 +182,6 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         &wlr_layer_surface_v1_ptr->events.new_popup,
         &layer_panel_ptr->new_popup_listener,
         _wlmaker_layer_panel_handle_new_popup);
-
-    if (!_wlmaker_layer_panel_apply_keyboard(
-            layer_panel_ptr,
-            wlr_layer_surface_v1_ptr->pending.keyboard_interactive) ||
-        !_wlmaker_layer_panel_apply_layer(
-            layer_panel_ptr,
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.layer)) {
-        _wlmaker_layer_panel_destroy(layer_panel_ptr);
-        return NULL;
-    }
 
     bs_log(BS_INFO, "Created layer panel %p with wlmtk surface %p",
            layer_panel_ptr, layer_panel_ptr->wlmtk_surface_ptr);
@@ -266,12 +252,46 @@ wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Applies the requested keyboard setting. Currently warns on non-zero. */
+/**
+ * Applies the requested keyboard setting.
+ *
+ * Supports 'NONE' and 'EXCLUSIVE' interactivity, but the latter only on
+ * top and overlay layers.
+ *
+ * TODO(kaeser@gubbe.ch): Implement full support, once layer elements have a
+ * means to organically obtain and release keyboard focus (eg. through pointer
+ * button clicks).
+ *
+ * @param layer_panel_ptr
+ * @param interactivity
+ * @param zwlr_layer
+ *
+ * @return true on success.
+ */
 bool _wlmaker_layer_panel_apply_keyboard(
     wlmaker_layer_panel_t *layer_panel_ptr,
-    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity)
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity,
+    enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
-    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE != interactivity) {
+    switch (interactivity) {
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE:
+        break;
+
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE:
+        if (ZWLR_LAYER_SHELL_V1_LAYER_TOP != zwlr_layer &&
+            ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY != zwlr_layer) {
+            wl_resource_post_error(
+                layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+                WL_DISPLAY_ERROR_IMPLEMENTATION,
+                "Exclusive interactivity unsupported on layer %d", zwlr_layer);
+            return false;
+        }
+
+        wlmtk_surface_set_activated(layer_panel_ptr->wlmtk_surface_ptr, true);
+        break;
+
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND:
+    default:
         wl_resource_post_error(
             layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
             WL_DISPLAY_ERROR_IMPLEMENTATION,
@@ -279,6 +299,7 @@ bool _wlmaker_layer_panel_apply_keyboard(
             interactivity);
         return false;
     }
+
     return true;
 }
 
@@ -305,7 +326,7 @@ bool _wlmaker_layer_panel_apply_layer(
     default:
         wl_resource_post_error(
             layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
-            WL_DISPLAY_ERROR_INVALID_METHOD,
+            ZWLR_LAYER_SHELL_V1_ERROR_INVALID_LAYER,
             "Invalid value for for zwlr_layer value: %d",
             layer_panel_ptr->wlr_layer_surface_v1_ptr->pending.layer);
         return false;
@@ -330,25 +351,6 @@ bool _wlmaker_layer_panel_apply_layer(
     }
 
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Updates `positioning_ptr` from the given surface state. */
-void _wlmaker_layer_panel_set_positioning(
-    wlmtk_panel_positioning_t *positioning_ptr,
-    const struct wlr_layer_surface_v1_state *state_ptr)
-{
-    positioning_ptr->anchor = state_ptr->anchor;
-
-    positioning_ptr->desired_width = state_ptr->desired_width;
-    positioning_ptr->desired_height = state_ptr->desired_height;
-
-    positioning_ptr->margin_left = state_ptr->margin.left;
-    positioning_ptr->margin_top = state_ptr->margin.top;
-    positioning_ptr->margin_right = state_ptr->margin.right;
-    positioning_ptr->margin_bottom = state_ptr->margin.bottom;
-
-    positioning_ptr->exclusive_zone = state_ptr->exclusive_zone;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -384,19 +386,42 @@ void _wlmaker_layer_panel_handle_surface_commit(
     struct wlr_layer_surface_v1_state *state_ptr =
         &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending;
 
-    wlmtk_panel_positioning_t pos;
-    _wlmaker_layer_panel_set_positioning(&pos, state_ptr);
+    wlmtk_panel_positioning_t pos = {
+        .anchor = state_ptr->anchor,
+        .desired_width = state_ptr->desired_width,
+        .desired_height = state_ptr->desired_height,
+
+        .margin_left = state_ptr->margin.left,
+        .margin_top = state_ptr->margin.top,
+        .margin_right = state_ptr->margin.right,
+        .margin_bottom = state_ptr->margin.bottom,
+
+        .exclusive_zone = state_ptr->exclusive_zone
+    };
+    // Sanity check position and anchor values.
+    if ((0 == pos.desired_width &&
+         0 == (pos.anchor & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT))) ||
+        (0 == pos.desired_height &&
+         0 == (pos.anchor & (WLR_EDGE_TOP | WLR_EDGE_BOTTOM)))) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
+            "Invalid size %d x %d for anchor 0x%"PRIx32,
+            pos.desired_width, pos.desired_height, pos.anchor);
+    }
+
     wlmtk_panel_commit(
         &layer_panel_ptr->super_panel,
         state_ptr->configure_serial,
         &pos);
 
     // Updates keyboard and layer values. Ignore failures here.
-    _wlmaker_layer_panel_apply_keyboard(
-        layer_panel_ptr,
-        state_ptr->keyboard_interactive);
     _wlmaker_layer_panel_apply_layer(
         layer_panel_ptr,
+        state_ptr->layer);
+    _wlmaker_layer_panel_apply_keyboard(
+        layer_panel_ptr,
+        state_ptr->keyboard_interactive,
         state_ptr->layer);
 }
 

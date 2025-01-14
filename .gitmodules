@@ -1,11 +1,11 @@
 [submodule "submodules/libbase"]
         path = submodules/libbase
-        url = ../libbase
+        url = https://github.com/phkaeser/libbase.git
         branch = main
         update = rebase
 [submodule "examples/gtk-layer-shell"]
         path = examples/gtk-layer-shell
         url = https://github.com/wmww/gtk-layer-shell.git
 [submodule "dependencies"]
-	path = dependencies
-	url = git@github.com:phkaeser/wlmaker-dependencies.git
+        path = dependencies
+        url = https://github.com/phkaeser/wlmaker-dependencies.git

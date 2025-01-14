@@ -102,6 +102,10 @@ struct _wlmtk_content_vmt_t {
     /**
      * Sets whether this content as activated (keyboard focus).
      *
+     * The implementation must (for the effective contained element) issue a
+     * call to  @ref wlmtk_container_set_keyboard_focus_element to claim or
+     * release keyboard focus.
+     *
      * @param content_ptr
      * @param activated
      */

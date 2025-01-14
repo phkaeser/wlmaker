@@ -25,7 +25,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Available also for X11 windows.
   * Available as (hardcoded) application menu.
   * Menu with submenus.
-  * Window menu adapting to window state.
+  * [done] Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
   * When positioning the root menu, keep it entirely within the desktop area.
 
