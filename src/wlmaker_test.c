@@ -19,6 +19,7 @@
  */
 
 #include "action.h"
+#include "action_item.h"
 #include "clip.h"
 #include "config.h"
 #include "corner.h"
@@ -31,6 +32,7 @@
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {
     { 1, "action", wlmaker_action_test_cases },
+    { 1, "action_item", wlmaker_action_item_test_cases },
     { 1, "clip", wlmaker_clip_test_cases },
     { 1, "config", wlmaker_config_test_cases },
     { 1, "corner", wlmaker_corner_test_cases },
