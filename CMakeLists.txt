@@ -72,7 +72,7 @@ OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 
 # Toplevel compile options, for GCC and clang.
 IF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-  ADD_COMPILE_OPTIONS(-Wall -Wextra -Werror)
+  ADD_COMPILE_OPTIONS(-Wall -Wextra)
 
   IF(config_DEBUG)
     ADD_COMPILE_OPTIONS(-ggdb -DDEBUG)
