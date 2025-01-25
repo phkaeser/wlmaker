@@ -1,4 +1,4 @@
-name: Build for Linux (Trixie, pre-compiled libwlroots-0.18-dev)
+name: Build for Fedora Linux 41
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
           wlroots-devel \
           pkg-config \
           plantuml \
-          xwayland-devel
+          xwayland-run
 
     - name: Checkout code, including git submodules.
       uses: actions/checkout@v3
