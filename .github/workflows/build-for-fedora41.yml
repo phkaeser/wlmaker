@@ -31,7 +31,8 @@ jobs:
           wlroots-devel \
           pkg-config \
           plantuml \
-          xwayland-run
+          wayland-protocols-devel \
+          xwayland-run 
 
     - name: Checkout code, including git submodules.
       uses: actions/checkout@v3
