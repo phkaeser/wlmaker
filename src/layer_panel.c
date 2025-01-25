@@ -272,12 +272,17 @@ bool _wlmaker_layer_panel_apply_keyboard(
     enum zwlr_layer_surface_v1_keyboard_interactivity interactivity)
 {
     if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE != interactivity) {
-        wl_resource_post_error(
-            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
-            WL_DISPLAY_ERROR_IMPLEMENTATION,
-            "Unsupported setting for keyboard interactivity: %d",
-            interactivity);
-        return false;
+        bs_log(BS_WARNING, "FIXME: panel %p - Unsupported setting for "
+               "keyboard interactivity: %d (ignored)",
+               layer_panel_ptr, interactivity);
+        return true;
+
+        /* wl_resource_post_error( */
+        /*     layer_panel_ptr->wlr_layer_surface_v1_ptr->resource, */
+        /*     WL_DISPLAY_ERROR_IMPLEMENTATION, */
+        /*     "Unsupported setting for keyboard interactivity: %d", */
+        /*     interactivity); */
+        /* return false; */
     }
     return true;
 }
@@ -349,6 +354,11 @@ void _wlmaker_layer_panel_set_positioning(
     positioning_ptr->margin_bottom = state_ptr->margin.bottom;
 
     positioning_ptr->exclusive_zone = state_ptr->exclusive_zone;
+
+    bs_log(BS_WARNING, "FIXME: anchor 0x%x, desired %d x %d",
+           state_ptr->anchor,
+           state_ptr->desired_width,
+           state_ptr->desired_height);
 }
 
 /* ------------------------------------------------------------------------- */
