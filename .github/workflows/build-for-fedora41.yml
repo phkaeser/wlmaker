@@ -1,0 +1,56 @@
+name: Build for Fedora Linux 41
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_matrix:
+    strategy:
+      matrix:
+        compiler: [ "gcc", "clang" ]
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:41
+
+    steps:
+    - name: Install package dependencies.
+      run: |
+        dnf -y upgrade
+        dnf -y install \
+          bison \
+          clang \
+          cmake \
+          flex \
+          gcc \
+          git \
+          cairo-devel \
+          ncurses-devel \
+          wlroots-devel \
+          pkg-config \
+          plantuml \
+          wayland-protocols-devel \
+          xwayland-run
+
+    - name: Checkout code, including git submodules.
+      uses: actions/checkout@v3
+      with:
+        # Not using 'recursive' prevents fetching extra submodules below
+        # dependencies/. These are only needed to build wlroots from source.
+        submodules: true
+
+    - name: Configure wlmaker through CMake.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake -B build/ -Dconfig_WERROR=ON
+
+    - name: Build wlmaker.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake --build build/
+
+    - name: Run all tests.
+      run: |
+        ctest --test-dir build/ --build-run-dir build/ -V
