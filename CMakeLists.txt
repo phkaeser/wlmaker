@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # Default arguments:
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -B build
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -B build
 # CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -B build-clang
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
@@ -69,10 +69,14 @@ ENDIF(NOT WLROOTS_FOUND)
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
 OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
+OPTION(config_WERROR "Make all compiler warnings into errors." OFF)
 
 # Toplevel compile options, for GCC and clang.
 IF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-  ADD_COMPILE_OPTIONS(-Wall -Wextra -Werror)
+  ADD_COMPILE_OPTIONS(-Wall -Wextra)
+  IF(config_WERROR)
+    ADD_COMPILE_OPTIONS(-Werror)
+  ENDIF(config_WERROR)
 
   IF(config_DEBUG)
     ADD_COMPILE_OPTIONS(-ggdb -DDEBUG)
