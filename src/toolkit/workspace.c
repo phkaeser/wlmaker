@@ -615,16 +615,17 @@ void wlmtk_workspace_activate_window(
     if (workspace_ptr->activated_window_ptr == window_ptr) return;
 
     if (NULL != workspace_ptr->activated_window_ptr) {
-        wlmtk_window_set_activated(workspace_ptr->activated_window_ptr, false);
+        wlmtk_window_t *w_ptr = workspace_ptr->activated_window_ptr;
         workspace_ptr->formerly_activated_window_ptr =
             workspace_ptr->activated_window_ptr;
         workspace_ptr->activated_window_ptr = NULL;
+        wlmtk_window_set_activated(w_ptr, false);
     }
 
     if (NULL != window_ptr) {
         if (workspace_ptr->enabled) {
-            wlmtk_window_set_activated(window_ptr, true);
             workspace_ptr->activated_window_ptr = window_ptr;
+            wlmtk_window_set_activated(window_ptr, true);
         }
         workspace_ptr->formerly_activated_window_ptr = window_ptr;
     }

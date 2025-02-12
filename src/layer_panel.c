@@ -65,7 +65,8 @@ static void _wlmaker_layer_panel_destroy(
 
 static bool _wlmaker_layer_panel_apply_keyboard(
     wlmaker_layer_panel_t *layer_panel_ptr,
-    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity);
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity,
+    enum zwlr_layer_shell_v1_layer zwlr_layer);
 static bool _wlmaker_layer_panel_apply_layer(
     wlmaker_layer_panel_t *layer_panel_ptr,
     enum zwlr_layer_shell_v1_layer zwlr_layer);
@@ -251,12 +252,46 @@ wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Applies the requested keyboard setting. Currently warns on non-zero. */
+/**
+ * Applies the requested keyboard setting.
+ *
+ * Supports 'NONE' and 'EXCLUSIVE' interactivity, but the latter only on
+ * top and overlay layers.
+ *
+ * TODO(kaeser@gubbe.ch): Implement full support, once layer elements have a
+ * means to organically obtain and release keyboard focus (eg. through pointer
+ * button clicks).
+ *
+ * @param layer_panel_ptr
+ * @param interactivity
+ * @param zwlr_layer
+ *
+ * @return true on success.
+ */
 bool _wlmaker_layer_panel_apply_keyboard(
     wlmaker_layer_panel_t *layer_panel_ptr,
-    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity)
+    enum zwlr_layer_surface_v1_keyboard_interactivity interactivity,
+    enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
-    if (ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE != interactivity) {
+    switch (interactivity) {
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE:
+        break;
+
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE:
+        if (ZWLR_LAYER_SHELL_V1_LAYER_TOP != zwlr_layer &&
+            ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY != zwlr_layer) {
+            wl_resource_post_error(
+                layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+                WL_DISPLAY_ERROR_IMPLEMENTATION,
+                "Exclusive interactivity unsupported on layer %d", zwlr_layer);
+            return false;
+        }
+
+        wlmtk_surface_set_activated(layer_panel_ptr->wlmtk_surface_ptr, true);
+        break;
+
+    case ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND:
+    default:
         wl_resource_post_error(
             layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
             WL_DISPLAY_ERROR_IMPLEMENTATION,
@@ -264,6 +299,7 @@ bool _wlmaker_layer_panel_apply_keyboard(
             interactivity);
         return false;
     }
+
     return true;
 }
 
@@ -380,11 +416,12 @@ void _wlmaker_layer_panel_handle_surface_commit(
         &pos);
 
     // Updates keyboard and layer values. Ignore failures here.
-    _wlmaker_layer_panel_apply_keyboard(
-        layer_panel_ptr,
-        state_ptr->keyboard_interactive);
     _wlmaker_layer_panel_apply_layer(
         layer_panel_ptr,
+        state_ptr->layer);
+    _wlmaker_layer_panel_apply_keyboard(
+        layer_panel_ptr,
+        state_ptr->keyboard_interactive,
         state_ptr->layer);
 }
 
