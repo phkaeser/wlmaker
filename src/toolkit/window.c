@@ -316,6 +316,8 @@ void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
 {
+    if (window_ptr->activated == activated) return;
+
     window_ptr->activated = activated;
     wlmtk_content_set_activated(window_ptr->content_ptr, activated);
     if (NULL != window_ptr->titlebar_ptr) {
@@ -324,6 +326,11 @@ void wlmtk_window_set_activated(
 
     if (!activated) {
         wlmtk_window_menu_set_enabled(window_ptr, false);
+
+        // TODO(kaeser@gubbe.ch): Should test this behaviour.
+        if (NULL != window_ptr->workspace_ptr) {
+            wlmtk_workspace_activate_window(window_ptr->workspace_ptr, NULL);
+        }
     }
 }
 

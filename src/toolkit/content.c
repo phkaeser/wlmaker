@@ -35,11 +35,15 @@ static void _wlmtk_content_element_get_dimensions(
     int *right_ptr,
     int *bottom_ptr);
 
+static void _wlmtk_content_element_keyboard_blur(
+    wlmtk_element_t *element_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table for the content's superclass @ref wlmtk_element_t. */
 static const wlmtk_element_vmt_t _wlmtk_content_element_vmt = {
     .get_dimensions = _wlmtk_content_element_get_dimensions,
+    .keyboard_blur = _wlmtk_content_element_keyboard_blur,
 };
 
 /* == Exported methods ===================================================== */
@@ -288,6 +292,24 @@ void _wlmtk_content_element_get_dimensions(
     wlmtk_element_get_dimensions(
         content_ptr->element_ptr,
         left_ptr, top_ptr, right_ptr, bottom_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * De-activates keyboard focus for the content: Propagates the blur to all
+ * children, and then de-activates the content's window.
+ *
+ * @param element_ptr
+ */
+void _wlmtk_content_element_keyboard_blur(wlmtk_element_t *element_ptr)
+{
+    wlmtk_content_t *content_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_content_t, super_container.super_element);
+
+    content_ptr->orig_super_element_vmt.keyboard_blur(element_ptr);
+    if (NULL != content_ptr->window_ptr) {
+        wlmtk_window_set_activated(content_ptr->window_ptr, false);
+    }
 }
 
 /* == Fake content, for tests ============================================== */
