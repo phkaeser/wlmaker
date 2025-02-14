@@ -31,6 +31,19 @@ typedef struct _wlmaker_action_item_t wlmaker_action_item_t;
 extern "C" {
 #endif  // __cplusplus
 
+/** Descriptor for creating a menu item triggering an action. */
+typedef struct {
+    /** Text for the menu item. */
+    const char                *text_ptr;
+    /** The action to trigger. */
+    wlmaker_action_t          action;
+    /**
+     * Where to store the @ref wlmaker_action_item_t, relative to the
+     * `dest_ptr` argument of @ref wlmaker_action_item_create_from_desc.
+     */
+    size_t                    destination_ofs;
+} wlmaker_action_item_desc_t;
+
 /**
  * Creates a menu item that triggers a @ref wlmaker_action_t.
  *
@@ -50,6 +63,24 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     wlmtk_env_t *env_ptr);
 
 /**
+ * Creates a menu item triggering an action item from a descriptor.
+ *
+ * @param desc_ptr
+ * @param dest_ptr
+ * @param style_ptr
+ * @param server_ptr
+ * @param env_ptr
+ *
+ * @return Pointer to the item's handle or NULL on error.
+ */
+wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
+    const wlmaker_action_item_desc_t *desc_ptr,
+    void *dest_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmaker_server_t *server_ptr,
+    wlmtk_env_t *env_ptr);
+
+/**
  * Destroys the action-triggering menu item.
  *
  * @param action_item_ptr
@@ -59,6 +90,9 @@ void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr);
 /** @returns pointer to the superclass @ref wlmtk_menu_item_t. */
 wlmtk_menu_item_t *wlmaker_action_item_menu_item(
     wlmaker_action_item_t *action_item_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t   wlmaker_action_item_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -48,6 +48,11 @@ typedef struct {
      * - @ref wlmtk_window_is_maximized
      * - @ref wlmtk_window_is_fullscreen
      * - @ref wlmtk_window_is_shaded
+     *
+     * The signal is also raised when the window's workspace is changed.
+     * Retrieve through @ref wlmtk_window_get_workspace.
+     *
+     * data_ptr points to the window state (@ref wlmtk_window_t).
      */
     struct wl_signal          state_changed;
 } wlmtk_window_events_t;

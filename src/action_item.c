@@ -92,6 +92,27 @@ wlmaker_action_item_t *wlmaker_action_item_create(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
+    const wlmaker_action_item_desc_t *desc_ptr,
+    void *dest_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmaker_server_t *server_ptr,
+    wlmtk_env_t *env_ptr)
+{
+    wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
+        desc_ptr->text_ptr,
+        style_ptr,
+        desc_ptr->action,
+        server_ptr,
+        env_ptr);
+    if (NULL == action_item_ptr) return NULL;
+
+    *(wlmaker_action_item_t**)(
+        (uint8_t*)dest_ptr + desc_ptr->destination_ofs) = action_item_ptr;
+    return action_item_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
     wlmtk_menu_item_fini(&action_item_ptr->super_menu_item);
@@ -134,4 +155,32 @@ void _wlmaker_action_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
     }
 }
 
-/* == End of action_item.c ================================================== */
+/* == Unit tests =========================================================== */
+
+static void _wlmaker_action_item_test_create(bs_test_t *test_ptr);
+
+/** Test cases for action items. */
+const bs_test_case_t          wlmaker_action_item_test_cases[] = {
+    { 1, "create", _wlmaker_action_item_test_create },
+    { 0, NULL, NULL },
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests creation the menu item. */
+void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
+{
+    wlmaker_action_item_t *ai_ptr = NULL;
+    wlmaker_action_item_desc_t desc = { "text", 42, 0 };
+    wlmtk_menu_item_style_t style = {};
+    wlmaker_server_t server = {};
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_action_item_create_from_desc(
+            &desc, &ai_ptr,  &style, &server, NULL));
+
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
+    wlmaker_action_item_destroy(ai_ptr);
+}
+
+/* == End of action_item.c ================================================= */
