@@ -1,0 +1,35 @@
+name: Build for Free BSD 14.2
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code, including git submodules.
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Configure, build and test wlmaker through CMake.
+      uses: cross-platform-actions/action@v0.26.0
+      with:
+        operating_system: freebsd
+        version: '14.2'
+        run: |
+          sudo pkg install -y \
+            devel/bison \
+            devel/cmake-core \
+            devel/evdev-proto \
+            devel/libepoll-shim \
+            devel/pkgconf \
+            graphics/cairo \
+            graphics/wayland \
+            graphics/wayland-protocols \
+            lang/gcc \
+            x11-toolkits/wlroots \
+            x11/libxcb \
+            x11/libxkbcommon
+          cmake -B build/ -Dconfig_WERROR=ON
+          cmake --build build/
+          ctest --test-dir build/ --build-run-dir build/ -V
