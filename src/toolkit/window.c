@@ -1546,6 +1546,8 @@ void test_maximize(bs_test_t *test_ptr)
 
     // Window must be mapped to get maximized: Need workspace dimensions.
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
 
     // Set up initial organic size, and verify.
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 20, 10, 200, 100);
@@ -1633,6 +1635,8 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     wlmtk_window_set_server_side_decorated(fw_ptr->window_ptr, true);
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
 
     BS_TEST_VERIFY_TRUE(test_ptr, fw_ptr->fake_content_ptr->activated);
     BS_TEST_VERIFY_EQ(
