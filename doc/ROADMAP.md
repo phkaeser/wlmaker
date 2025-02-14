@@ -27,7 +27,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Menu with submenus.
   * [done] Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
-  * When positioning the root menu, keep it entirely within the desktop area.
+  * [done] When positioning the root menu, keep it entirely within the desktop area.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.

@@ -402,6 +402,31 @@ struct wlr_box wlmtk_workspace_get_maximize_extents(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_confine_within(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr)
+{
+    // Only act if the window belongs to this workspace.
+    if (workspace_ptr != wlmtk_window_get_workspace(window_ptr)) return;
+
+    struct wlr_box box = wlmtk_workspace_get_fullscreen_extents(workspace_ptr);
+
+    struct wlr_box elem_box = wlmtk_element_get_dimensions_box(
+        wlmtk_window_element(window_ptr));
+    int x, y;
+    wlmtk_element_get_position(wlmtk_window_element(window_ptr), &x, &y);
+
+
+    int max_x = x - elem_box.x + elem_box.width;
+    if (max_x > box.width) x -= max_x - box.width;
+
+    int max_y = y - elem_box.y + elem_box.height;
+    if (max_y > box.height) y -= max_y - box.height;
+
+    wlmtk_element_set_position(wlmtk_window_element(window_ptr), x, y);
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_box wlmtk_workspace_get_fullscreen_extents(
     wlmtk_workspace_t *workspace_ptr)
 {
