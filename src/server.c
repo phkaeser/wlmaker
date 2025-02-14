@@ -802,12 +802,14 @@ void _wlmaker_server_unclaimed_button_event_handler(
             wlmtk_root_get_current_workspace(server_ptr->root_ptr),
             server_ptr->env_ptr);
         if (NULL != server_ptr->root_menu_ptr) {
-            // TODO(kaeser@gubbe.ch): Keep the menu window's position entirely
-            // within the desktop area.
             wlmtk_window_set_position(
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr),
                 server_ptr->cursor_ptr->wlr_cursor_ptr->x,
                 server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+
+            wlmtk_workspace_confine_within(
+                wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+                wlmaker_root_menu_window(server_ptr->root_menu_ptr));
         }
     }
 }

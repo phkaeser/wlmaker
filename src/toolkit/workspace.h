@@ -125,6 +125,18 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
+ * Confines the window to remain entirely within workspace extents.
+ *
+ * A no-op if window_ptr is not mapped to workspace_ptr.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ */
+void wlmtk_workspace_confine_within(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr);
+
+/**
  * Enabled or disables the workspace.
  *
  * An enabled workspace can have keyboard focus and activated windows. When
