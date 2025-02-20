@@ -28,7 +28,7 @@ jobs:
             graphics/wayland \
             graphics/wayland-protocols \
             lang/gcc \
-            x11-toolkits/wlroots \
+            x11-toolkits/wlroots018 \
             x11/libxcb \
             x11/libxkbcommon
           cmake -B build/ -Dconfig_WERROR=ON
