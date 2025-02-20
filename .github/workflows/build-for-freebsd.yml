@@ -17,6 +17,7 @@ jobs:
         operating_system: freebsd
         version: '14.2'
         run: |
+          sudo sed -i '' 's/quarterly/latest/' /etc/pkg/FreeBSD.conf
           sudo pkg install -y \
             devel/bison \
             devel/cmake-core \
