@@ -56,6 +56,12 @@ typedef enum {
     WLMTK_MENU_MODE_RIGHTCLICK
 } wlmtk_menu_mode_t;
 
+/** Events of the menu item. */
+typedef struct {
+    /** The menu item was triggered, by a click or key action. */
+    struct wl_signal          triggered;
+} wlmtk_menu_item_events_t;
+
 /** Menu item style. */
 struct _wlmtk_menu_item_style_t {
     /** Fill style. */
@@ -92,6 +98,9 @@ struct _wlmtk_menu_item_t {
     wlmtk_element_vmt_t       orig_super_element_vmt;
     /** The menu item's virtual method table. */
     wlmtk_menu_item_vmt_t     vmt;
+
+    /** Event listeners. @see wlmtk_menu_item_events. */
+    wlmtk_menu_item_events_t  events;
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
@@ -154,6 +163,10 @@ wlmtk_menu_item_vmt_t wlmtk_menu_item_extend(
  * @param menu_item_ptr
  */
 void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
+
+/** Returns pointer to the menu item's @ref wlmtk_menu_item_t::events. */
+wlmtk_menu_item_events_t *wlmtk_menu_item_events(
+    wlmtk_menu_item_t *menu_item_ptr);
 
 /**
  * Sets the menu's mode for this item.

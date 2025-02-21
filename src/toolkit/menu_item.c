@@ -22,6 +22,7 @@
 
 #include "gfxbuf.h"
 #include "primitives.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 
@@ -80,6 +81,7 @@ bool wlmtk_menu_item_init(
 {
     memset(menu_item_ptr, 0, sizeof(wlmtk_menu_item_t));
     menu_item_ptr->style = *style_ptr;
+    wl_signal_init(&menu_item_ptr->events.triggered);
 
     if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
         wlmtk_menu_item_fini(menu_item_ptr);
@@ -124,6 +126,13 @@ void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
     wlr_buffer_drop_nullify(&menu_item_ptr->disabled_wlr_buffer_ptr);
 
     wlmtk_buffer_fini(&menu_item_ptr->super_buffer);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_item_events_t *wlmtk_menu_item_events(
+    wlmtk_menu_item_t *menu_item_ptr)
+{
+    return &menu_item_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -334,6 +343,7 @@ bool _wlmtk_menu_item_element_pointer_button(
         WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
         NULL != menu_item_ptr->vmt.clicked) {
         menu_item_ptr->vmt.clicked(menu_item_ptr);
+        wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
         return true;
     }
 
@@ -344,6 +354,7 @@ bool _wlmtk_menu_item_element_pointer_button(
         WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
         NULL != menu_item_ptr->vmt.clicked) {
         menu_item_ptr->vmt.clicked(menu_item_ptr);
+        wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
         return true;
     }
 
@@ -448,7 +459,7 @@ void _wlmtk_fake_menu_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_buffers(bs_test_t *test_ptr);
 static void test_pointer(bs_test_t *test_ptr);
-static void test_clicked(bs_test_t *test_ptr);
+static void test_triggered(bs_test_t *test_ptr);
 static void test_right_click(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
@@ -457,7 +468,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     // Trixie when running as a github action.
     { 0, "buffers", test_buffers },
     { 1, "pointer", test_pointer },
-    { 1, "clicked", test_clicked },
+    { 1, "triggered", test_triggered },
     { 1, "right_click", test_right_click },
     { 0, NULL, NULL }
 };
@@ -582,10 +593,13 @@ void test_pointer(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Verifies desired clicks are passed to the handler. */
-void test_clicked(bs_test_t *test_ptr)
+void test_triggered(bs_test_t *test_ptr)
 {
     wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    wlmtk_util_test_listener_t tl;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_item_events(&fi_ptr->menu_item)->triggered, &tl);
     fi_ptr->menu_item.style = _wlmtk_menu_item_test_style;
     fi_ptr->menu_item.width = 80;
     wlmtk_menu_item_set_text(&fi_ptr->menu_item, "Menu item");
@@ -597,41 +611,51 @@ void test_clicked(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    wlmtk_util_clear_test_listener(&tl);
 
     // Pointer enters outside, click does not trigger.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Pointer enters again. Element disabled, will not trigger.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
     wlmtk_menu_item_set_enabled(&fi_ptr->menu_item, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Element enabled, triggers.
     wlmtk_menu_item_set_enabled(&fi_ptr->menu_item, true);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    wlmtk_util_clear_test_listener(&tl);
 
     // Right button: No trigger, but button claimed.
     b.button = BTN_RIGHT;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Left button, but not a CLICK event: No trigger.
     b.button = BTN_LEFT;
     b.type = WLMTK_BUTTON_DOWN;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Left button, a double-click event: No trigger.
     b.button = BTN_LEFT;
     b.type = WLMTK_BUTTON_DOUBLE_CLICK;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
+    wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_fake_menu_item_destroy(fi_ptr);
 }
 
@@ -641,6 +665,9 @@ void test_right_click(bs_test_t *test_ptr)
 {
     wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    wlmtk_util_test_listener_t tl;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_item_events(&fi_ptr->menu_item)->triggered, &tl);
     fi_ptr->menu_item.style = _wlmtk_menu_item_test_style;
     fi_ptr->menu_item.width = 80;
     wlmtk_menu_item_set_text(&fi_ptr->menu_item, "Menu item");
@@ -653,10 +680,13 @@ void test_right_click(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    wlmtk_util_clear_test_listener(&tl);
 
     // Pointer remains inside, button-up does not trigger..
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &bup));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Switch mode to right-click.
     wlmtk_menu_item_set_mode(&fi_ptr->menu_item, WLMTK_MENU_MODE_RIGHTCLICK);
@@ -665,17 +695,22 @@ void test_right_click(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Pointer remains inside, button-up triggers.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &bup));
     BS_TEST_VERIFY_TRUE(test_ptr, fi_ptr->clicked_called);
     fi_ptr->clicked_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    wlmtk_util_clear_test_listener(&tl);
 
     // Pointer leaves, button-up does not trigger.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_FALSE(test_ptr, fi_ptr->clicked_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
+    wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_fake_menu_item_destroy(fi_ptr);
 }
 
