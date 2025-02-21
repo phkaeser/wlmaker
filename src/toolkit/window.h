@@ -389,6 +389,8 @@ void wlmtk_window_menu_set_enabled(
  */
 wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr);
 
+wlmtk_popup_menu_t *wlmtk_window_menu_popup(wlmtk_window_t *window_ptr);
+
 /**
  * Returns the current position and size of the window.
  *

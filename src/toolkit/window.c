@@ -605,6 +605,13 @@ wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr)
     return wlmtk_popup_menu_menu(window_ptr->popup_menu_ptr);
 }
 
+// FIXME
+wlmtk_popup_menu_t *wlmtk_window_menu_popup(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->popup_menu_ptr;
+}
+
+
 /* ------------------------------------------------------------------------- */
 void wlmtk_window_request_move(wlmtk_window_t *window_ptr)
 {
