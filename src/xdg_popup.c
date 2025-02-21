@@ -183,9 +183,9 @@ void handle_new_popup(
 
     wlmtk_element_set_visible(
         wlmtk_popup_element(&new_popup_ptr->super_popup), true);
-    wlmtk_container_add_element(
-        &wlmaker_xdg_popup_ptr->super_popup.popup_container,
-        wlmtk_popup_element(&new_popup_ptr->super_popup));
+    wlmtk_popup_add_popup(
+        &wlmaker_xdg_popup_ptr->super_popup,
+        &new_popup_ptr->super_popup);
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
