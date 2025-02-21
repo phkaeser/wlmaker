@@ -27,23 +27,23 @@ struct _wlmaker_action_item_t {
     /** Superclass: a menu item. */
     wlmtk_menu_item_t         super_menu_item;
 
-    /** Action to trigger when clicked. */
+    /** Action to execute when triggered. */
     wlmaker_action_t          action;
     /** Back-link to @ref wlmaker_server_t, for executing the action. */
     wlmaker_server_t          *server_ptr;
+
+    /** Listener for @ref wlmtk_menu_item_events_t::triggered. */
+    struct wl_listener        triggered_listener;
 };
 
 static void _wlmaker_action_item_element_destroy(
     wlmtk_element_t *element_ptr);
-static void _wlmaker_action_item_clicked(
-    wlmtk_menu_item_t *menu_item_ptr);
+static void _wlmaker_action_item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
-/** Virtual method table for the action-triggering menu item. */
-static const wlmtk_menu_item_vmt_t _wlmaker_action_item_vmt = {
-    .clicked = _wlmaker_action_item_clicked
-};
 /** Virtual method table for the menu item's element superclass. */
 static const wlmtk_element_vmt_t _wlmaker_action_item_element_vmt = {
     .destroy = _wlmaker_action_item_element_destroy
@@ -72,9 +72,10 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
     }
-    wlmtk_menu_item_extend(
-        &action_item_ptr->super_menu_item,
-        &_wlmaker_action_item_vmt);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(&action_item_ptr->super_menu_item)->triggered,
+        &action_item_ptr->triggered_listener,
+        _wlmaker_action_item_handle_triggered);
     wlmtk_element_extend(
         wlmtk_menu_item_element(&action_item_ptr->super_menu_item),
         &_wlmaker_action_item_element_vmt);
@@ -115,6 +116,7 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
+    wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
     wlmtk_menu_item_fini(&action_item_ptr->super_menu_item);
     free(action_item_ptr);
 }
@@ -140,11 +142,13 @@ void _wlmaker_action_item_element_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_menu_item_vmt_t::clicked. Triggers the action. */
-void _wlmaker_action_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
+/** Handles @ref wlmtk_menu_item_events_t::triggered. Triggers the action */
+void _wlmaker_action_item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
-        menu_item_ptr, wlmaker_action_item_t, super_menu_item);
+        listener_ptr, wlmaker_action_item_t, triggered_listener);
 
     wlmaker_action_execute(
         action_item_ptr->server_ptr,

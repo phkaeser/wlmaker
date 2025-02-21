@@ -84,20 +84,12 @@ struct _wlmtk_menu_item_style_t {
     uint64_t                  width;
 };
 
-/** Virtual method table for the menu item. */
-struct _wlmtk_menu_item_vmt_t {
-    /** Abstract: Called when the menu item is clicked. */
-    void (*clicked)(wlmtk_menu_item_t *menu_item_ptr);
-};
-
 /** State of a menu item. */
 struct _wlmtk_menu_item_t {
     /** A menu item is a buffer. */
     wlmtk_buffer_t            super_buffer;
     /** The superclass' @ref wlmtk_element_t virtual method table. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-    /** The menu item's virtual method table. */
-    wlmtk_menu_item_vmt_t     vmt;
 
     /** Event listeners. @see wlmtk_menu_item_events. */
     wlmtk_menu_item_events_t  events;
@@ -144,18 +136,6 @@ bool wlmtk_menu_item_init(
     wlmtk_menu_item_t *menu_item_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
-
-/**
- * Extends the menu item's virtual methods.
- *
- * @param menu_item_ptr
- * @param menu_item_vmt_ptr
- *
- * @return The previous virtual method table.
- */
-wlmtk_menu_item_vmt_t wlmtk_menu_item_extend(
-    wlmtk_menu_item_t *menu_item_ptr,
-    const wlmtk_menu_item_vmt_t *menu_item_vmt_ptr);
 
 /**
  * Un-initializes the menu item.
@@ -212,10 +192,6 @@ wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
 typedef struct {
     /** State of the menu item. */
     wlmtk_menu_item_t         menu_item;
-    /** Original VMT. */
-    wlmtk_menu_item_vmt_t     orig_vmt;
-    /** Whether @ref wlmtk_menu_item_vmt_t::clicked was called. */
-    bool                      clicked_called;
 } wlmtk_fake_menu_item_t;
 
 /** Ctor for the fake menu item. */
