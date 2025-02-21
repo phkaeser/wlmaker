@@ -27,7 +27,10 @@
 
 static bool _wlmtk_menu_item_redraw(
     wlmtk_menu_item_t *menu_item_ptr);
-static void _wlmtk_menu_item_apply_state(wlmtk_menu_item_t *menu_item_ptr);
+static void _wlmtk_menu_item_set_state(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_item_state_t state);
+static void _wlmtk_menu_item_draw_state(wlmtk_menu_item_t *menu_item_ptr);
 static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
@@ -88,7 +91,7 @@ bool wlmtk_menu_item_init(
         &_wlmtk_menu_item_element_vmt);
 
     menu_item_ptr->enabled = true;
-    menu_item_ptr->state = WLMTK_MENU_ITEM_ENABLED;
+    _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
 
     wlmtk_element_set_visible(wlmtk_menu_item_element(menu_item_ptr), true);
     return true;
@@ -156,15 +159,19 @@ void wlmtk_menu_item_set_enabled(
 
     if (menu_item_ptr->enabled) {
         if (menu_item_ptr->super_buffer.super_element.pointer_inside) {
-            menu_item_ptr->state = WLMTK_MENU_ITEM_HIGHLIGHTED;
+            _wlmtk_menu_item_set_state(
+                menu_item_ptr,
+                WLMTK_MENU_ITEM_HIGHLIGHTED);
         } else {
-            menu_item_ptr->state = WLMTK_MENU_ITEM_ENABLED;
+            _wlmtk_menu_item_set_state(
+                menu_item_ptr,
+                WLMTK_MENU_ITEM_ENABLED);
         }
     } else {
-        menu_item_ptr->state = WLMTK_MENU_ITEM_DISABLED;
+        _wlmtk_menu_item_set_state(
+            menu_item_ptr,
+            WLMTK_MENU_ITEM_DISABLED);
     }
-
-    _wlmtk_menu_item_apply_state(menu_item_ptr);
 }
 
 /* -------------------------------------------------------------------------*/
@@ -215,13 +222,24 @@ bool _wlmtk_menu_item_redraw(wlmtk_menu_item_t *menu_item_ptr)
     wlr_buffer_drop_nullify(&menu_item_ptr->disabled_wlr_buffer_ptr);
     menu_item_ptr->disabled_wlr_buffer_ptr = d;
 
-    _wlmtk_menu_item_apply_state(menu_item_ptr);
+    _wlmtk_menu_item_draw_state(menu_item_ptr);
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
+/** Sets menu state: Sets the parent buffer's content accordingly. */
+void _wlmtk_menu_item_set_state(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_item_state_t state)
+{
+    if (menu_item_ptr->state == state) return;
+    menu_item_ptr->state = state;
+    _wlmtk_menu_item_draw_state(menu_item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Applies the state: Sets the parent buffer's content accordingly. */
-void _wlmtk_menu_item_apply_state(wlmtk_menu_item_t *menu_item_ptr)
+void _wlmtk_menu_item_draw_state(wlmtk_menu_item_t *menu_item_ptr)
 {
     switch (menu_item_ptr->state) {
     case WLMTK_MENU_ITEM_ENABLED:
@@ -343,9 +361,8 @@ void _wlmtk_menu_item_element_pointer_enter(
     menu_item_ptr->orig_super_element_vmt.pointer_enter(element_ptr);
 
     if (menu_item_ptr->enabled) {
-        menu_item_ptr->state = WLMTK_MENU_ITEM_HIGHLIGHTED;
+        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED);
     }
-    _wlmtk_menu_item_apply_state(menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -358,10 +375,9 @@ void _wlmtk_menu_item_element_pointer_leave(
     menu_item_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 
     if (menu_item_ptr->enabled) {
-        menu_item_ptr->state = WLMTK_MENU_ITEM_ENABLED;
+        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
     }
-    _wlmtk_menu_item_apply_state(menu_item_ptr);
-}
+ }
 
 /* == Fake menu item implementation ======================================== */
 
