@@ -17,6 +17,7 @@ jobs:
         operating_system: freebsd
         version: '14.2'
         run: |
+          sudo sed -i '' 's/quarterly/latest/' /etc/pkg/FreeBSD.conf
           sudo pkg install -y \
             devel/bison \
             devel/cmake-core \
@@ -27,7 +28,7 @@ jobs:
             graphics/wayland \
             graphics/wayland-protocols \
             lang/gcc \
-            x11-toolkits/wlroots \
+            x11-toolkits/wlroots018 \
             x11/libxcb \
             x11/libxkbcommon
           cmake -B build/ -Dconfig_WERROR=ON
