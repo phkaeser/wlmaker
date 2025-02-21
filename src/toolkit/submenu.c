@@ -96,7 +96,16 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
         &submenu_ptr->item2);
 
-    // FIXME: add new popup to parent wlmtk_popup_menu_popup(parent_pum_ptr);
+    wlmtk_popup_add_popup(
+        wlmtk_popup_menu_popup(parent_pum_ptr),
+        wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr));
+
+    wlmtk_element_set_visible(
+        wlmtk_popup_element(wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr)),
+        true);
+    wlmtk_element_set_position(
+        wlmtk_popup_element(wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr)),
+        150, 0);
 
     return submenu_ptr;
 }
