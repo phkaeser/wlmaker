@@ -81,6 +81,16 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_popup_add_popup(wlmtk_popup_t *popup_ptr,
+                           wlmtk_popup_t *further_popup_ptr)
+{
+    BS_ASSERT(!wlmtk_popup_element(further_popup_ptr)->parent_container_ptr);
+    wlmtk_container_add_element(
+        &popup_ptr->popup_container,
+        wlmtk_popup_element(further_popup_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_popup_element(wlmtk_popup_t *popup_ptr)
 {
     return &popup_ptr->super_container.super_element;
