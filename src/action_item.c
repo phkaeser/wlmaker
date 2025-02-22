@@ -24,30 +24,26 @@
 
 /** State of an action item that triggers a @ref wlmaker_action_t. */
 struct _wlmaker_action_item_t {
-    /** Superclass: a menu item. */
-    wlmtk_menu_item_t         super_menu_item;
+    /** Composed from a menu item. */
+    wlmtk_menu_item_t         *menu_item_ptr;
 
-    /** Action to trigger when clicked. */
+    /** Action to execute when triggered. */
     wlmaker_action_t          action;
     /** Back-link to @ref wlmaker_server_t, for executing the action. */
     wlmaker_server_t          *server_ptr;
+
+    /** Listener for @ref wlmtk_menu_item_events_t::triggered. */
+    struct wl_listener        triggered_listener;
+    /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
+    struct wl_listener        destroy_listener;
 };
 
-static void _wlmaker_action_item_element_destroy(
-    wlmtk_element_t *element_ptr);
-static void _wlmaker_action_item_clicked(
-    wlmtk_menu_item_t *menu_item_ptr);
-
-/* == Data ================================================================= */
-
-/** Virtual method table for the action-triggering menu item. */
-static const wlmtk_menu_item_vmt_t _wlmaker_action_item_vmt = {
-    .clicked = _wlmaker_action_item_clicked
-};
-/** Virtual method table for the menu item's element superclass. */
-static const wlmtk_element_vmt_t _wlmaker_action_item_element_vmt = {
-    .destroy = _wlmaker_action_item_element_destroy
-};
+static void _wlmaker_action_item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_action_item_handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -65,25 +61,21 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     action_item_ptr->action = action;
     action_item_ptr->server_ptr = server_ptr;
 
-    if (!wlmtk_menu_item_init(
-            &action_item_ptr->super_menu_item,
-            style_ptr,
-            env_ptr)) {
+    action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr, env_ptr);
+    if (NULL == action_item_ptr->menu_item_ptr) {
         wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
     }
-    wlmtk_menu_item_extend(
-        &action_item_ptr->super_menu_item,
-        &_wlmaker_action_item_vmt);
-    wlmtk_element_extend(
-        wlmtk_menu_item_element(&action_item_ptr->super_menu_item),
-        &_wlmaker_action_item_element_vmt);
-    // TODO(kaeser@gubbe.ch): Should not be required!
-    action_item_ptr->super_menu_item.width = style_ptr->width;
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(action_item_ptr->menu_item_ptr)->triggered,
+        &action_item_ptr->triggered_listener,
+        _wlmaker_action_item_handle_triggered);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(action_item_ptr->menu_item_ptr)->destroy,
+        &action_item_ptr->destroy_listener,
+        _wlmaker_action_item_handle_destroy);
 
-    if (!wlmtk_menu_item_set_text(
-            &action_item_ptr->super_menu_item,
-            text_ptr)) {
+    if (!wlmtk_menu_item_set_text(action_item_ptr->menu_item_ptr, text_ptr)) {
         wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
     }
@@ -115,7 +107,13 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
-    wlmtk_menu_item_fini(&action_item_ptr->super_menu_item);
+    if (NULL != action_item_ptr->menu_item_ptr) {
+        wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
+        wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
+
+        wlmtk_menu_item_destroy(action_item_ptr->menu_item_ptr);
+        action_item_ptr->menu_item_ptr = NULL;
+    }
     free(action_item_ptr);
 }
 
@@ -123,28 +121,19 @@ void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 wlmtk_menu_item_t *wlmaker_action_item_menu_item(
     wlmaker_action_item_t *action_item_ptr)
 {
-    return &action_item_ptr->super_menu_item;
+    return action_item_ptr->menu_item_ptr;
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::destroy. Routes to instance's dtor. */
-void _wlmaker_action_item_element_destroy(
-    wlmtk_element_t *element_ptr)
+/** Handles @ref wlmtk_menu_item_events_t::triggered. Triggers the action */
+void _wlmaker_action_item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_action_item_t,
-        super_menu_item.super_buffer.super_element);
-    wlmaker_action_item_destroy(action_item_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_menu_item_vmt_t::clicked. Triggers the action. */
-void _wlmaker_action_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
-{
-    wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
-        menu_item_ptr, wlmaker_action_item_t, super_menu_item);
+        listener_ptr, wlmaker_action_item_t, triggered_listener);
 
     wlmaker_action_execute(
         action_item_ptr->server_ptr,
@@ -155,14 +144,37 @@ void _wlmaker_action_item_clicked(wlmtk_menu_item_t *menu_item_ptr)
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_menu_item_events_t::destroy. Destroy the action item. */
+void _wlmaker_action_item_handle_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_action_item_t, destroy_listener);
+
+    // Clear the reference to the menu item. It is already being destroyed.
+    action_item_ptr->menu_item_ptr = NULL;
+    wlmaker_action_item_destroy(action_item_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void _wlmaker_action_item_test_create(bs_test_t *test_ptr);
+static void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 const bs_test_case_t          wlmaker_action_item_test_cases[] = {
     { 1, "create", _wlmaker_action_item_test_create },
+    { 1, "menu_dtor", _wlmaker_action_item_test_menu_dtor },
     { 0, NULL, NULL },
+};
+
+/** Test data: style for the menu item. */
+static const wlmtk_menu_style_t _wlmaker_action_item_menu_style = {};
+/** Test data: Descriptor for the action item used in tests. */
+static const wlmaker_action_item_desc_t _wlmaker_action_item_desc = {
+    "text", 42, 0
 };
 
 /* ------------------------------------------------------------------------- */
@@ -170,17 +182,40 @@ const bs_test_case_t          wlmaker_action_item_test_cases[] = {
 void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
 {
     wlmaker_action_item_t *ai_ptr = NULL;
-    wlmaker_action_item_desc_t desc = { "text", 42, 0 };
-    wlmtk_menu_item_style_t style = {};
     wlmaker_server_t server = {};
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmaker_action_item_create_from_desc(
-            &desc, &ai_ptr,  &style, &server, NULL));
-
+            &_wlmaker_action_item_desc,
+            &ai_ptr,
+            &_wlmaker_action_item_menu_style.item, &server,
+            NULL));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
     wlmaker_action_item_destroy(ai_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that dtors are called as deisred from the menu. */
+void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
+{
+    wlmtk_menu_t menu;
+    wlmaker_action_item_t *ai_ptr;
+    wlmaker_server_t server = {};
+
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_menu_init(&menu, &_wlmaker_action_item_menu_style, NULL));
+
+    ai_ptr = wlmaker_action_item_create_from_desc(
+        &_wlmaker_action_item_desc,
+        &ai_ptr,
+        &_wlmaker_action_item_menu_style.item, &server,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ai_ptr);
+    wlmtk_menu_add_item(&menu, wlmaker_action_item_menu_item(ai_ptr));
+
+    wlmtk_menu_fini(&menu);
 }
 
 /* == End of action_item.c ================================================= */
