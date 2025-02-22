@@ -107,8 +107,6 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
-    bs_log(BS_ERROR, "FIXME: destroy %p", action_item_ptr);
-
     if (NULL != action_item_ptr->menu_item_ptr) {
         wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
         wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
