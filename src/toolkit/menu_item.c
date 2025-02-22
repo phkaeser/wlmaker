@@ -121,6 +121,8 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
         1, sizeof(wlmtk_menu_item_t));
     if (NULL == menu_item_ptr) return NULL;
+    wl_signal_init(&menu_item_ptr->events.triggered);
+    wl_signal_init(&menu_item_ptr->events.destroy);
 
     if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
         wlmtk_menu_item_destroy(menu_item_ptr);
@@ -133,7 +135,6 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     menu_item_ptr->style = *style_ptr;
     // TODO(kaeser@gubbe.ch): Should not be required!
     menu_item_ptr->width = style_ptr->width;
-    wl_signal_init(&menu_item_ptr->events.triggered);
     menu_item_ptr->enabled = true;
     _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
 
@@ -145,6 +146,8 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
 /* -------------------------------------------------------------------------*/
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
+    wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
+
     if (NULL != menu_item_ptr->text_ptr) {
         free(menu_item_ptr->text_ptr);
         menu_item_ptr->text_ptr = NULL;

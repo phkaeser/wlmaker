@@ -34,9 +34,14 @@ struct _wlmaker_action_item_t {
 
     /** Listener for @ref wlmtk_menu_item_events_t::triggered. */
     struct wl_listener        triggered_listener;
+    /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
+    struct wl_listener        destroy_listener;
 };
 
 static void _wlmaker_action_item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_action_item_handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -65,6 +70,10 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         &wlmtk_menu_item_events(action_item_ptr->menu_item_ptr)->triggered,
         &action_item_ptr->triggered_listener,
         _wlmaker_action_item_handle_triggered);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(action_item_ptr->menu_item_ptr)->destroy,
+        &action_item_ptr->destroy_listener,
+        _wlmaker_action_item_handle_destroy);
 
     if (!wlmtk_menu_item_set_text(action_item_ptr->menu_item_ptr, text_ptr)) {
         wlmaker_action_item_destroy(action_item_ptr);
@@ -98,8 +107,12 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
-    wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
+    bs_log(BS_ERROR, "FIXME: destroy %p", action_item_ptr);
+
     if (NULL != action_item_ptr->menu_item_ptr) {
+        wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
+        wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
+
         wlmtk_menu_item_destroy(action_item_ptr->menu_item_ptr);
         action_item_ptr->menu_item_ptr = NULL;
     }
@@ -133,14 +146,37 @@ void _wlmaker_action_item_handle_triggered(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_menu_item_events_t::destroy. Destroy the action item. */
+void _wlmaker_action_item_handle_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_action_item_t *action_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_action_item_t, destroy_listener);
+
+    // Clear the reference to the menu item. It is already being destroyed.
+    action_item_ptr->menu_item_ptr = NULL;
+    wlmaker_action_item_destroy(action_item_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void _wlmaker_action_item_test_create(bs_test_t *test_ptr);
+static void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 const bs_test_case_t          wlmaker_action_item_test_cases[] = {
     { 1, "create", _wlmaker_action_item_test_create },
+    { 1, "menu_dtor", _wlmaker_action_item_test_menu_dtor },
     { 0, NULL, NULL },
+};
+
+/** Test data: style for the menu item. */
+static const wlmtk_menu_style_t _wlmaker_action_item_menu_style = {};
+/** Test data: Descriptor for the action item used in tests. */
+static const wlmaker_action_item_desc_t _wlmaker_action_item_desc = {
+    "text", 42, 0
 };
 
 /* ------------------------------------------------------------------------- */
@@ -148,17 +184,40 @@ const bs_test_case_t          wlmaker_action_item_test_cases[] = {
 void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
 {
     wlmaker_action_item_t *ai_ptr = NULL;
-    wlmaker_action_item_desc_t desc = { "text", 42, 0 };
-    wlmtk_menu_item_style_t style = {};
     wlmaker_server_t server = {};
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmaker_action_item_create_from_desc(
-            &desc, &ai_ptr,  &style, &server, NULL));
-
+            &_wlmaker_action_item_desc,
+            &ai_ptr,
+            &_wlmaker_action_item_menu_style.item, &server,
+            NULL));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
     wlmaker_action_item_destroy(ai_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that dtors are called as deisred from the menu. */
+void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
+{
+    wlmtk_menu_t menu;
+    wlmaker_action_item_t *ai_ptr;
+    wlmaker_server_t server = {};
+
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_menu_init(&menu, &_wlmaker_action_item_menu_style, NULL));
+
+    ai_ptr = wlmaker_action_item_create_from_desc(
+        &_wlmaker_action_item_desc,
+        &ai_ptr,
+        &_wlmaker_action_item_menu_style.item, &server,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ai_ptr);
+    wlmtk_menu_add_item(&menu, wlmaker_action_item_menu_item(ai_ptr));
+
+    wlmtk_menu_fini(&menu);
 }
 
 /* == End of action_item.c ================================================= */

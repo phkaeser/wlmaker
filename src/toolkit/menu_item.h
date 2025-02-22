@@ -60,6 +60,8 @@ typedef enum {
 typedef struct {
     /** The menu item was triggered, by a click or key action. */
     struct wl_signal          triggered;
+    /** The menu item is being destroyed. */
+    struct wl_signal          destroy;
 } wlmtk_menu_item_events_t;
 
 /** Menu item style. */
