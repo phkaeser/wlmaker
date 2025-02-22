@@ -122,29 +122,6 @@ struct _wlmtk_menu_item_t {
 };
 
 /**
- * Initializes the menu item.
- *
- * Note: Menu items are created as visible elements.
- *
- * @param menu_item_ptr
- * @param style_ptr
- * @param env_ptr
- *
- * @return true iff the initialization succeeded.
- */
-bool wlmtk_menu_item_init(
-    wlmtk_menu_item_t *menu_item_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
-
-/**
- * Un-initializes the menu item.
- *
- * @param menu_item_ptr
- */
-void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
-
-/**
  * Creates a menu item.
  *
  * Note: Menu items are created as 'visible' elements.
