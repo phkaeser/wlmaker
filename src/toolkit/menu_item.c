@@ -43,6 +43,8 @@ static void _wlmtk_menu_item_element_pointer_enter(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_menu_item_element_pointer_leave(
     wlmtk_element_t *element_ptr);
+static void _wlmtk_menu_item_element_destroy(
+    wlmtk_element_t *element_ptr);
 
 /* == Data ================================================================= */
 
@@ -51,6 +53,7 @@ static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
     .pointer_button = _wlmtk_menu_item_element_pointer_button,
     .pointer_enter = _wlmtk_menu_item_element_pointer_enter,
     .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
+    .destroy = _wlmtk_menu_item_element_destroy,
 };
 
 /** Style definition used for unit tests. */
@@ -72,6 +75,30 @@ static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
 };
 
 /* == Exported methods ===================================================== */
+
+/* -------------------------------------------------------------------------*/
+wlmtk_menu_item_t *wlmtk_menu_item_create(
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_env_t *env_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
+        1, sizeof(wlmtk_menu_item_t));
+    if (NULL == menu_item_ptr) return NULL;
+
+    if (!wlmtk_menu_item_init(menu_item_ptr, style_ptr, env_ptr)) {
+        wlmtk_menu_item_destroy(menu_item_ptr);
+        return NULL;
+    }
+
+    return menu_item_ptr;
+}
+
+/* -------------------------------------------------------------------------*/
+void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
+{
+    wlmtk_menu_item_fini(menu_item_ptr);
+    free(menu_item_ptr);
+}
 
 /* -------------------------------------------------------------------------*/
 bool wlmtk_menu_item_init(
@@ -370,54 +397,17 @@ void _wlmtk_menu_item_element_pointer_leave(
     if (menu_item_ptr->enabled) {
         _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
     }
- }
-
-/* == Fake menu item implementation ======================================== */
-
-static void _wlmtk_fake_menu_item_element_destroy(
-    wlmtk_element_t *element_ptr);
-
-/** Virtual method table for the fake menu item's element superclass. */
-static const wlmtk_element_vmt_t _wlmtk_fake_menu_item_element_vmt = {
-    .destroy = _wlmtk_fake_menu_item_element_destroy
-};
-
-/* ------------------------------------------------------------------------- */
-wlmtk_fake_menu_item_t *wlmtk_fake_menu_item_create(void)
-{
-    wlmtk_fake_menu_item_t *fake_menu_item_ptr = logged_calloc(
-        1, sizeof(wlmtk_fake_menu_item_t));
-    if (NULL == fake_menu_item_ptr) return NULL;
-
-    if (!wlmtk_menu_item_init(
-            &fake_menu_item_ptr->menu_item,
-            &_wlmtk_menu_item_test_style,
-            NULL)) {
-        wlmtk_fake_menu_item_destroy(fake_menu_item_ptr);
-        return NULL;
-    }
-    wlmtk_element_extend(
-        wlmtk_menu_item_element(&fake_menu_item_ptr->menu_item),
-        &_wlmtk_fake_menu_item_element_vmt);
-
-    return fake_menu_item_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_fake_menu_item_destroy(wlmtk_fake_menu_item_t *fake_menu_item_ptr)
+/** Implements @ref wlmtk_element_vmt_t::destroy. Dtor for the menu item. */
+void _wlmtk_menu_item_element_destroy(
+    wlmtk_element_t *element_ptr)
 {
-    wlmtk_menu_item_fini(&fake_menu_item_ptr->menu_item);
-    free(fake_menu_item_ptr);
-}
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
 
-/* ------------------------------------------------------------------------- */
-/** Dtor: Implements @ref wlmtk_element_vmt_t::destroy. */
-void _wlmtk_fake_menu_item_element_destroy(wlmtk_element_t *element_ptr)
-{
-    wlmtk_fake_menu_item_t *fake_menu_item_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_fake_menu_item_t,
-        menu_item.super_buffer.super_element);
-    wlmtk_fake_menu_item_destroy(fake_menu_item_ptr);
+    wlmtk_menu_item_destroy(menu_item_ptr);
 }
 
 /* == Unit tests =========================================================== */
@@ -561,15 +551,16 @@ void test_pointer(bs_test_t *test_ptr)
 /** Verifies desired clicks are passed to the handler. */
 void test_triggered(bs_test_t *test_ptr)
 {
-    wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
-        &wlmtk_menu_item_events(&fi_ptr->menu_item)->triggered, &tl);
-    fi_ptr->menu_item.style = _wlmtk_menu_item_test_style;
-    fi_ptr->menu_item.width = 80;
-    wlmtk_menu_item_set_text(&fi_ptr->menu_item, "Menu item");
-    wlmtk_element_t *e = wlmtk_menu_item_element(&fi_ptr->menu_item);
+        &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
+    item_ptr->style = _wlmtk_menu_item_test_style;
+    item_ptr->width = 80;
+    wlmtk_menu_item_set_text(item_ptr, "Menu item");
+    wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
     // Pointer enters to highlight, the click triggers the handler.
@@ -585,12 +576,12 @@ void test_triggered(bs_test_t *test_ptr)
 
     // Pointer enters again. Element disabled, will not trigger.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
-    wlmtk_menu_item_set_enabled(&fi_ptr->menu_item, false);
+    wlmtk_menu_item_set_enabled(item_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Element enabled, triggers.
-    wlmtk_menu_item_set_enabled(&fi_ptr->menu_item, true);
+    wlmtk_menu_item_set_enabled(item_ptr, true);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
     wlmtk_util_clear_test_listener(&tl);
@@ -613,22 +604,23 @@ void test_triggered(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     wlmtk_util_disconnect_test_listener(&tl);
-    wlmtk_fake_menu_item_destroy(fi_ptr);
+    wlmtk_menu_item_destroy(item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests button events in right-click mode. */
 void test_right_click(bs_test_t *test_ptr)
 {
-    wlmtk_fake_menu_item_t *fi_ptr = wlmtk_fake_menu_item_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fi_ptr);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
-        &wlmtk_menu_item_events(&fi_ptr->menu_item)->triggered, &tl);
-    fi_ptr->menu_item.style = _wlmtk_menu_item_test_style;
-    fi_ptr->menu_item.width = 80;
-    wlmtk_menu_item_set_text(&fi_ptr->menu_item, "Menu item");
-    wlmtk_element_t *e = wlmtk_menu_item_element(&fi_ptr->menu_item);
+        &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
+    item_ptr->style = _wlmtk_menu_item_test_style;
+    item_ptr->width = 80;
+    wlmtk_menu_item_set_text(item_ptr, "Menu item");
+    wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
     wlmtk_button_event_t bup = { .button = BTN_RIGHT, .type = WLMTK_BUTTON_UP };
 
@@ -643,7 +635,7 @@ void test_right_click(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Switch mode to right-click.
-    wlmtk_menu_item_set_mode(&fi_ptr->menu_item, WLMTK_MENU_MODE_RIGHTCLICK);
+    wlmtk_menu_item_set_mode(item_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
 
     // Pointer remains inside, click is ignored.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
@@ -661,7 +653,7 @@ void test_right_click(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     wlmtk_util_disconnect_test_listener(&tl);
-    wlmtk_fake_menu_item_destroy(fi_ptr);
+    wlmtk_menu_item_destroy(item_ptr);
 }
 
 /* == End of menu_item.c =================================================== */

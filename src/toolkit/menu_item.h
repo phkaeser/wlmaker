@@ -144,6 +144,27 @@ bool wlmtk_menu_item_init(
  */
 void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
 
+/**
+ * Creates a menu item.
+ *
+ * Note: Menu items are created as 'visible' elements.
+ *
+ * @param style_ptr
+ * @param env_ptr
+ *
+ * @return Pointer to the menu item state, or NULL on failure.
+ */
+wlmtk_menu_item_t *wlmtk_menu_item_create(
+    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the menu item.
+ *
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
+
 /** Returns pointer to the menu item's @ref wlmtk_menu_item_t::events. */
 wlmtk_menu_item_events_t *wlmtk_menu_item_events(
     wlmtk_menu_item_t *menu_item_ptr);
