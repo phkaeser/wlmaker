@@ -84,43 +84,6 @@ struct _wlmtk_menu_item_style_t {
     uint64_t                  width;
 };
 
-/** State of a menu item. */
-struct _wlmtk_menu_item_t {
-    /** A menu item is a buffer. */
-    wlmtk_buffer_t            super_buffer;
-    /** The superclass' @ref wlmtk_element_t virtual method table. */
-    wlmtk_element_vmt_t       orig_super_element_vmt;
-
-    /** Event listeners. @see wlmtk_menu_item_events. */
-    wlmtk_menu_item_events_t  events;
-
-    /** List node, within @ref wlmtk_menu_t::items. */
-    bs_dllist_node_t          dlnode;
-
-    /** Text to be shown for the menu item. */
-    char                      *text_ptr;
-    /** Width of the item element, in pixels. */
-    int                       width;
-    /** Mode of the menu (and the item). */
-    wlmtk_menu_mode_t         mode;
-
-    /** Texture buffer holding the item in enabled state. */
-    struct wlr_buffer         *enabled_wlr_buffer_ptr;
-    /** Texture buffer holding the item in highlighted state. */
-    struct wlr_buffer         *highlighted_wlr_buffer_ptr;
-    /** Texture buffer holding the item in disabled state. */
-    struct wlr_buffer         *disabled_wlr_buffer_ptr;
-
-    /** Whether the item is enabled. */
-    bool                      enabled;
-
-    /** State of the menu item. */
-    wlmtk_menu_item_state_t   state;
-
-    /** Style of the menu item. */
-    wlmtk_menu_item_style_t   style;
-};
-
 /**
  * Creates a menu item.
  *
@@ -156,6 +119,10 @@ void wlmtk_menu_item_set_mode(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_mode_t mode);
 
+/** @return the mode of this item. */
+wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
+    wlmtk_menu_item_t *menu_item_ptr);
+
 /**
  * Sets or updates the text for the menu item.
  *
@@ -185,17 +152,6 @@ wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Returns a pointer to the superclass @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
-
-/** Fake menu item, useful for unit tests. */
-typedef struct {
-    /** State of the menu item. */
-    wlmtk_menu_item_t         menu_item;
-} wlmtk_fake_menu_item_t;
-
-/** Ctor for the fake menu item. */
-wlmtk_fake_menu_item_t *wlmtk_fake_menu_item_create(void);
-/** Dtor for the fake menu item. */
-void wlmtk_fake_menu_item_destroy(wlmtk_fake_menu_item_t *fake_menu_item_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_item_test_cases[];

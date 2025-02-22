@@ -180,21 +180,39 @@ void test_set_mode(bs_test_t *test_ptr)
     wlmtk_menu_add_item(&menu, item1_ptr);
 
     // Setting the mode must propagate.
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_NORMAL, item1_ptr->mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_item_get_mode(item1_ptr));
     wlmtk_menu_set_mode(&menu, WLMTK_MENU_MODE_RIGHTCLICK);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_RIGHTCLICK, item1_ptr->mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_RIGHTCLICK,
+        wlmtk_menu_item_get_mode(item1_ptr));
 
     // A new item must get the mode applied.
     wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(&s.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item2_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_NORMAL, item2_ptr->mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_item_get_mode(item2_ptr));
     wlmtk_menu_add_item(&menu, item2_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_RIGHTCLICK, item2_ptr->mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_RIGHTCLICK,
+        wlmtk_menu_item_get_mode(item2_ptr));
 
     // Setting the mode must propagate to all.
     wlmtk_menu_set_mode(&menu, WLMTK_MENU_MODE_NORMAL);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_NORMAL, item1_ptr->mode);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_MODE_NORMAL, item2_ptr->mode);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_item_get_mode(item1_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_item_get_mode(item2_ptr));
 
     wlmtk_menu_fini(&menu);
 }

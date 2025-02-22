@@ -26,6 +26,43 @@
 
 /* == Declarations ========================================================= */
 
+/** State of a menu item. */
+struct _wlmtk_menu_item_t {
+    /** A menu item is a buffer. */
+    wlmtk_buffer_t            super_buffer;
+    /** The superclass' @ref wlmtk_element_t virtual method table. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
+
+    /** Event listeners. @see wlmtk_menu_item_events. */
+    wlmtk_menu_item_events_t  events;
+
+    /** List node, within @ref wlmtk_menu_t::items. */
+    bs_dllist_node_t          dlnode;
+
+    /** Text to be shown for the menu item. */
+    char                      *text_ptr;
+    /** Width of the item element, in pixels. */
+    int                       width;
+    /** Mode of the menu (and the item). */
+    wlmtk_menu_mode_t         mode;
+
+    /** Texture buffer holding the item in enabled state. */
+    struct wlr_buffer         *enabled_wlr_buffer_ptr;
+    /** Texture buffer holding the item in highlighted state. */
+    struct wlr_buffer         *highlighted_wlr_buffer_ptr;
+    /** Texture buffer holding the item in disabled state. */
+    struct wlr_buffer         *disabled_wlr_buffer_ptr;
+
+    /** Whether the item is enabled. */
+    bool                      enabled;
+
+    /** State of the menu item. */
+    wlmtk_menu_item_state_t   state;
+
+    /** Style of the menu item. */
+    wlmtk_menu_item_style_t   style;
+};
+
 static bool _wlmtk_menu_item_redraw(
     wlmtk_menu_item_t *menu_item_ptr);
 static void _wlmtk_menu_item_set_state(
@@ -94,6 +131,8 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
         &_wlmtk_menu_item_element_vmt);
 
     menu_item_ptr->style = *style_ptr;
+    // TODO(kaeser@gubbe.ch): Should not be required!
+    menu_item_ptr->width = style_ptr->width;
     wl_signal_init(&menu_item_ptr->events.triggered);
     menu_item_ptr->enabled = true;
     _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
@@ -132,6 +171,13 @@ void wlmtk_menu_item_set_mode(
     wlmtk_menu_mode_t mode)
 {
     menu_item_ptr->mode = mode;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
+    wlmtk_menu_item_t *menu_item_ptr)
+{
+    return menu_item_ptr->mode;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -599,6 +645,11 @@ void test_right_click(bs_test_t *test_ptr)
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
     wlmtk_button_event_t bup = { .button = BTN_RIGHT, .type = WLMTK_BUTTON_UP };
 
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_item_get_mode(item_ptr));
+
     // Pointer enters to highlight, click triggers.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
@@ -611,6 +662,10 @@ void test_right_click(bs_test_t *test_ptr)
 
     // Switch mode to right-click.
     wlmtk_menu_item_set_mode(item_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_RIGHTCLICK,
+        wlmtk_menu_item_get_mode(item_ptr));
 
     // Pointer remains inside, click is ignored.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));

@@ -65,8 +65,6 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         &wlmtk_menu_item_events(action_item_ptr->menu_item_ptr)->triggered,
         &action_item_ptr->triggered_listener,
         _wlmaker_action_item_handle_triggered);
-    // TODO(kaeser@gubbe.ch): Should not be required!
-    action_item_ptr->menu_item_ptr->width = style_ptr->width;
 
     if (!wlmtk_menu_item_set_text(action_item_ptr->menu_item_ptr, text_ptr)) {
         wlmaker_action_item_destroy(action_item_ptr);
