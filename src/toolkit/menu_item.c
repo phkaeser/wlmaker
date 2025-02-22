@@ -46,30 +46,6 @@ static void _wlmtk_menu_item_element_pointer_leave(
 static void _wlmtk_menu_item_element_destroy(
     wlmtk_element_t *element_ptr);
 
-/**
- * Initializes the menu item.
- *
- * Note: Menu items are created as visible elements.
- *
- * @param menu_item_ptr
- * @param style_ptr
- * @param env_ptr
- *
- * @return true iff the initialization succeeded.
- */
-static bool wlmtk_menu_item_init(
-    wlmtk_menu_item_t *menu_item_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
-
-/**
- * Un-initializes the menu item.
- *
- * @param menu_item_ptr
- */
-static void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr);
-
-
 /* == Data ================================================================= */
 
 /** Virtual method table for the menu item's super class: Element. */
@@ -109,49 +85,26 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
         1, sizeof(wlmtk_menu_item_t));
     if (NULL == menu_item_ptr) return NULL;
 
-    if (!wlmtk_menu_item_init(menu_item_ptr, style_ptr, env_ptr)) {
+    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
         wlmtk_menu_item_destroy(menu_item_ptr);
         return NULL;
     }
+    menu_item_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &menu_item_ptr->super_buffer.super_element,
+        &_wlmtk_menu_item_element_vmt);
+
+    menu_item_ptr->style = *style_ptr;
+    wl_signal_init(&menu_item_ptr->events.triggered);
+    menu_item_ptr->enabled = true;
+    _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
+
+    wlmtk_element_set_visible(wlmtk_menu_item_element(menu_item_ptr), true);
 
     return menu_item_ptr;
 }
 
 /* -------------------------------------------------------------------------*/
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
-{
-    wlmtk_menu_item_fini(menu_item_ptr);
-    free(menu_item_ptr);
-}
-
-/* -------------------------------------------------------------------------*/
-bool wlmtk_menu_item_init(
-    wlmtk_menu_item_t *menu_item_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
-    wlmtk_env_t *env_ptr)
-{
-    memset(menu_item_ptr, 0, sizeof(wlmtk_menu_item_t));
-    menu_item_ptr->style = *style_ptr;
-    wl_signal_init(&menu_item_ptr->events.triggered);
-
-    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
-        wlmtk_menu_item_fini(menu_item_ptr);
-        return false;
-    }
-
-    menu_item_ptr->orig_super_element_vmt = wlmtk_element_extend(
-        &menu_item_ptr->super_buffer.super_element,
-        &_wlmtk_menu_item_element_vmt);
-
-    menu_item_ptr->enabled = true;
-    _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
-
-    wlmtk_element_set_visible(wlmtk_menu_item_element(menu_item_ptr), true);
-    return true;
-}
-
-/* -------------------------------------------------------------------------*/
-void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
 {
     if (NULL != menu_item_ptr->text_ptr) {
         free(menu_item_ptr->text_ptr);
@@ -163,6 +116,7 @@ void wlmtk_menu_item_fini(wlmtk_menu_item_t *menu_item_ptr)
     wlr_buffer_drop_nullify(&menu_item_ptr->disabled_wlr_buffer_ptr);
 
     wlmtk_buffer_fini(&menu_item_ptr->super_buffer);
+    free(menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -436,14 +390,14 @@ void _wlmtk_menu_item_element_destroy(
 
 /* == Unit tests =========================================================== */
 
-static void test_init_fini(bs_test_t *test_ptr);
+static void test_create_destroy(bs_test_t *test_ptr);
 static void test_buffers(bs_test_t *test_ptr);
 static void test_pointer(bs_test_t *test_ptr);
 static void test_triggered(bs_test_t *test_ptr);
 static void test_right_click(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
-    { 1, "init_fini", test_init_fini },
+    { 1, "create_destroy", test_create_destroy },
     // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why these fail on
     // Trixie when running as a github action.
     { 0, "buffers", test_buffers },
@@ -455,120 +409,117 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
 
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown and a few accessors. */
-void test_init_fini(bs_test_t *test_ptr)
+void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_item_test_style, NULL);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
-    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(&item);
-    BS_TEST_VERIFY_EQ(test_ptr, dlnode_ptr, &item.dlnode);
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(item_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, dlnode_ptr, &item_ptr->dlnode);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        &item,
+        item_ptr,
         wlmtk_menu_item_from_dlnode(dlnode_ptr));
 
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        &item.super_buffer.super_element,
-        wlmtk_menu_item_element(&item));
+        &item_ptr->super_buffer.super_element,
+        wlmtk_menu_item_element(item_ptr));
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_item_set_text(&item, "Text"));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_item_set_text(item_ptr, "Text"));
 
-    wlmtk_menu_item_fini(&item);
+    wlmtk_menu_item_destroy(item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Exercises drawing. */
 void test_buffers(bs_test_t *test_ptr)
 {
-    wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_item_test_style, NULL);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
-    item.width = 80;
-    wlmtk_menu_item_set_text(&item, "Menu item");
+    item_ptr->width = 80;
+    wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
     bs_gfxbuf_t *g;
 
-    g = bs_gfxbuf_from_wlr_buffer(item.enabled_wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->enabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, g, "toolkit/menu_item_enabled.png");
 
-    g = bs_gfxbuf_from_wlr_buffer(item.highlighted_wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->highlighted_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, g, "toolkit/menu_item_highlighted.png");
 
-    g = bs_gfxbuf_from_wlr_buffer(item.disabled_wlr_buffer_ptr);
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->disabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, g, "toolkit/menu_item_disabled.png");
 
-    wlmtk_menu_item_fini(&item);
+    wlmtk_menu_item_destroy(item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests pointer entering & leaving. */
 void test_pointer(bs_test_t *test_ptr)
 {
-    wlmtk_menu_item_t item;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmtk_menu_item_init(&item, &_wlmtk_menu_item_test_style, NULL));
-    wlmtk_element_t *e = wlmtk_menu_item_element(&item);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_item_test_style, NULL);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
+    wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
-    item.style = _wlmtk_menu_item_test_style;
-    item.width = 80;
-    wlmtk_menu_item_set_text(&item, "Menu item");
+    item_ptr->style = _wlmtk_menu_item_test_style;
+    item_ptr->width = 80;
+    wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
     // Initial state: enabled.
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item.state);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item_ptr->state);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        item.super_buffer.wlr_buffer_ptr,
-        item.enabled_wlr_buffer_ptr);
+        item_ptr->super_buffer.wlr_buffer_ptr,
+        item_ptr->enabled_wlr_buffer_ptr);
 
     // Click event. Not passed, since not highlighted.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Disable it, verify texture and state.
-    wlmtk_menu_item_set_enabled(&item, false);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item.state);
+    wlmtk_menu_item_set_enabled(item_ptr, false);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item_ptr->state);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        item.super_buffer.wlr_buffer_ptr,
-        item.disabled_wlr_buffer_ptr);
+        item_ptr->super_buffer.wlr_buffer_ptr,
+        item_ptr->disabled_wlr_buffer_ptr);
 
     // Pointer enters the item, but remains disabled.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item.state);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item_ptr->state);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        item.super_buffer.wlr_buffer_ptr,
-        item.disabled_wlr_buffer_ptr);
+        item_ptr->super_buffer.wlr_buffer_ptr,
+        item_ptr->disabled_wlr_buffer_ptr);
 
     // When enabled, will be highlighted since pointer is inside.
-    wlmtk_menu_item_set_enabled(&item, true);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, item.state);
+    wlmtk_menu_item_set_enabled(item_ptr, true);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, item_ptr->state);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        item.super_buffer.wlr_buffer_ptr,
-        item.highlighted_wlr_buffer_ptr);
+        item_ptr->super_buffer.wlr_buffer_ptr,
+        item_ptr->highlighted_wlr_buffer_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Pointer moves outside: disabled.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 2));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item.state);
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item_ptr->state);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        item.super_buffer.wlr_buffer_ptr,
-        item.enabled_wlr_buffer_ptr);
+        item_ptr->super_buffer.wlr_buffer_ptr,
+        item_ptr->enabled_wlr_buffer_ptr);
 
-    wlmtk_menu_item_fini(&item);
+    wlmtk_menu_item_destroy(item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
