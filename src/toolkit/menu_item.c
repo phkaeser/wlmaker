@@ -121,6 +121,7 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
         1, sizeof(wlmtk_menu_item_t));
     if (NULL == menu_item_ptr) return NULL;
+    wl_signal_init(&menu_item_ptr->events.state_changed);
     wl_signal_init(&menu_item_ptr->events.triggered);
     wl_signal_init(&menu_item_ptr->events.destroy);
 
@@ -137,6 +138,7 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     menu_item_ptr->width = style_ptr->width;
     menu_item_ptr->enabled = true;
     _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
+    _wlmtk_menu_item_redraw(menu_item_ptr);
 
     wlmtk_element_set_visible(wlmtk_menu_item_element(menu_item_ptr), true);
 
@@ -181,6 +183,13 @@ wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
     wlmtk_menu_item_t *menu_item_ptr)
 {
     return menu_item_ptr->mode;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_item_state_t wlmtk_menu_item_get_state(
+    wlmtk_menu_item_t *menu_item_ptr)
+{
+    return menu_item_ptr->state;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -284,6 +293,7 @@ void _wlmtk_menu_item_set_state(
     if (menu_item_ptr->state == state) return;
     menu_item_ptr->state = state;
     _wlmtk_menu_item_draw_state(menu_item_ptr);
+    wl_signal_emit(&menu_item_ptr->events.state_changed, menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -519,13 +529,19 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
+    wlmtk_util_test_listener_t tl;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_item_events(item_ptr)->state_changed, &tl);
 
     item_ptr->style = _wlmtk_menu_item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
     // Initial state: enabled.
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_ENABLED,
+        wlmtk_menu_item_get_state(item_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
@@ -536,38 +552,58 @@ void test_pointer(bs_test_t *test_ptr)
 
     // Disable it, verify texture and state.
     wlmtk_menu_item_set_enabled(item_ptr, false);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_DISABLED,
+        wlmtk_menu_item_get_state(item_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->disabled_wlr_buffer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, item_ptr, tl.last_data_ptr);
+    wlmtk_util_clear_test_listener(&tl);
 
     // Pointer enters the item, but remains disabled.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_DISABLED, item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_DISABLED,
+        wlmtk_menu_item_get_state(item_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->disabled_wlr_buffer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // When enabled, will be highlighted since pointer is inside.
     wlmtk_menu_item_set_enabled(item_ptr, true);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(item_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->highlighted_wlr_buffer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    wlmtk_util_clear_test_listener(&tl);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Pointer moves outside: disabled.
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 2));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_MENU_ITEM_ENABLED, item_ptr->state);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_ENABLED,
+        wlmtk_menu_item_get_state(item_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->enabled_wlr_buffer_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
 
+    wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_menu_item_destroy(item_ptr);
 }
 

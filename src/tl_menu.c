@@ -148,6 +148,19 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
         &tl_menu_ptr->window_state_changed_listener,
         window_ptr);
 
+    if (false) {
+        // TODO(kaeser@gubbe.ch): Move to appropriate place.
+        wlmtk_submenu_t *submenu_ptr = wlmtk_submenu_create(
+            &server_ptr->style.menu,
+            server_ptr->env_ptr,
+            wlmtk_window_menu_popup(window_ptr));
+        if (NULL != submenu_ptr) {
+            wlmtk_menu_add_item(
+                tl_menu_ptr->menu_ptr,
+                wlmtk_submenu_menu_item(submenu_ptr));
+        }
+    }
+
     return tl_menu_ptr;
 }
 
