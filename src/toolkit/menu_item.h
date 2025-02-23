@@ -58,6 +58,8 @@ typedef enum {
 
 /** Events of the menu item. */
 typedef struct {
+    /** Signal is raised whenever the state has changed. */
+    struct wl_signal          state_changed;
     /** The menu item was triggered, by a click or key action. */
     struct wl_signal          triggered;
     /** The menu item is being destroyed. */
@@ -123,6 +125,10 @@ void wlmtk_menu_item_set_mode(
 
 /** @return the mode of this item. */
 wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
+    wlmtk_menu_item_t *menu_item_ptr);
+
+/** @return The state of the item, @ref wlmtk_menu_item_t::state. */
+wlmtk_menu_item_state_t wlmtk_menu_item_get_state(
     wlmtk_menu_item_t *menu_item_ptr);
 
 /**
