@@ -36,16 +36,11 @@ struct _wlmtk_submenu_t {
 
     /** Listener for @ref wlmtk_menu_item_events_t::state_changed. */
     struct wl_listener        state_changed_listener;
-    /** Listener for @ref wlmtk_menu_item_events_t::triggered. */
-    struct wl_listener        triggered_listener;
     /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
     struct wl_listener        destroy_listener;
 };
 
 static void _wlmtk_submenu_handle_state_changed(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void _wlmtk_submenu_handle_triggered(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmtk_submenu_handle_destroy(
@@ -75,10 +70,6 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->state_changed,
         &submenu_ptr->state_changed_listener,
         _wlmtk_submenu_handle_state_changed);
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->triggered,
-        &submenu_ptr->triggered_listener,
-        _wlmtk_submenu_handle_triggered);
     wlmtk_util_connect_listener_signal(
         &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->destroy,
         &submenu_ptr->destroy_listener,
@@ -140,7 +131,6 @@ void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr)
 
     if (NULL == submenu_ptr->menu_item_ptr) {
         wlmtk_util_disconnect_listener(&submenu_ptr->destroy_listener);
-        wlmtk_util_disconnect_listener(&submenu_ptr->triggered_listener);
         wlmtk_util_disconnect_listener(&submenu_ptr->state_changed_listener);
 
         wlmtk_menu_item_destroy(submenu_ptr->menu_item_ptr);
@@ -189,18 +179,6 @@ void _wlmtk_submenu_handle_state_changed(
         wlmtk_element_set_visible(popup_element_ptr, false);
         break;
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Handles @ref wlmtk_menu_item_events_t::triggered. Triggers the action */
-void _wlmtk_submenu_handle_triggered(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_submenu_t, triggered_listener);
-
-    bs_log(BS_ERROR, "FIXME: Clicked: %p", submenu_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
