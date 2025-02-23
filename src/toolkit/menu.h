@@ -82,6 +82,25 @@ bool wlmtk_menu_init(
 void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
 
 /**
+ * Creates a menu.
+ *
+ * @param style_ptr
+ * @param env_ptr
+ *
+ * @return Pointer to the menu state or NULL on error.
+ */
+wlmtk_menu_t *wlmtk_menu_create(
+    const wlmtk_menu_style_t *style_ptr,
+    wlmtk_env_t *env_ptr);
+
+/**
+ * Destroys the menu.
+ *
+ * @param menu_ptr
+ */
+void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
+
+/**
  * Sets the mode of the menu.
  *
  * @param menu_ptr
