@@ -255,6 +255,95 @@ class LayerShell {
 Panel *-- LayerShell
 ```
 
+
+### Thoughts on windows, popups and menus
+
+* Window: is a toplevel element (parent: workspace), may have decorations,
+  and toplevel interactions (eg. close, maximize, ...).
+  -> it's "body element" can be a surface, a menu (others? a legal info box?).
+  => XDG and XWM toplevels correspond to a window.
+     a "body element" may want to add a popup to the "parent"
+
+
+
+* Popup: is child to a window or to another popup.
+  -> it's body element can be a surface, a menu (others?)
+     a "body element" may want to add a popup to the "parent"
+  -> has a parent. Type of parent? a "pane" ? a "base" ?
+  -> a popup *may* have partial decoration
+
+* Menu: Can be the body of a window (root menu) or a popup (window menu).
+  Is a submenu a popup to the menu or to the parent of the menu?
+  (pro "to the menu": interactions are simpler (?)
+   pro "to the parent": consistency <-- that's what it should be)
+
+* Menu on right-click mode:
+  - Will remain open until click is outside the menu
+  - item remains highlighted *if pointer is on* OR *corresponding popup is open*
+
+* there is common functionality between popup and window. eg. both can have
+  further popups. Both have a child element. Have a common class from which
+  both derive? or is "window" an extension to "popup" ?
+
+Should "pane" be a pure virtual, or an instantiable class?
+* an XDG popup: composed of a pane that wraps the surface, with the XDG sugar.
+* an XWL popup: composed of a pane that wraps the surface, with XWL sugar.
+* a menu popup: composed of a pane that wraps the menu box.
+=> surface_pane and menu_pane?  (no functional difference?)
+   (this is overlapping with current 'content'; but popup holds only 'element'.
+    but, root menu should be a window
+
+
+Window:
+* request_fullscreen
+  -> For surfaces, send async to clients. Needs specific implementation.
+  -> For menu: ignore. Should be flagged as "not supported"
+* request_maximized
+  -> For surfaces, send async to clients. Needs specific implementation.
+  -> For menu: ignore. Should be flagged as "not supported"
+* request_size
+  -> async call to content element to adjust size. For surfaces, will async
+     send this to clients. (XWL, XDG) => needs specific implementation.
+  -> For menu: ignore. Should be flagged as "not supported"
+* request_close: request the content to close; will close the window.
+  Needs specific implementation.
+  -> for surfaces: relay back to the client.
+  -> For menu: close the menu.
+* set_activated: activates (kb focus)
+  -> for surfaces: relay back to the client.
+  -> for menu: update representation (local call).
+
+Popup
+* request_size: should be supported
+* request_close: request just that window or popup to disappear (?)
+* set_activated: activates (kb focus)
+
+#### Menu
+* pane: hold multiple popups, hold a child element.
+* window: holds a "pane", decorations, link to workspace, ...
+* popup: a pane, link to parent pane.
+
+a window menu: when desiring to create a child menu
+* the menu is an element to a pane. it looks up that pane.
+* creates a new popup (pane?) and adds it to the parent pane.
+
+a root menu: when desiring to create a child menu..
+* the menu is an element to a pane. it looks up that pane.
+* creates a new popup (pane?) and adds it to the parent pane.
+
+the popup menu is closed
+* it is closed when a click goes outside the popup menu (and outside
+  any of it's sub menus. But, these are part of the pane?)
+* it should know what parent item it was created for. signal there.
+
+=> The menu *is* an implementation of the pane. It can extend it's handlers.
+   it is a pane that (internally) holds a box, which holds menu items.
+=> the menu can close once the pointer is no longer in any child element,
+   of both pane and popup (panes).
+
+#### A window or popup surface
+* a pane that holds a surface as element.
+
 ### Pending work
 
 * Separate the "map" method into "attach_to_node" and "set_visible". Elements
