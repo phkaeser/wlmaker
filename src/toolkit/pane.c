@@ -84,6 +84,14 @@ void wlmtk_pane_add_popup(wlmtk_pane_t *pane_ptr, wlmtk_pane_t *popup_ptr)
         wlmtk_pane_element(popup_ptr));
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_pane_remove_popup(wlmtk_pane_t *pane_ptr, wlmtk_pane_t *popup_ptr)
+{
+    wlmtk_container_remove_element(
+        &pane_ptr->popup_container,
+        wlmtk_pane_element(popup_ptr));
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);

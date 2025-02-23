@@ -52,6 +52,8 @@ static void _wlmtk_menu_set_item_mode(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
+static void _wlmtk_menu_element_destroy(
+    wlmtk_element_t *element_ptr);
 static bool _wlmtk_menu_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -60,6 +62,7 @@ static bool _wlmtk_menu_element_pointer_button(
 
 /** The superclass' element virtual method table. */
 static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
+    .destroy = _wlmtk_menu_element_destroy,
     .pointer_button = _wlmtk_menu_element_pointer_button
 };
 
@@ -100,14 +103,14 @@ wlmtk_menu_t *wlmtk_menu_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 {
-    wlmtk_pane_fini(&menu_ptr->super_pane);
-
+    // Must destroy the items before the pane and box.
     bs_dllist_for_each(
         &menu_ptr->items,
         _wlmtk_menu_eliminate_item,
         menu_ptr);
-    wlmtk_box_fini(&menu_ptr->box);
 
+    wlmtk_pane_fini(&menu_ptr->super_pane);
+    wlmtk_box_fini(&menu_ptr->box);
     free(menu_ptr);
 }
 
@@ -194,6 +197,17 @@ void _wlmtk_menu_set_item_mode(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Wraps to dtor. Implements @ref wlmtk_element_vmt_t::destroy. */
+void _wlmtk_menu_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
+
+    wlmtk_menu_destroy(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * If the menu is in right-click mode, acts on right-button events and signals
  * the menu to close.
@@ -210,9 +224,7 @@ bool _wlmtk_menu_element_pointer_button(
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
-        element_ptr,
-        wlmtk_menu_t,
-        super_pane.super_container.super_element);
+        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
 
     bool rv = menu_ptr->orig_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
