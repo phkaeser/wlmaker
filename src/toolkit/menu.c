@@ -24,6 +24,27 @@
 
 /* == Declarations ========================================================= */
 
+/** State of the menu. */
+struct _wlmtk_menu_t {
+    /** Instantiates a @ref wlmtk_pane_t. */
+    wlmtk_pane_t              super_pane;
+
+    /** Composed of a box, holding menu items. */
+    wlmtk_box_t               box;
+    /** Style of the menu. */
+    wlmtk_menu_style_t        style;
+
+    /** Signals that can be raised by the menu. */
+    wlmtk_menu_events_t       events;
+    /** Virtual method table of the parent, before extending. */
+    wlmtk_element_vmt_t       orig_element_vmt;
+
+    /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
+    bs_dllist_t               items;
+    /** Current mode of the menu. */
+    wlmtk_menu_mode_t         mode;
+};
+
 static void _wlmtk_menu_eliminate_item(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -45,12 +66,12 @@ static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_menu_init(
-    wlmtk_menu_t *menu_ptr,
+wlmtk_menu_t *wlmtk_menu_create(
     const wlmtk_menu_style_t *style_ptr,
     wlmtk_env_t *env_ptr)
 {
-    memset(menu_ptr, 0, sizeof(wlmtk_menu_t));
+    wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
+    if (NULL == menu_ptr) return NULL;
     menu_ptr->style = *style_ptr;
 
     if (!wlmtk_box_init(
@@ -58,26 +79,26 @@ bool wlmtk_menu_init(
             env_ptr,
             WLMTK_BOX_VERTICAL,
             &menu_ptr->style.margin)) {
-        wlmtk_menu_fini(menu_ptr);
-        return false;
+        wlmtk_menu_destroy(menu_ptr);
+        return NULL;
     }
 
     if (!wlmtk_pane_init(
             &menu_ptr->super_pane,
             wlmtk_box_element(&menu_ptr->box),
             env_ptr)) {
-        wlmtk_menu_fini(menu_ptr);
-        return false;
+        wlmtk_menu_destroy(menu_ptr);
+        return NULL;
     }
     menu_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
 
     wl_signal_init(&menu_ptr->events.request_close);
-    return true;
+    return menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
+void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 {
     wlmtk_pane_fini(&menu_ptr->super_pane);
 
@@ -86,29 +107,20 @@ void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr)
         _wlmtk_menu_eliminate_item,
         menu_ptr);
     wlmtk_box_fini(&menu_ptr->box);
-}
 
-/* ------------------------------------------------------------------------- */
-wlmtk_menu_t *wlmtk_menu_create(
-    const wlmtk_menu_style_t *style_ptr,
-    wlmtk_env_t *env_ptr)
-{
-    wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
-    if (NULL == menu_ptr) return NULL;
-
-    if (!wlmtk_menu_init(menu_ptr, style_ptr, env_ptr)) {
-        wlmtk_menu_destroy(menu_ptr);
-        return NULL;
-    }
-
-    return menu_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
-{
-    wlmtk_menu_fini(menu_ptr);
     free(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
+{
+    return wlmtk_pane_element(&menu_ptr->super_pane);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr)
+{
+    return &menu_ptr->super_pane;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -127,18 +139,6 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
         &menu_ptr->items,
         _wlmtk_menu_set_item_mode,
         menu_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
-{
-    return wlmtk_pane_element(&menu_ptr->super_pane);
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr)
-{
-    return &menu_ptr->super_pane;
 }
 
 /* ------------------------------------------------------------------------- */

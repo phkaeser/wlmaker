@@ -110,6 +110,7 @@ void test_init_fini(bs_test_t *test_ptr)
         wlmtk_pane_element(&pane));
 
     wlmtk_pane_fini(&pane);
+    wlmtk_element_destroy(&fe->element);
 }
 
 /* == End of pane.c ======================================================== */

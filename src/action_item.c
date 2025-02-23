@@ -199,13 +199,12 @@ void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
 /** Tests that dtors are called as deisred from the menu. */
 void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t menu;
+    wlmtk_menu_t *menu_ptr;
     wlmaker_action_item_t *ai_ptr;
     wlmaker_server_t server = {};
 
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmtk_menu_init(&menu, &_wlmaker_action_item_menu_style, NULL));
+    menu_ptr = wlmtk_menu_create(&_wlmaker_action_item_menu_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     ai_ptr = wlmaker_action_item_create_from_desc(
         &_wlmaker_action_item_desc,
@@ -213,9 +212,9 @@ void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
         &_wlmaker_action_item_menu_style.item, &server,
         NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ai_ptr);
-    wlmtk_menu_add_item(&menu, wlmaker_action_item_menu_item(ai_ptr));
+    wlmtk_menu_add_item(menu_ptr, wlmaker_action_item_menu_item(ai_ptr));
 
-    wlmtk_menu_fini(&menu);
+    wlmtk_menu_destroy(menu_ptr);
 }
 
 /* == End of action_item.c ================================================= */
