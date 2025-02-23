@@ -34,8 +34,9 @@ extern "C" {
 /**
  * Creates a submenu: A menu item that opens a sub-menu, in a separate popup.
  *
- * @apram style_ptr
- * @poaram env_ptr
+ * @param style_ptr
+ * @param env_ptr
+ * @param parent_pum_ptr
  *
  * @return State of the submenu.
  */
@@ -51,8 +52,10 @@ wlmtk_submenu_t *wlmtk_submenu_create(
  */
 void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr);
 
+/** @return @ref wlmtk_submenu_t::popup_menu_ptr as menu. */
 wlmtk_menu_t *wlmtk_submenu_menu(wlmtk_submenu_t *submenu_ptr);
 
+/** @return @ref wlmtk_submenu_t::menu_item_ptr. */
 wlmtk_menu_item_t *wlmtk_submenu_menu_item(wlmtk_submenu_t *submenu_ptr);
 
 #ifdef __cplusplus

@@ -389,6 +389,11 @@ void wlmtk_window_menu_set_enabled(
  */
 wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr);
 
+/**
+ * @returns a pointer to the window menu as @ref wlmtk_popup_menu_t.
+ *
+ * TODO(kaeser@gubbe.ch): This method should be removed.
+ */
 wlmtk_popup_menu_t *wlmtk_window_menu_popup(wlmtk_window_t *window_ptr);
 
 /**

@@ -25,13 +25,16 @@
 
 /* == Declarations ========================================================= */
 
+/** State of submenu. */
 struct _wlmtk_submenu_t {
+    /** The menu item the submenu is anchored to. */
     wlmtk_menu_item_t         *menu_item_ptr;
-
+    /** The submenu, type popup_menu. */
     wlmtk_popup_menu_t        *popup_menu_ptr;
 
-
+    /** Temporary: Submenu item 1. */
     wlmtk_menu_item_t         *item1_ptr;
+    /** Temporary: Submenu item 2. */
     wlmtk_menu_item_t         *item2_ptr;
 
     /** Listener for @ref wlmtk_menu_item_events_t::state_changed. */
@@ -81,12 +84,12 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         return NULL;
     }
 
-
-    wlmtk_menu_item_set_text(submenu_ptr->menu_item_ptr, "FIXME");
+    // TODO(kaeser@gubbe.ch): Well, the contents should be configurable.
+    wlmtk_menu_item_set_text(submenu_ptr->menu_item_ptr, "Submenu test 1");
     submenu_ptr->item1_ptr = wlmtk_menu_item_create(&style_ptr->item, env_ptr);
     submenu_ptr->item2_ptr = wlmtk_menu_item_create(&style_ptr->item, env_ptr);
-    wlmtk_menu_item_set_text(submenu_ptr->item1_ptr, "FIXME: Item 1");
-    wlmtk_menu_item_set_text(submenu_ptr->item2_ptr, "FIXME: Item 2");
+    wlmtk_menu_item_set_text(submenu_ptr->item1_ptr, "submenu sub 1");
+    wlmtk_menu_item_set_text(submenu_ptr->item2_ptr, "submenu sub 2");
 
     wlmtk_menu_add_item(
         wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
