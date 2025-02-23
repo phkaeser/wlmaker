@@ -561,6 +561,7 @@ void test_pointer(bs_test_t *test_ptr)
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->disabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, item_ptr, tl.last_data_ptr);
     wlmtk_util_clear_test_listener(&tl);
 
     // Pointer enters the item, but remains disabled.
