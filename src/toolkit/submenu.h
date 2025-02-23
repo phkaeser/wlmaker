@@ -22,7 +22,7 @@
 
 #include "menu.h"
 #include "menu_item.h"
-#include "popup_menu.h"
+#include "pane.h"
 
 /** Forward declaration: State of the submenu. */
 typedef struct _wlmtk_submenu_t wlmtk_submenu_t;
@@ -36,14 +36,14 @@ extern "C" {
  *
  * @param style_ptr
  * @param env_ptr
- * @param parent_pum_ptr
+ * @param parent_pane_ptr
  *
  * @return State of the submenu.
  */
 wlmtk_submenu_t *wlmtk_submenu_create(
     const wlmtk_menu_style_t *style_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_popup_menu_t *parent_pum_ptr);
+    wlmtk_pane_t *parent_pane_ptr);
 
 /**
  * Destroys the submenu. Detaches the item from the parent, if still attached.
@@ -52,7 +52,7 @@ wlmtk_submenu_t *wlmtk_submenu_create(
  */
 void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr);
 
-/** @return @ref wlmtk_submenu_t::popup_menu_ptr as menu. */
+/** @return @ref wlmtk_submenu_t::sub_menu_ptr as menu. */
 wlmtk_menu_t *wlmtk_submenu_menu(wlmtk_submenu_t *submenu_ptr);
 
 /** @return @ref wlmtk_submenu_t::menu_item_ptr. */

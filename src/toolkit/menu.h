@@ -44,6 +44,12 @@ struct _wlmtk_menu_style_t {
     wlmtk_menu_item_style_t   item;
 };
 
+/** Events of the popup menu. */
+typedef struct {
+    /** Popup menu requests to be closed. */
+    struct wl_signal          request_close;
+} wlmtk_menu_events_t;
+
 /** State of the menu. */
 struct _wlmtk_menu_t {
     /** Instantiates a @ref wlmtk_pane_t. */
@@ -53,6 +59,11 @@ struct _wlmtk_menu_t {
     wlmtk_box_t               box;
     /** Style of the menu. */
     wlmtk_menu_style_t        style;
+
+    /** Signals that can be raised by the menu. */
+    wlmtk_menu_events_t       events;
+    /** Virtual method table of the parent, before extending. */
+    wlmtk_element_vmt_t       orig_element_vmt;
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
     bs_dllist_t               items;
@@ -100,6 +111,9 @@ wlmtk_menu_t *wlmtk_menu_create(
  */
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
 
+/** @return a pointer to @ref wlmtk_menu_t::events. */
+wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
+
 /**
  * Sets the mode of the menu.
  *
@@ -111,6 +125,9 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
 
 /** @return pointer to the menu's @ref wlmtk_element_t superclass. */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);
+
+/** @return pointer to the menu's @ref wlmtk_pane_t superclass. */
+wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.

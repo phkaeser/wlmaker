@@ -28,7 +28,6 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "content.h"
 #include "element.h"
 #include "menu.h"
-#include "popup_menu.h"
 #include "resizebar.h"
 #include "surface.h"
 #include "titlebar.h"
@@ -390,13 +389,6 @@ void wlmtk_window_menu_set_enabled(
 wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr);
 
 /**
- * @returns a pointer to the window menu as @ref wlmtk_popup_menu_t.
- *
- * TODO(kaeser@gubbe.ch): This method should be removed.
- */
-wlmtk_popup_menu_t *wlmtk_window_menu_popup(wlmtk_window_t *window_ptr);
-
-/**
  * Returns the current position and size of the window.
  *
  * @param window_ptr
@@ -479,7 +471,7 @@ typedef struct {
     /** Fake content, wraps the fake surface. */
     wlmtk_fake_content_t      *fake_content_ptr;
     /** Hack: Direct link to window popup menu. */
-    wlmtk_popup_menu_t        *popup_menu_ptr;
+    wlmtk_menu_t              *window_menu_ptr;
 
     /** Whether @ref wlmtk_window_request_minimize was called. */
     bool                      request_minimize_called;

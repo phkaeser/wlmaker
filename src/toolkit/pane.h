@@ -67,6 +67,9 @@ void wlmtk_pane_fini(wlmtk_pane_t *pane_ptr);
 /** @return Pointer to the superclass @ref wlmtk_element_t of the pane. */
 wlmtk_element_t *wlmtk_pane_element(wlmtk_pane_t *pane_ptr);
 
+/** Adds a popup (pane). */
+void wlmtk_pane_add_popup(wlmtk_pane_t *pane_ptr, wlmtk_pane_t *popup_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_pane_test_cases[];
 

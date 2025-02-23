@@ -76,6 +76,14 @@ wlmtk_element_t *wlmtk_pane_element(wlmtk_pane_t *pane_ptr)
     return &pane_ptr->super_container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_pane_add_popup(wlmtk_pane_t *pane_ptr, wlmtk_pane_t *popup_ptr)
+{
+    wlmtk_container_add_element(
+        &pane_ptr->popup_container,
+        wlmtk_pane_element(popup_ptr));
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);

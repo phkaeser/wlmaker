@@ -31,6 +31,17 @@ static void _wlmtk_menu_set_item_mode(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
+static bool _wlmtk_menu_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
+/* == Data ================================================================= */
+
+/** The superclass' element virtual method table. */
+static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
+    .pointer_button = _wlmtk_menu_element_pointer_button
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -58,7 +69,10 @@ bool wlmtk_menu_init(
         wlmtk_menu_fini(menu_ptr);
         return false;
     }
+    menu_ptr->orig_element_vmt = wlmtk_element_extend(
+        wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
 
+    wl_signal_init(&menu_ptr->events.request_close);
     return true;
 }
 
@@ -98,6 +112,12 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr)
+{
+    return &menu_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode)
 {
@@ -113,6 +133,12 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
 {
     return wlmtk_pane_element(&menu_ptr->super_pane);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr)
+{
+    return &menu_ptr->super_pane;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -165,6 +191,39 @@ void _wlmtk_menu_set_item_mode(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     wlmtk_menu_item_set_mode(
         wlmtk_menu_item_from_dlnode(dlnode_ptr),
         ((wlmtk_menu_t*)ud_ptr)->mode);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * If the menu is in right-click mode, acts on right-button events and signals
+ * the menu to close.
+ *
+ * Implementation of @ref wlmtk_element_vmt_t::pointer_button.
+ *
+ * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return whether the button event was claimed.
+ */
+bool _wlmtk_menu_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
+        element_ptr,
+        wlmtk_menu_t,
+        super_pane.super_container.super_element);
+
+    bool rv = menu_ptr->orig_element_vmt.pointer_button(
+        element_ptr, button_event_ptr);
+
+    if (WLMTK_MENU_MODE_RIGHTCLICK == menu_ptr->mode &&
+        BTN_RIGHT == button_event_ptr->button) {
+        wl_signal_emit(&menu_ptr->events.request_close, NULL);
+        rv = true;
+    }
+
+    return rv;
 }
 
 /* == Unit tests =========================================================== */

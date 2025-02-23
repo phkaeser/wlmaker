@@ -48,7 +48,6 @@
 #include "pane.h"
 #include "panel.h"
 #include "popup.h"
-#include "popup_menu.h"
 #include "rectangle.h"
 #include "resizebar.h"
 #include "resizebar_area.h"
