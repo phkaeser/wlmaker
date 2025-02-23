@@ -28,6 +28,7 @@ typedef struct _wlmtk_menu_style_t wlmtk_menu_style_t;
 #include "box.h"
 #include "env.h"
 #include "menu_item.h"
+#include "pane.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,8 +46,11 @@ struct _wlmtk_menu_style_t {
 
 /** State of the menu. */
 struct _wlmtk_menu_t {
-    /** Derived from box, holding menu items. */
-    wlmtk_box_t               super_box;
+    /** Instantiates a @ref wlmtk_pane_t. */
+    wlmtk_pane_t              super_pane;
+
+    /** Composed of a box, holding menu items. */
+    wlmtk_box_t               box;
     /** Style of the menu. */
     wlmtk_menu_style_t        style;
 

@@ -32,6 +32,7 @@ SET(PUBLIC_HEADER_FILES
   lock.h
   menu.h
   menu_item.h
+  pane.h
   panel.h
   popup.h
   popup_menu.h
@@ -71,6 +72,7 @@ TARGET_SOURCES(toolkit PRIVATE
   lock.c
   menu.c
   menu_item.c
+  pane.c
   panel.c
   popup.c
   popup_menu.c

@@ -45,6 +45,7 @@
 #include "lock.h"
 #include "menu.h"
 #include "menu_item.h"
+#include "pane.h"
 #include "panel.h"
 #include "popup.h"
 #include "popup_menu.h"
