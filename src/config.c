@@ -558,6 +558,7 @@ void test_style_file(bs_test_t *test_ptr)
         wlmcfg_decode_dict(
             dict_ptr, wlmaker_config_style_desc, &config_style));
     wlmcfg_dict_unref(dict_ptr);
+    free(config_style.cursor.name_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
