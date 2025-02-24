@@ -170,7 +170,9 @@ void _wlmtk_submenu_handle_state_changed(
     case WLMTK_MENU_ITEM_ENABLED:
     case WLMTK_MENU_ITEM_DISABLED:
     default:
-        wlmtk_element_set_visible(popup_element_ptr, false);
+        if (!popup_element_ptr->pointer_inside) {
+            wlmtk_element_set_visible(popup_element_ptr, false);
+        }
         break;
     }
 }
