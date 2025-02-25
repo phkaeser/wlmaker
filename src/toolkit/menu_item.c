@@ -36,6 +36,9 @@ struct _wlmtk_menu_item_t {
     /** Event listeners. @see wlmtk_menu_item_events. */
     wlmtk_menu_item_events_t  events;
 
+    /** Link to the menu the item belongs to. Can be NULL. */
+    wlmtk_menu_t              *menu_ptr;
+
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
 
@@ -168,6 +171,14 @@ wlmtk_menu_item_events_t *wlmtk_menu_item_events(
     wlmtk_menu_item_t *menu_item_ptr)
 {
     return &menu_item_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_item_set_parent_menu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *menu_ptr)
+{
+    menu_item_ptr->menu_ptr = menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -523,9 +534,15 @@ void test_buffers(bs_test_t *test_ptr)
 /** Tests pointer entering & leaving. */
 void test_pointer(bs_test_t *test_ptr)
 {
+    wlmtk_menu_style_t s = {};
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
         &_wlmtk_menu_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
+    wlmtk_menu_add_item(menu_ptr, item_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, menu_ptr, item_ptr->menu_ptr);
+
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
@@ -604,7 +621,10 @@ void test_pointer(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
 
     wlmtk_util_disconnect_test_listener(&tl);
+    wlmtk_menu_remove_item(menu_ptr, item_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, item_ptr->menu_ptr);
     wlmtk_menu_item_destroy(item_ptr);
+    wlmtk_menu_destroy(menu_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

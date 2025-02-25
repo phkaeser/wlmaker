@@ -155,12 +155,14 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
         &menu_ptr->box,
         wlmtk_menu_item_element(menu_item_ptr));
     wlmtk_menu_item_set_mode(menu_item_ptr, menu_ptr->mode);
+    wlmtk_menu_item_set_parent_menu(menu_item_ptr, menu_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr)
 {
+    wlmtk_menu_item_set_parent_menu(menu_item_ptr, NULL);
     wlmtk_box_remove_element(
         &menu_ptr->box,
         wlmtk_menu_item_element(menu_item_ptr));
