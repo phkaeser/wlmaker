@@ -227,10 +227,11 @@ void wlmtk_menu_item_set_enabled(
     menu_item_ptr->enabled = enabled;
 
     if (menu_item_ptr->enabled) {
-        if (menu_item_ptr->super_buffer.super_element.pointer_inside) {
-            _wlmtk_menu_item_set_state(
-                menu_item_ptr,
-                WLMTK_MENU_ITEM_HIGHLIGHTED);
+        if (menu_item_ptr->menu_ptr &&
+            wlmtk_menu_item_element(menu_item_ptr)->pointer_inside) {
+            wlmtk_menu_request_item_highlight(
+                menu_item_ptr->menu_ptr,
+                menu_item_ptr);
         } else {
             _wlmtk_menu_item_set_state(
                 menu_item_ptr,
@@ -248,22 +249,12 @@ bool wlmtk_menu_item_set_highlighted(
     wlmtk_menu_item_t *menu_item_ptr,
     bool highlighted)
 {
-    if (!highlighted) {
-        if (WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
-            _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
-        }
-        return true;
-    }
+    if (!menu_item_ptr->enabled) return false;
 
-    switch (menu_item_ptr->state) {
-    case WLMTK_MENU_ITEM_DISABLED:
-        return false;
-
-    case WLMTK_MENU_ITEM_ENABLED:
+    if (highlighted) {
         _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED);
-        break;
-    case WLMTK_MENU_ITEM_HIGHLIGHTED:
-        break;
+    } else {
+        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
     }
     return true;
 }
