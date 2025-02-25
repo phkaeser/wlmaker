@@ -103,6 +103,16 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
 void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr);
 
+/**
+ * Requests that menu_item_ptr be highlighted.
+ *
+ * @param menu_ptr
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_request_item_highlight(
+    wlmtk_menu_t *menu_ptr,
+    wlmtk_menu_item_t *menu_item_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_test_cases[];
 

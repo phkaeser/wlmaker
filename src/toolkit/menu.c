@@ -41,6 +41,8 @@ struct _wlmtk_menu_t {
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
     bs_dllist_t               items;
+    /** The currently-highlighted menu item, or NULL if none. */
+    wlmtk_menu_item_t         *highlighted_menu_item_ptr;
     /** Current mode of the menu. */
     wlmtk_menu_mode_t         mode;
 };
@@ -162,6 +164,9 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
 void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr)
 {
+    if (menu_ptr->highlighted_menu_item_ptr == menu_item_ptr) {
+        menu_ptr->highlighted_menu_item_ptr = NULL;
+    }
     wlmtk_menu_item_set_parent_menu(menu_item_ptr, NULL);
     wlmtk_box_remove_element(
         &menu_ptr->box,
@@ -169,6 +174,25 @@ void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
     bs_dllist_remove(
         &menu_ptr->items,
         wlmtk_dlnode_from_menu_item(menu_item_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_request_item_highlight(
+    wlmtk_menu_t *menu_ptr,
+    wlmtk_menu_item_t *menu_item_ptr)
+{
+    if (menu_ptr->highlighted_menu_item_ptr == menu_item_ptr) return;
+
+    if (NULL != menu_ptr->highlighted_menu_item_ptr) {
+        wlmtk_menu_item_set_highlighted(
+            menu_ptr->highlighted_menu_item_ptr, false);
+        menu_ptr->highlighted_menu_item_ptr = NULL;
+    }
+
+    if (NULL != menu_item_ptr &&
+        wlmtk_menu_item_set_highlighted(menu_item_ptr, true)) {
+        menu_ptr->highlighted_menu_item_ptr = menu_item_ptr;
+    }
 }
 
 /* == Local (static) methods =============================================== */

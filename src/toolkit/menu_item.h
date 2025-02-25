@@ -165,6 +165,18 @@ void wlmtk_menu_item_set_enabled(
     wlmtk_menu_item_t *menu_item_ptr,
     bool enabled);
 
+/**
+ * Sets the menu item as highlighted.
+ *
+ * @param menu_item_ptr
+ * @param highlighted
+ *
+ * @return false if the menu was not enabled, ie. could not be highlighted.
+ */
+bool wlmtk_menu_item_set_highlighted(
+    wlmtk_menu_item_t *menu_item_ptr,
+    bool highlighted);
+
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr);

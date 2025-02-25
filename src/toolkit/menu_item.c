@@ -244,6 +244,31 @@ void wlmtk_menu_item_set_enabled(
 }
 
 /* -------------------------------------------------------------------------*/
+bool wlmtk_menu_item_set_highlighted(
+    wlmtk_menu_item_t *menu_item_ptr,
+    bool highlighted)
+{
+    if (!highlighted) {
+        if (WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+            _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
+        }
+        return true;
+    }
+
+    switch (menu_item_ptr->state) {
+    case WLMTK_MENU_ITEM_DISABLED:
+        return false;
+
+    case WLMTK_MENU_ITEM_ENABLED:
+        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED);
+        break;
+    case WLMTK_MENU_ITEM_HIGHLIGHTED:
+        break;
+    }
+    return true;
+}
+
+/* -------------------------------------------------------------------------*/
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr)
 {
@@ -397,11 +422,12 @@ bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
 
-    // Normal mode and a left click when highlighted: Trigger it!
+    // Normal mode and a left click in the area when enabled: Trigger it!
     if (WLMTK_MENU_MODE_NORMAL == menu_item_ptr->mode &&
         BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_CLICK == button_event_ptr->type &&
-        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+        WLMTK_MENU_ITEM_DISABLED != menu_item_ptr->state &&
+        wlmtk_menu_item_element(menu_item_ptr)->pointer_inside) {
         wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
         return true;
     }
@@ -410,7 +436,8 @@ bool _wlmtk_menu_item_element_pointer_button(
     if (WLMTK_MENU_MODE_RIGHTCLICK == menu_item_ptr->mode &&
         BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_UP == button_event_ptr->type &&
-        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+        WLMTK_MENU_ITEM_DISABLED != menu_item_ptr->state &&
+        wlmtk_menu_item_element(menu_item_ptr)->pointer_inside) {
         wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
         return true;
     }
@@ -428,8 +455,10 @@ void _wlmtk_menu_item_element_pointer_enter(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
     menu_item_ptr->orig_super_element_vmt.pointer_enter(element_ptr);
 
-    if (menu_item_ptr->enabled) {
-        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED);
+    if (menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
     }
 }
 
