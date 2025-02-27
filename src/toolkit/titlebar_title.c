@@ -24,7 +24,6 @@
 #include "gfxbuf.h"
 #include "primitives.h"
 #include "window.h"
-#include "popup_menu.h"
 
 #include <wlr/version.h>
 #define WLR_USE_UNSTABLE
@@ -401,9 +400,7 @@ void test_title(bs_test_t *test_ptr)
     wlmtk_window_set_activated(fake_window_ptr->window_ptr, true);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_popup_element(
-            wlmtk_popup_menu_popup(
-                fake_window_ptr->popup_menu_ptr))->visible);
+        wlmtk_menu_element(fake_window_ptr->window_menu_ptr)->visible);
     button.button = BTN_RIGHT;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -411,9 +408,7 @@ void test_title(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_move_called);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_popup_element(
-            wlmtk_popup_menu_popup(
-                fake_window_ptr->popup_menu_ptr))->visible);
+        wlmtk_menu_element(fake_window_ptr->window_menu_ptr)->visible);
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_fake_window_destroy(fake_window_ptr);

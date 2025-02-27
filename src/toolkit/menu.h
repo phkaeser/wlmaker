@@ -22,60 +22,59 @@
 
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
-/** Forward declaration: Menu style. */
-typedef struct _wlmtk_menu_style_t wlmtk_menu_style_t;
 
 #include "box.h"
 #include "env.h"
 #include "menu_item.h"
+#include "pane.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 /** Style definition for the menu. */
-struct _wlmtk_menu_style_t {
+typedef struct  {
     /** Margin. */
     wlmtk_margin_style_t      margin;
     /** Border. */
     wlmtk_margin_style_t      border;
     /** Item's style. */
     wlmtk_menu_item_style_t   item;
-};
+} wlmtk_menu_style_t;
 
-/** State of the menu. */
-struct _wlmtk_menu_t {
-    /** Derived from box, holding menu items. */
-    wlmtk_box_t               super_box;
-    /** Style of the menu. */
-    wlmtk_menu_style_t        style;
-
-    /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
-    bs_dllist_t               items;
-    /** Current mode of the menu. */
-    wlmtk_menu_mode_t         mode;
-};
+/** Events of the popup menu. */
+typedef struct {
+    /** Popup menu requests to be closed. */
+    struct wl_signal          request_close;
+} wlmtk_menu_events_t;
 
 /**
- * Initializes the menu.
+ * Creates a menu.
  *
- * @param menu_ptr
  * @param style_ptr
  * @param env_ptr
  *
- * @return true on success.
+ * @return Pointer to the menu state or NULL on error.
  */
-bool wlmtk_menu_init(
-    wlmtk_menu_t *menu_ptr,
+wlmtk_menu_t *wlmtk_menu_create(
     const wlmtk_menu_style_t *style_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
- * Uninitializes the menu.
+ * Destroys the menu.
  *
  * @param menu_ptr
  */
-void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
+void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
+
+/** @return pointer to the menu's @ref wlmtk_element_t superclass. */
+wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);
+
+/** @return pointer to the menu's @ref wlmtk_pane_t superclass. */
+wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
+
+/** @return a pointer to @ref wlmtk_menu_t::events. */
+wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
 
 /**
  * Sets the mode of the menu.
@@ -85,9 +84,6 @@ void wlmtk_menu_fini(wlmtk_menu_t *menu_ptr);
  */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode);
-
-/** @return pointer to the menu's @ref wlmtk_element_t superclass. */
-wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.
@@ -106,6 +102,16 @@ void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
  */
 void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Requests that menu_item_ptr be highlighted.
+ *
+ * @param menu_ptr
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_request_item_highlight(
+    wlmtk_menu_t *menu_ptr,
+    wlmtk_menu_item_t *menu_item_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_test_cases[];

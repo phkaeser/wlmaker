@@ -34,7 +34,7 @@ struct _wlmaker_root_menu_t {
     /** The root menu's window content base instance. */
     wlmtk_content_t           content;
     /** The root menu base instance. */
-    wlmtk_menu_t              menu;
+    wlmtk_menu_t              *menu_ptr;
 
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
@@ -84,9 +84,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     root_menu_ptr->server_ptr = server_ptr;
     root_menu_ptr->server_ptr->root_menu_ptr = root_menu_ptr;
 
-    if (!wlmtk_menu_init(&root_menu_ptr->menu,
-                         menu_style_ptr,
-                         env_ptr)) {
+    root_menu_ptr->menu_ptr = wlmtk_menu_create(menu_style_ptr, env_ptr);
+    if (NULL == root_menu_ptr->menu_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
     }
@@ -110,13 +109,13 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
             return NULL;
         }
         wlmtk_menu_add_item(
-            &root_menu_ptr->menu,
+            root_menu_ptr->menu_ptr,
             wlmaker_action_item_menu_item(action_item_ptr));
     }
 
     if (!wlmtk_content_init(
             &root_menu_ptr->content,
-            wlmtk_menu_element(&root_menu_ptr->menu),
+            wlmtk_menu_element(root_menu_ptr->menu_ptr),
             env_ptr)) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
@@ -125,7 +124,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->content,
         &_wlmaker_root_menu_content_vmt);
     struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_menu_element(&root_menu_ptr->menu));
+        wlmtk_menu_element(root_menu_ptr->menu_ptr));
     // TODO(kaeser@gubbe.ch): Should not be required. Also, the sequence
     // of set_server_side_decorated and set_attributes is brittle.
     wlmtk_content_commit(
@@ -187,7 +186,10 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
     }
 
     wlmtk_content_fini(&root_menu_ptr->content);
-    wlmtk_menu_fini(&root_menu_ptr->menu);
+    if (NULL != root_menu_ptr->menu_ptr) {
+        wlmtk_menu_destroy(root_menu_ptr->menu_ptr);
+        root_menu_ptr->menu_ptr = NULL;
+    }
     free(root_menu_ptr);
 }
 
@@ -200,7 +202,7 @@ wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
 /* ------------------------------------------------------------------------- */
 wlmtk_menu_t *wlmaker_root_menu_menu(wlmaker_root_menu_t *root_menu_ptr)
 {
-    return &root_menu_ptr->menu;
+    return root_menu_ptr->menu_ptr;
 }
 
 /* == Local (static) methods =============================================== */

@@ -20,7 +20,6 @@
 
 #include "submenu.h"
 
-#include "popup_menu.h"
 #include "util.h"
 
 /* == Declarations ========================================================= */
@@ -29,8 +28,10 @@
 struct _wlmtk_submenu_t {
     /** The menu item the submenu is anchored to. */
     wlmtk_menu_item_t         *menu_item_ptr;
-    /** The submenu, type popup_menu. */
-    wlmtk_popup_menu_t        *popup_menu_ptr;
+    /** The submenu. */
+    wlmtk_menu_t              *sub_menu_ptr;
+    /** Links to the parent pane. */
+    wlmtk_pane_t              *parent_pane_ptr;
 
     /** Temporary: Submenu item 1. */
     wlmtk_menu_item_t         *item1_ptr;
@@ -40,13 +41,13 @@ struct _wlmtk_submenu_t {
     /** Listener for @ref wlmtk_menu_item_events_t::state_changed. */
     struct wl_listener        state_changed_listener;
     /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
-    struct wl_listener        destroy_listener;
+    struct wl_listener        item_destroy_listener;
 };
 
 static void _wlmtk_submenu_handle_state_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void _wlmtk_submenu_handle_destroy(
+static void _wlmtk_submenu_handle_item_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -58,7 +59,7 @@ static void _wlmtk_submenu_handle_destroy(
 wlmtk_submenu_t *wlmtk_submenu_create(
     const wlmtk_menu_style_t *style_ptr,
     wlmtk_env_t *env_ptr,
-    wlmtk_popup_menu_t *parent_pum_ptr)
+    wlmtk_pane_t *parent_pane_ptr)
 {
     wlmtk_submenu_t *submenu_ptr = logged_calloc(1, sizeof(wlmtk_submenu_t));
     if (NULL == submenu_ptr) return NULL;
@@ -75,11 +76,11 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         _wlmtk_submenu_handle_state_changed);
     wlmtk_util_connect_listener_signal(
         &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->destroy,
-        &submenu_ptr->destroy_listener,
-        _wlmtk_submenu_handle_destroy);
+        &submenu_ptr->item_destroy_listener,
+        _wlmtk_submenu_handle_item_destroy);
 
-    submenu_ptr->popup_menu_ptr = wlmtk_popup_menu_create(style_ptr, env_ptr);
-    if (NULL == submenu_ptr->popup_menu_ptr) {
+    submenu_ptr->sub_menu_ptr = wlmtk_menu_create(style_ptr, env_ptr);
+    if (NULL == submenu_ptr->sub_menu_ptr) {
         wlmtk_submenu_destroy(submenu_ptr);
         return NULL;
     }
@@ -91,22 +92,15 @@ wlmtk_submenu_t *wlmtk_submenu_create(
     wlmtk_menu_item_set_text(submenu_ptr->item1_ptr, "submenu sub 1");
     wlmtk_menu_item_set_text(submenu_ptr->item2_ptr, "submenu sub 2");
 
-    wlmtk_menu_add_item(
-        wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
-        submenu_ptr->item1_ptr);
-    wlmtk_menu_add_item(
-        wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
-        submenu_ptr->item2_ptr);
+    wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item1_ptr);
+    wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item2_ptr);
 
-    wlmtk_popup_add_popup(
-        wlmtk_popup_menu_popup(parent_pum_ptr),
-        wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr));
+    submenu_ptr->parent_pane_ptr = parent_pane_ptr;
+    wlmtk_pane_add_popup(
+        parent_pane_ptr, wlmtk_menu_pane(submenu_ptr->sub_menu_ptr));
 
-    wlmtk_element_set_visible(
-        wlmtk_popup_element(wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr)),
-        true);
     wlmtk_element_set_position(
-        wlmtk_popup_element(wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr)),
+        wlmtk_menu_element(submenu_ptr->sub_menu_ptr),
         150, 0);
 
     return submenu_ptr;
@@ -115,25 +109,22 @@ wlmtk_submenu_t *wlmtk_submenu_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr)
 {
+    if (NULL != submenu_ptr->sub_menu_ptr) {
+        wlmtk_pane_remove_popup(
+            submenu_ptr->parent_pane_ptr,
+            wlmtk_menu_pane(submenu_ptr->sub_menu_ptr));
 
-    if (NULL != submenu_ptr->popup_menu_ptr) {
+        wlmtk_menu_remove_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item1_ptr);
+        wlmtk_menu_remove_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item2_ptr);
+        wlmtk_menu_item_destroy(submenu_ptr->item2_ptr);
+        wlmtk_menu_item_destroy(submenu_ptr->item1_ptr);
 
-        wlmtk_menu_remove_item(
-            wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
-            submenu_ptr->item1_ptr);
-        wlmtk_menu_remove_item(
-            wlmtk_popup_menu_menu(submenu_ptr->popup_menu_ptr),
-            submenu_ptr->item2_ptr);
-
-        wlmtk_popup_menu_destroy(submenu_ptr->popup_menu_ptr);
-        submenu_ptr->popup_menu_ptr = NULL;
+        wlmtk_menu_destroy(submenu_ptr->sub_menu_ptr);
+        submenu_ptr->sub_menu_ptr = NULL;
     }
 
-    wlmtk_menu_item_destroy(submenu_ptr->item2_ptr);
-    wlmtk_menu_item_destroy(submenu_ptr->item1_ptr);
-
-    if (NULL == submenu_ptr->menu_item_ptr) {
-        wlmtk_util_disconnect_listener(&submenu_ptr->destroy_listener);
+    if (NULL != submenu_ptr->menu_item_ptr) {
+        wlmtk_util_disconnect_listener(&submenu_ptr->item_destroy_listener);
         wlmtk_util_disconnect_listener(&submenu_ptr->state_changed_listener);
 
         wlmtk_menu_item_destroy(submenu_ptr->menu_item_ptr);
@@ -161,8 +152,8 @@ void _wlmtk_submenu_handle_state_changed(
         listener_ptr, wlmtk_submenu_t, state_changed_listener);
     wlmtk_element_t *item_element_ptr = wlmtk_menu_item_element(
         submenu_ptr->menu_item_ptr);
-    wlmtk_element_t *popup_element_ptr = wlmtk_popup_element(
-        wlmtk_popup_menu_popup(submenu_ptr->popup_menu_ptr));
+    wlmtk_element_t *popup_element_ptr = wlmtk_menu_element(
+        submenu_ptr->sub_menu_ptr);
 
     switch (wlmtk_menu_item_get_state(submenu_ptr->menu_item_ptr)) {
     case WLMTK_MENU_ITEM_HIGHLIGHTED:
@@ -179,19 +170,21 @@ void _wlmtk_submenu_handle_state_changed(
     case WLMTK_MENU_ITEM_ENABLED:
     case WLMTK_MENU_ITEM_DISABLED:
     default:
-        wlmtk_element_set_visible(popup_element_ptr, false);
+        if (!popup_element_ptr->pointer_inside) {
+            wlmtk_element_set_visible(popup_element_ptr, false);
+        }
         break;
     }
 }
 
 /* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_item_events_t::destroy. Destroy the action item. */
-void _wlmtk_submenu_handle_destroy(
+void _wlmtk_submenu_handle_item_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_submenu_t, destroy_listener);
+        listener_ptr, wlmtk_submenu_t, item_destroy_listener);
 
     submenu_ptr->menu_item_ptr = NULL;
     wlmtk_submenu_destroy(submenu_ptr);

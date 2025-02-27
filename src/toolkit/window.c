@@ -20,7 +20,6 @@
 
 #include "window.h"
 
-#include "popup_menu.h"
 #include "rectangle.h"
 #include "workspace.h"
 
@@ -98,10 +97,10 @@ struct _wlmtk_window_t {
     wlmtk_titlebar_t          *titlebar_ptr;
     /** Resizebar. */
     wlmtk_resizebar_t         *resizebar_ptr;
-    /** The popup menu forming the basis of the window menu. */
-    wlmtk_popup_menu_t        *popup_menu_ptr;
+    /** The window menu. */
+    wlmtk_menu_t              *window_menu_ptr;
     /** Listener for then the popup menu requests to be closed. */
-    struct wl_listener        popup_menu_request_close_listener;
+    struct wl_listener        menu_request_close_listener;
 
     /** Window title. Set through @ref wlmtk_window_set_title. */
     char                      *title_ptr;
@@ -200,7 +199,7 @@ static void _wlmtk_window_release_update(
     wlmtk_window_t *window_ptr,
     wlmtk_pending_update_t *update_ptr);
 
-static void _wlmtk_window_popup_menu_request_close_handler(
+static void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -251,20 +250,21 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_set_window(content_ptr, window_ptr);
 
     // Create the window menu. It is kept hidden until invoked.
-    window_ptr->popup_menu_ptr = wlmtk_popup_menu_create(
+    window_ptr->window_menu_ptr = wlmtk_menu_create(
         menu_style_ptr,
         env_ptr);
-    if (NULL == window_ptr->popup_menu_ptr) {
+    if (NULL == window_ptr->window_menu_ptr) {
         _wlmtk_window_fini(window_ptr);
         return false;
     }
-    wlmtk_content_add_wlmtk_popup(
-        window_ptr->content_ptr,
-        wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
+    // TODO(kaeser@gubbe.ch): Do not access content element directly.
+    wlmtk_container_add_element(
+        &window_ptr->content_ptr->popup_container,
+        wlmtk_menu_element(window_ptr->window_menu_ptr));
     wlmtk_util_connect_listener_signal(
-        &wlmtk_popup_menu_events(window_ptr->popup_menu_ptr)->request_close,
-        &window_ptr->popup_menu_request_close_listener,
-        _wlmtk_window_popup_menu_request_close_handler);
+        &wlmtk_menu_events(window_ptr->window_menu_ptr)->request_close,
+        &window_ptr->menu_request_close_listener,
+        _wlmtk_window_menu_request_close_handler);
 
     return window_ptr;
 }
@@ -574,17 +574,15 @@ void wlmtk_window_menu_set_enabled(
 
     // For convenience: Get the menu's element. Note: It must have a parent,
     // since it's contained within the window.
-    wlmtk_element_t *menu_element_ptr = wlmtk_popup_element(
-        wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
+    wlmtk_element_t *menu_element_ptr = wlmtk_menu_element(
+        window_ptr->window_menu_ptr);
     BS_ASSERT(NULL != menu_element_ptr->parent_container_ptr);
 
-    wlmtk_element_set_visible(
-        wlmtk_popup_element(wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr)),
-        enabled);
+    wlmtk_element_set_visible(menu_element_ptr, enabled);
 
     if (enabled) {
         wlmtk_menu_set_mode(
-            wlmtk_popup_menu_menu(window_ptr->popup_menu_ptr),
+            window_ptr->window_menu_ptr,
             WLMTK_MENU_MODE_RIGHTCLICK);
         wlmtk_container_raise_element_to_top(
             menu_element_ptr->parent_container_ptr,
@@ -602,13 +600,7 @@ void wlmtk_window_menu_set_enabled(
 /* ------------------------------------------------------------------------- */
 wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr)
 {
-    return wlmtk_popup_menu_menu(window_ptr->popup_menu_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_popup_menu_t *wlmtk_window_menu_popup(wlmtk_window_t *window_ptr)
-{
-    return window_ptr->popup_menu_ptr;
+    return window_ptr->window_menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -810,14 +802,15 @@ bool _wlmtk_window_init(
  */
 void _wlmtk_window_fini(wlmtk_window_t *window_ptr)
 {
-    if (NULL != window_ptr->popup_menu_ptr) {
+    if (NULL != window_ptr->window_menu_ptr) {
         wlmtk_util_disconnect_listener(
-            &window_ptr->popup_menu_request_close_listener);
-        wlmtk_content_remove_wlmtk_popup(
-            window_ptr->content_ptr,
-            wlmtk_popup_menu_popup(window_ptr->popup_menu_ptr));
-        wlmtk_popup_menu_destroy(window_ptr->popup_menu_ptr);
-        window_ptr->popup_menu_ptr = NULL;
+            &window_ptr->menu_request_close_listener);
+
+        wlmtk_container_remove_element(
+            &window_ptr->content_ptr->popup_container,
+            wlmtk_menu_element(window_ptr->window_menu_ptr));
+        wlmtk_menu_destroy(window_ptr->window_menu_ptr);
+        window_ptr->window_menu_ptr = NULL;
     }
 
     wlmtk_window_set_server_side_decorated(window_ptr, false);
@@ -1198,13 +1191,13 @@ void _wlmtk_window_release_update(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles @ref wlmtk_popup_menu_events_t::request_close signals. */
-void _wlmtk_window_popup_menu_request_close_handler(
+/** Handles @ref wlmtk_menu_events_t::request_close signals. */
+void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_window_t, popup_menu_request_close_listener);
+        listener_ptr, wlmtk_window_t, menu_request_close_listener);
     wlmtk_window_menu_set_enabled(window_ptr, false);
 }
 
@@ -1266,14 +1259,14 @@ wlmtk_fake_window_t *wlmtk_fake_window_create(void)
         fake_window_state_ptr->fake_window.window_ptr);
 
     wlmtk_menu_style_t ms = {};
-    fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr =
-        wlmtk_popup_menu_create(&ms, NULL);
-    wlmtk_content_add_wlmtk_popup(
-        fake_window_state_ptr->fake_window.window_ptr->content_ptr,
-        wlmtk_popup_menu_popup(
-            fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr));
-    fake_window_state_ptr->fake_window.popup_menu_ptr =
-        fake_window_state_ptr->fake_window.window_ptr->popup_menu_ptr;
+    fake_window_state_ptr->fake_window.window_ptr->window_menu_ptr =
+        wlmtk_menu_create(&ms, NULL);
+
+    wlmtk_container_add_element(
+        &fake_window_state_ptr->fake_window.window_ptr->content_ptr->popup_container,
+        wlmtk_menu_element(fake_window_state_ptr->fake_window.window_ptr->window_menu_ptr));
+    fake_window_state_ptr->fake_window.window_menu_ptr =
+        fake_window_state_ptr->fake_window.window_ptr->window_menu_ptr;
 
     // Extend. We don't save the VMT, since it's for fake only.
     _wlmtk_window_extend(&fake_window_state_ptr->window,

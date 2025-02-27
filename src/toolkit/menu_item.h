@@ -34,10 +34,6 @@ typedef struct _wlmtk_menu_item_style_t wlmtk_menu_item_style_t;
 #include "env.h"
 #include "style.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
 /** States a menu item can be in. */
 typedef enum {
     WLMTK_MENU_ITEM_ENABLED,
@@ -88,6 +84,12 @@ struct _wlmtk_menu_item_style_t {
     uint64_t                  width;
 };
 
+#include "menu.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
+
 /**
  * Creates a menu item.
  *
@@ -112,6 +114,18 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
 /** Returns pointer to the menu item's @ref wlmtk_menu_item_t::events. */
 wlmtk_menu_item_events_t *wlmtk_menu_item_events(
     wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Sets the menu this item belongs to.
+ *
+ * Private: Should only be called by @ref wlmtk_menu_add_item.
+ *
+ * @param menu_item_ptr
+ * @param menu_ptr            May be NULL, to detach from menu.
+ */
+void wlmtk_menu_item_set_parent_menu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *menu_ptr);
 
 /**
  * Sets the menu's mode for this item.
@@ -150,6 +164,18 @@ bool wlmtk_menu_item_set_text(
 void wlmtk_menu_item_set_enabled(
     wlmtk_menu_item_t *menu_item_ptr,
     bool enabled);
+
+/**
+ * Sets the menu item as highlighted.
+ *
+ * @param menu_item_ptr
+ * @param highlighted
+ *
+ * @return false if the menu was not enabled, ie. could not be highlighted.
+ */
+bool wlmtk_menu_item_set_highlighted(
+    wlmtk_menu_item_t *menu_item_ptr,
+    bool highlighted);
 
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
