@@ -76,6 +76,12 @@ wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
 /** @return a pointer to @ref wlmtk_menu_t::events. */
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
 
+// FIXME:
+// - add methods to open/close the menu. This should reset highlighting.
+// - add a test that verifies highlight is updates after a close/open.
+//   currently it is sticky.
+// - test submenu item triggering on right-click mode.
+
 /**
  * Sets the mode of the menu.
  *
