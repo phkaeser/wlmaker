@@ -275,22 +275,26 @@ const bs_test_case_t wlmtk_menu_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** For tests: Meu style to apply. */
+static const wlmtk_menu_style_t _wlmtk_menu_test_style = {};
+
 /* ------------------------------------------------------------------------- */
 /** Tests adding and removing menu items. */
 void test_add_remove(bs_test_t *test_ptr)
 {
-    wlmtk_menu_style_t s = {};
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_wlmtk_menu_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
-    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(&s.item, NULL);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_menu_add_item(menu_ptr, item_ptr);
     wlmtk_menu_remove_item(menu_ptr, item_ptr);
     wlmtk_menu_item_destroy(item_ptr);
 
     // Adds another item. Must be destroyed during cleanup.
-    item_ptr = wlmtk_menu_item_create(&s.item, NULL);
+    item_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_menu_add_item(menu_ptr, item_ptr);
     wlmtk_menu_destroy(menu_ptr);
@@ -300,11 +304,11 @@ void test_add_remove(bs_test_t *test_ptr)
 /** Tests setting the menu's mode. */
 void test_set_mode(bs_test_t *test_ptr)
 {
-    wlmtk_menu_style_t s = {};
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_wlmtk_menu_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
-    wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(&s.item, NULL);
+    wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item1_ptr);
     wlmtk_menu_add_item(menu_ptr, item1_ptr);
 
@@ -320,7 +324,8 @@ void test_set_mode(bs_test_t *test_ptr)
         wlmtk_menu_item_get_mode(item1_ptr));
 
     // A new item must get the mode applied.
-    wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(&s.item, NULL);
+    wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(
+        &_wlmtk_menu_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
