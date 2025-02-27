@@ -38,15 +38,10 @@ struct _wlmtk_submenu_t {
     /** Temporary: Submenu item 2. */
     wlmtk_menu_item_t         *item2_ptr;
 
-    /** Listener for @ref wlmtk_menu_item_events_t::state_changed. */
-    struct wl_listener        state_changed_listener;
     /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
     struct wl_listener        item_destroy_listener;
 };
 
-static void _wlmtk_submenu_handle_state_changed(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void _wlmtk_submenu_handle_item_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -71,10 +66,6 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         return NULL;
     }
     wlmtk_util_connect_listener_signal(
-        &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->state_changed,
-        &submenu_ptr->state_changed_listener,
-        _wlmtk_submenu_handle_state_changed);
-    wlmtk_util_connect_listener_signal(
         &wlmtk_menu_item_events(submenu_ptr->menu_item_ptr)->destroy,
         &submenu_ptr->item_destroy_listener,
         _wlmtk_submenu_handle_item_destroy);
@@ -84,6 +75,9 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         wlmtk_submenu_destroy(submenu_ptr);
         return NULL;
     }
+    wlmtk_menu_item_set_submenu(
+        submenu_ptr->menu_item_ptr,
+        submenu_ptr->sub_menu_ptr);
 
     // TODO(kaeser@gubbe.ch): Well, the contents should be configurable.
     wlmtk_menu_item_set_text(submenu_ptr->menu_item_ptr, "Submenu test 1");
@@ -125,7 +119,6 @@ void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr)
 
     if (NULL != submenu_ptr->menu_item_ptr) {
         wlmtk_util_disconnect_listener(&submenu_ptr->item_destroy_listener);
-        wlmtk_util_disconnect_listener(&submenu_ptr->state_changed_listener);
 
         wlmtk_menu_item_destroy(submenu_ptr->menu_item_ptr);
         submenu_ptr->menu_item_ptr = NULL;
@@ -140,42 +133,6 @@ wlmtk_menu_item_t *wlmtk_submenu_menu_item(wlmtk_submenu_t *submenu_ptr)
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/** Handle @ref wlmtk_menu_item_events_t::state_changed. Show/hide submenu. */
-void _wlmtk_submenu_handle_state_changed(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    int x, y, t, r;
-    wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_submenu_t, state_changed_listener);
-    wlmtk_element_t *item_element_ptr = wlmtk_menu_item_element(
-        submenu_ptr->menu_item_ptr);
-    wlmtk_element_t *popup_element_ptr = wlmtk_menu_element(
-        submenu_ptr->sub_menu_ptr);
-
-    switch (wlmtk_menu_item_get_state(submenu_ptr->menu_item_ptr)) {
-    case WLMTK_MENU_ITEM_HIGHLIGHTED:
-        wlmtk_element_get_position(item_element_ptr, &x, &y);
-        wlmtk_element_get_dimensions(item_element_ptr, NULL, &t, &r, NULL);
-        x += r;
-        y += t;
-        wlmtk_element_set_position(popup_element_ptr, x, y);
-        wlmtk_container_raise_element_to_top(
-            popup_element_ptr->parent_container_ptr, popup_element_ptr);
-        wlmtk_element_set_visible(popup_element_ptr, true);
-        break;
-
-    case WLMTK_MENU_ITEM_ENABLED:
-    case WLMTK_MENU_ITEM_DISABLED:
-    default:
-        if (!popup_element_ptr->pointer_inside) {
-            wlmtk_element_set_visible(popup_element_ptr, false);
-        }
-        break;
-    }
-}
 
 /* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_item_events_t::destroy. Destroy the action item. */

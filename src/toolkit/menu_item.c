@@ -38,6 +38,8 @@ struct _wlmtk_menu_item_t {
 
     /** Link to the menu the item belongs to. Can be NULL. */
     wlmtk_menu_t              *menu_ptr;
+    /** A submenu for this item. Can be NULL. */
+    wlmtk_menu_t              *submenu_ptr;
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
@@ -182,6 +184,14 @@ void wlmtk_menu_item_set_parent_menu(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_item_set_submenu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *submenu_ptr)
+{
+    menu_item_ptr->submenu_ptr = submenu_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_item_set_mode(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_mode_t mode)
@@ -320,6 +330,22 @@ void _wlmtk_menu_item_set_state(
     if (menu_item_ptr->state == state) return;
     menu_item_ptr->state = state;
     _wlmtk_menu_item_draw_state(menu_item_ptr);
+
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_element_t *e = wlmtk_menu_element(menu_item_ptr->submenu_ptr);
+
+        int x, y, t, r;
+        wlmtk_element_t *ie_ptr = wlmtk_menu_item_element(menu_item_ptr);
+        wlmtk_element_get_position(ie_ptr, &x, &y);
+        wlmtk_element_get_dimensions(ie_ptr, NULL, &t, &r, NULL);
+        x += r;
+        y += t;
+        wlmtk_element_set_position(e, x, y);
+
+        wlmtk_element_set_visible(
+            e, menu_item_ptr->state == WLMTK_MENU_ITEM_HIGHLIGHTED);
+    }
+
     wl_signal_emit(&menu_item_ptr->events.state_changed, menu_item_ptr);
 }
 
@@ -454,7 +480,12 @@ void _wlmtk_menu_item_element_pointer_enter(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles when the pointer leaves the element: Ends highlight. */
+/**
+ * Handles when the pointer leaves the element: Ends highlight, in case there
+ * is no submenu currently visible.
+ *
+ * @param element_ptr
+ */
 void _wlmtk_menu_item_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
@@ -463,7 +494,9 @@ void _wlmtk_menu_item_element_pointer_leave(
     menu_item_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 
     if (menu_item_ptr->enabled &&
-        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
+        (NULL == menu_item_ptr->submenu_ptr ||
+         !wlmtk_menu_element(menu_item_ptr->submenu_ptr)->visible)) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
     }
 }

@@ -128,6 +128,17 @@ void wlmtk_menu_item_set_parent_menu(
     wlmtk_menu_t *menu_ptr);
 
 /**
+ * Sets the submenu for this menu item.
+ *
+ * @param menu_item_ptr
+ * @param submenu_ptr         May be NULL, to remove a submenu. Does not take
+ *                            ownerhip and must outlive `menu_item_ptr`.
+ */
+void wlmtk_menu_item_set_submenu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *submenu_ptr);
+
+/**
  * Sets the menu's mode for this item.
  *
  * @param menu_item_ptr
