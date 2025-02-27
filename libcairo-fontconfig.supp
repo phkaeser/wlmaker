@@ -10,9 +10,7 @@
    obj:/usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0
    fun:cairo_toy_font_face_create
    fun:cairo_select_font_face
-   fun:_wlmaker_clip_update_overlay
-   fun:wlmaker_clip_create
-   fun:main
+   fun:*
 }
 {
    <cairo_fontconfig2>
