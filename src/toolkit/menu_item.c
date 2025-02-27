@@ -462,8 +462,9 @@ void _wlmtk_menu_item_element_pointer_leave(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
     menu_item_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 
-    if (menu_item_ptr->enabled) {
-        _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
+    if (menu_item_ptr->enabled &&
+        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+        wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
     }
 }
 

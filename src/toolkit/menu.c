@@ -266,37 +266,77 @@ bool _wlmtk_menu_element_pointer_button(
 
 /* == Unit tests =========================================================== */
 
-static void test_add_remove(bs_test_t *test_ptr);
+static void test_pointer_highlight(bs_test_t *test_ptr);
 static void test_set_mode(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_test_cases[] = {
-    { 1, "add_remove", test_add_remove },
+    { 1, "pointer_highlight", test_pointer_highlight },
     { 1, "set_mode", test_set_mode },
     { 0, NULL, NULL }
 };
 
 /** For tests: Meu style to apply. */
-static const wlmtk_menu_style_t _wlmtk_menu_test_style = {};
+static const wlmtk_menu_style_t _test_style = {
+    .margin = { .width = 2 },
+    .border = { .width = 2 },
+    .item = { .height = 10, .bezel_width=1, .width = 100 }
+};
 
 /* ------------------------------------------------------------------------- */
-/** Tests adding and removing menu items. */
-void test_add_remove(bs_test_t *test_ptr)
+/** Tests that pointer moves highlight the items. */
+void test_pointer_highlight(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_wlmtk_menu_test_style, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
 
-    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_test_style.item, NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
-    wlmtk_menu_add_item(menu_ptr, item_ptr);
-    wlmtk_menu_remove_item(menu_ptr, item_ptr);
-    wlmtk_menu_item_destroy(item_ptr);
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style.item, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
+    wlmtk_menu_add_item(menu_ptr, i1);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_test_style.item, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
+    wlmtk_menu_add_item(menu_ptr, i2);
 
-    // Adds another item. Must be destroyed during cleanup.
-    item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_test_style.item, NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
-    wlmtk_menu_add_item(menu_ptr, item_ptr);
+    // Motion into first element: highlight it.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 5, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(test_ptr, i1, menu_ptr->highlighted_menu_item_ptr);
+
+    // Motion into second element: highlight that, un-highlight the other.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 15, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_EQ(test_ptr, i2, menu_ptr->highlighted_menu_item_ptr);
+
+    // Move into the margin area: Both are un-highlighted.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 10, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, menu_ptr->highlighted_menu_item_ptr);
+
+    // Move entirely outside: Both remain just enabled.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(me, 9, 55, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, menu_ptr->highlighted_menu_item_ptr);
+
+    // Back into second element: highlight that.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 15, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+
+    // Remove one item explicitly, the other one to destroy during cleanup.
+    wlmtk_menu_remove_item(menu_ptr, i1);
+    wlmtk_menu_item_destroy(i1);
     wlmtk_menu_destroy(menu_ptr);
 }
 
@@ -304,11 +344,11 @@ void test_add_remove(bs_test_t *test_ptr)
 /** Tests setting the menu's mode. */
 void test_set_mode(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_wlmtk_menu_test_style, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_test_style.item, NULL);
+        &_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item1_ptr);
     wlmtk_menu_add_item(menu_ptr, item1_ptr);
 
@@ -325,7 +365,7 @@ void test_set_mode(bs_test_t *test_ptr)
 
     // A new item must get the mode applied.
     wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_test_style.item, NULL);
+        &_test_style.item, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
