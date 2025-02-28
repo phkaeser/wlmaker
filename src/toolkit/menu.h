@@ -76,6 +76,15 @@ wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
 /** @return a pointer to @ref wlmtk_menu_t::events. */
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
 
+/**
+ * Opens the menu: Makes it visible or invisible, and resets state
+ * if needed.
+ *
+ * @param menu_ptr
+ * @param opened
+ */
+void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened);
+
 // FIXME:
 // - add methods to open/close the menu. This should reset highlighting.
 // - add a test that verifies highlight is updates after a close/open.

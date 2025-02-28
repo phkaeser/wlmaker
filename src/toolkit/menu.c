@@ -135,6 +135,20 @@ wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened)
+{
+    if (wlmtk_menu_element(menu_ptr)->visible == opened) return;
+
+    wlmtk_element_set_visible(wlmtk_menu_element(menu_ptr), opened);
+
+    if (NULL != menu_ptr->highlighted_menu_item_ptr) {
+        wlmtk_menu_item_set_highlighted(
+            menu_ptr->highlighted_menu_item_ptr, false);
+        menu_ptr->highlighted_menu_item_ptr = NULL;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode)
 {

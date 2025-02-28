@@ -341,8 +341,9 @@ void _wlmtk_menu_item_set_state(
         y += t;
         wlmtk_element_set_position(e, x, y);
 
-        wlmtk_element_set_visible(
-            e, menu_item_ptr->state == WLMTK_MENU_ITEM_HIGHLIGHTED);
+        wlmtk_menu_set_open(
+            menu_item_ptr->submenu_ptr,
+            menu_item_ptr->state == WLMTK_MENU_ITEM_HIGHLIGHTED);
     }
 }
 
