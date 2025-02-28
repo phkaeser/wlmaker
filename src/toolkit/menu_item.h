@@ -54,8 +54,6 @@ typedef enum {
 
 /** Events of the menu item. */
 typedef struct {
-    /** Signal is raised whenever the state has changed. */
-    struct wl_signal          state_changed;
     /** The menu item was triggered, by a click or key action. */
     struct wl_signal          triggered;
     /** The menu item is being destroyed. */
