@@ -494,7 +494,7 @@ void _wlmtk_menu_item_element_pointer_leave(
     if (menu_item_ptr->enabled &&
         WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
         (NULL == menu_item_ptr->submenu_ptr ||
-         !wlmtk_menu_element(menu_item_ptr->submenu_ptr)->visible)) {
+         !wlmtk_menu_is_open(menu_item_ptr->submenu_ptr))) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
     }
 }
