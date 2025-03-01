@@ -98,6 +98,7 @@ wlmtk_menu_t *wlmtk_menu_create(
     menu_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
 
+    wl_signal_init(&menu_ptr->events.open_changed);
     wl_signal_init(&menu_ptr->events.request_close);
     return menu_ptr;
 }
@@ -146,6 +147,8 @@ void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened)
             menu_ptr->highlighted_menu_item_ptr, false);
         menu_ptr->highlighted_menu_item_ptr = NULL;
     }
+
+    wl_signal_emit(&menu_ptr->events.open_changed, menu_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

@@ -44,6 +44,11 @@ typedef struct  {
 
 /** Events of the popup menu. */
 typedef struct {
+    /**
+     * The menu was opened or closed. Check through @ref wlmtk_menu_is_open.
+     * The signal's argument is a pointer to the menu that opened/closed.
+     */
+    struct wl_signal          open_changed;
     /** Popup menu requests to be closed. */
     struct wl_signal          request_close;
 } wlmtk_menu_events_t;

@@ -38,8 +38,11 @@ struct _wlmtk_menu_item_t {
 
     /** Link to the menu the item belongs to. Can be NULL. */
     wlmtk_menu_t              *menu_ptr;
+
     /** A submenu for this item. Can be NULL. */
     wlmtk_menu_t              *submenu_ptr;
+    /** Listens to @ref wlmtk_menu_events_t::open_changed. */
+    struct wl_listener        submenu_open_changed_listener;
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
@@ -88,6 +91,10 @@ static void _wlmtk_menu_item_element_pointer_leave(
 static void _wlmtk_menu_item_element_destroy(
     wlmtk_element_t *element_ptr);
 
+static void _wlmtk_menu_item_handle_open_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table for the menu item's super class: Element. */
@@ -99,7 +106,7 @@ static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
 };
 
 /** Style definition used for unit tests. */
-static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
+static const wlmtk_menu_item_style_t _item_test_style = {
     .fill = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
@@ -111,6 +118,7 @@ static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
     .font = { .face = "Helvetica", .size = 14 },
     .height = 24,
     .bezel_width = 1,
+    .width = 200,
     .enabled_text_color = 0xfff0f060,
     .highlighted_text_color = 0xff204080,
     .disabled_text_color = 0xff807060,
@@ -187,7 +195,21 @@ void wlmtk_menu_item_set_submenu(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_t *submenu_ptr)
 {
+    if (menu_item_ptr->submenu_ptr == submenu_ptr) return;
+
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &menu_item_ptr->submenu_open_changed_listener);
+    }
+
     menu_item_ptr->submenu_ptr = submenu_ptr;
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_menu_events(menu_item_ptr->submenu_ptr)->open_changed,
+            &menu_item_ptr->submenu_open_changed_listener,
+            _wlmtk_menu_item_handle_open_changed);
+    }
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -493,6 +515,7 @@ void _wlmtk_menu_item_element_pointer_leave(
 
     if (menu_item_ptr->enabled &&
         WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
+        NULL != menu_item_ptr->menu_ptr &&
         (NULL == menu_item_ptr->submenu_ptr ||
          !wlmtk_menu_is_open(menu_item_ptr->submenu_ptr))) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
@@ -510,6 +533,25 @@ void _wlmtk_menu_item_element_destroy(
     wlmtk_menu_item_destroy(menu_item_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_menu_events_t::open_changed. Updates item highlight. */
+void _wlmtk_menu_item_handle_open_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_menu_item_t, submenu_open_changed_listener);
+    wlmtk_menu_t *submenu_ptr = data_ptr;
+    BS_ASSERT(submenu_ptr == menu_item_ptr->submenu_ptr);
+
+    if (wlmtk_menu_is_open(submenu_ptr) &&
+        NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
+    }
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -517,6 +559,7 @@ static void test_buffers(bs_test_t *test_ptr);
 static void test_pointer(bs_test_t *test_ptr);
 static void test_triggered(bs_test_t *test_ptr);
 static void test_right_click(bs_test_t *test_ptr);
+static void test_submenu_highlight(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -526,6 +569,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "pointer", test_pointer },
     { 1, "triggered", test_triggered },
     { 1, "right_click", test_right_click },
+    { 1, "submenu_highlight", test_submenu_highlight },
     { 0, NULL, NULL }
 };
 
@@ -534,7 +578,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(item_ptr);
@@ -559,7 +603,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_buffers(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     item_ptr->width = 80;
@@ -590,7 +634,7 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
     wlmtk_menu_add_item(menu_ptr, item_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, menu_ptr, item_ptr->menu_ptr);
@@ -599,7 +643,7 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
-    item_ptr->style = _wlmtk_menu_item_test_style;
+    item_ptr->style = _item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
@@ -673,12 +717,11 @@ void test_pointer(bs_test_t *test_ptr)
 void test_triggered(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->style = _wlmtk_menu_item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
@@ -733,12 +776,11 @@ void test_triggered(bs_test_t *test_ptr)
 void test_right_click(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->style = _wlmtk_menu_item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
@@ -784,6 +826,55 @@ void test_right_click(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_menu_item_destroy(item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests the interaction of submenu and menu item highlighting.
+ *
+ * We want the following:
+ * - when the submenu opens, the menu item becomes highlighted.
+ * - if highlighting is turned off, the item closes the submenu.
+ *
+ * @param test_ptr
+ **/
+void test_submenu_highlight(bs_test_t *test_ptr)
+{
+    wlmtk_menu_style_t s = { .item = _item_test_style };
+
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
+
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
+    wlmtk_menu_add_item(menu_ptr, i1);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
+    wlmtk_menu_add_item(menu_ptr, i2);
+
+    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(&s, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, submenu_ptr);
+    wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
+    wlmtk_menu_add_item(submenu_ptr, s1);
+    wlmtk_menu_item_set_submenu(i2, submenu_ptr);
+
+    // Begin: Move pointer so that i1 is highlighted.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 12, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+
+    // Now: open submenu. We want i2 to become highlighted.
+    // (detail: Usuallly submenu will be opened when i2 already is ... )
+    wlmtk_menu_set_open(submenu_ptr, true);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+
+
+    wlmtk_menu_item_set_submenu(i2, NULL);
+    wlmtk_menu_destroy(submenu_ptr);
+    wlmtk_menu_destroy(menu_ptr);
 }
 
 /* == End of menu_item.c =================================================== */
