@@ -149,6 +149,13 @@ void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened)
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr)
+{
+    return wlmtk_menu_element(menu_ptr)->visible;
+}
+
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode)
 {

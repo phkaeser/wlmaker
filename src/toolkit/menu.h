@@ -85,6 +85,9 @@ wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
  */
 void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened);
 
+/** @return whether the menu is open, ie. visible. */
+bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
+
 // FIXME:
 // - add methods to open/close the menu. This should reset highlighting.
 // - add a test that verifies highlight is updates after a close/open.
