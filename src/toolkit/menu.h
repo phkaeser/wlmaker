@@ -94,7 +94,6 @@ void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened);
 bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
 
 // FIXME:
-// - add methods to open/close the menu. This should reset highlighting.
 // - add a test that verifies highlight is updates after a close/open.
 //   currently it is sticky.
 // - test submenu item triggering on right-click mode.
