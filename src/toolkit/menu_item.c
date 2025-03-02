@@ -81,6 +81,10 @@ static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
 
+static bool _wlmtk_menu_item_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec);
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -99,6 +103,7 @@ static void _wlmtk_menu_item_handle_open_changed(
 
 /** Virtual method table for the menu item's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
+    .pointer_motion = _wlmtk_menu_item_element_pointer_motion,
     .pointer_button = _wlmtk_menu_item_element_pointer_button,
     .pointer_enter = _wlmtk_menu_item_element_pointer_enter,
     .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
@@ -188,6 +193,13 @@ void wlmtk_menu_item_set_parent_menu(
     wlmtk_menu_t *menu_ptr)
 {
     menu_item_ptr->menu_ptr = menu_ptr;
+
+    if (NULL != menu_item_ptr->menu_ptr &&
+        NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_pane_add_popup(
+            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -200,6 +212,12 @@ void wlmtk_menu_item_set_submenu(
     if (NULL != menu_item_ptr->submenu_ptr) {
         wlmtk_util_disconnect_listener(
             &menu_item_ptr->submenu_open_changed_listener);
+
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_remove_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
     }
 
     menu_item_ptr->submenu_ptr = submenu_ptr;
@@ -208,6 +226,12 @@ void wlmtk_menu_item_set_submenu(
             &wlmtk_menu_events(menu_item_ptr->submenu_ptr)->open_changed,
             &menu_item_ptr->submenu_open_changed_listener,
             _wlmtk_menu_item_handle_open_changed);
+
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_add_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
     }
 
 }
@@ -448,6 +472,27 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Requests this item to be highlighted if there's motion. */
+bool _wlmtk_menu_item_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
+    bool rv = menu_item_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
+
+    if (rv && menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
+    }
+
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -833,7 +878,7 @@ void test_right_click(bs_test_t *test_ptr)
  * Tests the interaction of submenu and menu item highlighting.
  *
  * We want the following:
- * - when the submenu opens, the menu item becomes highlighted.
+ * - when the item with submenu highlights, the submenu opens.
  * - if highlighting is turned off, the item closes the submenu.
  *
  * @param test_ptr
@@ -864,13 +909,34 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 12, 1));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
 
-    // Now: open submenu. We want i2 to become highlighted.
-    // (detail: Usuallly submenu will be opened when i2 already is ... )
-    wlmtk_menu_set_open(submenu_ptr, true);
+    // Then: move pointer into i2. Must highlight and open submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
 
+    // Then: Move pointer into i2 and submenu. Must highlight the submenu item.
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Then: Move pointer a bit, within i1. Highlight that, close submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 13, 1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+
+    // Then: Move pointer into i2. Must highlight and (re)open submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
 
     wlmtk_menu_item_set_submenu(i2, NULL);
     wlmtk_menu_destroy(submenu_ptr);
