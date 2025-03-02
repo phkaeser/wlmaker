@@ -240,6 +240,8 @@ void wlmtk_menu_item_set_submenu(
                 wlmtk_menu_pane(menu_item_ptr->menu_ptr),
                 wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
         }
+
+        wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
     }
 
 }
@@ -250,6 +252,9 @@ void wlmtk_menu_item_set_mode(
     wlmtk_menu_mode_t mode)
 {
     menu_item_ptr->mode = mode;
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

@@ -99,7 +99,7 @@ wlmtk_submenu_t *wlmtk_submenu_create(
         &submenu_ptr->item1_listener,
         _handle_item1);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_menu_item_events(submenu_ptr->item1_ptr)->triggered,
+        &wlmtk_menu_item_events(submenu_ptr->item2_ptr)->triggered,
         &submenu_ptr->item2_listener,
         _handle_item2);
 
