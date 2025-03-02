@@ -40,9 +40,18 @@ struct _wlmtk_submenu_t {
 
     /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
     struct wl_listener        item_destroy_listener;
+
+    struct wl_listener        item1_listener;
+    struct wl_listener        item2_listener;
 };
 
 static void _wlmtk_submenu_handle_item_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _handle_item1(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _handle_item2(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -84,6 +93,15 @@ wlmtk_submenu_t *wlmtk_submenu_create(
     submenu_ptr->item2_ptr = wlmtk_menu_item_create(&style_ptr->item, env_ptr);
     wlmtk_menu_item_set_text(submenu_ptr->item1_ptr, "submenu sub 1");
     wlmtk_menu_item_set_text(submenu_ptr->item2_ptr, "submenu sub 2");
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(submenu_ptr->item1_ptr)->triggered,
+        &submenu_ptr->item1_listener,
+        _handle_item1);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(submenu_ptr->item1_ptr)->triggered,
+        &submenu_ptr->item2_listener,
+        _handle_item2);
 
     wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item1_ptr);
     wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item2_ptr);
@@ -138,6 +156,26 @@ void _wlmtk_submenu_handle_item_destroy(
     wlmtk_menu_item_set_submenu(submenu_ptr->menu_item_ptr, NULL);
     submenu_ptr->menu_item_ptr = NULL;
     wlmtk_submenu_destroy(submenu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _handle_item1(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_submenu_t, item1_listener);
+    bs_log(BS_ERROR, "FIXME: Item 1 on %p", submenu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _handle_item2(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_submenu_t, item2_listener);
+    bs_log(BS_ERROR, "FIXME: Item 2 on %p", submenu_ptr);
 }
 
 /* == End of submenu.c ===================================================== */
