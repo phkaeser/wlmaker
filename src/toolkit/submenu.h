@@ -36,14 +36,12 @@ extern "C" {
  *
  * @param style_ptr
  * @param env_ptr
- * @param parent_pane_ptr
  *
  * @return State of the submenu.
  */
 wlmtk_submenu_t *wlmtk_submenu_create(
     const wlmtk_menu_style_t *style_ptr,
-    wlmtk_env_t *env_ptr,
-    wlmtk_pane_t *parent_pane_ptr);
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the submenu. Detaches the item from the parent, if still attached.

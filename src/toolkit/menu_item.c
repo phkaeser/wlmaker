@@ -192,8 +192,16 @@ void wlmtk_menu_item_set_parent_menu(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_t *menu_ptr)
 {
-    menu_item_ptr->menu_ptr = menu_ptr;
+    if (menu_item_ptr->menu_ptr == menu_ptr) return;
 
+    if (NULL != menu_item_ptr->menu_ptr &&
+        NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_pane_remove_popup(
+            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+    }
+
+    menu_item_ptr->menu_ptr = menu_ptr;
     if (NULL != menu_item_ptr->menu_ptr &&
         NULL != menu_item_ptr->submenu_ptr) {
         wlmtk_pane_add_popup(

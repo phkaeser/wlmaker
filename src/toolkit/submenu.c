@@ -53,8 +53,7 @@ static void _wlmtk_submenu_handle_item_destroy(
 /* ------------------------------------------------------------------------- */
 wlmtk_submenu_t *wlmtk_submenu_create(
     const wlmtk_menu_style_t *style_ptr,
-    wlmtk_env_t *env_ptr,
-    wlmtk_pane_t *parent_pane_ptr)
+    wlmtk_env_t *env_ptr)
 {
     wlmtk_submenu_t *submenu_ptr = logged_calloc(1, sizeof(wlmtk_submenu_t));
     if (NULL == submenu_ptr) return NULL;
@@ -89,10 +88,6 @@ wlmtk_submenu_t *wlmtk_submenu_create(
     wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item1_ptr);
     wlmtk_menu_add_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item2_ptr);
 
-    submenu_ptr->parent_pane_ptr = parent_pane_ptr;
-    wlmtk_pane_add_popup(
-        parent_pane_ptr, wlmtk_menu_pane(submenu_ptr->sub_menu_ptr));
-
     wlmtk_element_set_position(
         wlmtk_menu_element(submenu_ptr->sub_menu_ptr),
         150, 0);
@@ -104,9 +99,6 @@ wlmtk_submenu_t *wlmtk_submenu_create(
 void wlmtk_submenu_destroy(wlmtk_submenu_t *submenu_ptr)
 {
     if (NULL != submenu_ptr->sub_menu_ptr) {
-        wlmtk_pane_remove_popup(
-            submenu_ptr->parent_pane_ptr,
-            wlmtk_menu_pane(submenu_ptr->sub_menu_ptr));
 
         wlmtk_menu_remove_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item1_ptr);
         wlmtk_menu_remove_item(submenu_ptr->sub_menu_ptr, submenu_ptr->item2_ptr);
@@ -143,6 +135,7 @@ void _wlmtk_submenu_handle_item_destroy(
     wlmtk_submenu_t *submenu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_submenu_t, item_destroy_listener);
 
+    wlmtk_menu_item_set_submenu(submenu_ptr->menu_item_ptr, NULL);
     submenu_ptr->menu_item_ptr = NULL;
     wlmtk_submenu_destroy(submenu_ptr);
 }
