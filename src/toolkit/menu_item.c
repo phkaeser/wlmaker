@@ -167,6 +167,19 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
     wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
 
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &menu_item_ptr->submenu_open_changed_listener);
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_remove_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
+
+        wlmtk_menu_destroy(menu_item_ptr->submenu_ptr);
+        menu_item_ptr->submenu_ptr = NULL;
+    }
+
     if (NULL != menu_item_ptr->text_ptr) {
         free(menu_item_ptr->text_ptr);
         menu_item_ptr->text_ptr = NULL;
@@ -974,9 +987,8 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(me, &bup));
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
 
+    // Deliberately: Do not detach submenu, must be cleaned up.
     wlmtk_util_disconnect_test_listener(&tl);
-    wlmtk_menu_item_set_submenu(i2, NULL);
-    wlmtk_menu_destroy(submenu_ptr);
     wlmtk_menu_destroy(menu_ptr);
 }
 

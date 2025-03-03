@@ -129,8 +129,11 @@ void wlmtk_menu_item_set_parent_menu(
  * Sets the submenu for this menu item.
  *
  * @param menu_item_ptr
- * @param submenu_ptr         May be NULL, to remove a submenu. Does not take
- *                            ownerhip and must outlive `menu_item_ptr`.
+ * @param submenu_ptr         The submenu to set for the item. The item will
+ *                            take ownership of `submenu_ptr`, and destroy it
+ *                            when the item ist destroyed. Unless the submenu
+ *                            is detached again, by calling with a NULL
+ *                            argument.
  */
 void wlmtk_menu_item_set_submenu(
     wlmtk_menu_item_t *menu_item_ptr,
