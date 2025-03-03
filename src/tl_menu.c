@@ -28,6 +28,13 @@
 struct _wlmaker_tl_menu_t {
     /** Pointer to the window's @ref wlmtk_menu_t. */
     wlmtk_menu_t              *menu_ptr;
+    /** Pointer to the submenu of `move_to_ws_ai_ptr`. */
+    wlmtk_menu_t              *workspaces_submenu_ptr;
+
+    /** Back-link to server. */
+    wlmaker_server_t          *server_ptr;
+    /** Back-link to the window. */
+    wlmtk_window_t            *window_ptr;
 
     /** Listener for @ref wlmtk_window_events_t::state_changed. */
     struct wl_listener        window_state_changed_listener;
@@ -42,6 +49,8 @@ struct _wlmaker_tl_menu_t {
     wlmaker_action_item_t     *shade_ai_ptr;
     /** Action item for 'Unshade'. */
     wlmaker_action_item_t     *unshade_ai_ptr;
+    /** Menu item for attaching the workspaces submenu. */
+    wlmaker_action_item_t     *move_to_ws_ai_ptr;
     /** Action item for 'to previous workspace'. */
     wlmaker_action_item_t     *prev_ws_ai_ptr;
     /** Action item for 'to next workspace'. */
@@ -50,7 +59,35 @@ struct _wlmaker_tl_menu_t {
     wlmaker_action_item_t     *close_ai_ptr;
 };
 
+/** Item holder. */
+typedef struct {
+    /** Composed from a menu item. */
+    wlmtk_menu_item_t         *menu_item_ptr;
+
+    /** Window to move. */
+    wlmtk_window_t            *window_ptr;
+    /** Workspace to move it to. */
+    wlmtk_workspace_t         *workspace_ptr;
+
+    /** Listener for @ref wlmtk_menu_item_events_t::triggered. */
+    struct wl_listener        triggered_listener;
+    /** Listener for @ref wlmtk_menu_item_events_t::destroy. */
+    struct wl_listener        destroy_listener;
+
+} wlmaker_tl_menu_ws_item_t;
+
+static void _wlmaker_tl_menu_workspace_iterator_create_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static void _wlmaker_tl_menu_handle_window_state_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void _destroy(wlmaker_tl_menu_ws_item_t *ws_item_ptr);
+static void _item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _item_handle_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -86,6 +123,11 @@ static const wlmaker_action_item_desc_t _tl_menu_items[] = {
 
     },
     {
+        "Move to ...",
+        WLMAKER_ACTION_NONE,
+        offsetof(wlmaker_tl_menu_t, move_to_ws_ai_ptr)
+    },
+    {
         "To prev. workspace",
         WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE,
         offsetof(wlmaker_tl_menu_t, prev_ws_ai_ptr)
@@ -116,7 +158,9 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
     wlmaker_tl_menu_t *tl_menu_ptr = logged_calloc(
         1, sizeof(wlmaker_tl_menu_t));
     if (NULL == tl_menu_ptr) return NULL;
+    tl_menu_ptr->server_ptr = server_ptr;
     tl_menu_ptr->menu_ptr = wlmtk_window_menu(window_ptr);
+    tl_menu_ptr->window_ptr = window_ptr;
 
     for (const wlmaker_action_item_desc_t *desc_ptr = &_tl_menu_items[0];
          NULL != desc_ptr->text_ptr;
@@ -138,6 +182,21 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
             tl_menu_ptr->menu_ptr,
             wlmaker_action_item_menu_item(ai_ptr));
     }
+
+    tl_menu_ptr->workspaces_submenu_ptr = wlmtk_menu_create(
+        &server_ptr->style.menu,
+        server_ptr->env_ptr);
+    if (NULL == tl_menu_ptr->workspaces_submenu_ptr) {
+        wlmaker_tl_menu_destroy(tl_menu_ptr);
+        return NULL;
+    }
+    wlmtk_menu_item_set_submenu(
+        wlmaker_action_item_menu_item(tl_menu_ptr->move_to_ws_ai_ptr),
+        tl_menu_ptr->workspaces_submenu_ptr);
+    wlmtk_root_for_each_workspace(
+        server_ptr->root_ptr,
+        _wlmaker_tl_menu_workspace_iterator_create_item,
+        tl_menu_ptr);
 
     // Connect state listener and initialize state.
     wlmtk_util_connect_listener_signal(
@@ -197,6 +256,90 @@ void _wlmaker_tl_menu_handle_window_state_changed(
             wlmaker_action_item_menu_item(tl_menu_ptr->next_ws_ai_ptr),
             NULL != ws_dlnode_ptr->next_ptr);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destroys the item holder. */
+void _destroy(wlmaker_tl_menu_ws_item_t *ws_item_ptr)
+{
+    if (NULL != ws_item_ptr->menu_item_ptr) {
+        wlmtk_menu_item_destroy(ws_item_ptr->menu_item_ptr);
+        ws_item_ptr->menu_item_ptr = NULL;
+    }
+    free(ws_item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates a menu item for each workspace. */
+void _wlmaker_tl_menu_workspace_iterator_create_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+    wlmaker_tl_menu_t *tl_menu_ptr = ud_ptr;
+
+    const char *name_ptr;
+    int index;
+    wlmtk_workspace_get_details(workspace_ptr, &name_ptr, &index);
+
+    wlmaker_tl_menu_ws_item_t *ws_item_ptr = logged_calloc(
+        1, sizeof(wlmaker_tl_menu_ws_item_t));
+    if (NULL == ws_item_ptr) return;
+    ws_item_ptr->workspace_ptr = workspace_ptr;
+    ws_item_ptr->window_ptr = tl_menu_ptr->window_ptr;
+
+    ws_item_ptr->menu_item_ptr = wlmtk_menu_item_create(
+        &tl_menu_ptr->server_ptr->style.menu.item,
+        tl_menu_ptr->server_ptr->env_ptr);
+    if (NULL == ws_item_ptr->menu_item_ptr) {
+        _destroy(ws_item_ptr);
+        return;
+    }
+
+    wlmtk_menu_item_set_text(ws_item_ptr->menu_item_ptr, name_ptr);
+
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(ws_item_ptr->menu_item_ptr)->triggered,
+        &ws_item_ptr->triggered_listener,
+        _item_handle_triggered);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(ws_item_ptr->menu_item_ptr)->destroy,
+        &ws_item_ptr->destroy_listener,
+        _item_handle_destroy);
+
+    wlmtk_menu_add_item(
+        tl_menu_ptr->workspaces_submenu_ptr,
+        ws_item_ptr->menu_item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for @ref wlmtk_menu_item_events_t::triggered. Moves the window. */
+void _item_handle_triggered(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_tl_menu_ws_item_t *ws_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_tl_menu_ws_item_t, triggered_listener);
+
+    wlmtk_workspace_unmap_window(
+        wlmtk_window_get_workspace(ws_item_ptr->window_ptr),
+        ws_item_ptr->window_ptr);
+    wlmtk_workspace_map_window(
+        ws_item_ptr->workspace_ptr,
+        ws_item_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for @ref wlmtk_menu_item_events_t::destroy. Destroy. */
+void _item_handle_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_tl_menu_ws_item_t *ws_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_tl_menu_ws_item_t, destroy_listener);
+
+    ws_item_ptr->menu_item_ptr = NULL;
+    _destroy(ws_item_ptr);
 }
 
 /* == End of tl_menu.c ===================================================== */
