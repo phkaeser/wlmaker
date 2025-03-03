@@ -29,6 +29,8 @@ struct _wlmaker_action_item_t {
 
     /** Action to execute when triggered. */
     wlmaker_action_t          action;
+    /** Argument to the action when executing. */
+    void                      *action_arg_ptr;
     /** Back-link to @ref wlmaker_server_t, for executing the action. */
     wlmaker_server_t          *server_ptr;
 
@@ -52,6 +54,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
+    void *action_arg_ptr,
     wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr)
 {
@@ -59,6 +62,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         1, sizeof(wlmaker_action_item_t));
     if (NULL == action_item_ptr) return NULL;
     action_item_ptr->action = action;
+    action_item_ptr->action_arg_ptr = action_arg_ptr;
     action_item_ptr->server_ptr = server_ptr;
 
     action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr, env_ptr);
@@ -95,6 +99,7 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
         desc_ptr->text_ptr,
         style_ptr,
         desc_ptr->action,
+        NULL,
         server_ptr,
         env_ptr);
     if (NULL == action_item_ptr) return NULL;

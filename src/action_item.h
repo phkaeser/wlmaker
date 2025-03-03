@@ -50,6 +50,7 @@ typedef struct {
  * @param text_ptr
  * @param style_ptr
  * @param action
+ * @param action_arg_ptr
  * @param server_ptr
  * @param env_ptr
  *
@@ -59,6 +60,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
+    void *action_arg_ptr,
     wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr);
 
