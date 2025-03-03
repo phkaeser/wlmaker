@@ -892,6 +892,7 @@ void test_right_click(bs_test_t *test_ptr)
  *
  * We want the following:
  * - when the item with submenu highlights, the submenu opens.
+ * - move the cursor onto submenu, check it highlights.
  * - if highlighting is turned off, the item closes the submenu.
  *
  * @param test_ptr
@@ -902,6 +903,7 @@ void test_submenu_highlight(bs_test_t *test_ptr)
 
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
 
     wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style, NULL);
@@ -917,6 +919,10 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
     wlmtk_menu_add_item(submenu_ptr, s1);
     wlmtk_menu_item_set_submenu(i2, submenu_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_RIGHTCLICK,
+        wlmtk_menu_get_mode(submenu_ptr));
 
     // Begin: Move pointer so that i1 is highlighted.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 12, 1));
@@ -944,13 +950,31 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 
     // Then: Move pointer into i2. Must highlight and (re)open submenu.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 
+    // Then: Move pointer into submenu again. Release button. Must trigger.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Release right button.
+    wlmtk_util_test_listener_t tl;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_item_events(s1)->triggered, &tl);
+    wlmtk_button_event_t bup = { .button = BTN_RIGHT, .type = WLMTK_BUTTON_UP };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(me, &bup));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+
+    wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_menu_item_set_submenu(i2, NULL);
     wlmtk_menu_destroy(submenu_ptr);
     wlmtk_menu_destroy(menu_ptr);

@@ -171,6 +171,12 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr)
+{
+    return menu_ptr->mode;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_add_item(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_item_t *menu_item_ptr)
 {

@@ -93,11 +93,6 @@ void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened);
 /** @return whether the menu is open, ie. visible. */
 bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
 
-// FIXME:
-// - add a test that verifies highlight is updates after a close/open.
-//   currently it is sticky.
-// - test submenu item triggering on right-click mode.
-
 /**
  * Sets the mode of the menu.
  *
@@ -106,6 +101,9 @@ bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
  */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode);
+
+/** @return mode of the menu. @see wlmtk_menu_set_mode. */
+wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.
