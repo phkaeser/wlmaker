@@ -182,6 +182,18 @@ void wlmtk_root_switch_to_next_workspace(wlmtk_root_t *root_ptr);
 void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr);
 
 /**
+ * Runs |func()| for each workspace.
+ *
+ * @param root_ptr
+ * @param func
+ * @param ud_ptr
+ */
+void wlmtk_root_for_each_workspace(
+    wlmtk_root_t *root_ptr,
+    void (*func)(bs_dllist_node_t *dlnode_ptr, void *ud_ptr),
+    void *ud_ptr);
+
+/**
  * Locks the root, using the provided lock.
  *
  * The root must not be locked already. If locked successfully, the root will

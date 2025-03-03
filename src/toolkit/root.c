@@ -350,6 +350,15 @@ void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_root_for_each_workspace(
+    wlmtk_root_t *root_ptr,
+    void (*func)(bs_dllist_node_t *dlnode_ptr, void *ud_ptr),
+    void *ud_ptr)
+{
+    bs_dllist_for_each(&root_ptr->workspaces, func, ud_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmtk_root_lock(
     wlmtk_root_t *root_ptr,
     wlmtk_lock_t *lock_ptr)
