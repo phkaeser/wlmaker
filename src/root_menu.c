@@ -102,7 +102,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
             i_ptr->text_ptr,
             &menu_style_ptr->item,
             i_ptr->action,
-            NULL,
             server_ptr,
             env_ptr);
         if (NULL == action_item_ptr) {
