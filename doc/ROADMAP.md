@@ -29,6 +29,13 @@ Support for visual effects to improve usability, but not for pure show.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
   * [done] When positioning the root menu, keep it entirely within the desktop area.
 
+* [done] Support `xdg_shell`, based on toolkit.
+  * [done] show window menu.
+
+* [done] Support `layer_shell`, based on toolkit.
+  * [done] Fixed [#158](https://github.com/phkaeser/wlmaker/issues/158), an setup issue triggered when running fuzzel.
+  * [done] preliminary support for keyboard interactivity.
+
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
@@ -284,6 +291,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Support XDG `wm_capabilities` and advertise the compositor features.
   * Fullscreen: Hide all other visuals when a window takes fullscreen.
   * `xdg-shell`: set_parent, by child wlmtk_window_t.
+  * `xdg-shell`: consider suggested position on `show_window_menu`.
   * Test `idle-inhibit-unstable-v1`. Didn't have a tool when adding.xs
   * Add `ext-idle-notify-v1` support.
   * Add `xdg-activation-v1` support.

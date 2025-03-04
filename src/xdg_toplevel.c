@@ -681,7 +681,7 @@ void handle_toplevel_request_resize(
  * Handler for the `request_show_window_menu` signal.
  *
  * @param listener_ptr
- * @param data_ptr
+ * @param data_ptr            struct wlr_xdg_toplevel_show_window_menu_event.
  */
 void handle_toplevel_request_show_window_menu(
     struct wl_listener *listener_ptr,
@@ -692,9 +692,10 @@ void handle_toplevel_request_show_window_menu(
         xdg_toplevel_surface_t,
         toplevel_request_show_window_menu_listener);
 
-    // TODO(kaeser@gubbe.ch): Implement.
-    bs_log(BS_WARNING, "Unimplemented: request_show_window_menu for XDG "
-           "toplevel %p", xdg_tl_surface_ptr);
+    wlmtk_window_menu_set_enabled(
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        true);
+
 }
 
 /* ------------------------------------------------------------------------- */
