@@ -39,7 +39,7 @@ IF(PLDES)
   # Sadly, the gnustep-base plist utilies don't return EXIT_FAILURE upon
   # parsing an invalid plist file. But eg. `pldes` reports the parsing error,
   # so we capture this as a failure.
-  SET(pldes_failure_regex "pldes.*at\ line.*char")
+  SET(pldes_failure_regex ".*at\ line.*char")
 
   ADD_TEST(
     NAME wlmaker_plist_test
@@ -74,5 +74,12 @@ IF(PLDES)
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-default.plist")
   SET_PROPERTY(
     TEST style_default_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
+    NAME root_menu_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+  SET_PROPERTY(
+    TEST root_menu_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 ENDIF(PLDES)
