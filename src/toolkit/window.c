@@ -590,6 +590,14 @@ void wlmtk_window_menu_set_enabled(
         wlmtk_container_pointer_grab(
             menu_element_ptr->parent_container_ptr,
             menu_element_ptr);
+
+        if (wlmtk_window_element(window_ptr)->pointer_inside) {
+            wlmtk_element_set_position(
+                menu_element_ptr,
+                wlmtk_window_element(window_ptr)->last_pointer_x, 0);
+        } else {
+            wlmtk_element_set_position(menu_element_ptr, 0, 0);
+        }
     } else {
         wlmtk_container_pointer_grab_release(
             menu_element_ptr->parent_container_ptr,
