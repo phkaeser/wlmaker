@@ -31,6 +31,9 @@ struct _wlmaker_tl_menu_t {
     /** Pointer to the submenu of `move_to_ws_ai_ptr`. */
     wlmtk_menu_t              *workspaces_submenu_ptr;
 
+    /** Holds @ref wlmaker_tl_menu_ws_item_t::dlnode items. */
+    bs_dllist_t               submenu_items;
+
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
     /** Back-link to the window. */
@@ -51,16 +54,15 @@ struct _wlmaker_tl_menu_t {
     wlmaker_action_item_t     *unshade_ai_ptr;
     /** Menu item for attaching the workspaces submenu. */
     wlmaker_action_item_t     *move_to_ws_ai_ptr;
-    /** Action item for 'to previous workspace'. */
-    wlmaker_action_item_t     *prev_ws_ai_ptr;
-    /** Action item for 'to next workspace'. */
-    wlmaker_action_item_t     *next_ws_ai_ptr;
     /** Action item for 'close'. */
     wlmaker_action_item_t     *close_ai_ptr;
 };
 
 /** Item holder. */
 typedef struct {
+    /** Element of @ref wlmaker_tl_menu_t::submenu_items. */
+    bs_dllist_node_t          dlnode;
+
     /** Composed from a menu item. */
     wlmtk_menu_item_t         *menu_item_ptr;
 
@@ -77,6 +79,9 @@ typedef struct {
 } wlmaker_tl_menu_ws_item_t;
 
 static void _wlmaker_tl_menu_workspace_iterator_create_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+static void _wlmaker_tl_menu_ws_items_iterator_enable_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 static void _wlmaker_tl_menu_handle_window_state_changed(
@@ -123,21 +128,9 @@ static const wlmaker_action_item_desc_t _tl_menu_items[] = {
 
     },
     {
-        "Move to ...",
+        "Move to workspace ...",
         WLMAKER_ACTION_NONE,
         offsetof(wlmaker_tl_menu_t, move_to_ws_ai_ptr)
-    },
-    {
-        "To prev. workspace",
-        WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE,
-        offsetof(wlmaker_tl_menu_t, prev_ws_ai_ptr)
-
-    },
-    {
-        "To next workspace",
-        WLMAKER_ACTION_WINDOW_TO_NEXT_WORKSPACE,
-        offsetof(wlmaker_tl_menu_t, next_ws_ai_ptr)
-
     },
     {
         "Close",
@@ -198,6 +191,11 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
         _wlmaker_tl_menu_workspace_iterator_create_item,
         tl_menu_ptr);
 
+    bs_dllist_for_each(
+        &tl_menu_ptr->submenu_items,
+        _wlmaker_tl_menu_ws_items_iterator_enable_workspace,
+        NULL);
+
     // Connect state listener and initialize state.
     wlmtk_util_connect_listener_signal(
         &wlmtk_window_events(window_ptr)->state_changed,
@@ -246,16 +244,12 @@ void _wlmaker_tl_menu_handle_window_state_changed(
         wlmaker_action_item_menu_item(tl_menu_ptr->unmaximize_ai_ptr),
         wlmtk_window_is_maximized(window_ptr));
 
-    if (NULL != wlmtk_window_get_workspace(window_ptr)) {
-        bs_dllist_node_t *ws_dlnode_ptr = wlmtk_dlnode_from_workspace(
-            wlmtk_window_get_workspace(window_ptr));
-        wlmtk_menu_item_set_enabled(
-            wlmaker_action_item_menu_item(tl_menu_ptr->prev_ws_ai_ptr),
-            NULL != ws_dlnode_ptr->prev_ptr);
-        wlmtk_menu_item_set_enabled(
-            wlmaker_action_item_menu_item(tl_menu_ptr->next_ws_ai_ptr),
-            NULL != ws_dlnode_ptr->next_ptr);
-    }
+    // Refresh the list of workspaces.
+    bs_dllist_for_each(
+        &tl_menu_ptr->submenu_items,
+        _wlmaker_tl_menu_ws_items_iterator_enable_workspace,
+        NULL);
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -310,6 +304,22 @@ void _wlmaker_tl_menu_workspace_iterator_create_item(
     wlmtk_menu_add_item(
         tl_menu_ptr->workspaces_submenu_ptr,
         ws_item_ptr->menu_item_ptr);
+    bs_dllist_push_back(&tl_menu_ptr->submenu_items, &ws_item_ptr->dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Enables workspace items, except the one the window is currently on. */
+void _wlmaker_tl_menu_ws_items_iterator_enable_workspace(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    wlmaker_tl_menu_ws_item_t *ws_item_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmaker_tl_menu_ws_item_t, dlnode);
+
+    wlmtk_menu_item_set_enabled(
+        ws_item_ptr->menu_item_ptr,
+        (wlmtk_window_get_workspace(ws_item_ptr->window_ptr) !=
+         ws_item_ptr->workspace_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
