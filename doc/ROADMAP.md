@@ -383,6 +383,13 @@ Support for visual effects to improve usability, but not for pure show.
 * Exploratory ideas
   * Stretch: Consider supporting XScreenSaver (or visualization modules).
 
+* Toolkit improvements
+  * Menu
+    * Permit navigation by keys
+    * Position all menus to remain within output.
+    * Re-position to remain within output when submenu opens.
+    * Handle case of too manu menu items that exceed output space.
+
 ## Visualization and effects
 
 * Animations
