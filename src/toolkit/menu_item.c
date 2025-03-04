@@ -256,7 +256,6 @@ void wlmtk_menu_item_set_submenu(
 
         wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
     }
-
 }
 
 /* ------------------------------------------------------------------------- */
