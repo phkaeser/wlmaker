@@ -54,8 +54,6 @@ typedef enum {
 
 /** Events of the menu item. */
 typedef struct {
-    /** Signal is raised whenever the state has changed. */
-    struct wl_signal          state_changed;
     /** The menu item was triggered, by a click or key action. */
     struct wl_signal          triggered;
     /** The menu item is being destroyed. */
@@ -126,6 +124,20 @@ wlmtk_menu_item_events_t *wlmtk_menu_item_events(
 void wlmtk_menu_item_set_parent_menu(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_t *menu_ptr);
+
+/**
+ * Sets the submenu for this menu item.
+ *
+ * @param menu_item_ptr
+ * @param submenu_ptr         The submenu to set for the item. The item will
+ *                            take ownership of `submenu_ptr`, and destroy it
+ *                            when the item ist destroyed. Unless the submenu
+ *                            is detached again, by calling with a NULL
+ *                            argument.
+ */
+void wlmtk_menu_item_set_submenu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *submenu_ptr);
 
 /**
  * Sets the menu's mode for this item.

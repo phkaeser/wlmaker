@@ -44,6 +44,11 @@ typedef struct  {
 
 /** Events of the popup menu. */
 typedef struct {
+    /**
+     * The menu was opened or closed. Check through @ref wlmtk_menu_is_open.
+     * The signal's argument is a pointer to the menu that opened/closed.
+     */
+    struct wl_signal          open_changed;
     /** Popup menu requests to be closed. */
     struct wl_signal          request_close;
 } wlmtk_menu_events_t;
@@ -77,6 +82,18 @@ wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
 
 /**
+ * Opens the menu: Makes it visible or invisible, and resets state
+ * if needed.
+ *
+ * @param menu_ptr
+ * @param opened
+ */
+void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened);
+
+/** @return whether the menu is open, ie. visible. */
+bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
+
+/**
  * Sets the mode of the menu.
  *
  * @param menu_ptr
@@ -84,6 +101,9 @@ wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
  */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode);
+
+/** @return mode of the menu. @see wlmtk_menu_set_mode. */
+wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.

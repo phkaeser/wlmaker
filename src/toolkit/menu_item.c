@@ -39,6 +39,11 @@ struct _wlmtk_menu_item_t {
     /** Link to the menu the item belongs to. Can be NULL. */
     wlmtk_menu_t              *menu_ptr;
 
+    /** A submenu for this item. Can be NULL. */
+    wlmtk_menu_t              *submenu_ptr;
+    /** Listens to @ref wlmtk_menu_events_t::open_changed. */
+    struct wl_listener        submenu_open_changed_listener;
+
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
 
@@ -76,6 +81,10 @@ static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
 
+static bool _wlmtk_menu_item_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec);
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -86,10 +95,15 @@ static void _wlmtk_menu_item_element_pointer_leave(
 static void _wlmtk_menu_item_element_destroy(
     wlmtk_element_t *element_ptr);
 
+static void _wlmtk_menu_item_handle_open_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table for the menu item's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
+    .pointer_motion = _wlmtk_menu_item_element_pointer_motion,
     .pointer_button = _wlmtk_menu_item_element_pointer_button,
     .pointer_enter = _wlmtk_menu_item_element_pointer_enter,
     .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
@@ -97,7 +111,7 @@ static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
 };
 
 /** Style definition used for unit tests. */
-static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
+static const wlmtk_menu_item_style_t _item_test_style = {
     .fill = {
         .type = WLMTK_STYLE_COLOR_DGRADIENT,
         .param = { .dgradient = { .from = 0xff102040, .to = 0xff4080ff }}
@@ -109,6 +123,7 @@ static const wlmtk_menu_item_style_t _wlmtk_menu_item_test_style = {
     .font = { .face = "Helvetica", .size = 14 },
     .height = 24,
     .bezel_width = 1,
+    .width = 200,
     .enabled_text_color = 0xfff0f060,
     .highlighted_text_color = 0xff204080,
     .disabled_text_color = 0xff807060,
@@ -124,7 +139,6 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
         1, sizeof(wlmtk_menu_item_t));
     if (NULL == menu_item_ptr) return NULL;
-    wl_signal_init(&menu_item_ptr->events.state_changed);
     wl_signal_init(&menu_item_ptr->events.triggered);
     wl_signal_init(&menu_item_ptr->events.destroy);
 
@@ -153,6 +167,19 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
     wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
 
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &menu_item_ptr->submenu_open_changed_listener);
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_remove_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
+
+        wlmtk_menu_destroy(menu_item_ptr->submenu_ptr);
+        menu_item_ptr->submenu_ptr = NULL;
+    }
+
     if (NULL != menu_item_ptr->text_ptr) {
         free(menu_item_ptr->text_ptr);
         menu_item_ptr->text_ptr = NULL;
@@ -178,7 +205,57 @@ void wlmtk_menu_item_set_parent_menu(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_t *menu_ptr)
 {
+    if (menu_item_ptr->menu_ptr == menu_ptr) return;
+
+    if (NULL != menu_item_ptr->menu_ptr &&
+        NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_pane_remove_popup(
+            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+    }
+
     menu_item_ptr->menu_ptr = menu_ptr;
+    if (NULL != menu_item_ptr->menu_ptr &&
+        NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_pane_add_popup(
+            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_item_set_submenu(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_t *submenu_ptr)
+{
+    if (menu_item_ptr->submenu_ptr == submenu_ptr) return;
+
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &menu_item_ptr->submenu_open_changed_listener);
+
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_remove_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
+    }
+
+    menu_item_ptr->submenu_ptr = submenu_ptr;
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_menu_events(menu_item_ptr->submenu_ptr)->open_changed,
+            &menu_item_ptr->submenu_open_changed_listener,
+            _wlmtk_menu_item_handle_open_changed);
+
+        if (NULL != menu_item_ptr->menu_ptr) {
+            wlmtk_pane_add_popup(
+                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
+                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        }
+
+        wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -187,6 +264,9 @@ void wlmtk_menu_item_set_mode(
     wlmtk_menu_mode_t mode)
 {
     menu_item_ptr->mode = mode;
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -320,7 +400,22 @@ void _wlmtk_menu_item_set_state(
     if (menu_item_ptr->state == state) return;
     menu_item_ptr->state = state;
     _wlmtk_menu_item_draw_state(menu_item_ptr);
-    wl_signal_emit(&menu_item_ptr->events.state_changed, menu_item_ptr);
+
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        wlmtk_element_t *e = wlmtk_menu_element(menu_item_ptr->submenu_ptr);
+
+        int x, y, t, r;
+        wlmtk_element_t *ie_ptr = wlmtk_menu_item_element(menu_item_ptr);
+        wlmtk_element_get_position(ie_ptr, &x, &y);
+        wlmtk_element_get_dimensions(ie_ptr, NULL, &t, &r, NULL);
+        x += r;
+        y += t;
+        wlmtk_element_set_position(e, x, y);
+
+        wlmtk_menu_set_open(
+            menu_item_ptr->submenu_ptr,
+            menu_item_ptr->state == WLMTK_MENU_ITEM_HIGHLIGHTED);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -405,6 +500,27 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Requests this item to be highlighted if there's motion. */
+bool _wlmtk_menu_item_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    double x, double y,
+    uint32_t time_msec)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
+    bool rv = menu_item_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, x, y, time_msec);
+
+    if (rv && menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
+    }
+
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Checks if the button event is a click, and calls the handler. */
 bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
@@ -454,7 +570,12 @@ void _wlmtk_menu_item_element_pointer_enter(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles when the pointer leaves the element: Ends highlight. */
+/**
+ * Handles when the pointer leaves the element: Ends highlight, in case there
+ * is no submenu currently visible.
+ *
+ * @param element_ptr
+ */
 void _wlmtk_menu_item_element_pointer_leave(
     wlmtk_element_t *element_ptr)
 {
@@ -463,7 +584,10 @@ void _wlmtk_menu_item_element_pointer_leave(
     menu_item_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
 
     if (menu_item_ptr->enabled &&
-        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state) {
+        WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
+        NULL != menu_item_ptr->menu_ptr &&
+        (NULL == menu_item_ptr->submenu_ptr ||
+         !wlmtk_menu_is_open(menu_item_ptr->submenu_ptr))) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
     }
 }
@@ -479,6 +603,25 @@ void _wlmtk_menu_item_element_destroy(
     wlmtk_menu_item_destroy(menu_item_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_menu_events_t::open_changed. Updates item highlight. */
+void _wlmtk_menu_item_handle_open_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_menu_item_t, submenu_open_changed_listener);
+    wlmtk_menu_t *submenu_ptr = data_ptr;
+    BS_ASSERT(submenu_ptr == menu_item_ptr->submenu_ptr);
+
+    if (wlmtk_menu_is_open(submenu_ptr) &&
+        NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
+    }
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -486,6 +629,7 @@ static void test_buffers(bs_test_t *test_ptr);
 static void test_pointer(bs_test_t *test_ptr);
 static void test_triggered(bs_test_t *test_ptr);
 static void test_right_click(bs_test_t *test_ptr);
+static void test_submenu_highlight(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -495,6 +639,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "pointer", test_pointer },
     { 1, "triggered", test_triggered },
     { 1, "right_click", test_right_click },
+    { 1, "submenu_highlight", test_submenu_highlight },
     { 0, NULL, NULL }
 };
 
@@ -503,7 +648,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(item_ptr);
@@ -528,7 +673,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_buffers(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     item_ptr->width = 80;
@@ -559,7 +704,7 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
     wlmtk_menu_add_item(menu_ptr, item_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, menu_ptr, item_ptr->menu_ptr);
@@ -567,11 +712,8 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
-    wlmtk_util_test_listener_t tl;
-    wlmtk_util_connect_test_listener(
-        &wlmtk_menu_item_events(item_ptr)->state_changed, &tl);
 
-    item_ptr->style = _wlmtk_menu_item_test_style;
+    item_ptr->style = _item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
@@ -598,9 +740,6 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->disabled_wlr_buffer_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, item_ptr, tl.last_data_ptr);
-    wlmtk_util_clear_test_listener(&tl);
 
     // Pointer enters the item, but remains disabled.
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
@@ -612,7 +751,6 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->disabled_wlr_buffer_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // When enabled, will be highlighted since pointer is inside.
     wlmtk_menu_item_set_enabled(item_ptr, true);
@@ -624,8 +762,6 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->highlighted_wlr_buffer_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
-    wlmtk_util_clear_test_listener(&tl);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
@@ -639,9 +775,7 @@ void test_pointer(bs_test_t *test_ptr)
         test_ptr,
         item_ptr->super_buffer.wlr_buffer_ptr,
         item_ptr->enabled_wlr_buffer_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
 
-    wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_menu_remove_item(menu_ptr, item_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, item_ptr->menu_ptr);
     wlmtk_menu_item_destroy(item_ptr);
@@ -653,12 +787,11 @@ void test_pointer(bs_test_t *test_ptr)
 void test_triggered(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->style = _wlmtk_menu_item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
@@ -713,12 +846,11 @@ void test_triggered(bs_test_t *test_ptr)
 void test_right_click(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_wlmtk_menu_item_test_style, NULL);
+        &_item_test_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->style = _wlmtk_menu_item_test_style;
     item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
@@ -764,6 +896,99 @@ void test_right_click(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_test_listener(&tl);
     wlmtk_menu_item_destroy(item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests the interaction of submenu and menu item highlighting.
+ *
+ * We want the following:
+ * - when the item with submenu highlights, the submenu opens.
+ * - move the cursor onto submenu, check it highlights.
+ * - if highlighting is turned off, the item closes the submenu.
+ *
+ * @param test_ptr
+ **/
+void test_submenu_highlight(bs_test_t *test_ptr)
+{
+    wlmtk_menu_style_t s = { .item = _item_test_style };
+
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
+    wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
+
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
+    wlmtk_menu_add_item(menu_ptr, i1);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
+    wlmtk_menu_add_item(menu_ptr, i2);
+
+    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(&s, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, submenu_ptr);
+    wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
+    wlmtk_menu_add_item(submenu_ptr, s1);
+    wlmtk_menu_item_set_submenu(i2, submenu_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_RIGHTCLICK,
+        wlmtk_menu_get_mode(submenu_ptr));
+
+    // Begin: Move pointer so that i1 is highlighted.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 12, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+
+    // Then: move pointer into i2. Must highlight and open submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+
+    // Then: Move pointer into i2 and submenu. Must highlight the submenu item.
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Then: Move pointer a bit, within i1. Highlight that, close submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 13, 1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Then: Move pointer into i2. Must highlight and (re)open submenu.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Then: Move pointer into submenu again. Release button. Must trigger.
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
+
+    // Release right button.
+    wlmtk_util_test_listener_t tl;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_item_events(s1)->triggered, &tl);
+    wlmtk_button_event_t bup = { .button = BTN_RIGHT, .type = WLMTK_BUTTON_UP };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(me, &bup));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
+
+    // Deliberately: Do not detach submenu, must be cleaned up.
+    wlmtk_util_disconnect_test_listener(&tl);
+    wlmtk_menu_destroy(menu_ptr);
 }
 
 /* == End of menu_item.c =================================================== */

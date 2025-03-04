@@ -24,7 +24,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Available as window menu in windows.
   * [done] Available also for X11 windows.
   * Available as (hardcoded) application menu.
-  * Menu with submenus.
+  * [done] Menu with submenus.
   * [done] Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
   * [done] When positioning the root menu, keep it entirely within the desktop area.
@@ -33,6 +33,8 @@ Support for visual effects to improve usability, but not for pure show.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
   * When switching workspace, pointer state appears to be reset.
+  * Test handling of mouse position when changing element visibility. Making
+    an element visible should re-trigger focus computation.
   * Verify handling of element motion() and button() return values.
 
 ## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
@@ -353,6 +355,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Configurable keyboard map.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)
+  * Support ChromeOS layout switch hotkey (`Ctrl+Shift+Space`)
 
 * Window placement
   * Automatic placement on a free spot.

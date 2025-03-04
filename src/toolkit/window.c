@@ -578,7 +578,7 @@ void wlmtk_window_menu_set_enabled(
         window_ptr->window_menu_ptr);
     BS_ASSERT(NULL != menu_element_ptr->parent_container_ptr);
 
-    wlmtk_element_set_visible(menu_element_ptr, enabled);
+    wlmtk_menu_set_open(window_ptr->window_menu_ptr, enabled);
 
     if (enabled) {
         wlmtk_menu_set_mode(

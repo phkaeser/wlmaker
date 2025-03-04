@@ -98,6 +98,7 @@ wlmtk_menu_t *wlmtk_menu_create(
     menu_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
 
+    wl_signal_init(&menu_ptr->events.open_changed);
     wl_signal_init(&menu_ptr->events.request_close);
     return menu_ptr;
 }
@@ -135,6 +136,29 @@ wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_menu_set_open(wlmtk_menu_t *menu_ptr, bool opened)
+{
+    if (wlmtk_menu_element(menu_ptr)->visible == opened) return;
+
+    wlmtk_element_set_visible(wlmtk_menu_element(menu_ptr), opened);
+
+    if (NULL != menu_ptr->highlighted_menu_item_ptr) {
+        wlmtk_menu_item_set_highlighted(
+            menu_ptr->highlighted_menu_item_ptr, false);
+        menu_ptr->highlighted_menu_item_ptr = NULL;
+    }
+
+    wl_signal_emit(&menu_ptr->events.open_changed, menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr)
+{
+    return wlmtk_menu_element(menu_ptr)->visible;
+}
+
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          wlmtk_menu_mode_t mode)
 {
@@ -144,6 +168,12 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
         &menu_ptr->items,
         _wlmtk_menu_set_item_mode,
         menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr)
+{
+    return menu_ptr->mode;
 }
 
 /* ------------------------------------------------------------------------- */
