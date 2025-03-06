@@ -89,6 +89,7 @@ ADD_DEPENDENCIES(
   conf
   toolkit
   embedded_configuration
+  embedded_root_menu
   embedded_state
   embedded_style
   wlmaker_lib)
@@ -99,6 +100,7 @@ TARGET_LINK_LIBRARIES(
   conf
   toolkit
   embedded_configuration
+  embedded_root_menu
   embedded_state
   embedded_style
   wlmaker_protocols

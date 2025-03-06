@@ -200,6 +200,8 @@ struct _wlmaker_server_t {
 
     /** Root menu, when active. NULL when not invoked. */
     wlmaker_root_menu_t       *root_menu_ptr;
+    /** Parsed contents of the root menu definition, from plist. */
+    wlmcfg_array_t            *root_menu_array_ptr;
     /** Listener for `unclaimed_button_event` signal raised by `wlmtk_root`. */
     struct wl_listener        unclaimed_button_event_listener;
 

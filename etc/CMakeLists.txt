@@ -21,6 +21,11 @@ EmbedBinary_ADD_LIBRARY(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
 
 EmbedBinary_ADD_LIBRARY(
+  embedded_root_menu
+  "root_menu"
+  "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+
+EmbedBinary_ADD_LIBRARY(
   embedded_state
   "default_state"
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-state.plist")
@@ -63,6 +68,13 @@ IF(PLDES)
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
+    NAME root_menu_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+  SET_PROPERTY(
+    TEST root_menu_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
     NAME style_debian_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-debian.plist")
   SET_PROPERTY(
@@ -76,10 +88,4 @@ IF(PLDES)
     TEST style_default_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
-  ADD_TEST(
-    NAME root_menu_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
-  SET_PROPERTY(
-    TEST root_menu_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 ENDIF(PLDES)

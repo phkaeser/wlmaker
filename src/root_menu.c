@@ -95,6 +95,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
             WLMTK_MENU_MODE_RIGHTCLICK);
     }
 
+    // FIXME
+
     for (const wlmaker_root_menu_item_t *i_ptr = &_wlmaker_root_menu_items[0];
          i_ptr->text_ptr != NULL;
          ++i_ptr) {
