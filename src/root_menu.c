@@ -78,6 +78,16 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_env_t *env_ptr)
 {
+    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+        bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
+        return NULL;
+    }
+    if (WLMCFG_STRING != wlmcfg_object_type(
+            wlmcfg_array_at(server_ptr->root_menu_array_ptr, 0))) {
+        bs_log(BS_ERROR, "Array element [0] must be a string.");
+        return NULL;
+    }
+
     wlmaker_root_menu_t *root_menu_ptr = logged_calloc(
         1, sizeof(wlmaker_root_menu_t));
     if (NULL == root_menu_ptr) return NULL;
@@ -94,8 +104,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             WLMTK_MENU_MODE_RIGHTCLICK);
     }
-
-    // FIXME
 
     for (const wlmaker_root_menu_item_t *i_ptr = &_wlmaker_root_menu_items[0];
          i_ptr->text_ptr != NULL;
@@ -144,7 +152,9 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
     }
-    wlmtk_window_set_title(root_menu_ptr->window_ptr, "Root Menu");
+    wlmtk_window_set_title(
+        root_menu_ptr->window_ptr,
+        wlmcfg_array_string_value_at(server_ptr->root_menu_array_ptr, 0));
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
     uint32_t properties = 0;
     if (right_click_mode) {
