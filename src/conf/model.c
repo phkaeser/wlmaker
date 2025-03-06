@@ -142,6 +142,7 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
 /* ------------------------------------------------------------------------- */
 const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr)
 {
+    if (NULL == string_ptr) return NULL;  // Guard clause.
     return string_ptr->value_ptr;
 }
 

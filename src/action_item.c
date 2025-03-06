@@ -154,6 +154,8 @@ void _wlmaker_action_item_handle_destroy(
         listener_ptr, wlmaker_action_item_t, destroy_listener);
 
     // Clear the reference to the menu item. It is already being destroyed.
+    wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
     action_item_ptr->menu_item_ptr = NULL;
     wlmaker_action_item_destroy(action_item_ptr);
 }

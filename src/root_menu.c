@@ -42,29 +42,20 @@ struct _wlmaker_root_menu_t {
 
 static void _wlmaker_root_menu_content_request_close(
     wlmtk_content_t *content_ptr);
-
-/** Temporary: Struct for defining a menu item for the root menu. */
-typedef struct {
-    /** Text to use in the root menu item. */
-    const char                *text_ptr;
-    /** Action to be executed for that menu item. */
-    wlmaker_action_t          action;
-} wlmaker_root_menu_item_t;
+static wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
+    wlmcfg_array_t *array_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr);
+static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
+    wlmcfg_array_t *array_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr);
 
 /* == Data ================================================================= */
 
 /** Virtual method of the root menu's window content. */
 static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
     .request_close = _wlmaker_root_menu_content_request_close
-};
-
-/** Menu items in the root menu. */
-static const wlmaker_root_menu_item_t _wlmaker_root_menu_items[] = {
-    { "Previous Workspace", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS },
-    { "Next Workspace", WLMAKER_ACTION_WORKSPACE_TO_NEXT },
-    { "Lock", WLMAKER_ACTION_LOCK_SCREEN },
-    { "Exit", WLMAKER_ACTION_QUIT },
-    { NULL, 0 }  // Sentinel.
 };
 
 /* == Exported methods ===================================================== */
@@ -94,7 +85,10 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     root_menu_ptr->server_ptr = server_ptr;
     root_menu_ptr->server_ptr->root_menu_ptr = root_menu_ptr;
 
-    root_menu_ptr->menu_ptr = wlmtk_menu_create(menu_style_ptr, env_ptr);
+    root_menu_ptr->menu_ptr = _wlmaker_root_menu_create_menu_from_array(
+        server_ptr->root_menu_array_ptr,
+        menu_style_ptr,
+        server_ptr);
     if (NULL == root_menu_ptr->menu_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
@@ -103,24 +97,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         wlmtk_menu_set_mode(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             WLMTK_MENU_MODE_RIGHTCLICK);
-    }
-
-    for (const wlmaker_root_menu_item_t *i_ptr = &_wlmaker_root_menu_items[0];
-         i_ptr->text_ptr != NULL;
-         ++i_ptr) {
-        wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
-            i_ptr->text_ptr,
-            &menu_style_ptr->item,
-            i_ptr->action,
-            server_ptr,
-            env_ptr);
-        if (NULL == action_item_ptr) {
-            wlmaker_root_menu_destroy(root_menu_ptr);
-            return NULL;
-        }
-        wlmtk_menu_add_item(
-            root_menu_ptr->menu_ptr,
-            wlmaker_action_item_menu_item(action_item_ptr));
     }
 
     if (!wlmtk_content_init(
@@ -227,6 +203,114 @@ void _wlmaker_root_menu_content_request_close(
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
         content_ptr, wlmaker_root_menu_t, content);
     wlmaker_root_menu_destroy(root_menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates an action menu item from the plist array.
+ *
+ * @param array_ptr
+ * @param menu_style_ptr
+ * @param server_ptr
+ *
+ * @return Pointer to the created @ref wlmaker_action_item_t or NULL on error.
+ */
+wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
+    wlmcfg_array_t *array_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 2) {
+        bs_log(BS_ERROR, "Needs >= 2 array elements for item definition.");
+        return NULL;
+    }
+    const char *name_ptr = wlmcfg_array_string_value_at(array_ptr, 0);
+    if (NULL == name_ptr) {
+        bs_log(BS_ERROR, "Array element [0] for item must be a string.");
+        return NULL;
+    }
+
+    const char *action_name_ptr = wlmcfg_array_string_value_at(array_ptr, 1);
+    if (NULL == action_name_ptr) {
+        bs_log(BS_ERROR, "Array element [1] for item '%s' must be a string.",
+               name_ptr);
+        return NULL;
+    }
+
+    int action;
+    if (!wlmcfg_enum_name_to_value(
+            wlmaker_action_desc,
+            action_name_ptr,
+            &action)) {
+        bs_log(BS_ERROR, "Failed decoding '%s' of item '%s' into action.",
+               action_name_ptr, name_ptr);
+        return NULL;
+    }
+
+    return wlmaker_action_item_create(
+        name_ptr,
+        &menu_style_ptr->item,
+        action,
+        server_ptr,
+        server_ptr->env_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates a @ref wlmtk_menu_t from the plist array.
+ *
+ * @param array_ptr
+ * @param menu_style_ptr
+ * @param server_ptr
+ *
+ * @return A pointer to the created @ref wlmtk_menu_t or NULL on error.
+ */
+wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
+    wlmcfg_array_t *array_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+        bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
+        return NULL;
+    }
+    const char *name_ptr = wlmcfg_array_string_value_at(array_ptr, 0);
+    if (NULL == name_ptr) {
+        bs_log(BS_ERROR, "Array element [0] must be a string.");
+        return NULL;
+    }
+
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(
+        menu_style_ptr,
+        server_ptr->env_ptr);
+    if (NULL == menu_ptr) return NULL;
+
+    for (size_t i = 1; i < wlmcfg_array_size(array_ptr); ++i) {
+        wlmcfg_array_t *item_array_ptr = wlmcfg_array_from_object(
+            wlmcfg_array_at(array_ptr, i));
+        if (NULL == item_array_ptr) {
+            bs_log(BS_ERROR, "Array element [1] in '%s' must be an array.",
+                   name_ptr);
+            wlmtk_menu_destroy(menu_ptr);
+            return NULL;
+        }
+
+        wlmaker_action_item_t *action_item_ptr =
+            _wlmaker_root_menu_create_action_item_from_array(
+                item_array_ptr,
+                menu_style_ptr,
+                server_ptr);
+        if (NULL == action_item_ptr) {
+            bs_log(BS_ERROR, "Failed to create action item from element [%zu] "
+                   "in '%s'", i, name_ptr);
+        }
+
+        wlmtk_menu_add_item(
+            menu_ptr,
+            wlmaker_action_item_menu_item(action_item_ptr));
+    }
+
+    return menu_ptr;
 }
 
 /* == End of root_menu.c =================================================== */

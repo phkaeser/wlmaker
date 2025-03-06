@@ -1,8 +1,8 @@
 // Definition of root menu. Follows Window Maker plist order.
 ("Root Menu",
- (Applications,
-  (Terminal, EXEC, foot),
-  (Chrome, EXEC, chrome)),
+// (Applications,
+//  (Terminal, EXEC, foot),
+//  (Chrome, EXEC, chrome)),
  ("Previous Workspace", WorkspacePrevious),
  ("Next Workspace", WorkspaceNext),
  ("Lock", LockScreen),
