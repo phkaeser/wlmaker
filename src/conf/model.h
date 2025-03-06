@@ -64,6 +64,15 @@ wlmcfg_object_t *wlmcfg_object_ref(wlmcfg_object_t *object_ptr);
 void wlmcfg_object_unref(wlmcfg_object_t *object_ptr);
 
 /**
+ * Returns the type of `object_ptr`.
+ *
+ * @param object_ptr
+ *
+ * @return The type.
+ */
+wlmcfg_type_t wlmcfg_object_type(wlmcfg_object_t *object_ptr);
+
+/**
  * Creates a string object.
  *
  * @param value_ptr
