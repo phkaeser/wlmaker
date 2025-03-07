@@ -111,6 +111,12 @@ void wlmcfg_object_unref(wlmcfg_object_t *object_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmcfg_type_t wlmcfg_object_type(wlmcfg_object_t *object_ptr)
+{
+    return object_ptr->type;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
 {
     BS_ASSERT(NULL != value_ptr);
@@ -136,6 +142,7 @@ wlmcfg_string_t *wlmcfg_string_create(const char *value_ptr)
 /* ------------------------------------------------------------------------- */
 const char *wlmcfg_string_value(const wlmcfg_string_t *string_ptr)
 {
+    if (NULL == string_ptr) return NULL;  // Guard clause.
     return string_ptr->value_ptr;
 }
 
@@ -496,6 +503,11 @@ void test_string(bs_test_t *test_ptr)
         string_ptr,
         wlmcfg_string_from_object(object_ptr));
 
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMCFG_STRING,
+        wlmcfg_object_type(object_ptr));
+
     wlmcfg_object_unref(object_ptr);
 }
 
@@ -539,6 +551,11 @@ void test_dict(bs_test_t *test_ptr)
         wlmcfg_dict_foreach(dict_ptr, foreach_callback, &val));
     BS_TEST_VERIFY_EQ(test_ptr, 3, val);
 
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMCFG_DICT,
+        wlmcfg_object_type(wlmcfg_object_from_dict(dict_ptr)));
+
     wlmcfg_dict_unref(dict_ptr);
 }
 
@@ -564,6 +581,11 @@ void test_array(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_EQ(test_ptr, obj0_ptr, wlmcfg_array_at(array_ptr, 0));
     BS_TEST_VERIFY_EQ(test_ptr, obj1_ptr, wlmcfg_array_at(array_ptr, 1));
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMCFG_ARRAY,
+        wlmcfg_object_type(wlmcfg_object_from_array(array_ptr)));
 
     wlmcfg_array_unref(array_ptr);
 }

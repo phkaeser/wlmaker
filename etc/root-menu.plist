@@ -1,0 +1,6 @@
+// Definition of root menu. Follows Window Maker plist order.
+("Root Menu",
+ ("Previous Workspace", WorkspacePrevious),
+ ("Next Workspace", WorkspaceNext),
+ ("Lock", LockScreen),
+ (Exit, Quit))

@@ -41,6 +41,7 @@
 #include "task_list.h"
 
 #include "style_default.h"
+#include "../etc/root_menu.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
@@ -48,6 +49,8 @@ static char *wlmaker_arg_config_file_ptr = NULL;
 static char *wlmaker_arg_state_file_ptr = NULL;
 /** Will hold the value of --style_file. */
 static char *wlmaker_arg_style_file_ptr = NULL;
+/** Will hold the value of --root_menu_file. */
+static char *wlmaker_arg_root_menu_file_ptr = NULL;
 
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {
@@ -94,6 +97,12 @@ static const bs_arg_t wlmaker_args[] = {
         "will use a built-in default style.",
         NULL,
         &wlmaker_arg_style_file_ptr),
+    BS_ARG_STRING(
+        "root_menu_file",
+        "Optional: Path to a file describing the root menu. If not provided, "
+        "wlmaker will use a built-in definition for the root menu.",
+        NULL,
+        &wlmaker_arg_root_menu_file_ptr),
     BS_ARG_ENUM(
         "log_level",
         "Log level to apply. One of DEBUG, INFO, WARNING, ERROR.",
@@ -345,6 +354,30 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
                   &server_ptr->style));
     wlmcfg_dict_unref(style_dict_ptr);
 
+    if (NULL != wlmaker_arg_root_menu_file_ptr) {
+        server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(
+            wlmcfg_create_object_from_plist_file(
+                wlmaker_arg_root_menu_file_ptr));
+    } else {
+        server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(
+            wlmcfg_create_object_from_plist_data(
+                embedded_binary_root_menu_data,
+                embedded_binary_root_menu_size));
+    }
+    if (NULL == server_ptr->root_menu_array_ptr) return EXIT_FAILURE;
+    // TODO(kaeser@gubbe.ch): Uh, that's ugly...
+    server_ptr->root_menu_ptr = wlmaker_root_menu_create(
+        server_ptr,
+        &server_ptr->style.window,
+        &server_ptr->style.menu,
+        server_ptr->env_ptr);
+    if (NULL == server_ptr->root_menu_ptr) {
+        return EXIT_FAILURE;
+    }
+    wlmtk_menu_set_open(
+        wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
+        false);
+
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
         wlmcfg_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
@@ -401,6 +434,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     if (NULL != clip_ptr) wlmaker_clip_destroy(clip_ptr);
     if (NULL != dock_ptr) wlmaker_dock_destroy(dock_ptr);
     wlmaker_action_unbind_keys(action_handle_ptr);
+    wlmcfg_array_unref(server_ptr->root_menu_array_ptr);
     wlmaker_server_destroy(server_ptr);
 
     bs_subprocess_t *sp_ptr;
