@@ -71,7 +71,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     bool right_click_mode,
-    __UNUSED__ wlmtk_workspace_t *workspace_ptr,
     wlmtk_env_t *env_ptr)
 {
     if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
