@@ -285,6 +285,12 @@ bool create_workspaces(
     return rv;
 }
 
+/** Lookup paths for the root menu config file. */
+static const char *_wlmaker_root_menu_fname_ptrs[] = {
+    "~/.wlmaker-root-menu.plist",
+    NULL  // Sentinel.
+};
+
 /* ------------------------------------------------------------------------- */
 /** Loads the root menu plist from provided arg, or built-in. */
 wlmcfg_array_t *_load_root_menu_plist(void) {
@@ -300,6 +306,26 @@ wlmcfg_array_t *_load_root_menu_plist(void) {
                    wlmaker_arg_root_menu_file_ptr);
             return NULL;
         }
+        return array_ptr;
+    }
+
+    for (const char **fname_ptr_ptr = _wlmaker_root_menu_fname_ptrs;
+         *fname_ptr_ptr != NULL;
+         fname_ptr_ptr++) {
+        char full_path[PATH_MAX];
+        char *path_ptr = bs_file_resolve_path(*fname_ptr_ptr, full_path);
+        if (NULL == path_ptr) {
+            bs_log(BS_INFO | BS_ERRNO, "Failed bs_file_resolve_path(%s, %p)",
+                   *fname_ptr_ptr, full_path);
+            continue;
+        }
+
+        // If we get here, there was a resolved item at the path. A load
+        // failure indicates an issue with an existing file, and we should
+        // fali here.
+        bs_log(BS_INFO, "Loading configuration from \"%s\"", path_ptr);
+        array_ptr = wlmcfg_array_from_object(
+            wlmcfg_create_object_from_plist_file(path_ptr));
         return array_ptr;
     }
 
