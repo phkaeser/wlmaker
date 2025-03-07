@@ -1,5 +1,6 @@
 // Definition of root menu. Follows Window Maker plist order.
 ("Root Menu",
+ ("Launch Terminal", Execute, "/usr/bin/foot"),
  ("Previous Workspace", WorkspacePrevious),
  ("Next Workspace", WorkspaceNext),
  ("Lock", LockScreen),

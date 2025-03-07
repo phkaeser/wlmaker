@@ -35,6 +35,7 @@ typedef enum {
     WLMAKER_ACTION_LOCK_INHIBIT_BEGIN,
     WLMAKER_ACTION_LOCK_INHIBIT_END,
     WLMAKER_ACTION_LAUNCH_TERMINAL,
+    WLMAKER_ACTION_EXECUTE,
 
     WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS,
     WLMAKER_ACTION_WORKSPACE_TO_NEXT,
@@ -104,10 +105,12 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr);
  *
  * @param server_ptr
  * @param action
+ * @param arg_ptr
  */
 void wlmaker_action_execute(
     wlmaker_server_t *server_ptr,
-    wlmaker_action_t action);
+    wlmaker_action_t action,
+    void *arg_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t   wlmaker_action_test_cases[];

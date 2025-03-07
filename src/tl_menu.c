@@ -103,42 +103,49 @@ static const wlmaker_action_item_desc_t _tl_menu_items[] = {
     {
         "Maximize",
         WLMAKER_ACTION_WINDOW_MAXIMIZE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, maximize_ai_ptr)
     },
     {
         "Unmaximize",
         WLMAKER_ACTION_WINDOW_UNMAXIMIZE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, unmaximize_ai_ptr)
     },
     {
         "Fullscreen",
         WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN,
+        NULL,
         offsetof(wlmaker_tl_menu_t, fullscreen_ai_ptr)
     },
     {
         "Shade",
         WLMAKER_ACTION_WINDOW_SHADE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, shade_ai_ptr)
 
     },
     {
         "Unshade",
         WLMAKER_ACTION_WINDOW_UNSHADE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, unshade_ai_ptr)
 
     },
     {
         "Move to workspace ...",
         WLMAKER_ACTION_NONE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, move_to_ws_ai_ptr)
     },
     {
         "Close",
         WLMAKER_ACTION_WINDOW_CLOSE,
+        NULL,
         offsetof(wlmaker_tl_menu_t, close_ai_ptr)
 
     },
-    { NULL, 0, 0 }  // Sentinel.
+    { NULL, 0, NULL, 0 }  // Sentinel.
 };
 
 /* == Exported methods ===================================================== */

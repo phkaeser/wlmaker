@@ -293,10 +293,16 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
         }
     }
 
+    const char *action_arg_ptr = NULL;
+    if (2 < wlmcfg_array_size(array_ptr)) {
+        action_arg_ptr = wlmcfg_array_string_value_at(array_ptr, 2);
+    }
+
     wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
         name_ptr,
         &menu_style_ptr->item,
         action,
+        action_arg_ptr,
         server_ptr,
         server_ptr->env_ptr);
     if (NULL == action_item_ptr) {

@@ -37,6 +37,8 @@ typedef struct {
     const char                *text_ptr;
     /** The action to trigger. */
     wlmaker_action_t          action;
+    /** Extra argument for @ref wlmaker_action_execute. */
+    char                      *action_arg_ptr;
     /**
      * Where to store the @ref wlmaker_action_item_t, relative to the
      * `dest_ptr` argument of @ref wlmaker_action_item_create_from_desc.
@@ -50,6 +52,7 @@ typedef struct {
  * @param text_ptr
  * @param style_ptr
  * @param action
+ * @param action_arg_ptr      Extra argument. Will be duplicated.
  * @param server_ptr
  * @param env_ptr
  *
@@ -59,6 +62,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
+    const char *action_arg_ptr,
     wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr);
 
