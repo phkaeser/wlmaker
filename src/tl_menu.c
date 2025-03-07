@@ -218,6 +218,9 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_tl_menu_destroy(wlmaker_tl_menu_t *tl_menu_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &tl_menu_ptr->window_state_changed_listener);
+
     free(tl_menu_ptr);
 }
 
