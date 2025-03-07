@@ -230,29 +230,55 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
         return NULL;
     }
 
-    const char *action_name_ptr = wlmcfg_array_string_value_at(array_ptr, 1);
-    if (NULL == action_name_ptr) {
-        bs_log(BS_ERROR, "Array element [1] for item '%s' must be a string.",
-               name_ptr);
-        return NULL;
+    wlmtk_menu_t *submenu_ptr = NULL;
+    int action = WLMAKER_ACTION_NONE;
+    wlmcfg_object_t *obj_ptr = wlmcfg_array_at(array_ptr, 1);
+    if (WLMCFG_ARRAY == wlmcfg_object_type(obj_ptr)) {
+
+        submenu_ptr = _wlmaker_root_menu_create_menu_from_array(
+            array_ptr,
+            menu_style_ptr,
+            server_ptr);
+        if (NULL == submenu_ptr) {
+            bs_log(BS_ERROR, "Failed to create submenu for item '%s'",
+                   name_ptr);
+            return NULL;
+        }
+
+    } else {
+        const char *action_name_ptr = wlmcfg_string_value(
+            wlmcfg_string_from_object(obj_ptr));
+        if (NULL == action_name_ptr) {
+            bs_log(BS_ERROR, "Array element [1] for item '%s' must be a "
+                   "string.", name_ptr);
+            return NULL;
+        }
+
+        if (!wlmcfg_enum_name_to_value(
+                wlmaker_action_desc,
+                action_name_ptr,
+                &action)) {
+            bs_log(BS_ERROR, "Failed decoding '%s' of item '%s' into action.",
+                   action_name_ptr, name_ptr);
+            return NULL;
+        }
     }
 
-    int action;
-    if (!wlmcfg_enum_name_to_value(
-            wlmaker_action_desc,
-            action_name_ptr,
-            &action)) {
-        bs_log(BS_ERROR, "Failed decoding '%s' of item '%s' into action.",
-               action_name_ptr, name_ptr);
-        return NULL;
-    }
-
-    return wlmaker_action_item_create(
+    wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
         name_ptr,
         &menu_style_ptr->item,
         action,
         server_ptr,
         server_ptr->env_ptr);
+    if (NULL == action_item_ptr) {
+        if (NULL == submenu_ptr) wlmtk_menu_destroy(submenu_ptr);
+        return NULL;
+    }
+
+    wlmtk_menu_item_set_submenu(
+        wlmaker_action_item_menu_item(action_item_ptr),
+        submenu_ptr);
+    return action_item_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -303,6 +329,7 @@ wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
         if (NULL == action_item_ptr) {
             bs_log(BS_ERROR, "Failed to create action item from element [%zu] "
                    "in '%s'", i, name_ptr);
+            return NULL;
         }
 
         wlmtk_menu_add_item(
