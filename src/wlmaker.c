@@ -285,6 +285,33 @@ bool create_workspaces(
     return rv;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Loads the root menu plist from provided arg, or built-in. */
+wlmcfg_array_t *_load_root_menu_plist(void) {
+    wlmcfg_array_t *array_ptr = NULL;
+
+    if (NULL != wlmaker_arg_root_menu_file_ptr) {
+        array_ptr = wlmcfg_array_from_object(
+            wlmcfg_create_object_from_plist_file(
+                wlmaker_arg_root_menu_file_ptr));
+        if (NULL == array_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed to load root menu configuration from '%s'.",
+                   wlmaker_arg_root_menu_file_ptr);
+            return NULL;
+        }
+        return array_ptr;
+    }
+
+    // Finally: Load built-in default. A failure here is... unexpected.
+    array_ptr = wlmcfg_array_from_object(
+        wlmcfg_create_object_from_plist_data(
+            embedded_binary_root_menu_data,
+            embedded_binary_root_menu_size));
+    BS_ASSERT(NULL != array_ptr);
+    return array_ptr;
+}
+
 /* == Main program ========================================================= */
 /** The main program. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
@@ -354,16 +381,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
                   &server_ptr->style));
     wlmcfg_dict_unref(style_dict_ptr);
 
-    if (NULL != wlmaker_arg_root_menu_file_ptr) {
-        server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(
-            wlmcfg_create_object_from_plist_file(
-                wlmaker_arg_root_menu_file_ptr));
-    } else {
-        server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(
-            wlmcfg_create_object_from_plist_data(
-                embedded_binary_root_menu_data,
-                embedded_binary_root_menu_size));
-    }
+    server_ptr->root_menu_array_ptr = _load_root_menu_plist();
     if (NULL == server_ptr->root_menu_array_ptr) return EXIT_FAILURE;
     // TODO(kaeser@gubbe.ch): Uh, that's ugly...
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
