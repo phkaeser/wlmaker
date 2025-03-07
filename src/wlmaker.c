@@ -387,6 +387,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         config_dict_ptr, &wlmaker_server_options);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
+    // FIXME
     // TODO: Should be loaded from file, if given in the config. Or on the
     // commandline.
     wlmcfg_dict_t *style_dict_ptr = NULL;
