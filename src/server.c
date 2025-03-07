@@ -793,7 +793,9 @@ void _wlmaker_server_unclaimed_button_event_handler(
 
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type &&
-        NULL != server_ptr->root_menu_ptr) {
+        NULL != server_ptr->root_menu_ptr &&
+        !wlmtk_menu_is_open(
+            wlmaker_root_menu_menu(server_ptr->root_menu_ptr))) {
         wlmtk_menu_set_open(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             true);

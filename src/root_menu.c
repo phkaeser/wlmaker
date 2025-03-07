@@ -225,7 +225,8 @@ void _wlmaker_root_menu_handle_menu_open_changed(
 {
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_root_menu_t, menu_open_changed_listener);
-    if (!wlmtk_menu_is_open(root_menu_ptr->menu_ptr)) {
+    if (!wlmtk_menu_is_open(root_menu_ptr->menu_ptr) &&
+        NULL != wlmtk_window_get_workspace(root_menu_ptr->window_ptr)) {
         wlmtk_workspace_unmap_window(
             wlmtk_window_get_workspace(root_menu_ptr->window_ptr),
             root_menu_ptr->window_ptr);
