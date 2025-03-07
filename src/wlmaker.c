@@ -292,6 +292,13 @@ static const char *_wlmaker_root_menu_fname_ptrs[] = {
     NULL  // Sentinel.
 };
 
+/** Lookup paths for the style config file. */
+static const char *_wlmaker_style_fname_ptrs[] = {
+    "~/.wlmaker-style.plist",
+    "/usr/share/wlmaker/style.plist",
+    NULL  // Sentinel.
+};
+
 /* == Main program ========================================================= */
 /** The main program. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
@@ -341,25 +348,18 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         config_dict_ptr, &wlmaker_server_options);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
-    // FIXME
-    // TODO: Should be loaded from file, if given in the config. Or on the
-    // commandline.
-    wlmcfg_dict_t *style_dict_ptr = NULL;
-    if (NULL != wlmaker_arg_style_file_ptr) {
-        style_dict_ptr = wlmcfg_dict_from_object(
-            wlmcfg_create_object_from_plist_file(
-                wlmaker_arg_style_file_ptr));
-    } else {
-        style_dict_ptr = wlmcfg_dict_from_object(
-            wlmcfg_create_object_from_plist_data(
-                embedded_binary_style_default_data,
-                embedded_binary_style_default_size));
-    }
+    wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
+        wlmaker_plist_load(
+            "style",
+            wlmaker_arg_style_file_ptr,
+            _wlmaker_style_fname_ptrs,
+            embedded_binary_style_default_data,
+            embedded_binary_style_default_size));
     if (NULL == style_dict_ptr) return EXIT_FAILURE;
-    BS_ASSERT(wlmcfg_decode_dict(
-                  style_dict_ptr,
-                  wlmaker_config_style_desc,
-                  &server_ptr->style));
+    if (!wlmcfg_decode_dict(
+            style_dict_ptr,
+            wlmaker_config_style_desc,
+            &server_ptr->style)) return EXIT_FAILURE;
     wlmcfg_dict_unref(style_dict_ptr);
 
     server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(

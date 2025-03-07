@@ -61,7 +61,7 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
   there is an alternative theme you can use -- or extend it on your own.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style. Or create
-  your own in `/usr/share/wlmaker/ `~/.wlmaker-style.plist`
+  your own in `/usr/share/wlmaker/style.plist` or `~/.wlmaker-style.plist`.
 
 * [etc/root-menu.plist](../etc/root-menu.plist) defines the contents of the
   root menu. To customize, copy to `/usr/share/wlmaker/root-menu.plist`,

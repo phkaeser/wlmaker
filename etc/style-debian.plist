@@ -61,25 +61,25 @@
         Type = SOLID;
       };
       Height = 14;
-      BezelWidth = 2;
+      BezelWidth = 3;
       CornerWidth = 58;
     };
     Border = {
-      Width = 1;
+      Width = 2;
       Color = "argb32:ff000000";
     };
     Margin = {
-      Width = 1;
+      Width = 2;
       Color = "argb32:ff000000";
     };
   };
   Menu = {
     Margin = {
-      Width = 1;
+      Width = 2;
       Color = "argb32:ff000000";
     };
     Border = {
-      Width = 1;
+      Width = 2;
       Color = "argb32:ff000000";
     };
     Item = {
@@ -95,14 +95,14 @@
       Font = {
         Face = Helvetica;
         Weight = Normal;
-        Size = 14;
+        Size = 24;
       };
       EnabledTextColor = "argb32:ff000000";
       HighlightedTextColor = "argb32:ff000000";
       DisabledTextColor = "argb32:ff808080";
-      Height = 22;
-      BezelWidth = 1;
-      Width = 80;
+      Height = 44;
+      BezelWidth = 3;
+      Width = 240;
     };
   };
   TaskList = {
