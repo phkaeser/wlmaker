@@ -1,6 +1,8 @@
 // Definition of root menu. Follows Window Maker plist order.
 ("Root Menu",
- ("Launch Terminal", Execute, "/usr/bin/foot"),
+ ("Applications...",
+  ("Terminal", ShellExecute, "/usr/bin/foot"),
+  ("Chrome", ShellExecute, "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland --user-data-dir=/tmp/chrome-wayland")),
  ("Previous Workspace", WorkspacePrevious),
  ("Next Workspace", WorkspaceNext),
  ("Lock", LockScreen),

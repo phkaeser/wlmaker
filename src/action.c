@@ -100,7 +100,7 @@ const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("InhibitLockBegin", WLMAKER_ACTION_LOCK_INHIBIT_BEGIN),
     WLMCFG_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
     WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
-    WLMCFG_ENUM("Execute", WLMAKER_ACTION_EXECUTE),
+    WLMCFG_ENUM("ShellExecute", WLMAKER_ACTION_SHELL_EXECUTE),
 
     WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     WLMCFG_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
@@ -213,7 +213,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         }
         break;
 
-    case WLMAKER_ACTION_EXECUTE:
+    case WLMAKER_ACTION_SHELL_EXECUTE:
         if (NULL == arg_ptr) {
             bs_log(BS_ERROR, "Invalid argument NULL for 'Execute'.");
         } else if (0 == fork()) {
