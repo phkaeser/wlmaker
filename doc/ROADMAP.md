@@ -46,7 +46,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
   * [done] When positioning the root menu, keep it entirely within the desktop area.
-  * Lookup root menu plist file in home or system directory.
+  * [done] Lookup root menu plist file in home or system directory.
 
 * [done] Support `xdg_shell`, based on toolkit.
   * [done] show window menu.

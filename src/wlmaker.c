@@ -288,6 +288,7 @@ bool create_workspaces(
 /** Lookup paths for the root menu config file. */
 static const char *_wlmaker_root_menu_fname_ptrs[] = {
     "~/.wlmaker-root-menu.plist",
+    "/usr/share/wlmaker/root-menu.plist",
     NULL  // Sentinel.
 };
 
