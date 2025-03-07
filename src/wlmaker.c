@@ -40,7 +40,7 @@
 #include "server.h"
 #include "task_list.h"
 
-#include "style_default.h"
+#include "../etc/style.h"
 #include "../etc/root_menu.h"
 
 /** Will hold the value of --config_file. */
@@ -353,8 +353,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             "style",
             wlmaker_arg_style_file_ptr,
             _wlmaker_style_fname_ptrs,
-            embedded_binary_style_default_data,
-            embedded_binary_style_default_size));
+            embedded_binary_style_data,
+            embedded_binary_style_size));
     if (NULL == style_dict_ptr) return EXIT_FAILURE;
     if (!wlmcfg_decode_dict(
             style_dict_ptr,
