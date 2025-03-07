@@ -16,24 +16,24 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 INCLUDE(EmbedBinary)
 
 EmbedBinary_ADD_LIBRARY(
-  embedded_configuration
-  "default_configuration"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
-
-EmbedBinary_ADD_LIBRARY(
   embedded_root_menu
   "root_menu"
   "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
 
 EmbedBinary_ADD_LIBRARY(
+  embedded_style
+  "style"
+  "${CMAKE_CURRENT_SOURCE_DIR}/style.plist")
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_configuration
+  "default_configuration"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
+
+EmbedBinary_ADD_LIBRARY(
   embedded_state
   "default_state"
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-state.plist")
-
-EmbedBinary_ADD_LIBRARY(
-  embedded_style
-  "style_default"
-  "${CMAKE_CURRENT_SOURCE_DIR}/style-default.plist")
 
 # Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
 # with what GNUstep expects. Optional.
@@ -45,6 +45,27 @@ IF(PLDES)
   # parsing an invalid plist file. But eg. `pldes` reports the parsing error,
   # so we capture this as a failure.
   SET(pldes_failure_regex ".*at\ line.*char")
+
+  ADD_TEST(
+    NAME root_menu_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+  SET_PROPERTY(
+    TEST root_menu_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
+    NAME style_default_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style.plist")
+  SET_PROPERTY(
+    TEST style_default_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
+    NAME style_debian_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-debian.plist")
+  SET_PROPERTY(
+    TEST style_debian_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME wlmaker_plist_test
@@ -67,25 +88,8 @@ IF(PLDES)
     TEST wlmaker_state_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
-  ADD_TEST(
-    NAME root_menu_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
-  SET_PROPERTY(
-    TEST root_menu_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
-    NAME style_debian_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-debian.plist")
-  SET_PROPERTY(
-    TEST style_debian_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
-    NAME style_default_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-default.plist")
-  SET_PROPERTY(
-    TEST style_default_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
 ENDIF(PLDES)
+
+INSTALL(
+  FILES root-menu.plist style.plist wlmaker.plist wlmaker-state.plist
+  DESTINATION share/wlmaker)

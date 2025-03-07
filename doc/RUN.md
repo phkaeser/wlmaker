@@ -13,10 +13,10 @@ Once running: Press `Ctrl-Window-Alt+T` to open a terminal (`foot`), or
 
 The most accessible option is to run Wayland Maker in a window in your
 already-running graphical environment. It can run both on a X11 or a Wayland
-session. Easiest is to run it via the wrapper script:
+session.
 
 ```bash
-${HOME}/.local/bin/wrap-wlmaker.sh
+${HOME}/.local/bin/wlmaker
 ```
 
 ## Option 2: Run from a Linux virtual terminal
@@ -25,7 +25,7 @@ ${HOME}/.local/bin/wrap-wlmaker.sh
 > Make sure your distribution has `seatd` installed and running.
 
 ```
-${HOME}/.local/bin/wrap-wlmaker.sh
+${HOME}/.local/bin/wlmaker
 ```
 
 Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
@@ -44,36 +44,45 @@ Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 * Copy `${HOME}/.local/share/wlmaker.desktop` to `/usr/share/wayland-sessions/wlmaker.desktop`
 * Restart your session manager, to reload the sessions.
 
-The desktop entry will execute `${HOME}/.local/bin/wrap-wlmaker.sh`.
+The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
 
-## Make it run for you!
+## Customize it!
 
 * [etc/wlmaker.plist](../etc/wlmaker.plist) is the where keyboard options, key
   bindings, screensaver details and more can be configured. That file in the
   source tree is the compiled-in default.
 
-  To extend: Create a copy of the file to `~/.wlmaker.plist` and modify it
-  according to your needs. Or, move it somewhere else and call `wlmaker` with
-  the `--config_file=...` arugment.
+  To extend: Create a copy of the file to `/usr/share/wlmaker/wlmaker.plist` or
+  `~/.wlmaker.plist` and modify it according to your needs. Or, move it
+  somewhere else and call `wlmaker` with the `--config_file=...` arugment.
+
+* [etc/style-default.plist](../etc/style-default.plist) is the compiled-in
+  default theme. With [etc/style-debian.plist](../etc/style-debian.plist),
+  there is an alternative theme you can use -- or extend it on your own.
+
+  Run `wlmaker` with `--style_file=...` to use an alternative style. Or create
+  your own in `/usr/share/wlmaker/style.plist` or `~/.wlmaker-style.plist`.
+
+* [etc/root-menu.plist](../etc/root-menu.plist) defines the contents of the
+  root menu. To customize, copy to `/usr/share/wlmaker/root-menu.plist`,
+  `~/wlmaker-root-menu.plist` or provide via the `--root_menu_file` argument.
+
+* [etc/wlmaker-state.plist](../etc/wlmaker-state.plist) stores state of dock
+  and clip.  To customize, copy to `/usr/share/wlmaker/state.plist`,
+  `~/wlmaker-state.plist` or provide via the `--state_file` argument.
 
 * To run X11 applications in Wayland Maker, XWayland must be enabled. It is
   compiled in, if the `xwayland` package is installed. In that case, use the
   `--start_xwayland` option. The `DISPLAY` environment variable will be set
   suitably.
 
-* [etc/style-default.plist](../etc/style-default.plist) is the compiled-in
-  default theme. With [etc/style-debian.plist](../etc/style-debian.plist),
-  there is an alternative theme you can use -- or extend it on your own.
-
-  Run `wlmaker` with `--style_file=...` to use an alternative style.
-
 * To make Wayland Maker look well on a high-resolution screen, you can either
   set the `Output` `Scale` in [etc/wlmaker.plist](../etc/wlmaker.plist) (and
   use `--config_file=...`). This will scale all surfaces.
 
   Or, you can configure the style with larger decorations & fonts, as is done
-  in [etc/style-debian.plist](../etc/style-debian.plist). This will not scale
-  application surfaces.
+  in [etc/style-debian.plist](../etc/style-debian.plist). That approach will
+  not scale application surfaces.
 
 # Debugging issues
 

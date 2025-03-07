@@ -31,11 +31,11 @@ Support for visual effects to improve usability, but not for pure show.
     an element visible should re-trigger focus computation.
   * Verify handling of element motion() and button() return values.
 
-## Plan for 0.5
+## [0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5))
 
 **Focus**: Add root menu and window menu.
 
-* Menu, based on toolkit.
+* [done] Menu, based on toolkit.
   * [done] Root menu: Basic actions (quit, lock, next- or previous workspace).
   * [done] Menu shown on right-button-down, items trigger on right-button-up.
   * [done] When invoked on unclaimed button, exits menu on button release.

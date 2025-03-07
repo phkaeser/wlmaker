@@ -17,13 +17,15 @@ How it looks, running in a window using the default theme:
 
 ### Current status
 
-**Early access**: Wayland Maker provides basic functionality for using it on a single monitor. There will be bugs... reports are welcome! 
+**Early access**: Wayland Maker covers elementary compositor functionality on single-monitor output. Please report what's missing or broken!
 
-Highlights for current version ([0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)):
+Highlights for current version ([0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5)):
 
-* *new:* Configurable layout and scaling for the output.
-* *new:* Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
-* *new:* Ready to build with [wlroots 0.18](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* *new:* Window menu and [configurable](https://github.com/phkaeser/wlmaker/blob/main/etc/root-menu.plist) root menu.
+* *new:* Fixes to `wlr_layer_shell_unstable_v1` implementation, early support for keyboard interactivity.
+* Builds with [wlroots 0.18](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* Configurable layout and scaling for the output.
+* Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
 * Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
 * Configurable through plist text files: [base configuration](etc/wlmaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
 * wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
@@ -39,7 +41,7 @@ Protocol support:
 
 * `xdg-decoration-unstable-v1`: Implemented & tested.
 * `ext_session_lock_v1`: Implemented & tested.
-* `wlr_layer_shell_unstable_v1`: Implemented & tested.
+* `wlr_layer_shell_unstable_v1`: Largely implemented & tested.
 * `xdg_shell`: Largely implemented & tested.
 * `idle_inhibit_unstable_v1`: Implemented, untested.
 
@@ -55,13 +57,9 @@ Protocol support:
 
   [![Packaging status](https://repology.org/badge/vertical-allrepos/wlmaker.svg)](https://repology.org/project/wlmaker/versions)
 
-> [!NOTE]
-> `wlmaker` covers basic functionality for using it on a single monitor. Please
-> report bugs you find, and functionality you're missing.
-
 ## Contributing
 
-Contributions and help are highly welcome! See
+Contributions, help and bug reports are highly welcome! See
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for details, and
 [code of conduct](CODE_OF_CONDUCT.md) for more.
 

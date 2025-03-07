@@ -32,7 +32,7 @@
 
 #include "default_configuration.h"
 #include "default_state.h"
-#include "style_default.h"
+#include "../etc/style.h"
 
 /* == Declarations ========================================================= */
 
@@ -500,8 +500,8 @@ void test_embedded(bs_test_t *test_ptr)
     wlmcfg_object_unref(obj_ptr);
 
     obj_ptr = wlmcfg_create_object_from_plist_data(
-        embedded_binary_style_default_data,
-        embedded_binary_style_default_size);
+        embedded_binary_style_data,
+        embedded_binary_style_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
     wlmcfg_object_unref(obj_ptr);
 }
@@ -546,7 +546,7 @@ void test_style_file(bs_test_t *test_ptr)
 #endif
 
     dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/style-default.plist");
+        WLMAKER_SOURCE_DIR "/etc/style.plist");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
     BS_TEST_VERIFY_TRUE(
