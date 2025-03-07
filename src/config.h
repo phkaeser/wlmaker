@@ -92,6 +92,34 @@ typedef struct {
 extern const float config_output_scale;
 
 /**
+ * Loads a plist object from the given file(s) or data.
+ *
+ * Useful to load configuration files from (1) the expclitly provided name in
+ * `fname_ptr`, (2) any of the files listed in `fname_defaults`, or (3)
+ * an in-memory buffer, as a compiled-in fallback option.
+ *
+ * @param name_ptr            Name to use when logging about the plist.
+ * @param fname_ptr           Explicit filename to use for loading the file,
+ *                            eg. from the commandline. Or NULL.
+ * @param fname_defaults      NULL-terminated list of pointers to default
+ *                            paths & filenames to use for searching plist
+ *                            file(s).
+ * @param default_data_ptr    Points to in-memory plist data, or NULL.
+ *                            Will be used if fname_ptr was NULL and no
+ *                            file was found at fname_defaults.
+ * @param default_data_size   The size of the in-memory plist data.
+ *
+ * @returns a @ref wlmcfg_object_t on success, or NULL if none of the options
+ *     had data, or if there was a file or parsing error.
+ */
+wlmcfg_object_t *wlmaker_plist_load(
+    const char *name_ptr,
+    const char *fname_ptr,
+    const char **fname_defaults,
+    const uint8_t *default_data_ptr,
+    size_t default_data_size);
+
+/**
  * Loads the configuration for wlmaker.
  *
  * If `fname_ptr` is give, it will attempt to load the configuration from the
