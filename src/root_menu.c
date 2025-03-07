@@ -101,18 +101,30 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->menu_open_changed_listener,
         _wlmaker_root_menu_handle_menu_open_changed);
 
+    // FIXME - really terrible hack.
+    wlmtk_pane_t *pane_ptr = wlmtk_menu_pane(root_menu_ptr->menu_ptr);
+    struct wlr_box box = wlmtk_element_get_dimensions_box(
+        wlmtk_menu_element(root_menu_ptr->menu_ptr));
+    wlmtk_container_remove_element(
+        &pane_ptr->super_container,
+        pane_ptr->element_ptr);
     if (!wlmtk_content_init(
             &root_menu_ptr->content,
-            wlmtk_menu_element(root_menu_ptr->menu_ptr),
+            pane_ptr->element_ptr,
             env_ptr)) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
     }
+    wlmtk_container_remove_element(
+        &pane_ptr->super_container,
+        &pane_ptr->popup_container.super_element);
+    wlmtk_container_add_element(
+        &root_menu_ptr->content.popup_container,
+        &pane_ptr->popup_container.super_element);
+
     wlmtk_content_extend(
         &root_menu_ptr->content,
         &_wlmaker_root_menu_content_vmt);
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_menu_element(root_menu_ptr->menu_ptr));
     // TODO(kaeser@gubbe.ch): Should not be required. Also, the sequence
     // of set_server_side_decorated and set_attributes is brittle.
     wlmtk_content_commit(
@@ -158,6 +170,21 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 
         wlmtk_window_destroy(root_menu_ptr->window_ptr);
         root_menu_ptr->window_ptr = NULL;
+    }
+
+    if (NULL != root_menu_ptr->menu_ptr) {
+        wlmtk_content_set_element(&root_menu_ptr->content, NULL);
+        wlmtk_pane_t *pane_ptr = wlmtk_menu_pane(root_menu_ptr->menu_ptr);
+        wlmtk_container_add_element(
+            &pane_ptr->super_container,
+            pane_ptr->element_ptr);
+
+        wlmtk_container_remove_element(
+            &root_menu_ptr->content.popup_container,
+            &pane_ptr->popup_container.super_element);
+        wlmtk_container_add_element(
+            &pane_ptr->super_container,
+            &pane_ptr->popup_container.super_element);
     }
 
     wlmtk_content_fini(&root_menu_ptr->content);
@@ -258,7 +285,7 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
     wlmcfg_object_t *obj_ptr = wlmcfg_array_at(array_ptr, 1);
     if (WLMCFG_ARRAY == wlmcfg_object_type(obj_ptr)) {
 
-#if 0
+#if 1
         // TODO(kaeser@gubbe.ch): Re-enable, once submenu hierarchy fixed.
         submenu_ptr = _wlmaker_root_menu_create_menu_from_array(
             array_ptr,
