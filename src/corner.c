@@ -245,7 +245,7 @@ void _wlmaker_corner_clear(wlmaker_corner_t *corner_ptr)
             break;
         default: break;
         }
-        wlmaker_action_execute(corner_ptr->server_ptr, action);
+        wlmaker_action_execute(corner_ptr->server_ptr, action, NULL);
         corner_ptr->corner_triggered = false;
     }
     corner_ptr->current_corner = 0;
@@ -349,7 +349,7 @@ int _wlmaker_corner_handle_timer(void *data_ptr)
         break;
     default: break;
     }
-    wlmaker_action_execute(corner_ptr->server_ptr, action);
+    wlmaker_action_execute(corner_ptr->server_ptr, action, NULL);
     return 0;
 }
 

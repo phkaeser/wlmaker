@@ -29,6 +29,8 @@ struct _wlmaker_action_item_t {
 
     /** Action to execute when triggered. */
     wlmaker_action_t          action;
+    /** Argument for the action. May be NULL. */
+    char                      *action_arg_ptr;
     /** Back-link to @ref wlmaker_server_t, for executing the action. */
     wlmaker_server_t          *server_ptr;
 
@@ -52,6 +54,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
+    const char *action_arg_ptr,
     wlmaker_server_t *server_ptr,
     wlmtk_env_t *env_ptr)
 {
@@ -59,6 +62,13 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         1, sizeof(wlmaker_action_item_t));
     if (NULL == action_item_ptr) return NULL;
     action_item_ptr->action = action;
+    if (NULL != action_arg_ptr) {
+        action_item_ptr->action_arg_ptr = logged_strdup(action_arg_ptr);
+        if (NULL == action_item_ptr->action_arg_ptr) {
+            wlmaker_action_item_destroy(action_item_ptr);
+            return NULL;
+        }
+    }
     action_item_ptr->server_ptr = server_ptr;
 
     action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr, env_ptr);
@@ -95,6 +105,7 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
         desc_ptr->text_ptr,
         style_ptr,
         desc_ptr->action,
+        NULL,
         server_ptr,
         env_ptr);
     if (NULL == action_item_ptr) return NULL;
@@ -113,6 +124,11 @@ void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 
         wlmtk_menu_item_destroy(action_item_ptr->menu_item_ptr);
         action_item_ptr->menu_item_ptr = NULL;
+    }
+
+    if (NULL != action_item_ptr->action_arg_ptr) {
+        free(action_item_ptr->action_arg_ptr);
+        action_item_ptr->action_arg_ptr = NULL;
     }
     free(action_item_ptr);
 }
@@ -137,7 +153,8 @@ void _wlmaker_action_item_handle_triggered(
 
     wlmaker_action_execute(
         action_item_ptr->server_ptr,
-        action_item_ptr->action);
+        action_item_ptr->action,
+        action_item_ptr->action_arg_ptr);
 
     if (NULL != action_item_ptr->server_ptr->root_menu_ptr) {
         wlmtk_menu_set_open(
@@ -178,7 +195,7 @@ const bs_test_case_t          wlmaker_action_item_test_cases[] = {
 static const wlmtk_menu_style_t _wlmaker_action_item_menu_style = {};
 /** Test data: Descriptor for the action item used in tests. */
 static const wlmaker_action_item_desc_t _wlmaker_action_item_desc = {
-    "text", 42, 0
+    "text", 42, NULL, 0
 };
 
 /* ------------------------------------------------------------------------- */

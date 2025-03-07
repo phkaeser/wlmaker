@@ -100,6 +100,7 @@ const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
     WLMCFG_ENUM("InhibitLockBegin", WLMAKER_ACTION_LOCK_INHIBIT_BEGIN),
     WLMCFG_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
     WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
+    WLMCFG_ENUM("Execute", WLMAKER_ACTION_EXECUTE),
 
     WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     WLMCFG_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
@@ -178,7 +179,8 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_action_execute(wlmaker_server_t *server_ptr,
-                            wlmaker_action_t action)
+                            wlmaker_action_t action,
+                            void *arg_ptr)
 {
     wlmtk_workspace_t *workspace_ptr, *next_workspace_ptr;
     wlmtk_window_t *window_ptr;
@@ -208,6 +210,14 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     case WLMAKER_ACTION_LAUNCH_TERMINAL:
         if (0 == fork()) {
             execl("/bin/sh", "/bin/sh", "-c", "/usr/bin/foot", (void *)NULL);
+        }
+        break;
+
+    case WLMAKER_ACTION_EXECUTE:
+        if (NULL == arg_ptr) {
+            bs_log(BS_ERROR, "Invalid argument NULL for 'Execute'.");
+        } else if (0 == fork()) {
+            execl("/bin/sh", "/bin/sh", "-c", arg_ptr, (void *)NULL);
         }
         break;
 
@@ -523,7 +533,8 @@ bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
 
     wlmaker_action_execute(
         action_binding_ptr->handle_ptr->server_ptr,
-        action_binding_ptr->action);
+        action_binding_ptr->action,
+        NULL);
     return true;
 }
 
