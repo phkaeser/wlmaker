@@ -56,7 +56,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] preliminary support for keyboard interactivity.
 
 * Bug fixes
-  * Fix crash when closing a shaded window.
+  * [done] Fix crash when closing a shaded window.
 
 ## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
 

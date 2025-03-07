@@ -320,11 +320,6 @@ void xdg_toplevel_surface_destroy(
     wl_list_remove(&xts_ptr->new_popup_listener.link);
     wl_list_remove(&xts_ptr->destroy_listener.link);
 
-    if (NULL != xdg_tl_surface_ptr->tl_menu_ptr) {
-        wlmaker_tl_menu_destroy(xdg_tl_surface_ptr->tl_menu_ptr);
-        xdg_tl_surface_ptr->tl_menu_ptr = NULL;
-    }
-
     wlmtk_content_fini(&xts_ptr->super_content);
 
     if (NULL != xdg_tl_surface_ptr->surface_ptr) {
@@ -437,6 +432,12 @@ void handle_destroy(struct wl_listener *listener_ptr,
     wl_signal_emit(
         &xdg_tl_surface_ptr->server_ptr->window_destroyed_event,
         xdg_tl_surface_ptr->super_content.window_ptr);
+
+    if (NULL != xdg_tl_surface_ptr->tl_menu_ptr) {
+        wlmaker_tl_menu_destroy(xdg_tl_surface_ptr->tl_menu_ptr);
+        xdg_tl_surface_ptr->tl_menu_ptr = NULL;
+    }
+
     wlmtk_window_destroy(xdg_tl_surface_ptr->super_content.window_ptr);
     xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
 }
