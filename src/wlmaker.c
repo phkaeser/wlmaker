@@ -365,6 +365,17 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
                 embedded_binary_root_menu_size));
     }
     if (NULL == server_ptr->root_menu_array_ptr) return EXIT_FAILURE;
+    // TODO(kaeser@gubbe.ch): Uh, that's ugly...
+    server_ptr->root_menu_ptr = wlmaker_root_menu_create(
+        server_ptr,
+        &server_ptr->style.window,
+        &server_ptr->style.menu,
+        false,
+        NULL,
+        server_ptr->env_ptr);
+    if (NULL == server_ptr->root_menu_ptr) {
+        return EXIT_FAILURE;
+    }
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,

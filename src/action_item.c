@@ -140,7 +140,9 @@ void _wlmaker_action_item_handle_triggered(
         action_item_ptr->action);
 
     if (NULL != action_item_ptr->server_ptr->root_menu_ptr) {
-        wlmaker_root_menu_destroy(action_item_ptr->server_ptr->root_menu_ptr);
+        wlmtk_menu_set_open(
+            wlmaker_root_menu_menu(action_item_ptr->server_ptr->root_menu_ptr),
+            false);
     }
 }
 

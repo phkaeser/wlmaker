@@ -341,19 +341,13 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_ROOT_MENU:
-        if (NULL == server_ptr->root_menu_ptr) {
-            server_ptr->root_menu_ptr = wlmaker_root_menu_create(
-                server_ptr,
-                &server_ptr->style.window,
-                &server_ptr->style.menu,
-                false,
+        if (NULL != server_ptr->root_menu_ptr) {
+            wlmtk_menu_set_open(
+                wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
+                true);
+            wlmtk_workspace_map_window(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
-                server_ptr->env_ptr);
-        } else {
-            window_ptr = wlmaker_root_menu_window(server_ptr->root_menu_ptr);
-            wlmtk_workspace_activate_window(
-                workspace_ptr = wlmtk_window_get_workspace(window_ptr),
-                window_ptr);
+                wlmaker_root_menu_window(server_ptr->root_menu_ptr));
         }
         break;
 
