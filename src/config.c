@@ -310,71 +310,74 @@ static const char *_wlmaker_state_fname_ptrs[] = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
+wlmcfg_object_t *wlmaker_plist_load(
+    const char *name_ptr,
+    const char *fname_ptr,
+    const char **fname_defaults,
+    const uint8_t *default_data_ptr,
+    size_t default_data_size)
+{
+    if (NULL != fname_ptr) {
+        bs_log(BS_INFO, "Loading %s plist from file \"%s\"",
+               name_ptr, fname_ptr);
+        wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_file(
+            fname_ptr);
+        if (NULL == object_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed wlmcfg_create_object_from_plist(%s) for %s",
+                   fname_ptr, name_ptr);
+        }
+        return object_ptr;
+    }
+
+    if (NULL != fname_defaults) {
+        for (; *fname_defaults != NULL; ++fname_defaults) {
+            char full_path[PATH_MAX];
+            char *path_ptr = bs_file_resolve_path(*fname_defaults, full_path);
+            if (NULL == path_ptr) {
+                bs_log(BS_DEBUG | BS_ERRNO,
+                       "Failed bs_file_resolve_path(%s, %p) for %s",
+                       *fname_defaults, full_path, name_ptr);
+                continue;
+            }
+
+            // If we get here, there was a resolved item at the path. A load
+            // failure indicates an issue with an existing file, and we should
+            // fail here.
+            bs_log(BS_INFO, "Loading %s plist from file \"%s\"",
+                   name_ptr, path_ptr);
+            return wlmcfg_create_object_from_plist_file(path_ptr);
+        }
+    }
+
+    if (NULL == default_data_ptr) return NULL;
+    bs_log(BS_INFO, "Using compiled-in data for %s plist.", name_ptr);
+    return wlmcfg_create_object_from_plist_data(
+        default_data_ptr, default_data_size);
+}
+
+/* ------------------------------------------------------------------------- */
 wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr)
 {
-    // If a file was provided, we try only that.
-    if (NULL != fname_ptr) {
-        return _wlmaker_config_from_plist(fname_ptr);
-    }
-
-    for (const char **fname_ptr_ptr = _wlmaker_config_fname_ptrs;
-         *fname_ptr_ptr != NULL;
-         fname_ptr_ptr++) {
-        char full_path[PATH_MAX];
-        char *path_ptr = bs_file_resolve_path(*fname_ptr_ptr, full_path);
-        if (NULL == path_ptr) {
-            bs_log(BS_INFO | BS_ERRNO, "Failed bs_file_resolve_path(%s, %p)",
-                   *fname_ptr_ptr, full_path);
-            continue;
-        }
-
-        // If we get here, there was a resolved item at the path. A load
-        // failure indicates an issue with an existing file, and we should
-        // fali here.
-        bs_log(BS_INFO, "Loading configuration from \"%s\"", path_ptr);
-        return _wlmaker_config_from_plist(path_ptr);
-    }
-
-    // Hardcoded configuration. Failing to load that is an error.
-    bs_log(BS_INFO, "No configuration file found, using embedded default.");
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+    wlmcfg_object_t *object_ptr = wlmaker_plist_load(
+        "wlmaker config",
+        fname_ptr,
+        _wlmaker_config_fname_ptrs,
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
-    return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(obj_ptr));
+    return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(object_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr)
 {
-    // If a file was provided, we try only that.
-    if (NULL != fname_ptr) {
-        return _wlmaker_config_from_plist(fname_ptr);
-    }
-
-    for (const char **fname_ptr_ptr = _wlmaker_state_fname_ptrs;
-         *fname_ptr_ptr != NULL;
-         fname_ptr_ptr++) {
-        char full_path[PATH_MAX];
-        char *path_ptr = bs_file_resolve_path(*fname_ptr_ptr, full_path);
-        if (NULL == path_ptr) {
-            bs_log(BS_INFO | BS_ERRNO, "Failed bs_file_resolve_path(%s, %p)",
-                   *fname_ptr_ptr, full_path);
-            continue;
-        }
-
-        // If we get here, there was a resolved item at the path. A load
-        // failure indicates an issue with an existing file, and we should
-        // fali here.
-        bs_log(BS_INFO, "Loading state from \"%s\"", path_ptr);
-        return _wlmaker_config_from_plist(path_ptr);
-    }
-
-    // Hardcoded configuration. Failing to load that is an error.
-    bs_log(BS_INFO, "No state file found, using embedded default.");
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+    wlmcfg_object_t *object_ptr = wlmaker_plist_load(
+        "wlmaker state",
+        fname_ptr,
+        _wlmaker_state_fname_ptrs,
         embedded_binary_default_state_data,
         embedded_binary_default_state_size);
-    return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(obj_ptr));
+    return BS_ASSERT_NOTNULL(wlmcfg_dict_from_object(object_ptr));
 }
 
 /* == Local (static) methods =============================================== */
