@@ -370,7 +370,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         server_ptr,
         &server_ptr->style.window,
         &server_ptr->style.menu,
-        false,
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_menu_ptr) {
         return EXIT_FAILURE;

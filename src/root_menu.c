@@ -70,7 +70,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
-    bool right_click_mode,
     wlmtk_env_t *env_ptr)
 {
     if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
@@ -101,12 +100,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &wlmtk_menu_events(root_menu_ptr->menu_ptr)->open_changed,
         &root_menu_ptr->menu_open_changed_listener,
         _wlmaker_root_menu_handle_menu_open_changed);
-
-    if (right_click_mode) {
-        wlmtk_menu_set_mode(
-            wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
-            WLMTK_MENU_MODE_RIGHTCLICK);
-    }
 
     if (!wlmtk_content_init(
             &root_menu_ptr->content,
@@ -141,20 +134,6 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         root_menu_ptr->window_ptr,
         wlmcfg_array_string_value_at(server_ptr->root_menu_array_ptr, 0));
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
-    uint32_t properties = 0;
-    if (right_click_mode) {
-        properties |= WLMTK_WINDOW_PROPERTY_RIGHTCLICK;
-    } else {
-        properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
-    }
-    wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
-
-    if (right_click_mode) {
-        wlmtk_container_pointer_grab(
-            wlmtk_window_element(
-                root_menu_ptr->window_ptr)->parent_container_ptr,
-            wlmtk_window_element(root_menu_ptr->window_ptr));
-    }
 
     return root_menu_ptr;
 }
@@ -229,6 +208,23 @@ void _wlmaker_root_menu_handle_menu_open_changed(
         wlmtk_workspace_unmap_window(
             wlmtk_window_get_workspace(root_menu_ptr->window_ptr),
             root_menu_ptr->window_ptr);
+    } else {
+
+        uint32_t properties = 0;
+        if (WLMTK_MENU_MODE_RIGHTCLICK ==
+            wlmtk_menu_get_mode(root_menu_ptr->menu_ptr)) {
+            properties |= WLMTK_WINDOW_PROPERTY_RIGHTCLICK;
+
+            wlmtk_container_pointer_grab(
+                wlmtk_window_element(
+                    root_menu_ptr->window_ptr)->parent_container_ptr,
+                wlmtk_window_element(root_menu_ptr->window_ptr));
+
+        } else {
+            properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
+        }
+        wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
+
     }
 }
 

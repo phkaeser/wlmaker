@@ -794,11 +794,9 @@ void _wlmaker_server_unclaimed_button_event_handler(
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type &&
         NULL != server_ptr->root_menu_ptr &&
+        // TODO(kaeser@gubbe.ch): Clean up.
         !wlmtk_menu_is_open(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr))) {
-        wlmtk_menu_set_open(
-            wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
-            true);
         wlmtk_workspace_map_window(
             wlmtk_root_get_current_workspace(server_ptr->root_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr));
@@ -812,6 +810,9 @@ void _wlmaker_server_unclaimed_button_event_handler(
         wlmtk_menu_set_mode(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             WLMTK_MENU_MODE_RIGHTCLICK);
+        wlmtk_menu_set_open(
+            wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
+            true);
     }
 }
 
