@@ -5,6 +5,11 @@ Maker, and fully theme-able and configurable.
 
 Support for visual effects to improve usability, but not for pure show.
 
+## Plan for 0.7
+
+* Cleanups:
+  * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
+
 ## Plan for 0.6
 
 **Focus**: Multiple outputs.
@@ -12,6 +17,19 @@ Support for visual effects to improve usability, but not for pure show.
 * Support for dynamic output configurations.
   * Multiple monitors, with output mirrored across.
   * Per-monitor fractional scale.
+
+* Menu
+  * Keyboard navigation.
+  * Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
+  * Re-position to remain within output when adding submenus.
+
+* Bug fixes
+  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * Particularly when using large decorations, there is resize jitter.
+  * When switching workspace, pointer state appears to be reset.
+  * Test handling of mouse position when changing element visibility. Making
+    an element visible should re-trigger focus computation.
+  * Verify handling of element motion() and button() return values.
 
 ## Plan for 0.5
 
@@ -23,11 +41,12 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] When invoked on unclaimed button, exits menu on button release.
   * [done] Available as window menu in windows.
   * [done] Available also for X11 windows.
-  * Available as (hardcoded) application menu.
+  * [done] Available as (hardcoded) application menu.
   * [done] Menu with submenus.
   * [done] Window menu adapting to window state.
     (Eg. "Maximize" shown when not maximized, otherwise: "restore".)
   * [done] When positioning the root menu, keep it entirely within the desktop area.
+  * Lookup root menu plist file in home or system directory.
 
 * [done] Support `xdg_shell`, based on toolkit.
   * [done] show window menu.
@@ -37,12 +56,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] preliminary support for keyboard interactivity.
 
 * Bug fixes
-  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
-  * Particularly when using large decorations, there is resize jitter.
-  * When switching workspace, pointer state appears to be reset.
-  * Test handling of mouse position when changing element visibility. Making
-    an element visible should re-trigger focus computation.
-  * Verify handling of element motion() and button() return values.
+  * Fix crash when closing a shaded window.
 
 ## [0.4](https://github.com/phkaeser/wlmaker/releases/tag/v0.4)
 
