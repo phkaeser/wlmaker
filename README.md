@@ -74,3 +74,7 @@ Apache 2.0; see [`LICENSE`](LICENSE) for details.
 This project is not an official Google project. It is not supported by
 Google and Google specifically disclaims all warranties as to its quality,
 merchantability, or fitness for a particular purpose.
+
+[#147](https://github.com/phkaeser/wlmaker/issues/147): Why is every file
+copyrighted by Google, then? Google happens to be the primary author's
+employer, and the copyright note is default recommended Open Source procedure.
