@@ -1,13 +1,17 @@
 # Build Wayland Maker
 
-Wayland Maker is developed and tested on Debian, hence we're using package
-names and versions as found on that distribution. The code is aimed to
+Wayland Maker is developed and tested primarily on Debian, hence we're using
+package names and versions as found on that distribution. The code is aimed to
 compile well on **Debian Trixie** using pre-compiled libraries; with detailed
 build intructions just below.
 
 For compiling on **Debian Bookworm**, further dependencies need to be
 compiled, built and installed. This is described
 [further below](BUILD.md#build-on-debian-bookworm-stable).
+
+Consult the worfklows for [FreeBSD](../.github/workflows/build-for-freebsd.yml)
+and [Fedora41](../.github/workflows/build-for-fedora41.yml) about setup for
+these systems.
 
 ## Build on Debian Trixie
 

@@ -37,9 +37,9 @@ Note: You may need to `su -c "pkill seatd"` to stop `seatd` after you're done.
 > managers. `gdm3` has been found to work, but `lightdm` did not.
 
 > [!IMPORTANT]
-> It is not recommended to run wlmaker as your main compositor. This approach
-> will not work if dependencies are not all operating correctly, and is hardest
-> to debug.
+> It is not yet recommended to run wlmaker as your only compositor. This
+> approach will not work if dependencies are not all operating correctly, and
+> is hardest to debug.
 
 * Copy `${HOME}/.local/share/wlmaker.desktop` to `/usr/share/wayland-sessions/wlmaker.desktop`
 * Restart your session manager, to reload the sessions.
@@ -56,9 +56,9 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
   `~/.wlmaker.plist` and modify it according to your needs. Or, move it
   somewhere else and call `wlmaker` with the `--config_file=...` arugment.
 
-* [etc/style-default.plist](../etc/style-default.plist) is the compiled-in
-  default theme. With [etc/style-debian.plist](../etc/style-debian.plist),
-  there is an alternative theme you can use -- or extend it on your own.
+* [etc/style.plist](../etc/style.plist) is the compiled-in  default theme. With
+  [etc/style-debian.plist](../etc/style-debian.plist), there is an alternative
+  theme you can use -- or extend it on your own.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style. Or create
   your own in `/usr/share/wlmaker/style.plist` or `~/.wlmaker-style.plist`.
