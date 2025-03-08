@@ -27,7 +27,9 @@ Highlights for current version ([0.5](https://github.com/phkaeser/wlmaker/releas
 * Configurable layout and scaling for the output.
 * Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
 * Screen saver support, through `ext_session_lock_v1` and `idle_inhibit_unstable_v1` protocols.
-* Configurable through plist text files: [base configuration](etc/wlmaker.plist), [style](/etc/style-default.plist) and [docks & workspaces](etc/wlmaker-state.plist).
+* Configurable through plist text files: [base configuration](etc/wlmaker.plist),
+  [style](etc/style.plist), [root menu](etc/root-menu.plist) and
+  [docks & workspaces](etc/wlmaker-state.plist).
 * wlr layer shell support (`wlr_layer_shell_unstable_v1`), fully implemented & tested.
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
