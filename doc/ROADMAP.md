@@ -17,6 +17,10 @@ Support for visual effects to improve usability, but not for pure show.
 * Support for dynamic output configurations.
   * Multiple monitors, with output mirrored across.
   * Per-monitor fractional scale.
+  * Define, document and implement behaviour of 'fullscreen' window on multiple outputs.
+  * Define, document and implement behaviour of 'maximized' window on multiple outputs.
+  * Verify behaviour of screen lock on multiple outputs.
+  * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
 
 * Menu
   * Keyboard navigation.
