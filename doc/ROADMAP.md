@@ -15,11 +15,15 @@ Support for visual effects to improve usability, but not for pure show.
 **Focus**: Multiple outputs.
 
 * Support for dynamic output configurations.
-  * Multiple monitors, with output mirrored across.
-  * Per-monitor fractional scale.
-  * Define, document and implement behaviour of 'fullscreen' window on multiple outputs.
-  * Define, document and implement behaviour of 'maximized' window on multiple outputs.
-  * Verify behaviour of screen lock on multiple outputs.
+  * Support `wlr-output-management-unstable-v1` protocol.
+    * Verify that `wdisplays` works.
+  * Test and verify: Multiple monitors supported. Supporting:
+    * per-monitor fractional scale.
+    * per-monitor transformation setting.
+  * Explore if wlroots permits mirroring layouts. If yes: Implement.
+  * Document and implement behaviour of 'fullscreen' window on multiple outputs: Fill the active output.
+  * Document and implement behaviour of 'maximized' window on multiple outputs: Maximize on active output.
+  * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
 
 * Menu
