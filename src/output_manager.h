@@ -25,6 +25,8 @@
 /** Forward declaration: Handle for output manager. */
 typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
 
+#include "server.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -32,6 +34,19 @@ extern "C" {
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr);
+
+/**
+ * Updates the output configuration from the currently-available outputs.
+ *
+ * Should be called whenever the output layout is updated, or an output is
+ * added or removed.
+ *
+ * @param output_manager_ptr
+ * @param server_ptr
+ */
+void wlmaker_output_manager_update_config(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_server_t *server_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

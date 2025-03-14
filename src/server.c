@@ -320,6 +320,9 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
+    wlmaker_output_manager_update_config(
+        server_ptr->output_manager_ptr,
+        server_ptr);
 
     server_ptr->icon_manager_ptr = wlmaker_icon_manager_create(
         server_ptr->wl_display_ptr, server_ptr);
@@ -502,6 +505,12 @@ void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
         wlr_output_layout_output_ptr,
         wlr_scene_output_ptr);
     bs_dllist_push_back(&server_ptr->outputs, &output_ptr->node);
+
+    if (NULL != server_ptr->output_manager_ptr) {
+        wlmaker_output_manager_update_config(
+            server_ptr->output_manager_ptr,
+            server_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -785,8 +794,15 @@ void handle_output_layout_change(
            extents.x, extents.y, extents.width, extents.height);
     wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
 
+    if (NULL != server_ptr->output_manager_ptr) {
+        wlmaker_output_manager_update_config(
+            server_ptr->output_manager_ptr,
+            server_ptr);
+    }
+
     wl_signal_emit_mutable(&server_ptr->output_layout_changed_event,
                            &extents);
+
 }
 
 /* ------------------------------------------------------------------------- */

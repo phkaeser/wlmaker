@@ -36,12 +36,27 @@ struct _wlmaker_output_manager_t {
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
     struct wl_listener        destroy_listener;
+
+    /** Listener for wlr_output_manager_v1::events.apply. */
+    struct wl_listener        apply_listener;
+    /** Listener for wlr_output_manager_v1::events.test. */
+    struct wl_listener        test_listener;
 };
 
 static void _wlmaker_output_manager_destroy(
     wlmaker_output_manager_t *output_mgr_ptr);
 
+static void _wlmaker_output_manager_add_dlnode_output(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
 static void _wlmaker_output_manager_handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_output_manager_handle_apply(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_output_manager_handle_test(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -65,8 +80,34 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         &output_mgr_ptr->wlr_output_manager_v1_ptr->events.destroy,
         &output_mgr_ptr->destroy_listener,
         _wlmaker_output_manager_handle_destroy);
+    wlmtk_util_connect_listener_signal(
+        &output_mgr_ptr->wlr_output_manager_v1_ptr->events.apply,
+        &output_mgr_ptr->apply_listener,
+        _wlmaker_output_manager_handle_apply);
+    wlmtk_util_connect_listener_signal(
+        &output_mgr_ptr->wlr_output_manager_v1_ptr->events.test,
+        &output_mgr_ptr->test_listener,
+        _wlmaker_output_manager_handle_test);
 
     return output_mgr_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_output_manager_update_config(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    struct wlr_output_configuration_v1 *config_ptr =
+        wlr_output_configuration_v1_create();
+
+    bs_dllist_for_each(
+        &server_ptr->outputs,
+        _wlmaker_output_manager_add_dlnode_output,
+        config_ptr);
+
+    wlr_output_manager_v1_set_configuration(
+        output_manager_ptr->wlr_output_manager_v1_ptr,
+        config_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -77,11 +118,33 @@ void _wlmaker_output_manager_destroy(wlmaker_output_manager_t *output_mgr_ptr)
 {
     if (NULL != output_mgr_ptr->wlr_output_manager_v1_ptr) {
         wlmtk_util_disconnect_listener(
+            &output_mgr_ptr->test_listener);
+        wlmtk_util_disconnect_listener(
+            &output_mgr_ptr->apply_listener);
+        wlmtk_util_disconnect_listener(
             &output_mgr_ptr->destroy_listener);
         output_mgr_ptr->wlr_output_manager_v1_ptr = NULL;
     }
 
     free(output_mgr_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Iterator callback: Adds the output to the configuration.
+ *
+ * @param dlnode_ptr         Pointer to @ref wlmaker_output_t::node.
+ * @param ud_ptr             Pointer to struct wlr_output_configuration_v1.
+ */
+void _wlmaker_output_manager_add_dlnode_output(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, wlmaker_output_t, node);
+    struct wlr_output_configuration_v1 *config_ptr = ud_ptr;
+    wlr_output_configuration_head_v1_create(
+        config_ptr, output_ptr->wlr_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -93,6 +156,38 @@ void _wlmaker_output_manager_handle_destroy(
     wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, destroy_listener);
     _wlmaker_output_manager_destroy(output_mgr_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for wlr_output_manager_v1::events.apply. Cleans up. */
+void _wlmaker_output_manager_handle_apply(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_output_manager_t, apply_listener);
+
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
+        data_ptr;
+    bs_log(BS_ERROR, "Output manager %p. Apply, not implemented for %p.",
+           output_mgr_ptr, wlr_output_configuration_v1_ptr);
+    wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for wlr_output_manager_v1::events.test. */
+void _wlmaker_output_manager_handle_test(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_output_manager_t, test_listener);
+
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
+        data_ptr;
+    bs_log(BS_ERROR, "Output manager %p. Test, not implemented for %p.",
+           output_mgr_ptr, wlr_output_configuration_v1_ptr);
+    wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
 }
 
 /* == End of output_manager.c ============================================== */
