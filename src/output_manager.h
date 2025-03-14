@@ -33,7 +33,8 @@ extern "C" {
 
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
-    struct wl_display *wl_display_ptr);
+    struct wl_display *wl_display_ptr,
+    struct wlr_backend *wlr_backend_ptr);
 
 /**
  * Updates the output configuration from the currently-available outputs.

@@ -33,6 +33,8 @@
 struct _wlmaker_output_manager_t {
     /** Points to wlroots `struct wlr_output_manager_v1`. */
     struct wlr_output_manager_v1 *wlr_output_manager_v1_ptr;
+    /** Points to struct wlr_backend. */
+    struct wlr_backend *wlr_backend_ptr;
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
     struct wl_listener        destroy_listener;
@@ -64,11 +66,13 @@ static void _wlmaker_output_manager_handle_test(
 
 /* ------------------------------------------------------------------------- */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
-    struct wl_display *wl_display_ptr)
+    struct wl_display *wl_display_ptr,
+    struct wlr_backend *wlr_backend_ptr)
 {
     wlmaker_output_manager_t *output_mgr_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
     if (NULL == output_mgr_ptr) return NULL;
+    output_mgr_ptr->wlr_backend_ptr = wlr_backend_ptr;
 
     output_mgr_ptr->wlr_output_manager_v1_ptr =
         wlr_output_manager_v1_create(wl_display_ptr);
@@ -169,9 +173,46 @@ void _wlmaker_output_manager_handle_apply(
 
     struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
         data_ptr;
-    bs_log(BS_ERROR, "Output manager %p. Apply, not implemented for %p.",
-           output_mgr_ptr, wlr_output_configuration_v1_ptr);
-    wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
+
+    bool succeeded = true;
+    for (struct wl_list *list_ptr =
+             wlr_output_configuration_v1_ptr->heads.next;
+         list_ptr != &wlr_output_configuration_v1_ptr->heads;
+         list_ptr = list_ptr->next) {
+
+        struct wlr_output_configuration_head_v1 *head_ptr = BS_CONTAINER_OF(
+            list_ptr, struct wlr_output_configuration_head_v1, link);
+
+        struct wlr_output_state output_state = {};
+        wlr_output_head_v1_state_apply(&head_ptr->state, &output_state);
+
+        if (!wlr_output_commit_state(
+                head_ptr->state.output,
+                &output_state)) succeeded = false;
+    }
+
+    if (!succeeded) {
+        wlr_output_configuration_v1_send_failed(
+            wlr_output_configuration_v1_ptr);
+        return;
+    }
+
+    size_t states_len;
+    struct wlr_backend_output_state *wlr_backend_output_state_ptr =
+        wlr_output_configuration_v1_build_state(
+            wlr_output_configuration_v1_ptr, &states_len);
+    succeeded = wlr_backend_commit(
+        output_mgr_ptr->wlr_backend_ptr,
+        wlr_backend_output_state_ptr,
+        states_len);
+    free(wlr_backend_output_state_ptr);
+
+    if (succeeded) {
+        wlr_output_configuration_v1_send_succeeded(
+            wlr_output_configuration_v1_ptr);
+    } else {
+        wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
