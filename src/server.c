@@ -313,6 +313,14 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    server_ptr->output_manager_ptr = wlmaker_output_manager_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->output_manager_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_output_manager_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     server_ptr->icon_manager_ptr = wlmaker_icon_manager_create(
         server_ptr->wl_display_ptr, server_ptr);
     if (NULL == server_ptr->icon_manager_ptr) {
