@@ -16,6 +16,8 @@ Support for visual effects to improve usability, but not for pure show.
 
 * Support for dynamic output configurations.
   * Support `wlr-output-management-unstable-v1` protocol.
+    * Verify that `wlr-randr` works.
+  * Support `xdg-output-unstable-v1` protocol.
     * Verify that `wdisplays` works.
   * Test and verify: Multiple monitors supported. Supporting:
     * per-monitor fractional scale.
