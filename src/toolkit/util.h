@@ -50,13 +50,14 @@ typedef struct {
 /**
  * Iterates over `list_ptr` and calls func() for each element.
  *
- * Permits removal of `link_ptr` in `func()`.
+ * Permits removal of `link_ptr` in `func()`. Similar to wl_list_for_each_safe,
+ * but not as a macro, and returning true if all invocations succeeded.
  *
- * Similar to wl_list_for_each_safe, but not as a macro.
+ * @return true if none of the `func()` invocations returned false.
  */
-void wlmtk_util_wl_list_for_each(
+bool wlmtk_util_wl_list_for_each(
     struct wl_list *list_ptr,
-    void (*func)(struct wl_list *link_ptr, void *ud_ptr),
+    bool (*func)(struct wl_list *link_ptr, void *ud_ptr),
     void *ud_ptr);
 
 /**
