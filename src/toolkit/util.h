@@ -48,6 +48,19 @@ typedef struct {
 } wlmtk_util_test_listener_t;
 
 /**
+ * Iterates over `list_ptr` and calls func() for each element.
+ *
+ * Permits removal of `link_ptr` in `func()`. Similar to wl_list_for_each_safe,
+ * but not as a macro, and returning true if all invocations succeeded.
+ *
+ * @return true if none of the `func()` invocations returned false.
+ */
+bool wlmtk_util_wl_list_for_each(
+    struct wl_list *list_ptr,
+    bool (*func)(struct wl_list *link_ptr, void *ud_ptr),
+    void *ud_ptr);
+
+/**
  * Sets |notifier_func| as the notifier for |listener_ptr|, and registers it
  * with |signal_ptr|.
  *

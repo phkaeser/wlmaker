@@ -31,6 +31,7 @@ SET(PUBLIC_HEADER_FILES
   launcher.h
   lock_mgr.h
   output.h
+  output_manager.h
   root_menu.h
   server.h
   subprocess_monitor.h
@@ -63,6 +64,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   layer_shell.c
   lock_mgr.c
   output.c
+  output_manager.c
   root_menu.c
   server.c
   subprocess_monitor.c

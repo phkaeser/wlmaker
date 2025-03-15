@@ -59,6 +59,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "cursor.h"
 #include "idle.h"
 #include "output.h"
+#include "output_manager.h"
 #include "keyboard.h"
 #include "layer_shell.h"
 #include "lock_mgr.h"
@@ -147,6 +148,8 @@ struct _wlmaker_server_t {
     wlmaker_xdg_decoration_manager_t *xdg_decoration_manager_ptr;
     /** Layer shell handler. */
     wlmaker_layer_shell_t     *layer_shell_ptr;
+    /** Output manager. */
+    wlmaker_output_manager_t  *output_manager_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
     /**

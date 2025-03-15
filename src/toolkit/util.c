@@ -29,6 +29,25 @@ static void _wlmtk_util_test_listener_handler(
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_util_wl_list_for_each(
+    struct wl_list *list_ptr,
+    bool (*func)(struct wl_list *link_ptr, void *ud_ptr),
+    void *ud_ptr)
+{
+    bool rv = true;
+
+    if (NULL != list_ptr && NULL != list_ptr->next) {
+        struct wl_list *link_ptr, *next_link_ptr;
+        for (link_ptr = list_ptr->next, next_link_ptr = link_ptr->next;
+             link_ptr != list_ptr;
+             link_ptr = next_link_ptr, next_link_ptr = next_link_ptr->next) {
+            if (!func(link_ptr, ud_ptr)) rv = false;
+        }
+    }
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_util_connect_listener_signal(
     struct wl_signal *signal_ptr,
     struct wl_listener *listener_ptr,
@@ -96,12 +115,84 @@ void _wlmtk_util_test_listener_handler(
 
 /* == Unit tests =========================================================== */
 
+static void test_wl_list_for_each(bs_test_t *test_ptr);
 static void test_listener(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_util_test_cases[] = {
+    { 1, "wl_list_for_each", test_wl_list_for_each },
     { 1, "listener", test_listener },
     { 0, NULL, NULL }
 };
+
+/* ------------------------------------------------------------------------- */
+/** For tests: a list item. */
+typedef struct {
+    struct wl_list link;  /*!< list node. */
+    bool called;  /*!< reports calls by @ref _test_wl_list_callback. */
+    bool rv;  /*!< what to return. */
+} test_wl_list_it_t;
+
+/** Callback for testing @ref wlmtk_util_wl_list_for_each. */
+static bool _test_wl_list_callback(
+    struct wl_list *link_ptr, void *ud_ptr)
+{
+    test_wl_list_it_t *t = BS_CONTAINER_OF(link_ptr, test_wl_list_it_t, link);
+    t->called = true;
+    *((size_t*)ud_ptr) += 1;
+    return t->rv;
+}
+
+/** Tests @ref wlmtk_util_wl_list_for_each. */
+static void test_wl_list_for_each(bs_test_t *test_ptr)
+{
+    test_wl_list_it_t t1 = { .rv = true }, t2 = { .rv = true };
+    size_t calls = 0;
+
+    struct wl_list l = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, calls);
+
+    wl_list_init(&l);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, calls);
+
+    wl_list_insert(&l, &t1.link);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, calls);
+    calls = 0;
+    BS_TEST_VERIFY_TRUE(test_ptr, t1.called);
+    t1.called = false;
+
+    wl_list_insert(&l, &t2.link);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 2, calls);
+    calls = 0;
+    BS_TEST_VERIFY_TRUE(test_ptr, t1.called);
+    t1.called = false;
+    BS_TEST_VERIFY_TRUE(test_ptr, t2.called);
+    t2.called = false;
+
+    t1.rv = false;
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 2, calls);
+    calls = 0;
+
+    t2.rv = false;
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_util_wl_list_for_each(&l, _test_wl_list_callback, &calls));
+    BS_TEST_VERIFY_EQ(test_ptr, 2, calls);
+}
 
 /* ------------------------------------------------------------------------- */
 /** A test to verify listener handlers are called in order of subscription. */
