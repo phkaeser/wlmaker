@@ -46,11 +46,19 @@ struct _wlmaker_output_manager_t {
 };
 
 static void _wlmaker_output_manager_destroy(
-    wlmaker_output_manager_t *output_mgr_ptr);
+    wlmaker_output_manager_t *output_manager_ptr);
 
 static void _wlmaker_output_manager_add_dlnode_output(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static bool _wlmaker_output_config_head_apply(
+    struct wl_list *link_ptr,
+    void *ud_ptr);
+
+static bool _wlmaker_output_manager_apply(
+    wlmaker_output_manager_t *output_manager_ptr,
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr,
+    bool really);
 
 static void _wlmaker_output_manager_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -69,31 +77,31 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
     struct wlr_backend *wlr_backend_ptr)
 {
-    wlmaker_output_manager_t *output_mgr_ptr = logged_calloc(
+    wlmaker_output_manager_t *output_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
-    if (NULL == output_mgr_ptr) return NULL;
-    output_mgr_ptr->wlr_backend_ptr = wlr_backend_ptr;
+    if (NULL == output_manager_ptr) return NULL;
+    output_manager_ptr->wlr_backend_ptr = wlr_backend_ptr;
 
-    output_mgr_ptr->wlr_output_manager_v1_ptr =
+    output_manager_ptr->wlr_output_manager_v1_ptr =
         wlr_output_manager_v1_create(wl_display_ptr);
-    if (NULL == output_mgr_ptr->wlr_output_manager_v1_ptr) {
-        _wlmaker_output_manager_destroy(output_mgr_ptr);
+    if (NULL == output_manager_ptr->wlr_output_manager_v1_ptr) {
+        _wlmaker_output_manager_destroy(output_manager_ptr);
         return NULL;
     }
     wlmtk_util_connect_listener_signal(
-        &output_mgr_ptr->wlr_output_manager_v1_ptr->events.destroy,
-        &output_mgr_ptr->destroy_listener,
+        &output_manager_ptr->wlr_output_manager_v1_ptr->events.destroy,
+        &output_manager_ptr->destroy_listener,
         _wlmaker_output_manager_handle_destroy);
     wlmtk_util_connect_listener_signal(
-        &output_mgr_ptr->wlr_output_manager_v1_ptr->events.apply,
-        &output_mgr_ptr->apply_listener,
+        &output_manager_ptr->wlr_output_manager_v1_ptr->events.apply,
+        &output_manager_ptr->apply_listener,
         _wlmaker_output_manager_handle_apply);
     wlmtk_util_connect_listener_signal(
-        &output_mgr_ptr->wlr_output_manager_v1_ptr->events.test,
-        &output_mgr_ptr->test_listener,
+        &output_manager_ptr->wlr_output_manager_v1_ptr->events.test,
+        &output_manager_ptr->test_listener,
         _wlmaker_output_manager_handle_test);
 
-    return output_mgr_ptr;
+    return output_manager_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -118,19 +126,19 @@ void wlmaker_output_manager_update_config(
 
 /* ------------------------------------------------------------------------- */
 /** Dtor. */
-void _wlmaker_output_manager_destroy(wlmaker_output_manager_t *output_mgr_ptr)
+void _wlmaker_output_manager_destroy(wlmaker_output_manager_t *output_manager_ptr)
 {
-    if (NULL != output_mgr_ptr->wlr_output_manager_v1_ptr) {
+    if (NULL != output_manager_ptr->wlr_output_manager_v1_ptr) {
         wlmtk_util_disconnect_listener(
-            &output_mgr_ptr->test_listener);
+            &output_manager_ptr->test_listener);
         wlmtk_util_disconnect_listener(
-            &output_mgr_ptr->apply_listener);
+            &output_manager_ptr->apply_listener);
         wlmtk_util_disconnect_listener(
-            &output_mgr_ptr->destroy_listener);
-        output_mgr_ptr->wlr_output_manager_v1_ptr = NULL;
+            &output_manager_ptr->destroy_listener);
+        output_manager_ptr->wlr_output_manager_v1_ptr = NULL;
     }
 
-    free(output_mgr_ptr);
+    free(output_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -152,14 +160,96 @@ void _wlmaker_output_manager_add_dlnode_output(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Applies the heads's output configuration.
+ *
+ * Callback for @ref wlmtk_util_wl_list_for_each.
+ *
+ * @param link_ptr
+ * @param ud_ptr
+ *
+ * @return true if the tests & apply methods succeeded.
+ */
+static bool _wlmaker_output_config_head_apply(
+    struct wl_list *link_ptr,
+    void *ud_ptr)
+{
+    struct wlr_output_configuration_head_v1 *head_v1_ptr  = BS_CONTAINER_OF(
+        link_ptr, struct wlr_output_configuration_head_v1, link);
+    struct wlr_output_state state = {};
+    bool *really_ptr = ud_ptr;
+
+    wlr_output_head_v1_state_apply(&head_v1_ptr->state, &state);
+
+    if (!wlr_output_test_state(head_v1_ptr->state.output, &state)) {
+        return false;
+    }
+
+    if (*really_ptr &&
+        !wlr_output_commit_state(head_v1_ptr->state.output, &state)) {
+        return false;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests and applies an output configuration.
+ *
+ * @param output_manager_ptr
+ * @param wlr_output_configuration_v1_ptr
+ * @param really              Whether to not just test, but also apply it.
+ *
+ * @return true on success.
+ */
+bool _wlmaker_output_manager_apply(
+    wlmaker_output_manager_t *output_manager_ptr,
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr,
+    bool really)
+{
+    if (!wlmtk_util_wl_list_for_each(
+            &wlr_output_configuration_v1_ptr->heads,
+            _wlmaker_output_config_head_apply,
+            &really)) {
+        return false;
+    }
+
+    size_t states_len;
+    struct wlr_backend_output_state *wlr_backend_output_state_ptr =
+        wlr_output_configuration_v1_build_state(
+            wlr_output_configuration_v1_ptr, &states_len);
+    if (NULL == wlr_backend_output_state_ptr) {
+        bs_log(BS_ERROR,
+               "Failed wlr_output_configuration_v1_build_state(%p, %p)",
+               wlr_output_configuration_v1_ptr, &states_len);
+        return false;
+    }
+
+    bool rv = wlr_backend_test(
+        output_manager_ptr->wlr_backend_ptr,
+        wlr_backend_output_state_ptr,
+        states_len);
+    if (rv && really) {
+        rv = wlr_backend_commit(
+            output_manager_ptr->wlr_backend_ptr,
+            wlr_backend_output_state_ptr,
+            states_len);
+    }
+    free(wlr_backend_output_state_ptr);
+
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for wlr_output_manager_v1::events.destroy. Cleans up. */
 void _wlmaker_output_manager_handle_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
+    wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, destroy_listener);
-    _wlmaker_output_manager_destroy(output_mgr_ptr);
+    _wlmaker_output_manager_destroy(output_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -168,50 +258,14 @@ void _wlmaker_output_manager_handle_apply(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
+    wlmaker_output_manager_t *om_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, apply_listener);
+    struct wlr_output_configuration_v1 *wlr_output_config_ptr = data_ptr;
 
-    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
-        data_ptr;
-
-    bool succeeded = true;
-    for (struct wl_list *list_ptr =
-             wlr_output_configuration_v1_ptr->heads.next;
-         list_ptr != &wlr_output_configuration_v1_ptr->heads;
-         list_ptr = list_ptr->next) {
-
-        struct wlr_output_configuration_head_v1 *head_ptr = BS_CONTAINER_OF(
-            list_ptr, struct wlr_output_configuration_head_v1, link);
-
-        struct wlr_output_state output_state = {};
-        wlr_output_head_v1_state_apply(&head_ptr->state, &output_state);
-
-        if (!wlr_output_commit_state(
-                head_ptr->state.output,
-                &output_state)) succeeded = false;
-    }
-
-    if (!succeeded) {
-        wlr_output_configuration_v1_send_failed(
-            wlr_output_configuration_v1_ptr);
-        return;
-    }
-
-    size_t states_len;
-    struct wlr_backend_output_state *wlr_backend_output_state_ptr =
-        wlr_output_configuration_v1_build_state(
-            wlr_output_configuration_v1_ptr, &states_len);
-    succeeded = wlr_backend_commit(
-        output_mgr_ptr->wlr_backend_ptr,
-        wlr_backend_output_state_ptr,
-        states_len);
-    free(wlr_backend_output_state_ptr);
-
-    if (succeeded) {
-        wlr_output_configuration_v1_send_succeeded(
-            wlr_output_configuration_v1_ptr);
+    if (_wlmaker_output_manager_apply(om_ptr, wlr_output_config_ptr, true)) {
+        wlr_output_configuration_v1_send_succeeded(wlr_output_config_ptr);
     } else {
-        wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
+        wlr_output_configuration_v1_send_failed(wlr_output_config_ptr);
     }
 }
 
@@ -221,14 +275,15 @@ void _wlmaker_output_manager_handle_test(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    wlmaker_output_manager_t *output_mgr_ptr = BS_CONTAINER_OF(
+    wlmaker_output_manager_t *om_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, test_listener);
+    struct wlr_output_configuration_v1 *wlr_output_config_ptr = data_ptr;
 
-    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
-        data_ptr;
-    bs_log(BS_ERROR, "Output manager %p. Test, not implemented for %p.",
-           output_mgr_ptr, wlr_output_configuration_v1_ptr);
-    wlr_output_configuration_v1_send_failed(wlr_output_configuration_v1_ptr);
+    if (_wlmaker_output_manager_apply(om_ptr, wlr_output_config_ptr, false)) {
+        wlr_output_configuration_v1_send_succeeded(wlr_output_config_ptr);
+    } else {
+        wlr_output_configuration_v1_send_failed(wlr_output_config_ptr);
+    }
 }
 
 /* == End of output_manager.c ============================================== */
