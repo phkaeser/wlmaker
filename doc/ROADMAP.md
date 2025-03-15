@@ -17,7 +17,8 @@ Support for visual effects to improve usability, but not for pure show.
 * Support for dynamic output configurations.
   * Support `wlr-output-management-unstable-v1` protocol.
     * [done] Verify that `wlr-randr` works, for `test` and `apply`.
-    * Fix: Report output position and update accordingly.
+    * [done] Fix: Report output position correctly.
+    * Verify that setting output position works as desired.
     * Fix: Handle --on and --off, should remove output and re-position dock & clip.
   * [done] Support `xdg-output-unstable-v1` protocol.
     * Verify that `wdisplays` works.

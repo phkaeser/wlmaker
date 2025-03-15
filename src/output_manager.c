@@ -39,6 +39,8 @@ struct _wlmaker_output_manager_t {
 
     /** Points to struct wlr_backend. */
     struct wlr_backend *wlr_backend_ptr;
+    /** Points to struct wlr_output_layout. */
+    struct wlr_output_layout *wlr_output_layout_ptr;
 
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
@@ -49,6 +51,14 @@ struct _wlmaker_output_manager_t {
     /** Listener for wlr_output_manager_v1::events.test. */
     struct wl_listener        test_listener;
 };
+
+/** Argument to @ref _wlmaker_output_manager_add_dlnode_output. */
+typedef struct {
+    /** Links to the output manager. */
+    wlmaker_output_manager_t  *output_manager_ptr;
+    /** The output configuration to update. */
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr;
+} _wlmaker_output_manager_add_dlnode_output_arg_t;
 
 static void _wlmaker_output_manager_destroy(
     wlmaker_output_manager_t *output_manager_ptr);
@@ -87,6 +97,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         1, sizeof(wlmaker_output_manager_t));
     if (NULL == output_manager_ptr) return NULL;
     output_manager_ptr->wlr_backend_ptr = wlr_backend_ptr;
+    output_manager_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     output_manager_ptr->wlr_output_manager_v1_ptr =
         wlr_output_manager_v1_create(wl_display_ptr);
@@ -121,17 +132,23 @@ void wlmaker_output_manager_update_config(
     wlmaker_output_manager_t *output_manager_ptr,
     wlmaker_server_t *server_ptr)
 {
-    struct wlr_output_configuration_v1 *config_ptr =
-        wlr_output_configuration_v1_create();
+    _wlmaker_output_manager_add_dlnode_output_arg_t arg = {
+        .output_manager_ptr = output_manager_ptr,
+        .wlr_output_configuration_v1_ptr = wlr_output_configuration_v1_create()
+    };
+    if (NULL == arg.wlr_output_configuration_v1_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_output_configuration_v1_create()");
+        return;
+    }
 
     bs_dllist_for_each(
         &server_ptr->outputs,
         _wlmaker_output_manager_add_dlnode_output,
-        config_ptr);
+        &arg);
 
     wlr_output_manager_v1_set_configuration(
         output_manager_ptr->wlr_output_manager_v1_ptr,
-        config_ptr);
+        arg.wlr_output_configuration_v1_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -166,9 +183,27 @@ void _wlmaker_output_manager_add_dlnode_output(
 {
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
         dlnode_ptr, wlmaker_output_t, node);
-    struct wlr_output_configuration_v1 *config_ptr = ud_ptr;
-    wlr_output_configuration_head_v1_create(
-        config_ptr, output_ptr->wlr_output_ptr);
+    _wlmaker_output_manager_add_dlnode_output_arg_t *arg_ptr = ud_ptr;
+
+    struct wlr_output_configuration_head_v1 *head_v1_ptr =
+        wlr_output_configuration_head_v1_create(
+            arg_ptr->wlr_output_configuration_v1_ptr,
+            output_ptr->wlr_output_ptr);
+    if (NULL == head_v1_ptr) {
+        bs_log(BS_ERROR,
+               "Failed wlr_output_configuration_head_v1_create(%p, %p)",
+               arg_ptr->wlr_output_configuration_v1_ptr,
+               output_ptr->wlr_output_ptr);
+        return;
+    }
+
+    struct wlr_box box;
+    wlr_output_layout_get_box(
+        arg_ptr->output_manager_ptr->wlr_output_layout_ptr,
+        output_ptr->wlr_output_ptr,
+        &box);
+    head_v1_ptr->state.x = box.x;
+    head_v1_ptr->state.y = box.y;
 }
 
 /* ------------------------------------------------------------------------- */
