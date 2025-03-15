@@ -25,6 +25,7 @@
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_management_v1.h>
+#include <wlr/types/wlr_xdg_output_v1.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -33,8 +34,12 @@
 struct _wlmaker_output_manager_t {
     /** Points to wlroots `struct wlr_output_manager_v1`. */
     struct wlr_output_manager_v1 *wlr_output_manager_v1_ptr;
+    /** Points to wlroots 'struct wlr_xdg_output_manager_v1`. */
+    struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager_v1_ptr;
+
     /** Points to struct wlr_backend. */
     struct wlr_backend *wlr_backend_ptr;
+
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
     struct wl_listener        destroy_listener;
@@ -75,7 +80,8 @@ static void _wlmaker_output_manager_handle_test(
 /* ------------------------------------------------------------------------- */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_backend *wlr_backend_ptr)
+    struct wlr_backend *wlr_backend_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmaker_output_manager_t *output_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
@@ -100,6 +106,12 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         &output_manager_ptr->wlr_output_manager_v1_ptr->events.test,
         &output_manager_ptr->test_listener,
         _wlmaker_output_manager_handle_test);
+
+    output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
+        wlr_xdg_output_manager_v1_create(
+            wl_display_ptr,
+            wlr_output_layout_ptr);
+
 
     return output_manager_ptr;
 }
