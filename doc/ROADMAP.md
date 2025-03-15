@@ -19,8 +19,10 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Verify that `wlr-randr` works, for `test` and `apply`.
     * Fix: Report output position and update accordingly.
     * Fix: Handle --on and --off, should remove output and re-position dock & clip.
-  * Support `xdg-output-unstable-v1` protocol.
+  * [done] Support `xdg-output-unstable-v1` protocol.
     * Verify that `wdisplays` works.
+      * Fix `wdisplays` crash when unsetting `Overlay Screen Names`.
+      * Fix positioning of overlaid screen names.
   * Test and verify: Multiple monitors supported. Supporting:
     * per-monitor fractional scale.
     * per-monitor transformation setting.
