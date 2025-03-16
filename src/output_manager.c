@@ -250,14 +250,19 @@ static bool _wlmaker_output_config_head_apply(
     int x = head_v1_ptr->state.x, y = head_v1_ptr->state.y;
     struct wlr_output_layout *wlr_output_layout_ptr =
         arg_ptr->wlr_output_layout_ptr;
-    if (!wlr_output_layout_add(wlr_output_layout_ptr, wlr_output_ptr, x, y)) {
+    if (head_v1_ptr->state.enabled &&
+        !wlr_output_layout_add(wlr_output_layout_ptr, wlr_output_ptr, x, y)) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_add(%p, %p, %d, %d)",
                wlr_output_layout_ptr, wlr_output_ptr, x, y);
         return false;
+    } else if (!head_v1_ptr->state.enabled) {
+        wlr_output_layout_remove(wlr_output_layout_ptr, wlr_output_ptr);
     }
 
-    bs_log(BS_INFO, "Applied: Output '%s' to %dx%d@%.2f position (%d,%d)",
-           wlr_output_ptr->name, wlr_output_ptr->width, wlr_output_ptr->height,
+    bs_log(BS_INFO, "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d)",
+           wlr_output_ptr->name,
+           head_v1_ptr->state.enabled ? "enabled" : "disabled",
+           wlr_output_ptr->width, wlr_output_ptr->height,
            1e-3 * wlr_output_ptr->refresh, x, y);
     return true;
 }
