@@ -18,16 +18,18 @@ Support for visual effects to improve usability, but not for pure show.
   * Support `wlr-output-management-unstable-v1` protocol.
     * [done] Verify that `wlr-randr` works, for `test` and `apply`.
     * [done] Fix: Report output position correctly.
-    * Verify that setting output position works as desired.
+    * [done] Verify that setting output position works as desired.
     * Fix: Handle --on and --off, should remove output and re-position dock & clip.
   * [done] Support `xdg-output-unstable-v1` protocol.
     * Verify that `wdisplays` works.
       * Fix `wdisplays` crash when unsetting `Overlay Screen Names`.
       * Fix positioning of overlaid screen names.
-  * Test and verify: Multiple monitors supported. Supporting:
-    * per-monitor fractional scale.
-    * per-monitor transformation setting.
-  * Explore if wlroots permits mirroring layouts. If yes: Implement.
+  * [done] Test and verify: Multiple monitors supported. Supporting:
+    * [done] per-monitor fractional scale.
+    * [done] per-monitor transformation setting.
+  * Permit `wlmaker.plist` per-output configuration, to persist layout.
+  * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
+    (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
   * Document and implement behaviour of 'fullscreen' window on multiple outputs: Fill the active output.
   * Document and implement behaviour of 'maximized' window on multiple outputs: Maximize on active output.
   * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.

@@ -489,7 +489,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
+bool wlmaker_server_output_add(wlmaker_server_t *server_ptr,
                                wlmaker_output_t *output_ptr)
 {
     // tinywl: Adds this to the output layout. The add_auto function arranges
@@ -497,8 +497,16 @@ void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
     // compositor would let the user configure the arrangement of outputs in
     // the layout.
     struct wlr_output_layout_output *wlr_output_layout_output_ptr =
-        wlr_output_layout_add_auto(server_ptr->wlr_output_layout_ptr,
-                                   output_ptr->wlr_output_ptr);
+        wlr_output_layout_add_auto(
+            server_ptr->wlr_output_layout_ptr,
+            output_ptr->wlr_output_ptr);
+    if (NULL == wlr_output_layout_output_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_output_layout_add_auto(%p, %p) for '%s'",
+               server_ptr->wlr_output_layout_ptr,
+               output_ptr->wlr_output_ptr,
+            output_ptr->wlr_output_ptr->name);
+        return false;
+    }
     struct wlr_scene_output *wlr_scene_output_ptr =
         wlr_scene_output_create(server_ptr->wlr_scene_ptr,
                                 output_ptr->wlr_output_ptr);
@@ -513,6 +521,7 @@ void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
             server_ptr->output_manager_ptr,
             server_ptr);
     }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
