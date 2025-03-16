@@ -32,6 +32,8 @@ Support for visual effects to improve usability, but not for pure show.
   * Document and implement behaviour of 'maximized' window on multiple outputs: Maximize on active output.
   * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
+  * Add "scaling" actions, configurable as hotkey and in root menu.
+  * Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
 * Menu
   * Keyboard navigation.
