@@ -1,10 +1,10 @@
 name: Build for Linux (Bookworm, libwlroots-0.18)
 
 on:
-  push:
-    branches: [ ]
-  pull_request:
-    branches: [ ]
+  # push:
+  #   branches: [ "push" ]
+  # pull_request:
+  #   branches: [ "push" ]
 
 env:
   INSTALL_PATH: "${HOME}/wlmaker"
