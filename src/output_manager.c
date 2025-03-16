@@ -60,6 +60,14 @@ typedef struct {
     struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr;
 } _wlmaker_output_manager_add_dlnode_output_arg_t;
 
+/** Argument to @ref _wlmaker_output_config_head_apply. */
+typedef struct {
+    /** Points to struct wlr_output_layout. */
+    struct wlr_output_layout *wlr_output_layout_ptr;
+    /** Whether to test only, or to apply "really". */
+    bool really;
+} _wlmaker_output_config_head_apply_arg_t;
+
 static void _wlmaker_output_manager_destroy(
     wlmaker_output_manager_t *output_manager_ptr);
 
@@ -224,19 +232,33 @@ static bool _wlmaker_output_config_head_apply(
     struct wlr_output_configuration_head_v1 *head_v1_ptr  = BS_CONTAINER_OF(
         link_ptr, struct wlr_output_configuration_head_v1, link);
     struct wlr_output_state state = {};
-    bool *really_ptr = ud_ptr;
+    _wlmaker_output_config_head_apply_arg_t *arg_ptr = ud_ptr;
+
+    // Convenience pointers. Guard against accidental misses.
+    struct wlr_output *wlr_output_ptr = head_v1_ptr->state.output;
+    if (NULL == wlr_output_ptr) {
+        bs_log(BS_ERROR, "Unexpected NULL output in head %p", head_v1_ptr);
+        return false;
+    }
 
     wlr_output_head_v1_state_apply(&head_v1_ptr->state, &state);
+    if (!wlr_output_test_state(wlr_output_ptr, &state)) return false;
+    if (!arg_ptr->really) return true;
 
-    if (!wlr_output_test_state(head_v1_ptr->state.output, &state)) {
+    if (!wlr_output_commit_state(wlr_output_ptr, &state)) return false;
+
+    int x = head_v1_ptr->state.x, y = head_v1_ptr->state.y;
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        arg_ptr->wlr_output_layout_ptr;
+    if (!wlr_output_layout_add(wlr_output_layout_ptr, wlr_output_ptr, x, y)) {
+        bs_log(BS_ERROR, "Failed wlr_output_layout_add(%p, %p, %d, %d)",
+               wlr_output_layout_ptr, wlr_output_ptr, x, y);
         return false;
     }
 
-    if (*really_ptr &&
-        !wlr_output_commit_state(head_v1_ptr->state.output, &state)) {
-        return false;
-    }
-
+    bs_log(BS_INFO, "Applied: Output '%s' to %dx%d@%.2f position (%d,%d)",
+           wlr_output_ptr->name, wlr_output_ptr->width, wlr_output_ptr->height,
+           1e-3 * wlr_output_ptr->refresh, x, y);
     return true;
 }
 
@@ -255,10 +277,14 @@ bool _wlmaker_output_manager_apply(
     struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr,
     bool really)
 {
+    _wlmaker_output_config_head_apply_arg_t arg = {
+        .wlr_output_layout_ptr = output_manager_ptr->wlr_output_layout_ptr,
+        .really = really
+    };
     if (!wlmtk_util_wl_list_for_each(
             &wlr_output_configuration_v1_ptr->heads,
             _wlmaker_output_config_head_apply,
-            &really)) {
+            &arg)) {
         return false;
     }
 
