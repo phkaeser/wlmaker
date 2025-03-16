@@ -27,10 +27,13 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Test and verify: Multiple monitors supported. Supporting:
     * [done] per-monitor fractional scale.
     * [done] per-monitor transformation setting.
+  * `wlr-layer-shell-unstable-v1` implementation fixes:
+    * Update layer positioning to be respective to the panel's configured output.
   * Permit `wlmaker.plist` per-output configuration, to persist layout.
   * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
   * Document and implement behaviour of 'fullscreen' window on multiple outputs: Fill the active output.
+    * Support and handle `wl_output` arg to `xdg_toplevel::set_fullscreen`.
   * Document and implement behaviour of 'maximized' window on multiple outputs: Maximize on active output.
   * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
