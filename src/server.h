@@ -251,8 +251,10 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr);
  *
  * @param server_ptr
  * @param output_ptr
+ *
+ * @return true on success.
  */
-void wlmaker_server_output_add(wlmaker_server_t *server_ptr,
+bool wlmaker_server_output_add(wlmaker_server_t *server_ptr,
                                wlmaker_output_t *output_ptr);
 
 /**
