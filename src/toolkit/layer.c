@@ -409,12 +409,12 @@ void _wlmtk_layer_output_remove_panel(
 /* == Unit tests =========================================================== */
 
 static void test_add_remove(bs_test_t *test_ptr);
-static void test_update_layout(bs_test_t *test_ptr);
+static void test_update_output_layout(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_layer_test_cases[] = {
     { 1, "add_remove", test_add_remove },
-    { 1, "update_layout", test_update_layout },
+    { 1, "update_output_layout", test_update_output_layout },
     { 1, "layout", test_layout },
     { 0, NULL, NULL }
 };
@@ -462,7 +462,7 @@ void test_add_remove(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Tests adding + removing outputs, and updates to panel positions. */
-void test_update_layout(bs_test_t *test_ptr)
+void test_update_output_layout(bs_test_t *test_ptr)
 {
     wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
