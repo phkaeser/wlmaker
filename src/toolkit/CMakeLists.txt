@@ -80,6 +80,7 @@ TARGET_SOURCES(toolkit PRIVATE
   root.c
   style.c
   surface.c
+  test.c
   tile.c
   titlebar.c
   titlebar_button.c
