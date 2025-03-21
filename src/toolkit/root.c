@@ -60,7 +60,7 @@ static void _wlmtk_root_switch_to_workspace(
 static void _wlmtk_root_set_workspace_extents(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
-static void _wlmtk_root_workspace_update_layout(
+static void _wlmtk_root_workspace_update_output_layout(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 static void _wlmtk_root_enumerate_workspaces(
@@ -181,7 +181,7 @@ void wlmtk_root_set_extents(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_root_update_layout(
+void wlmtk_root_update_output_layout(
     wlmtk_root_t *root_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
@@ -194,7 +194,7 @@ void wlmtk_root_update_layout(
 
     bs_dllist_for_each(
         &root_ptr->workspaces,
-        _wlmtk_root_workspace_update_layout,
+        _wlmtk_root_workspace_update_output_layout,
         wlr_output_layout_ptr);
 }
 
@@ -520,7 +520,7 @@ void _wlmtk_root_set_workspace_extents(
  * @param dlnode_ptr
  * @param ud_ptr
  */
-void _wlmtk_root_workspace_update_layout(
+void _wlmtk_root_workspace_update_output_layout(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr)
 {

@@ -32,7 +32,7 @@
 
 /* == Declarations ========================================================= */
 
-/** State of a layer. */
+/** State of a layer, covering multiple outputs. */
 struct _wlmtk_layer_t {
     /** Super class of the layer. */
     wlmtk_container_t         super_container;
@@ -46,13 +46,13 @@ struct _wlmtk_layer_t {
     /** Holds outputs and panels. */
     bs_avltree_t              *output_tree_ptr;
 
-    /** Used only in @ref wlmtk_layer_update_layout. The former tree. */
+    /** Used only in @ref wlmtk_layer_update_output_layout. The former tree. */
     bs_avltree_t              *former_output_tree_ptr;
-    /** Used only in @ref wlmtk_layer_update_layout. Output layout. */
+    /** Used only in @ref wlmtk_layer_update_output_layout. Output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
-/** An output node. */
+/** State of the layer on the given output. */
 typedef struct {
     /** Tree node, referenced from @ref wlmtk_layer_t::output_tree_ptr. */
     bs_avltree_node_t         avlnode;
@@ -63,20 +63,20 @@ typedef struct {
     struct wlr_box            extents;
     /** Panels. Holds nodes at @ref wlmtk_panel_t::dlnode. */
     bs_dllist_t               panels;
-} wlmtk_layer_output_tree_node_t;
+} wlmtk_layer_output_t;
 
-static wlmtk_layer_output_tree_node_t *_wlmtk_layer_output_tree_node_create(
+static wlmtk_layer_output_t *_wlmtk_layer_output_create(
     struct wlr_output *wlr_output_ptr);
 static void _wlmtk_layer_output_tree_node_destroy(
     bs_avltree_node_t *avlnode_ptr);
 static int _wlmtk_layer_output_tree_node_cmp(
     const bs_avltree_node_t *avlnode_ptr,
     const void *key_ptr);
-static bool _wlmtk_layer_update_output(
+static bool _wlmtk_layer_output_update(
     struct wl_list *link_ptr,
     void *ud_ptr);
-static void _wlmtk_layer_reconfigure_output(
-    wlmtk_layer_output_tree_node_t *node_ptr);
+static void _wlmtk_layer_output_reconfigure(
+    wlmtk_layer_output_t *node_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -152,18 +152,18 @@ bool wlmtk_layer_add_panel_output(
                layer_ptr, wlr_output_ptr);
         return false;
     }
-    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
-        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+    wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_t, avlnode);
 
     wlmtk_container_add_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, layer_ptr);
     bs_dllist_push_back(
-        &node_ptr->panels,
+        &output_ptr->panels,
         wlmtk_dlnode_from_panel(panel_ptr));
 
-    _wlmtk_layer_reconfigure_output(node_ptr);
+    _wlmtk_layer_output_reconfigure(output_ptr);
     return true;
 }
 
@@ -214,7 +214,7 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_layer_update_layout(
+void wlmtk_layer_update_output_layout(
     wlmtk_layer_t *layer_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
@@ -228,7 +228,7 @@ void wlmtk_layer_update_layout(
         _wlmtk_layer_output_tree_node_destroy);
     BS_ASSERT(wlmtk_util_wl_list_for_each(
                   &wlr_output_layout_ptr->outputs,
-                  _wlmtk_layer_update_output,
+                  _wlmtk_layer_output_update,
                   layer_ptr));
 
     bs_avltree_destroy(layer_ptr->former_output_tree_ptr);
@@ -246,14 +246,14 @@ void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
 
 /* ------------------------------------------------------------------------- */
 /** Creates an output node for `wlr_output_ptr`. */
-wlmtk_layer_output_tree_node_t *_wlmtk_layer_output_tree_node_create(
+wlmtk_layer_output_t *_wlmtk_layer_output_create(
     struct wlr_output *wlr_output_ptr)
 {
-    wlmtk_layer_output_tree_node_t *node_ptr = logged_calloc(
-        1, sizeof(wlmtk_layer_output_tree_node_t));
-    if (NULL == node_ptr) return NULL;
-    node_ptr->wlr_output_ptr = wlr_output_ptr;
-    return node_ptr;
+    wlmtk_layer_output_t *output_ptr = logged_calloc(
+        1, sizeof(wlmtk_layer_output_t));
+    if (NULL == output_ptr) return NULL;
+    output_ptr->wlr_output_ptr = wlr_output_ptr;
+    return output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -261,21 +261,21 @@ wlmtk_layer_output_tree_node_t *_wlmtk_layer_output_tree_node_create(
 void _wlmtk_layer_output_tree_node_destroy(
     bs_avltree_node_t *avlnode_ptr)
 {
-    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
-        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+    wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_t, avlnode);
 
-    free(node_ptr);
+    free(output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Compares @ref wlmtk_layer_output_tree_node_t::wlr_output_ptr. */
+/** Compares @ref wlmtk_layer_output_t::wlr_output_ptr. */
 int _wlmtk_layer_output_tree_node_cmp(
     const bs_avltree_node_t *avlnode_ptr,
     const void *key_ptr)
 {
-    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
-        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
-    return bs_avltree_cmp_ptr(node_ptr->wlr_output_ptr, key_ptr);
+    wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_t, avlnode);
+    return bs_avltree_cmp_ptr(output_ptr->wlr_output_ptr, key_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -292,7 +292,7 @@ int _wlmtk_layer_output_tree_node_cmp(
  *
  * @return true on success, or false on error.
  */
-bool _wlmtk_layer_update_output(
+bool _wlmtk_layer_output_update(
     struct wl_list *link_ptr,
     void *ud_ptr)
 {
@@ -301,16 +301,16 @@ bool _wlmtk_layer_update_output(
     struct wlr_output *wlr_output_ptr = wlr_output_layout_output_ptr->output;
     wlmtk_layer_t *layer_ptr = ud_ptr;
 
-    wlmtk_layer_output_tree_node_t *node_ptr = NULL;
+    wlmtk_layer_output_t *output_ptr = NULL;
     bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
         layer_ptr->former_output_tree_ptr, wlr_output_ptr);
     if (NULL != avlnode_ptr) {
-        node_ptr = BS_CONTAINER_OF(
-            avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+        output_ptr = BS_CONTAINER_OF(
+            avlnode_ptr, wlmtk_layer_output_t, avlnode);
     } else {
-        node_ptr = _wlmtk_layer_output_tree_node_create(wlr_output_ptr);
-        if (NULL == node_ptr) return false;
-        avlnode_ptr = &node_ptr->avlnode;
+        output_ptr = _wlmtk_layer_output_create(wlr_output_ptr);
+        if (NULL == output_ptr) return false;
+        avlnode_ptr = &output_ptr->avlnode;
     }
 
     struct wlr_box new_extents;
@@ -318,9 +318,9 @@ bool _wlmtk_layer_update_output(
         layer_ptr->wlr_output_layout_ptr,
         wlr_output_ptr,
         &new_extents);
-    if (!wlr_box_equal(&new_extents, &node_ptr->extents)) {
-        node_ptr->extents = new_extents;
-        _wlmtk_layer_reconfigure_output(node_ptr);
+    if (!wlr_box_equal(&new_extents, &output_ptr->extents)) {
+        output_ptr->extents = new_extents;
+        _wlmtk_layer_output_reconfigure(output_ptr);
     }
 
     return bs_avltree_insert(
@@ -329,19 +329,19 @@ bool _wlmtk_layer_update_output(
 
 /* ------------------------------------------------------------------------- */
 /** Reconfigures the panel positions within the output of the layer. */
-void _wlmtk_layer_reconfigure_output(
-    wlmtk_layer_output_tree_node_t *node_ptr)
+void _wlmtk_layer_output_reconfigure(
+    wlmtk_layer_output_t *output_ptr)
 {
-    struct wlr_box usable_area = node_ptr->extents;
+    struct wlr_box usable_area = output_ptr->extents;
 
-    for (bs_dllist_node_t *dlnode_ptr = node_ptr->panels.head_ptr;
+    for (bs_dllist_node_t *dlnode_ptr = output_ptr->panels.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
 
         struct wlr_box new_usable_area = usable_area;
         struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
-            panel_ptr, &node_ptr->extents, &new_usable_area);
+            panel_ptr, &output_ptr->extents, &new_usable_area);
 
         if (wlmtk_panel_element(panel_ptr)->visible) {
             usable_area = new_usable_area;
@@ -428,7 +428,7 @@ void test_update_layout(bs_test_t *test_ptr)
     struct wlr_output o1 = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&o1);
     wlr_output_layout_add(layout_ptr, &o1, 10, 20);
-    wlmtk_layer_update_layout(layer_ptr, layout_ptr);
+    wlmtk_layer_update_output_layout(layer_ptr, layout_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, 1, bs_avltree_size(layer_ptr->output_tree_ptr));
 
@@ -461,7 +461,7 @@ void test_update_layout(bs_test_t *test_ptr)
         wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &o2));
 
     // Now: Add second output. Adding the panel must now work.
-    wlmtk_layer_update_layout(layer_ptr, layout_ptr);
+    wlmtk_layer_update_output_layout(layer_ptr, layout_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, 2, bs_avltree_size(layer_ptr->output_tree_ptr));
     BS_TEST_VERIFY_TRUE(
@@ -475,7 +475,7 @@ void test_update_layout(bs_test_t *test_ptr)
 
     // Reposition the second output. Must reconfigure that panel's position.
     wlr_output_layout_add(layout_ptr, &o2, 500, 300);
-    wlmtk_layer_update_layout(layer_ptr, layout_ptr);
+    wlmtk_layer_update_output_layout(layer_ptr, layout_ptr);
 
     // Position: 500 (output) + 640/4 (half scaled output) - 40 (half panel).
     BS_TEST_VERIFY_EQ(test_ptr, 620, wlmtk_panel_element(&fp2_ptr->panel)->x );
@@ -483,7 +483,7 @@ void test_update_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 402, wlmtk_panel_element(&fp2_ptr->panel)->y);
 
     wlr_output_layout_remove(layout_ptr, &o1);
-    wlmtk_layer_update_layout(layer_ptr, layout_ptr);
+    wlmtk_layer_update_output_layout(layer_ptr, layout_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, 1, bs_avltree_size(layer_ptr->output_tree_ptr));
 

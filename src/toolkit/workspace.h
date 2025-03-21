@@ -115,7 +115,7 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
  *                            next call to wlmtk_workspace_update_layout, or
  *                            until @ref wlmtk_workspace_destroy is called.
  */
-void wlmtk_workspace_update_layout(
+void wlmtk_workspace_update_output_layout(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 

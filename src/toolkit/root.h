@@ -99,10 +99,10 @@ void wlmtk_root_set_extents(
  * @param root_ptr
  * @param wlr_output_layout_ptr The output layout. @ref wlmtk_root_t expects
  *                            all referred outputs to live until the next
- *                            call to wlmtk_root_update_layout, or until
+ *                            call to wlmtk_root_update_output_layout, or until
  *                            @ref wlmtk_root_destroy is called.
  */
-void wlmtk_root_update_layout(
+void wlmtk_root_update_output_layout(
     wlmtk_root_t *root_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 

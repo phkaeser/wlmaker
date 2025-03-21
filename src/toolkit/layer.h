@@ -101,7 +101,7 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
  *                            next call to wlmtk_workspace_update_layout, or
  *                            until @ref wlmtk_layer_destroy is called.
  */
-void wlmtk_layer_update_layout(
+void wlmtk_layer_update_output_layout(
     wlmtk_layer_t *layer_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 
