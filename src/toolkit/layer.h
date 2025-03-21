@@ -24,6 +24,8 @@
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
 /** Forward declaration: wlr output layout. */
 struct wlr_output_layout;
+/** Forward declaration: wlr output. */
+struct wlr_output;
 
 #include "element.h"
 #include "env.h"
@@ -62,6 +64,12 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
  */
 void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
                            wlmtk_panel_t *panel_ptr);
+
+/** Temporary: Wraps for @ref wlmtk_layer_add_panel. */
+void wlmtk_layer_add_panel_output(
+    wlmtk_layer_t *layer_ptr,
+    wlmtk_panel_t *panel_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /**
  * Removes the panel from the layer.

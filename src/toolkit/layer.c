@@ -40,7 +40,34 @@ struct _wlmtk_layer_t {
 
     /** Panels, holds nodes at @ref wlmtk_panel_t::dlnode. */
     bs_dllist_t               panels;
+
+    /** Holds outputs and panels. */
+    bs_avltree_t              *output_tree_ptr;
+    /** Used only in @ref wlmtk_layer_update_layout. The former tree. */
+    bs_avltree_t              *former_output_tree_ptr;
 };
+
+/** An output node. */
+typedef struct {
+    /** Tree node, referenced from @ref wlmtk_layer_t::output_tree_ptr. */
+    bs_avltree_node_t         avlnode;
+
+    /** The WLR output that the panels in this node belong to. */
+    struct wlr_output         *wlr_output_ptr;
+    /** Panels. Holds nodes at @ref wlmtk_panel_t::dlnode. */
+    bs_dllist_t               panels;
+} wlmtk_layer_output_tree_node_t;
+
+static wlmtk_layer_output_tree_node_t *_wlmtk_layer_output_tree_node_create(
+    struct wlr_output *wlr_output_ptr);
+static void _wlmtk_layer_output_tree_node_destroy(
+    bs_avltree_node_t *avlnode_ptr);
+static int _wlmtk_layer_output_tree_node_cmp(
+    const bs_avltree_node_t *avlnode_ptr,
+    const void *key_ptr);
+static bool _wlmtk_layer_add_output(
+    struct wl_list *link_ptr,
+    void *ud_ptr);
 
 /* == Exported methods ===================================================== */
 
@@ -55,12 +82,26 @@ wlmtk_layer_t *wlmtk_layer_create(wlmtk_env_t *env_ptr)
         return NULL;
     }
 
+    layer_ptr->output_tree_ptr = bs_avltree_create(
+        _wlmtk_layer_output_tree_node_cmp,
+        _wlmtk_layer_output_tree_node_destroy);
+    if (NULL == layer_ptr->output_tree_ptr) {
+        bs_log(BS_ERROR, "Failed bs_avltree_create(%p, NULL)",
+               _wlmtk_layer_output_tree_node_cmp);
+        wlmtk_layer_destroy(layer_ptr);
+        return NULL;
+    }
+
     return layer_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr)
 {
+    if (NULL != layer_ptr->output_tree_ptr) {
+        bs_avltree_destroy(layer_ptr->output_tree_ptr);
+        layer_ptr->output_tree_ptr = NULL;
+    }
     wlmtk_container_fini(&layer_ptr->super_container);
     free(layer_ptr);
 }
@@ -74,6 +115,23 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
                            wlmtk_panel_t *panel_ptr)
+{
+    BS_ASSERT(NULL == wlmtk_panel_get_layer(panel_ptr));
+    wlmtk_container_add_element(
+        &layer_ptr->super_container,
+        wlmtk_panel_element(panel_ptr));
+    wlmtk_panel_set_layer(panel_ptr, layer_ptr);
+    bs_dllist_push_back(
+        &layer_ptr->panels,
+        wlmtk_dlnode_from_panel(panel_ptr));
+    wlmtk_layer_reconfigure(layer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_layer_add_panel_output(
+    wlmtk_layer_t *layer_ptr,
+    wlmtk_panel_t *panel_ptr,
+    __UNUSED__ struct wlr_output *wlr_output_ptr)
 {
     BS_ASSERT(NULL == wlmtk_panel_get_layer(panel_ptr));
     wlmtk_container_add_element(
@@ -134,10 +192,23 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_layer_update_layout(
-    __UNUSED__ wlmtk_layer_t *layer_ptr,
-    __UNUSED__ struct wlr_output_layout *wlr_output_layout_ptr)
+    wlmtk_layer_t *layer_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
-    // TODO(kaeser@gubbe.ch): Implement.
+    BS_ASSERT(NULL == layer_ptr->former_output_tree_ptr);
+    BS_ASSERT(NULL != layer_ptr->output_tree_ptr);
+    layer_ptr->former_output_tree_ptr = layer_ptr->output_tree_ptr;
+
+    layer_ptr->output_tree_ptr = bs_avltree_create(
+        _wlmtk_layer_output_tree_node_cmp,
+        _wlmtk_layer_output_tree_node_destroy);
+    BS_ASSERT(wlmtk_util_wl_list_for_each(
+                  &wlr_output_layout_ptr->outputs,
+                  _wlmtk_layer_add_output,
+                  layer_ptr));
+
+    bs_avltree_destroy(layer_ptr->former_output_tree_ptr);
+    layer_ptr->former_output_tree_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -148,6 +219,75 @@ void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Creates an output node for `wlr_output_ptr`. */
+wlmtk_layer_output_tree_node_t *_wlmtk_layer_output_tree_node_create(
+    struct wlr_output *wlr_output_ptr)
+{
+    wlmtk_layer_output_tree_node_t *node_ptr = logged_calloc(
+        1, sizeof(wlmtk_layer_output_tree_node_t));
+    if (NULL == node_ptr) return NULL;
+    node_ptr->wlr_output_ptr = wlr_output_ptr;
+    return node_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destroys the output node. */
+void _wlmtk_layer_output_tree_node_destroy(
+    bs_avltree_node_t *avlnode_ptr)
+{
+    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+
+    free(node_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Compares @ref wlmtk_layer_output_tree_node_t::wlr_output_ptr. */
+int _wlmtk_layer_output_tree_node_cmp(
+    const bs_avltree_node_t *avlnode_ptr,
+    const void *key_ptr)
+{
+    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+    return bs_avltree_cmp_ptr(node_ptr->wlr_output_ptr, key_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Adds the given output into @ref wlmtk_layer_t::output_tree_ptr.
+ *
+ * If the output already exists in @ref wlmtk_layer_t::former_output_tree_ptr,
+ * the corresponding node will be moved from there. Otherwise, a new node is
+ * created.
+ *
+ * @param link_ptr            struct wlr_output_layout_output::link.
+ * @param ud_ptr              The @ref wlmtk_layer_t.
+ *
+ * @return true on success, or false on error.
+ */
+bool _wlmtk_layer_add_output(
+    struct wl_list *link_ptr,
+    void *ud_ptr)
+{
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        BS_CONTAINER_OF(link_ptr, struct wlr_output_layout_output, link);
+    struct wlr_output *wlr_output_ptr = wlr_output_layout_output_ptr->output;
+    wlmtk_layer_t *layer_ptr = ud_ptr;
+
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
+        layer_ptr->former_output_tree_ptr, wlr_output_ptr);
+    if (NULL == avlnode_ptr) {
+        wlmtk_layer_output_tree_node_t *node_ptr =
+            _wlmtk_layer_output_tree_node_create(wlr_output_ptr);
+        if (NULL == node_ptr) return false;
+        avlnode_ptr = &node_ptr->avlnode;
+    }
+
+    return bs_avltree_insert(
+        layer_ptr->output_tree_ptr, wlr_output_ptr, avlnode_ptr, false);
+}
 
 /* == Unit tests =========================================================== */
 
