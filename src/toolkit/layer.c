@@ -128,20 +128,35 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_layer_add_panel_output(
+bool wlmtk_layer_add_panel_output(
     wlmtk_layer_t *layer_ptr,
     wlmtk_panel_t *panel_ptr,
-    __UNUSED__ struct wlr_output *wlr_output_ptr)
+    struct wlr_output *wlr_output_ptr)
 {
     BS_ASSERT(NULL == wlmtk_panel_get_layer(panel_ptr));
+
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
+        layer_ptr->output_tree_ptr,
+        wlr_output_ptr);
+    if (NULL == avlnode_ptr) {
+        bs_log(BS_WARNING, "Layer %p does not contain output %p",
+               layer_ptr, wlr_output_ptr);
+        return false;
+    }
+    wlmtk_layer_output_tree_node_t *node_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_layer_output_tree_node_t, avlnode);
+
     wlmtk_container_add_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, layer_ptr);
     bs_dllist_push_back(
-        &layer_ptr->panels,
+        &node_ptr->panels,
         wlmtk_dlnode_from_panel(panel_ptr));
-    wlmtk_layer_reconfigure(layer_ptr);
+
+    // TODO: Reconfigure -- wlmtk_layer_reconfigure(layer_ptr);
+
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -360,12 +375,33 @@ void test_update_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, 1, bs_avltree_size(layer_ptr->output_tree_ptr));
 
+    wlmtk_panel_positioning_t p1 = {
+        .desired_width = 100, .desired_height = 50 };
+    wlmtk_fake_panel_t *fp1_ptr = wlmtk_fake_panel_create(&p1);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp1_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_layer_add_panel_output(layer_ptr, &fp1_ptr->panel, &o1));
+
     struct wlr_output o2 = {};
     struct wlr_output_layout_output lo2 = { .output = &o2 };
+
+    wlmtk_panel_positioning_t p2 = {
+        .desired_width = 100, .desired_height = 50 };
+    wlmtk_fake_panel_t *fp2_ptr = wlmtk_fake_panel_create(&p2);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp2_ptr);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &o2));
+
     wl_list_insert(&layout.outputs, &lo2.link);
     wlmtk_layer_update_layout(layer_ptr, &layout);
     BS_TEST_VERIFY_EQ(
         test_ptr, 2, bs_avltree_size(layer_ptr->output_tree_ptr));
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &o2));
 
     wl_list_remove(&lo1.link);
     wlmtk_layer_update_layout(layer_ptr, &layout);

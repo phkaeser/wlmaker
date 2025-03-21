@@ -66,7 +66,7 @@ void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
                            wlmtk_panel_t *panel_ptr);
 
 /** Temporary: Wraps for @ref wlmtk_layer_add_panel. */
-void wlmtk_layer_add_panel_output(
+bool wlmtk_layer_add_panel_output(
     wlmtk_layer_t *layer_ptr,
     wlmtk_panel_t *panel_ptr,
     struct wlr_output *wlr_output_ptr);
