@@ -22,6 +22,8 @@
 
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
+/** Forward declaration: Layer state. */
+typedef struct _wlmtk_layer_output_t wlmtk_layer_output_t;
 /** Forward declaration: wlr output layout. */
 struct wlr_output_layout;
 /** Forward declaration: wlr output. */

@@ -115,16 +115,17 @@ wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_panel_set_output(wlmtk_panel_t *panel_ptr,
-                            struct wlr_output *wlr_output_ptr)
+void wlmtk_panel_set_layer_output(
+    wlmtk_panel_t *panel_ptr,
+    wlmtk_layer_output_t *layer_output_ptr)
 {
-    panel_ptr->wlr_output_ptr = wlr_output_ptr;
+    panel_ptr->layer_output_ptr = layer_output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlr_output *wlmtk_panel_get_output(wlmtk_panel_t *panel_ptr)
+wlmtk_layer_output_t *wlmtk_panel_get_layer_output(wlmtk_panel_t *panel_ptr)
 {
-    return panel_ptr->wlr_output_ptr;
+    return panel_ptr->layer_output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */

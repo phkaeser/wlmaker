@@ -28,8 +28,6 @@ typedef struct _wlmtk_panel_t wlmtk_panel_t;
 typedef struct _wlmtk_panel_vmt_t wlmtk_panel_vmt_t;
 /** Forward declaration: The panel's positioning parameters. */
 typedef struct _wlmtk_panel_positioning_t wlmtk_panel_positioning_t;
-/** Forward declaration. */
-struct wlr_output;
 
 #include "container.h"
 #include "layer.h"
@@ -96,8 +94,8 @@ struct _wlmtk_panel_t {
 
     /** The layer that this panel belongs to. NULL if none. */
     wlmtk_layer_t             *layer_ptr;
-    /** The output this panel is associated with. */
-    struct wlr_output         *wlr_output_ptr;
+    /** The layer output this panel is associated with. */
+    wlmtk_layer_output_t      *layer_output_ptr;
     /** Node of @ref wlmtk_layer_t::panels. */
     bs_dllist_node_t          dlnode;
 
@@ -161,18 +159,19 @@ void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
 wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr);
 
 /**
- * Sets @ref wlmtk_panel_t::wlr_output_ptr.
+ * Sets the layer output for the `panel_ptr`.
  *
- * @protected This method must only be called from @ref wlmtk_layer_t.
+ * @protected This method must only be called from @ref wlmtk_layer_output_t.
  *
  * @param panel_ptr
- * @param wlr_output_ptr
+ * @param layer_output_ptr
  */
-void wlmtk_panel_set_output(wlmtk_panel_t *panel_ptr,
-                            struct wlr_output *wlr_output_ptr);
+void wlmtk_panel_set_layer_output(
+    wlmtk_panel_t *panel_ptr,
+    wlmtk_layer_output_t *layer_output_ptr);
 
-/** @return @ref wlmtk_panel_t::wlr_output_ptr. May be NULL. */
-struct wlr_output *wlmtk_panel_get_output(wlmtk_panel_t *panel_ptr);
+/** @return the wlmtk_layer_output_t the panel belongs to. NULL if unmapped. */
+wlmtk_layer_output_t *wlmtk_panel_get_layer_output(wlmtk_panel_t *panel_ptr);
 
 /** Requests new size. See @ref wlmtk_panel_vmt_t::request_size. */
 static inline uint32_t wlmtk_panel_request_size(
