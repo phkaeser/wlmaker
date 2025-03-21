@@ -292,10 +292,12 @@ bool _wlmtk_layer_add_output(
 /* == Unit tests =========================================================== */
 
 static void test_add_remove(bs_test_t *test_ptr);
+static void test_update_layout(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_layer_test_cases[] = {
     { 1, "add_remove", test_add_remove },
+    { 1, "update_layout", test_update_layout },
     { 1, "layout", test_layout },
     { 0, NULL, NULL }
 };
@@ -339,6 +341,38 @@ void test_add_remove(bs_test_t *test_ptr)
     wlmtk_layer_set_workspace(layer_ptr, NULL);
     wlmtk_layer_destroy(layer_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises updating the set of outputs. */
+void test_update_layout(bs_test_t *test_ptr)
+{
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
+
+    struct wlr_output_layout layout = {};
+    wl_list_init(&layout.outputs);
+    struct wlr_output o1 = {};
+    struct wlr_output_layout_output lo1 = { .output = &o1 };
+    wl_list_insert(&layout.outputs, &lo1.link);
+
+    wlmtk_layer_update_layout(layer_ptr, &layout);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 1, bs_avltree_size(layer_ptr->output_tree_ptr));
+
+    struct wlr_output o2 = {};
+    struct wlr_output_layout_output lo2 = { .output = &o2 };
+    wl_list_insert(&layout.outputs, &lo2.link);
+    wlmtk_layer_update_layout(layer_ptr, &layout);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 2, bs_avltree_size(layer_ptr->output_tree_ptr));
+
+    wl_list_remove(&lo1.link);
+    wlmtk_layer_update_layout(layer_ptr, &layout);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 1, bs_avltree_size(layer_ptr->output_tree_ptr));
+
+    wlmtk_layer_destroy(layer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
