@@ -24,6 +24,7 @@
 #include "layer.h"
 
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/edges.h>
@@ -383,6 +384,41 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
     }
     if (NULL != workspace_ptr->overlay_layer_ptr) {
         wlmtk_layer_reconfigure(workspace_ptr->overlay_layer_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+// TODO(kaeser@gubbe.ch): Add test to verify layers are reconfigured.
+void wlmtk_workspace_update_layout(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    struct wlr_box extents;
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    workspace_ptr->x1 = extents.x;
+    workspace_ptr->y1 = extents.y;
+    workspace_ptr->x2 = extents.x + extents.width;
+    workspace_ptr->y2 = extents.y + extents.height;
+
+    if (NULL != workspace_ptr->background_layer_ptr) {
+        wlmtk_layer_update_layout(
+            workspace_ptr->background_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->bottom_layer_ptr) {
+        wlmtk_layer_update_layout(
+            workspace_ptr->bottom_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->top_layer_ptr) {
+        wlmtk_layer_update_layout(
+            workspace_ptr->top_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->overlay_layer_ptr) {
+        wlmtk_layer_update_layout(
+            workspace_ptr->overlay_layer_ptr,
+            wlr_output_layout_ptr);
     }
 }
 

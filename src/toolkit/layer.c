@@ -133,6 +133,14 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_layer_update_layout(
+    __UNUSED__ wlmtk_layer_t *layer_ptr,
+    __UNUSED__ struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    // TODO(kaeser@gubbe.ch): Implement.
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
                                wlmtk_workspace_t *workspace_ptr)
 {

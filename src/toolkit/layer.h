@@ -22,6 +22,8 @@
 
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
+/** Forward declaration: wlr output layout. */
+struct wlr_output_layout;
 
 #include "element.h"
 #include "env.h"
@@ -81,6 +83,19 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
  * @param layer_ptr
  */
 void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
+
+/**
+ * Updates the set of outputs.
+ *
+ * @param layer_ptr
+ * @param wlr_output_layout_ptr The output layout. @ref wlmtk_layer_t
+ *                            expects all referred outputs to live until the
+ *                            next call to wlmtk_workspace_update_layout, or
+ *                            until @ref wlmtk_layer_destroy is called.
+ */
+void wlmtk_layer_update_layout(
+    wlmtk_layer_t *layer_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Sets the parent workspace for the layer.

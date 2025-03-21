@@ -22,6 +22,8 @@
 
 /** Forward declaration: Root element (technically: container). */
 typedef struct _wlmtk_root_t wlmtk_root_t;
+/** Forward declaration: wlr output layout. */
+struct wlr_output_layout;
 
 #include "lock.h"
 
@@ -90,6 +92,19 @@ wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
 void wlmtk_root_set_extents(
     wlmtk_root_t *root_ptr,
     const struct wlr_box *extents_ptr);
+
+/**
+ * Updates the set of outputs.
+ *
+ * @param root_ptr
+ * @param wlr_output_layout_ptr The output layout. @ref wlmtk_root_t expects
+ *                            all referred outputs to live until the next
+ *                            call to wlmtk_root_update_layout, or until
+ *                            @ref wlmtk_root_destroy is called.
+ */
+void wlmtk_root_update_layout(
+    wlmtk_root_t *root_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Handles a pointer motion event.
