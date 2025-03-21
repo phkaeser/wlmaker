@@ -234,7 +234,6 @@ wlmtk_fake_panel_t *wlmtk_fake_panel_create(
 /** Destroys the fake panel. */
 void wlmtk_fake_panel_destroy(wlmtk_fake_panel_t *fake_panel_ptr);
 
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
