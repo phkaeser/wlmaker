@@ -45,11 +45,6 @@ struct _wlmtk_layer_t {
 
     /** Holds outputs and panels. */
     bs_avltree_t              *output_tree_ptr;
-
-    /** Used only in @ref wlmtk_layer_update_output_layout. The former tree. */
-    bs_avltree_t              *former_output_tree_ptr;
-    /** Used only in @ref wlmtk_layer_update_output_layout. Output layout. */
-    struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
 /** State of the layer on the given output. */
@@ -64,6 +59,16 @@ typedef struct {
     /** Panels. Holds nodes at @ref wlmtk_panel_t::dlnode. */
     bs_dllist_t               panels;
 } wlmtk_layer_output_t;
+
+/** Argument to @ref _wlmtk_layer_output_update. */
+typedef struct {
+    /** The layer on which the output is to be added or updated on. */
+    wlmtk_layer_t             *layer_ptr;
+    /** Used only in @ref wlmtk_layer_update_output_layout. The former tree. */
+    bs_avltree_t              *former_output_tree_ptr;
+    /** Used only in @ref wlmtk_layer_update_output_layout. Output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
+} wlmtk_layer_output_update_arg_t;
 
 static wlmtk_layer_output_t *_wlmtk_layer_output_create(
     struct wlr_output *wlr_output_ptr);
@@ -218,10 +223,11 @@ void wlmtk_layer_update_output_layout(
     wlmtk_layer_t *layer_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
-    BS_ASSERT(NULL == layer_ptr->former_output_tree_ptr);
-    BS_ASSERT(NULL != layer_ptr->output_tree_ptr);
-    layer_ptr->former_output_tree_ptr = layer_ptr->output_tree_ptr;
-    layer_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
+    wlmtk_layer_output_update_arg_t arg = {
+        .layer_ptr = layer_ptr,
+        .former_output_tree_ptr = layer_ptr->output_tree_ptr,
+        .wlr_output_layout_ptr = wlr_output_layout_ptr,
+    };
 
     layer_ptr->output_tree_ptr = bs_avltree_create(
         _wlmtk_layer_output_tree_node_cmp,
@@ -229,10 +235,9 @@ void wlmtk_layer_update_output_layout(
     BS_ASSERT(wlmtk_util_wl_list_for_each(
                   &wlr_output_layout_ptr->outputs,
                   _wlmtk_layer_output_update,
-                  layer_ptr));
+                  &arg));
 
-    bs_avltree_destroy(layer_ptr->former_output_tree_ptr);
-    layer_ptr->former_output_tree_ptr = NULL;
+    bs_avltree_destroy(arg.former_output_tree_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -282,13 +287,15 @@ int _wlmtk_layer_output_tree_node_cmp(
 /**
  * Updates the given output in @ref wlmtk_layer_t::output_tree_ptr.
  *
- * If the output already exists in @ref wlmtk_layer_t::former_output_tree_ptr,
- * the corresponding node will be moved from there. Otherwise, a new node is
- * created.
- * The panel layout will be recomputed, if the output's extents changed.
+ * If the output already exists in
+ * @ref wlmtk_layer_output_update_arg_t::former_output_tree_ptr, it will be
+ * moved over into @ref wlmtk_layer_t::output_tree_ptr. Otherwise, a new output
+ * is created there.
+ * If the output's extents (position and/or size) have changed, the layer's
+ * panel positions will be reconfigured.
  *
  * @param link_ptr            struct wlr_output_layout_output::link.
- * @param ud_ptr              The @ref wlmtk_layer_t.
+ * @param ud_ptr              The @ref wlmtk_layer_output_update_arg_t.
  *
  * @return true on success, or false on error.
  */
@@ -299,11 +306,11 @@ bool _wlmtk_layer_output_update(
     struct wlr_output_layout_output *wlr_output_layout_output_ptr =
         BS_CONTAINER_OF(link_ptr, struct wlr_output_layout_output, link);
     struct wlr_output *wlr_output_ptr = wlr_output_layout_output_ptr->output;
-    wlmtk_layer_t *layer_ptr = ud_ptr;
+    wlmtk_layer_output_update_arg_t *arg_ptr = ud_ptr;
 
     wlmtk_layer_output_t *output_ptr = NULL;
     bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
-        layer_ptr->former_output_tree_ptr, wlr_output_ptr);
+        arg_ptr->former_output_tree_ptr, wlr_output_ptr);
     if (NULL != avlnode_ptr) {
         output_ptr = BS_CONTAINER_OF(
             avlnode_ptr, wlmtk_layer_output_t, avlnode);
@@ -315,7 +322,7 @@ bool _wlmtk_layer_output_update(
 
     struct wlr_box new_extents;
     wlr_output_layout_get_box(
-        layer_ptr->wlr_output_layout_ptr,
+        arg_ptr->wlr_output_layout_ptr,
         wlr_output_ptr,
         &new_extents);
     if (!wlr_box_equal(&new_extents, &output_ptr->extents)) {
@@ -324,7 +331,10 @@ bool _wlmtk_layer_output_update(
     }
 
     return bs_avltree_insert(
-        layer_ptr->output_tree_ptr, wlr_output_ptr, avlnode_ptr, false);
+        arg_ptr->layer_ptr->output_tree_ptr,
+        wlr_output_ptr,
+        avlnode_ptr,
+        false);
 }
 
 /* ------------------------------------------------------------------------- */
