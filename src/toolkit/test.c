@@ -35,7 +35,6 @@ void wlmtk_test_wlr_output_init(struct wlr_output *wlr_output_ptr)
     wl_signal_init(&wlr_output_ptr->events.commit);
     wl_signal_init(&wlr_output_ptr->events.damage);
     wl_signal_init(&wlr_output_ptr->events.needs_frame);
-    wlr_output_ptr->frame_pending = true;
 }
 
 /* == End of test.c ======================================================== */
