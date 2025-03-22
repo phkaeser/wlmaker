@@ -187,6 +187,8 @@ void wlmtk_root_update_output_layout(
 {
     struct wlr_box extents;
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    bs_log(BS_ERROR, "FIXME: extents %d, %d (%d x %d)",
+           extents.x, extents.y, extents.width, extents.height);
     wlmtk_rectangle_set_size(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width,
@@ -518,14 +520,16 @@ void _wlmtk_root_set_workspace_extents(
  * workspace.
  *
  * @param dlnode_ptr
- * @param ud_ptr
+ * @param ud_ptr              A pointer to struct wlr_output_layout.
  */
 void _wlmtk_root_workspace_update_output_layout(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr)
 {
-    wlmtk_workspace_set_extents(
-        wlmtk_workspace_from_dlnode(dlnode_ptr), ud_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = ud_ptr;
+    wlmtk_workspace_update_output_layout(
+        wlmtk_workspace_from_dlnode(dlnode_ptr),
+        wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

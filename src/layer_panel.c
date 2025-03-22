@@ -346,8 +346,10 @@ bool _wlmaker_layer_panel_apply_layer(
     }
 
     if (NULL != layer_ptr) {
-        wlmtk_layer_add_panel(
-            layer_ptr, &layer_panel_ptr->super_panel);
+        wlmtk_layer_add_panel_output(
+            layer_ptr,
+            &layer_panel_ptr->super_panel,
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->output);
     }
 
     return true;

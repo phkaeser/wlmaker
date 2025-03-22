@@ -146,7 +146,9 @@ void wlmtk_panel_commit(
 
     panel_ptr->positioning = *positioning_ptr;
 
-    if (NULL != panel_ptr->layer_ptr) {
+    if (NULL != panel_ptr->layer_output_ptr) {
+        wlmtk_layer_output_reconfigure(panel_ptr->layer_output_ptr);
+    } else if (NULL != panel_ptr->layer_ptr) {
         wlmtk_layer_reconfigure(panel_ptr->layer_ptr);
     }
 }
