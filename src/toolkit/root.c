@@ -187,8 +187,6 @@ void wlmtk_root_update_output_layout(
 {
     struct wlr_box extents;
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
-    bs_log(BS_ERROR, "FIXME: extents %d, %d (%d x %d)",
-           extents.x, extents.y, extents.width, extents.height);
     wlmtk_rectangle_set_size(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width,
