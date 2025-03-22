@@ -42,6 +42,7 @@ SET(PUBLIC_HEADER_FILES
   root.h
   style.h
   surface.h
+  test.h
   tile.h
   titlebar.h
   titlebar_button.h
