@@ -96,6 +96,8 @@ void wlmtk_root_set_extents(
 /**
  * Updates the set of outputs.
  *
+ * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
+ *
  * @param root_ptr
  * @param wlr_output_layout_ptr The output layout. @ref wlmtk_root_t expects
  *                            all referred outputs to live until the next

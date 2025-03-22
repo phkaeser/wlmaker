@@ -109,6 +109,8 @@ void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
 /**
  * Updates the set of outputs.
  *
+ * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
+ *
  * @param workspace_ptr
  * @param wlr_output_layout_ptr The output layout. @ref wlmtk_workspace_t
  *                            expects all referred outputs to live until the

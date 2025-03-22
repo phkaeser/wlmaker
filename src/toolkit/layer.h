@@ -109,6 +109,8 @@ void wlmtk_layer_output_reconfigure(wlmtk_layer_output_t *layer_output_ptr);
 /**
  * Updates the set of outputs.
  *
+ * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
+ *
  * @param layer_ptr
  * @param wlr_output_layout_ptr The output layout. @ref wlmtk_layer_t
  *                            expects all referred outputs to live until the
