@@ -23,12 +23,12 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Support `xdg-output-unstable-v1` protocol.
     * Verify that `wdisplays` works.
       * Fix `wdisplays` crash when unsetting `Overlay Screen Names`.
-      * Fix positioning of overlaid screen names.
+      * [done] Fix positioning of overlaid screen names.
   * [done] Test and verify: Multiple monitors supported. Supporting:
     * [done] per-monitor fractional scale.
     * [done] per-monitor transformation setting.
-  * `wlr-layer-shell-unstable-v1` implementation fixes:
-    * Update layer positioning to be respective to the panel's configured output.
+  * [done] `wlr-layer-shell-unstable-v1` implementation fixes:
+    * [done] Update layer positioning to be respective to the panel's configured output.
   * Permit `wlmaker.plist` per-output configuration, to persist layout.
   * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
