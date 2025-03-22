@@ -425,7 +425,10 @@ void _wlmaker_task_list_handle_task_list_enabled(
         wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
-    wlmtk_layer_add_panel(layer_ptr, &task_list_ptr->super_panel);
+    wlmtk_layer_add_panel_output(
+        layer_ptr,
+        &task_list_ptr->super_panel,
+        wlmaker_server_get_output_at_cursor(task_list_ptr->server_ptr));
     task_list_ptr->enabled = true;
 }
 
