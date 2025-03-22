@@ -360,7 +360,6 @@ bool _wlmtk_layer_output_update(
     } else {
         layer_output_ptr = _wlmtk_layer_output_create(wlr_output_ptr);
         if (NULL == layer_output_ptr) return false;
-        avlnode_ptr = &layer_output_ptr->avlnode;
     }
 
     struct wlr_box new_extents;
@@ -376,7 +375,7 @@ bool _wlmtk_layer_output_update(
     return bs_avltree_insert(
         arg_ptr->layer_ptr->output_tree_ptr,
         wlr_output_ptr,
-        avlnode_ptr,
+        &layer_output_ptr->avlnode,
         false);
 }
 
