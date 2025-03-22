@@ -24,7 +24,9 @@
 #include <wayland-server.h>
 #include <xkbcommon/xkbcommon.h>
 
+#define WLR_USE_UNSTABLE
 #include "wlr/util/box.h"
+#undef WLR_USE_UNSTABLE
 
 /** Forward declaration: Element. */
 typedef struct _wlmtk_element_t wlmtk_element_t;

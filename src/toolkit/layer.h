@@ -22,6 +22,12 @@
 
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
+/** Forward declaration: Layer state. */
+typedef struct _wlmtk_layer_output_t wlmtk_layer_output_t;
+/** Forward declaration: wlr output layout. */
+struct wlr_output_layout;
+/** Forward declaration: wlr output. */
+struct wlr_output;
 
 #include "element.h"
 #include "env.h"
@@ -52,14 +58,18 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr);
 wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
 
 /**
- * Adds the panel to the layer. This will trigger an update to the layer's
- * layout, and a call to request_size of each panel.
+ * Adds the panel to the output within the specified layer. This will trigger
+ * an update to the layer's layout, and a call to request_size of each panel
+ * of that output.
  *
  * @param layer_ptr
  * @param panel_ptr
+ * @param wlr_output_ptr
  */
-void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
-                           wlmtk_panel_t *panel_ptr);
+bool wlmtk_layer_add_panel(
+    wlmtk_layer_t *layer_ptr,
+    wlmtk_panel_t *panel_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /**
  * Removes the panel from the layer.
@@ -81,6 +91,33 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
  * @param layer_ptr
  */
 void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
+
+/**
+ * Calls @ref wlmtk_panel_compute_dimensions for each contained panel.
+ *
+ * The Wayland protocol spells it is 'undefined' how panels (layer shells)
+ * are stacked and configured within a layer. For wlmaker, we'll configure
+ * the panels in sequence as they were added (found in the container, back
+ * to front).
+ *
+ * @param layer_output_ptr
+ */
+void wlmtk_layer_output_reconfigure(wlmtk_layer_output_t *layer_output_ptr);
+
+/**
+ * Updates the set of outputs.
+ *
+ * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
+ *
+ * @param layer_ptr
+ * @param wlr_output_layout_ptr The output layout. @ref wlmtk_layer_t
+ *                            expects all referred outputs to live until the
+ *                            next call to wlmtk_workspace_update_layout, or
+ *                            until @ref wlmtk_layer_destroy is called.
+ */
+void wlmtk_layer_update_output_layout(
+    wlmtk_layer_t *layer_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Sets the parent workspace for the layer.

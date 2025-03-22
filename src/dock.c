@@ -114,9 +114,13 @@ wlmaker_dock_t *wlmaker_dock_create(
         wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
-    wlmtk_layer_add_panel(
-        layer_ptr,
-        wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+    if (!wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr),
+            wlmaker_server_get_primary_output(server_ptr)->wlr_output_ptr)) {
+        wlmaker_dock_destroy(dock_ptr);
+        return NULL;
+    }
 
     for (size_t i = 0;
          i < wlmcfg_array_size(args.launchers_array_ptr);
@@ -160,9 +164,12 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
     wlmtk_util_disconnect_listener(&dock_ptr->workspace_changed_listener);
 
     if (NULL != dock_ptr->wlmtk_dock_ptr) {
-        wlmtk_layer_remove_panel(
-            wlmtk_panel_get_layer(wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr)),
-            wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+        if (NULL != wlmtk_panel_get_layer(
+                wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr))) {
+            wlmtk_layer_remove_panel(
+                wlmtk_panel_get_layer(wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr)),
+                wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr));
+        }
 
         wlmtk_dock_destroy(dock_ptr->wlmtk_dock_ptr);
         dock_ptr->wlmtk_dock_ptr = NULL;
@@ -209,7 +216,11 @@ void _wlmaker_dock_handle_workspace_changed(
     if (NULL != current_layer_ptr) {
         wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
     }
-    wlmtk_layer_add_panel(new_layer_ptr, panel_ptr);
+    wlmtk_layer_add_panel(
+        new_layer_ptr,
+        panel_ptr,
+        wlmaker_server_get_primary_output(
+            dock_ptr->server_ptr)->wlr_output_ptr);
 }
 
 /* == Unit tests =========================================================== */
@@ -234,7 +245,22 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_root_add_workspace(root_ptr, ws_ptr);
 
-    wlmaker_server_t server = { .root_ptr = root_ptr };
+    wlmaker_server_t server = {
+        .wlr_scene_ptr = wlr_scene_ptr,
+        .wl_display_ptr = wl_display_create(),
+        .root_ptr = root_ptr
+    };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
+    server.wlr_output_layout_ptr = wlr_output_layout_create(server.wl_display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(server.wlr_output_layout_ptr, &output, 0, 0);
+    wlmtk_root_update_output_layout(root_ptr, server.wlr_output_layout_ptr);
+
+    wlmaker_output_t wo = { .wlr_output_ptr = &output };
+    bs_dllist_push_back(&server.outputs, &wo.node);
+
     wlmaker_config_style_t style = {};
 
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
@@ -244,7 +270,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
     wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, dict_ptr, &style);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dock_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
     wlmcfg_dict_unref(dict_ptr);

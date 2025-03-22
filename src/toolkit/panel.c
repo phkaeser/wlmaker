@@ -115,6 +115,20 @@ wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_panel_set_layer_output(
+    wlmtk_panel_t *panel_ptr,
+    wlmtk_layer_output_t *layer_output_ptr)
+{
+    panel_ptr->layer_output_ptr = layer_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_layer_output_t *wlmtk_panel_get_layer_output(wlmtk_panel_t *panel_ptr)
+{
+    return panel_ptr->layer_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_panel_commit(
     wlmtk_panel_t *panel_ptr,
     __UNUSED__ uint32_t serial,
@@ -132,7 +146,9 @@ void wlmtk_panel_commit(
 
     panel_ptr->positioning = *positioning_ptr;
 
-    if (NULL != panel_ptr->layer_ptr) {
+    if (NULL != panel_ptr->layer_output_ptr) {
+        wlmtk_layer_output_reconfigure(panel_ptr->layer_output_ptr);
+    } else if (NULL != panel_ptr->layer_ptr) {
         wlmtk_layer_reconfigure(panel_ptr->layer_ptr);
     }
 }
@@ -223,11 +239,17 @@ struct wlr_box wlmtk_panel_compute_dimensions(
 
 /* == Local (static) methods =============================================== */
 
+static void _wlmtk_fake_panel_element_destroy(
+    wlmtk_element_t *element_ptr);
 static uint32_t _wlmtk_fake_panel_request_size(
     wlmtk_panel_t *panel_ptr,
     int width,
     int height);
 
+/** Virtual methods of the fake panel's element superclass. */
+static const wlmtk_element_vmt_t _wlmtk_fake_panel_element_vmt = {
+    .destroy = _wlmtk_fake_panel_element_destroy
+};
 /** Virtual methods of the fake panel. */
 static const wlmtk_panel_vmt_t _wlmtk_fake_panel_vmt = {
     .request_size = _wlmtk_fake_panel_request_size
@@ -245,6 +267,9 @@ wlmtk_fake_panel_t *wlmtk_fake_panel_create(
         wlmtk_fake_panel_destroy(fake_panel_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        &fake_panel_ptr->panel.super_container.super_element,
+        &_wlmtk_fake_panel_element_vmt);
     wlmtk_panel_extend(&fake_panel_ptr->panel, &_wlmtk_fake_panel_vmt);
 
     return fake_panel_ptr;
@@ -257,7 +282,15 @@ void wlmtk_fake_panel_destroy(wlmtk_fake_panel_t *fake_panel_ptr)
     free(fake_panel_ptr);
 }
 
-/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::destroy for the fake panel. */
+void _wlmtk_fake_panel_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_panel_t *fake_panel_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_panel_t, panel.super_container.super_element);
+    wlmtk_fake_panel_destroy(fake_panel_ptr);
+}
+
 /** Fake implementation of @ref wlmtk_panel_vmt_t::request_size. */
 uint32_t _wlmtk_fake_panel_request_size(
     wlmtk_panel_t *panel_ptr,

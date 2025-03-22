@@ -94,6 +94,8 @@ struct _wlmtk_panel_t {
 
     /** The layer that this panel belongs to. NULL if none. */
     wlmtk_layer_t             *layer_ptr;
+    /** The layer output this panel is associated with. */
+    wlmtk_layer_output_t      *layer_output_ptr;
     /** Node of @ref wlmtk_layer_t::panels. */
     bs_dllist_node_t          dlnode;
 
@@ -156,6 +158,21 @@ void wlmtk_panel_set_layer(wlmtk_panel_t *panel_ptr,
 /** @return the wlmtk_layer_t this panel belongs to. Or NULL, if unmapped. */
 wlmtk_layer_t *wlmtk_panel_get_layer(wlmtk_panel_t *panel_ptr);
 
+/**
+ * Sets the layer output for the `panel_ptr`.
+ *
+ * @protected This method must only be called from @ref wlmtk_layer_output_t.
+ *
+ * @param panel_ptr
+ * @param layer_output_ptr
+ */
+void wlmtk_panel_set_layer_output(
+    wlmtk_panel_t *panel_ptr,
+    wlmtk_layer_output_t *layer_output_ptr);
+
+/** @return the wlmtk_layer_output_t the panel belongs to. NULL if unmapped. */
+wlmtk_layer_output_t *wlmtk_panel_get_layer_output(wlmtk_panel_t *panel_ptr);
+
 /** Requests new size. See @ref wlmtk_panel_vmt_t::request_size. */
 static inline uint32_t wlmtk_panel_request_size(
     wlmtk_panel_t *panel_ptr,
@@ -216,7 +233,6 @@ wlmtk_fake_panel_t *wlmtk_fake_panel_create(
     const wlmtk_panel_positioning_t *positioning_ptr);
 /** Destroys the fake panel. */
 void wlmtk_fake_panel_destroy(wlmtk_fake_panel_t *fake_panel_ptr);
-
 
 #ifdef __cplusplus
 }  // extern "C"

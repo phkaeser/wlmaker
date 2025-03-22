@@ -60,6 +60,9 @@ static void _wlmtk_root_switch_to_workspace(
 static void _wlmtk_root_set_workspace_extents(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static void _wlmtk_root_workspace_update_output_layout(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static void _wlmtk_root_enumerate_workspaces(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -175,6 +178,24 @@ void wlmtk_root_set_extents(
     bs_dllist_for_each(
         &root_ptr->workspaces, _wlmtk_root_set_workspace_extents,
         &root_ptr->extents);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_update_output_layout(
+    wlmtk_root_t *root_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    struct wlr_box extents;
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    wlmtk_rectangle_set_size(
+        root_ptr->curtain_rectangle_ptr,
+        root_ptr->extents.width,
+        root_ptr->extents.height);
+
+    bs_dllist_for_each(
+        &root_ptr->workspaces,
+        _wlmtk_root_workspace_update_output_layout,
+        wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -489,6 +510,24 @@ void _wlmtk_root_set_workspace_extents(
 {
     wlmtk_workspace_set_extents(
         wlmtk_workspace_from_dlnode(dlnode_ptr), ud_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for `bs_dllist_for_each` to update the output layout of the
+ * workspace.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr              A pointer to struct wlr_output_layout.
+ */
+void _wlmtk_root_workspace_update_output_layout(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    struct wlr_output_layout *wlr_output_layout_ptr = ud_ptr;
+    wlmtk_workspace_update_output_layout(
+        wlmtk_workspace_from_dlnode(dlnode_ptr),
+        wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

@@ -22,6 +22,9 @@
 
 #include <libbase/libbase.h>
 
+/** Forward declaration. */
+struct wlr_output;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -40,6 +43,9 @@ extern "C" {
                 #_box, __box.x, __box.y, __box.width, __box.height);    \
         }                                                               \
     } while (false)
+
+/** Initializes a struct wlr_output sufficient for testing. */
+void wlmtk_test_wlr_output_init(struct wlr_output *wlr_output_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

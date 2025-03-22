@@ -128,6 +128,8 @@ static const bs_arg_t wlmaker_args[] = {
 
 /** References auto-started subprocesses. */
 static bs_ptr_stack_t         wlmaker_subprocess_stack;
+/** References to the created backgrounds. */
+static bs_ptr_stack_t         wlmaker_background_stack;
 
 /** Compiled regular expression for extracting file & line no. from wlr_log. */
 static regex_t                wlmaker_wlr_log_regex;
@@ -264,6 +266,8 @@ bool create_workspaces(
             s.color = server_ptr->style.background_color;
         }
         wlmaker_background_t *background_ptr = wlmaker_background_create(
+            workspace_ptr,
+            server_ptr->wlr_output_layout_ptr,
             s.color, server_ptr->env_ptr);
         if (NULL == background_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
@@ -271,13 +275,8 @@ bool create_workspaces(
             rv = false;
             break;
         }
-
-        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
-            workspace_ptr,
-            WLMTK_WORKSPACE_LAYER_BACKGROUND);
-        wlmtk_layer_add_panel(
-            layer_ptr,
-            wlmaker_background_panel(background_ptr));
+        BS_ASSERT(bs_ptr_stack_push(
+                      &wlmaker_background_stack, background_ptr));
 
         wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
     }
@@ -322,6 +321,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
+    BS_ASSERT(bs_ptr_stack_init(&wlmaker_background_stack));
 
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
@@ -434,6 +434,12 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         bs_log(BS_ERROR, "Failed wlmaker_server_start()");
         rv = EXIT_FAILURE;
     }
+
+    wlmaker_background_t *bg_ptr;
+    while (NULL != (bg_ptr = bs_ptr_stack_pop(&wlmaker_background_stack))) {
+        wlmaker_background_destroy(bg_ptr);
+    }
+    bs_ptr_stack_fini(&wlmaker_background_stack);
 
     if (NULL != task_list_ptr) wlmaker_task_list_destroy(task_list_ptr);
     if (NULL != clip_ptr) wlmaker_clip_destroy(clip_ptr);
