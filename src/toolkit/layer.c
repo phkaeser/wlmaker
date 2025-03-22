@@ -130,7 +130,7 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_layer_add_panel_output(
+bool wlmtk_layer_add_panel(
     wlmtk_layer_t *layer_ptr,
     wlmtk_panel_t *panel_ptr,
     struct wlr_output *wlr_output_ptr)
@@ -427,7 +427,7 @@ void test_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp1_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_layer_add_panel_output(layer_ptr, &fp1_ptr->panel, &o1));
+        wlmtk_layer_add_panel(layer_ptr, &fp1_ptr->panel, &o1));
 
     // Position: 10 (output) + 1024/2 (half output width) - 50 (half panel).
     BS_TEST_VERIFY_EQ(test_ptr, 472, wlmtk_panel_element(&fp1_ptr->panel)->x );
@@ -450,7 +450,7 @@ void test_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp2_ptr);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &o2));
+        wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel, &o2));
 
     // Now: Add second output. Adding the panel must now work.
     wlmtk_layer_update_output_layout(layer_ptr, layout_ptr);
@@ -458,7 +458,7 @@ void test_multi_output(bs_test_t *test_ptr)
         test_ptr, 2, bs_avltree_size(layer_ptr->output_tree_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &o2));
+        wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel, &o2));
 
     // Position: 400 (output) + 640/4 (half scaled output) - 40 (half panel).
     BS_TEST_VERIFY_EQ(test_ptr, 520, wlmtk_panel_element(&fp2_ptr->panel)->x );
@@ -519,7 +519,7 @@ void test_layout(bs_test_t *test_ptr)
     BS_ASSERT_NOTNULL(fp1_ptr);
     wlmtk_element_set_visible(wlmtk_panel_element(&fp1_ptr->panel), true);
 
-    wlmtk_layer_add_panel_output(layer_ptr, &fp1_ptr->panel, &output);
+    wlmtk_layer_add_panel(layer_ptr, &fp1_ptr->panel, &output);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp1_ptr->panel)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 359, wlmtk_panel_element(&fp1_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp1_ptr->requested_width);
@@ -532,7 +532,7 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_fake_panel_t *fp2_ptr = wlmtk_fake_panel_create(&pos);
     wlmtk_element_set_visible(wlmtk_panel_element(&fp2_ptr->panel), false);
     BS_ASSERT_NOTNULL(fp2_ptr);
-    wlmtk_layer_add_panel_output(layer_ptr, &fp2_ptr->panel, &output);
+    wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel, &output);
     BS_TEST_VERIFY_EQ(test_ptr, 40, wlmtk_panel_element(&fp2_ptr->panel)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp2_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp2_ptr->requested_width);
@@ -542,7 +542,7 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_fake_panel_t *fp3_ptr = wlmtk_fake_panel_create(&pos);
     wlmtk_element_set_visible(wlmtk_panel_element(&fp3_ptr->panel), true);
     BS_ASSERT_NOTNULL(fp3_ptr);
-    wlmtk_layer_add_panel_output(layer_ptr, &fp3_ptr->panel, &output);
+    wlmtk_layer_add_panel(layer_ptr, &fp3_ptr->panel, &output);
     BS_TEST_VERIFY_EQ(test_ptr, 40, wlmtk_panel_element(&fp3_ptr->panel)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp3_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp3_ptr->requested_width);

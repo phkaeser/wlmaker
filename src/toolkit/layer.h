@@ -66,7 +66,7 @@ wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
  * @param panel_ptr
  * @param wlr_output_ptr
  */
-bool wlmtk_layer_add_panel_output(
+bool wlmtk_layer_add_panel(
     wlmtk_layer_t *layer_ptr,
     wlmtk_panel_t *panel_ptr,
     struct wlr_output *wlr_output_ptr);

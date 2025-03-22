@@ -289,7 +289,7 @@ wlmaker_background_panel_t *_wlmaker_background_panel_create(
         wlmtk_panel_element(&background_panel_ptr->super_panel),
         true);
 
-    wlmtk_layer_add_panel_output(
+    wlmtk_layer_add_panel(
         layer_ptr,
         &background_panel_ptr->super_panel,
         wlr_output_ptr);
