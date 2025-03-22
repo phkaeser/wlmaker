@@ -264,6 +264,8 @@ bool create_workspaces(
             s.color = server_ptr->style.background_color;
         }
         wlmaker_background_t *background_ptr = wlmaker_background_create(
+            workspace_ptr,
+            server_ptr->wlr_output_layout_ptr,
             s.color, server_ptr->env_ptr);
         if (NULL == background_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
@@ -271,13 +273,6 @@ bool create_workspaces(
             rv = false;
             break;
         }
-
-        wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
-            workspace_ptr,
-            WLMTK_WORKSPACE_LAYER_BACKGROUND);
-        wlmtk_layer_add_panel(
-            layer_ptr,
-            wlmaker_background_panel(background_ptr));
 
         wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
     }
