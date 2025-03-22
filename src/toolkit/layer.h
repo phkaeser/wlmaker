@@ -58,16 +58,14 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr);
 wlmtk_element_t *wlmtk_layer_element(wlmtk_layer_t *layer_ptr);
 
 /**
- * Adds the panel to the layer. This will trigger an update to the layer's
- * layout, and a call to request_size of each panel.
+ * Adds the panel to the output within the specified layer. This will trigger
+ * an update to the layer's layout, and a call to request_size of each panel
+ * of that output.
  *
  * @param layer_ptr
  * @param panel_ptr
+ * @param wlr_output_ptr
  */
-void wlmtk_layer_add_panel(wlmtk_layer_t *layer_ptr,
-                           wlmtk_panel_t *panel_ptr);
-
-/** Temporary: Wraps for @ref wlmtk_layer_add_panel. */
 bool wlmtk_layer_add_panel_output(
     wlmtk_layer_t *layer_ptr,
     wlmtk_panel_t *panel_ptr,
