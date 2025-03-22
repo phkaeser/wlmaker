@@ -501,8 +501,6 @@ void test_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
     struct wlr_output_layout *layout_ptr = wlr_output_layout_create(display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layout_ptr);
-
-    // First output. Add to the layout + update the layer right away.
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(layout_ptr, &output, 0, 0);
@@ -556,6 +554,10 @@ void test_layout(bs_test_t *test_ptr)
 
     wlmtk_layer_remove_panel(layer_ptr, &fp1_ptr->panel);
     wlmtk_fake_panel_destroy(fp1_ptr);
+
+    wlr_output_layout_remove(layout_ptr, &output);
+    wlr_output_layout_destroy(layout_ptr);
+    wl_display_destroy(display_ptr);
 
     wlmtk_layer_set_workspace(layer_ptr, NULL);
     wlmtk_layer_destroy(layer_ptr);
