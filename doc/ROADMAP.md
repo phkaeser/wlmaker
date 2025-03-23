@@ -10,6 +10,11 @@ Support for visual effects to improve usability, but not for pure show.
 * Cleanups:
   * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
 
+* Clip & Dock handling
+  * Add option to save state (Dock, Clip, Output).
+  * Permit dragging clip & dock, updating anchor and relative position.
+    * Including dragging to different output.
+
 ## Plan for 0.6
 
 **Focus**: Multiple outputs.
@@ -24,6 +29,7 @@ Support for visual effects to improve usability, but not for pure show.
     * Verify that `wdisplays` works.
       * Fix `wdisplays` crash when unsetting `Overlay Screen Names`.
       * [done] Fix positioning of overlaid screen names.
+      * See if `wlr-screencopy-unstable-v1` would be simple to add.
   * [done] Test and verify: Multiple monitors supported. Supporting:
     * [done] per-monitor fractional scale.
     * [done] per-monitor transformation setting.
@@ -32,9 +38,11 @@ Support for visual effects to improve usability, but not for pure show.
   * Permit `wlmaker.plist` per-output configuration, to persist layout.
   * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
-  * Document and implement behaviour of 'fullscreen' window on multiple outputs: Fill the active output.
+  * Window (toplevel) handling on multiple outputs:
     * Support and handle `wl_output` arg to `xdg_toplevel::set_fullscreen`.
-  * Document and implement behaviour of 'maximized' window on multiple outputs: Maximize on active output.
+    * 'fullscreen': Fill the configured (or active) output.
+    * 'maximized': Maximize on configured (or active) output.
+    * When an output is removed: Re-position toplevels into visible area.
   * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
   * Add "scaling" actions, configurable as hotkey and in root menu.
