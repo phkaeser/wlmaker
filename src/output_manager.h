@@ -65,7 +65,10 @@ struct _wlmaker_output_t {
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_backend *wlr_backend_ptr,
+    struct wlr_renderer *wlr_renderer_ptr,
+    struct wlr_scene *wlr_scene_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**

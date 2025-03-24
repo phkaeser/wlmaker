@@ -24,6 +24,7 @@
 #include "toolkit/toolkit.h"
 
 #define WLR_USE_UNSTABLE
+#include <wlr/backend/wayland.h>
 #include <wlr/backend/x11.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
@@ -38,11 +39,17 @@ struct _wlmaker_output_manager_t {
     /** Points to wlroots 'struct wlr_xdg_output_manager_v1`. */
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager_v1_ptr;
 
+    /** The allocator. */
+    struct wlr_allocator *wlr_allocator_ptr;
     /** Points to struct wlr_backend. */
     struct wlr_backend *wlr_backend_ptr;
+    /** The renderer. */
+    struct wlr_renderer *wlr_renderer_ptr;
+    /** The scene. */
+    struct wlr_scene *wlr_scene_ptr;
+
     /** Points to struct wlr_output_layout. */
     struct wlr_output_layout *wlr_output_layout_ptr;
-
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
     struct wl_listener        destroy_listener;
@@ -285,13 +292,20 @@ void wlmaker_output_destroy(wlmaker_output_t *output_ptr)
 /* ------------------------------------------------------------------------- */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_backend *wlr_backend_ptr,
+    struct wlr_renderer *wlr_renderer_ptr,
+    struct wlr_scene *wlr_scene_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmaker_output_manager_t *output_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
     if (NULL == output_manager_ptr) return NULL;
+    output_manager_ptr->wlr_allocator_ptr = wlr_allocator_ptr;
     output_manager_ptr->wlr_backend_ptr = wlr_backend_ptr;
+    output_manager_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
+    output_manager_ptr->wlr_scene_ptr = wlr_scene_ptr;
+
     output_manager_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     output_manager_ptr->wlr_output_manager_v1_ptr =
