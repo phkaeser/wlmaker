@@ -22,6 +22,8 @@
 
 #include <wayland-server-core.h>
 
+/** Handle for an output device. */
+typedef struct _wlmaker_output_t wlmaker_output_t;
 /** Forward declaration: Handle for output manager. */
 typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
 
@@ -30,6 +32,35 @@ typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** Handle for a compositor output device. */
+struct _wlmaker_output_t {
+    /** List node for insertion to server's list of outputs. */
+    bs_dllist_node_t          node;
+    /** Back-link to the server this output belongs to. */
+    wlmaker_server_t          *server_ptr;
+
+    /** Refers to the compositor output region, from wlroots. */
+    struct wlr_output         *wlr_output_ptr;
+    /** Refers to the allocator of the server. */
+    struct wlr_allocator      *wlr_allocator_ptr;
+    /** Refers to the renderer used for the server. */
+    struct wlr_renderer       *wlr_renderer_ptr;
+    /** Refers to the scene graph used. */
+    struct wlr_scene          *wlr_scene_ptr;
+
+    /** Listener for `destroy` signals raised by `wlr_output`. */
+    struct wl_listener        output_destroy_listener;
+    /** Listener for `frame` signals raised by `wlr_output`. */
+    struct wl_listener        output_frame_listener;
+    /** Listener for `request_state` signals raised by `wlr_output`. */
+    struct wl_listener        output_request_state_listener;
+
+    /** Default transformation for the output(s). */
+    enum wl_output_transform  transformation;
+    /** Default scaling factor to use for the output(s). */
+    double                    scale;
+};
 
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
@@ -49,6 +80,35 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
 void wlmaker_output_manager_update_config(
     wlmaker_output_manager_t *output_manager_ptr,
     wlmaker_server_t *server_ptr);
+
+/**
+ * Creates an output device from |wlr_output_ptr|.
+ *
+ * @param wlr_output_ptr
+ * @param wlr_allocator_ptr
+ * @param wlr_renderer_ptr
+ * @param wlr_scene_ptr
+ * @param width
+ * @param height
+ * @param server_ptr
+ *
+ * @return The output device handle or NULL on error.
+ */
+wlmaker_output_t *wlmaker_output_create(
+    struct wlr_output *wlr_output_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
+    struct wlr_renderer *wlr_renderer_ptr,
+    struct wlr_scene *wlr_scene_ptr,
+    uint32_t width,
+    uint32_t height,
+    wlmaker_server_t *server_ptr);
+
+/**
+ * Destroys the output device handle, as created by wlmaker_output_create().
+ *
+ * @param output_ptr
+ */
+void wlmaker_output_destroy(wlmaker_output_t *output_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

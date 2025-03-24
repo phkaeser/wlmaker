@@ -21,7 +21,6 @@
 #include "server.h"
 
 #include "config.h"
-#include "output.h"
 #include "toolkit/toolkit.h"
 
 #include <libbase/libbase.h>

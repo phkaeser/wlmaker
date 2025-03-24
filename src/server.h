@@ -58,7 +58,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "corner.h"
 #include "cursor.h"
 #include "idle.h"
-#include "output.h"
 #include "output_manager.h"
 #include "keyboard.h"
 #include "layer_shell.h"
