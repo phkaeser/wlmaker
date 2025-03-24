@@ -238,7 +238,9 @@ wlmaker_output_t *wlmaker_output_create(
                output_ptr->wlr_output_ptr->name);
     }
 
-    if (wlr_output_is_x11(wlr_output_ptr) && 0 < width && 0 < height) {
+    if ((wlr_output_is_x11(wlr_output_ptr) ||
+         wlr_output_is_wl(wlr_output_ptr))
+        && 0 < width && 0 < height) {
         bs_log(BS_INFO, "Overriding output dimensions to %"PRIu32"x%"PRIu32,
                width, height);
         wlr_output_state_set_custom_mode(&state, width, height, 0);
