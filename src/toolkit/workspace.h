@@ -98,15 +98,6 @@ void wlmtk_workspace_get_details(
     int *index_ptr);
 
 /**
- * Sets (or updates) the extents of the workspace.
- *
- * @param workspace_ptr
- * @param extents_ptr
- */
-void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
-                                 const struct wlr_box *extents_ptr);
-
-/**
  * Updates the set of outputs.
  *
  * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
