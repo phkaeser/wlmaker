@@ -29,6 +29,7 @@
 
 /// Use wlroots non-stable API.
 #define WLR_USE_UNSTABLE
+#include <wlr/backend/wayland.h>
 #include <wlr/backend/x11.h>
 #undef WLR_USE_UNSTABLE
 
@@ -141,7 +142,8 @@ wlmaker_output_t *wlmaker_output_create(
 
     // Issue #97: Found that X11 and transformations do not translate
     // cursor coordinates well. Force it to 'Normal'.
-    if (wlr_output_is_x11(wlr_output_ptr) &&
+    if ((wlr_output_is_x11(wlr_output_ptr) ||
+         wlr_output_is_wl(wlr_output_ptr)) &&
         output_ptr->transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
         const char *name_ptr = "Unknown";
         wlmcfg_enum_value_to_name(
