@@ -365,30 +365,6 @@ void wlmtk_workspace_get_details(
 
 /* ------------------------------------------------------------------------- */
 // TODO(kaeser@gubbe.ch): Add test to verify layers are reconfigured.
-void wlmtk_workspace_set_extents(wlmtk_workspace_t *workspace_ptr,
-                                 const struct wlr_box *extents_ptr)
-{
-    workspace_ptr->x1 = extents_ptr->x;
-    workspace_ptr->y1 = extents_ptr->y;
-    workspace_ptr->x2 = extents_ptr->x + extents_ptr->width;
-    workspace_ptr->y2 = extents_ptr->y + extents_ptr->height;
-
-    if (NULL != workspace_ptr->background_layer_ptr) {
-        wlmtk_layer_reconfigure(workspace_ptr->background_layer_ptr);
-    }
-    if (NULL != workspace_ptr->bottom_layer_ptr) {
-        wlmtk_layer_reconfigure(workspace_ptr->bottom_layer_ptr);
-    }
-    if (NULL != workspace_ptr->top_layer_ptr) {
-        wlmtk_layer_reconfigure(workspace_ptr->top_layer_ptr);
-    }
-    if (NULL != workspace_ptr->overlay_layer_ptr) {
-        wlmtk_layer_reconfigure(workspace_ptr->overlay_layer_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Add test to verify layers are reconfigured.
 void wlmtk_workspace_update_output_layout(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
@@ -799,8 +775,8 @@ wlmtk_workspace_t *wlmtk_workspace_create_for_test(
         "test", &ts, env_ptr);
     if (NULL == workspace_ptr) return NULL;
 
-    struct wlr_box extents = { .width = width, .height = height };
-    wlmtk_workspace_set_extents(workspace_ptr, &extents);
+    workspace_ptr->x2 = width;
+    workspace_ptr->y2 = height;
     wlmtk_workspace_enable(workspace_ptr, true);
 
     return workspace_ptr;
@@ -1084,7 +1060,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
-    wlmtk_workspace_set_extents(workspace_ptr, &box);
+    workspace_ptr->x1 = -10;
+    workspace_ptr->y1 = -20;
+    workspace_ptr->x2 = 90;
+    workspace_ptr->y2 = 180;
+
     int x1, y1, x2, y2;
     wlmtk_element_get_pointer_area(
         &workspace_ptr->super_container.super_element, &x1, &y1, &x2, &y2);

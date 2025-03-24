@@ -817,7 +817,6 @@ void handle_output_layout_change(
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
     bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
            extents.x, extents.y, extents.width, extents.height);
-    wlmtk_root_set_extents(server_ptr->root_ptr, &extents);
 
     if (NULL != server_ptr->output_manager_ptr) {
         wlmaker_output_manager_update_config(

@@ -57,9 +57,6 @@ struct _wlmtk_root_t {
 static void _wlmtk_root_switch_to_workspace(
     wlmtk_root_t *root_ptr,
     wlmtk_workspace_t *workspace_ptr);
-static void _wlmtk_root_set_workspace_extents(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
 static void _wlmtk_root_workspace_update_output_layout(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -164,29 +161,11 @@ wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_root_set_extents(
-    wlmtk_root_t *root_ptr,
-    const struct wlr_box *extents_ptr)
-{
-    root_ptr->extents = *extents_ptr;
-
-    wlmtk_rectangle_set_size(
-        root_ptr->curtain_rectangle_ptr,
-        root_ptr->extents.width,
-        root_ptr->extents.height);
-
-    bs_dllist_for_each(
-        &root_ptr->workspaces, _wlmtk_root_set_workspace_extents,
-        &root_ptr->extents);
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmtk_root_update_output_layout(
     wlmtk_root_t *root_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
     wlmtk_rectangle_set_size(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width,
@@ -295,7 +274,6 @@ void wlmtk_root_add_workspace(
     wlmtk_workspace_set_details(
         workspace_ptr, bs_dllist_size(&root_ptr->workspaces));
     wlmtk_workspace_set_root(workspace_ptr, root_ptr);
-    wlmtk_workspace_set_extents(workspace_ptr, &root_ptr->extents);
 
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
@@ -495,21 +473,6 @@ void _wlmtk_root_switch_to_workspace(
     wl_signal_emit(
         &root_ptr->events.workspace_changed,
         root_ptr->current_workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to set extents of the workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr
- */
-void _wlmtk_root_set_workspace_extents(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    wlmtk_workspace_set_extents(
-        wlmtk_workspace_from_dlnode(dlnode_ptr), ud_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -725,11 +688,6 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_EQ(
         test_ptr, &root_ptr->events, wlmtk_root_events(root_ptr));
-
-    struct wlr_box extents = { .width = 100, .height = 50 };
-    wlmtk_root_set_extents(root_ptr, &extents);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, root_ptr->extents.width);
-    BS_TEST_VERIFY_EQ(test_ptr, 50, root_ptr->extents.height);
 
     wlmtk_root_destroy(root_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);

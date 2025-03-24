@@ -84,16 +84,6 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
 wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
 
 /**
- * Sets the extents of root (and all workspaces thereof).
- *
- * @param root_ptr
- * @param extents_ptr
- */
-void wlmtk_root_set_extents(
-    wlmtk_root_t *root_ptr,
-    const struct wlr_box *extents_ptr);
-
-/**
  * Updates the set of outputs.
  *
  * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
