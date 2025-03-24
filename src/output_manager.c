@@ -69,12 +69,15 @@ typedef struct {
     bool really;
 } _wlmaker_output_config_head_apply_arg_t;
 
-static void handle_output_destroy(struct wl_listener *listener_ptr,
-                                  void *data_ptr);
-static void handle_output_frame(struct wl_listener *listener_ptr,
-                                void *data_ptr);
-static void handle_request_state(struct wl_listener *listener_ptr,
-                                 void *data_ptr);
+static void _wlmaker_output_handle_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_output_handle_frame(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_output_handle_request_state(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmaker_output_manager_destroy(
     wlmaker_output_manager_t *output_manager_ptr);
@@ -171,15 +174,15 @@ wlmaker_output_t *wlmaker_output_create(
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
         &output_ptr->output_destroy_listener,
-        handle_output_destroy);
+        _wlmaker_output_handle_destroy);
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.frame,
         &output_ptr->output_frame_listener,
-        handle_output_frame);
+        _wlmaker_output_handle_frame);
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.request_state,
         &output_ptr->output_request_state_listener,
-        handle_request_state);
+        _wlmaker_output_handle_request_state);
 
     // From tinwywl: Configures the output created by the backend to use our
     // allocator and our renderer. Must be done once, before commiting the
@@ -350,8 +353,9 @@ void wlmaker_output_manager_update_config(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_output_destroy(struct wl_listener *listener_ptr,
-                           __UNUSED__ void *data_ptr)
+void _wlmaker_output_handle_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_t, output_destroy_listener);
@@ -366,8 +370,9 @@ void handle_output_destroy(struct wl_listener *listener_ptr,
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_output_frame(struct wl_listener *listener_ptr,
-                         __UNUSED__ void *data_ptr)
+void _wlmaker_output_handle_frame(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_t, output_frame_listener);
@@ -389,8 +394,9 @@ void handle_output_frame(struct wl_listener *listener_ptr,
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_request_state(struct wl_listener *listener_ptr,
-                          void *data_ptr)
+void _wlmaker_output_handle_request_state(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
 {
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_t, output_request_state_listener);
