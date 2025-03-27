@@ -798,6 +798,8 @@ void handle_destroy_input_device(struct wl_listener *listener_ptr,
  *
  * @param listener_ptr
  * @param data_ptr            Points to a `struct wlr_output_layout`.
+ *
+ * FIXME -- eliminate this call.
  */
 void handle_output_layout_change(
     struct wl_listener *listener_ptr,
