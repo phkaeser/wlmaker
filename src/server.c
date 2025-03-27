@@ -240,14 +240,12 @@ wlmaker_server_t *wlmaker_server_create(
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    wlmtk_root_update_output_layout(
-        server_ptr->root_ptr,
-        server_ptr->wlr_output_layout_ptr);
     wlmtk_util_connect_listener_signal(
         &wlmtk_root_events(server_ptr->root_ptr)->unclaimed_button_event,
         &server_ptr->unclaimed_button_event_listener,
@@ -824,11 +822,6 @@ void handle_output_layout_change(
         wlmaker_output_manager_update_config(
             server_ptr->output_manager_ptr,
             server_ptr);
-    }
-    if (NULL != server_ptr->root_ptr) {
-        wlmtk_root_update_output_layout(
-            server_ptr->root_ptr,
-            server_ptr->wlr_output_layout_ptr);
     }
 
     wl_signal_emit_mutable(&server_ptr->output_layout_changed_event,

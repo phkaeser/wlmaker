@@ -59,12 +59,14 @@ typedef struct {
  * Creates the root element.
  *
  * @param wlr_scene_ptr
+ * @param wlr_output_layout_ptr
  * @param env_ptr
  *
  * @return Handle of the root element or NULL on error.
  */
 wlmtk_root_t *wlmtk_root_create(
     struct wlr_scene *wlr_scene_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
@@ -82,21 +84,6 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
  * @return Pointer to @ref wlmtk_root_t::events.
  */
 wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
-
-/**
- * Updates the set of outputs.
- *
- * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
- *
- * @param root_ptr
- * @param wlr_output_layout_ptr The output layout. @ref wlmtk_root_t expects
- *                            all referred outputs to live until the next
- *                            call to wlmtk_root_update_output_layout, or until
- *                            @ref wlmtk_root_destroy is called.
- */
-void wlmtk_root_update_output_layout(
-    wlmtk_root_t *root_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Handles a pointer motion event.
