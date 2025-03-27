@@ -238,28 +238,30 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    wlmtk_tile_style_t ts = {};
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws_ptr);
-
     wlmaker_server_t server = {
         .wlr_scene_ptr = wlr_scene_ptr,
         .wl_display_ptr = wl_display_create(),
-        .root_ptr = root_ptr
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
     server.wlr_output_layout_ptr = wlr_output_layout_create(server.wl_display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
+
+    server.root_ptr = wlmtk_root_create(
+        server.wlr_scene_ptr,
+        server.wlr_output_layout_ptr,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
+
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
-    wlr_output_layout_add(server.wlr_output_layout_ptr, &output, 0, 0);
-    wlmtk_root_update_output_layout(root_ptr, server.wlr_output_layout_ptr);
-
     wlmaker_output_t wo = { .wlr_output_ptr = &output };
     bs_dllist_push_back(&server.outputs, &wo.node);
+    wlr_output_layout_add(server.wlr_output_layout_ptr, &output, 0, 0);
 
     wlmaker_config_style_t style = {};
 
@@ -274,9 +276,9 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     wlmaker_dock_destroy(dock_ptr);
     wlmcfg_dict_unref(dict_ptr);
-    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
+    wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
-    wlmtk_root_destroy(root_ptr);
+    wlmtk_root_destroy(server.root_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
