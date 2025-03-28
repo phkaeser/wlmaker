@@ -213,7 +213,9 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->cursor_ptr = wlmaker_cursor_create(server_ptr);
+    server_ptr->cursor_ptr = wlmaker_cursor_create(
+        server_ptr,
+        server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
         wlmaker_server_destroy(server_ptr);
