@@ -265,6 +265,10 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         wlr_xdg_output_manager_v1_create(
             wl_display_ptr,
             output_manager_ptr->wlr_output_layout_ptr);
+    if (NULL == output_manager_ptr->wlr_xdg_output_manager_v1_ptr) {
+        _wlmaker_output_manager_destroy(output_manager_ptr);
+        return NULL;
+    }
 
     _wlmaker_output_manager_handle_output_layout_change(
         &output_manager_ptr->output_layout_change_listener,
