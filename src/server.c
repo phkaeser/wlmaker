@@ -73,9 +73,6 @@ static void handle_new_input_device(
 static void handle_destroy_input_device(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 
 static void _wlmaker_server_unclaimed_button_event_handler(
     struct wl_listener *listener_ptr,
@@ -199,10 +196,6 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    wlmtk_util_connect_listener_signal(
-        &server_ptr->wlr_output_layout_ptr->events.change,
-        &server_ptr->output_layout_change_listener,
-        handle_output_layout_change);
 
     // The scene graph.
     server_ptr->wlr_scene_ptr = wlr_scene_create();
@@ -318,15 +311,13 @@ wlmaker_server_t *wlmaker_server_create(
         server_ptr->wlr_backend_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr);
+        server_ptr->wlr_output_layout_ptr,
+        &server_ptr->outputs);
     if (NULL == server_ptr->output_manager_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_output_manager_create()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    wlmaker_output_manager_update_config(
-        server_ptr->output_manager_ptr,
-        server_ptr);
 
     server_ptr->icon_manager_ptr = wlmaker_icon_manager_create(
         server_ptr->wl_display_ptr, server_ptr);
@@ -518,11 +509,6 @@ bool wlmaker_server_output_add(wlmaker_server_t *server_ptr,
         wlr_scene_output_ptr);
     bs_dllist_push_back(&server_ptr->outputs, &output_ptr->node);
 
-    if (NULL != server_ptr->output_manager_ptr) {
-        wlmaker_output_manager_update_config(
-            server_ptr->output_manager_ptr,
-            server_ptr);
-    }
     return true;
 }
 
@@ -786,46 +772,6 @@ void handle_destroy_input_device(struct wl_listener *listener_ptr,
     bs_dllist_remove(&input_device_ptr->server_ptr->input_devices,
                      &input_device_ptr->node);
     free(input_device_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Signal handler for `change` event of `wlr_output_layout`.
- *
- * Is emitted whenever the output layout changes. For us, this means each
- * workspace should consider re-arranging views suitably.
- *
- * @param listener_ptr
- * @param data_ptr            Points to a `struct wlr_output_layout`.
- *
- * FIXME -- eliminate this call.
- */
-void handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_server_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
-    if (wlr_output_layout_ptr != server_ptr->wlr_output_layout_ptr) {
-        // OK, this is unexpected...
-        bs_log(BS_ERROR, "Unexpected output layer mismatch: %p vs %p",
-               wlr_output_layout_ptr, server_ptr->wlr_output_layout_ptr);
-        return;
-    }
-
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
-    bs_log(BS_INFO, "Output layout change: Pos %d, %d (%d x %d).",
-           extents.x, extents.y, extents.width, extents.height);
-
-    if (NULL != server_ptr->output_manager_ptr) {
-        wlmaker_output_manager_update_config(
-            server_ptr->output_manager_ptr,
-            server_ptr);
-    }
-
-
 }
 
 /* ------------------------------------------------------------------------- */

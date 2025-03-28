@@ -124,8 +124,6 @@ struct _wlmaker_server_t {
     struct wl_listener        backend_new_output_listener;
     /** Listener for `new_input` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_input_device_listener;
-    /** Listener for `change` signals raised by `wlr_output_layout`. */
-    struct wl_listener        output_layout_change_listener;
 
     // From tinywl.c: A few hands-off wlroots interfaces.
 

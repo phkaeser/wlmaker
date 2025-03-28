@@ -69,20 +69,8 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
-
-/**
- * Updates the output configuration from the currently-available outputs.
- *
- * Should be called whenever the output layout is updated, or an output is
- * added or removed.
- *
- * @param output_manager_ptr
- * @param server_ptr
- */
-void wlmaker_output_manager_update_config(
-    wlmaker_output_manager_t *output_manager_ptr,
-    wlmaker_server_t *server_ptr);
+    struct wlr_output_layout  *wlr_output_layout_ptr,
+    bs_dllist_t *server_outputs_ptr);
 
 /**
  * Creates an output device from |wlr_output_ptr|.
