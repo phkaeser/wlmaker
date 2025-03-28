@@ -64,9 +64,6 @@ static bool register_input_device(
     struct wlr_input_device *wlr_input_device_ptr,
     void *handle_ptr);
 
-static void handle_new_output(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void handle_new_input_device(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -153,10 +150,6 @@ wlmaker_server_t *wlmaker_server_create(
 
     // Listen for new (or newly recognized) output and input devices.
     wlmtk_util_connect_listener_signal(
-        &server_ptr->wlr_backend_ptr->events.new_output,
-        &server_ptr->backend_new_output_listener,
-        handle_new_output);
-    wlmtk_util_connect_listener_signal(
         &server_ptr->wlr_backend_ptr->events.new_input,
         &server_ptr->backend_new_input_device_listener,
         handle_new_input_device);
@@ -185,18 +178,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    // The output layout.
-    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
-#if WLR_VERSION_NUM >= (18 << 8)
-        server_ptr->wl_display_ptr
-#endif // WLR_VERSION_NUM >= (18 << 8)
-        );
-    if (NULL == server_ptr->wlr_output_layout_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_output_layout_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // The scene graph.
     server_ptr->wlr_scene_ptr = wlr_scene_create();
     if (NULL == server_ptr->wlr_scene_ptr) {
@@ -204,18 +185,26 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    server_ptr->wlr_scene_output_layout_ptr = wlr_scene_attach_output_layout(
+
+    server_ptr->output_manager_ptr = wlmaker_output_manager_create(
+        server_ptr->wl_display_ptr,
+        server_ptr->wlr_allocator_ptr,
+        server_ptr->wlr_backend_ptr,
+        server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr);
-    if (NULL == server_ptr->wlr_scene_output_layout_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
+        &server_ptr->outputs,
+        &server_ptr->options_ptr->output,
+        server_ptr->config_dict_ptr);
+    if (NULL == server_ptr->output_manager_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_output_manager_create()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
 
     server_ptr->cursor_ptr = wlmaker_cursor_create(
         server_ptr,
-        server_ptr->wlr_output_layout_ptr);
+        wlmaker_output_manager_wlr_output_layout(
+            server_ptr->output_manager_ptr));
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
         wlmaker_server_destroy(server_ptr);
@@ -234,7 +223,8 @@ wlmaker_server_t *wlmaker_server_create(
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr,
+        wlmaker_output_manager_wlr_output_layout(
+            server_ptr->output_manager_ptr),
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
@@ -307,20 +297,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->output_manager_ptr = wlmaker_output_manager_create(
-        server_ptr->wl_display_ptr,
-        server_ptr->wlr_allocator_ptr,
-        server_ptr->wlr_backend_ptr,
-        server_ptr->wlr_renderer_ptr,
-        server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr,
-        &server_ptr->outputs);
-    if (NULL == server_ptr->output_manager_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_output_manager_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     server_ptr->icon_manager_ptr = wlmaker_icon_manager_create(
         server_ptr->wl_display_ptr, server_ptr);
     if (NULL == server_ptr->icon_manager_ptr) {
@@ -346,14 +322,16 @@ wlmaker_server_t *wlmaker_server_create(
     server_ptr->corner_ptr = wlmaker_corner_create(
         wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
-        server_ptr->wlr_output_layout_ptr,
+        wlmaker_output_manager_wlr_output_layout(
+            server_ptr->output_manager_ptr),
         server_ptr->cursor_ptr,
         server_ptr);
     if (NULL == server_ptr->corner_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
                wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
                wl_display_get_event_loop(server_ptr->wl_display_ptr),
-               server_ptr->wlr_output_layout_ptr,
+               wlmaker_output_manager_wlr_output_layout(
+                   server_ptr->output_manager_ptr),
                server_ptr->cursor_ptr,
                server_ptr);
         wlmaker_server_destroy(server_ptr);
@@ -481,46 +459,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     free(server_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmaker_server_output_add(wlmaker_server_t *server_ptr,
-                               wlmaker_output_t *output_ptr)
-{
-    // tinywl: Adds this to the output layout. The add_auto function arranges
-    // outputs from left-to-right in the order they appear. A sophisticated
-    // compositor would let the user configure the arrangement of outputs in
-    // the layout.
-    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
-        wlr_output_layout_add_auto(
-            server_ptr->wlr_output_layout_ptr,
-            output_ptr->wlr_output_ptr);
-    if (NULL == wlr_output_layout_output_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_output_layout_add_auto(%p, %p) for '%s'",
-               server_ptr->wlr_output_layout_ptr,
-               output_ptr->wlr_output_ptr,
-            output_ptr->wlr_output_ptr->name);
-        return false;
-    }
-    struct wlr_scene_output *wlr_scene_output_ptr =
-        wlr_scene_output_create(server_ptr->wlr_scene_ptr,
-                                output_ptr->wlr_output_ptr);
-    wlr_scene_output_layout_add_output(
-        server_ptr->wlr_scene_output_layout_ptr,
-        wlr_output_layout_output_ptr,
-        wlr_scene_output_ptr);
-    bs_dllist_push_back(&server_ptr->outputs, &output_ptr->node);
-
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
-                                  wlmaker_output_t *output_ptr)
-{
-    bs_dllist_remove(&server_ptr->outputs, &output_ptr->node);
-    wlr_output_layout_remove(server_ptr->wlr_output_layout_ptr,
-                             output_ptr->wlr_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -661,36 +599,6 @@ bool register_input_device(wlmaker_server_t *server_ptr,
 
     bs_dllist_push_back(&server_ptr->input_devices, &input_device_ptr->node);
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Handler for the `new_output` signal raised by `wlr_backend`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_new_output(struct wl_listener *listener_ptr, void *data_ptr)
-{
-    struct wlr_output *wlr_output_ptr = data_ptr;
-    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_server_t, backend_new_output_listener);
-
-    wlmaker_output_t *output_ptr = wlmaker_output_create(
-        wlr_output_ptr,
-        server_ptr->wlr_allocator_ptr,
-        server_ptr->wlr_renderer_ptr,
-        server_ptr->wlr_scene_ptr,
-        server_ptr->options_ptr->width,
-        server_ptr->options_ptr->height,
-        server_ptr);
-    if (NULL == output_ptr) {
-        bs_log(BS_INFO, "Failed wlmaker_output_create for server %p",
-               server_ptr);
-        return;
-    }
-
-    wlmaker_server_output_add(server_ptr, output_ptr);
-    bs_log(BS_INFO, "Server %p: Added output %p", server_ptr, output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

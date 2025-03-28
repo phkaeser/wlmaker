@@ -26,6 +26,16 @@
 typedef struct _wlmaker_output_t wlmaker_output_t;
 /** Forward declaration: Handle for output manager. */
 typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
+/** Forward declaration. */
+typedef struct _wlmaker_output_config_t wlmaker_output_config_t;
+
+/** Options for the output manager. */
+typedef struct {
+    /** Preferred output width, for windowed mode. */
+    uint32_t                  width;
+    /** Preferred output height, for windowed mode. */
+    uint32_t                  height;
+} wlmaker_output_manager_options_t;
 
 #include "server.h"
 
@@ -37,8 +47,8 @@ extern "C" {
 struct _wlmaker_output_t {
     /** List node for insertion to server's list of outputs. */
     bs_dllist_node_t          node;
-    /** Back-link to the server this output belongs to. */
-    wlmaker_server_t          *server_ptr;
+    /** Back-link to the output manager, if the output is added to one. */
+    wlmaker_output_manager_t  *output_manager_ptr;
 
     /** Refers to the compositor output region, from wlroots. */
     struct wlr_output         *wlr_output_ptr;
@@ -69,8 +79,13 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    struct wlr_output_layout  *wlr_output_layout_ptr,
-    bs_dllist_t *server_outputs_ptr);
+    bs_dllist_t *server_outputs_ptr,
+    const wlmaker_output_manager_options_t *options_ptr,
+    wlmcfg_dict_t *config_dict_ptr);
+
+/** Accessor for @ref wlmaker_output_manager_t::wlr_output_layout_ptr. */
+struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
+    wlmaker_output_manager_t *output_manager_ptr);
 
 /**
  * Creates an output device from |wlr_output_ptr|.
@@ -81,7 +96,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
  * @param wlr_scene_ptr
  * @param width
  * @param height
- * @param server_ptr
+ * @param config_ptr
  *
  * @return The output device handle or NULL on error.
  */
@@ -92,7 +107,7 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_scene *wlr_scene_ptr,
     uint32_t width,
     uint32_t height,
-    wlmaker_server_t *server_ptr);
+    wlmaker_output_config_t *config_ptr);
 
 /**
  * Destroys the output device handle, as created by wlmaker_output_create().

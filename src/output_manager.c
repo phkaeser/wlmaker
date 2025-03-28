@@ -32,6 +32,14 @@
 
 /* == Declarations ========================================================= */
 
+/** Output configuration. */
+struct _wlmaker_output_config_t {
+    /** Default transformation for the output(s). */
+    enum wl_output_transform  transformation;
+    /** Default scaling factor to use for the output(s). */
+    double                    scale;
+} ;
+
 /** Implementation of the wlr output manager. */
 struct _wlmaker_output_manager_t {
     /** Points to wlroots `struct wlr_output_manager_v1`. */
@@ -50,6 +58,8 @@ struct _wlmaker_output_manager_t {
 
     /** Points to struct wlr_output_layout. */
     struct wlr_output_layout *wlr_output_layout_ptr;
+    /** The scene output layout. */
+    struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
 
     /** Listener for wlr_output_manager_v1::events.destroy. */
     struct wl_listener        destroy_listener;
@@ -59,11 +69,18 @@ struct _wlmaker_output_manager_t {
     /** Listener for wlr_output_manager_v1::events.test. */
     struct wl_listener        test_listener;
 
-    /** Listener for wlt_output_layout::events.change. */
+    /** Listener for wlr_backend::events::new_input. */
+    struct wl_listener        new_output_listener;
+    /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
     /** List of outputs. FIXME: Move into this file. */
     bs_dllist_t               *server_outputs_ptr;
+
+    /** Output options. */
+    wlmaker_output_manager_options_t options;
+    /** Configuration. */
+    wlmaker_output_config_t   config;
 };
 
 /** Argument to @ref _wlmaker_output_manager_add_dlnode_output. */
@@ -106,6 +123,12 @@ static bool _wlmaker_output_manager_apply(
     wlmaker_output_manager_t *output_manager_ptr,
     struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr,
     bool really);
+static bool _wlmaker_output_manager_add_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_output_t *output_ptr);
+static void _wlmaker_output_manager_remove_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_output_t *output_ptr);
 
 static void _wlmaker_output_manager_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -114,6 +137,9 @@ static void _wlmaker_output_manager_handle_apply(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_output_manager_handle_test(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_output_manager_handle_new_output(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_output_manager_handle_output_layout_change(
@@ -140,10 +166,11 @@ static const wlmcfg_enum_desc_t _wlmaker_output_transformation_desc[] = {
 
 /** Descriptor for the output configuration. */
 static const wlmcfg_desc_t _wlmaker_output_config_desc[] = {
-    WLMCFG_DESC_ENUM("Transformation", true, wlmaker_output_t, transformation,
+    WLMCFG_DESC_ENUM("Transformation", true,
+                     wlmaker_output_config_t, transformation,
                      WL_OUTPUT_TRANSFORM_NORMAL,
                      _wlmaker_output_transformation_desc),
-    WLMCFG_DESC_DOUBLE("Scale", true, wlmaker_output_t, scale, 1.0),
+    WLMCFG_DESC_DOUBLE("Scale", true, wlmaker_output_config_t, scale, 1.0),
     WLMCFG_DESC_SENTINEL()
 };
 
@@ -157,7 +184,7 @@ wlmaker_output_t *wlmaker_output_create(
     struct wlr_scene *wlr_scene_ptr,
     uint32_t width,
     uint32_t height,
-    wlmaker_server_t *server_ptr)
+    wlmaker_output_config_t *config_ptr)
 {
     wlmaker_output_t *output_ptr = logged_calloc(1, sizeof(wlmaker_output_t));
     if (NULL == output_ptr) return NULL;
@@ -165,27 +192,8 @@ wlmaker_output_t *wlmaker_output_create(
     output_ptr->wlr_allocator_ptr = wlr_allocator_ptr;
     output_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
-    output_ptr->server_ptr = server_ptr;
-
-    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_ref(
-        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr,
-                             _wlmaker_output_dict_name));
-    if (NULL == output_dict_ptr) {
-        bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_output_dict_name);
-        wlmaker_output_destroy(output_ptr);
-        return NULL;
-    }
-    bool decoded = wlmcfg_decode_dict(
-        output_dict_ptr,
-        _wlmaker_output_config_desc,
-        output_ptr);
-    wlmcfg_dict_unref(output_dict_ptr);
-    if (!decoded) {
-        bs_log(BS_ERROR, "Failed to decode '%s' dict",
-               _wlmaker_output_dict_name);
-        wlmaker_output_destroy(output_ptr);
-        return NULL;
-    }
+    output_ptr->transformation = config_ptr->transformation;
+    output_ptr->scale = config_ptr->scale;
 
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
@@ -287,6 +295,12 @@ wlmaker_output_t *wlmaker_output_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_output_destroy(wlmaker_output_t *output_ptr)
 {
+    if (NULL != output_ptr->output_manager_ptr) {
+        _wlmaker_output_manager_remove_output(
+            output_ptr->output_manager_ptr,
+            output_ptr);
+    }
+
     if (NULL != output_ptr->wlr_output_ptr) {
         bs_log(BS_INFO, "Destroy output %s", output_ptr->wlr_output_ptr->name);
     }
@@ -305,8 +319,9 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr,
-    bs_dllist_t *server_outputs_ptr)
+    bs_dllist_t *server_outputs_ptr,
+    const wlmaker_output_manager_options_t *options_ptr,
+    wlmcfg_dict_t *config_dict_ptr)
 {
     wlmaker_output_manager_t *output_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
@@ -316,12 +331,40 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     output_manager_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
     output_manager_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_manager_ptr->server_outputs_ptr = server_outputs_ptr;
+    output_manager_ptr->options = *options_ptr;
+
+    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
+        config_dict_ptr, _wlmaker_output_dict_name);
+    if (NULL == output_dict_ptr) {
+        bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_output_dict_name);
+        _wlmaker_output_manager_destroy(output_manager_ptr);
+        return NULL;
+    }
+    if (!wlmcfg_decode_dict(
+            output_dict_ptr,
+            _wlmaker_output_config_desc,
+            &output_manager_ptr->config)) {
+        bs_log(BS_ERROR, "Failed to decode '%s' dict",
+               _wlmaker_output_dict_name);
+        _wlmaker_output_manager_destroy(output_manager_ptr);
+        return NULL;
+    }
 
     output_manager_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
         wl_display_ptr);
     if (NULL == output_manager_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed wlr_output_layout_create(%p)",
                wl_display_ptr);
+        _wlmaker_output_manager_destroy(output_manager_ptr);
+        return NULL;
+    }
+
+    output_manager_ptr->wlr_scene_output_layout_ptr =
+        wlr_scene_attach_output_layout(
+            wlr_scene_ptr,
+            output_manager_ptr->wlr_output_layout_ptr);
+    if (NULL == output_manager_ptr->wlr_scene_output_layout_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
         _wlmaker_output_manager_destroy(output_manager_ptr);
         return NULL;
     }
@@ -346,6 +389,10 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         _wlmaker_output_manager_handle_test);
 
     wlmtk_util_connect_listener_signal(
+        &output_manager_ptr->wlr_backend_ptr->events.new_output,
+        &output_manager_ptr->new_output_listener,
+        _wlmaker_output_manager_handle_new_output);
+    wlmtk_util_connect_listener_signal(
         &output_manager_ptr->wlr_output_layout_ptr->events.change,
         &output_manager_ptr->output_layout_change_listener,
         _wlmaker_output_manager_handle_output_layout_change);
@@ -353,12 +400,19 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
         wlr_xdg_output_manager_v1_create(
             wl_display_ptr,
-            wlr_output_layout_ptr);
+            output_manager_ptr->wlr_output_layout_ptr);
 
     _wlmaker_output_manager_handle_output_layout_change(
         &output_manager_ptr->output_layout_change_listener,
-        wlr_output_layout_ptr);
+        output_manager_ptr->wlr_output_layout_ptr);
     return output_manager_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
+    wlmaker_output_manager_t *output_manager_ptr)
+{
+    return output_manager_ptr->wlr_output_layout_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -376,7 +430,6 @@ void _wlmaker_output_handle_destroy(
 {
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_t, output_destroy_listener);
-    wlmaker_server_output_remove(output_ptr->server_ptr, output_ptr);
     wlmaker_output_destroy(output_ptr);
 }
 
@@ -427,10 +480,12 @@ void _wlmaker_output_handle_request_state(
 void _wlmaker_output_manager_destroy(
     wlmaker_output_manager_t *output_manager_ptr)
 {
-    if (NULL != output_manager_ptr->wlr_output_layout_ptr) {
-        wlmtk_util_disconnect_listener(
-            &output_manager_ptr->output_layout_change_listener);
+    wlmtk_util_disconnect_listener(
+        &output_manager_ptr->new_output_listener);
+    wlmtk_util_disconnect_listener(
+        &output_manager_ptr->output_layout_change_listener);
 
+    if (NULL != output_manager_ptr->wlr_output_layout_ptr) {
         wlr_output_layout_destroy(output_manager_ptr->wlr_output_layout_ptr);
         output_manager_ptr->wlr_output_layout_ptr = NULL;
     }
@@ -590,6 +645,59 @@ bool _wlmaker_output_manager_apply(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Adds the output. */
+bool _wlmaker_output_manager_add_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_output_t *output_ptr)
+{
+    BS_ASSERT(NULL == output_ptr->output_manager_ptr);
+
+    // tinywl: Adds this to the output layout. The add_auto function arranges
+    // outputs from left-to-right in the order they appear. A sophisticated
+    // compositor would let the user configure the arrangement of outputs in
+    // the layout.
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        wlr_output_layout_add_auto(
+            output_manager_ptr->wlr_output_layout_ptr,
+            output_ptr->wlr_output_ptr);
+    if (NULL == wlr_output_layout_output_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_output_layout_add_auto(%p, %p) for '%s'",
+               output_manager_ptr->wlr_output_layout_ptr,
+               output_ptr->wlr_output_ptr,
+            output_ptr->wlr_output_ptr->name);
+        return false;
+    }
+    struct wlr_scene_output *wlr_scene_output_ptr =
+        wlr_scene_output_create(
+            output_manager_ptr->wlr_scene_ptr,
+            output_ptr->wlr_output_ptr);
+    wlr_scene_output_layout_add_output(
+        output_manager_ptr->wlr_scene_output_layout_ptr,
+        wlr_output_layout_output_ptr,
+        wlr_scene_output_ptr);
+    bs_dllist_push_back(
+        output_manager_ptr->server_outputs_ptr,
+        &output_ptr->node);
+
+    output_ptr->output_manager_ptr = output_manager_ptr;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Removes the output. */
+void _wlmaker_output_manager_remove_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    wlmaker_output_t *output_ptr)
+{
+    bs_dllist_remove(
+        output_manager_ptr->server_outputs_ptr, &output_ptr->node);
+    output_ptr->output_manager_ptr = NULL;
+    wlr_output_layout_remove(
+        output_manager_ptr->wlr_output_layout_ptr,
+        output_ptr->wlr_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for wlr_output_manager_v1::events.destroy. Cleans up. */
 void _wlmaker_output_manager_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -635,12 +743,39 @@ void _wlmaker_output_manager_handle_test(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles new output events. */
+void _wlmaker_output_manager_handle_new_output(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_output_manager_t, new_output_listener);
+    struct wlr_output *wlr_output_ptr = data_ptr;
+
+    wlmaker_output_t *output_ptr = wlmaker_output_create(
+        wlr_output_ptr,
+        output_manager_ptr->wlr_allocator_ptr,
+        output_manager_ptr->wlr_renderer_ptr,
+        output_manager_ptr->wlr_scene_ptr,
+        output_manager_ptr->options.width,
+        output_manager_ptr->options.height,
+        &output_manager_ptr->config);
+    if (NULL == output_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_output_create()");
+        return;
+    }
+
+    _wlmaker_output_manager_add_output(output_manager_ptr, output_ptr);
+    bs_log(BS_INFO, "Added output %p", output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles layout change events. */
 void _wlmaker_output_manager_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    __UNUSED__ wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
+    wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, output_layout_change_listener);
 
     _wlmaker_output_manager_add_dlnode_output_arg_t arg = {

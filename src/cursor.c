@@ -74,8 +74,6 @@ wlmaker_cursor_t *wlmaker_cursor_create(
         wlmaker_cursor_destroy(cursor_ptr);
         return NULL;
     }
-    // Must be initialized after wlr_output_layout_ptr.
-    BS_ASSERT(NULL != server_ptr->wlr_output_layout_ptr);
     wlr_cursor_attach_output_layout(
         cursor_ptr->wlr_cursor_ptr, wlr_output_layout_ptr);
 

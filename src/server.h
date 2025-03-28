@@ -80,10 +80,8 @@ extern "C" {
 typedef struct {
     /** Whether to start XWayland. */
     bool                      start_xwayland;
-    /** Preferred output height, for windowed mode. */
-    uint32_t                  height;
-    /** Preferred output width, for windowed mode. */
-    uint32_t                  width;
+    /** Output options. */
+    wlmaker_output_manager_options_t output;
 } wlmaker_server_options_t;
 
 /** State of the Wayland server. */
@@ -117,11 +115,7 @@ struct _wlmaker_server_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
-    /** The scene output layout. */
-    struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
 
-    /** Listener for `new_output` signals raised by `wlr_backend`. */
-    struct wl_listener        backend_new_output_listener;
     /** Listener for `new_input` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_input_device_listener;
 
@@ -239,26 +233,6 @@ wlmaker_server_t *wlmaker_server_create(
  * @param server_ptr
  */
 void wlmaker_server_destroy(wlmaker_server_t *server_ptr);
-
-/**
- * Adds the output.
- *
- * @param server_ptr
- * @param output_ptr
- *
- * @return true on success.
- */
-bool wlmaker_server_output_add(wlmaker_server_t *server_ptr,
-                               wlmaker_output_t *output_ptr);
-
-/**
- * Removes the output.
- *
- * @param server_ptr
- * @param output_ptr
- */
-void wlmaker_server_output_remove(wlmaker_server_t *server_ptr,
-                                  wlmaker_output_t *output_ptr);
 
 /**
  * Returns the primary output. Currently, that's the first one added.
