@@ -43,39 +43,9 @@ typedef struct {
 extern "C" {
 #endif  // __cplusplus
 
-/** Handle for a compositor output device. */
-struct _wlmaker_output_t {
-    /** List node for insertion to server's list of outputs. */
-    bs_dllist_node_t          node;
-    /** Back-link to the output manager, if the output is added to one. */
-    wlmaker_output_manager_t  *output_manager_ptr;
-
-    /** Refers to the compositor output region, from wlroots. */
-    struct wlr_output         *wlr_output_ptr;
-    /** Refers to the allocator of the server. */
-    struct wlr_allocator      *wlr_allocator_ptr;
-    /** Refers to the renderer used for the server. */
-    struct wlr_renderer       *wlr_renderer_ptr;
-    /** Refers to the scene graph used. */
-    struct wlr_scene          *wlr_scene_ptr;
-
-    /** Listener for `destroy` signals raised by `wlr_output`. */
-    struct wl_listener        output_destroy_listener;
-    /** Listener for `frame` signals raised by `wlr_output`. */
-    struct wl_listener        output_frame_listener;
-    /** Listener for `request_state` signals raised by `wlr_output`. */
-    struct wl_listener        output_request_state_listener;
-
-    /** Default transformation for the output(s). */
-    enum wl_output_transform  transformation;
-    /** Default scaling factor to use for the output(s). */
-    double                    scale;
-};
-
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,

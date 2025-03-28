@@ -169,15 +169,6 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    // Auto-create allocator, suitable to backend and renderer.
-    server_ptr->wlr_allocator_ptr = wlr_allocator_autocreate(
-        server_ptr->wlr_backend_ptr, server_ptr->wlr_renderer_ptr);
-    if (NULL == server_ptr->wlr_allocator_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_allocator_autocreate()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // The scene graph.
     server_ptr->wlr_scene_ptr = wlr_scene_create();
     if (NULL == server_ptr->wlr_scene_ptr) {
@@ -188,7 +179,6 @@ wlmaker_server_t *wlmaker_server_create(
 
     server_ptr->output_manager_ptr = wlmaker_output_manager_create(
         server_ptr->wl_display_ptr,
-        server_ptr->wlr_allocator_ptr,
         server_ptr->wlr_backend_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
@@ -440,11 +430,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->wlr_allocator_ptr) {
-        wlr_allocator_destroy(server_ptr->wlr_allocator_ptr);
-        server_ptr->wlr_allocator_ptr = NULL;
     }
 
     if (NULL != server_ptr->config_dict_ptr) {

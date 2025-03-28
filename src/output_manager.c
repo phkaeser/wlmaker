@@ -40,6 +40,35 @@ struct _wlmaker_output_config_t {
     double                    scale;
 } ;
 
+/** Handle for a compositor output device. */
+struct _wlmaker_output_t {
+    /** List node for insertion to server's list of outputs. */
+    bs_dllist_node_t          node;
+    /** Back-link to the output manager, if the output is added to one. */
+    wlmaker_output_manager_t  *output_manager_ptr;
+
+    /** Refers to the compositor output region, from wlroots. */
+    struct wlr_output         *wlr_output_ptr;
+    /** Refers to the allocator of the server. */
+    struct wlr_allocator      *wlr_allocator_ptr;
+    /** Refers to the renderer used for the server. */
+    struct wlr_renderer       *wlr_renderer_ptr;
+    /** Refers to the scene graph used. */
+    struct wlr_scene          *wlr_scene_ptr;
+
+    /** Listener for `destroy` signals raised by `wlr_output`. */
+    struct wl_listener        output_destroy_listener;
+    /** Listener for `frame` signals raised by `wlr_output`. */
+    struct wl_listener        output_frame_listener;
+    /** Listener for `request_state` signals raised by `wlr_output`. */
+    struct wl_listener        output_request_state_listener;
+
+    /** Default transformation for the output(s). */
+    enum wl_output_transform  transformation;
+    /** Default scaling factor to use for the output(s). */
+    double                    scale;
+};
+
 /** Implementation of the wlr output manager. */
 struct _wlmaker_output_manager_t {
     /** Points to wlroots `struct wlr_output_manager_v1`. */
@@ -47,17 +76,17 @@ struct _wlmaker_output_manager_t {
     /** Points to wlroots 'struct wlr_xdg_output_manager_v1`. */
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager_v1_ptr;
 
-    /** The allocator. */
-    struct wlr_allocator *wlr_allocator_ptr;
     /** Points to struct wlr_backend. */
-    struct wlr_backend *wlr_backend_ptr;
+    struct wlr_backend        *wlr_backend_ptr;
     /** The renderer. */
-    struct wlr_renderer *wlr_renderer_ptr;
+    struct wlr_renderer       *wlr_renderer_ptr;
     /** The scene. */
-    struct wlr_scene *wlr_scene_ptr;
+    struct wlr_scene           *wlr_scene_ptr;
 
+    /** The allocator. */
+    struct wlr_allocator      *wlr_allocator_ptr;
     /** Points to struct wlr_output_layout. */
-    struct wlr_output_layout *wlr_output_layout_ptr;
+    struct wlr_output_layout  *wlr_output_layout_ptr;
     /** The scene output layout. */
     struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
 
@@ -185,7 +214,6 @@ static const wlmcfg_desc_t _wlmaker_output_config_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
@@ -195,11 +223,21 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     wlmaker_output_manager_t *output_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_output_manager_t));
     if (NULL == output_manager_ptr) return NULL;
-    output_manager_ptr->wlr_allocator_ptr = wlr_allocator_ptr;
     output_manager_ptr->wlr_backend_ptr = wlr_backend_ptr;
     output_manager_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
     output_manager_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_manager_ptr->options = *options_ptr;
+
+    if (NULL != wlr_backend_ptr) {
+        output_manager_ptr->wlr_allocator_ptr = wlr_allocator_autocreate(
+            output_manager_ptr->wlr_backend_ptr,
+            output_manager_ptr->wlr_renderer_ptr);
+        if (NULL == output_manager_ptr->wlr_allocator_ptr) {
+            bs_log(BS_ERROR, "Failed wlr_allocator_autocreate()");
+            _wlmaker_output_manager_destroy(output_manager_ptr);
+            return NULL;
+        }
+    }
 
     wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
         config_dict_ptr, _wlmaker_output_dict_name);
@@ -228,7 +266,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     }
 
     // FIXME
-    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+    if (NULL != wlr_renderer_ptr) {
         output_manager_ptr->wlr_scene_output_layout_ptr =
             wlr_scene_attach_output_layout(
                 wlr_scene_ptr,
@@ -260,7 +298,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         _wlmaker_output_manager_handle_test);
 
     // FIXME
-    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+    if (NULL != wlr_renderer_ptr) {
         wlmtk_util_connect_listener_signal(
             &output_manager_ptr->wlr_backend_ptr->events.new_output,
             &output_manager_ptr->new_output_listener,
@@ -276,7 +314,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         _wlmaker_output_manager_handle_output_layout_destroy);
 
     // FIXME
-    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+    if (NULL != wlr_renderer_ptr) {
         output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
             wlr_xdg_output_manager_v1_create(
                 wl_display_ptr,
@@ -382,7 +420,7 @@ wlmaker_output_t *wlmaker_output_create(
     // allocator and our renderer. Must be done once, before commiting the
     // output.
     // FIXME
-    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+    if (NULL != wlr_renderer_ptr) {
         if (!wlr_output_init_render(
                 output_ptr->wlr_output_ptr,
                 output_ptr->wlr_allocator_ptr,
@@ -444,7 +482,7 @@ wlmaker_output_t *wlmaker_output_create(
     }
 
     // FIXME
-    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+    if (NULL != wlr_renderer_ptr) {
         if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
             bs_log(BS_ERROR, "Failed wlr_output_test_state() on %s",
                    output_ptr->wlr_output_ptr->name);
@@ -508,6 +546,12 @@ void _wlmaker_output_manager_destroy(
          &output_manager_ptr->apply_listener);
      wlmtk_util_disconnect_listener(
          &output_manager_ptr->destroy_listener);
+
+     if (NULL != output_manager_ptr->wlr_allocator_ptr) {
+        wlr_allocator_destroy(output_manager_ptr->wlr_allocator_ptr);
+        output_manager_ptr->wlr_allocator_ptr = NULL;
+
+     }
 
     free(output_manager_ptr);
 }
@@ -678,7 +722,7 @@ bool _wlmaker_output_manager_add_output(
     }
 
     // FIXME
-    if (NULL != output_manager_ptr->wlr_allocator_ptr) {
+    if (NULL != output_manager_ptr->wlr_renderer_ptr) {
         struct wlr_scene_output *wlr_scene_output_ptr =
             wlr_scene_output_create(
                 output_manager_ptr->wlr_scene_ptr,

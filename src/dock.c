@@ -258,7 +258,6 @@ void test_create_destroy(bs_test_t *test_ptr)
         server.wl_display_ptr,
         NULL,
         NULL,
-        NULL,
         server.wlr_scene_ptr,
         &options,
         wlmcfg_dict_from_object(object_ptr));

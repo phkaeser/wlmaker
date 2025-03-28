@@ -101,8 +101,6 @@ struct _wlmaker_server_t {
     /** Idle monitor. */
     wlmaker_idle_monitor_t    *idle_monitor_ptr;
 
-    /** wlroots allocator. */
-    struct wlr_allocator      *wlr_allocator_ptr;
     /** wlroots backend. */
     struct wlr_backend        *wlr_backend_ptr;
     /** wlroots session. Populated from wlr_backend_autocreate(). */
