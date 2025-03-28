@@ -34,6 +34,9 @@ void wlmtk_test_wlr_output_init(struct wlr_output *wlr_output_ptr)
     wl_list_init(&wlr_output_ptr->resources);
     wl_signal_init(&wlr_output_ptr->events.commit);
     wl_signal_init(&wlr_output_ptr->events.damage);
+    wl_signal_init(&wlr_output_ptr->events.destroy);
+    wl_signal_init(&wlr_output_ptr->events.frame);
+    wl_signal_init(&wlr_output_ptr->events.request_state);
     wl_signal_init(&wlr_output_ptr->events.needs_frame);
 }
 
