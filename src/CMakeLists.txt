@@ -30,7 +30,6 @@ SET(PUBLIC_HEADER_FILES
   layer_shell.h
   launcher.h
   lock_mgr.h
-  output_manager.h
   root_menu.h
   server.h
   subprocess_monitor.h
@@ -62,7 +61,6 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   layer_panel.c
   layer_shell.c
   lock_mgr.c
-  output_manager.c
   root_menu.c
   server.c
   subprocess_monitor.c
@@ -86,6 +84,7 @@ SET_TARGET_PROPERTIES(
 ADD_DEPENDENCIES(
   wlmaker_lib
   protocol_headers
+  backend
   conf
   toolkit
   embedded_configuration
@@ -96,6 +95,7 @@ ADD_DEPENDENCIES(
 
 TARGET_LINK_LIBRARIES(
   wlmaker_lib
+  backend
   base
   conf
   toolkit
@@ -113,6 +113,7 @@ TARGET_INCLUDE_DIRECTORIES(
   wlmaker_lib PUBLIC
   # Keep wlroots first -- multiple versions may interfere (#117).
   ${WLROOTS_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}

@@ -14,17 +14,14 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-SET(PUBLIC_HEADER_FILES
-  output_manager.h
-)
+SET(PUBLIC_HEADER_FILES output_manager.h)
 
-ADD_LIBRARY(backend STATIC)
-TARGET_SOURCES(backend PRIVATE
-  output_manager.c
-)
+ADD_LIBRARY(backend STATIC output_manager.c)
 
 TARGET_INCLUDE_DIRECTORIES(
-  backend PRIVATE
+  backend
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE
   ${WLROOTS_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
@@ -40,10 +37,4 @@ TARGET_COMPILE_OPTIONS(
   ${WAYLAND_CFLAGS_OTHER}
 )
 
-TARGET_LINK_LIBRARIES(
-  backend
-  base
-  conf
-  toolkit
-  PkgConfig::WLROOTS
-)
+TARGET_LINK_LIBRARIES(backend PRIVATE base conf toolkit PkgConfig::WLROOTS)
