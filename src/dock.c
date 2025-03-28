@@ -279,6 +279,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
     wlmtk_root_destroy(server.root_ptr);
+    wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
