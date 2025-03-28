@@ -624,8 +624,8 @@ bool _wlmaker_output_manager_add_output(
     bs_dllist_push_back(
         output_manager_ptr->server_outputs_ptr,
         &output_ptr->node);
-
     output_ptr->output_manager_ptr = output_manager_ptr;
+
     return true;
 }
 
@@ -712,6 +712,11 @@ void _wlmaker_output_manager_handle_new_output(
     }
 
     _wlmaker_output_manager_add_output(output_manager_ptr, output_ptr);
+
+    _wlmaker_output_manager_handle_output_layout_change(
+        &output_manager_ptr->output_layout_change_listener,
+        output_manager_ptr->wlr_output_layout_ptr);
+
     bs_log(BS_INFO, "Added output %p", output_ptr);
 }
 
