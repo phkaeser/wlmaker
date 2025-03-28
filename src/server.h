@@ -233,16 +233,6 @@ wlmaker_server_t *wlmaker_server_create(
 void wlmaker_server_destroy(wlmaker_server_t *server_ptr);
 
 /**
- * Returns the primary output. Currently, that's the first one added.
- *
- * @param server_ptr
- *
- * @return The primary output, or NULL if there is no output.
- */
-wlmaker_output_t *wlmaker_server_get_primary_output(
-    wlmaker_server_t *server_ptr);
-
-/**
  * Binds a particular key to a callback.
  *
  * @param server_ptr

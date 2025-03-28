@@ -207,10 +207,14 @@ wlmaker_clip_t *wlmaker_clip_create(
         wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
-    wlmtk_layer_add_panel(
-        layer_ptr,
-        wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
-        wlmaker_server_get_primary_output(server_ptr)->wlr_output_ptr);
+    if (!wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
+            wlmaker_output_manager_get_primary_output(
+                clip_ptr->server_ptr->output_manager_ptr))) {
+        wlmaker_clip_destroy(clip_ptr);
+        return NULL;
+    }
 
     char full_path[PATH_MAX];
     char *path_ptr = bs_file_resolve_and_lookup_from_paths(
@@ -276,10 +280,12 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
     }
 
     if (NULL != clip_ptr->wlmtk_dock_ptr) {
-        wlmtk_layer_remove_panel(
-            wlmtk_panel_get_layer(wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr)),
-            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
-
+        if (NULL != wlmtk_panel_get_layer(
+                wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr))) {
+            wlmtk_layer_remove_panel(
+                wlmtk_panel_get_layer(wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr)),
+                wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+        }
         wlmtk_dock_destroy(clip_ptr->wlmtk_dock_ptr);
         clip_ptr->wlmtk_dock_ptr = NULL;
     }
@@ -728,11 +734,11 @@ void _wlmaker_clip_handle_workspace_changed(
     if (NULL != current_layer_ptr) {
         wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
     }
-    wlmtk_layer_add_panel(
-        new_layer_ptr,
-        panel_ptr,
-        wlmaker_server_get_primary_output(
-            clip_ptr->server_ptr)->wlr_output_ptr);
+    BS_ASSERT(wlmtk_layer_add_panel(
+                  new_layer_ptr,
+                  panel_ptr,
+                  wlmaker_output_manager_get_primary_output(
+                      clip_ptr->server_ptr->output_manager_ptr)));
 
     _wlmaker_clip_update_overlay(clip_ptr);
 }

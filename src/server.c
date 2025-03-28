@@ -457,17 +457,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmaker_output_t *wlmaker_server_get_primary_output(
-    wlmaker_server_t *server_ptr)
-{
-    if (bs_dllist_empty(&server_ptr->outputs)) return NULL;
-
-    wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
-        server_ptr->outputs.head_ptr, wlmaker_output_t, node);
-    return output_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr)
 {
     server_ptr->task_list_enabled = true;

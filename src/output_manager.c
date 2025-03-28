@@ -284,6 +284,17 @@ struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
 }
 
 /* ------------------------------------------------------------------------- */
+struct wlr_output *wlmaker_output_manager_get_primary_output(
+    wlmaker_output_manager_t *output_manager_ptr)
+{
+    if (bs_dllist_empty(output_manager_ptr->server_outputs_ptr)) return NULL;
+
+    wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
+        output_manager_ptr->server_outputs_ptr->head_ptr, wlmaker_output_t, node);
+    return output_ptr->wlr_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmaker_output_t *wlmaker_output_create(
     struct wlr_output *wlr_output_ptr,
     struct wlr_allocator *wlr_allocator_ptr,

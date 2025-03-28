@@ -117,7 +117,8 @@ wlmaker_dock_t *wlmaker_dock_create(
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr),
-            wlmaker_server_get_primary_output(server_ptr)->wlr_output_ptr)) {
+            wlmaker_output_manager_get_primary_output(
+                dock_ptr->server_ptr->output_manager_ptr))) {
         wlmaker_dock_destroy(dock_ptr);
         return NULL;
     }
@@ -216,11 +217,11 @@ void _wlmaker_dock_handle_workspace_changed(
     if (NULL != current_layer_ptr) {
         wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
     }
-    wlmtk_layer_add_panel(
-        new_layer_ptr,
-        panel_ptr,
-        wlmaker_server_get_primary_output(
-            dock_ptr->server_ptr)->wlr_output_ptr);
+    BS_ASSERT(wlmtk_layer_add_panel(
+                  new_layer_ptr,
+                  panel_ptr,
+                  wlmaker_output_manager_get_primary_output(
+                      dock_ptr->server_ptr->output_manager_ptr)));
 }
 
 /* == Unit tests =========================================================== */

@@ -88,6 +88,16 @@ struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
     wlmaker_output_manager_t *output_manager_ptr);
 
 /**
+ * Returns the primary output. Currently that is the first output added.
+ *
+ * @param output_manager_ptr
+ *
+ * @return A pointer to the `struct wlr_output` for the primary output.
+ */
+struct wlr_output *wlmaker_output_manager_get_primary_output(
+    wlmaker_output_manager_t *output_manager_ptr);
+
+/**
  * Creates an output device from |wlr_output_ptr|.
  *
  * @param wlr_output_ptr
