@@ -433,11 +433,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->cursor_ptr = NULL;
     }
 
-    if (NULL != server_ptr->wlr_output_layout_ptr) {
-        wlr_output_layout_destroy(server_ptr->wlr_output_layout_ptr);
-        server_ptr->wlr_output_layout_ptr = NULL;
-    }
-
     if (NULL != server_ptr->wlr_renderer_ptr) {
         wlr_renderer_destroy(server_ptr->wlr_renderer_ptr);
         server_ptr->wlr_renderer_ptr = NULL;
@@ -501,7 +496,8 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr)
 {
     return wlr_output_layout_output_at(
-        server_ptr->wlr_output_layout_ptr,
+        wlmaker_output_manager_wlr_output_layout(
+            server_ptr->output_manager_ptr),
         server_ptr->cursor_ptr->wlr_cursor_ptr->x,
         server_ptr->cursor_ptr->wlr_cursor_ptr->y);
 }

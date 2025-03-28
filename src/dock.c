@@ -243,12 +243,13 @@ void test_create_destroy(bs_test_t *test_ptr)
         .wl_display_ptr = wl_display_create(),
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
-    server.wlr_output_layout_ptr = wlr_output_layout_create(server.wl_display_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        server.wl_display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
 
     server.root_ptr = wlmtk_root_create(
         server.wlr_scene_ptr,
-        server.wlr_output_layout_ptr,
+        wlr_output_layout_ptr,
         NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
@@ -261,7 +262,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlmaker_output_t wo = { .wlr_output_ptr = &output };
     bs_dllist_push_back(&server.outputs, &wo.node);
-    wlr_output_layout_add(server.wlr_output_layout_ptr, &output, 0, 0);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
     wlmaker_config_style_t style = {};
 
