@@ -148,8 +148,6 @@ struct _wlmaker_server_t {
      */
     wlmaker_xwl_t             *xwl_ptr;
 
-    /** The list of outputs. */
-    bs_dllist_t               outputs;
     /** The list of input devices. */
     bs_dllist_t               input_devices;
 

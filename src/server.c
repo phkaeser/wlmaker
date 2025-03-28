@@ -192,7 +192,6 @@ wlmaker_server_t *wlmaker_server_create(
         server_ptr->wlr_backend_ptr,
         server_ptr->wlr_renderer_ptr,
         server_ptr->wlr_scene_ptr,
-        &server_ptr->outputs,
         &server_ptr->options_ptr->output,
         server_ptr->config_dict_ptr);
     if (NULL == server_ptr->output_manager_ptr) {

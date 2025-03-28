@@ -244,23 +244,14 @@ void test_create_destroy(bs_test_t *test_ptr)
         .wl_display_ptr = wl_display_create(),
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        server.wl_display_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
-
-    server.root_ptr = wlmtk_root_create(
-        server.wlr_scene_ptr,
-        wlr_output_layout_ptr,
-        NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
-
-    wlmtk_tile_style_t ts = {};
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
 
     wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_string(
         "{ Output = { Transformation = Normal; Scale = 1 }}");
+    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
+        wlmcfg_create_object_from_plist_data(
+            embedded_binary_default_state_data,
+            embedded_binary_default_state_size));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
     wlmaker_output_manager_options_t options = {};
     wlmaker_output_manager_t *om_ptr = wlmaker_output_manager_create(
@@ -269,23 +260,27 @@ void test_create_destroy(bs_test_t *test_ptr)
         NULL,
         NULL,
         server.wlr_scene_ptr,
-        &server.outputs,
         &options,
         wlmcfg_dict_from_object(object_ptr));
+    server.output_manager_ptr = om_ptr;
 
-    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1, .enabled = true };
     wlmtk_test_wlr_output_init(&output);
 
-    // FIXME    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+    server.root_ptr = wlmtk_root_create(
+        server.wlr_scene_ptr,
+        wlmaker_output_manager_wlr_output_layout(om_ptr),
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
+
     wlmaker_output_manager_add_wlr_output(om_ptr, &output);
 
     wlmaker_config_style_t style = {};
-
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-        wlmcfg_create_object_from_plist_data(
-            embedded_binary_default_state_data,
-            embedded_binary_default_state_size));
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
     wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, dict_ptr, &style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dock_ptr);

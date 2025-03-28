@@ -71,11 +71,14 @@ struct _wlmaker_output_manager_t {
 
     /** Listener for wlr_backend::events::new_input. */
     struct wl_listener        new_output_listener;
+
+    /** Listener for wlr_output_layout::events.destroy. */
+    struct wl_listener        output_layout_destroy_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
-    /** List of outputs. FIXME: Move into this file. */
-    bs_dllist_t               *server_outputs_ptr;
+    /** List of outputs. Connects @ref wlmaker_output_t::node. */
+    bs_dllist_t               outputs;
 
     /** Output options. */
     wlmaker_output_manager_options_t options;
@@ -135,6 +138,9 @@ static void _wlmaker_output_manager_handle_new_output(
 static void _wlmaker_output_manager_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmaker_output_manager_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmaker_output_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -183,7 +189,6 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    bs_dllist_t *server_outputs_ptr,
     const wlmaker_output_manager_options_t *options_ptr,
     wlmcfg_dict_t *config_dict_ptr)
 {
@@ -194,7 +199,6 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     output_manager_ptr->wlr_backend_ptr = wlr_backend_ptr;
     output_manager_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
     output_manager_ptr->wlr_scene_ptr = wlr_scene_ptr;
-    output_manager_ptr->server_outputs_ptr = server_outputs_ptr;
     output_manager_ptr->options = *options_ptr;
 
     wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
@@ -223,14 +227,17 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         return NULL;
     }
 
-    output_manager_ptr->wlr_scene_output_layout_ptr =
-        wlr_scene_attach_output_layout(
-            wlr_scene_ptr,
-            output_manager_ptr->wlr_output_layout_ptr);
-    if (NULL == output_manager_ptr->wlr_scene_output_layout_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
-        _wlmaker_output_manager_destroy(output_manager_ptr);
-        return NULL;
+    // FIXME
+    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+        output_manager_ptr->wlr_scene_output_layout_ptr =
+            wlr_scene_attach_output_layout(
+                wlr_scene_ptr,
+                output_manager_ptr->wlr_output_layout_ptr);
+        if (NULL == output_manager_ptr->wlr_scene_output_layout_ptr) {
+            bs_log(BS_ERROR, "Failed wlr_scene_attach_output_layout()");
+            _wlmaker_output_manager_destroy(output_manager_ptr);
+            return NULL;
+        }
     }
 
     output_manager_ptr->wlr_output_manager_v1_ptr =
@@ -253,7 +260,7 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         _wlmaker_output_manager_handle_test);
 
     // FIXME
-    if (NULL != output_manager_ptr->wlr_backend_ptr) {
+    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
         wlmtk_util_connect_listener_signal(
             &output_manager_ptr->wlr_backend_ptr->events.new_output,
             &output_manager_ptr->new_output_listener,
@@ -263,20 +270,34 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         &output_manager_ptr->wlr_output_layout_ptr->events.change,
         &output_manager_ptr->output_layout_change_listener,
         _wlmaker_output_manager_handle_output_layout_change);
+    wlmtk_util_connect_listener_signal(
+        &output_manager_ptr->wlr_output_layout_ptr->events.destroy,
+        &output_manager_ptr->output_layout_destroy_listener,
+        _wlmaker_output_manager_handle_output_layout_destroy);
 
-    output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
-        wlr_xdg_output_manager_v1_create(
-            wl_display_ptr,
-            output_manager_ptr->wlr_output_layout_ptr);
-    if (NULL == output_manager_ptr->wlr_xdg_output_manager_v1_ptr) {
-        _wlmaker_output_manager_destroy(output_manager_ptr);
-        return NULL;
+    // FIXME
+    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
+        output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
+            wlr_xdg_output_manager_v1_create(
+                wl_display_ptr,
+                output_manager_ptr->wlr_output_layout_ptr);
+        if (NULL == output_manager_ptr->wlr_xdg_output_manager_v1_ptr) {
+            _wlmaker_output_manager_destroy(output_manager_ptr);
+            return NULL;
+        }
     }
 
     _wlmaker_output_manager_handle_output_layout_change(
         &output_manager_ptr->output_layout_change_listener,
         output_manager_ptr->wlr_output_layout_ptr);
     return output_manager_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+size_t wlmaker_output_manager_outputs(
+    wlmaker_output_manager_t *output_manager_ptr)
+{
+    return bs_dllist_size(&output_manager_ptr->outputs);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -318,10 +339,10 @@ struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
 struct wlr_output *wlmaker_output_manager_get_primary_output(
     wlmaker_output_manager_t *output_manager_ptr)
 {
-    if (bs_dllist_empty(output_manager_ptr->server_outputs_ptr)) return NULL;
+    if (bs_dllist_empty(&output_manager_ptr->outputs)) return NULL;
 
     wlmaker_output_t *output_ptr = BS_CONTAINER_OF(
-        output_manager_ptr->server_outputs_ptr->head_ptr, wlmaker_output_t, node);
+        output_manager_ptr->outputs.head_ptr, wlmaker_output_t, node);
     return output_ptr->wlr_output_ptr;
 }
 
@@ -361,8 +382,7 @@ wlmaker_output_t *wlmaker_output_create(
     // allocator and our renderer. Must be done once, before commiting the
     // output.
     // FIXME
-    if (NULL != output_ptr->wlr_allocator_ptr &&
-        NULL != output_ptr->wlr_renderer_ptr) {
+    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
         if (!wlr_output_init_render(
                 output_ptr->wlr_output_ptr,
                 output_ptr->wlr_allocator_ptr,
@@ -424,8 +444,7 @@ wlmaker_output_t *wlmaker_output_create(
     }
 
     // FIXME
-    if (NULL != output_ptr->wlr_allocator_ptr &&
-        NULL != output_ptr->wlr_renderer_ptr) {
+    if (NULL != wlr_allocator_ptr && NULL != wlr_renderer_ptr) {
         if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
             bs_log(BS_ERROR, "Failed wlr_output_test_state() on %s",
                    output_ptr->wlr_output_ptr->name);
@@ -478,23 +497,17 @@ void _wlmaker_output_manager_destroy(
 {
     wlmtk_util_disconnect_listener(
         &output_manager_ptr->new_output_listener);
-    wlmtk_util_disconnect_listener(
+     wlmtk_util_disconnect_listener(
         &output_manager_ptr->output_layout_change_listener);
+     wlmtk_util_disconnect_listener(
+        &output_manager_ptr->output_layout_destroy_listener);
 
-    if (NULL != output_manager_ptr->wlr_output_layout_ptr) {
-        wlr_output_layout_destroy(output_manager_ptr->wlr_output_layout_ptr);
-        output_manager_ptr->wlr_output_layout_ptr = NULL;
-    }
-
-    if (NULL != output_manager_ptr->wlr_output_manager_v1_ptr) {
-        wlmtk_util_disconnect_listener(
-            &output_manager_ptr->test_listener);
-        wlmtk_util_disconnect_listener(
-            &output_manager_ptr->apply_listener);
-        wlmtk_util_disconnect_listener(
-            &output_manager_ptr->destroy_listener);
-        output_manager_ptr->wlr_output_manager_v1_ptr = NULL;
-    }
+     wlmtk_util_disconnect_listener(
+         &output_manager_ptr->test_listener);
+     wlmtk_util_disconnect_listener(
+         &output_manager_ptr->apply_listener);
+     wlmtk_util_disconnect_listener(
+         &output_manager_ptr->destroy_listener);
 
     free(output_manager_ptr);
 }
@@ -663,17 +676,20 @@ bool _wlmaker_output_manager_add_output(
             output_ptr->wlr_output_ptr->name);
         return false;
     }
-    struct wlr_scene_output *wlr_scene_output_ptr =
-        wlr_scene_output_create(
-            output_manager_ptr->wlr_scene_ptr,
-            output_ptr->wlr_output_ptr);
-    wlr_scene_output_layout_add_output(
-        output_manager_ptr->wlr_scene_output_layout_ptr,
-        wlr_output_layout_output_ptr,
-        wlr_scene_output_ptr);
-    bs_dllist_push_back(
-        output_manager_ptr->server_outputs_ptr,
-        &output_ptr->node);
+
+    // FIXME
+    if (NULL != output_manager_ptr->wlr_allocator_ptr) {
+        struct wlr_scene_output *wlr_scene_output_ptr =
+            wlr_scene_output_create(
+                output_manager_ptr->wlr_scene_ptr,
+                output_ptr->wlr_output_ptr);
+        wlr_scene_output_layout_add_output(
+            output_manager_ptr->wlr_scene_output_layout_ptr,
+            wlr_output_layout_output_ptr,
+            wlr_scene_output_ptr);
+    }
+
+    bs_dllist_push_back(&output_manager_ptr->outputs, &output_ptr->node);
     output_ptr->output_manager_ptr = output_manager_ptr;
 
     return true;
@@ -685,8 +701,7 @@ void _wlmaker_output_manager_remove_output(
     wlmaker_output_manager_t *output_manager_ptr,
     wlmaker_output_t *output_ptr)
 {
-    bs_dllist_remove(
-        output_manager_ptr->server_outputs_ptr, &output_ptr->node);
+    bs_dllist_remove(&output_manager_ptr->outputs, &output_ptr->node);
     output_ptr->output_manager_ptr = NULL;
     wlr_output_layout_remove(
         output_manager_ptr->wlr_output_layout_ptr,
@@ -701,6 +716,7 @@ void _wlmaker_output_manager_handle_destroy(
 {
     wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_output_manager_t, destroy_listener);
+
     _wlmaker_output_manager_destroy(output_manager_ptr);
 }
 
@@ -752,6 +768,20 @@ void _wlmaker_output_manager_handle_new_output(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles dtor for @ref wlmaker_output_manager_t::wlr_output_layout_ptr. */
+void _wlmaker_output_manager_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmaker_output_manager_t,
+        output_layout_destroy_listener);
+
+    _wlmaker_output_manager_destroy(output_manager_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles layout change events. */
 void _wlmaker_output_manager_handle_output_layout_change(
     struct wl_listener *listener_ptr,
@@ -770,7 +800,7 @@ void _wlmaker_output_manager_handle_output_layout_change(
     }
 
     bs_dllist_for_each(
-        output_manager_ptr->server_outputs_ptr,
+        &output_manager_ptr->outputs,
         _wlmaker_output_manager_add_dlnode_output,
         &arg);
 

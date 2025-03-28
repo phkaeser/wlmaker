@@ -399,7 +399,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     rv = EXIT_SUCCESS;
     if (wlr_backend_start(server_ptr->wlr_backend_ptr)) {
 
-        if (bs_dllist_empty(&server_ptr->outputs)) {
+        if (0 >= wlmaker_output_manager_outputs(
+                server_ptr->output_manager_ptr)) {
             bs_log(BS_ERROR, "No outputs available!");
             return EXIT_FAILURE;
         }

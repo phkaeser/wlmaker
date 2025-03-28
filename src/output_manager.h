@@ -79,9 +79,12 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    bs_dllist_t *server_outputs_ptr,
     const wlmaker_output_manager_options_t *options_ptr,
     wlmcfg_dict_t *config_dict_ptr);
+
+/** Returns the number of outputs. */
+size_t wlmaker_output_manager_outputs(
+    wlmaker_output_manager_t *output_manager_ptr);
 
 /** Adds the output. */
 bool wlmaker_output_manager_add_wlr_output(
