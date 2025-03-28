@@ -30,7 +30,9 @@
 void wlmtk_test_wlr_output_init(struct wlr_output *wlr_output_ptr)
 {
     wlr_addon_set_init(&wlr_output_ptr->addons);
+    wlr_addon_set_init(&wlr_output_ptr->addons);
     wl_list_init(&wlr_output_ptr->display_destroy.link);
+    wl_list_init(&wlr_output_ptr->modes);
     wl_list_init(&wlr_output_ptr->resources);
     wl_signal_init(&wlr_output_ptr->events.commit);
     wl_signal_init(&wlr_output_ptr->events.damage);

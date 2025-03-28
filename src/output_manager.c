@@ -252,10 +252,13 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         &output_manager_ptr->test_listener,
         _wlmaker_output_manager_handle_test);
 
-    wlmtk_util_connect_listener_signal(
-        &output_manager_ptr->wlr_backend_ptr->events.new_output,
-        &output_manager_ptr->new_output_listener,
-        _wlmaker_output_manager_handle_new_output);
+    // FIXME
+    if (NULL != output_manager_ptr->wlr_backend_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &output_manager_ptr->wlr_backend_ptr->events.new_output,
+            &output_manager_ptr->new_output_listener,
+            _wlmaker_output_manager_handle_new_output);
+    }
     wlmtk_util_connect_listener_signal(
         &output_manager_ptr->wlr_output_layout_ptr->events.change,
         &output_manager_ptr->output_layout_change_listener,
@@ -274,6 +277,34 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
         &output_manager_ptr->output_layout_change_listener,
         output_manager_ptr->wlr_output_layout_ptr);
     return output_manager_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_output_manager_add_wlr_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
+    wlmaker_output_t *output_ptr = wlmaker_output_create(
+        wlr_output_ptr,
+        output_manager_ptr->wlr_allocator_ptr,
+        output_manager_ptr->wlr_renderer_ptr,
+        output_manager_ptr->wlr_scene_ptr,
+        output_manager_ptr->options.width,
+        output_manager_ptr->options.height,
+        &output_manager_ptr->config);
+    if (NULL == output_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_output_create()");
+        return false;
+    }
+
+    _wlmaker_output_manager_add_output(output_manager_ptr, output_ptr);
+
+    _wlmaker_output_manager_handle_output_layout_change(
+        &output_manager_ptr->output_layout_change_listener,
+        output_manager_ptr->wlr_output_layout_ptr);
+
+    bs_log(BS_INFO, "Added output %p", output_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -329,14 +360,18 @@ wlmaker_output_t *wlmaker_output_create(
     // From tinwywl: Configures the output created by the backend to use our
     // allocator and our renderer. Must be done once, before commiting the
     // output.
-    if (!wlr_output_init_render(
-            output_ptr->wlr_output_ptr,
-            output_ptr->wlr_allocator_ptr,
-            output_ptr->wlr_renderer_ptr)) {
-        bs_log(BS_ERROR, "Failed wlr_output_init_renderer() on %s",
-               output_ptr->wlr_output_ptr->name);
-        wlmaker_output_destroy(output_ptr);
-        return NULL;
+    // FIXME
+    if (NULL != output_ptr->wlr_allocator_ptr &&
+        NULL != output_ptr->wlr_renderer_ptr) {
+        if (!wlr_output_init_render(
+                output_ptr->wlr_output_ptr,
+                output_ptr->wlr_allocator_ptr,
+                output_ptr->wlr_renderer_ptr)) {
+            bs_log(BS_ERROR, "Failed wlr_output_init_renderer() on %s",
+                   output_ptr->wlr_output_ptr->name);
+            wlmaker_output_destroy(output_ptr);
+            return NULL;
+        }
     }
 
     struct wlr_output_state state;
@@ -388,22 +423,26 @@ wlmaker_output_t *wlmaker_output_create(
         wlr_output_state_set_custom_mode(&state, width, height, 0);
     }
 
-    if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
-        bs_log(BS_ERROR, "Failed wlr_output_test_state() on %s",
-               output_ptr->wlr_output_ptr->name);
-        wlmaker_output_destroy(output_ptr);
-        wlr_output_state_finish(&state);
-        return NULL;
-    }
+    // FIXME
+    if (NULL != output_ptr->wlr_allocator_ptr &&
+        NULL != output_ptr->wlr_renderer_ptr) {
+        if (!wlr_output_test_state(output_ptr->wlr_output_ptr, &state)) {
+            bs_log(BS_ERROR, "Failed wlr_output_test_state() on %s",
+                   output_ptr->wlr_output_ptr->name);
+            wlmaker_output_destroy(output_ptr);
+            wlr_output_state_finish(&state);
+            return NULL;
+        }
 
-    // Enable the output and commit.
-    bool rv = wlr_output_commit_state(output_ptr->wlr_output_ptr, &state);
-    wlr_output_state_finish(&state);
-    if (!rv) {
-        bs_log(BS_ERROR, "Failed wlr_output_commit_state() on %s",
-               output_ptr->wlr_output_ptr->name);
-        wlmaker_output_destroy(output_ptr);
-        return NULL;
+        // Enable the output and commit.
+        bool rv = wlr_output_commit_state(output_ptr->wlr_output_ptr, &state);
+        wlr_output_state_finish(&state);
+        if (!rv) {
+            bs_log(BS_ERROR, "Failed wlr_output_commit_state() on %s",
+                   output_ptr->wlr_output_ptr->name);
+            wlmaker_output_destroy(output_ptr);
+            return NULL;
+        }
     }
 
     bs_log(BS_INFO, "Created output %s", output_ptr->wlr_output_ptr->name);
@@ -709,26 +748,7 @@ void _wlmaker_output_manager_handle_new_output(
         listener_ptr, wlmaker_output_manager_t, new_output_listener);
     struct wlr_output *wlr_output_ptr = data_ptr;
 
-    wlmaker_output_t *output_ptr = wlmaker_output_create(
-        wlr_output_ptr,
-        output_manager_ptr->wlr_allocator_ptr,
-        output_manager_ptr->wlr_renderer_ptr,
-        output_manager_ptr->wlr_scene_ptr,
-        output_manager_ptr->options.width,
-        output_manager_ptr->options.height,
-        &output_manager_ptr->config);
-    if (NULL == output_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_output_create()");
-        return;
-    }
-
-    _wlmaker_output_manager_add_output(output_manager_ptr, output_ptr);
-
-    _wlmaker_output_manager_handle_output_layout_change(
-        &output_manager_ptr->output_layout_change_listener,
-        output_manager_ptr->wlr_output_layout_ptr);
-
-    bs_log(BS_INFO, "Added output %p", output_ptr);
+    wlmaker_output_manager_add_wlr_output(output_manager_ptr, wlr_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

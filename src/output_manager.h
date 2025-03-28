@@ -83,6 +83,11 @@ wlmaker_output_manager_t *wlmaker_output_manager_create(
     const wlmaker_output_manager_options_t *options_ptr,
     wlmcfg_dict_t *config_dict_ptr);
 
+/** Adds the output. */
+bool wlmaker_output_manager_add_wlr_output(
+    wlmaker_output_manager_t *output_manager_ptr,
+    struct wlr_output *wlr_output_ptr);
+
 /** Accessor for @ref wlmaker_output_manager_t::wlr_output_layout_ptr. */
 struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
     wlmaker_output_manager_t *output_manager_ptr);

@@ -259,11 +259,25 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
 
+    wlmcfg_object_t *object_ptr = wlmcfg_create_object_from_plist_string(
+        "{ Output = { Transformation = Normal; Scale = 1 }}");
+
+    wlmaker_output_manager_options_t options = {};
+    wlmaker_output_manager_t *om_ptr = wlmaker_output_manager_create(
+        server.wl_display_ptr,
+        NULL,
+        NULL,
+        NULL,
+        server.wlr_scene_ptr,
+        &server.outputs,
+        &options,
+        wlmcfg_dict_from_object(object_ptr));
+
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
-    wlmaker_output_t wo = { .wlr_output_ptr = &output };
-    bs_dllist_push_back(&server.outputs, &wo.node);
-    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    // FIXME    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+    wlmaker_output_manager_add_wlr_output(om_ptr, &output);
 
     wlmaker_config_style_t style = {};
 
