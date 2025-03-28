@@ -28,6 +28,7 @@
 #include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

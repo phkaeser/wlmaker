@@ -20,13 +20,17 @@
 
 #include "output_manager.h"
 
+#include <conf/decode.h>
+#include <conf/model.h>
 #include <libbase/libbase.h>
-#include "toolkit/toolkit.h"
+#include <toolkit/toolkit.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend/wayland.h>
 #include <wlr/backend/x11.h>
+#include <wlr/render/allocator.h>
 #include <wlr/types/wlr_output_management_v1.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
 #undef WLR_USE_UNSTABLE
 

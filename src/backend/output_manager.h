@@ -22,12 +22,22 @@
 
 #include <wayland-server-core.h>
 
+#include <conf/model.h>
+#include <toolkit/toolkit.h>
+
+struct wlr_allocator;
+struct wlr_backend;
+
 /** Handle for an output device. */
 typedef struct _wlmaker_output_t wlmaker_output_t;
 /** Forward declaration: Handle for output manager. */
 typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
 /** Forward declaration. */
 typedef struct _wlmaker_output_config_t wlmaker_output_config_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 /** Options for the output manager. */
 typedef struct {
@@ -36,12 +46,6 @@ typedef struct {
     /** Preferred output height, for windowed mode. */
     uint32_t                  height;
 } wlmaker_output_manager_options_t;
-
-#include "server.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
 
 /** Ctor. */
 wlmaker_output_manager_t *wlmaker_output_manager_create(

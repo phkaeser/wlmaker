@@ -24,15 +24,14 @@
 #include <wayland-server-core.h>
 
 #include "toolkit/toolkit.h"
+#include <backend/output_manager.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
-#include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_subcompositor.h>
 #undef WLR_USE_UNSTABLE
@@ -58,7 +57,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "corner.h"
 #include "cursor.h"
 #include "idle.h"
-#include "output_manager.h"
 #include "keyboard.h"
 #include "layer_shell.h"
 #include "lock_mgr.h"
