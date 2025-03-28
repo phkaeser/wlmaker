@@ -42,7 +42,7 @@ struct _wlmaker_output_config_t {
     enum wl_output_transform  transformation;
     /** Default scaling factor to use for the output(s). */
     double                    scale;
-} ;
+};
 
 /** Handle for a compositor output device. */
 struct _wlmaker_output_t {
