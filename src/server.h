@@ -194,9 +194,6 @@ struct _wlmaker_server_t {
     /** Signal: Triggered whenever a window is destroyed. */
     struct wl_signal          window_destroyed_event;
 
-    /** Signal: Output dimensions changed. Parameter: struct wlr_box*. */
-    struct wl_signal          output_layout_changed_event;
-
     /** Temporary: Points to the @ref wlmtk_dock_t of the clip. */
     wlmtk_dock_t              *clip_dock_ptr;
 
