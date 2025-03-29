@@ -30,7 +30,6 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 

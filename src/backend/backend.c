@@ -19,6 +19,8 @@
  */
 
 #include "backend.h"
+#include "output.h"
+#include "output_manager.h"
 
 #include <conf/decode.h>
 #include <libbase/libbase.h>
@@ -36,8 +38,6 @@
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
-#include "output.h"
-#include "output_manager.h"
 
 /* == Declarations ========================================================= */
 
