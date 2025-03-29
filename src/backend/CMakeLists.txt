@@ -14,9 +14,9 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-SET(PUBLIC_HEADER_FILES output_manager.h)
+SET(PUBLIC_HEADER_FILES backend.h output.h output_manager.h)
 
-ADD_LIBRARY(backend STATIC output_manager.c)
+ADD_LIBRARY(backend STATIC backend.c output.c output_manager.c)
 
 TARGET_INCLUDE_DIRECTORIES(
   backend

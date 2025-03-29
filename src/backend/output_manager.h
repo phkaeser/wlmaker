@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_OUTPUT_MANAGER_H__
-#define __WLMAKER_OUTPUT_MANAGER_H__
+#ifndef __WLMBE_OUTPUT_MANAGER_H__
+#define __WLMBE_OUTPUT_MANAGER_H__
 
 #include <wayland-server-core.h>
 
@@ -28,89 +28,26 @@
 struct wlr_allocator;
 struct wlr_backend;
 
-/** Handle for an output device. */
-typedef struct _wlmaker_output_t wlmaker_output_t;
 /** Forward declaration: Handle for output manager. */
-typedef struct _wlmaker_output_manager_t wlmaker_output_manager_t;
-/** Forward declaration. */
-typedef struct _wlmaker_output_config_t wlmaker_output_config_t;
+typedef struct _wlmbe_output_manager_t wlmbe_output_manager_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-/** Options for the output manager. */
-typedef struct {
-    /** Preferred output width, for windowed mode. */
-    uint32_t                  width;
-    /** Preferred output height, for windowed mode. */
-    uint32_t                  height;
-} wlmaker_output_manager_options_t;
-
-/** Ctor. */
-wlmaker_output_manager_t *wlmaker_output_manager_create(
+// Wraps two OMs.
+wlmbe_output_manager_t *wlmbe_output_manager_create(
     struct wl_display *wl_display_ptr,
-    struct wlr_backend *wlr_backend_ptr,
-    struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
-    const wlmaker_output_manager_options_t *options_ptr,
-    wlmcfg_dict_t *config_dict_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr,
+    struct wlr_backend *wlr_backend_ptr);
 
-/** Returns the number of outputs. */
-size_t wlmaker_output_manager_outputs(
-    wlmaker_output_manager_t *output_manager_ptr);
-
-/** Adds the output. */
-bool wlmaker_output_manager_add_wlr_output(
-    wlmaker_output_manager_t *output_manager_ptr,
-    struct wlr_output *wlr_output_ptr);
-
-/** Accessor for @ref wlmaker_output_manager_t::wlr_output_layout_ptr. */
-struct wlr_output_layout *wlmaker_output_manager_wlr_output_layout(
-    wlmaker_output_manager_t *output_manager_ptr);
-
-/**
- * Returns the primary output. Currently that is the first output added.
- *
- * @param output_manager_ptr
- *
- * @return A pointer to the `struct wlr_output` for the primary output.
- */
-struct wlr_output *wlmaker_output_manager_get_primary_output(
-    wlmaker_output_manager_t *output_manager_ptr);
-
-/**
- * Creates an output device from |wlr_output_ptr|.
- *
- * @param wlr_output_ptr
- * @param wlr_allocator_ptr
- * @param wlr_renderer_ptr
- * @param wlr_scene_ptr
- * @param width
- * @param height
- * @param config_ptr
- *
- * @return The output device handle or NULL on error.
- */
-wlmaker_output_t *wlmaker_output_create(
-    struct wlr_output *wlr_output_ptr,
-    struct wlr_allocator *wlr_allocator_ptr,
-    struct wlr_renderer *wlr_renderer_ptr,
-    struct wlr_scene *wlr_scene_ptr,
-    uint32_t width,
-    uint32_t height,
-    wlmaker_output_config_t *config_ptr);
-
-/**
- * Destroys the output device handle, as created by wlmaker_output_create().
- *
- * @param output_ptr
- */
-void wlmaker_output_destroy(wlmaker_output_t *output_ptr);
+void wlmbe_output_manager_destroy(
+    wlmbe_output_manager_t *output_manager_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMAKER_OUTPUT_MANAGER_H__ */
+#endif /* __WLMBE_OUTPUT_MANAGER_H__ */
 /* == End of output_manager.h ============================================== */

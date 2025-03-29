@@ -55,8 +55,8 @@ static char *wlmaker_arg_root_menu_file_ptr = NULL;
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {
     .start_xwayland = false,
-    .output = { .width = 0, .height = 0 }
-    ,
+    .width = 0,
+    .height = 0,
 };
 
 /** Log levels. */
@@ -115,14 +115,14 @@ static const bs_arg_t wlmaker_args[] = {
         "only if --width is set, too. Set to 0 for using the output's "
         "preferred dimensions.",
         0, 0, UINT32_MAX,
-        &wlmaker_server_options.output.height),
+        &wlmaker_server_options.height),
     BS_ARG_UINT32(
         "width",
         "Desired output width. Applies when running in windowed mode, and "
         "only if --height is set, too. Set to 0 for using the output's "
         "preferred dimensions.",
         0, 0, UINT32_MAX,
-        &wlmaker_server_options.output.width),
+        &wlmaker_server_options.width),
     BS_ARG_SENTINEL()
 };
 
@@ -267,9 +267,9 @@ bool create_workspaces(
         }
         wlmaker_background_t *background_ptr = wlmaker_background_create(
             workspace_ptr,
-            wlmaker_output_manager_wlr_output_layout(
-                server_ptr->output_manager_ptr),
-            s.color, server_ptr->env_ptr);
+            server_ptr->wlr_output_layout_ptr,
+            s.color,
+            server_ptr->env_ptr);
         if (NULL == background_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
                    server_ptr->env_ptr);
@@ -397,10 +397,9 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     rv = EXIT_SUCCESS;
-    if (wlr_backend_start(server_ptr->wlr_backend_ptr)) {
+    if (wlr_backend_start(wlmbe_backend_wlr(server_ptr->backend_ptr))) {
 
-        if (0 >= wlmaker_output_manager_outputs(
-                server_ptr->output_manager_ptr)) {
+        if (0 >= wlmbe_backend_outputs(server_ptr->backend_ptr)) {
             bs_log(BS_ERROR, "No outputs available!");
             return EXIT_FAILURE;
         }

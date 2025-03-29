@@ -24,16 +24,14 @@
 #include <wayland-server-core.h>
 
 #include "toolkit/toolkit.h"
-#include <backend/output_manager.h>
+#include <backend/backend.h>
+#include <backend/output.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
-#include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
-#include <wlr/types/wlr_subcompositor.h>
 #undef WLR_USE_UNSTABLE
 
 /** A handle for a wlmaker server. */
@@ -78,8 +76,10 @@ extern "C" {
 typedef struct {
     /** Whether to start XWayland. */
     bool                      start_xwayland;
-    /** Output options. */
-    wlmaker_output_manager_options_t output;
+    /** Desired output width, for windowed mode. 0 for no preference. */
+    uint32_t                  width;
+    /** Desired output height, for windowed mode. 0 for no preference. */
+    uint32_t                  height;
 } wlmaker_server_options_t;
 
 /** State of the Wayland server. */
@@ -99,29 +99,18 @@ struct _wlmaker_server_t {
     /** Idle monitor. */
     wlmaker_idle_monitor_t    *idle_monitor_ptr;
 
-    /** wlroots backend. */
-    struct wlr_backend        *wlr_backend_ptr;
-    /** wlroots session. Populated from wlr_backend_autocreate(). */
-    struct wlr_session        *wlr_session_ptr;
-    /** wlroots renderer. */
-    struct wlr_renderer       *wlr_renderer_ptr;
     /** wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
+    /** wlroots output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 
     /** Listener for `new_input` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_input_device_listener;
 
     // From tinywl.c: A few hands-off wlroots interfaces.
 
-    /** The compositor is necessary for clients to allocate surfaces. */
-    struct wlr_compositor     *wlr_compositor_ptr;
-    /**
-     * The subcompositor allows to assign the role of subsurfaces to
-     * surfaces.
-     */
-    struct wlr_subcompositor  *wlr_subcompositor_ptr;
     /** The data device manager handles the clipboard. */
     struct wlr_data_device_manager *wlr_data_device_manager_ptr;
 
@@ -133,8 +122,8 @@ struct _wlmaker_server_t {
     wlmaker_xdg_decoration_manager_t *xdg_decoration_manager_ptr;
     /** Layer shell handler. */
     wlmaker_layer_shell_t     *layer_shell_ptr;
-    /** Output manager. */
-    wlmaker_output_manager_t  *output_manager_ptr;
+    /** Backend handler. */
+    wlmbe_backend_t           *backend_ptr;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
     /**

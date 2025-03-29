@@ -25,10 +25,10 @@
 
 #include <libbase/libbase.h>
 
-#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -135,41 +135,6 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
     }
 
-    // Auto-create the wlroots backend. Can be X11 or direct.
-    server_ptr->wlr_backend_ptr = wlr_backend_autocreate(
-#if WLR_VERSION_NUM >= (18 << 8)
-        wl_display_get_event_loop(server_ptr->wl_display_ptr),
-#else // WLR_VERSION_NUM >= (18 << 8)
-        server_ptr->wl_display_ptr,
-#endif // WLR_VERSION_NUM >= (18 << 8)
-        &server_ptr->wlr_session_ptr);
-    if (NULL == server_ptr->wlr_backend_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
-    // Listen for new (or newly recognized) output and input devices.
-    wlmtk_util_connect_listener_signal(
-        &server_ptr->wlr_backend_ptr->events.new_input,
-        &server_ptr->backend_new_input_device_listener,
-        handle_new_input_device);
-
-    // Auto-create a renderer. Can be specified using WLR_RENDERER env var.
-    server_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(
-        server_ptr->wlr_backend_ptr);
-    if (NULL == server_ptr->wlr_renderer_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_renderer_autocreate()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-    if (!wlr_renderer_init_wl_display(
-            server_ptr->wlr_renderer_ptr, server_ptr->wl_display_ptr)) {
-        bs_log(BS_ERROR, "Failed wlr_render_init_wl_display()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // The scene graph.
     server_ptr->wlr_scene_ptr = wlr_scene_create();
     if (NULL == server_ptr->wlr_scene_ptr) {
@@ -178,23 +143,36 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->output_manager_ptr = wlmaker_output_manager_create(
-        server_ptr->wl_display_ptr,
-        server_ptr->wlr_backend_ptr,
-        server_ptr->wlr_renderer_ptr,
-        server_ptr->wlr_scene_ptr,
-        &server_ptr->options_ptr->output,
-        server_ptr->config_dict_ptr);
-    if (NULL == server_ptr->output_manager_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_output_manager_create()");
+    server_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->wlr_output_layout_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_output_layout_create(%p)",
+               server_ptr->wl_display_ptr);
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
 
+    server_ptr->backend_ptr = wlmbe_backend_create(
+        server_ptr->wl_display_ptr,
+        server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->options_ptr->width,
+        server_ptr->options_ptr->height,
+        server_ptr->config_dict_ptr);
+    if (NULL == server_ptr->backend_ptr) {
+        bs_log(BS_ERROR, "Failed wlmbe_backend_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+    // Listen for new (or newly recognized) output and input devices.
+    wlmtk_util_connect_listener_signal(
+        &wlmbe_backend_wlr(server_ptr->backend_ptr)->events.new_input,
+        &server_ptr->backend_new_input_device_listener,
+        handle_new_input_device);
+
     server_ptr->cursor_ptr = wlmaker_cursor_create(
         server_ptr,
-        wlmaker_output_manager_wlr_output_layout(
-            server_ptr->output_manager_ptr));
+        server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->cursor_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
         wlmaker_server_destroy(server_ptr);
@@ -213,8 +191,7 @@ wlmaker_server_t *wlmaker_server_create(
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
-        wlmaker_output_manager_wlr_output_layout(
-            server_ptr->output_manager_ptr),
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->env_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
@@ -243,20 +220,6 @@ wlmaker_server_t *wlmaker_server_create(
     // The below helpers all setup a listener |display_destroy| for freeing the
     // assets held via the respective create() calls. Hence no need to call a
     // clean-up method from our end.
-    server_ptr->wlr_compositor_ptr = wlr_compositor_create(
-        server_ptr->wl_display_ptr, 5, server_ptr->wlr_renderer_ptr);
-    if (NULL == server_ptr->wlr_compositor_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_compositor_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-    server_ptr->wlr_subcompositor_ptr = wlr_subcompositor_create(
-        server_ptr->wl_display_ptr);
-    if (NULL == server_ptr->wlr_subcompositor_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_subcompositor_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
     server_ptr->wlr_data_device_manager_ptr = wlr_data_device_manager_create(
         server_ptr->wl_display_ptr);
     if (NULL == server_ptr->wlr_data_device_manager_ptr) {
@@ -312,16 +275,14 @@ wlmaker_server_t *wlmaker_server_create(
     server_ptr->corner_ptr = wlmaker_corner_create(
         wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
-        wlmaker_output_manager_wlr_output_layout(
-            server_ptr->output_manager_ptr),
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->cursor_ptr,
         server_ptr);
     if (NULL == server_ptr->corner_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
                wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
                wl_display_get_event_loop(server_ptr->wl_display_ptr),
-               wlmaker_output_manager_wlr_output_layout(
-                   server_ptr->output_manager_ptr),
+               server_ptr->wlr_output_layout_ptr,
                server_ptr->cursor_ptr,
                server_ptr);
         wlmaker_server_destroy(server_ptr);
@@ -423,11 +384,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->cursor_ptr = NULL;
     }
 
-    if (NULL != server_ptr->wlr_renderer_ptr) {
-        wlr_renderer_destroy(server_ptr->wlr_renderer_ptr);
-        server_ptr->wlr_renderer_ptr = NULL;
-    }
-
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
@@ -470,8 +426,7 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr)
 {
     return wlr_output_layout_output_at(
-        wlmaker_output_manager_wlr_output_layout(
-            server_ptr->output_manager_ptr),
+        server_ptr->wlr_output_layout_ptr,
         server_ptr->cursor_ptr->wlr_cursor_ptr->x,
         server_ptr->cursor_ptr->wlr_cursor_ptr->y);
 }
