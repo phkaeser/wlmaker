@@ -133,12 +133,12 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
 #if defined(WLMAKER_HAVE_XWAYLAND)
     xwl_ptr->wlr_xwayland_ptr = wlr_xwayland_create(
         server_ptr->wl_display_ptr,
-        server_ptr->wlr_compositor_ptr,
+        wlmbe_backend_compositor(server_ptr->backend_ptr),
         false);
     if (NULL == xwl_ptr->wlr_xwayland_ptr) {
         bs_log(BS_ERROR, "Failed wlr_xwayland_create(%p, %p, false).",
                server_ptr->wl_display_ptr,
-               server_ptr->wlr_compositor_ptr);
+               wlmbe_backend_compositor(server_ptr->backend_ptr));
         wlmaker_xwl_destroy(xwl_ptr);
         return NULL;
     }

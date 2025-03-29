@@ -22,11 +22,6 @@
 #ifndef __WLMTK_TOOLKIT_H__
 #define __WLMTK_TOOLKIT_H__
 
-#include "gfxbuf.h"
-#include "primitives.h"
-#include "style.h"
-#include "util.h"
-
 #include <libbase/libbase.h>
 #include <wayland-server.h>
 
@@ -40,6 +35,7 @@
 #include "element.h"
 #include "env.h"
 #include "fsm.h"
+#include "gfxbuf.h"
 #include "image.h"
 #include "input.h"
 #include "lock.h"
@@ -48,10 +44,12 @@
 #include "pane.h"
 #include "panel.h"
 #include "popup.h"
+#include "primitives.h"
 #include "rectangle.h"
 #include "resizebar.h"
 #include "resizebar_area.h"
 #include "root.h"
+#include "style.h"
 #include "surface.h"
 #include "test.h"
 #include "tile.h"
@@ -65,7 +63,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -52,6 +52,13 @@ struct _wlmtk_root_t {
     bs_dllist_t               workspaces;
     /** Currently-active workspace. */
     wlmtk_workspace_t         *current_workspace_ptr;
+
+    /** Listener for wlr_output_layout::events.change. */
+    struct wl_listener        output_layout_change_listener;
+
+    // Elements below not owned by wlmtk_root_t.
+    /** wlroots output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
 static void _wlmtk_root_switch_to_workspace(
@@ -84,6 +91,10 @@ static bool _wlmtk_root_element_keyboard_event(
     size_t key_syms_count,
     uint32_t modifiers);
 
+static void _wlmtk_root_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
     .pointer_motion = _wlmtk_root_element_pointer_motion,
@@ -97,10 +108,12 @@ static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_root_t *wlmtk_root_create(
     struct wlr_scene *wlr_scene_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_root_t *root_ptr = logged_calloc(1, sizeof(wlmtk_root_t));
     if (NULL == root_ptr) return NULL;
+    root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (!wlmtk_container_init_attached(
             &root_ptr->container,
@@ -124,6 +137,14 @@ wlmtk_root_t *wlmtk_root_create(
         &root_ptr->container,
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
 
+    wlmtk_util_connect_listener_signal(
+        &wlr_output_layout_ptr->events.change,
+        &root_ptr->output_layout_change_listener,
+        _wlmtk_root_handle_output_layout_change);
+    _wlmtk_root_handle_output_layout_change(
+        &root_ptr->output_layout_change_listener,
+        wlr_output_layout_ptr);
+
     wl_signal_init(&root_ptr->events.workspace_changed);
     wl_signal_init(&root_ptr->events.unlock_event);
     wl_signal_init(&root_ptr->events.window_mapped);
@@ -135,6 +156,9 @@ wlmtk_root_t *wlmtk_root_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &root_ptr->output_layout_change_listener);
+
     bs_dllist_for_each(
         &root_ptr->workspaces,
         _wlmtk_root_destroy_workspace,
@@ -158,23 +182,6 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr)
 {
     return &root_ptr->events;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_update_output_layout(
-    wlmtk_root_t *root_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr)
-{
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
-    wlmtk_rectangle_set_size(
-        root_ptr->curtain_rectangle_ptr,
-        root_ptr->extents.width,
-        root_ptr->extents.height);
-
-    bs_dllist_for_each(
-        &root_ptr->workspaces,
-        _wlmtk_root_workspace_update_output_layout,
-        wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -278,6 +285,9 @@ void wlmtk_root_add_workspace(
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
     }
+
+    wlmtk_workspace_update_output_layout(
+        workspace_ptr, root_ptr->wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -664,6 +674,35 @@ bool _wlmtk_root_element_keyboard_event(
     return false;
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles wlr_output_layout::events::change. Triggers when the output layout
+ * changes, and we use this for updating the curtain and the layout in each
+ * workspace.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_root_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_root_t, output_layout_change_listener);
+    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
+
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
+    wlmtk_rectangle_set_size(
+        root_ptr->curtain_rectangle_ptr,
+        root_ptr->extents.width,
+        root_ptr->extents.height);
+
+    bs_dllist_for_each(
+        &root_ptr->workspaces,
+        _wlmtk_root_workspace_update_output_layout,
+        wlr_output_layout_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -683,13 +722,20 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        wl_display_ptr);
+
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
 
     BS_TEST_VERIFY_EQ(
         test_ptr, &root_ptr->events, wlmtk_root_events(root_ptr));
 
     wlmtk_root_destroy(root_ptr);
+    wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
@@ -700,7 +746,12 @@ void test_workspaces(bs_test_t *test_ptr)
     wlmtk_util_test_listener_t l;
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        wl_display_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
@@ -751,6 +802,7 @@ void test_workspaces(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_test_listener(&l);
     wlmtk_root_destroy(root_ptr);
+    wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
@@ -764,7 +816,12 @@ void test_pointer_button(bs_test_t *test_ptr)
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        wl_display_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_container_add_element(
         &root_ptr->container, &fake_element_ptr->element);
@@ -821,6 +878,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fake_element_ptr->element);
 
     wlmtk_root_destroy(root_ptr);
+    wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 

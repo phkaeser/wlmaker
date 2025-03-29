@@ -105,6 +105,7 @@ ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(share)
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(src/backend)
 ADD_SUBDIRECTORY(src/conf)
 ADD_SUBDIRECTORY(src/toolkit)
 

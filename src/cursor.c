@@ -58,7 +58,9 @@ static void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec);
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
+wlmaker_cursor_t *wlmaker_cursor_create(
+    wlmaker_server_t *server_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmaker_cursor_t *cursor_ptr = logged_calloc(1, sizeof(wlmaker_cursor_t));
     if (NULL == cursor_ptr) return NULL;
@@ -72,10 +74,8 @@ wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr)
         wlmaker_cursor_destroy(cursor_ptr);
         return NULL;
     }
-    // Must be initialized after wlr_output_layout_ptr.
-    BS_ASSERT(NULL != server_ptr->wlr_output_layout_ptr);
-    wlr_cursor_attach_output_layout(cursor_ptr->wlr_cursor_ptr,
-                                    server_ptr->wlr_output_layout_ptr);
+    wlr_cursor_attach_output_layout(
+        cursor_ptr->wlr_cursor_ptr, wlr_output_layout_ptr);
 
     cursor_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_create(
         server_ptr->style.cursor.name_ptr,

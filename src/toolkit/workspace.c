@@ -1101,7 +1101,12 @@ void test_map_unmap(bs_test_t *test_ptr)
 {
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        wl_display_ptr);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         "test", &_wlmtk_workspace_test_tile_style, NULL);
@@ -1153,6 +1158,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_root_remove_workspace(root_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_root_destroy(root_ptr);
+    wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 

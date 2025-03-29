@@ -29,7 +29,6 @@
 #include <xkbcommon/xkbcommon.h>
 
 #define WLR_USE_UNSTABLE
-#include <wlr/backend/session.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
@@ -70,9 +69,6 @@ static bool _wlmaker_keybindings_bind_item(
 
 static bool _wlmaker_action_bound_callback(
     const wlmaker_key_combo_t *binding_ptr);
-static void _wlmaker_action_switch_to_vt(
-    wlmaker_server_t *server_ptr,
-    unsigned vt_num);
 
 /* == Data ================================================================= */
 
@@ -389,8 +385,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     case WLMAKER_ACTION_SWITCH_TO_VT12:
         // Enums are required to be defined consecutively, so we can compute
         // the VT number from the action code.
-        _wlmaker_action_switch_to_vt(
-            server_ptr,
+        wlmbe_backend_switch_to_vt(
+            server_ptr->backend_ptr,
             action - WLMAKER_ACTION_SWITCH_TO_VT1 + 1);
         break;
 
@@ -536,31 +532,6 @@ bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
         action_binding_ptr->action,
         NULL);
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Switches to the given virtual terminal, if a wlroots session is available.
- *
- * Logs if wlr_session_change_vt() fails, but ignores the errors.
- *
- * @param server_ptr
- * @param vt_num
- */
-void _wlmaker_action_switch_to_vt(
-    wlmaker_server_t *server_ptr,
-    unsigned vt_num)
-{
-    // Guard clause: @ref wlmaker_server_t::session_ptr will be populated only
-    // if wlroots created a session, eg. when running from the terminal.
-    if (NULL == server_ptr->wlr_session_ptr) {
-        bs_log(BS_DEBUG, "_wlmaker_action_switch_to_vt: No session, ignored.");
-        return;
-    }
-
-    if (!wlr_session_change_vt(server_ptr->wlr_session_ptr, vt_num)) {
-        bs_log(BS_WARNING, "Failed wlr_session_change_vt(, %u)", vt_num);
-    }
 }
 
 /* == Unit tests =========================================================== */

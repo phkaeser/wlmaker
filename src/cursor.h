@@ -69,10 +69,13 @@ struct _wlmaker_cursor_t {
  * Creates the cursor handlers.
  *
  * @param server_ptr
+ * @param wlr_output_layout_ptr
  *
  * @return The cursor handler or NULL on error.
  */
-wlmaker_cursor_t *wlmaker_cursor_create(wlmaker_server_t *server_ptr);
+wlmaker_cursor_t *wlmaker_cursor_create(
+    wlmaker_server_t *server_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Destroys the cursor handlers.

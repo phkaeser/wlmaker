@@ -20,6 +20,11 @@
 
 #include "dock.h"
 
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_scene.h>
+#undef WLR_USE_UNSTABLE
+
 #include <wlr/util/edges.h>
 #include "toolkit/toolkit.h"
 
@@ -117,7 +122,8 @@ wlmaker_dock_t *wlmaker_dock_create(
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr),
-            wlmaker_server_get_primary_output(server_ptr)->wlr_output_ptr)) {
+            wlmbe_primary_output(
+                dock_ptr->server_ptr->wlr_output_layout_ptr))) {
         wlmaker_dock_destroy(dock_ptr);
         return NULL;
     }
@@ -216,11 +222,11 @@ void _wlmaker_dock_handle_workspace_changed(
     if (NULL != current_layer_ptr) {
         wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
     }
-    wlmtk_layer_add_panel(
-        new_layer_ptr,
-        panel_ptr,
-        wlmaker_server_get_primary_output(
-            dock_ptr->server_ptr)->wlr_output_ptr);
+    BS_ASSERT(wlmtk_layer_add_panel(
+                  new_layer_ptr,
+                  panel_ptr,
+                  wlmbe_primary_output(
+                      dock_ptr->server_ptr->wlr_output_layout_ptr)));
 }
 
 /* == Unit tests =========================================================== */
@@ -238,30 +244,16 @@ void test_create_destroy(bs_test_t *test_ptr)
 {
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(wlr_scene_ptr, NULL);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    wlmtk_tile_style_t ts = {};
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws_ptr);
-
     wlmaker_server_t server = {
         .wlr_scene_ptr = wlr_scene_ptr,
         .wl_display_ptr = wl_display_create(),
-        .root_ptr = root_ptr
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
-    server.wlr_output_layout_ptr = wlr_output_layout_create(server.wl_display_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
+    server.wlr_output_layout_ptr = wlr_output_layout_create(
+        server.wl_display_ptr);
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
-    wlr_output_layout_add(server.wlr_output_layout_ptr, &output, 0, 0);
-    wlmtk_root_update_output_layout(root_ptr, server.wlr_output_layout_ptr);
-
-    wlmaker_output_t wo = { .wlr_output_ptr = &output };
-    bs_dllist_push_back(&server.outputs, &wo.node);
-
-    wlmaker_config_style_t style = {};
+    wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
 
     wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
         wlmcfg_create_object_from_plist_data(
@@ -269,14 +261,28 @@ void test_create_destroy(bs_test_t *test_ptr)
             embedded_binary_default_state_size));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
+    server.root_ptr = wlmtk_root_create(
+        server.wlr_scene_ptr,
+        server.wlr_output_layout_ptr,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create("1", &ts, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
+
+    wlmaker_config_style_t style = {};
+
     wlmaker_dock_t *dock_ptr = wlmaker_dock_create(&server, dict_ptr, &style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
     wlmcfg_dict_unref(dict_ptr);
-    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
+    wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
-    wlmtk_root_destroy(root_ptr);
+    wlmtk_root_destroy(server.root_ptr);
+    wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
