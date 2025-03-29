@@ -255,13 +255,16 @@ size_t wlmbe_backend_outputs(wlmbe_backend_t *backend_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlr_output *wlmbe_backend_primary_output(
-    wlmbe_backend_t *backend_ptr)
+struct wlr_output *wlmbe_primary_output(
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
-    if (bs_dllist_empty(&backend_ptr->outputs)) return NULL;
+    if (0 >= wl_list_length(&wlr_output_layout_ptr->outputs)) return NULL;
 
-    return wlmbe_wlr_output_from_output(
-        wlmbe_output_from_dlnode(backend_ptr->outputs.head_ptr));
+    struct wlr_output_layout_output* wolo = BS_CONTAINER_OF(
+        wlr_output_layout_ptr->outputs.next,
+        struct wlr_output_layout_output,
+        link);
+    return wolo->output;
 }
 
 /* ------------------------------------------------------------------------- */

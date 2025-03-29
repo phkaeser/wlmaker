@@ -47,16 +47,16 @@ void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr);
 
 size_t wlmbe_backend_outputs(wlmbe_backend_t *backend_ptr);
 
-
 /**
- * Returns the primary output. Currently that is the first output added.
+ * Returns the primary output. Currently that is the first output found
+ * in the output layout.
  *
  * @param output_manager_ptr
  *
  * @return A pointer to the `struct wlr_output` for the primary output.
  */
-struct wlr_output *wlmbe_backend_primary_output(
-    wlmbe_backend_t *backend_ptr);
+struct wlr_output *wlmbe_primary_output(
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Switches to the given virtual terminal, if a wlroots session is available.

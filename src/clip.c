@@ -214,7 +214,8 @@ wlmaker_clip_t *wlmaker_clip_create(
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
-            wlmbe_backend_primary_output(clip_ptr->server_ptr->backend_ptr))) {
+            wlmbe_primary_output(
+                clip_ptr->server_ptr->wlr_output_layout_ptr))) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
@@ -740,8 +741,8 @@ void _wlmaker_clip_handle_workspace_changed(
     BS_ASSERT(wlmtk_layer_add_panel(
                   new_layer_ptr,
                   panel_ptr,
-                  wlmbe_backend_primary_output(
-                      clip_ptr->server_ptr->backend_ptr)));
+                  wlmbe_primary_output(
+                      clip_ptr->server_ptr->wlr_output_layout_ptr)));
 
     _wlmaker_clip_update_overlay(clip_ptr);
 }

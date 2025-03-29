@@ -55,6 +55,10 @@ struct _wlmtk_root_t {
 
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
+
+    // Elements below not owned by wlmtk_root_t.
+    /** wlroots output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
 static void _wlmtk_root_switch_to_workspace(
@@ -109,6 +113,7 @@ wlmtk_root_t *wlmtk_root_create(
 {
     wlmtk_root_t *root_ptr = logged_calloc(1, sizeof(wlmtk_root_t));
     if (NULL == root_ptr) return NULL;
+    root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (!wlmtk_container_init_attached(
             &root_ptr->container,
@@ -280,6 +285,9 @@ void wlmtk_root_add_workspace(
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
     }
+
+    wlmtk_workspace_update_output_layout(
+        workspace_ptr, root_ptr->wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
