@@ -43,9 +43,6 @@
 
 /** State of the server's backend. */
 struct _wlmbe_backend_t {
-    /** Back-link to the wlroots scene. */
-    struct wlr_scene          *wlr_scene_ptr;
-
     /** wlroots backend. */
     struct wlr_backend        *wlr_backend_ptr;
     /** wlroots session. Populated from wlr_backend_autocreate(). */
@@ -54,8 +51,6 @@ struct _wlmbe_backend_t {
     struct wlr_renderer       *wlr_renderer_ptr;
     /** The allocator. */
     struct wlr_allocator      *wlr_allocator_ptr;
-    /** Points to struct wlr_output_layout. */
-    struct wlr_output_layout  *wlr_output_layout_ptr;
     /** The scene output layout. */
     struct wlr_scene_output_layout *wlr_scene_output_layout_ptr;
     /** The compositor is necessary for clients to allocate surfaces. */
@@ -79,6 +74,12 @@ struct _wlmbe_backend_t {
     wlmbe_output_config_t     output_config;
     /** List of outputs. Connects @ref wlmaker_output_t::node. */
     bs_dllist_t               outputs;
+
+    // Elements below not owned by @ref wlmbe_backend_t.
+    /** Back-link to the wlroots scene. */
+    struct wlr_scene          *wlr_scene_ptr;
+    /** Points to struct wlr_output_layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
 static bool _wlmbe_output_config_parse(
