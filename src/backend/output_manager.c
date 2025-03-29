@@ -40,20 +40,21 @@ struct _wlmbe_output_manager_t {
     /** Points to wlroots `struct wlr_output_manager_v1`. */
     struct wlr_output_manager_v1 *wlr_output_manager_v1_ptr;
 
-    /** Listener for wlr_output_manager_v1::events.destroy. */
+    /** Listener for wlr_output_manager_v1::events::destroy. */
     struct wl_listener        wlr_om_destroy_listener;
-    /** Listener for wlr_output_manager_v1::events.apply. */
+    /** Listener for wlr_output_manager_v1::events::apply. */
     struct wl_listener        apply_listener;
-    /** Listener for wlr_output_manager_v1::events.test. */
+    /** Listener for wlr_output_manager_v1::events::test. */
     struct wl_listener        test_listener;
 
     /** Points to wlroots 'struct wlr_xdg_output_manager_v1`. */
     struct wlr_xdg_output_manager_v1 *wlr_xdg_output_manager_v1_ptr;
+    /** Listener for wlr_xdg_output_manager_v1::events::destroy. */
     struct wl_listener        xdg_om_destroy_listener;
 
-    /** Listener for wlr_output_layout::events.destroy. */
+    /** Listener for wlr_output_layout::events::destroy. */
     struct wl_listener        output_layout_destroy_listener;
-    /** Listener for wlr_output_layout::events.change. */
+    /** Listener for wlr_output_layout::events::change. */
     struct wl_listener        output_layout_change_listener;
 
     // Below: Not owned by @ref wlmbe_output_manager_t.
@@ -79,7 +80,6 @@ static bool _wlmbe_output_manager_update_output_configuration(
 static bool _wlmaker_output_manager_config_head_apply(
     struct wl_list *link_ptr,
     void *ud_ptr);
-
 static bool _wlmbe_output_manager_apply(
     wlmbe_output_manager_t *output_manager_ptr,
     struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr,
@@ -94,13 +94,15 @@ static void _wlmbe_output_manager_handle_apply(
 static void _wlmbe_output_manager_handle_test(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void _wlmbe_output_manager_handle_output_layout_change(
+
+static void _wlmbe_output_manager_handle_xdg_om_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+
 static void _wlmbe_output_manager_handle_output_layout_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static void _wlmbe_output_manager_handle_xdg_om_destroy(
+static void _wlmbe_output_manager_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -140,13 +142,13 @@ wlmbe_output_manager_t *wlmbe_output_manager_create(
         _wlmbe_output_manager_handle_test);
 
     wlmtk_util_connect_listener_signal(
-        &wlr_output_layout_ptr->events.change,
-        &output_manager_ptr->output_layout_change_listener,
-        _wlmbe_output_manager_handle_output_layout_change);
-    wlmtk_util_connect_listener_signal(
         &wlr_output_layout_ptr->events.destroy,
         &output_manager_ptr->output_layout_destroy_listener,
         _wlmbe_output_manager_handle_output_layout_destroy);
+    wlmtk_util_connect_listener_signal(
+        &wlr_output_layout_ptr->events.change,
+        &output_manager_ptr->output_layout_change_listener,
+        _wlmbe_output_manager_handle_output_layout_change);
 
     output_manager_ptr->wlr_xdg_output_manager_v1_ptr =
         wlr_xdg_output_manager_v1_create(
@@ -172,11 +174,8 @@ wlmbe_output_manager_t *wlmbe_output_manager_create(
 void wlmbe_output_manager_destroy(
     wlmbe_output_manager_t *output_manager_ptr)
 {
-     wlmtk_util_disconnect_listener(
-        &output_manager_ptr->output_layout_change_listener);
-     wlmtk_util_disconnect_listener(
-        &output_manager_ptr->output_layout_destroy_listener);
-
+    _wlmbe_output_manager_handle_output_layout_destroy(
+        &output_manager_ptr->output_layout_destroy_listener, NULL);
      _wlmbe_output_manager_handle_wlr_om_destroy(
          &output_manager_ptr->wlr_om_destroy_listener, NULL);
      _wlmbe_output_manager_handle_xdg_om_destroy(
@@ -357,22 +356,6 @@ void _wlmbe_output_manager_handle_wlr_om_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handler for wlr_xdg_output_manager_v1::events.destroy. Detaches. */
-void _wlmbe_output_manager_handle_xdg_om_destroy(
-    struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
-{
-    wlmbe_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmbe_output_manager_t, xdg_om_destroy_listener);
-
-    if (NULL == output_manager_ptr->wlr_xdg_output_manager_v1_ptr) return;
-
-     wlmtk_util_disconnect_listener(
-         &output_manager_ptr->xdg_om_destroy_listener);
-    output_manager_ptr->wlr_xdg_output_manager_v1_ptr = NULL;
-}
-
-/* ------------------------------------------------------------------------- */
 /** Handler for wlr_output_manager_v1::events.apply. Cleans up. */
 void _wlmbe_output_manager_handle_apply(
     struct wl_listener *listener_ptr,
@@ -407,6 +390,22 @@ void _wlmbe_output_manager_handle_test(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handler for wlr_xdg_output_manager_v1::events.destroy. Detaches. */
+void _wlmbe_output_manager_handle_xdg_om_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmbe_output_manager_t *output_manager_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmbe_output_manager_t, xdg_om_destroy_listener);
+
+    if (NULL == output_manager_ptr->wlr_xdg_output_manager_v1_ptr) return;
+
+     wlmtk_util_disconnect_listener(
+         &output_manager_ptr->xdg_om_destroy_listener);
+    output_manager_ptr->wlr_xdg_output_manager_v1_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles dtor for @ref wlmbe_output_manager_t::wlr_output_layout_ptr. */
 void _wlmbe_output_manager_handle_output_layout_destroy(
     struct wl_listener *listener_ptr,
@@ -417,7 +416,13 @@ void _wlmbe_output_manager_handle_output_layout_destroy(
         wlmbe_output_manager_t,
         output_layout_destroy_listener);
 
-    wlmbe_output_manager_destroy(output_manager_ptr);
+    if (NULL == output_manager_ptr->wlr_output_layout_ptr) return;
+
+     wlmtk_util_disconnect_listener(
+        &output_manager_ptr->output_layout_change_listener);
+     wlmtk_util_disconnect_listener(
+        &output_manager_ptr->output_layout_destroy_listener);
+    output_manager_ptr->wlr_output_layout_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */

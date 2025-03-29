@@ -28,20 +28,38 @@
 struct wlr_allocator;
 struct wlr_backend;
 
-/** Forward declaration: Handle for output manager. */
+/** Forward declaration: Handle for output managers. */
 typedef struct _wlmbe_output_manager_t wlmbe_output_manager_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-// Wraps two OMs.
+/**
+ * Instantiates output managers for both `wlr-output-management-unstable-v1`
+ * and `xdg-output-unstable-v1`. Both will listen for output changes in
+ * `wlr_output_layout_ptr` and update the respective output configurations
+ * is requested so.
+ *
+ * @param wl_display_ptr
+ * @param wlr_scene_ptr
+ * @param wlr_output_layout_ptr
+ * @param wlr_backend_ptr
+ *
+ * @return Handle for the output managers, or NULL on error. Must be destroyed
+ * by @ref wlmbe_output_manager_destroy.
+ */
 wlmbe_output_manager_t *wlmbe_output_manager_create(
     struct wl_display *wl_display_ptr,
     struct wlr_scene *wlr_scene_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_backend *wlr_backend_ptr);
 
+/**
+ * Destroy the output manager, returned from @ref wlmbe_output_manager_create.
+ *
+ * @param output_manager_ptr
+ */
 void wlmbe_output_manager_destroy(
     wlmbe_output_manager_t *output_manager_ptr);
 

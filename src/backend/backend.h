@@ -35,6 +35,18 @@ typedef struct _wlmbe_backend_t wlmbe_backend_t;
 extern "C" {
 #endif  // __cplusplus
 
+/**
+ * Creates the backend drivers.
+ *
+ * @param wl_display_ptr
+ * @param wlr_scene_ptr
+ * @param wlr_output_layout_ptr
+ * @param width
+ * @param height
+ * @param config_dict_ptr
+ *
+ * @return the server backend state, or NULL on error.
+ */
 wlmbe_backend_t *wlmbe_backend_create(
     struct wl_display *wl_display_ptr,
     struct wlr_scene *wlr_scene_ptr,
@@ -43,27 +55,19 @@ wlmbe_backend_t *wlmbe_backend_create(
     int height,
     wlmcfg_dict_t *config_dict_ptr);
 
-void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr);
-
-size_t wlmbe_backend_outputs(wlmbe_backend_t *backend_ptr);
-
 /**
- * Returns the primary output. Currently that is the first output found
- * in the output layout.
+ * Destroys the server backend.
  *
- * @param output_manager_ptr
- *
- * @return A pointer to the `struct wlr_output` for the primary output.
+ * @param backend_ptr
  */
-struct wlr_output *wlmbe_primary_output(
-    struct wlr_output_layout *wlr_output_layout_ptr);
+void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr);
 
 /**
  * Switches to the given virtual terminal, if a wlroots session is available.
  *
  * Logs if wlr_session_change_vt() fails, but ignores the errors.
  *
- * @param server_ptr
+ * @param backend_ptr
  * @param vt_num
  */
 void wlmbe_backend_switch_to_vt(wlmbe_backend_t *backend_ptr, unsigned vt_num);
@@ -72,6 +76,26 @@ void wlmbe_backend_switch_to_vt(wlmbe_backend_t *backend_ptr, unsigned vt_num);
 struct wlr_backend *wlmbe_backend_wlr(wlmbe_backend_t *backend_ptr);
 /** Accessor. TODO(kaeser@gubbe.ch): Eliminate. */
 struct wlr_compositor *wlmbe_backend_compositor(wlmbe_backend_t *backend_ptr);
+
+/**
+ * Returns the primary output. Currently that is the first output found
+ * in the output layout.
+ *
+ * @param wlr_output_layout_ptr
+ *
+ * @return A pointer to the `struct wlr_output` for the primary output.
+ */
+struct wlr_output *wlmbe_primary_output(
+    struct wlr_output_layout *wlr_output_layout_ptr);
+
+/**
+ * Returns the number of outputs active in the output layout.
+ *
+ * @param wlr_output_layout_ptr
+ *
+ * @return Number of outputs.
+ */
+size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

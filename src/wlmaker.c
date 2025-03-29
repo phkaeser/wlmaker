@@ -399,7 +399,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     rv = EXIT_SUCCESS;
     if (wlr_backend_start(wlmbe_backend_wlr(server_ptr->backend_ptr))) {
 
-        if (0 >= wlmbe_backend_outputs(server_ptr->backend_ptr)) {
+        if (0 >= wlmbe_num_outputs(server_ptr->wlr_output_layout_ptr)) {
             bs_log(BS_ERROR, "No outputs available!");
             return EXIT_FAILURE;
         }

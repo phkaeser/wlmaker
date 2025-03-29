@@ -72,7 +72,7 @@ struct _wlmbe_backend_t {
     uint32_t                  height;
     /** Default configuration for outputs. */
     wlmbe_output_config_t     output_config;
-    /** List of outputs. Connects @ref wlmaker_output_t::node. */
+    /** List of outputs. Connects @ref wlmbe_output_t::dlnode. */
     bs_dllist_t               outputs;
 
     // Elements below not owned by @ref wlmbe_backend_t.
@@ -249,25 +249,6 @@ void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-size_t wlmbe_backend_outputs(wlmbe_backend_t *backend_ptr)
-{
-    return bs_dllist_size(&backend_ptr->outputs);
-}
-
-/* ------------------------------------------------------------------------- */
-struct wlr_output *wlmbe_primary_output(
-    struct wlr_output_layout *wlr_output_layout_ptr)
-{
-    if (0 >= wl_list_length(&wlr_output_layout_ptr->outputs)) return NULL;
-
-    struct wlr_output_layout_output* wolo = BS_CONTAINER_OF(
-        wlr_output_layout_ptr->outputs.next,
-        struct wlr_output_layout_output,
-        link);
-    return wolo->output;
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmbe_backend_switch_to_vt(wlmbe_backend_t *backend_ptr, unsigned vt_num)
 {
     // Guard clause: @ref wlmbe_backend_t::session_ptr will be populated only
@@ -292,6 +273,19 @@ struct wlr_backend *wlmbe_backend_wlr(wlmbe_backend_t *backend_ptr)
 struct wlr_compositor *wlmbe_backend_compositor(wlmbe_backend_t *backend_ptr)
 {
     return backend_ptr->wlr_compositor_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_output *wlmbe_primary_output(
+    struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    if (0 >= wl_list_length(&wlr_output_layout_ptr->outputs)) return NULL;
+
+    struct wlr_output_layout_output* wolo = BS_CONTAINER_OF(
+        wlr_output_layout_ptr->outputs.next,
+        struct wlr_output_layout_output,
+        link);
+    return wolo->output;
 }
 
 /* == Local (static) methods =============================================== */
@@ -390,5 +384,12 @@ void _wlmbe_backend_handle_new_output(
         wlmbe_output_destroy(output_ptr);
     }
 }
+
+/* ------------------------------------------------------------------------- */
+size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    return wl_list_length(&wlr_output_layout_ptr->outputs);
+}
+
 
 /* == End of backend.c ===================================================== */

@@ -36,7 +36,7 @@
 
 /** Handle for a compositor output device. */
 struct _wlmbe_output_t {
-    /** List node for insertion in @ref wlmaker_backend_t::outputs. */
+    /** List node for insertion in @ref wlmbe_backend_t::outputs. */
     bs_dllist_node_t          dlnode;
 
     /** Listener for `destroy` signals raised by `wlr_output`. */
