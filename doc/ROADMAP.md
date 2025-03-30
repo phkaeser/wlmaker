@@ -29,7 +29,7 @@ Support for visual effects to improve usability, but not for pure show.
     * Verify that `wdisplays` works.
       * Fix `wdisplays` crash when unsetting `Overlay Screen Names`.
       * [done] Fix positioning of overlaid screen names.
-      * [done] See if `wlr-screencopy-unstable-v1` would be simple to add.
+  * [done] Add `wlr-screencopy-unstable-v1` support.
   * [done] Test and verify: Multiple monitors supported. Supporting:
     * [done] per-monitor fractional scale.
     * [done] per-monitor transformation setting.
