@@ -34,10 +34,10 @@
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
-
 
 /* == Declarations ========================================================= */
 
@@ -60,6 +60,8 @@ struct _wlmbe_backend_t {
      * surfaces.
      */
     struct wlr_subcompositor  *wlr_subcompositor_ptr;
+    /** The screencopy manager. */
+    struct wlr_screencopy_manager_v1 *wlr_screencopy_manager_v1_ptr;
     /** The output manager(s). */
     wlmbe_output_manager_t    *output_manager_ptr;
 
@@ -201,6 +203,14 @@ wlmbe_backend_t *wlmbe_backend_create(
         wl_display_ptr);
     if (NULL == backend_ptr->wlr_subcompositor_ptr) {
         bs_log(BS_ERROR, "Failed wlr_subcompositor_create()");
+        wlmbe_backend_destroy(backend_ptr);
+        return NULL;
+    }
+
+    backend_ptr->wlr_screencopy_manager_v1_ptr =
+        wlr_screencopy_manager_v1_create(wl_display_ptr);
+    if (NULL == backend_ptr->wlr_screencopy_manager_v1_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_screencopy_manager_v1_create()");
         wlmbe_backend_destroy(backend_ptr);
         return NULL;
     }
