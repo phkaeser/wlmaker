@@ -128,10 +128,14 @@ void handle_new_surface(
             layer_shell_ptr->server_ptr);
     }
 
-    __UNUSED__ wlmaker_layer_panel_t *layer_panel_ptr =
+    wlmaker_layer_panel_t *layer_panel_ptr =
         wlmaker_layer_panel_create(
             wlr_layer_surface_v1_ptr,
             layer_shell_ptr->server_ptr);
+
+    if (NULL == layer_panel_ptr) {
+        wlr_layer_surface_v1_destroy(wlr_layer_surface_v1_ptr);
+    }
 }
 
 /* == End of layer_shell.c ================================================= */

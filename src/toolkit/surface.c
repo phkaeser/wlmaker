@@ -682,7 +682,6 @@ void _wlmtk_surface_handle_surface_unmap(
     wlmtk_element_set_visible( wlmtk_surface_element(surface_ptr), false);
 }
 
-
 /* ------------------------------------------------------------------------- */
 /**
  * Surface commits a new size: Store the size, and update the parent's layout.
