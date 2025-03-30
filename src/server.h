@@ -25,7 +25,6 @@
 
 #include "toolkit/toolkit.h"
 #include <backend/backend.h>
-#include <backend/output.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
