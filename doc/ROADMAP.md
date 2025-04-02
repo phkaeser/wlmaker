@@ -26,7 +26,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] Verify that setting output position works as desired.
     * [done] Fix: Handle --on and --off, should remove output and re-position dock & clip.
   * [done] Support `xdg-output-unstable-v1` protocol.
-    * Verify that `wdisplays` works.
+    * [done] Verify that `wdisplays` works.
       * [done] Fix `wdisplays` crash when unsetting `Overlay Screen Names`: [Known](https://github.com/artizirk/wdisplays/issues/17) `wdisplays` issue.
       * [done] Fix positioning of overlaid screen names.
   * [done] Add `wlr-screencopy-unstable-v1` support.
