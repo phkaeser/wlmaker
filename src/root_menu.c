@@ -48,11 +48,11 @@ static void _wlmaker_root_menu_handle_menu_open_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
-    wlmcfg_array_t *array_ptr,
+    bspl_array_t *array_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr);
 static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
-    wlmcfg_array_t *array_ptr,
+    bspl_array_t *array_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr);
 
@@ -72,12 +72,12 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmtk_env_t *env_ptr)
 {
-    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 1) {
         bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
         return NULL;
     }
-    if (WLMCFG_STRING != wlmcfg_object_type(
-            wlmcfg_array_at(server_ptr->root_menu_array_ptr, 0))) {
+    if (BSPL_STRING != bspl_object_type(
+            bspl_array_at(server_ptr->root_menu_array_ptr, 0))) {
         bs_log(BS_ERROR, "Array element [0] must be a string.");
         return NULL;
     }
@@ -144,7 +144,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     }
     wlmtk_window_set_title(
         root_menu_ptr->window_ptr,
-        wlmcfg_array_string_value_at(server_ptr->root_menu_array_ptr, 0));
+        bspl_array_string_value_at(server_ptr->root_menu_array_ptr, 0));
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
 
     return root_menu_ptr;
@@ -266,15 +266,15 @@ void _wlmaker_root_menu_handle_menu_open_changed(
  * @return Pointer to the created @ref wlmaker_action_item_t or NULL on error.
  */
 wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
-    wlmcfg_array_t *array_ptr,
+    bspl_array_t *array_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr)
 {
-    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 2) {
+    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 2) {
         bs_log(BS_ERROR, "Needs >= 2 array elements for item definition.");
         return NULL;
     }
-    const char *name_ptr = wlmcfg_array_string_value_at(array_ptr, 0);
+    const char *name_ptr = bspl_array_string_value_at(array_ptr, 0);
     if (NULL == name_ptr) {
         bs_log(BS_ERROR, "Array element [0] for item must be a string.");
         return NULL;
@@ -282,8 +282,8 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
 
     wlmtk_menu_t *submenu_ptr = NULL;
     int action = WLMAKER_ACTION_NONE;
-    wlmcfg_object_t *obj_ptr = wlmcfg_array_at(array_ptr, 1);
-    if (WLMCFG_ARRAY == wlmcfg_object_type(obj_ptr)) {
+    bspl_object_t *obj_ptr = bspl_array_at(array_ptr, 1);
+    if (BSPL_ARRAY == bspl_object_type(obj_ptr)) {
 
 #if 1
         // TODO(kaeser@gubbe.ch): Re-enable, once submenu hierarchy fixed.
@@ -302,15 +302,15 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
 #endif
 
     } else {
-        const char *action_name_ptr = wlmcfg_string_value(
-            wlmcfg_string_from_object(obj_ptr));
+        const char *action_name_ptr = bspl_string_value(
+            bspl_string_from_object(obj_ptr));
         if (NULL == action_name_ptr) {
             bs_log(BS_ERROR, "Array element [1] for item '%s' must be a "
                    "string.", name_ptr);
             return NULL;
         }
 
-        if (!wlmcfg_enum_name_to_value(
+        if (!bspl_enum_name_to_value(
                 wlmaker_action_desc,
                 action_name_ptr,
                 &action)) {
@@ -321,8 +321,8 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
     }
 
     const char *action_arg_ptr = NULL;
-    if (2 < wlmcfg_array_size(array_ptr)) {
-        action_arg_ptr = wlmcfg_array_string_value_at(array_ptr, 2);
+    if (2 < bspl_array_size(array_ptr)) {
+        action_arg_ptr = bspl_array_string_value_at(array_ptr, 2);
     }
 
     wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
@@ -354,15 +354,15 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
  * @return A pointer to the created @ref wlmtk_menu_t or NULL on error.
  */
 wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
-    wlmcfg_array_t *array_ptr,
+    bspl_array_t *array_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr)
 {
-    if (wlmcfg_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 1) {
         bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
         return NULL;
     }
-    const char *name_ptr = wlmcfg_array_string_value_at(array_ptr, 0);
+    const char *name_ptr = bspl_array_string_value_at(array_ptr, 0);
     if (NULL == name_ptr) {
         bs_log(BS_ERROR, "Array element [0] must be a string.");
         return NULL;
@@ -373,9 +373,9 @@ wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
         server_ptr->env_ptr);
     if (NULL == menu_ptr) return NULL;
 
-    for (size_t i = 1; i < wlmcfg_array_size(array_ptr); ++i) {
-        wlmcfg_array_t *item_array_ptr = wlmcfg_array_from_object(
-            wlmcfg_array_at(array_ptr, i));
+    for (size_t i = 1; i < bspl_array_size(array_ptr); ++i) {
+        bspl_array_t *item_array_ptr = bspl_array_from_object(
+            bspl_array_at(array_ptr, i));
         if (NULL == item_array_ptr) {
             bs_log(BS_ERROR, "Array element [1] in '%s' must be an array.",
                    name_ptr);

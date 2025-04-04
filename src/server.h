@@ -21,6 +21,7 @@
 #define __WLMAKER_SERVER_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <wayland-server-core.h>
 
 #include "toolkit/toolkit.h"
@@ -63,7 +64,6 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "xdg_shell.h"
 #include "xwl.h"
 
-#include "conf/model.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -83,7 +83,7 @@ typedef struct {
 /** State of the Wayland server. */
 struct _wlmaker_server_t {
     /** Configuration dictionnary. */
-    wlmcfg_dict_t             *config_dict_ptr;
+    bspl_dict_t             *config_dict_ptr;
     /** Copy of the options. */
     const wlmaker_server_options_t *options_ptr;
 
@@ -171,7 +171,7 @@ struct _wlmaker_server_t {
     /** Root menu, when active. NULL when not invoked. */
     wlmaker_root_menu_t       *root_menu_ptr;
     /** Parsed contents of the root menu definition, from plist. */
-    wlmcfg_array_t            *root_menu_array_ptr;
+    bspl_array_t            *root_menu_array_ptr;
     /** Listener for `unclaimed_button_event` signal raised by `wlmtk_root`. */
     struct wl_listener        unclaimed_button_event_listener;
 
@@ -203,7 +203,7 @@ struct _wlmaker_key_combo_t {
  * calling wlmaker_server_destroy().
  */
 wlmaker_server_t *wlmaker_server_create(
-    wlmcfg_dict_t *config_dict_ptr,
+    bspl_dict_t *config_dict_ptr,
     const wlmaker_server_options_t *options_ptr);
 
 /**

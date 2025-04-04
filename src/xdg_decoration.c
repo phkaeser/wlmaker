@@ -82,20 +82,20 @@ static void handle_decoration_destroy(
 /* == Data ================================================================= */
 
 /** Plist descriptor of decoration mode. @see wlmaker_config_decoration_t. */
-static const wlmcfg_enum_desc_t _wlmaker_config_decoration_desc[] = {
-    WLMCFG_ENUM("SuggestClient", WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT),
-    WLMCFG_ENUM("SuggestServer", WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER),
-    WLMCFG_ENUM("EnforceClient", WLMAKER_CONFIG_DECORATION_ENFORCE_CLIENT),
-    WLMCFG_ENUM("EnforceServer", WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER),
-    WLMCFG_ENUM_SENTINEL()
+static const bspl_enum_desc_t _wlmaker_config_decoration_desc[] = {
+    BSPL_ENUM("SuggestClient", WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT),
+    BSPL_ENUM("SuggestServer", WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER),
+    BSPL_ENUM("EnforceClient", WLMAKER_CONFIG_DECORATION_ENFORCE_CLIENT),
+    BSPL_ENUM("EnforceServer", WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER),
+    BSPL_ENUM_SENTINEL()
 };
 
 /** Plist descriptor of the 'Decoration' dict contents. */
-static const wlmcfg_desc_t _wlmaker_xdg_decoration_config_desc[] = {
-    WLMCFG_DESC_ENUM("Mode", true, wlmaker_xdg_decoration_manager_t, mode,
+static const bspl_desc_t _wlmaker_xdg_decoration_config_desc[] = {
+    BSPL_DESC_ENUM("Mode", true, wlmaker_xdg_decoration_manager_t, mode,
                      WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER,
                      _wlmaker_config_decoration_desc),
-    WLMCFG_DESC_SENTINEL()
+    BSPL_DESC_SENTINEL()
 };
 
 /** Name of the top-level dict holding the decoration manager's config. */
@@ -119,19 +119,19 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
         return NULL;
     }
 
-    wlmcfg_dict_t *decoration_dict_ptr = wlmcfg_dict_ref(
-        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr,
+    bspl_dict_t *decoration_dict_ptr = bspl_dict_ref(
+        bspl_dict_get_dict(server_ptr->config_dict_ptr,
                              _wlmaker_xdg_decoration_dict_name));
     if (NULL == decoration_dict_ptr) {
         bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_xdg_decoration_dict_name);
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
         return NULL;
     }
-    bool decoded = wlmcfg_decode_dict(
+    bool decoded = bspl_decode_dict(
         decoration_dict_ptr,
         _wlmaker_xdg_decoration_config_desc,
         decoration_manager_ptr);
-    wlmcfg_dict_unref(decoration_dict_ptr);
+    bspl_dict_unref(decoration_dict_ptr);
     if (!decoded) {
         bs_log(BS_ERROR, "Failed to decode '%s' dict",
                _wlmaker_xdg_decoration_dict_name);

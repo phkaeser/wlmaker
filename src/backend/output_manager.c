@@ -20,8 +20,6 @@
 
 #include "output_manager.h"
 
-#include <conf/decode.h>
-#include <conf/model.h>
 #include <libbase/libbase.h>
 #include <toolkit/toolkit.h>
 

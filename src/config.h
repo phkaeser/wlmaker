@@ -21,10 +21,10 @@
 #define __CONFIG_H__
 
 #include <inttypes.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "conf/plist.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -109,10 +109,10 @@ extern const float config_output_scale;
  *                            file was found at fname_defaults.
  * @param default_data_size   The size of the in-memory plist data.
  *
- * @returns a @ref wlmcfg_object_t on success, or NULL if none of the options
- *     had data, or if there was a file or parsing error.
+ * @returns a bspl_object_t on success, or NULL if none of the options had
+ *     data, or if there was a file or parsing error.
  */
-wlmcfg_object_t *wlmaker_plist_load(
+bspl_object_t *wlmaker_plist_load(
     const char *name_ptr,
     const char *fname_ptr,
     const char **fname_defaults,
@@ -131,9 +131,9 @@ wlmcfg_object_t *wlmaker_plist_load(
  *
  * @return A dict object, or NULL on error. Errors will already be logged.
  *     The caller must free the associated resources by calling
- *     @ref wlmcfg_object_unref.
+ *      bspl_object_unref().
  */
-wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
+bspl_dict_t *wlmaker_config_load(const char *fname_ptr);
 
 /**
  * Loads the state for wlmaker.
@@ -144,9 +144,9 @@ wlmcfg_dict_t *wlmaker_config_load(const char *fname_ptr);
  *
  * @return A dict object or NULL on error.
  */
-wlmcfg_dict_t *wlmaker_state_load(const char *fname_ptr);
+bspl_dict_t *wlmaker_state_load(const char *fname_ptr);
 
-extern const wlmcfg_desc_t wlmaker_config_style_desc[];
+extern const bspl_desc_t wlmaker_config_style_desc[];
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmaker_config_test_cases[];

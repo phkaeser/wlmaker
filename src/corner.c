@@ -116,41 +116,41 @@ static void _wlmaker_corner_handle_position_updated(
 /* == Data ================================================================= */
 
 /** Descriptor for the 'HotConfig' config dictionary. */
-static const wlmcfg_desc_t _wlmaker_corner_config_desc[] = {
-    WLMCFG_DESC_UINT64(
+static const bspl_desc_t _wlmaker_corner_config_desc[] = {
+    BSPL_DESC_UINT64(
         "TriggerDelay", true, wlmaker_corner_t, trigger_delay_msec, 500),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "TopLeftEnter", false, wlmaker_corner_t, top_left_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "TopLeftLeave", false, wlmaker_corner_t, top_left_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "TopRightEnter", false, wlmaker_corner_t, top_right_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "TopRightLeave", false, wlmaker_corner_t, top_right_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "BottomLeftEnter", false, wlmaker_corner_t, bottom_left_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "BottomLeftLeave", false, wlmaker_corner_t, bottom_left_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "BottomRightEnter", false, wlmaker_corner_t, bottom_right_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_ENUM(
+    BSPL_DESC_ENUM(
         "BottomRightLeave", false, wlmaker_corner_t, bottom_right_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
-    WLMCFG_DESC_SENTINEL()
+    BSPL_DESC_SENTINEL()
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_corner_t *wlmaker_corner_create(
-    wlmcfg_dict_t *hot_corner_config_dict_ptr,
+    bspl_dict_t *hot_corner_config_dict_ptr,
     struct wl_event_loop *wl_event_loop_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     wlmaker_cursor_t *cursor_ptr,
@@ -161,7 +161,7 @@ wlmaker_corner_t *wlmaker_corner_create(
     corner_ptr->server_ptr = server_ptr;
     corner_ptr->cursor_ptr = cursor_ptr;
 
-    if (!wlmcfg_decode_dict(
+    if (!bspl_decode_dict(
             hot_corner_config_dict_ptr,
             _wlmaker_corner_config_desc,
             corner_ptr)) {
@@ -417,7 +417,7 @@ const bs_test_case_t wlmaker_corner_test_cases[] = {
 /** Exercises the hot corner module. */
 void _wlmaker_corner_test(bs_test_t *test_ptr)
 {
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_string(
+    bspl_object_t *obj_ptr = bspl_create_object_from_plist_string(
         "{"
         "TriggerDelay = 500;"
         "}");
@@ -435,7 +435,7 @@ void _wlmaker_corner_test(bs_test_t *test_ptr)
     wl_signal_init(&cursor.position_updated);
     wlmaker_server_t server = {};
     wlmaker_corner_t *c_ptr = wlmaker_corner_create(
-        wlmcfg_dict_from_object(obj_ptr),
+        bspl_dict_from_object(obj_ptr),
         wl_event_loop_ptr,
         wlr_output_layout_ptr,
         &cursor,
@@ -478,7 +478,7 @@ void _wlmaker_corner_test(bs_test_t *test_ptr)
     wlmaker_corner_destroy(c_ptr);
     wl_display_destroy(wl_display_ptr);
     wl_event_loop_destroy(wl_event_loop_ptr);
-    wlmcfg_object_unref(obj_ptr);
+    bspl_object_unref(obj_ptr);
 }
 
 /* == End of corner.c ====================================================== */

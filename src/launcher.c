@@ -22,10 +22,9 @@
 
 #include <limits.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include "toolkit/toolkit.h"
 
-#include "conf/decode.h"
-#include "conf/plist.h"
 
 /* == Declarations ========================================================= */
 
@@ -58,12 +57,12 @@ struct _wlmaker_launcher_t {
 };
 
 /** Plist descroptor for a launcher. */
-static const wlmcfg_desc_t _wlmaker_launcher_plist_desc[] = {
-    WLMCFG_DESC_STRING(
+static const bspl_desc_t _wlmaker_launcher_plist_desc[] = {
+    BSPL_DESC_STRING(
         "CommandLine", true, wlmaker_launcher_t, cmdline_ptr, ""),
-    WLMCFG_DESC_STRING(
+    BSPL_DESC_STRING(
         "Icon", true, wlmaker_launcher_t, icon_path_ptr, ""),
-    WLMCFG_DESC_SENTINEL(),
+    BSPL_DESC_SENTINEL(),
 };
 
 /** Lookup paths for icons. */
@@ -126,7 +125,7 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const wlmtk_tile_style_t *style_ptr,
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     wlmaker_subprocess_monitor_t *monitor_ptr,
     wlmtk_env_t *env_ptr)
 {
@@ -171,7 +170,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         &launcher_ptr->super_tile,
         wlmtk_buffer_element(&launcher_ptr->overlay_buffer));
 
-    if (!wlmcfg_decode_dict(
+    if (!bspl_decode_dict(
             dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
         bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
         wlmaker_launcher_destroy(launcher_ptr);
@@ -562,12 +561,12 @@ void test_create_from_plist(bs_test_t *test_ptr)
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
 
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-        wlmcfg_create_object_from_plist_string(plist_ptr));
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(plist_ptr));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
         &style, dict_ptr, NULL, NULL);
-    wlmcfg_dict_unref(dict_ptr);
+    bspl_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
 
     BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher_ptr->cmdline_ptr);

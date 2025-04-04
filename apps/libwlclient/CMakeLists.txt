@@ -53,7 +53,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_LINK_LIBRARIES(
   libwlclient
-  base
+  libbase
   PkgConfig::WAYLAND)
 INCLUDE(CheckSymbolExists)
 CHECK_SYMBOL_EXISTS(signalfd "sys/signalfd.h" HAVE_SIGNALFD)

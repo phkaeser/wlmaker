@@ -76,7 +76,7 @@ typedef enum {
 
 extern const char *wlmaker_action_config_dict_key;
 
-extern const wlmcfg_enum_desc_t wlmaker_action_desc[];
+extern const bspl_enum_desc_t wlmaker_action_desc[];
 
 /** Forward declaration: Handle for bound actions. */
 typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;
@@ -91,7 +91,7 @@ typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;
  */
 wlmaker_action_handle_t *wlmaker_action_bind_keys(
     wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *keybindings_dict_ptr);
+    bspl_dict_t *keybindings_dict_ptr);
 
 /**
  * Unbinds actions previously bound by @ref wlmaker_action_bind_keys.

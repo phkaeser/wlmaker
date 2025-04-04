@@ -92,14 +92,14 @@ const uint32_t wlmaker_modifier_default_mask = (
 
 /* ------------------------------------------------------------------------- */
 wlmaker_server_t *wlmaker_server_create(
-    wlmcfg_dict_t *config_dict_ptr,
+    bspl_dict_t *config_dict_ptr,
     const wlmaker_server_options_t *options_ptr)
 {
     wlmaker_server_t *server_ptr = logged_calloc(1, sizeof(wlmaker_server_t));
     if (NULL == server_ptr) return NULL;
     server_ptr->options_ptr = options_ptr;
 
-    server_ptr->config_dict_ptr = wlmcfg_dict_ref(config_dict_ptr);
+    server_ptr->config_dict_ptr = bspl_dict_ref(config_dict_ptr);
     if (NULL == server_ptr->config_dict_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -273,14 +273,14 @@ wlmaker_server_t *wlmaker_server_create(
     }
 
     server_ptr->corner_ptr = wlmaker_corner_create(
-        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
+        bspl_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
         server_ptr->wlr_output_layout_ptr,
         server_ptr->cursor_ptr,
         server_ptr);
     if (NULL == server_ptr->corner_ptr) {
         bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
-               wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
+               bspl_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
                wl_display_get_event_loop(server_ptr->wl_display_ptr),
                server_ptr->wlr_output_layout_ptr,
                server_ptr->cursor_ptr,
@@ -390,7 +390,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->config_dict_ptr) {
-        wlmcfg_dict_unref(server_ptr->config_dict_ptr);
+        bspl_dict_unref(server_ptr->config_dict_ptr);
         server_ptr->config_dict_ptr = NULL;
     }
 
