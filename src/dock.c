@@ -47,7 +47,7 @@ struct _wlmaker_dock_t {
 };
 
 static bool _wlmaker_dock_decode_launchers(
-    wlmcfg_object_t *object_ptr,
+    bspl_object_t *object_ptr,
     void *dest_ptr);
 
 static void _wlmaker_dock_handle_workspace_changed(
@@ -61,27 +61,27 @@ typedef struct {
     /** Positioning data. */
     wlmtk_dock_positioning_t  positioning;
     /** Launchers. */
-    wlmcfg_array_t            *launchers_array_ptr;
+    bspl_array_t            *launchers_array_ptr;
 } parse_args;
 
 /** Enum descriptor for `enum wlr_edges`. */
-static const wlmcfg_enum_desc_t _wlmaker_dock_edges[] = {
-    WLMCFG_ENUM("TOP", WLR_EDGE_TOP),
-    WLMCFG_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
-    WLMCFG_ENUM("LEFT", WLR_EDGE_LEFT),
-    WLMCFG_ENUM("RIGHT", WLR_EDGE_RIGHT),
-    WLMCFG_ENUM_SENTINEL(),
+static const bspl_enum_desc_t _wlmaker_dock_edges[] = {
+    BSPL_ENUM("TOP", WLR_EDGE_TOP),
+    BSPL_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
+    BSPL_ENUM("LEFT", WLR_EDGE_LEFT),
+    BSPL_ENUM("RIGHT", WLR_EDGE_RIGHT),
+    BSPL_ENUM_SENTINEL(),
 };
 
 /** Descriptor for the dock's plist. */
-const wlmcfg_desc_t _wlmaker_dock_desc[] = {
-    WLMCFG_DESC_ENUM("Edge", true, parse_args, positioning.edge,
+const bspl_desc_t _wlmaker_dock_desc[] = {
+    BSPL_DESC_ENUM("Edge", true, parse_args, positioning.edge,
                      WLR_EDGE_NONE, _wlmaker_dock_edges),
-    WLMCFG_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
+    BSPL_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
                      WLR_EDGE_NONE, _wlmaker_dock_edges),
-    WLMCFG_DESC_CUSTOM("Launchers", true, parse_args, launchers_array_ptr,
+    BSPL_DESC_CUSTOM("Launchers", true, parse_args, launchers_array_ptr,
                        _wlmaker_dock_decode_launchers, NULL, NULL),
-    WLMCFG_DESC_SENTINEL(),
+    BSPL_DESC_SENTINEL(),
 };
 
 /* == Exported methods ===================================================== */
@@ -89,7 +89,7 @@ const wlmcfg_desc_t _wlmaker_dock_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_dock_t *wlmaker_dock_create(
     wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *state_dict_ptr,
+    bspl_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmaker_dock_t));
@@ -97,13 +97,13 @@ wlmaker_dock_t *wlmaker_dock_create(
     dock_ptr->server_ptr = server_ptr;
 
     parse_args args = {};
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(state_dict_ptr, "Dock");
+    bspl_dict_t *dict_ptr = bspl_dict_get_dict(state_dict_ptr, "Dock");
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "No 'Dock' dict found in configuration.");
         wlmaker_dock_destroy(dock_ptr);
         return NULL;
     }
-    wlmcfg_decode_dict(dict_ptr, _wlmaker_dock_desc, &args);
+    bspl_decode_dict(dict_ptr, _wlmaker_dock_desc, &args);
 
     dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
@@ -129,10 +129,10 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
 
     for (size_t i = 0;
-         i < wlmcfg_array_size(args.launchers_array_ptr);
+         i < bspl_array_size(args.launchers_array_ptr);
          ++i) {
-        wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-            wlmcfg_array_at(args.launchers_array_ptr, i));
+        bspl_dict_t *dict_ptr = bspl_dict_from_object(
+            bspl_array_at(args.launchers_array_ptr, i));
         if (NULL == dict_ptr) {
             bs_log(BS_ERROR, "Elements of 'Launchers' must be dicts.");
             wlmaker_dock_destroy(dock_ptr);
@@ -151,7 +151,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
     // FIXME: This is leaky.
     if (NULL != args.launchers_array_ptr) {
-        wlmcfg_array_unref(args.launchers_array_ptr);
+        bspl_array_unref(args.launchers_array_ptr);
         args.launchers_array_ptr = NULL;
     }
 
@@ -189,15 +189,15 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
 /* ------------------------------------------------------------------------- */
 /** Decoder for the "Launchers" array. Currently just stores a reference. */
 bool _wlmaker_dock_decode_launchers(
-    wlmcfg_object_t *object_ptr,
+    bspl_object_t *object_ptr,
     void *dest_ptr)
 {
-    wlmcfg_array_t **array_ptr_ptr = dest_ptr;
+    bspl_array_t **array_ptr_ptr = dest_ptr;
 
-    *array_ptr_ptr = wlmcfg_array_from_object(object_ptr);
+    *array_ptr_ptr = bspl_array_from_object(object_ptr);
     if (NULL == *array_ptr_ptr) return false;
 
-    wlmcfg_object_ref(wlmcfg_object_from_array(*array_ptr_ptr));
+    bspl_object_ref(bspl_object_from_array(*array_ptr_ptr));
     return true;
 }
 
@@ -255,8 +255,8 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
 
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-        wlmcfg_create_object_from_plist_data(
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_data(
             embedded_binary_default_state_data,
             embedded_binary_default_state_size));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
@@ -278,7 +278,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
-    wlmcfg_dict_unref(dict_ptr);
+    bspl_dict_unref(dict_ptr);
     wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
     wlmtk_root_destroy(server.root_ptr);

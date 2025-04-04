@@ -37,4 +37,10 @@ TARGET_COMPILE_OPTIONS(
   ${WAYLAND_CFLAGS_OTHER}
 )
 
-TARGET_LINK_LIBRARIES(backend PRIVATE base conf toolkit PkgConfig::WLROOTS)
+TARGET_LINK_LIBRARIES(
+  backend
+  PRIVATE
+  libbase
+  libbase_plist
+  toolkit
+  PkgConfig::WLROOTS)

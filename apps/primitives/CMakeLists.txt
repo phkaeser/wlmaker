@@ -23,7 +23,7 @@ TARGET_INCLUDE_DIRECTORIES(
   primitives PRIVATE)
 TARGET_LINK_LIBRARIES(
   primitives
-  base)
+  libbase)
 
 ADD_EXECUTABLE(segment_display_test
   segment_display_test.c
@@ -37,7 +37,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${CAIRO_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(
   segment_display_test PRIVATE
-  base
+  libbase
   PkgConfig::CAIRO)
 ADD_TEST(
   NAME segment_display_test

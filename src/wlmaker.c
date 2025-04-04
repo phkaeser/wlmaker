@@ -22,6 +22,7 @@
 #define _POSIX_C_SOURCE 200112L
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <wlr/util/log.h>
 
 #include <limits.h>
@@ -29,8 +30,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-
-#include "conf/plist.h"
 
 #include "action.h"
 #include "background.h"
@@ -146,12 +145,12 @@ typedef struct {
 } wlmaker_workspace_style_t;
 
 /** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
-static const wlmcfg_desc_t wlmaker_workspace_style_desc[] = {
-    WLMCFG_DESC_CHARBUF(
+static const bspl_desc_t wlmaker_workspace_style_desc[] = {
+    BSPL_DESC_CHARBUF(
         "Name", true, wlmaker_workspace_style_t, name, 32, NULL),
-    WLMCFG_DESC_ARGB32(
+    BSPL_DESC_ARGB32(
         "Color", false, wlmaker_workspace_style_t, color, 0),
-    WLMCFG_DESC_SENTINEL()
+    BSPL_DESC_SENTINEL()
 };
 
 /* ------------------------------------------------------------------------- */
@@ -227,17 +226,17 @@ bool start_subprocess(const char *cmdline_ptr)
 /* ------------------------------------------------------------------------- */
 /** Creates workspaces as configured in the state dict. */
 bool create_workspaces(
-    wlmcfg_dict_t *state_dict_ptr,
+    bspl_dict_t *state_dict_ptr,
     wlmaker_server_t *server_ptr)
 {
-    wlmcfg_array_t *array_ptr = wlmcfg_dict_get_array(
+    bspl_array_t *array_ptr = bspl_dict_get_array(
         state_dict_ptr, "Workspaces");
     if (NULL == array_ptr) return false;
 
     bool rv = true;
-    for (size_t i = 0; i < wlmcfg_array_size(array_ptr); ++i) {
-        wlmcfg_dict_t *dict_ptr = wlmcfg_dict_from_object(
-            wlmcfg_array_at(array_ptr, i));
+    for (size_t i = 0; i < bspl_array_size(array_ptr); ++i) {
+        bspl_dict_t *dict_ptr = bspl_dict_from_object(
+            bspl_array_at(array_ptr, i));
         if (NULL == dict_ptr) {
             bs_log(BS_ERROR, "Array element in \"Workspaces\" is not a dict");
             rv = false;
@@ -245,7 +244,7 @@ bool create_workspaces(
         }
 
         wlmaker_workspace_style_t s;
-        if (!wlmcfg_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
+        if (!bspl_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
             bs_log(BS_ERROR,
                    "Failed to decode dict element %zu in \"Workspace\"",
                    i);
@@ -329,7 +328,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         bs_arg_print_usage(stderr, wlmaker_args);
         return EXIT_FAILURE;
     }
-    wlmcfg_dict_t *config_dict_ptr = wlmaker_config_load(
+    bspl_dict_t *config_dict_ptr = wlmaker_config_load(
         wlmaker_arg_config_file_ptr);
     if (NULL != wlmaker_arg_config_file_ptr) free(wlmaker_arg_config_file_ptr);
     if (NULL == config_dict_ptr) {
@@ -337,7 +336,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmcfg_dict_t *state_dict_ptr = wlmaker_state_load(
+    bspl_dict_t *state_dict_ptr = wlmaker_state_load(
         wlmaker_arg_state_file_ptr);
     if (NULL != wlmaker_arg_state_file_ptr) free(wlmaker_arg_state_file_ptr);
     if (NULL == state_dict_ptr) {
@@ -349,7 +348,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         config_dict_ptr, &wlmaker_server_options);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
-    wlmcfg_dict_t *style_dict_ptr = wlmcfg_dict_from_object(
+    bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
         wlmaker_plist_load(
             "style",
             wlmaker_arg_style_file_ptr,
@@ -357,13 +356,13 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             embedded_binary_style_data,
             embedded_binary_style_size));
     if (NULL == style_dict_ptr) return EXIT_FAILURE;
-    if (!wlmcfg_decode_dict(
+    if (!bspl_decode_dict(
             style_dict_ptr,
             wlmaker_config_style_desc,
             &server_ptr->style)) return EXIT_FAILURE;
-    wlmcfg_dict_unref(style_dict_ptr);
+    bspl_dict_unref(style_dict_ptr);
 
-    server_ptr->root_menu_array_ptr = wlmcfg_array_from_object(
+    server_ptr->root_menu_array_ptr = bspl_array_from_object(
         wlmaker_plist_load(
             "root menu",
             wlmaker_arg_root_menu_file_ptr,
@@ -386,7 +385,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
-        wlmcfg_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
+        bspl_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
     if (NULL == action_handle_ptr) {
         bs_log(BS_ERROR, "Failed to bind keys.");
         return EXIT_FAILURE;
@@ -409,11 +408,11 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
         setenv("WAYLAND_DISPLAY", server_ptr->wl_socket_name_ptr, true);
 
-        wlmcfg_array_t *autostarted_ptr = wlmcfg_dict_get_array(
+        bspl_array_t *autostarted_ptr = bspl_dict_get_array(
             config_dict_ptr, "Autostart");
         if (NULL != autostarted_ptr) {
-            for (size_t i = 0; i < wlmcfg_array_size(autostarted_ptr); ++i) {
-                const char *cmd_ptr = wlmcfg_array_string_value_at(
+            for (size_t i = 0; i < bspl_array_size(autostarted_ptr); ++i) {
+                const char *cmd_ptr = bspl_array_string_value_at(
                     autostarted_ptr, i);
                 if (!start_subprocess(cmd_ptr)) return EXIT_FAILURE;
             }
@@ -446,7 +445,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     if (NULL != clip_ptr) wlmaker_clip_destroy(clip_ptr);
     if (NULL != dock_ptr) wlmaker_dock_destroy(dock_ptr);
     wlmaker_action_unbind_keys(action_handle_ptr);
-    wlmcfg_array_unref(server_ptr->root_menu_array_ptr);
+    bspl_array_unref(server_ptr->root_menu_array_ptr);
     wlmaker_server_destroy(server_ptr);
 
     bs_subprocess_t *sp_ptr;
@@ -455,8 +454,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
     bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
-    wlmcfg_dict_unref(config_dict_ptr);
-    wlmcfg_dict_unref(state_dict_ptr);
+    bspl_dict_unref(config_dict_ptr);
+    bspl_dict_unref(state_dict_ptr);
     regfree(&wlmaker_wlr_log_regex);
     return rv;
 }

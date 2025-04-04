@@ -112,21 +112,21 @@ typedef struct {
 } parse_args;
 
 /** Enum descriptor for `enum wlr_edges`. */
-static const wlmcfg_enum_desc_t _wlmaker_clip_edges[] = {
-    WLMCFG_ENUM("TOP", WLR_EDGE_TOP),
-    WLMCFG_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
-    WLMCFG_ENUM("LEFT", WLR_EDGE_LEFT),
-    WLMCFG_ENUM("RIGHT", WLR_EDGE_RIGHT),
-    WLMCFG_ENUM_SENTINEL(),
+static const bspl_enum_desc_t _wlmaker_clip_edges[] = {
+    BSPL_ENUM("TOP", WLR_EDGE_TOP),
+    BSPL_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
+    BSPL_ENUM("LEFT", WLR_EDGE_LEFT),
+    BSPL_ENUM("RIGHT", WLR_EDGE_RIGHT),
+    BSPL_ENUM_SENTINEL(),
 };
 
 /** Descriptor for the clip's plist. */
-const wlmcfg_desc_t _wlmaker_clip_desc[] = {
-    WLMCFG_DESC_ENUM("Edge", true, parse_args, positioning.edge,
+const bspl_desc_t _wlmaker_clip_desc[] = {
+    BSPL_DESC_ENUM("Edge", true, parse_args, positioning.edge,
                      WLR_EDGE_NONE, _wlmaker_clip_edges),
-    WLMCFG_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
+    BSPL_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
                      WLR_EDGE_NONE, _wlmaker_clip_edges),
-    WLMCFG_DESC_SENTINEL(),
+    BSPL_DESC_SENTINEL(),
 };
 
 /** Lookup paths for icons -- FIXME: de-duplicate this! */
@@ -147,7 +147,7 @@ static const char *lookup_paths[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_clip_t *wlmaker_clip_create(
     wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *state_dict_ptr,
+    bspl_dict_t *state_dict_ptr,
     const wlmaker_config_style_t *style_ptr)
 {
     wlmaker_clip_t *clip_ptr = logged_calloc(1, sizeof(wlmaker_clip_t));
@@ -169,13 +169,13 @@ wlmaker_clip_t *wlmaker_clip_create(
     }
 
     parse_args args = {};
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(state_dict_ptr, "Clip");
+    bspl_dict_t *dict_ptr = bspl_dict_get_dict(state_dict_ptr, "Clip");
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "No 'Clip' dict found in state.");
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
-    wlmcfg_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
+    bspl_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
 
     clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);

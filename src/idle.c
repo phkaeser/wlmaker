@@ -37,7 +37,7 @@ struct _wlmaker_idle_monitor_t {
     wlmaker_server_t          *server_ptr;
 
     /** Dictionnary holding the 'ScreenLock' configuration. */
-    wlmcfg_dict_t             *lock_config_dict_ptr;
+    bspl_dict_t             *lock_config_dict_ptr;
 
     /** Reference to the event loop. */
     struct wl_event_loop      *wl_event_loop_ptr;
@@ -111,8 +111,8 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
     monitor_ptr->wl_event_loop_ptr = wl_display_get_event_loop(
         server_ptr->wl_display_ptr);
 
-    monitor_ptr->lock_config_dict_ptr = wlmcfg_dict_ref(
-        wlmcfg_dict_get_dict(server_ptr->config_dict_ptr, "ScreenLock"));
+    monitor_ptr->lock_config_dict_ptr = bspl_dict_ref(
+        bspl_dict_get_dict(server_ptr->config_dict_ptr, "ScreenLock"));
     if (NULL == monitor_ptr->lock_config_dict_ptr) {
         bs_log(BS_ERROR, "No 'ScreenLock' dict found in config.");
         wlmaker_idle_monitor_destroy(monitor_ptr);
@@ -170,7 +170,7 @@ void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr)
     }
 
     if (NULL != idle_monitor_ptr->lock_config_dict_ptr) {
-        wlmcfg_dict_unref(idle_monitor_ptr->lock_config_dict_ptr);
+        bspl_dict_unref(idle_monitor_ptr->lock_config_dict_ptr);
         idle_monitor_ptr->lock_config_dict_ptr = NULL;
     }
 
@@ -194,7 +194,7 @@ void wlmaker_idle_monitor_reset(wlmaker_idle_monitor_t *idle_monitor_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr)
 {
-    const char *cmd_ptr = wlmcfg_dict_get_string_value(
+    const char *cmd_ptr = bspl_dict_get_string_value(
         idle_monitor_ptr->lock_config_dict_ptr, "Command");
     if (NULL == cmd_ptr) {
         bs_log(BS_WARNING, "No 'Command' configured in 'ScreenLock' config.");
@@ -299,7 +299,7 @@ int _wlmaker_idle_monitor_timer(void *data_ptr)
  */
 int _wlmaker_idle_msec(wlmaker_idle_monitor_t *idle_monitor_ptr)
 {
-    const char *idle_seconds_ptr = wlmcfg_dict_get_string_value(
+    const char *idle_seconds_ptr = bspl_dict_get_string_value(
         idle_monitor_ptr->lock_config_dict_ptr, "IdleSeconds");
     if (NULL == idle_seconds_ptr) return 0;
 

@@ -20,7 +20,7 @@
 #ifndef __WLMBE_BACKEND_H__
 #define __WLMBE_BACKEND_H__
 
-#include <conf/model.h>
+#include <libbase/plist.h>
 #include <wayland-server-core.h>
 
 struct wlr_backend;
@@ -53,7 +53,7 @@ wlmbe_backend_t *wlmbe_backend_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     int width,
     int height,
-    wlmcfg_dict_t *config_dict_ptr);
+    bspl_dict_t *config_dict_ptr);
 
 /**
  * Destroys the server backend.

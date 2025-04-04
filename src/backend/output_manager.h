@@ -22,7 +22,6 @@
 
 #include <wayland-server-core.h>
 
-#include <conf/model.h>
 #include <toolkit/toolkit.h>
 
 struct wlr_allocator;

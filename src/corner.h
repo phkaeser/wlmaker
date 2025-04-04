@@ -42,7 +42,7 @@ extern "C" {
  * @return Pointer to the hot-corner monitor.
  */
 wlmaker_corner_t *wlmaker_corner_create(
-    wlmcfg_dict_t *hot_corner_config_dict_ptr,
+    bspl_dict_t *hot_corner_config_dict_ptr,
     struct wl_event_loop *wl_event_loop_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     wlmaker_cursor_t *cursor_ptr,

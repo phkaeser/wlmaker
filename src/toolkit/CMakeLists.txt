@@ -109,7 +109,7 @@ TARGET_COMPILE_OPTIONS(
 
 TARGET_LINK_LIBRARIES(
   toolkit
-  PUBLIC base PkgConfig::CAIRO PkgConfig::WLROOTS
+  PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND
 )
 

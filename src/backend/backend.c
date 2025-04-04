@@ -22,8 +22,8 @@
 #include "output.h"
 #include "output_manager.h"
 
-#include <conf/decode.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <toolkit/toolkit.h>
 
 #define WLR_USE_UNSTABLE
@@ -85,7 +85,7 @@ struct _wlmbe_backend_t {
 };
 
 static bool _wlmbe_output_config_parse(
-    wlmcfg_dict_t *config_dict_ptr,
+    bspl_dict_t *config_dict_ptr,
     wlmbe_output_config_t *config_ptr);
 static void _wlmbe_backend_handle_new_output(
     struct wl_listener *listener_ptr,
@@ -97,26 +97,26 @@ static void _wlmbe_backend_handle_new_output(
 static const char *_wlmbe_output_dict_name = "Output";
 
 /** Descriptor for output transformations. */
-static const wlmcfg_enum_desc_t _wlmbe_output_transformation_desc[] = {
-    WLMCFG_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
-    WLMCFG_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
-    WLMCFG_ENUM("Rotate180", WL_OUTPUT_TRANSFORM_180),
-    WLMCFG_ENUM("Rotate270", WL_OUTPUT_TRANSFORM_270),
-    WLMCFG_ENUM("Flip", WL_OUTPUT_TRANSFORM_FLIPPED),
-    WLMCFG_ENUM("FlipAndRotate90", WL_OUTPUT_TRANSFORM_FLIPPED_90),
-    WLMCFG_ENUM("FlipAndRotate180", WL_OUTPUT_TRANSFORM_FLIPPED_180),
-    WLMCFG_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
-    WLMCFG_ENUM_SENTINEL(),
+static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
+    BSPL_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
+    BSPL_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
+    BSPL_ENUM("Rotate180", WL_OUTPUT_TRANSFORM_180),
+    BSPL_ENUM("Rotate270", WL_OUTPUT_TRANSFORM_270),
+    BSPL_ENUM("Flip", WL_OUTPUT_TRANSFORM_FLIPPED),
+    BSPL_ENUM("FlipAndRotate90", WL_OUTPUT_TRANSFORM_FLIPPED_90),
+    BSPL_ENUM("FlipAndRotate180", WL_OUTPUT_TRANSFORM_FLIPPED_180),
+    BSPL_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
+    BSPL_ENUM_SENTINEL(),
 };
 
 /** Descriptor for the output configuration. */
-static const wlmcfg_desc_t    _wlmbe_output_config_desc[] = {
-    WLMCFG_DESC_ENUM("Transformation", true,
+static const bspl_desc_t    _wlmbe_output_config_desc[] = {
+    BSPL_DESC_ENUM("Transformation", true,
                      wlmbe_output_config_t, transformation,
                      WL_OUTPUT_TRANSFORM_NORMAL,
                      _wlmbe_output_transformation_desc),
-    WLMCFG_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, scale, 1.0),
-    WLMCFG_DESC_SENTINEL()
+    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, scale, 1.0),
+    BSPL_DESC_SENTINEL()
 };
 
 /* == Exported methods ===================================================== */
@@ -128,7 +128,7 @@ wlmbe_backend_t *wlmbe_backend_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     int width,
     int height,
-    wlmcfg_dict_t *config_dict_ptr)
+    bspl_dict_t *config_dict_ptr)
 {
     wlmbe_backend_t *backend_ptr = logged_calloc(1, sizeof(wlmbe_backend_t));
     if (NULL == backend_ptr) return NULL;
@@ -338,7 +338,7 @@ bool _wlmbe_backend_add_output(
         wlmbe_dlnode_from_output(output_ptr));
 
     const char *tname_ptr = "Unknown";
-    wlmcfg_enum_value_to_name(
+    bspl_enum_value_to_name(
         _wlmbe_output_transformation_desc, wlrop->transform, &tname_ptr);
     bs_log(BS_INFO, "Added output '%s' (%dx%d). Trsf '%s', Scale %.2f.",
            wlrop->name, wlrop->width, wlrop->height, tname_ptr, wlrop->scale);
@@ -348,17 +348,17 @@ bool _wlmbe_backend_add_output(
 /* ------------------------------------------------------------------------- */
 /** Parses the plist dictionnary into the @ref wlmbe_output_config_t. */
 bool _wlmbe_output_config_parse(
-    wlmcfg_dict_t *config_dict_ptr,
+    bspl_dict_t *config_dict_ptr,
     wlmbe_output_config_t *config_ptr)
 {
-    wlmcfg_dict_t *output_dict_ptr = wlmcfg_dict_get_dict(
+    bspl_dict_t *output_dict_ptr = bspl_dict_get_dict(
         config_dict_ptr, _wlmbe_output_dict_name);
     if (NULL == output_dict_ptr) {
         bs_log(BS_ERROR, "No '%s' dict.", _wlmbe_output_dict_name);
         return false;
     }
 
-    if (!wlmcfg_decode_dict(
+    if (!bspl_decode_dict(
             output_dict_ptr,
             _wlmbe_output_config_desc,
             config_ptr)) {

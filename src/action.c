@@ -23,8 +23,6 @@
 #include "default_configuration.h"
 #include "root_menu.h"
 #include "server.h"
-#include "conf/decode.h"
-#include "conf/plist.h"
 
 #include <xkbcommon/xkbcommon.h>
 
@@ -64,7 +62,7 @@ static bool _wlmaker_keybindings_parse(
 
 static bool _wlmaker_keybindings_bind_item(
     const char *key_ptr,
-    wlmcfg_object_t *object_ptr,
+    bspl_object_t *object_ptr,
     void *userdata_ptr);
 
 static bool _wlmaker_action_bound_callback(
@@ -76,61 +74,61 @@ static bool _wlmaker_action_bound_callback(
 const char *wlmaker_action_config_dict_key = "KeyBindings";
 
 /** Supported modifiers for key bindings. */
-static const wlmcfg_enum_desc_t _wlmaker_keybindings_modifiers[] = {
-    WLMCFG_ENUM("Shift", WLR_MODIFIER_SHIFT),
-    // Caps? Maybe not: WLMCFG_ENUM("Caps", WLR_MODIFIER_CAPS),
-    WLMCFG_ENUM("Ctrl", WLR_MODIFIER_CTRL),
-    WLMCFG_ENUM("Alt", WLR_MODIFIER_ALT),
-    WLMCFG_ENUM("Mod2", WLR_MODIFIER_MOD2),
-    WLMCFG_ENUM("Mod3", WLR_MODIFIER_MOD3),
-    WLMCFG_ENUM("Logo", WLR_MODIFIER_LOGO),
-    WLMCFG_ENUM("Mod5", WLR_MODIFIER_MOD5),
-    WLMCFG_ENUM_SENTINEL(),
+static const bspl_enum_desc_t _wlmaker_keybindings_modifiers[] = {
+    BSPL_ENUM("Shift", WLR_MODIFIER_SHIFT),
+    // Caps? Maybe not: BSPL_ENUM("Caps", WLR_MODIFIER_CAPS),
+    BSPL_ENUM("Ctrl", WLR_MODIFIER_CTRL),
+    BSPL_ENUM("Alt", WLR_MODIFIER_ALT),
+    BSPL_ENUM("Mod2", WLR_MODIFIER_MOD2),
+    BSPL_ENUM("Mod3", WLR_MODIFIER_MOD3),
+    BSPL_ENUM("Logo", WLR_MODIFIER_LOGO),
+    BSPL_ENUM("Mod5", WLR_MODIFIER_MOD5),
+    BSPL_ENUM_SENTINEL(),
 };
 
 /** The actions that can be bound. */
-const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
-    WLMCFG_ENUM("None", WLMAKER_ACTION_NONE),
-    WLMCFG_ENUM("Quit", WLMAKER_ACTION_QUIT),
-    WLMCFG_ENUM("LockScreen", WLMAKER_ACTION_LOCK_SCREEN),
-    WLMCFG_ENUM("InhibitLockBegin", WLMAKER_ACTION_LOCK_INHIBIT_BEGIN),
-    WLMCFG_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
-    WLMCFG_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
-    WLMCFG_ENUM("ShellExecute", WLMAKER_ACTION_SHELL_EXECUTE),
+const bspl_enum_desc_t wlmaker_action_desc[] = {
+    BSPL_ENUM("None", WLMAKER_ACTION_NONE),
+    BSPL_ENUM("Quit", WLMAKER_ACTION_QUIT),
+    BSPL_ENUM("LockScreen", WLMAKER_ACTION_LOCK_SCREEN),
+    BSPL_ENUM("InhibitLockBegin", WLMAKER_ACTION_LOCK_INHIBIT_BEGIN),
+    BSPL_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
+    BSPL_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
+    BSPL_ENUM("ShellExecute", WLMAKER_ACTION_SHELL_EXECUTE),
 
-    WLMCFG_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
-    WLMCFG_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
+    BSPL_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
+    BSPL_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
 
-    WLMCFG_ENUM("TaskPrevious", WLMAKER_ACTION_TASK_TO_PREVIOUS),
-    WLMCFG_ENUM("TaskNext", WLMAKER_ACTION_TASK_TO_NEXT),
+    BSPL_ENUM("TaskPrevious", WLMAKER_ACTION_TASK_TO_PREVIOUS),
+    BSPL_ENUM("TaskNext", WLMAKER_ACTION_TASK_TO_NEXT),
 
-    WLMCFG_ENUM("WindowRaise", WLMAKER_ACTION_WINDOW_RAISE),
-    WLMCFG_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
-    WLMCFG_ENUM("WindowToggleFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
-    WLMCFG_ENUM("WindowToggleMaximized", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
+    BSPL_ENUM("WindowRaise", WLMAKER_ACTION_WINDOW_RAISE),
+    BSPL_ENUM("WindowLower", WLMAKER_ACTION_WINDOW_LOWER),
+    BSPL_ENUM("WindowToggleFullscreen", WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN),
+    BSPL_ENUM("WindowToggleMaximized", WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED),
 
-    WLMCFG_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_MAXIMIZE),
-    WLMCFG_ENUM("WindowUnmaximize", WLMAKER_ACTION_WINDOW_UNMAXIMIZE),
-    WLMCFG_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_FULLSCREEN),
-    WLMCFG_ENUM("WindowShade", WLMAKER_ACTION_WINDOW_SHADE),
-    WLMCFG_ENUM("WindowUnshade", WLMAKER_ACTION_WINDOW_UNSHADE),
+    BSPL_ENUM("WindowMaximize", WLMAKER_ACTION_WINDOW_MAXIMIZE),
+    BSPL_ENUM("WindowUnmaximize", WLMAKER_ACTION_WINDOW_UNMAXIMIZE),
+    BSPL_ENUM("WindowFullscreen", WLMAKER_ACTION_WINDOW_FULLSCREEN),
+    BSPL_ENUM("WindowShade", WLMAKER_ACTION_WINDOW_SHADE),
+    BSPL_ENUM("WindowUnshade", WLMAKER_ACTION_WINDOW_UNSHADE),
 
-    WLMCFG_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
+    BSPL_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
 
-    WLMCFG_ENUM("SwitchToVT1", WLMAKER_ACTION_SWITCH_TO_VT1),
-    WLMCFG_ENUM("SwitchToVT2", WLMAKER_ACTION_SWITCH_TO_VT2),
-    WLMCFG_ENUM("SwitchToVT3", WLMAKER_ACTION_SWITCH_TO_VT3),
-    WLMCFG_ENUM("SwitchToVT4", WLMAKER_ACTION_SWITCH_TO_VT4),
-    WLMCFG_ENUM("SwitchToVT5", WLMAKER_ACTION_SWITCH_TO_VT5),
-    WLMCFG_ENUM("SwitchToVT6", WLMAKER_ACTION_SWITCH_TO_VT6),
-    WLMCFG_ENUM("SwitchToVT7", WLMAKER_ACTION_SWITCH_TO_VT7),
-    WLMCFG_ENUM("SwitchToVT8", WLMAKER_ACTION_SWITCH_TO_VT8),
-    WLMCFG_ENUM("SwitchToVT9", WLMAKER_ACTION_SWITCH_TO_VT9),
-    WLMCFG_ENUM("SwitchToVT10", WLMAKER_ACTION_SWITCH_TO_VT10),
-    WLMCFG_ENUM("SwitchToVT11", WLMAKER_ACTION_SWITCH_TO_VT11),
-    WLMCFG_ENUM("SwitchToVT12", WLMAKER_ACTION_SWITCH_TO_VT12),
+    BSPL_ENUM("SwitchToVT1", WLMAKER_ACTION_SWITCH_TO_VT1),
+    BSPL_ENUM("SwitchToVT2", WLMAKER_ACTION_SWITCH_TO_VT2),
+    BSPL_ENUM("SwitchToVT3", WLMAKER_ACTION_SWITCH_TO_VT3),
+    BSPL_ENUM("SwitchToVT4", WLMAKER_ACTION_SWITCH_TO_VT4),
+    BSPL_ENUM("SwitchToVT5", WLMAKER_ACTION_SWITCH_TO_VT5),
+    BSPL_ENUM("SwitchToVT6", WLMAKER_ACTION_SWITCH_TO_VT6),
+    BSPL_ENUM("SwitchToVT7", WLMAKER_ACTION_SWITCH_TO_VT7),
+    BSPL_ENUM("SwitchToVT8", WLMAKER_ACTION_SWITCH_TO_VT8),
+    BSPL_ENUM("SwitchToVT9", WLMAKER_ACTION_SWITCH_TO_VT9),
+    BSPL_ENUM("SwitchToVT10", WLMAKER_ACTION_SWITCH_TO_VT10),
+    BSPL_ENUM("SwitchToVT11", WLMAKER_ACTION_SWITCH_TO_VT11),
+    BSPL_ENUM("SwitchToVT12", WLMAKER_ACTION_SWITCH_TO_VT12),
 
-    WLMCFG_ENUM_SENTINEL(),
+    BSPL_ENUM_SENTINEL(),
 };
 
 /* == Exported methods ===================================================== */
@@ -138,14 +136,14 @@ const wlmcfg_enum_desc_t wlmaker_action_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_action_handle_t *wlmaker_action_bind_keys(
     wlmaker_server_t *server_ptr,
-    wlmcfg_dict_t *keybindings_dict_ptr)
+    bspl_dict_t *keybindings_dict_ptr)
 {
     wlmaker_action_handle_t *handle_ptr = logged_calloc(
         1, sizeof(wlmaker_action_handle_t));
     if (NULL == handle_ptr) return NULL;
     handle_ptr->server_ptr = server_ptr;
 
-    if (wlmcfg_dict_foreach(
+    if (bspl_dict_foreach(
             keybindings_dict_ptr,
             _wlmaker_keybindings_bind_item,
             handle_ptr)) {
@@ -411,11 +409,11 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
  */
 bool _wlmaker_keybindings_bind_item(
     const char *key_ptr,
-    wlmcfg_object_t *object_ptr,
+    bspl_object_t *object_ptr,
     void *userdata_ptr)
 {
     wlmaker_action_handle_t *handle_ptr = userdata_ptr;
-    wlmcfg_string_t *string_ptr = wlmcfg_string_from_object(object_ptr);
+    bspl_string_t *string_ptr = bspl_string_from_object(object_ptr);
     if (NULL == string_ptr) {
         bs_log(BS_WARNING, "Action must be a string for key binding \"%s\"",
                key_ptr);
@@ -427,15 +425,15 @@ bool _wlmaker_keybindings_bind_item(
     if (!_wlmaker_keybindings_parse(key_ptr, &modifiers, &keysym)) {
         bs_log(BS_WARNING,
                "Failed to parse binding '%s' for keybinding action '%s'",
-               key_ptr, wlmcfg_string_value(string_ptr));
+               key_ptr, bspl_string_value(string_ptr));
         return false;
     }
 
     int action;
-    if (!wlmcfg_enum_name_to_value(
-            wlmaker_action_desc, wlmcfg_string_value(string_ptr), &action)) {
+    if (!bspl_enum_name_to_value(
+            wlmaker_action_desc, bspl_string_value(string_ptr), &action)) {
         bs_log(BS_WARNING, "Not a valid keybinding action: '%s'",
-               wlmcfg_string_value(string_ptr));
+               bspl_string_value(string_ptr));
         return false;
     }
 
@@ -496,7 +494,7 @@ bool _wlmaker_keybindings_parse(
         start_ptr = end_ptr;
 
         int new_modifier;
-        if (wlmcfg_enum_name_to_value(
+        if (bspl_enum_name_to_value(
                 _wlmaker_keybindings_modifiers, token_ptr, &new_modifier)) {
             *modifiers_ptr |= new_modifier;
         } else if (*keysym_ptr == XKB_KEY_NoSymbol) {
@@ -589,19 +587,19 @@ void test_keybindings_parse(bs_test_t *test_ptr)
 void test_default_keybindings(bs_test_t *test_ptr)
 {
     wlmaker_server_t server = {};
-    wlmcfg_object_t *obj_ptr = wlmcfg_create_object_from_plist_data(
+    bspl_object_t *obj_ptr = bspl_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmcfg_dict_from_object(obj_ptr));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, bspl_dict_from_object(obj_ptr));
 
-    wlmcfg_dict_t *dict_ptr = wlmcfg_dict_get_dict(
-        wlmcfg_dict_from_object(obj_ptr), wlmaker_action_config_dict_key);
+    bspl_dict_t *dict_ptr = bspl_dict_get_dict(
+        bspl_dict_from_object(obj_ptr), wlmaker_action_config_dict_key);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
     wlmaker_action_handle_t *handle_ptr = wlmaker_action_bind_keys(
         &server, dict_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
-    wlmcfg_object_unref(obj_ptr);
+    bspl_object_unref(obj_ptr);
     wlmaker_action_unbind_keys(handle_ptr);
 }
 

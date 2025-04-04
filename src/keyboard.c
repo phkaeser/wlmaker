@@ -29,7 +29,7 @@
 /** Keyboard handle. */
 struct _wlmaker_keyboard_t {
     /** Configuration dictionnary, just the "Keyboard" section. */
-    wlmcfg_dict_t             *config_dict_ptr;
+    bspl_dict_t             *config_dict_ptr;
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
     /** The wlroots keyboard structure. */
@@ -44,10 +44,10 @@ struct _wlmaker_keyboard_t {
 };
 
 static bool _wlmaker_keyboard_populate_rules(
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr);
 static bool _wlmaker_keyboard_populate_repeat(
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     int32_t *rate_ptr,
     int32_t *delay_ptr);
 
@@ -71,7 +71,7 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     // Retrieve configuration.
-    wlmcfg_dict_t *config_dict_ptr = wlmcfg_dict_get_dict(
+    bspl_dict_t *config_dict_ptr = bspl_dict_get_dict(
         server_ptr->config_dict_ptr, "Keyboard");
     if (NULL == config_dict_ptr) {
         bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
@@ -79,7 +79,7 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         return NULL;
     }
     keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
-        wlmcfg_dict_ref(config_dict_ptr));
+        bspl_dict_ref(config_dict_ptr));
 
     struct xkb_rule_names xkb_rule;
     if (!_wlmaker_keyboard_populate_rules(
@@ -140,7 +140,7 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
 
     if (NULL != keyboard_ptr->config_dict_ptr) {
-        wlmcfg_dict_unref(keyboard_ptr->config_dict_ptr);
+        bspl_dict_unref(keyboard_ptr->config_dict_ptr);
         keyboard_ptr->config_dict_ptr = NULL;
     }
 
@@ -159,20 +159,20 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
  * @return true on success
  */
 bool _wlmaker_keyboard_populate_rules(
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr)
 {
-    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "XkbRMLVO");
+    dict_ptr = bspl_dict_get_dict(dict_ptr, "XkbRMLVO");
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "No 'XkbRMLVO' dict in 'Keyboard' dict.");
         return false;
     }
 
-    rules_ptr->rules = wlmcfg_dict_get_string_value(dict_ptr, "Rules");
-    rules_ptr->model = wlmcfg_dict_get_string_value(dict_ptr, "Model");
-    rules_ptr->layout = wlmcfg_dict_get_string_value(dict_ptr, "Layout");
-    rules_ptr->variant = wlmcfg_dict_get_string_value(dict_ptr, "Variant");
-    rules_ptr->options = wlmcfg_dict_get_string_value(dict_ptr, "Options");
+    rules_ptr->rules = bspl_dict_get_string_value(dict_ptr, "Rules");
+    rules_ptr->model = bspl_dict_get_string_value(dict_ptr, "Model");
+    rules_ptr->layout = bspl_dict_get_string_value(dict_ptr, "Layout");
+    rules_ptr->variant = bspl_dict_get_string_value(dict_ptr, "Variant");
+    rules_ptr->options = bspl_dict_get_string_value(dict_ptr, "Options");
 
     return true;
 }
@@ -188,11 +188,11 @@ bool _wlmaker_keyboard_populate_rules(
  * @return true on success.
  */
 bool _wlmaker_keyboard_populate_repeat(
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     int32_t *rate_ptr,
     int32_t *delay_ptr)
 {
-    dict_ptr = wlmcfg_dict_get_dict(dict_ptr, "Repeat");
+    dict_ptr = bspl_dict_get_dict(dict_ptr, "Repeat");
     if (NULL == dict_ptr) {
         bs_log(BS_ERROR, "No 'Repeat' dict in 'Keyboard' dict.");
         return false;
@@ -200,21 +200,21 @@ bool _wlmaker_keyboard_populate_repeat(
 
     uint64_t value;
     if (!bs_strconvert_uint64(
-            wlmcfg_dict_get_string_value(dict_ptr, "Delay"),
+            bspl_dict_get_string_value(dict_ptr, "Delay"),
             &value, 10) ||
         value > INT32_MAX) {
         bs_log(BS_ERROR, "Invalid value for 'Delay': %s",
-               wlmcfg_dict_get_string_value(dict_ptr, "Delay"));
+               bspl_dict_get_string_value(dict_ptr, "Delay"));
         return false;
     }
     *delay_ptr = value;
 
     if (!bs_strconvert_uint64(
-            wlmcfg_dict_get_string_value(dict_ptr, "Rate"),
+            bspl_dict_get_string_value(dict_ptr, "Rate"),
             &value, 10) ||
         value > INT32_MAX) {
         bs_log(BS_ERROR, "Invalid value for 'Rate': %s",
-               wlmcfg_dict_get_string_value(dict_ptr, "Rate"));
+               bspl_dict_get_string_value(dict_ptr, "Rate"));
         return false;
     }
     *rate_ptr = value;

@@ -42,7 +42,7 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
  */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const wlmtk_tile_style_t *style_ptr,
-    wlmcfg_dict_t *dict_ptr,
+    bspl_dict_t *dict_ptr,
     wlmaker_subprocess_monitor_t *monitor_ptr,
     wlmtk_env_t *env_ptr);
 

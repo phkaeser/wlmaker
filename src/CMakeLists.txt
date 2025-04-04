@@ -83,26 +83,27 @@ SET_TARGET_PROPERTIES(
 
 ADD_DEPENDENCIES(
   wlmaker_lib
-  protocol_headers
   backend
-  conf
-  toolkit
   embedded_configuration
   embedded_root_menu
   embedded_state
   embedded_style
+  libbase
+  libbase_plist
+  protocol_headers
+  toolkit
   wlmaker_lib)
 
 TARGET_LINK_LIBRARIES(
   wlmaker_lib
   backend
-  base
-  conf
-  toolkit
   embedded_configuration
   embedded_root_menu
   embedded_state
   embedded_style
+  libbase
+  libbase_plist
+  toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND
@@ -138,7 +139,7 @@ TARGET_COMPILE_OPTIONS(
   wlmaker PRIVATE
   ${WAYLAND_CFLAGS}
   ${WAYLAND_CFLAGS_OTHER})
-TARGET_LINK_LIBRARIES(wlmaker PRIVATE base conf wlmaker_lib)
+TARGET_LINK_LIBRARIES(wlmaker PRIVATE libbase libbase_plist wlmaker_lib)
 
 ADD_EXECUTABLE(wlmaker_test wlmaker_test.c)
 ADD_DEPENDENCIES(wlmaker_test wlmaker_lib)
