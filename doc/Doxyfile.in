@@ -858,7 +858,6 @@ WARN_LOGFILE           =
 
 INPUT                  = @PROJECT_SOURCE_DIR@/src \
                          @PROJECT_SOURCE_DIR@/src/backend \
-                         @PROJECT_SOURCE_DIR@/src/conf \
                          @PROJECT_SOURCE_DIR@/src/toolkit \
                          @PROJECT_SOURCE_DIR@/apps/ \
                          @PROJECT_SOURCE_DIR@/apps/libwlclient

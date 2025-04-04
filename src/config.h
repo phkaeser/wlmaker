@@ -109,8 +109,8 @@ extern const float config_output_scale;
  *                            file was found at fname_defaults.
  * @param default_data_size   The size of the in-memory plist data.
  *
- * @returns a @ref bspl_object_t on success, or NULL if none of the options
- *     had data, or if there was a file or parsing error.
+ * @returns a bspl_object_t on success, or NULL if none of the options had
+ *     data, or if there was a file or parsing error.
  */
 bspl_object_t *wlmaker_plist_load(
     const char *name_ptr,
@@ -131,7 +131,7 @@ bspl_object_t *wlmaker_plist_load(
  *
  * @return A dict object, or NULL on error. Errors will already be logged.
  *     The caller must free the associated resources by calling
- *     @ref bspl_object_unref.
+ *      bspl_object_unref().
  */
 bspl_dict_t *wlmaker_config_load(const char *fname_ptr);
 
