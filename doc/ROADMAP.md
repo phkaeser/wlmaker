@@ -321,6 +321,13 @@ Support for visual effects to improve usability, but not for pure show.
 
 ### Features for further versions, not ordered by priority nor timeline.
 
+## Window Maker features
+
+* "sloppy focus": Focus that follows mouse, and activates windows after a configurable delay (eg. 200ms). Also to auto-raise activated windows.
+* "workspace groups": Up to 10 workspaces are directly indexable. A further layer of key combos moves to workspace N+10/N-10.
+
+## Overall
+
 * wlroots handling
   * Split xdg_surface off xdg_toplevel.
   * Accept state changes (maximize, fullscreen, ...) also before being mapped.
