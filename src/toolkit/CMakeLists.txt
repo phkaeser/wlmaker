@@ -91,9 +91,10 @@ TARGET_SOURCES(toolkit PRIVATE
   workspace.c
 )
 TARGET_INCLUDE_DIRECTORIES(
-  toolkit PRIVATE
+  toolkit PUBLIC
   ${WLROOTS_INCLUDE_DIRS}
   ${CAIRO_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/include
 )
 SET_TARGET_PROPERTIES(
   toolkit PROPERTIES
@@ -112,9 +113,3 @@ TARGET_LINK_LIBRARIES(
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND
 )
-
-ADD_EXECUTABLE(toolkit_test toolkit_test.c)
-TARGET_LINK_LIBRARIES(toolkit_test toolkit)
-TARGET_COMPILE_DEFINITIONS(
-  toolkit_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/testdata")
-ADD_TEST(NAME toolkit_test COMMAND toolkit_test)

@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "dock.h"
-
-#include "box.h"
+#include <toolkit/dock.h>
+#include <toolkit/box.h>
 
 /* == Declarations ========================================================= */
 

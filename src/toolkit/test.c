@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "test.h"
+#include <toolkit/test.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>

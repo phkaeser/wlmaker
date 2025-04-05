@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "container.h"
-
-#include "util.h"
+#include <toolkit/container.h>
+#include <toolkit/util.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>

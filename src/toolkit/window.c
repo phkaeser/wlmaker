@@ -18,16 +18,14 @@
  * limitations under the License.
  */
 
-#include "window.h"
-
-#include "rectangle.h"
-#include "workspace.h"
-
-#include "wlr/util/box.h"
+#include <toolkit/rectangle.h>
+#include <toolkit/window.h>
+#include <toolkit/workspace.h>
 
 /// Include unstable interfaces of wlroots.
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_seat.h>
+#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

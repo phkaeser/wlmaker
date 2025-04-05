@@ -18,11 +18,9 @@
  * limitations under the License.
  */
 
-#include "button.h"
-
-#include "gfxbuf.h"
-
 #include <libbase/libbase.h>
+#include <toolkit/button.h>
+#include <toolkit/gfxbuf.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>

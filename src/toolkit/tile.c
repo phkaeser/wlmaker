@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-#include "tile.h"
-
-#include "gfxbuf.h"
-#include "primitives.h"
+#include <toolkit/gfxbuf.h>
+#include <toolkit/primitives.h>
+#include <toolkit/tile.h>
 
 /* == Declarations ========================================================= */
 

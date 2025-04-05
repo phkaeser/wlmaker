@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "content.h"
-
-#include "surface.h"
+#include <toolkit/content.h>
+#include <toolkit/surface.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>

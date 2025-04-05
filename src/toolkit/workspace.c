@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-#include "workspace.h"
-
-#include "fsm.h"
-#include "layer.h"
+#include <toolkit/fsm.h>
+#include <toolkit/layer.h>
+#include <toolkit/workspace.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>

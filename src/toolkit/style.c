@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "style.h"
-
 #include <libbase/libbase.h>
+#include <toolkit/style.h>
 
 /* == Exported methods ===================================================== */
 

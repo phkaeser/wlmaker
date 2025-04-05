@@ -18,17 +18,16 @@
  * limitations under the License.
  */
 
-#include "surface.h"
+#include <toolkit/element.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/surface.h>
+#include <toolkit/util.h>
 
-#include "element.h"
-#include "gfxbuf.h"
-#include "util.h"
-
-#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

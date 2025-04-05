@@ -18,10 +18,8 @@
  * limitations under the License.
  */
 
-#include "output.h"
-
-#include "output_manager.h"
-
+#include <backend/output.h>
+#include <backend/output_manager.h>
 #include <libbase/libbase.h>
 #include <toolkit/toolkit.h>
 

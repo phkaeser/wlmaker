@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "pane.h"
+#include <toolkit/pane.h>
 
 /* == Exported methods ===================================================== */
 

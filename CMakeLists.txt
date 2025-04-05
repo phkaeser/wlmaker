@@ -107,6 +107,7 @@ ADD_SUBDIRECTORY(share)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(src/backend)
 ADD_SUBDIRECTORY(src/toolkit)
+ADD_SUBDIRECTORY(tests)
 
 # Adds submodules last, to permit checking on already-existing targets.
 ADD_SUBDIRECTORY(submodules/libbase)

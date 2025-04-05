@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "box.h"
-
-#include "rectangle.h"
+#include <toolkit/box.h>
+#include <toolkit/rectangle.h>
 
 /* == Declarations ========================================================= */
 

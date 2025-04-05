@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "menu.h"
-
-#include "style.h"
+#include <toolkit/menu.h>
+#include <toolkit/style.h>
 
 /* == Declarations ========================================================= */
 
