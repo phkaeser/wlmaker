@@ -18,12 +18,11 @@
  * limitations under the License.
  */
 
-#include "titlebar_button.h"
-
-#include "button.h"
-#include "content.h"
-#include "gfxbuf.h"
-#include "primitives.h"
+#include <toolkit/button.h>
+#include <toolkit/content.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/primitives.h>
+#include <toolkit/titlebar_button.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>

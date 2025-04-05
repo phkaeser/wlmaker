@@ -18,12 +18,12 @@
  * limitations under the License.
 */
 
-#include "root.h"
+#include <toolkit/root.h>
 
-#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

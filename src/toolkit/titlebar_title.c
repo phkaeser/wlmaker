@@ -18,16 +18,15 @@
  * limitations under the License.
  */
 
-#include "titlebar_title.h"
+#include <toolkit/buffer.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/primitives.h>
+#include <toolkit/titlebar_title.h>
+#include <toolkit/window.h>
 
-#include "buffer.h"
-#include "gfxbuf.h"
-#include "primitives.h"
-#include "window.h"
-
-#include <wlr/version.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

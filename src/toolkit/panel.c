@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#include "panel.h"
-#include "test.h"
+#include <toolkit/panel.h>
+#include <toolkit/test.h>
 
 #include <wlr/util/edges.h>
 

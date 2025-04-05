@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-#include "layer.h"
-
-#include "container.h"
-#include "test.h"
+#include <toolkit/container.h>
+#include <toolkit/layer.h>
+#include <toolkit/test.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/util/box.h>

@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-#include "image.h"
-
-#include "buffer.h"
-#include "gfxbuf.h"
+#include <toolkit/buffer.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/image.h>
 
 /* == Declarations ========================================================= */
 

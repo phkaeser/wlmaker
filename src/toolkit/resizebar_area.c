@@ -18,15 +18,13 @@
  * limitations under the License.
  */
 
-#include "resizebar_area.h"
-
-#include "box.h"
-#include "buffer.h"
-#include "gfxbuf.h"
-#include "primitives.h"
-#include "window.h"
-
 #include <libbase/libbase.h>
+#include <toolkit/box.h>
+#include <toolkit/buffer.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/primitives.h>
+#include <toolkit/resizebar_area.h>
+#include <toolkit/window.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>

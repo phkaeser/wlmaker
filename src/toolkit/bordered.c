@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "bordered.h"
+#include <toolkit/bordered.h>
 
 /* == Declarations ========================================================= */
 

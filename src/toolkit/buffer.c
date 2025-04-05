@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-#include "buffer.h"
-
-#include "util.h"
+#include <toolkit/buffer.h>
+#include <toolkit/util.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>

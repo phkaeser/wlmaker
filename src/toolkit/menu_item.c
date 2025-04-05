@@ -18,11 +18,10 @@
  * limitations under the License.
  */
 
-#include "menu_item.h"
-
-#include "gfxbuf.h"
-#include "primitives.h"
-#include "util.h"
+#include <toolkit/menu_item.h>
+#include <toolkit/gfxbuf.h>
+#include <toolkit/primitives.h>
+#include <toolkit/util.h>
 
 /* == Declarations ========================================================= */
 

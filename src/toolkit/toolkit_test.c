@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "toolkit.h"
+#include <toolkit/toolkit.h>
 
 /** Toolkit unit tests. */
 const bs_test_set_t toolkit_tests[] = {

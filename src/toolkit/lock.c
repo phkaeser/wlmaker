@@ -18,11 +18,10 @@
  * limitations under the License.
  */
 
-#include "lock.h"
-
-#include "container.h"
-#include "surface.h"
-#include "util.h"
+#include <toolkit/container.h>
+#include <toolkit/lock.h>
+#include <toolkit/surface.h>
+#include <toolkit/util.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
