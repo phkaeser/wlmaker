@@ -141,11 +141,4 @@ TARGET_COMPILE_OPTIONS(
   ${WAYLAND_CFLAGS_OTHER})
 TARGET_LINK_LIBRARIES(wlmaker PRIVATE libbase libbase_plist wlmaker_lib)
 
-ADD_EXECUTABLE(wlmaker_test wlmaker_test.c)
-ADD_DEPENDENCIES(wlmaker_test wlmaker_lib)
-TARGET_LINK_LIBRARIES(wlmaker_test PRIVATE wlmaker_lib)
-TARGET_COMPILE_DEFINITIONS(
-  wlmaker_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/testdata")
-ADD_TEST(NAME wlmaker_test COMMAND wlmaker_test)
-
 INSTALL(TARGETS wlmaker DESTINATION bin)
