@@ -62,7 +62,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Verify handling of element motion() and button() return values.
   * Fix non-updating wlmclock observed on non-accelerated graphics stack.
 
-## [0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5))
+## [0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5)
 
 **Focus**: Add root menu and window menu.
 
