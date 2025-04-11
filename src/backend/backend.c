@@ -109,7 +109,7 @@ static bool _wlmbe_backend_decode_item(
     size_t i,
     void *dest_ptr);
 static void _wlmbe_backend_decode_fini(void *dest_ptr);
-static void _wlmbe_backend_config_node_destroy(
+static void _wlmbe_backend_config_dlnode_destroy(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
@@ -456,7 +456,7 @@ bool _wlmbe_backend_decode_item(
         return true;
     }
 
-    free(config_node_ptr);
+    _wlmbe_backend_config_dlnode_destroy(&config_node_ptr->dlnode, NULL);
     return true;
 }
 
@@ -467,13 +467,19 @@ void _wlmbe_backend_decode_fini(void *dest_ptr)
     wlmbe_backend_config_t *be_config_ptr = dest_ptr;
     bs_dllist_for_each(
         &be_config_ptr->outputs,
-        _wlmbe_backend_config_node_destroy,
+        _wlmbe_backend_config_dlnode_destroy,
         NULL);
 }
 
 /* ------------------------------------------------------------------------- */
-/** Destroys one @ref wlmbe_output_config_node_t. */
-void _wlmbe_backend_config_node_destroy(
+/**
+ * Iterator callback: Destroys a @ref wlmbe_output_config_node_t.
+ *
+ * @param dlnode_ptr          To @ref wlmbe_output_config_node_t::dlnode, and
+ *                            identifies the config node to destroy.
+ * @param ud_ptr              unused.
+ */
+void _wlmbe_backend_config_dlnode_destroy(
     bs_dllist_node_t *dlnode_ptr,
     __UNUSED__ void *ud_ptr)
 {
