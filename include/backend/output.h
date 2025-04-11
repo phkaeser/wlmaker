@@ -40,6 +40,8 @@ extern "C" {
 
 /** Output configuration. */
 struct _wlmbe_output_config_t {
+    /** Name of this output. */
+    char                      *name_ptr;
     /** Default transformation for the output(s). */
     enum wl_output_transform  transformation;
     /** Default scaling factor to use for the output(s). */

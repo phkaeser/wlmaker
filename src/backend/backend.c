@@ -138,6 +138,7 @@ static const bspl_desc_t    _wlmbe_output_config_desc[] = {
                      WL_OUTPUT_TRANSFORM_NORMAL,
                      _wlmbe_output_transformation_desc),
     BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, scale, 1.0),
+    BSPL_DESC_STRING("Name", true, wlmbe_output_config_t, name_ptr, ""),
     BSPL_DESC_SENTINEL()
 };
 
@@ -485,6 +486,7 @@ void _wlmbe_backend_config_dlnode_destroy(
 {
     wlmbe_output_config_node_t *config_node_ptr = BS_CONTAINER_OF(
         dlnode_ptr, wlmbe_output_config_node_t, dlnode);
+    bspl_decoded_destroy(_wlmbe_output_config_desc, &config_node_ptr->config);
     free(config_node_ptr);
 }
 
@@ -502,7 +504,8 @@ const bs_test_case_t          wlmbe_backend_test_cases[] = {
 void _wlmbe_backend_test_parse(bs_test_t *test_ptr)
 {
     wlmbe_backend_config_t config = {};
-    static const char *pls = "{Outputs = ({Transformation=Flip;Scale=1})}";
+    static const char *pls =
+        "{Outputs = ({Transformation=Flip;Scale=1;Name=X11})}";
 
     bspl_object_t *obj_ptr = bspl_create_object_from_plist_string(pls);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, obj_ptr);
@@ -524,6 +527,10 @@ void _wlmbe_backend_test_parse(bs_test_t *test_ptr)
         test_ptr,
         1.0,
         config_node_ptr->config.scale);
+    BS_TEST_VERIFY_STREQ(
+        test_ptr,
+        "X11",
+        config_node_ptr->config.name_ptr);
 
     bspl_decoded_destroy(_wlmbe_outputs_config_desc, &config);
     bspl_object_unref(obj_ptr);
