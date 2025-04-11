@@ -97,6 +97,9 @@ struct wlr_output *wlmbe_primary_output(
  */
 size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr);
 
+/** Unit test cases. */
+extern const bs_test_case_t wlmbe_backend_test_cases[];
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

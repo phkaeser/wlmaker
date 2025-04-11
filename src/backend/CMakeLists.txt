@@ -20,7 +20,8 @@ ADD_LIBRARY(backend STATIC backend.c output.c output_manager.c)
 
 TARGET_INCLUDE_DIRECTORIES(
   backend
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC
+  ${PROJECT_SOURCE_DIR}/include
   PRIVATE
   ${WLROOTS_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
@@ -39,8 +40,9 @@ TARGET_COMPILE_OPTIONS(
 
 TARGET_LINK_LIBRARIES(
   backend
+  PUBLIC
+  libbase_plist
   PRIVATE
   libbase
-  libbase_plist
   toolkit
   PkgConfig::WLROOTS)
