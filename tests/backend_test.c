@@ -19,10 +19,12 @@
  */
 
 #include <backend/backend.h>
+#include <backend/output.h>
 
 /** Backend unit tests. */
 const bs_test_set_t backend_tests[] = {
     { 1, "backend", wlmbe_backend_test_cases },
+    { 1, "output", wlmbe_output_test_cases },
     { 0, NULL, NULL }
 };
 

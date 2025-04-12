@@ -49,6 +49,8 @@ struct _wlmbe_output_t {
     struct wlr_output         *wlr_output_ptr;
     /** Refers to the scene graph used. */
     struct wlr_scene          *wlr_scene_ptr;
+    /** Output configuration. */
+    wlmbe_output_config_t     *config_ptr;
 };
 
 static void _wlmbe_output_handle_destroy(
@@ -61,6 +63,32 @@ static void _wlmbe_output_handle_request_state(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+/* == Data ================================================================= */
+
+/** Descriptor for output transformations. */
+static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
+    BSPL_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
+    BSPL_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
+    BSPL_ENUM("Rotate180", WL_OUTPUT_TRANSFORM_180),
+    BSPL_ENUM("Rotate270", WL_OUTPUT_TRANSFORM_270),
+    BSPL_ENUM("Flip", WL_OUTPUT_TRANSFORM_FLIPPED),
+    BSPL_ENUM("FlipAndRotate90", WL_OUTPUT_TRANSFORM_FLIPPED_90),
+    BSPL_ENUM("FlipAndRotate180", WL_OUTPUT_TRANSFORM_FLIPPED_180),
+    BSPL_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
+    BSPL_ENUM_SENTINEL(),
+};
+
+/** Descriptor for the output configuration. */
+static const bspl_desc_t    _wlmbe_output_config_desc[] = {
+    BSPL_DESC_ENUM("Transformation", true,
+                     wlmbe_output_config_t, attr.transformation,
+                     WL_OUTPUT_TRANSFORM_NORMAL,
+                     _wlmbe_output_transformation_desc),
+    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, attr.scale, 1.0),
+    BSPL_DESC_STRING("Name", true, wlmbe_output_config_t, name_ptr, ""),
+    BSPL_DESC_SENTINEL()
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -69,14 +97,15 @@ wlmbe_output_t *wlmbe_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    wlmbe_output_config_t *config_ptr,
     int width,
-    int height,
-    wlmbe_output_config_t *config_ptr)
+    int height)
 {
     wlmbe_output_t *output_ptr = logged_calloc(1, sizeof(wlmbe_output_t));
     if (NULL == output_ptr) return NULL;
     output_ptr->wlr_output_ptr = wlr_output_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
+    output_ptr->config_ptr = config_ptr;
 
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
@@ -107,11 +136,12 @@ wlmbe_output_t *wlmbe_output_create(
     struct wlr_output_state state;
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, true);
-    wlr_output_state_set_scale(&state, config_ptr->scale);
+    wlr_output_state_set_scale(&state, output_ptr->config_ptr->attr.scale);
 
     // Issue #97: Found that X11 and transformations do not translate
     // cursor coordinates well. Force it to 'Normal'.
-    enum wl_output_transform transformation = config_ptr->transformation;
+    enum wl_output_transform transformation =
+        output_ptr->config_ptr->attr.transformation;
     if (wlr_output_is_x11(wlr_output_ptr) &&
         transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
         bs_log(BS_WARNING, "X11 backend: Transformation changed to 'Normal'.");
@@ -191,6 +221,51 @@ wlmbe_output_t *wlmbe_output_from_dlnode(bs_dllist_node_t *dlnode_ptr)
     return BS_CONTAINER_OF(dlnode_ptr, wlmbe_output_t, dlnode);
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_config_init_from_config(
+    wlmbe_output_config_t *config_ptr,
+    const wlmbe_output_config_t *source_config_ptr)
+{
+    *config_ptr = (wlmbe_output_config_t){
+        .name_ptr = logged_strdup(source_config_ptr->name_ptr),
+        .attr = source_config_ptr->attr,
+    };
+    return config_ptr->name_ptr != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_config_init_from_plist(
+    wlmbe_output_config_t *config_ptr,
+    bspl_dict_t *dict_ptr)
+{
+    *config_ptr = (wlmbe_output_config_t){};
+    return bspl_decode_dict(
+        dict_ptr,
+        _wlmbe_output_config_desc,
+        config_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_config_init_from_wlr(
+    wlmbe_output_config_t *config_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
+    if (NULL == wlr_output_ptr || NULL == wlr_output_ptr->name) return false;
+
+    *config_ptr = (wlmbe_output_config_t){
+        .name_ptr = logged_strdup(wlr_output_ptr->name),
+        .attr.transformation = wlr_output_ptr->transform,
+        .attr.scale = wlr_output_ptr->scale,
+    };
+    return config_ptr->name_ptr != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_config_fini(wlmbe_output_config_t *config_ptr)
+{
+    bspl_decoded_destroy(_wlmbe_output_config_desc, config_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -252,7 +327,63 @@ void _wlmbe_output_handle_request_state(
         listener_ptr, wlmbe_output_t, output_request_state_listener);
 
     const struct wlr_output_event_request_state *event_ptr = data_ptr;
-    wlr_output_commit_state(output_ptr->wlr_output_ptr, event_ptr->state);
+
+    if (wlr_output_commit_state(output_ptr->wlr_output_ptr,
+                                event_ptr->state)) {
+        output_ptr->config_ptr->attr.transformation =
+            event_ptr->state->transform;
+        output_ptr->config_ptr->attr.scale = event_ptr->state->scale;
+    } else {
+        bs_log(BS_WARNING, "Failed wlr_output_commit_state('%s', %p)",
+               output_ptr->wlr_output_ptr->name, event_ptr->state);
+    }
+}
+
+/* == Unit tests =========================================================== */
+
+static void _wlmbe_output_test_config_parse(bs_test_t *test_ptr);
+static void _wlmbe_output_test_config_init(bs_test_t *test_ptr);
+
+const bs_test_case_t          wlmbe_output_test_cases[] = {
+    { 1, "config_parse", _wlmbe_output_test_config_parse },
+    { 1, "config_init", _wlmbe_output_test_config_init },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Verifies parsing. */
+void _wlmbe_output_test_config_parse(bs_test_t *test_ptr)
+{
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{Transformation=Flip;Scale=1;Name=X11}"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    wlmbe_output_config_t c;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr, wlmbe_output_config_init_from_plist(&c, dict_ptr));
+
+    BS_TEST_VERIFY_STREQ(test_ptr, "X11", c.name_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, WL_OUTPUT_TRANSFORM_FLIPPED,
+        c.attr.transformation);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, c.attr.scale);
+
+    wlmbe_output_config_fini(&c);
+    bspl_dict_unref(dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests the various flavours of initializing a @ref wlmbe_output_config_t. */
+void _wlmbe_output_test_config_init(bs_test_t *test_ptr)
+{
+    wlmbe_output_config_t c, src = { .name_ptr = "name" };
+
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmbe_output_config_init_from_config(&c, &src));
+    BS_TEST_VERIFY_STREQ(test_ptr, "name", c.name_ptr);
+    wlmbe_output_config_fini(&c);
 }
 
 /* == End of output.c ====================================================== */

@@ -22,6 +22,7 @@
 
 #include <wayland-client-protocol.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 
 /** Handle for an output device. */
 typedef struct _wlmbe_output_t wlmbe_output_t;
@@ -42,10 +43,14 @@ extern "C" {
 struct _wlmbe_output_config_t {
     /** Name of this output. */
     char                      *name_ptr;
-    /** Default transformation for the output(s). */
-    enum wl_output_transform  transformation;
-    /** Default scaling factor to use for the output(s). */
-    double                    scale;
+
+    /** Attributes of the output. */
+    struct {
+        /** Default transformation for the output(s). */
+        enum wl_output_transform  transformation;
+        /** Default scaling factor to use for the output(s). */
+        double                    scale;
+    } attr;
 };
 
 /**
@@ -55,9 +60,9 @@ struct _wlmbe_output_config_t {
  * @param wlr_allocator_ptr
  * @param wlr_renderer_ptr
  * @param wlr_scene_ptr
+ * @param config_ptr
  * @param width
  * @param height
- * @param config_ptr
  *
  * @return The output device handle or NULL on error.
  */
@@ -66,9 +71,9 @@ wlmbe_output_t *wlmbe_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    wlmbe_output_config_t *config_ptr,
     int width,
-    int height,
-    wlmbe_output_config_t *config_ptr);
+    int height);
 
 /**
  * Destroys the output device handle, as created by @ref wlmbe_output_create.
@@ -85,6 +90,27 @@ bs_dllist_node_t *wlmbe_dlnode_from_output(wlmbe_output_t *output_ptr);
 
 /** Returns the @ref wlmbe_output_t for @ref wlmbe_output_t::dlnode. */
 wlmbe_output_t *wlmbe_output_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+
+/** Initializes the configuration from the source. */
+bool wlmbe_output_config_init_from_config(
+    wlmbe_output_config_t *config_ptr,
+    const wlmbe_output_config_t *source_config_ptr);
+
+/** Initializes the configuration from a plist. */
+bool wlmbe_output_config_init_from_plist(
+    wlmbe_output_config_t *config_ptr,
+    bspl_dict_t *dict_ptr);
+
+/** Initializes the configuration from a wlr_output. */
+bool wlmbe_output_config_init_from_wlr(
+    wlmbe_output_config_t *config_ptr,
+    struct wlr_output *wlr_output_ptr);
+
+/** Un-initializes the configuration. */
+void wlmbe_output_config_fini(wlmbe_output_config_t *config_ptr);
+
+/** Unit tests for the output module. */
+extern const bs_test_case_t wlmbe_output_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

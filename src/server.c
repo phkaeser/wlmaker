@@ -384,6 +384,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->cursor_ptr = NULL;
     }
 
+    if (NULL != server_ptr->backend_ptr) {
+        wlmbe_backend_destroy(server_ptr->backend_ptr);
+        server_ptr->backend_ptr = NULL;
+    }
+
     if (NULL != server_ptr->wl_display_ptr) {
         wl_display_destroy(server_ptr->wl_display_ptr);
         server_ptr->wl_display_ptr = NULL;
