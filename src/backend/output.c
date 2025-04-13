@@ -68,6 +68,11 @@ static bool _wlmbe_output_position_decode(
     void *dest_ptr);
 static bool _wlmbe_output_position_decode_init(void *dest_ptr);
 
+static bool _wlmbe_output_mode_decode(
+    bspl_object_t *object_ptr,
+    void *dest_ptr);
+static bool _wlmbe_output_mode_decode_init(void *dest_ptr);
+
 /* == Data ================================================================= */
 
 /** Descriptor for output transformations. */
@@ -112,6 +117,12 @@ static const bspl_desc_t    _wlmbe_output_config_desc[] = {
         attr.position, attr.has_position,
         _wlmbe_output_position_decode,
         _wlmbe_output_position_decode_init,
+        NULL),
+    BSPL_DESC_CUSTOM(
+        "Mode", false, wlmbe_output_config_t,
+        attr.mode, attr.has_mode,
+        _wlmbe_output_mode_decode,
+        _wlmbe_output_mode_decode_init,
         NULL),
     BSPL_DESC_SENTINEL()
 };
@@ -417,16 +428,80 @@ bool _wlmbe_output_position_decode_init(void *dest_ptr)
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Decodes a plist "WxH@R" string into @ref wlmbe_output_config_mode_t. */
+bool _wlmbe_output_mode_decode(
+    bspl_object_t *object_ptr,
+    void *dest_ptr)
+{
+    const char *s = bspl_string_value(bspl_string_from_object(object_ptr));
+    const char *full_s = s;
+    if (NULL == s) return false;
+
+    // Extracts the first arg into buf. Large enough for a INT32_MIN.
+    char width[12], height[12];
+    size_t i = 0;
+    for (i = 0; s[i] != '\0' && s[i] != 'x' && i < sizeof(width) - 1; ++i) {
+        width[i] = s[i];
+    }
+    width[i] = '\0';
+    s += i;
+    if (*s == 'x') ++s;
+
+    for (i = 0; s[i] != '\0' && s[i] != '@' && i < sizeof(height) - 1; ++i) {
+        height[i] = s[i];
+    }
+    height[i] = '\0';
+    if (s[i] == '@') {
+        s = s + i + 1;
+    } else if (s[i] == '\0') {
+        s = "0";
+    } else {
+        bs_log(BS_WARNING, "Failed to decode mode \"%s\"", full_s);
+        return false;
+    }
+
+    int64_t w, h, r;
+    if (!bs_strconvert_int64(width, &w, 10) ||
+        !bs_strconvert_int64(height, &h, 10) ||
+        !bs_strconvert_int64(s, &r, 10)) {
+        bs_log(BS_WARNING, "Failed to decode mode \"%s\"", full_s);
+        return false;
+    }
+    if (w < INT32_MIN || w > INT32_MAX ||
+        h < INT32_MIN || h > INT32_MAX ||
+        r < INT32_MIN || r > INT32_MAX) {
+        bs_log(BS_WARNING, "Mode values out of range for \"%s\"", full_s);
+        return false;
+    }
+    wlmbe_output_config_mode_t *mode_ptr = dest_ptr;
+    *mode_ptr = (wlmbe_output_config_mode_t){
+        .width = w, .height = h, .refresh = r
+    };
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Initializes @ref wlmbe_output_config_mode_t at `dest_ptr`. */
+bool _wlmbe_output_mode_decode_init(void *dest_ptr)
+{
+    wlmbe_output_config_mode_t *mode_ptr = dest_ptr;
+    *mode_ptr = (wlmbe_output_config_mode_t){};
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void _wlmbe_output_test_config_parse(bs_test_t *test_ptr);
 static void _wlmbe_output_test_config_init(bs_test_t *test_ptr);
 static void _wlmbe_output_test_decode_position(bs_test_t *test_ptr);
+static void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_output_test_cases[] = {
     { 1, "config_parse", _wlmbe_output_test_config_parse },
     { 1, "config_init", _wlmbe_output_test_config_init },
     { 1, "decode_position", _wlmbe_output_test_decode_position },
+    { 1, "decode_mode", _wlmbe_output_test_decode_mode },
     { 0, NULL, NULL }
 };
 
@@ -495,4 +570,45 @@ void _wlmbe_output_test_decode_position(bs_test_t *test_ptr)
     bspl_object_unref(o);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Tests decoding of a position field. */
+void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
+{
+    wlmbe_output_config_mode_t m;
+    _wlmbe_output_mode_decode_init(&m);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, m.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, m.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, m.refresh);
+
+    bspl_object_t *o = bspl_object_from_string(bspl_string_create("1x2@3"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, m.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, m.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, m.refresh);
+    bspl_object_unref(o);
+
+    o = bspl_object_from_string(
+        bspl_string_create("2147483647x-2147483648@2147483647"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, m.width);
+    BS_TEST_VERIFY_EQ(test_ptr, INT32_MIN, m.height);
+    BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, m.refresh);
+    bspl_object_unref(o);
+
+    o = bspl_object_from_string(
+        bspl_string_create("2147483648x-2147483649@2147483648"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    bspl_object_unref(o);
+
+    o = bspl_object_from_string(bspl_string_create("3x4"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_EQ(test_ptr, 3, m.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 4, m.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, m.refresh);
+    bspl_object_unref(o);
+}
 /* == End of output.c ====================================================== */

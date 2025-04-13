@@ -47,6 +47,16 @@ typedef struct {
     int32_t                   y;
 } wlmbe_output_config_position_t;
 
+/** An output's position. */
+typedef struct {
+    /** Width, in pixels. */
+    int32_t                   width;
+    /** Height, in pixels. */
+    int32_t                   height;
+    /** Refresh rate, in mHz. Seet 0, to let backend pick a preferred value. */
+    int32_t                   refresh;
+} wlmbe_output_config_mode_t;
+
 /** Output configuration. */
 struct _wlmbe_output_config_t {
     /** Name of this output. */
@@ -81,6 +91,11 @@ struct _wlmbe_output_config_t {
         wlmbe_output_config_position_t position;
         /** Whether the 'Position' field was present. */
         bool                      has_position;
+
+        /** Mode of this output. */
+        wlmbe_output_config_mode_t mode;
+        /** Whether the 'Mode' field was present. */
+        bool                      has_mode;
     } attr;
 };
 
