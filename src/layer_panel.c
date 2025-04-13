@@ -62,6 +62,8 @@ static wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
     wlmtk_surface_create_t wlmtk_surface_create_fn);
 static void _wlmaker_layer_panel_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr);
+static void _wlmaker_layer_panel_element_destroy(
+    wlmtk_element_t *element_ptr);
 
 static bool _wlmaker_layer_panel_apply_keyboard(
     wlmaker_layer_panel_t *layer_panel_ptr,
@@ -96,8 +98,12 @@ static void _wlmaker_layer_panel_handle_new_popup(
 /* == Data ================================================================= */
 
 /** Virtual method table for the layer panel. */
-static const wlmtk_panel_vmt_t _wlmtk_layer_panel_vmt = {
+static const wlmtk_panel_vmt_t _wlmaker_layer_panel_vmt = {
     .request_size = _wlmaker_layer_panel_request_size,
+};
+/** Virtual method table for the layer panel's superclass element. */
+static const wlmtk_element_vmt_t _wlmaker_layer_panel_element_vmt = {
+    .destroy = _wlmaker_layer_panel_element_destroy,
 };
 
 /* == Exported methods ===================================================== */
@@ -144,7 +150,10 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
     }
     wlmtk_panel_extend(
         &layer_panel_ptr->super_panel,
-        &_wlmtk_layer_panel_vmt);
+        &_wlmaker_layer_panel_vmt);
+    wlmtk_element_extend(
+        wlmtk_panel_element(&layer_panel_ptr->super_panel),
+        &_wlmaker_layer_panel_element_vmt);
 
     layer_panel_ptr->wlmtk_surface_ptr = wlmtk_surface_create_fn(
         wlr_layer_surface_v1_ptr->surface,
@@ -207,7 +216,6 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 
     wlmtk_util_disconnect_listener(&layer_panel_ptr->new_popup_listener);
     wlmtk_util_disconnect_listener(&layer_panel_ptr->destroy_listener);
-
     wlmtk_util_disconnect_listener(&layer_panel_ptr->surface_commit_listener);
 
     wlmtk_util_disconnect_listener(&layer_panel_ptr->surface_unmap_listener);
@@ -222,7 +230,27 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
     }
 
     wlmtk_panel_fini(&layer_panel_ptr->super_panel);
+
+    if (layer_panel_ptr->wlr_layer_surface_v1_ptr) {
+        wlr_layer_surface_v1_destroy(layer_panel_ptr->wlr_layer_surface_v1_ptr);
+        layer_panel_ptr->wlr_layer_surface_v1_ptr = NULL;
+    }
     free(layer_panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Implements @ref wlmtk_element_vmt_t::destroy, forwards to
+ * @ref _wlmaker_layer_panel_destroy.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_layer_panel_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmaker_layer_panel_t, super_panel.super_container.super_element);
+    _wlmaker_layer_panel_destroy(layer_panel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -478,6 +506,7 @@ void _wlmaker_layer_panel_handle_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_layer_panel_t, destroy_listener);
 
+    layer_panel_ptr->wlr_layer_surface_v1_ptr = NULL;
     _wlmaker_layer_panel_destroy(layer_panel_ptr);
 }
 
