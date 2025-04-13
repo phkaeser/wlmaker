@@ -358,7 +358,7 @@ bool _wlmbe_backend_add_output(
             backend_ptr->wlr_output_layout_ptr, wlrop);
     }
     if (NULL == wlr_output_layout_output_ptr) {
-        bs_log(BS_ERROR,
+        bs_log(BS_WARNING,
                "Failed wlr_output_layout_add(%p, %p, %d, %d) for \"%s\"",
                backend_ptr->wlr_output_layout_ptr, wlrop,
                config_ptr->attr.position.x, config_ptr->attr.position.y,
@@ -367,7 +367,6 @@ bool _wlmbe_backend_add_output(
     }
     config_ptr->attr.position.x = wlr_output_layout_output_ptr->x;
     config_ptr->attr.position.y = wlr_output_layout_output_ptr->y;
-    config_ptr->attr.has_position = true;
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_output_create(
         backend_ptr->wlr_scene_ptr, wlrop);

@@ -278,6 +278,15 @@ static bool _wlmaker_output_manager_config_head_apply(
     config_ptr->attr.enabled = head_v1_ptr->state.enabled;
     config_ptr->attr.position.x = x;
     config_ptr->attr.position.y = y;
+
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        wlr_output_layout_get(
+            arg_ptr->wlr_output_layout_ptr,
+            wlr_output_ptr);
+    if (NULL != wlr_output_layout_output_ptr) {
+        config_ptr->attr.has_position =
+            !wlr_output_layout_output_ptr->auto_configured;
+    }
     bs_log(BS_INFO, "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d)",
            wlr_output_ptr->name,
            head_v1_ptr->state.enabled ? "enabled" : "disabled",
