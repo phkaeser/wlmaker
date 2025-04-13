@@ -39,6 +39,14 @@ struct wlr_scene;
 extern "C" {
 #endif  // __cplusplus
 
+/** An output's position. */
+typedef struct {
+    /** Horizontal, in pixels. */
+    int32_t                   x;
+    /** Vertical, in pixels. */
+    int32_t                   y;
+} wlmbe_output_config_position_t;
+
 /** Output configuration. */
 struct _wlmbe_output_config_t {
     /** Name of this output. */
@@ -52,6 +60,14 @@ struct _wlmbe_output_config_t {
         enum wl_output_transform  transformation;
         /** Default scaling factor to use for the output(s). */
         double                    scale;
+
+        /** Whether this output is enabled. */
+        bool                      enabled;
+
+        /** Position of this output. */
+        wlmbe_output_config_position_t position;
+        /** Whether the 'Position' field was present. */
+        bool                      has_position;
     } attr;
 };
 
@@ -86,6 +102,9 @@ void wlmbe_output_destroy(wlmbe_output_t *output_ptr);
 
 /** Returns @ref wlmbe_output_t::wlr_output_ptr. */
 struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr);
+
+/** Returns @ref wlmbe_output_t::config_ptr. */
+wlmbe_output_config_t *wlmbe_config_from_output(wlmbe_output_t *output_ptr);
 
 /** Returns a pointer to @ref wlmbe_output_t::dlnode. */
 bs_dllist_node_t *wlmbe_dlnode_from_output(wlmbe_output_t *output_ptr);
