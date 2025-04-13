@@ -38,9 +38,6 @@ struct _wlmtk_layer_t {
     /** Workspace that the layer belongs to. */
     wlmtk_workspace_t         *workspace_ptr;
 
-    /** Panels, holds nodes at @ref wlmtk_panel_t::dlnode. */
-    bs_dllist_t               panels;
-
     /** Holds outputs and panels. */
     bs_avltree_t              *output_tree_ptr;
 };
@@ -75,6 +72,9 @@ static void _wlmtk_layer_output_tree_node_destroy(
 static int _wlmtk_layer_output_tree_node_cmp(
     const bs_avltree_node_t *avlnode_ptr,
     const void *key_ptr);
+static void _wlmtk_layer_output_remove_dlnode_panel(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static bool _wlmtk_layer_output_update(
     struct wl_list *link_ptr,
     void *ud_ptr);
@@ -118,6 +118,8 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr)
         bs_avltree_destroy(layer_ptr->output_tree_ptr);
         layer_ptr->output_tree_ptr = NULL;
     }
+
+    BS_ASSERT(bs_dllist_empty(&layer_ptr->super_container.elements));
     wlmtk_container_fini(&layer_ptr->super_container);
     free(layer_ptr);
 }
@@ -162,57 +164,15 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
 {
     BS_ASSERT(layer_ptr == wlmtk_panel_get_layer(panel_ptr));
 
-    wlmtk_layer_output_t *layer_output_ptr = wlmtk_panel_get_layer_output(
-        panel_ptr);
-    if (NULL != layer_output_ptr) {
-        _wlmtk_layer_output_remove_panel(layer_output_ptr, panel_ptr);
-    } else {
-        bs_dllist_remove(
-            &layer_ptr->panels,
-            wlmtk_dlnode_from_panel(panel_ptr));
-    }
+    wlmtk_layer_output_t *layer_output_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_panel_get_layer_output(panel_ptr));
+    _wlmtk_layer_output_remove_panel(layer_output_ptr, panel_ptr);
 
     wlmtk_panel_set_layer(panel_ptr, NULL);
     wlmtk_container_remove_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
-
-    if (NULL != layer_output_ptr) {
-        wlmtk_layer_output_reconfigure(layer_output_ptr);
-    } else {
-        wlmtk_layer_reconfigure(layer_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr)
-{
-    struct wlr_box extents = wlmtk_workspace_get_fullscreen_extents(
-        layer_ptr->workspace_ptr);
-    struct wlr_box usable_area = extents;
-
-    for (bs_dllist_node_t *dlnode_ptr = layer_ptr->panels.head_ptr;
-         dlnode_ptr != NULL;
-         dlnode_ptr = dlnode_ptr->next_ptr) {
-        wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
-
-        struct wlr_box new_usable_area = usable_area;
-        struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
-            panel_ptr, &extents, &new_usable_area);
-
-        if (wlmtk_panel_element(panel_ptr)->visible) {
-            usable_area = new_usable_area;
-        }
-
-        wlmtk_panel_request_size(
-            panel_ptr,
-            panel_dimensions.width,
-            panel_dimensions.height);
-        wlmtk_element_set_position(
-            wlmtk_panel_element(panel_ptr),
-            panel_dimensions.x,
-            panel_dimensions.y);
-    }
+    wlmtk_layer_output_reconfigure(layer_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -293,10 +253,14 @@ wlmtk_layer_output_t *_wlmtk_layer_output_create(
 void _wlmtk_layer_output_tree_node_destroy(
     bs_avltree_node_t *avlnode_ptr)
 {
-    wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
+    wlmtk_layer_output_t *layer_output_ptr = BS_CONTAINER_OF(
         avlnode_ptr, wlmtk_layer_output_t, avlnode);
 
-    free(output_ptr);
+    bs_dllist_for_each(
+        &layer_output_ptr->panels,
+        _wlmtk_layer_output_remove_dlnode_panel,
+        NULL);
+    free(layer_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -308,6 +272,21 @@ int _wlmtk_layer_output_tree_node_cmp(
     wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
         avlnode_ptr, wlmtk_layer_output_t, avlnode);
     return bs_avltree_cmp_ptr(output_ptr->wlr_output_ptr, key_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Removes `dlnode_ptr`'s panel from the layer output and destroys it. */
+void _wlmtk_layer_output_remove_dlnode_panel(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
+
+    wlmtk_layer_remove_panel(
+        BS_ASSERT_NOTNULL(wlmtk_panel_get_layer(panel_ptr)),
+        panel_ptr);
+
+    wlmtk_element_destroy(wlmtk_panel_element(panel_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

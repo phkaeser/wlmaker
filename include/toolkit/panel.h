@@ -96,7 +96,7 @@ struct _wlmtk_panel_t {
     wlmtk_layer_t             *layer_ptr;
     /** The layer output this panel is associated with. */
     wlmtk_layer_output_t      *layer_output_ptr;
-    /** Node of @ref wlmtk_layer_t::panels. */
+    /** Node of @ref wlmtk_layer_output_t::panels. */
     bs_dllist_node_t          dlnode;
 
     /** Positioning parameters. */
