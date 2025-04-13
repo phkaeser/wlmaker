@@ -241,7 +241,7 @@ void _wlmaker_layer_panel_destroy(wlmaker_layer_panel_t *layer_panel_ptr)
 /* ------------------------------------------------------------------------- */
 /**
  * Implements @ref wlmtk_element_vmt_t::destroy, forwards to
- * @ref _wlmtk_panel_destroy.
+ * @ref _wlmaker_layer_panel_destroy.
  *
  * @param element_ptr
  */
