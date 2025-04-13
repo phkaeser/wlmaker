@@ -80,12 +80,14 @@ static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
 
 /** Descriptor for the output configuration. */
 static const bspl_desc_t    _wlmbe_output_config_desc[] = {
-    BSPL_DESC_ENUM("Transformation", true,
-                     wlmbe_output_config_t, attr.transformation,
-                     WL_OUTPUT_TRANSFORM_NORMAL,
-                     _wlmbe_output_transformation_desc),
-    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, attr.scale, 1.0),
-    BSPL_DESC_STRING("Name", true, wlmbe_output_config_t, name_ptr, ""),
+    BSPL_DESC_ENUM("Transformation", true, wlmbe_output_config_t,
+                   attr.transformation, attr.transformation,
+                   WL_OUTPUT_TRANSFORM_NORMAL,
+                   _wlmbe_output_transformation_desc),
+    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t,
+                     attr.scale, attr.scale, 1.0),
+    BSPL_DESC_STRING("Name", true, wlmbe_output_config_t,
+                     name_ptr, has_name, ""),
     BSPL_DESC_SENTINEL()
 };
 

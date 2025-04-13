@@ -92,7 +92,7 @@ static const bspl_enum_desc_t _wlmaker_config_decoration_desc[] = {
 
 /** Plist descriptor of the 'Decoration' dict contents. */
 static const bspl_desc_t _wlmaker_xdg_decoration_config_desc[] = {
-    BSPL_DESC_ENUM("Mode", true, wlmaker_xdg_decoration_manager_t, mode,
+    BSPL_DESC_ENUM("Mode", true, wlmaker_xdg_decoration_manager_t, mode, mode,
                      WLMAKER_CONFIG_DECORATION_SUGGEST_SERVER,
                      _wlmaker_config_decoration_desc),
     BSPL_DESC_SENTINEL()

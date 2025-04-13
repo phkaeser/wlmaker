@@ -122,10 +122,12 @@ static const bspl_enum_desc_t _wlmaker_clip_edges[] = {
 
 /** Descriptor for the clip's plist. */
 const bspl_desc_t _wlmaker_clip_desc[] = {
-    BSPL_DESC_ENUM("Edge", true, parse_args, positioning.edge,
-                     WLR_EDGE_NONE, _wlmaker_clip_edges),
-    BSPL_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
-                     WLR_EDGE_NONE, _wlmaker_clip_edges),
+    BSPL_DESC_ENUM("Edge", true, parse_args,
+                   positioning.edge, positioning.edge,
+                   WLR_EDGE_NONE, _wlmaker_clip_edges),
+    BSPL_DESC_ENUM("Anchor", true, parse_args,
+                   positioning.anchor, positioning.anchor,
+                   WLR_EDGE_NONE, _wlmaker_clip_edges),
     BSPL_DESC_SENTINEL(),
 };
 

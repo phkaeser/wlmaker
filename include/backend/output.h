@@ -43,6 +43,8 @@ extern "C" {
 struct _wlmbe_output_config_t {
     /** Name of this output. */
     char                      *name_ptr;
+    /** Whether a 'Name' entry was present. */
+    bool                      has_name;
 
     /** Attributes of the output. */
     struct {

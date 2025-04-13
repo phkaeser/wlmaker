@@ -118,30 +118,39 @@ static void _wlmaker_corner_handle_position_updated(
 /** Descriptor for the 'HotConfig' config dictionary. */
 static const bspl_desc_t _wlmaker_corner_config_desc[] = {
     BSPL_DESC_UINT64(
-        "TriggerDelay", true, wlmaker_corner_t, trigger_delay_msec, 500),
+        "TriggerDelay", true, wlmaker_corner_t,
+        trigger_delay_msec, trigger_delay_msec, 500),
     BSPL_DESC_ENUM(
-        "TopLeftEnter", false, wlmaker_corner_t, top_left_enter_action,
+        "TopLeftEnter", false, wlmaker_corner_t,
+        top_left_enter_action,top_left_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "TopLeftLeave", false, wlmaker_corner_t, top_left_leave_action,
+        "TopLeftLeave", false, wlmaker_corner_t,
+        top_left_leave_action, top_left_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "TopRightEnter", false, wlmaker_corner_t, top_right_enter_action,
+        "TopRightEnter", false, wlmaker_corner_t,
+        top_right_enter_action, top_right_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "TopRightLeave", false, wlmaker_corner_t, top_right_leave_action,
+        "TopRightLeave", false, wlmaker_corner_t,
+        top_right_leave_action, top_right_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "BottomLeftEnter", false, wlmaker_corner_t, bottom_left_enter_action,
+        "BottomLeftEnter", false, wlmaker_corner_t,
+        bottom_left_enter_action, bottom_left_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "BottomLeftLeave", false, wlmaker_corner_t, bottom_left_leave_action,
+        "BottomLeftLeave", false, wlmaker_corner_t,
+        bottom_left_leave_action,  bottom_left_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "BottomRightEnter", false, wlmaker_corner_t, bottom_right_enter_action,
+        "BottomRightEnter", false, wlmaker_corner_t,
+        bottom_right_enter_action, bottom_right_enter_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_ENUM(
-        "BottomRightLeave", false, wlmaker_corner_t, bottom_right_leave_action,
+        "BottomRightLeave", false, wlmaker_corner_t,
+        bottom_right_leave_action, bottom_right_leave_action,
         WLMAKER_ACTION_NONE, wlmaker_action_desc),
     BSPL_DESC_SENTINEL()
 };
