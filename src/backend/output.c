@@ -86,8 +86,17 @@ static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
 /** Descriptor for the output configuration. */
 static const bspl_desc_t    _wlmbe_output_config_desc[] = {
     BSPL_DESC_STRING(
-        "Name", true, wlmbe_output_config_t,
-        name_ptr, has_name, ""),
+        "Name", false, wlmbe_output_config_t,
+        name_ptr, has_name, "*"),
+    BSPL_DESC_STRING(
+        "Manufacturer", false, wlmbe_output_config_t,
+        manufacturer_ptr, has_manufacturer, ""),
+    BSPL_DESC_STRING(
+        "Model", false, wlmbe_output_config_t,
+        model_ptr, has_model, ""),
+    BSPL_DESC_STRING(
+        "Serial", false, wlmbe_output_config_t,
+        serial_ptr, has_serial, ""),
     BSPL_DESC_ENUM(
         "Transformation", true, wlmbe_output_config_t,
         attr.transformation, attr.transformation, WL_OUTPUT_TRANSFORM_NORMAL,

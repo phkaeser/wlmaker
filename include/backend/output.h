@@ -54,6 +54,19 @@ struct _wlmbe_output_config_t {
     /** Whether a 'Name' entry was present. */
     bool                      has_name;
 
+    /** Manufacturer of this output. That is 'make' in WLR speech. */
+    char                      *manufacturer_ptr;
+    /** Whether the 'Manufacturer' entry was present. */
+    bool                      has_manufacturer;
+    /** The model of this output. */
+    char                      *model_ptr;
+    /** Whether the 'Model' entry was present. */
+    bool                      has_model;
+    /** The serial of this output. */
+    char                      *serial_ptr;
+    /** Whether the 'Serial' entry was present. */
+    bool                      has_serial;
+
     /** Attributes of the output. */
     struct {
         /** Default transformation for the output(s). */

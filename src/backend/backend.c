@@ -402,9 +402,42 @@ bool _wlmbe_output_config_equals(
         dlnode_ptr, wlmbe_output_config_node_t, dlnode);
     struct wlr_output *wlr_output_ptr = ud_ptr;
 
-    if (NULL == wlr_output_ptr->name ||
-        NULL == config_node_ptr->config.name_ptr) return false;
-    return 0 == strcmp(config_node_ptr->config.name_ptr, wlr_output_ptr->name);
+    if (config_node_ptr->config.has_name) {
+        if (NULL == wlr_output_ptr->name) return false;
+        if (0 != strcmp(config_node_ptr->config.name_ptr,
+                        wlr_output_ptr->name)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_manufacturer) {
+        if (NULL == wlr_output_ptr->make) return false;
+        if (0 != strcmp(config_node_ptr->config.manufacturer_ptr,
+                        wlr_output_ptr->make)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_model) {
+        if (NULL == wlr_output_ptr->model) return false;
+        if (0 != strcmp(config_node_ptr->config.model_ptr,
+                        wlr_output_ptr->model)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_serial) {
+        if (NULL == wlr_output_ptr->serial) return false;
+        if (0 != strcmp(config_node_ptr->config.serial_ptr,
+                        wlr_output_ptr->serial)) {
+            return false;
+        }
+    }
+
+    return (config_node_ptr->config.has_name ||
+            config_node_ptr->config.has_manufacturer ||
+            config_node_ptr->config.has_model ||
+            config_node_ptr->config.has_serial);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -424,11 +457,43 @@ bool _wlmbe_output_config_fnmatches(
         dlnode_ptr, wlmbe_output_config_node_t, dlnode);
     struct wlr_output *wlr_output_ptr = ud_ptr;
 
-    if (NULL == wlr_output_ptr->name ||
-        NULL == config_node_ptr->config.name_ptr) return false;
-    return 0 == fnmatch(config_node_ptr->config.name_ptr,
-                        wlr_output_ptr->name,
-                        0);
+    if (config_node_ptr->config.has_name) {
+        if (NULL == wlr_output_ptr->name) return false;
+        if (0 != fnmatch(config_node_ptr->config.name_ptr,
+                         wlr_output_ptr->name,
+                         0)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_manufacturer) {
+        if (NULL == wlr_output_ptr->make) return false;
+        if (0 != fnmatch(config_node_ptr->config.manufacturer_ptr,
+                         wlr_output_ptr->make,
+                         0)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_model) {
+        if (NULL == wlr_output_ptr->model) return false;
+        if (0 != fnmatch(config_node_ptr->config.model_ptr,
+                         wlr_output_ptr->model,
+                         0)) {
+            return false;
+        }
+    }
+
+    if (config_node_ptr->config.has_serial) {
+        if (NULL == wlr_output_ptr->serial) return false;
+        if (0 != fnmatch(config_node_ptr->config.serial_ptr,
+                         wlr_output_ptr->serial,
+                         0)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
