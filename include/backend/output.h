@@ -31,6 +31,7 @@ typedef struct _wlmbe_output_t wlmbe_output_t;
 typedef struct _wlmbe_output_config_t wlmbe_output_config_t;
 
 struct wlr_output;
+struct wlr_output_layout;
 struct wlr_allocator;
 struct wlr_renderer;
 struct wlr_scene;

@@ -189,15 +189,23 @@ wlmbe_output_t *wlmbe_output_create(
     wlr_output_state_set_transform(&state, transformation);
 
     // Set modes for backends that have them.
-    if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
-        struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
-            output_ptr->wlr_output_ptr);
-        bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
-               mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
-        wlr_output_state_set_mode(&state, mode_ptr);
+    if (output_ptr->config_ptr->attr.has_mode) {
+        wlr_output_state_set_custom_mode(
+            &state,
+            output_ptr->config_ptr->attr.mode.width,
+            output_ptr->config_ptr->attr.mode.height,
+            output_ptr->config_ptr->attr.mode.refresh);
     } else {
-        bs_log(BS_INFO, "No modes available on %s",
-               output_ptr->wlr_output_ptr->name);
+        if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
+            struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
+                output_ptr->wlr_output_ptr);
+            bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
+                   mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
+            wlr_output_state_set_mode(&state, mode_ptr);
+        } else {
+            bs_log(BS_INFO, "No modes available on %s",
+                   output_ptr->wlr_output_ptr->name);
+        }
     }
 
     if ((wlr_output_is_x11(wlr_output_ptr) ||
@@ -273,6 +281,7 @@ bool wlmbe_output_config_init_from_config(
 {
     *config_ptr = (wlmbe_output_config_t){
         .name_ptr = logged_strdup(source_config_ptr->name_ptr),
+        .has_name = true,
         .attr = source_config_ptr->attr,
     };
     return config_ptr->name_ptr != NULL;
@@ -299,9 +308,20 @@ bool wlmbe_output_config_init_from_wlr(
 
     *config_ptr = (wlmbe_output_config_t){
         .name_ptr = logged_strdup(wlr_output_ptr->name),
+        .has_name = true,
+
         .attr.transformation = wlr_output_ptr->transform,
         .attr.scale = wlr_output_ptr->scale,
         .attr.enabled = wlr_output_ptr->enabled,
+
+        .attr.position.x = 0,
+        .attr.position.y = 0,
+        .attr.has_position = false,
+
+        .attr.mode.width = wlr_output_ptr->width,
+        .attr.mode.height = wlr_output_ptr->height,
+        .attr.mode.refresh = wlr_output_ptr->refresh,
+        .attr.has_mode = true,
     };
     return config_ptr->name_ptr != NULL;
 }

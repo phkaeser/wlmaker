@@ -275,9 +275,14 @@ static bool _wlmaker_output_manager_config_head_apply(
 
     wlmbe_output_config_t *config_ptr = wlmbe_config_from_output(
         wlr_output_ptr->data);
-    config_ptr->attr.enabled = head_v1_ptr->state.enabled;
+    config_ptr->attr.enabled = wlr_output_ptr->enabled;
     config_ptr->attr.position.x = x;
     config_ptr->attr.position.y = y;
+
+    config_ptr->attr.mode.width = wlr_output_ptr->width;
+    config_ptr->attr.mode.height = wlr_output_ptr->height;
+    config_ptr->attr.mode.refresh = wlr_output_ptr->refresh;
+    config_ptr->attr.has_mode = true;
 
     struct wlr_output_layout_output *wlr_output_layout_output_ptr =
         wlr_output_layout_get(
@@ -287,11 +292,14 @@ static bool _wlmaker_output_manager_config_head_apply(
         config_ptr->attr.has_position =
             !wlr_output_layout_output_ptr->auto_configured;
     }
-    bs_log(BS_INFO, "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d)",
+    bs_log(BS_INFO,
+           "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d) %s",
            wlr_output_ptr->name,
-           head_v1_ptr->state.enabled ? "enabled" : "disabled",
+           wlr_output_ptr->enabled ? "enabled" : "disabled",
            wlr_output_ptr->width, wlr_output_ptr->height,
-           1e-3 * wlr_output_ptr->refresh, x, y);
+           1e-3 * wlr_output_ptr->refresh,
+           x, y,
+           config_ptr->attr.has_position ? "explicit" : "auto");
     return true;
 }
 

@@ -379,9 +379,15 @@ bool _wlmbe_backend_add_output(
         &backend_ptr->outputs,
         wlmbe_dlnode_from_output(output_ptr));
 
-    bs_log(BS_INFO, "Added output '%s' (%dx%d). Trsf %d, Scale %.2f.",
-           wlrop->name, wlrop->width, wlrop->height, wlrop->transform,
-           wlrop->scale);
+    bs_log(BS_INFO,
+           "Created: Output '%s' %s to %dx%d@%.2f position (%d,%d) %s",
+           wlrop->name,
+           wlrop->enabled ? "enabled" : "disabled",
+           wlrop->width, wlrop->height,
+           1e-3 * wlrop->refresh,
+           wlr_output_layout_output_ptr->x,
+           wlr_output_layout_output_ptr->y,
+           config_ptr->attr.has_position ? "explicit" : "auto");
     return true;
 }
 
@@ -536,7 +542,8 @@ wlmbe_output_config_t *_wlmbe_backend_get_config(
         config_node_ptr = logged_calloc(1, sizeof(wlmbe_output_config_node_t));
         if (NULL == config_node_ptr) return false;
         if (!wlmbe_output_config_init_from_wlr(
-                &config_node_ptr->config, wlr_output_ptr)) {
+                &config_node_ptr->config,
+                wlr_output_ptr)) {
             free(config_node_ptr);
             return false;
         }
