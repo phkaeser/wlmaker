@@ -72,6 +72,9 @@ static void _wlmtk_layer_output_tree_node_destroy(
 static int _wlmtk_layer_output_tree_node_cmp(
     const bs_avltree_node_t *avlnode_ptr,
     const void *key_ptr);
+static void _wlmtk_layer_output_remove_dlnode_panel(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static bool _wlmtk_layer_output_update(
     struct wl_list *link_ptr,
     void *ud_ptr);
@@ -115,6 +118,8 @@ void wlmtk_layer_destroy(wlmtk_layer_t *layer_ptr)
         bs_avltree_destroy(layer_ptr->output_tree_ptr);
         layer_ptr->output_tree_ptr = NULL;
     }
+
+    BS_ASSERT(bs_dllist_empty(&layer_ptr->super_container.elements));
     wlmtk_container_fini(&layer_ptr->super_container);
     free(layer_ptr);
 }
@@ -248,10 +253,14 @@ wlmtk_layer_output_t *_wlmtk_layer_output_create(
 void _wlmtk_layer_output_tree_node_destroy(
     bs_avltree_node_t *avlnode_ptr)
 {
-    wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
+    wlmtk_layer_output_t *layer_output_ptr = BS_CONTAINER_OF(
         avlnode_ptr, wlmtk_layer_output_t, avlnode);
 
-    free(output_ptr);
+    bs_dllist_for_each(
+        &layer_output_ptr->panels,
+        _wlmtk_layer_output_remove_dlnode_panel,
+        NULL);
+    free(layer_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -263,6 +272,21 @@ int _wlmtk_layer_output_tree_node_cmp(
     wlmtk_layer_output_t *output_ptr = BS_CONTAINER_OF(
         avlnode_ptr, wlmtk_layer_output_t, avlnode);
     return bs_avltree_cmp_ptr(output_ptr->wlr_output_ptr, key_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Removes `dlnode_ptr`'s panel from the layer output and destroys it. */
+void _wlmtk_layer_output_remove_dlnode_panel(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
+
+    wlmtk_layer_remove_panel(
+        BS_ASSERT_NOTNULL(wlmtk_panel_get_layer(panel_ptr)),
+        panel_ptr);
+
+    wlmtk_element_destroy(wlmtk_panel_element(panel_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

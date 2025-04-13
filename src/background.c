@@ -236,6 +236,7 @@ bool _wlmaker_background_update_output(
             arg_ptr->background_ptr->color,
             arg_ptr->background_ptr->env_ptr);
         if (NULL == background_panel_ptr) return false;
+        background_panel_ptr->background_ptr = arg_ptr->background_ptr;
     }
 
     return bs_avltree_insert(
@@ -348,6 +349,7 @@ void _wlmaker_background_panel_element_destroy(
         bs_avltree_delete(
             background_panel_ptr->background_ptr->output_tree_ptr,
             background_panel_ptr->wlr_output_ptr);
+        background_panel_ptr->background_ptr = NULL;
     }
     _wlmaker_background_panel_destroy(background_panel_ptr);
 }
