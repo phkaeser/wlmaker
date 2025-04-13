@@ -63,6 +63,11 @@ static void _wlmbe_output_handle_request_state(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static bool _wlmbe_output_position_decode(
+    bspl_object_t *object_ptr,
+    void *dest_ptr);
+static bool _wlmbe_output_position_decode_init(void *dest_ptr);
+
 /* == Data ================================================================= */
 
 /** Descriptor for output transformations. */
@@ -80,14 +85,25 @@ static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
 
 /** Descriptor for the output configuration. */
 static const bspl_desc_t    _wlmbe_output_config_desc[] = {
-    BSPL_DESC_ENUM("Transformation", true, wlmbe_output_config_t,
-                   attr.transformation, attr.transformation,
-                   WL_OUTPUT_TRANSFORM_NORMAL,
-                   _wlmbe_output_transformation_desc),
-    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t,
-                     attr.scale, attr.scale, 1.0),
-    BSPL_DESC_STRING("Name", true, wlmbe_output_config_t,
-                     name_ptr, has_name, ""),
+    BSPL_DESC_STRING(
+        "Name", true, wlmbe_output_config_t,
+        name_ptr, has_name, ""),
+    BSPL_DESC_ENUM(
+        "Transformation", true, wlmbe_output_config_t,
+        attr.transformation, attr.transformation, WL_OUTPUT_TRANSFORM_NORMAL,
+        _wlmbe_output_transformation_desc),
+    BSPL_DESC_DOUBLE(
+        "Scale", true, wlmbe_output_config_t,
+        attr.scale, attr.scale, 1.0),
+    BSPL_DESC_BOOL(
+        "Enabled", false, wlmbe_output_config_t,
+        attr.enabled, attr.enabled, true),
+    BSPL_DESC_CUSTOM(
+        "Position", false, wlmbe_output_config_t,
+        attr.position, attr.has_position,
+        _wlmbe_output_position_decode,
+        _wlmbe_output_position_decode_init,
+        NULL),
     BSPL_DESC_SENTINEL()
 };
 
@@ -108,6 +124,7 @@ wlmbe_output_t *wlmbe_output_create(
     output_ptr->wlr_output_ptr = wlr_output_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
     output_ptr->config_ptr = config_ptr;
+    output_ptr->wlr_output_ptr->data = output_ptr;
 
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
@@ -137,7 +154,7 @@ wlmbe_output_t *wlmbe_output_create(
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
-    wlr_output_state_set_enabled(&state, true);
+    wlr_output_state_set_enabled(&state, output_ptr->config_ptr->attr.enabled);
     wlr_output_state_set_scale(&state, output_ptr->config_ptr->attr.scale);
 
     // Issue #97: Found that X11 and transformations do not translate
@@ -211,6 +228,12 @@ struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmbe_output_config_t *wlmbe_config_from_output(wlmbe_output_t *output_ptr)
+{
+    return output_ptr->config_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 bs_dllist_node_t *wlmbe_dlnode_from_output(wlmbe_output_t *output_ptr)
 {
     return &output_ptr->dlnode;
@@ -258,6 +281,7 @@ bool wlmbe_output_config_init_from_wlr(
         .name_ptr = logged_strdup(wlr_output_ptr->name),
         .attr.transformation = wlr_output_ptr->transform,
         .attr.scale = wlr_output_ptr->scale,
+        .attr.enabled = wlr_output_ptr->enabled,
     };
     return config_ptr->name_ptr != NULL;
 }
@@ -335,20 +359,65 @@ void _wlmbe_output_handle_request_state(
         output_ptr->config_ptr->attr.transformation =
             event_ptr->state->transform;
         output_ptr->config_ptr->attr.scale = event_ptr->state->scale;
+        output_ptr->config_ptr->attr.enabled = event_ptr->state->enabled;
     } else {
         bs_log(BS_WARNING, "Failed wlr_output_commit_state('%s', %p)",
                output_ptr->wlr_output_ptr->name, event_ptr->state);
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/** Decodes a plist "x,y" string into @ref wlmbe_output_config_position_t. */
+bool _wlmbe_output_position_decode(
+    bspl_object_t *object_ptr,
+    void *dest_ptr)
+{
+    const char *s = bspl_string_value(bspl_string_from_object(object_ptr));
+    if (NULL == s) return false;
+
+    // Extracts the first arg into buf. Large enough for a INT32_MIN.
+    char buf[12];
+    size_t i = 0;
+    for (; s[i] != '\0' && s[i] != ',' && i < sizeof(buf) - 1; ++i) {
+        buf[i] = s[i];
+    }
+    buf[i] = '\0';
+    if (s[i] == ',') ++i;
+
+    int64_t x, y;
+    if (!bs_strconvert_int64(buf, &x, 10) ||
+        !bs_strconvert_int64(s + i, &y, 10)) {
+        bs_log(BS_WARNING, "Failed to decode position \"%s\"", s);
+        return false;
+    }
+    if (x < INT32_MIN || x > INT32_MAX || y < INT32_MIN || y > INT32_MAX) {
+        bs_log(BS_WARNING, "Position out of range for \"%s\"", s);
+        return false;
+    }
+    wlmbe_output_config_position_t *pos_ptr = dest_ptr;
+    *pos_ptr = (wlmbe_output_config_position_t){ .x = x, .y = y };
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Initializes @ref wlmbe_output_config_position_t at `dest_ptr`. */
+bool _wlmbe_output_position_decode_init(void *dest_ptr)
+{
+    wlmbe_output_config_position_t *pos_ptr = dest_ptr;
+    *pos_ptr = (wlmbe_output_config_position_t){};
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void _wlmbe_output_test_config_parse(bs_test_t *test_ptr);
 static void _wlmbe_output_test_config_init(bs_test_t *test_ptr);
+static void _wlmbe_output_test_decode_position(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_output_test_cases[] = {
     { 1, "config_parse", _wlmbe_output_test_config_parse },
     { 1, "config_init", _wlmbe_output_test_config_init },
+    { 1, "decode_position", _wlmbe_output_test_decode_position },
     { 0, NULL, NULL }
 };
 
@@ -386,6 +455,35 @@ void _wlmbe_output_test_config_init(bs_test_t *test_ptr)
         wlmbe_output_config_init_from_config(&c, &src));
     BS_TEST_VERIFY_STREQ(test_ptr, "name", c.name_ptr);
     wlmbe_output_config_fini(&c);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests decoding of a position field. */
+void _wlmbe_output_test_decode_position(bs_test_t *test_ptr)
+{
+    wlmbe_output_config_position_t p;
+    _wlmbe_output_position_decode_init(&p);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, p.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, p.y);
+
+    bspl_object_t *o = bspl_object_from_string(bspl_string_create("1,2"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, p.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, p.y);
+    bspl_object_unref(o);
+
+    o = bspl_object_from_string(bspl_string_create("2147483647,-2147483648"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, p.x);
+    BS_TEST_VERIFY_EQ(test_ptr, INT32_MIN, p.y);
+    bspl_object_unref(o);
+
+    o = bspl_object_from_string(bspl_string_create("2147483648,-2147483649"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    bspl_object_unref(o);
 }
 
 /* == End of output.c ====================================================== */

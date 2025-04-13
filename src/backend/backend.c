@@ -344,18 +344,30 @@ bool _wlmbe_backend_add_output(
     wlmbe_backend_t *backend_ptr,
     wlmbe_output_t *output_ptr)
 {
-    // tinywl: Adds this to the output layout. The add_auto function arranges
-    // outputs from left-to-right in the order they appear. A sophisticated
-    // compositor would let the user configure the arrangement of outputs in
-    // the layout.
+    wlmbe_output_config_t *config_ptr = wlmbe_config_from_output(output_ptr);
+    BS_ASSERT(NULL != config_ptr);
+
     struct wlr_output *wlrop = wlmbe_wlr_output_from_output(output_ptr);
-    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
-        wlr_output_layout_add_auto(backend_ptr->wlr_output_layout_ptr, wlrop);
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr = NULL;
+    if (config_ptr->attr.has_position) {
+        wlr_output_layout_output_ptr = wlr_output_layout_add(
+            backend_ptr->wlr_output_layout_ptr, wlrop,
+            config_ptr->attr.position.x, config_ptr->attr.position.y);
+    } else {
+        wlr_output_layout_output_ptr = wlr_output_layout_add_auto(
+            backend_ptr->wlr_output_layout_ptr, wlrop);
+    }
     if (NULL == wlr_output_layout_output_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_output_layout_add_auto(%p, %p) for '%s'",
-               backend_ptr->wlr_output_layout_ptr, wlrop, wlrop->name);
+        bs_log(BS_ERROR,
+               "Failed wlr_output_layout_add(%p, %p, %d, %d) for \"%s\"",
+               backend_ptr->wlr_output_layout_ptr, wlrop,
+               config_ptr->attr.position.x, config_ptr->attr.position.y,
+               wlrop->name);
         return false;
     }
+    config_ptr->attr.position.x = wlr_output_layout_output_ptr->x;
+    config_ptr->attr.position.y = wlr_output_layout_output_ptr->y;
+    config_ptr->attr.has_position = true;
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_output_create(
         backend_ptr->wlr_scene_ptr, wlrop);
@@ -441,16 +453,22 @@ wlmbe_output_config_t *_wlmbe_backend_get_config(
     wlmbe_backend_t *backend_ptr,
     struct wlr_output *wlr_output_ptr)
 {
+    wlmbe_output_config_node_t *config_node_ptr;
     bs_dllist_node_t *dlnode_ptr = bs_dllist_find(
         &backend_ptr->state_output_configs,
         _wlmbe_output_config_equals,
         wlr_output_ptr);
-
-    wlmbe_output_config_node_t *config_node_ptr;
     if (NULL != dlnode_ptr) {
+        // Found this output in @ref wlmbe_backend_t::state_output_configs,
+        // meaning it had been connected earlier. In order for the output
+        // management to find them, we always re-enable the output.
         config_node_ptr = BS_CONTAINER_OF(
             dlnode_ptr, wlmbe_output_config_node_t, dlnode);
+        config_node_ptr->config.attr.enabled = true;
     } else {
+        // This output is seen from wlmaker the first time. Note that the
+        // configuration in @ref wlmbe_backend_t::output_configs may have that
+        // output disabled. We will not overwrite that.
         config_node_ptr = logged_calloc(1, sizeof(wlmbe_output_config_node_t));
         if (NULL == config_node_ptr) return false;
         if (!wlmbe_output_config_init_from_wlr(
@@ -489,6 +507,11 @@ void _wlmbe_backend_handle_new_output(
     wlmbe_output_config_t *output_config_ptr =
         _wlmbe_backend_get_config(backend_ptr, wlr_output_ptr);
     if (NULL == output_config_ptr) return;
+
+    if (!output_config_ptr->attr.enabled) {
+        wlr_output_destroy(wlr_output_ptr);
+        return;
+    }
 
     wlmbe_output_t *output_ptr = wlmbe_output_create(
         wlr_output_ptr,
