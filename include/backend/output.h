@@ -129,6 +129,9 @@ wlmbe_output_t *wlmbe_output_create(
  */
 void wlmbe_output_destroy(wlmbe_output_t *output_ptr);
 
+/** @return A long description string, @see wlmbe_output_t::description_ptr. */
+const char *wlmbe_output_description(wlmbe_output_t *output_ptr);
+
 /** Returns @ref wlmbe_output_t::wlr_output_ptr. */
 struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr);
 

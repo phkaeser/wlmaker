@@ -292,9 +292,10 @@ static bool _wlmaker_output_manager_config_head_apply(
         config_ptr->attr.has_position =
             !wlr_output_layout_output_ptr->auto_configured;
     }
+
     bs_log(BS_INFO,
-           "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d) %s",
-           wlr_output_ptr->name,
+           "Applied: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
+           wlmbe_output_description(wlr_output_ptr->data),
            wlr_output_ptr->enabled ? "enabled" : "disabled",
            wlr_output_ptr->width, wlr_output_ptr->height,
            1e-3 * wlr_output_ptr->refresh,

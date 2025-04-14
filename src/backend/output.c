@@ -44,6 +44,9 @@ struct _wlmbe_output_t {
     /** Listener for `request_state` signals raised by `wlr_output`. */
     struct wl_listener        output_request_state_listener;
 
+    /** Descriptive name, showing manufacturer, model and serial. */
+    char                      *description_ptr;
+
     // Below: Not owned by @ref wlmbe_output_t.
     /** Refers to the compositor output region, from wlroots. */
     struct wlr_output         *wlr_output_ptr;
@@ -146,6 +149,17 @@ wlmbe_output_t *wlmbe_output_create(
     output_ptr->config_ptr = config_ptr;
     output_ptr->wlr_output_ptr->data = output_ptr;
 
+    output_ptr->description_ptr = bs_strdupf(
+        "\"%s\": Manufacturer: \"%s\", Model \"%s\", Serial \"%s\"",
+        wlr_output_ptr->name,
+        wlr_output_ptr->make ? wlr_output_ptr->make : "Unknown",
+        wlr_output_ptr->model ? wlr_output_ptr->model : "Unknown",
+        wlr_output_ptr->serial ? wlr_output_ptr->serial : "Unknown");
+    if (NULL == output_ptr->description_ptr) {
+        wlmbe_output_destroy(output_ptr);
+        return NULL;
+    }
+
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
         &output_ptr->output_destroy_listener,
@@ -246,7 +260,18 @@ void wlmbe_output_destroy(wlmbe_output_t *output_ptr)
     }
 
     _wlmbe_output_handle_destroy(&output_ptr->output_destroy_listener, NULL);
+
+    if (NULL != output_ptr->description_ptr) {
+        free(output_ptr->description_ptr);
+        output_ptr->description_ptr = NULL;
+    }
     free(output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+const char *wlmbe_output_description(wlmbe_output_t *output_ptr)
+{
+    return output_ptr->description_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
