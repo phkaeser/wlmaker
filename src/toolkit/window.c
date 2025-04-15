@@ -1123,8 +1123,6 @@ void _wlmtk_window_request_position_and_size_decorated(
         height -= 2 * window_ptr->style.border.width;
         width -= 2 * window_ptr->style.border.width;
     }
-    height = BS_MAX(0, height);
-    width = BS_MAX(0, width);
 
     // Account for potential extra size beyond the content: For example, by
     // sub-surfaces that clients use for borders or resize-areas.
@@ -1136,6 +1134,9 @@ void _wlmtk_window_request_position_and_size_decorated(
         width += w - dimensions.width;
         height += h - dimensions.height;
     }
+
+    height = BS_MAX(0, height);
+    width = BS_MAX(0, width);
 
     uint32_t serial = wlmtk_content_request_size(
         window_ptr->content_ptr, width, height);
