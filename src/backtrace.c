@@ -55,6 +55,7 @@ static void _signal_backtrace(int signum);
 bool wlmaker_backtrace_setup(const char *filename_ptr)
 {
 #if defined(WLMAKER_HAVE_LIBBACKTRACE)
+
     _wlmaker_bt_state_ptr = backtrace_create_state(
         filename_ptr, 0, _backtrace_error_callback, NULL);
     if (NULL == _wlmaker_bt_state_ptr) {
@@ -66,6 +67,11 @@ bool wlmaker_backtrace_setup(const char *filename_ptr)
     signal(SIGFPE, _signal_backtrace);
     signal(SIGILL, _signal_backtrace);
     signal(SIGSEGV, _signal_backtrace);
+
+#else
+
+    bs_log(BS_DEBUG, "No libbacktrace, ignoring setup for %s", filename_ptr);
+
 #endif  // defined(WLMAKER_HAVE_LIBBACKTRACE)
 
     return true;
