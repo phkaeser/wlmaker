@@ -26,6 +26,7 @@ jobs:
           flex \
           gcc \
           git \
+          libbacktrace-dev \
           libcairo2-dev \
           libncurses-dev \
           libwlroots-0.18-dev \
@@ -71,6 +72,7 @@ jobs:
           flex \
           gcc \
           git \
+          libbacktrace-dev \
           libcairo2-dev \
           libncurses-dev \
           libwlroots-0.18-dev \

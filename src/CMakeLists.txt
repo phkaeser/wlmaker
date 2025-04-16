@@ -18,6 +18,7 @@ SET(PUBLIC_HEADER_FILES
   action.h
   action_item.h
   background.h
+  backtrace.h
   clip.h
   config.h
   corner.h
@@ -49,6 +50,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   action.c
   action_item.c
   background.c
+  backtrace.c
   clip.c
   config.c
   corner.c
@@ -133,12 +135,14 @@ ENDIF(XWAYLAND_FOUND)
 
 ADD_EXECUTABLE(wlmaker wlmaker.c)
 ADD_DEPENDENCIES(wlmaker wlmaker_lib)
-IF(XWAYLAND_FOUND)
-ENDIF(XWAYLAND_FOUND)
 TARGET_COMPILE_OPTIONS(
   wlmaker PRIVATE
   ${WAYLAND_CFLAGS}
   ${WAYLAND_CFLAGS_OTHER})
 TARGET_LINK_LIBRARIES(wlmaker PRIVATE libbase libbase_plist wlmaker_lib)
+IF(LIBBACKTRACE)
+  TARGET_COMPILE_DEFINITIONS(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
+  TARGET_LINK_LIBRARIES(wlmaker PRIVATE ${LIBBACKTRACE})
+ENDIF()
 
 INSTALL(TARGETS wlmaker DESTINATION bin)

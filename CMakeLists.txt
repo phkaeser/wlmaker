@@ -60,6 +60,16 @@ PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
 # We build for wlroots 0.18.
 PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
 
+# https://github.com/ianlancetaylor/libbacktrace.
+# The REQUIRED arg is available only from cmake 3.28.
+FIND_LIBRARY(LIBBACKTRACE backtrace)
+IF(LIBBACKTRACE)
+  MESSAGE(STATUS "Found libbacktrace: ${LIBBACKTRACE}")
+ELSE()
+  MESSAGE(STATUS "libbacktrace not found. Will compile without.")
+ENDIF()
+
+
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
