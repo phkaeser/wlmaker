@@ -33,6 +33,7 @@
 
 #include "action.h"
 #include "background.h"
+#include "backtrace.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
@@ -306,6 +307,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_clip_t            *clip_ptr = NULL;
     wlmaker_task_list_t       *task_list_ptr = NULL;
     int                       rv = EXIT_SUCCESS;
+
+    if (!wlmaker_backtrace_setup(argv[0])) return EXIT_FAILURE;
 
     rv = regcomp(
         &wlmaker_wlr_log_regex,
