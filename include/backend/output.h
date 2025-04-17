@@ -60,6 +60,12 @@ typedef struct {
 
 /** Output configuration. */
 struct _wlmbe_output_config_t {
+    /**
+     * List node, element of @ref wlmbe_backend_t::output_configs, or
+     * @ref wlmbe_backend_t::ephemeral_output_configs.
+     */
+    bs_dllist_node_t          dlnode;
+
     /** Name of this output. */
     char                      *name_ptr;
     /** Whether a 'Name' entry was present. */
@@ -144,23 +150,36 @@ bs_dllist_node_t *wlmbe_dlnode_from_output(wlmbe_output_t *output_ptr);
 /** Returns the @ref wlmbe_output_t for @ref wlmbe_output_t::dlnode. */
 wlmbe_output_t *wlmbe_output_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
-/** Initializes the configuration from the source. */
-bool wlmbe_output_config_init_from_config(
-    wlmbe_output_config_t *config_ptr,
-    const wlmbe_output_config_t *source_config_ptr);
+/** Returns the base pointer from the  @ref wlmbe_output_config_t::dlnode. */
+wlmbe_output_config_t *wlmbe_output_config_from_dlnode(
+    bs_dllist_node_t *dlnode_ptr);
 
-/** Initializes the configuration from a plist. */
-bool wlmbe_output_config_init_from_plist(
-    wlmbe_output_config_t *config_ptr,
-    bspl_dict_t *dict_ptr);
+/** Returns the base pointer from the  @ref wlmbe_output_config_t::dlnode. */
+bs_dllist_node_t *wlmbe_dlnode_from_output_config(
+    wlmbe_output_config_t *config_ptr);
 
-/** Initializes the configuration from a wlr_output. */
-bool wlmbe_output_config_init_from_wlr(
-    wlmbe_output_config_t *config_ptr,
+/**
+ * Creates a new output config from `wlr_output`.
+ *
+ * @param wlr_output_ptr
+ *
+ * @return New output configuration or NULL on error.
+ */
+wlmbe_output_config_t *wlmbe_output_config_create_from_wlr(
     struct wlr_output *wlr_output_ptr);
 
-/** Un-initializes the configuration. */
-void wlmbe_output_config_fini(wlmbe_output_config_t *config_ptr);
+/**
+ * Creates a new output config from the plist dictionnary `dict_ptr`.
+ *
+ * @param dict_ptr
+ *
+ * @return New output configuration or NULL on error.
+ */
+wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
+    bspl_dict_t *dict_ptr);
+
+/** Destroys the output configuration. */
+void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr);
 
 /** Unit tests for the output module. */
 extern const bs_test_case_t wlmbe_output_test_cases[];

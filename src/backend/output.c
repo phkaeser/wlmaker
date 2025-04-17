@@ -300,61 +300,103 @@ wlmbe_output_t *wlmbe_output_from_dlnode(bs_dllist_node_t *dlnode_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_output_config_init_from_config(
-    wlmbe_output_config_t *config_ptr,
-    const wlmbe_output_config_t *source_config_ptr)
+wlmbe_output_config_t *wlmbe_output_config_from_dlnode(
+    bs_dllist_node_t *dlnode_ptr)
 {
-    *config_ptr = (wlmbe_output_config_t){
-        .name_ptr = logged_strdup(source_config_ptr->name_ptr),
-        .has_name = true,
-        .attr = source_config_ptr->attr,
-    };
-    return config_ptr->name_ptr != NULL;
+    if (NULL == dlnode_ptr) return NULL;
+    return BS_CONTAINER_OF(dlnode_ptr, wlmbe_output_config_t, dlnode);
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_output_config_init_from_plist(
-    wlmbe_output_config_t *config_ptr,
-    bspl_dict_t *dict_ptr)
+bs_dllist_node_t *wlmbe_dlnode_from_output_config(
+    wlmbe_output_config_t *config_ptr)
 {
-    *config_ptr = (wlmbe_output_config_t){};
-    return bspl_decode_dict(
-        dict_ptr,
-        _wlmbe_output_config_desc,
-        config_ptr);
+    return &config_ptr->dlnode;
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_output_config_init_from_wlr(
-    wlmbe_output_config_t *config_ptr,
+wlmbe_output_config_t *wlmbe_output_config_create_from_wlr(
     struct wlr_output *wlr_output_ptr)
 {
-    if (NULL == wlr_output_ptr || NULL == wlr_output_ptr->name) return false;
+    BS_ASSERT(NULL != wlr_output_ptr);
+    BS_ASSERT(NULL != wlr_output_ptr->name);
+        wlmbe_output_config_t *config_ptr = logged_calloc(
+        1, sizeof(wlmbe_output_config_t));
+    if (NULL == config_ptr) return NULL;
 
-    *config_ptr = (wlmbe_output_config_t){
-        .name_ptr = logged_strdup(wlr_output_ptr->name),
-        .has_name = true,
-
-        .attr.transformation = wlr_output_ptr->transform,
-        .attr.scale = wlr_output_ptr->scale,
-        .attr.enabled = wlr_output_ptr->enabled,
-
-        .attr.position.x = 0,
-        .attr.position.y = 0,
-        .attr.has_position = false,
-
-        .attr.mode.width = wlr_output_ptr->width,
-        .attr.mode.height = wlr_output_ptr->height,
-        .attr.mode.refresh = wlr_output_ptr->refresh,
-        .attr.has_mode = true,
+    struct strings { char **d; const char *s; } s[4] = {
+        { .d = &config_ptr->name_ptr, .s = wlr_output_ptr->name },
+        { .d = &config_ptr->manufacturer_ptr, .s = wlr_output_ptr->make },
+        { .d = &config_ptr->model_ptr, .s = wlr_output_ptr->model },
+        { .d = &config_ptr->serial_ptr, .s = wlr_output_ptr->serial },
     };
-    return config_ptr->name_ptr != NULL;
+    for (size_t i = 0; i < sizeof(s) / sizeof(struct strings); ++i) {
+        if (NULL == s[i].s) continue;
+        *s[i].d = logged_strdup(s[i].s);
+        if (NULL == *s[i].d) {
+            wlmbe_output_config_destroy(config_ptr);
+            return NULL;
+        }
+    }
+    config_ptr->has_name = NULL != config_ptr->name_ptr;
+    config_ptr->has_manufacturer = NULL != config_ptr->manufacturer_ptr;
+    config_ptr->has_model = NULL != config_ptr->model_ptr;
+    config_ptr->has_serial = NULL != config_ptr->serial_ptr;
+
+    config_ptr->attr.transformation = wlr_output_ptr->transform;
+    config_ptr->attr.scale = wlr_output_ptr->scale;
+    config_ptr->attr.enabled = wlr_output_ptr->enabled;
+
+    config_ptr->attr.position.x = 0;
+    config_ptr->attr.position.y = 0;
+    config_ptr->attr.has_position = false;
+
+    config_ptr->attr.mode.width = wlr_output_ptr->width;
+    config_ptr->attr.mode.height = wlr_output_ptr->height;
+    config_ptr->attr.mode.refresh = wlr_output_ptr->refresh;
+    config_ptr->attr.has_mode = true;
+
+    return config_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmbe_output_config_fini(wlmbe_output_config_t *config_ptr)
+wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
+    bspl_dict_t *dict_ptr)
 {
-    bspl_decoded_destroy(_wlmbe_output_config_desc, config_ptr);
+    wlmbe_output_config_t *config_ptr = logged_calloc(
+        1, sizeof(wlmbe_output_config_t));
+    if (NULL != config_ptr) {
+        if (bspl_decode_dict(
+                dict_ptr,
+                _wlmbe_output_config_desc,
+                config_ptr)) {
+            return config_ptr;
+        }
+        free(config_ptr);
+    }
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr)
+{
+    if (NULL != config_ptr->serial_ptr) {
+        free(config_ptr->serial_ptr);
+        config_ptr->serial_ptr = NULL;
+    }
+    if (NULL != config_ptr->model_ptr) {
+        free(config_ptr->model_ptr);
+        config_ptr->model_ptr = NULL;
+    }
+    if (NULL != config_ptr->manufacturer_ptr) {
+        free(config_ptr->manufacturer_ptr);
+        config_ptr->manufacturer_ptr = NULL;
+    }
+    if (NULL != config_ptr->name_ptr) {
+        free(config_ptr->name_ptr);
+        config_ptr->name_ptr = NULL;
+    }
+    free(config_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -538,13 +580,11 @@ bool _wlmbe_output_mode_decode_init(void *dest_ptr)
 /* == Unit tests =========================================================== */
 
 static void _wlmbe_output_test_config_parse(bs_test_t *test_ptr);
-static void _wlmbe_output_test_config_init(bs_test_t *test_ptr);
 static void _wlmbe_output_test_decode_position(bs_test_t *test_ptr);
 static void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_output_test_cases[] = {
     { 1, "config_parse", _wlmbe_output_test_config_parse },
-    { 1, "config_init", _wlmbe_output_test_config_init },
     { 1, "decode_position", _wlmbe_output_test_decode_position },
     { 1, "decode_mode", _wlmbe_output_test_decode_mode },
     { 0, NULL, NULL }
@@ -559,31 +599,17 @@ void _wlmbe_output_test_config_parse(bs_test_t *test_ptr)
             "{Transformation=Flip;Scale=1;Name=X11}"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
-    wlmbe_output_config_t c;
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr, wlmbe_output_config_init_from_plist(&c, dict_ptr));
+    wlmbe_output_config_t *c = wlmbe_output_config_create_from_plist(dict_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c);
 
-    BS_TEST_VERIFY_STREQ(test_ptr, "X11", c.name_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "X11", c->name_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, WL_OUTPUT_TRANSFORM_FLIPPED,
-        c.attr.transformation);
-    BS_TEST_VERIFY_EQ(test_ptr, 1.0, c.attr.scale);
+        c->attr.transformation);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, c->attr.scale);
 
-    wlmbe_output_config_fini(&c);
+    wlmbe_output_config_destroy(c);
     bspl_dict_unref(dict_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests the various flavours of initializing a @ref wlmbe_output_config_t. */
-void _wlmbe_output_test_config_init(bs_test_t *test_ptr)
-{
-    wlmbe_output_config_t c, src = { .name_ptr = "name" };
-
-    BS_TEST_VERIFY_TRUE_OR_RETURN(
-        test_ptr,
-        wlmbe_output_config_init_from_config(&c, &src));
-    BS_TEST_VERIFY_STREQ(test_ptr, "name", c.name_ptr);
-    wlmbe_output_config_fini(&c);
 }
 
 /* ------------------------------------------------------------------------- */

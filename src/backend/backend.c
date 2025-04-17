@@ -73,10 +73,24 @@ struct _wlmbe_backend_t {
     /** Desired output height, for windowed mode. 0 for no preference. */
     uint32_t                  height;
 
-    /** A list of @ref wlmbe_output_config_node_t items. */
+    /**
+     * A list of @ref wlmbe_output_config_t items, configured through
+     * wlmaker's configuration file.
+     *
+     * Discovered outputs are attempted to matched through
+     * @ref _wlmbe_output_config_fnmatches for configured attributes.
+     */
     bs_dllist_t               output_configs;
-    /** A list of @ref wlmbe_output_config_node_t items. */
-    bs_dllist_t               state_output_configs;
+    /**
+     * Another list of @ref wlmbe_output_config_t items. This is
+     * initialized from wlmaker's state file.
+     *
+     * If a discovered output equals to one of the nodes here, it's attributes
+     * will be taken from here. Otherwise, a new entry is created in this list.
+     * The intent is to memorize state of connected configs, so that
+     * re-connected outputs are using the same attributes they left with.
+     */
+    bs_dllist_t               ephemeral_output_configs;
 
     /** List of outputs. Connects @ref wlmbe_output_t::dlnode. */
     bs_dllist_t               outputs;
@@ -88,14 +102,6 @@ struct _wlmbe_backend_t {
     struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
-/** One output configuration. */
-typedef struct {
-    /** Element of @ref wlmbe_backend_t::output_configs. */
-    bs_dllist_node_t          dlnode;
-    /** The configurtation. */
-    wlmbe_output_config_t     config;
-} wlmbe_output_config_node_t;
-
 static void _wlmbe_backend_handle_new_output(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -105,9 +111,6 @@ static bool _wlmbe_output_config_equals(
 static bool _wlmbe_output_config_fnmatches(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
-static wlmbe_output_config_t *_wlmbe_backend_get_config(
-    wlmbe_backend_t *backend_ptr,
-    struct wlr_output *wlr_output_ptr);
 
 static bool _wlmbe_backend_decode_item(
     bspl_object_t *obj_ptr,
@@ -132,8 +135,8 @@ static const bspl_desc_t _wlmbe_output_configs_desc[] = {
 
 /** Descriptor for the output state, stored as plist. */
 static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
-    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, state_output_configs,
-                    state_output_configs,
+    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, ephemeral_output_configs,
+                    ephemeral_output_configs,
                     _wlmbe_backend_decode_item,
                     NULL,
                     _wlmbe_backend_decode_fini),
@@ -395,7 +398,7 @@ bool _wlmbe_backend_add_output(
 /**
  * Returns if the backend configuration equals the wlr_output attributes.
  *
- * @param dlnode_ptr          To @ref wlmbe_output_config_node_t::dlnode.
+ * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode.
  * @param ud_ptr              To a `struct wlr_output`.
  *
  * @return true if it equals.
@@ -404,53 +407,51 @@ bool _wlmbe_output_config_equals(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr)
 {
-    wlmbe_output_config_node_t *config_node_ptr = BS_CONTAINER_OF(
-        dlnode_ptr, wlmbe_output_config_node_t, dlnode);
+    wlmbe_output_config_t *config_ptr =
+        wlmbe_output_config_from_dlnode(dlnode_ptr);
     struct wlr_output *wlr_output_ptr = ud_ptr;
 
-    if (config_node_ptr->config.has_name) {
-        if (NULL == wlr_output_ptr->name) return false;
-        if (0 != strcmp(config_node_ptr->config.name_ptr,
-                        wlr_output_ptr->name)) {
-            return false;
-        }
-    }
+    // Maps the presence indicator and fields to match.
+    struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
+        {
+            .present = config_ptr->has_name,
+            .cfg_val = config_ptr->name_ptr,
+            .o_val = wlr_output_ptr->name,
+        },
+        {
+            .present = config_ptr->has_manufacturer,
+            .cfg_val = config_ptr->manufacturer_ptr,
+            .o_val = wlr_output_ptr->make,
+        },
+        {
+            .present = config_ptr->has_model,
+            .cfg_val = config_ptr->model_ptr,
+            .o_val = wlr_output_ptr->model,
+        },
+        {
+            .present = config_ptr->has_serial,
+            .cfg_val = config_ptr->serial_ptr,
+            .o_val = wlr_output_ptr->serial,
+        },
+    };
 
-    if (config_node_ptr->config.has_manufacturer) {
-        if (NULL == wlr_output_ptr->make) return false;
-        if (0 != strcmp(config_node_ptr->config.manufacturer_ptr,
-                        wlr_output_ptr->make)) {
-            return false;
-        }
-    }
+    // Presence of the field must match in both config and output.
+    bool any_field_equals = false;
+    for (size_t i = 0; i < sizeof(f) / sizeof(struct fields); ++i) {
 
-    if (config_node_ptr->config.has_model) {
-        if (NULL == wlr_output_ptr->model) return false;
-        if (0 != strcmp(config_node_ptr->config.model_ptr,
-                        wlr_output_ptr->model)) {
-            return false;
-        }
+        if (f[i].present != (NULL != f[i].o_val)) return false;
+        if (!f[i].present) continue;
+        if (0 != strcmp(f[i].cfg_val, f[i].o_val)) return false;
+        any_field_equals = true;
     }
-
-    if (config_node_ptr->config.has_serial) {
-        if (NULL == wlr_output_ptr->serial) return false;
-        if (0 != strcmp(config_node_ptr->config.serial_ptr,
-                        wlr_output_ptr->serial)) {
-            return false;
-        }
-    }
-
-    return (config_node_ptr->config.has_name ||
-            config_node_ptr->config.has_manufacturer ||
-            config_node_ptr->config.has_model ||
-            config_node_ptr->config.has_serial);
+    return any_field_equals;
 }
 
 /* ------------------------------------------------------------------------- */
 /**
  * Returns if the backend configuration fnmatches the wlr_output attributes.
  *
- * @param dlnode_ptr          To @ref wlmbe_output_config_node_t::dlnode.
+ * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode.
  * @param ud_ptr              To a `struct wlr_output`.
  *
  * @return true if it matches.
@@ -459,110 +460,39 @@ bool _wlmbe_output_config_fnmatches(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr)
 {
-    wlmbe_output_config_node_t *config_node_ptr = BS_CONTAINER_OF(
-        dlnode_ptr, wlmbe_output_config_node_t, dlnode);
+    wlmbe_output_config_t *config_ptr =
+        wlmbe_output_config_from_dlnode(dlnode_ptr);
     struct wlr_output *wlr_output_ptr = ud_ptr;
 
-    if (config_node_ptr->config.has_name) {
-        if (NULL == wlr_output_ptr->name) return false;
-        if (0 != fnmatch(config_node_ptr->config.name_ptr,
-                         wlr_output_ptr->name,
-                         0)) {
-            return false;
-        }
+    // Maps the presence indicator and fields to match.
+    struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
+        {
+            .present = config_ptr->has_name,
+            .cfg_val = config_ptr->name_ptr,
+            .o_val = wlr_output_ptr->name,
+        },
+        {
+            .present = config_ptr->has_manufacturer,
+            .cfg_val = config_ptr->manufacturer_ptr,
+            .o_val = wlr_output_ptr->make,
+        },
+        {
+            .present = config_ptr->has_model,
+            .cfg_val = config_ptr->model_ptr,
+            .o_val = wlr_output_ptr->model,
+        },
+        {
+            .present = config_ptr->has_serial,
+            .cfg_val = config_ptr->serial_ptr,
+            .o_val = wlr_output_ptr->serial,
+        },
+    };
+    for (size_t i = 0; i < sizeof(f) / sizeof(struct fields); ++i) {
+        if (!f[i].present) continue;
+        if (NULL == f[i].cfg_val) return false;
+        if (0 != fnmatch(f[i].cfg_val, f[i].o_val, 0)) return false;
     }
-
-    if (config_node_ptr->config.has_manufacturer) {
-        if (NULL == wlr_output_ptr->make) return false;
-        if (0 != fnmatch(config_node_ptr->config.manufacturer_ptr,
-                         wlr_output_ptr->make,
-                         0)) {
-            return false;
-        }
-    }
-
-    if (config_node_ptr->config.has_model) {
-        if (NULL == wlr_output_ptr->model) return false;
-        if (0 != fnmatch(config_node_ptr->config.model_ptr,
-                         wlr_output_ptr->model,
-                         0)) {
-            return false;
-        }
-    }
-
-    if (config_node_ptr->config.has_serial) {
-        if (NULL == wlr_output_ptr->serial) return false;
-        if (0 != fnmatch(config_node_ptr->config.serial_ptr,
-                         wlr_output_ptr->serial,
-                         0)) {
-            return false;
-        }
-    }
-
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Retrieves (or creates) an output configuration for `wlr_output_ptr`.
- *
- * Will first look if @ref wlmbe_backend_t::state_output_configs contains a
- * corresponding configuration, and return if found.
- *
- * If not, creates a new @ref wlmbe_output_config_node_t and adds it to
- * @ref wlmbe_backend_t::state_output_configs. If a matching configuration can
- * be found in @ref wlmbe_backend_t::output_configs, that new node will get
- * it's attributes initalized from there.
- *
- * @param backend_ptr
- * @param wlr_output_ptr
- *
- * @return Pointer to the output configuration, or NULL on error.
- */
-wlmbe_output_config_t *_wlmbe_backend_get_config(
-    wlmbe_backend_t *backend_ptr,
-    struct wlr_output *wlr_output_ptr)
-{
-    wlmbe_output_config_node_t *config_node_ptr;
-    bs_dllist_node_t *dlnode_ptr = bs_dllist_find(
-        &backend_ptr->state_output_configs,
-        _wlmbe_output_config_equals,
-        wlr_output_ptr);
-    if (NULL != dlnode_ptr) {
-        // Found this output in @ref wlmbe_backend_t::state_output_configs,
-        // meaning it had been connected earlier. In order for the output
-        // management to find them, we always re-enable the output.
-        config_node_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmbe_output_config_node_t, dlnode);
-        config_node_ptr->config.attr.enabled = true;
-    } else {
-        // This output is seen from wlmaker the first time. Note that the
-        // configuration in @ref wlmbe_backend_t::output_configs may have that
-        // output disabled. We will not overwrite that.
-        config_node_ptr = logged_calloc(1, sizeof(wlmbe_output_config_node_t));
-        if (NULL == config_node_ptr) return false;
-        if (!wlmbe_output_config_init_from_wlr(
-                &config_node_ptr->config,
-                wlr_output_ptr)) {
-            free(config_node_ptr);
-            return false;
-        }
-
-        dlnode_ptr = bs_dllist_find(
-            &backend_ptr->output_configs,
-            _wlmbe_output_config_fnmatches,
-            wlr_output_ptr);
-        if (NULL != dlnode_ptr) {
-            wlmbe_output_config_node_t *state_node_ptr = BS_CONTAINER_OF(
-                dlnode_ptr, wlmbe_output_config_node_t, dlnode);
-            config_node_ptr->config.attr = state_node_ptr->config.attr;
-        }
-
-        bs_dllist_push_back(&backend_ptr->state_output_configs,
-                            &config_node_ptr->dlnode);
-    }
-
-    return &config_node_ptr->config;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -575,28 +505,58 @@ void _wlmbe_backend_handle_new_output(
         listener_ptr, wlmbe_backend_t, new_output_listener);
     struct wlr_output *wlr_output_ptr = data_ptr;
 
-    wlmbe_output_config_t *output_config_ptr =
-        _wlmbe_backend_get_config(backend_ptr, wlr_output_ptr);
-    if (NULL == output_config_ptr) return;
-
-    if (!output_config_ptr->attr.enabled) {
+    // See if there is an exact match among the ephemeral output configs. If
+    // yes, pick that configuration. Otherwise, create a new one.
+    wlmbe_output_config_t *config_ptr = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &backend_ptr->ephemeral_output_configs,
+            _wlmbe_output_config_equals,
+            wlr_output_ptr));
+    if (NULL != config_ptr && !config_ptr->attr.enabled) {
+        // Explicitly configured to be disabled. Skip that output.
         wlr_output_destroy(wlr_output_ptr);
         return;
     }
+    if (NULL == config_ptr) {
+        config_ptr = wlmbe_output_config_create_from_wlr(wlr_output_ptr);
+        bs_dllist_push_front(
+            &backend_ptr->ephemeral_output_configs,
+            wlmbe_dlnode_from_output_config(config_ptr));
+    }
+
+    // See if we have a corresponding entry among configured outputs. If yes,
+    // apply the attributes to our new config.
+    // FIXME
+    wlmbe_output_config_t *xxxx_config_ptr = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &backend_ptr->output_configs,
+            _wlmbe_output_config_fnmatches,
+            wlr_output_ptr));
+    if (NULL != xxxx_config_ptr) {
+        config_ptr->attr = xxxx_config_ptr->attr;
+    }
+
+    // FIXME: do we have an existing config..?
+    // FIXME:
+    // (1) see if the exact config already exists (without an output).
+    // (2) if not: (1) create new config from wlr_output.
+    //             (2) see if outputs has a config. if yes: copy attrs.
+    // (3) create output. (this will attempt to set attrs)
+    // (4) if output was created && config did not exist: add.
 
     wlmbe_output_t *output_ptr = wlmbe_output_create(
         wlr_output_ptr,
         backend_ptr->wlr_allocator_ptr,
         backend_ptr->wlr_renderer_ptr,
         backend_ptr->wlr_scene_ptr,
-        output_config_ptr,
+        config_ptr,
         backend_ptr->width,
         backend_ptr->height);
-    if (NULL == output_ptr) return;
-
-    if (!_wlmbe_backend_add_output(backend_ptr, output_ptr)) {
+    if (NULL != output_ptr) {
+        if (_wlmbe_backend_add_output(backend_ptr, output_ptr)) return;
         wlmbe_output_destroy(output_ptr);
     }
+    wlr_output_destroy(wlr_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -613,23 +573,20 @@ bool _wlmbe_backend_decode_item(
         return false;
     }
 
-    wlmbe_output_config_node_t *config_node_ptr = logged_calloc(
-        1, sizeof(wlmbe_output_config_node_t));
-    if (NULL == config_node_ptr) return false;
+    wlmbe_output_config_t *config_ptr =
+        wlmbe_output_config_create_from_plist(dict_ptr);
+    if (NULL != config_ptr) {
+        bs_dllist_push_back(
+            dllist_ptr,
+            wlmbe_dlnode_from_output_config(config_ptr));
 
-    if (wlmbe_output_config_init_from_plist(
-            &config_node_ptr->config,
-            dict_ptr)) {
-        bs_dllist_push_back(dllist_ptr, &config_node_ptr->dlnode);
         return true;
     }
-
-    _wlmbe_backend_config_dlnode_destroy(&config_node_ptr->dlnode, NULL);
-    return true;
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
-/** Frees all resources of the @ref wlmbe_output_config_node_t in the list. */
+/** Frees all resources of the @ref wlmbe_output_config_t in the list. */
 void _wlmbe_backend_decode_fini(void *dest_ptr)
 {
     bs_dllist_t *dllist_ptr = dest_ptr;
@@ -640,9 +597,9 @@ void _wlmbe_backend_decode_fini(void *dest_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Iterator callback: Destroys a @ref wlmbe_output_config_node_t.
+ * Iterator callback: Destroys a @ref wlmbe_output_config_t.
  *
- * @param dlnode_ptr          To @ref wlmbe_output_config_node_t::dlnode, and
+ * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode, and
  *                            identifies the config node to destroy.
  * @param ud_ptr              unused.
  */
@@ -650,10 +607,7 @@ void _wlmbe_backend_config_dlnode_destroy(
     bs_dllist_node_t *dlnode_ptr,
     __UNUSED__ void *ud_ptr)
 {
-    wlmbe_output_config_node_t *config_node_ptr = BS_CONTAINER_OF(
-        dlnode_ptr, wlmbe_output_config_node_t, dlnode);
-    wlmbe_output_config_fini(&config_node_ptr->config);
-    free(config_node_ptr);
+    wlmbe_output_config_destroy(wlmbe_output_config_from_dlnode(dlnode_ptr));
 }
 
 /* == Unit tests =========================================================== */
@@ -690,37 +644,41 @@ void _wlmbe_backend_test_find(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE_OR_RETURN(
         test_ptr,
         bspl_decode_dict(state_dict_ptr, _wlmbe_outputs_state_desc, &be));
-    BS_TEST_VERIFY_EQ(test_ptr, 2, bs_dllist_size(&be.state_output_configs));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 2, bs_dllist_size(&be.ephemeral_output_configs));
 
     wlmbe_output_config_t *o;
     struct wlr_output wlr_output = {};
 
     // These are found in the configured state.
     wlr_output.name = "DP-0";
-    o = _wlmbe_backend_get_config(&be, &wlr_output);
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.ephemeral_output_configs,
+            _wlmbe_output_config_equals,
+            &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
     BS_TEST_VERIFY_EQ(test_ptr, 2.0, o->attr.scale);
 
     wlr_output.name = "DP-1";
-    o = _wlmbe_backend_get_config(&be, &wlr_output);
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.ephemeral_output_configs,
+            _wlmbe_output_config_equals,
+            &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
     BS_TEST_VERIFY_EQ(test_ptr, 3.0, o->attr.scale);
 
     // Only has a fit through config match. Will add a state entry.
     wlr_output.name = "DP-2";
-    o = _wlmbe_backend_get_config(&be, &wlr_output);
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.output_configs,
+            _wlmbe_output_config_fnmatches,
+            &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_STREQ(test_ptr, "DP-2", o->name_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "DP-*", o->name_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1.0, o->attr.scale);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, bs_dllist_size(&be.state_output_configs));
-
-    // No match, will create a new entry.
-    wlr_output.name = "HDMI-0";
-    o = _wlmbe_backend_get_config(&be, &wlr_output);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_STREQ(test_ptr, "HDMI-0", o->name_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, o->attr.scale);
-    BS_TEST_VERIFY_EQ(test_ptr, 4, bs_dllist_size(&be.state_output_configs));
 
     bspl_decoded_destroy(_wlmbe_outputs_state_desc, &be);
     bspl_decoded_destroy(_wlmbe_output_configs_desc, &be);
