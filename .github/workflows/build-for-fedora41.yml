@@ -21,17 +21,17 @@ jobs:
         dnf -y upgrade
         dnf -y install \
           bison \
+          cairo-devel \
           clang \
           cmake \
           flex \
           gcc \
           git \
-          cairo-devel \
           ncurses-devel \
-          wlroots-devel \
           pkg-config \
           plantuml \
           wayland-protocols-devel \
+          wlroots-devel \
           xwayland-run
 
     - name: Checkout code, including git submodules.

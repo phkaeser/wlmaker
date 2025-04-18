@@ -26,6 +26,7 @@ jobs:
             devel/bison \
             devel/cmake-core \
             devel/evdev-proto \
+            devel/libbacktrace \
             devel/libepoll-shim \
             devel/pkgconf \
             graphics/cairo \
