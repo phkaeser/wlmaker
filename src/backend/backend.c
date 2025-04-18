@@ -21,7 +21,6 @@
 #include <backend/backend.h>
 #include <backend/output.h>
 #include <backend/output_manager.h>
-#include <fnmatch.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <toolkit/toolkit.h>
@@ -78,7 +77,7 @@ struct _wlmbe_backend_t {
      * wlmaker's configuration file.
      *
      * Discovered outputs are attempted to matched through
-     * @ref _wlmbe_output_config_fnmatches for configured attributes.
+     * @ref wlmbe_output_config_fnmatches for configured attributes.
      */
     bs_dllist_t               output_configs;
     /**
@@ -105,12 +104,6 @@ struct _wlmbe_backend_t {
 static void _wlmbe_backend_handle_new_output(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-static bool _wlmbe_output_config_equals(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static bool _wlmbe_output_config_fnmatches(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
 
 static bool _wlmbe_backend_decode_item(
     bspl_object_t *obj_ptr,
@@ -347,15 +340,16 @@ bool _wlmbe_backend_add_output(
     wlmbe_backend_t *backend_ptr,
     wlmbe_output_t *output_ptr)
 {
-    wlmbe_output_config_t *config_ptr = wlmbe_config_from_output(output_ptr);
-    BS_ASSERT(NULL != config_ptr);
+    wlmbe_output_config_attributes_t *attr_ptr =
+        wlmbe_output_attributes(output_ptr);
+    BS_ASSERT(NULL != attr_ptr);
 
     struct wlr_output *wlrop = wlmbe_wlr_output_from_output(output_ptr);
     struct wlr_output_layout_output *wlr_output_layout_output_ptr = NULL;
-    if (config_ptr->attr.has_position) {
+    if (attr_ptr->has_position) {
         wlr_output_layout_output_ptr = wlr_output_layout_add(
             backend_ptr->wlr_output_layout_ptr, wlrop,
-            config_ptr->attr.position.x, config_ptr->attr.position.y);
+            attr_ptr->position.x, attr_ptr->position.y);
     } else {
         wlr_output_layout_output_ptr = wlr_output_layout_add_auto(
             backend_ptr->wlr_output_layout_ptr, wlrop);
@@ -364,12 +358,12 @@ bool _wlmbe_backend_add_output(
         bs_log(BS_WARNING,
                "Failed wlr_output_layout_add(%p, %p, %d, %d) for \"%s\"",
                backend_ptr->wlr_output_layout_ptr, wlrop,
-               config_ptr->attr.position.x, config_ptr->attr.position.y,
+               attr_ptr->position.x, attr_ptr->position.y,
                wlrop->name);
         return false;
     }
-    config_ptr->attr.position.x = wlr_output_layout_output_ptr->x;
-    config_ptr->attr.position.y = wlr_output_layout_output_ptr->y;
+    attr_ptr->position.x = wlr_output_layout_output_ptr->x;
+    attr_ptr->position.y = wlr_output_layout_output_ptr->y;
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_output_create(
         backend_ptr->wlr_scene_ptr, wlrop);
@@ -390,108 +384,7 @@ bool _wlmbe_backend_add_output(
            1e-3 * wlrop->refresh,
            wlr_output_layout_output_ptr->x,
            wlr_output_layout_output_ptr->y,
-           config_ptr->attr.has_position ? "explicit" : "auto");
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Returns if the backend configuration equals the wlr_output attributes.
- *
- * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode.
- * @param ud_ptr              To a `struct wlr_output`.
- *
- * @return true if it equals.
- */
-bool _wlmbe_output_config_equals(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    wlmbe_output_config_t *config_ptr =
-        wlmbe_output_config_from_dlnode(dlnode_ptr);
-    struct wlr_output *wlr_output_ptr = ud_ptr;
-
-    // Maps the presence indicator and fields to match.
-    struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
-        {
-            .present = config_ptr->has_name,
-            .cfg_val = config_ptr->name_ptr,
-            .o_val = wlr_output_ptr->name,
-        },
-        {
-            .present = config_ptr->has_manufacturer,
-            .cfg_val = config_ptr->manufacturer_ptr,
-            .o_val = wlr_output_ptr->make,
-        },
-        {
-            .present = config_ptr->has_model,
-            .cfg_val = config_ptr->model_ptr,
-            .o_val = wlr_output_ptr->model,
-        },
-        {
-            .present = config_ptr->has_serial,
-            .cfg_val = config_ptr->serial_ptr,
-            .o_val = wlr_output_ptr->serial,
-        },
-    };
-
-    // Presence of the field must match in both config and output.
-    bool any_field_equals = false;
-    for (size_t i = 0; i < sizeof(f) / sizeof(struct fields); ++i) {
-
-        if (f[i].present != (NULL != f[i].o_val)) return false;
-        if (!f[i].present) continue;
-        if (0 != strcmp(f[i].cfg_val, f[i].o_val)) return false;
-        any_field_equals = true;
-    }
-    return any_field_equals;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Returns if the backend configuration fnmatches the wlr_output attributes.
- *
- * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode.
- * @param ud_ptr              To a `struct wlr_output`.
- *
- * @return true if it matches.
- */
-bool _wlmbe_output_config_fnmatches(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    wlmbe_output_config_t *config_ptr =
-        wlmbe_output_config_from_dlnode(dlnode_ptr);
-    struct wlr_output *wlr_output_ptr = ud_ptr;
-
-    // Maps the presence indicator and fields to match.
-    struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
-        {
-            .present = config_ptr->has_name,
-            .cfg_val = config_ptr->name_ptr,
-            .o_val = wlr_output_ptr->name,
-        },
-        {
-            .present = config_ptr->has_manufacturer,
-            .cfg_val = config_ptr->manufacturer_ptr,
-            .o_val = wlr_output_ptr->make,
-        },
-        {
-            .present = config_ptr->has_model,
-            .cfg_val = config_ptr->model_ptr,
-            .o_val = wlr_output_ptr->model,
-        },
-        {
-            .present = config_ptr->has_serial,
-            .cfg_val = config_ptr->serial_ptr,
-            .o_val = wlr_output_ptr->serial,
-        },
-    };
-    for (size_t i = 0; i < sizeof(f) / sizeof(struct fields); ++i) {
-        if (!f[i].present) continue;
-        if (NULL == f[i].cfg_val) return false;
-        if (0 != fnmatch(f[i].cfg_val, f[i].o_val, 0)) return false;
-    }
+           attr_ptr->has_position ? "explicit" : "auto");
     return true;
 }
 
@@ -510,9 +403,10 @@ void _wlmbe_backend_handle_new_output(
     wlmbe_output_config_t *config_ptr = wlmbe_output_config_from_dlnode(
         bs_dllist_find(
             &backend_ptr->ephemeral_output_configs,
-            _wlmbe_output_config_equals,
+            wlmbe_output_config_equals,
             wlr_output_ptr));
-    if (NULL != config_ptr && !config_ptr->attr.enabled) {
+    if (NULL != config_ptr &&
+        !wlmbe_output_config_attributes(config_ptr)->enabled) {
         // Explicitly configured to be disabled. Skip that output.
         wlr_output_destroy(wlr_output_ptr);
         return;
@@ -526,23 +420,16 @@ void _wlmbe_backend_handle_new_output(
 
     // See if we have a corresponding entry among configured outputs. If yes,
     // apply the attributes to our new config.
-    // FIXME
-    wlmbe_output_config_t *xxxx_config_ptr = wlmbe_output_config_from_dlnode(
-        bs_dllist_find(
-            &backend_ptr->output_configs,
-            _wlmbe_output_config_fnmatches,
-            wlr_output_ptr));
-    if (NULL != xxxx_config_ptr) {
-        config_ptr->attr = xxxx_config_ptr->attr;
+    wlmbe_output_config_t *outputs_config_ptr =
+        wlmbe_output_config_from_dlnode(
+            bs_dllist_find(
+                &backend_ptr->output_configs,
+                wlmbe_output_config_fnmatches,
+                wlr_output_ptr));
+    if (NULL != outputs_config_ptr) {
+        *wlmbe_output_config_attributes(config_ptr) =
+            *wlmbe_output_config_attributes(outputs_config_ptr);
     }
-
-    // FIXME: do we have an existing config..?
-    // FIXME:
-    // (1) see if the exact config already exists (without an output).
-    // (2) if not: (1) create new config from wlr_output.
-    //             (2) see if outputs has a config. if yes: copy attrs.
-    // (3) create output. (this will attempt to set attrs)
-    // (4) if output was created && config did not exist: add.
 
     wlmbe_output_t *output_ptr = wlmbe_output_create(
         wlr_output_ptr,
@@ -655,30 +542,30 @@ void _wlmbe_backend_test_find(bs_test_t *test_ptr)
     o = wlmbe_output_config_from_dlnode(
         bs_dllist_find(
             &be.ephemeral_output_configs,
-            _wlmbe_output_config_equals,
+            wlmbe_output_config_equals,
             &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_EQ(test_ptr, 2.0, o->attr.scale);
+    BS_TEST_VERIFY_EQ(test_ptr, 2.0, wlmbe_output_config_attributes(o)->scale);
+
 
     wlr_output.name = "DP-1";
     o = wlmbe_output_config_from_dlnode(
         bs_dllist_find(
             &be.ephemeral_output_configs,
-            _wlmbe_output_config_equals,
+            wlmbe_output_config_equals,
             &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_EQ(test_ptr, 3.0, o->attr.scale);
+    BS_TEST_VERIFY_EQ(test_ptr, 3.0, wlmbe_output_config_attributes(o)->scale);
 
     // Only has a fit through config match. Will add a state entry.
     wlr_output.name = "DP-2";
     o = wlmbe_output_config_from_dlnode(
         bs_dllist_find(
             &be.output_configs,
-            _wlmbe_output_config_fnmatches,
+            wlmbe_output_config_fnmatches,
             &wlr_output));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_STREQ(test_ptr, "DP-*", o->name_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1.0, o->attr.scale);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, wlmbe_output_config_attributes(o)->scale);
 
     bspl_decoded_destroy(_wlmbe_outputs_state_desc, &be);
     bspl_decoded_destroy(_wlmbe_output_configs_desc, &be);

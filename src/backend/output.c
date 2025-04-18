@@ -52,8 +52,8 @@ struct _wlmbe_output_t {
     struct wlr_output         *wlr_output_ptr;
     /** Refers to the scene graph used. */
     struct wlr_scene          *wlr_scene_ptr;
-    /** Output configuration. */
-    wlmbe_output_config_t     *config_ptr;
+    /** Attributes of the output configuration. */
+    wlmbe_output_config_attributes_t *attributes_ptr;
 };
 
 static void _wlmbe_output_handle_destroy(
@@ -84,7 +84,7 @@ wlmbe_output_t *wlmbe_output_create(
     if (NULL == output_ptr) return NULL;
     output_ptr->wlr_output_ptr = wlr_output_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
-    output_ptr->config_ptr = config_ptr;
+    output_ptr->attributes_ptr = wlmbe_output_config_attributes(config_ptr);
     output_ptr->wlr_output_ptr->data = output_ptr;
 
     output_ptr->description_ptr = bs_strdupf(
@@ -126,13 +126,13 @@ wlmbe_output_t *wlmbe_output_create(
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
-    wlr_output_state_set_enabled(&state, output_ptr->config_ptr->attr.enabled);
-    wlr_output_state_set_scale(&state, output_ptr->config_ptr->attr.scale);
+    wlr_output_state_set_enabled(&state, output_ptr->attributes_ptr->enabled);
+    wlr_output_state_set_scale(&state, output_ptr->attributes_ptr->scale);
 
     // Issue #97: Found that X11 and transformations do not translate
     // cursor coordinates well. Force it to 'Normal'.
     enum wl_output_transform transformation =
-        output_ptr->config_ptr->attr.transformation;
+        output_ptr->attributes_ptr->transformation;
     if (wlr_output_is_x11(wlr_output_ptr) &&
         transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
         bs_log(BS_WARNING, "X11 backend: Transformation changed to 'Normal'.");
@@ -141,12 +141,12 @@ wlmbe_output_t *wlmbe_output_create(
     wlr_output_state_set_transform(&state, transformation);
 
     // Set modes for backends that have them.
-    if (output_ptr->config_ptr->attr.has_mode) {
+    if (output_ptr->attributes_ptr->has_mode) {
         wlr_output_state_set_custom_mode(
             &state,
-            output_ptr->config_ptr->attr.mode.width,
-            output_ptr->config_ptr->attr.mode.height,
-            output_ptr->config_ptr->attr.mode.refresh);
+            output_ptr->attributes_ptr->mode.width,
+            output_ptr->attributes_ptr->mode.height,
+            output_ptr->attributes_ptr->mode.refresh);
     } else {
         if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
             struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
@@ -219,9 +219,10 @@ struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmbe_output_config_t *wlmbe_config_from_output(wlmbe_output_t *output_ptr)
+wlmbe_output_config_attributes_t *wlmbe_output_attributes(
+    wlmbe_output_t *output_ptr)
 {
-    return output_ptr->config_ptr;
+    return output_ptr->attributes_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -301,10 +302,10 @@ void _wlmbe_output_handle_request_state(
 
     if (wlr_output_commit_state(output_ptr->wlr_output_ptr,
                                 event_ptr->state)) {
-        output_ptr->config_ptr->attr.transformation =
+        output_ptr->attributes_ptr->transformation =
             event_ptr->state->transform;
-        output_ptr->config_ptr->attr.scale = event_ptr->state->scale;
-        output_ptr->config_ptr->attr.enabled = event_ptr->state->enabled;
+        output_ptr->attributes_ptr->scale = event_ptr->state->scale;
+        output_ptr->attributes_ptr->enabled = event_ptr->state->enabled;
     } else {
         bs_log(BS_WARNING, "Failed wlr_output_commit_state('%s', %p)",
                output_ptr->wlr_output_ptr->name, event_ptr->state);

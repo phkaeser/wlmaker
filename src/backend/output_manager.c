@@ -273,23 +273,23 @@ static bool _wlmaker_output_manager_config_head_apply(
         wlr_output_layout_remove(wlr_output_layout_ptr, wlr_output_ptr);
     }
 
-    wlmbe_output_config_t *config_ptr = wlmbe_config_from_output(
-        wlr_output_ptr->data);
-    config_ptr->attr.enabled = wlr_output_ptr->enabled;
-    config_ptr->attr.position.x = x;
-    config_ptr->attr.position.y = y;
+    wlmbe_output_config_attributes_t *attr_ptr =
+        wlmbe_output_config_attributes(wlr_output_ptr->data);
+    attr_ptr->enabled = wlr_output_ptr->enabled;
+    attr_ptr->position.x = x;
+    attr_ptr->position.y = y;
 
-    config_ptr->attr.mode.width = wlr_output_ptr->width;
-    config_ptr->attr.mode.height = wlr_output_ptr->height;
-    config_ptr->attr.mode.refresh = wlr_output_ptr->refresh;
-    config_ptr->attr.has_mode = true;
+    attr_ptr->mode.width = wlr_output_ptr->width;
+    attr_ptr->mode.height = wlr_output_ptr->height;
+    attr_ptr->mode.refresh = wlr_output_ptr->refresh;
+    attr_ptr->has_mode = true;
 
     struct wlr_output_layout_output *wlr_output_layout_output_ptr =
         wlr_output_layout_get(
             arg_ptr->wlr_output_layout_ptr,
             wlr_output_ptr);
     if (NULL != wlr_output_layout_output_ptr) {
-        config_ptr->attr.has_position =
+        attr_ptr->has_position =
             !wlr_output_layout_output_ptr->auto_configured;
     }
 
@@ -300,7 +300,7 @@ static bool _wlmaker_output_manager_config_head_apply(
            wlr_output_ptr->width, wlr_output_ptr->height,
            1e-3 * wlr_output_ptr->refresh,
            x, y,
-           config_ptr->attr.has_position ? "explicit" : "auto");
+           attr_ptr->has_position ? "explicit" : "auto");
     return true;
 }
 
