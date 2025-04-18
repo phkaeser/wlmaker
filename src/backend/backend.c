@@ -71,8 +71,26 @@ struct _wlmbe_backend_t {
     uint32_t                  width;
     /** Desired output height, for windowed mode. 0 for no preference. */
     uint32_t                  height;
-    /** Default configuration for outputs. */
-    wlmbe_output_config_t     output_config;
+
+    /**
+     * A list of @ref wlmbe_output_config_t items, configured through
+     * wlmaker's configuration file.
+     *
+     * Discovered outputs are attempted to matched through
+     * @ref wlmbe_output_config_fnmatches for configured attributes.
+     */
+    bs_dllist_t               output_configs;
+    /**
+     * Another list of @ref wlmbe_output_config_t items. This is
+     * initialized from wlmaker's state file.
+     *
+     * If a discovered output equals to one of the nodes here, it's attributes
+     * will be taken from here. Otherwise, a new entry is created in this list.
+     * The intent is to memorize state of connected configs, so that
+     * re-connected outputs are using the same attributes they left with.
+     */
+    bs_dllist_t               ephemeral_output_configs;
+
     /** List of outputs. Connects @ref wlmbe_output_t::dlnode. */
     bs_dllist_t               outputs;
 
@@ -83,39 +101,39 @@ struct _wlmbe_backend_t {
     struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
-static bool _wlmbe_output_config_parse(
-    bspl_dict_t *config_dict_ptr,
-    wlmbe_output_config_t *config_ptr);
 static void _wlmbe_backend_handle_new_output(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static bool _wlmbe_backend_decode_item(
+    bspl_object_t *obj_ptr,
+    size_t i,
+    void *dest_ptr);
+static void _wlmbe_backend_decode_fini(void *dest_ptr);
+static void _wlmbe_backend_config_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
 /* == Data ================================================================= */
 
-/** Name of the plist dict describing the (default) output configuration. */
-static const char *_wlmbe_output_dict_name = "Output";
-
-/** Descriptor for output transformations. */
-static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
-    BSPL_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
-    BSPL_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
-    BSPL_ENUM("Rotate180", WL_OUTPUT_TRANSFORM_180),
-    BSPL_ENUM("Rotate270", WL_OUTPUT_TRANSFORM_270),
-    BSPL_ENUM("Flip", WL_OUTPUT_TRANSFORM_FLIPPED),
-    BSPL_ENUM("FlipAndRotate90", WL_OUTPUT_TRANSFORM_FLIPPED_90),
-    BSPL_ENUM("FlipAndRotate180", WL_OUTPUT_TRANSFORM_FLIPPED_180),
-    BSPL_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
-    BSPL_ENUM_SENTINEL(),
+/** Descriptor for the output configuration. */
+static const bspl_desc_t _wlmbe_output_configs_desc[] = {
+    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, output_configs,
+                    output_configs,
+                    _wlmbe_backend_decode_item,
+                    NULL,
+                    _wlmbe_backend_decode_fini),
+    BSPL_DESC_SENTINEL(),
 };
 
-/** Descriptor for the output configuration. */
-static const bspl_desc_t    _wlmbe_output_config_desc[] = {
-    BSPL_DESC_ENUM("Transformation", true,
-                     wlmbe_output_config_t, transformation,
-                     WL_OUTPUT_TRANSFORM_NORMAL,
-                     _wlmbe_output_transformation_desc),
-    BSPL_DESC_DOUBLE("Scale", true, wlmbe_output_config_t, scale, 1.0),
-    BSPL_DESC_SENTINEL()
+/** Descriptor for the output state, stored as plist. */
+static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
+    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, ephemeral_output_configs,
+                    ephemeral_output_configs,
+                    _wlmbe_backend_decode_item,
+                    NULL,
+                    _wlmbe_backend_decode_fini),
+    BSPL_DESC_SENTINEL(),
 };
 
 /* == Exported methods ===================================================== */
@@ -136,9 +154,10 @@ wlmbe_backend_t *wlmbe_backend_create(
     backend_ptr->width = width;
     backend_ptr->height = height;
 
-    if (!_wlmbe_output_config_parse(
+    if (!bspl_decode_dict(
             config_dict_ptr,
-            &backend_ptr->output_config)) {
+            _wlmbe_output_configs_desc,
+            backend_ptr)) {
         wlmbe_backend_destroy(backend_ptr);
         return NULL;
     }
@@ -252,6 +271,9 @@ void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr)
         backend_ptr->wlr_allocator_ptr = NULL;
      }
 
+    bspl_decoded_destroy(_wlmbe_outputs_state_desc, backend_ptr);
+    bspl_decoded_destroy(_wlmbe_output_configs_desc, backend_ptr);
+
     // @ref wlmbe_backend_t::wlr_backend_ptr is destroyed from wl_display.
 
     free(backend_ptr);
@@ -297,6 +319,12 @@ struct wlr_output *wlmbe_primary_output(
     return wolo->output;
 }
 
+/* ------------------------------------------------------------------------- */
+size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    return wl_list_length(&wlr_output_layout_ptr->outputs);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -312,18 +340,30 @@ bool _wlmbe_backend_add_output(
     wlmbe_backend_t *backend_ptr,
     wlmbe_output_t *output_ptr)
 {
-    // tinywl: Adds this to the output layout. The add_auto function arranges
-    // outputs from left-to-right in the order they appear. A sophisticated
-    // compositor would let the user configure the arrangement of outputs in
-    // the layout.
+    wlmbe_output_config_attributes_t *attr_ptr =
+        wlmbe_output_attributes(output_ptr);
+    BS_ASSERT(NULL != attr_ptr);
+
     struct wlr_output *wlrop = wlmbe_wlr_output_from_output(output_ptr);
-    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
-        wlr_output_layout_add_auto(backend_ptr->wlr_output_layout_ptr, wlrop);
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr = NULL;
+    if (attr_ptr->has_position) {
+        wlr_output_layout_output_ptr = wlr_output_layout_add(
+            backend_ptr->wlr_output_layout_ptr, wlrop,
+            attr_ptr->position.x, attr_ptr->position.y);
+    } else {
+        wlr_output_layout_output_ptr = wlr_output_layout_add_auto(
+            backend_ptr->wlr_output_layout_ptr, wlrop);
+    }
     if (NULL == wlr_output_layout_output_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_output_layout_add_auto(%p, %p) for '%s'",
-               backend_ptr->wlr_output_layout_ptr, wlrop, wlrop->name);
+        bs_log(BS_WARNING,
+               "Failed wlr_output_layout_add(%p, %p, %d, %d) for \"%s\"",
+               backend_ptr->wlr_output_layout_ptr, wlrop,
+               attr_ptr->position.x, attr_ptr->position.y,
+               wlrop->name);
         return false;
     }
+    attr_ptr->position.x = wlr_output_layout_output_ptr->x;
+    attr_ptr->position.y = wlr_output_layout_output_ptr->y;
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_output_create(
         backend_ptr->wlr_scene_ptr, wlrop);
@@ -336,36 +376,15 @@ bool _wlmbe_backend_add_output(
         &backend_ptr->outputs,
         wlmbe_dlnode_from_output(output_ptr));
 
-    const char *tname_ptr = "Unknown";
-    bspl_enum_value_to_name(
-        _wlmbe_output_transformation_desc, wlrop->transform, &tname_ptr);
-    bs_log(BS_INFO, "Added output '%s' (%dx%d). Trsf '%s', Scale %.2f.",
-           wlrop->name, wlrop->width, wlrop->height, tname_ptr, wlrop->scale);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Parses the plist dictionnary into the @ref wlmbe_output_config_t. */
-bool _wlmbe_output_config_parse(
-    bspl_dict_t *config_dict_ptr,
-    wlmbe_output_config_t *config_ptr)
-{
-    bspl_dict_t *output_dict_ptr = bspl_dict_get_dict(
-        config_dict_ptr, _wlmbe_output_dict_name);
-    if (NULL == output_dict_ptr) {
-        bs_log(BS_ERROR, "No '%s' dict.", _wlmbe_output_dict_name);
-        return false;
-    }
-
-    if (!bspl_decode_dict(
-            output_dict_ptr,
-            _wlmbe_output_config_desc,
-            config_ptr)) {
-        bs_log(BS_ERROR, "Failed to decode '%s' dict",
-               _wlmbe_output_dict_name);
-        return false;
-    }
-
+    bs_log(BS_INFO,
+           "Created: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
+           wlmbe_output_description(output_ptr),
+           wlrop->enabled ? "enabled" : "disabled",
+           wlrop->width, wlrop->height,
+           1e-3 * wlrop->refresh,
+           wlr_output_layout_output_ptr->x,
+           wlr_output_layout_output_ptr->y,
+           attr_ptr->has_position ? "explicit" : "auto");
     return true;
 }
 
@@ -379,26 +398,179 @@ void _wlmbe_backend_handle_new_output(
         listener_ptr, wlmbe_backend_t, new_output_listener);
     struct wlr_output *wlr_output_ptr = data_ptr;
 
+    // See if there is an exact match among the ephemeral output configs. If
+    // yes, pick that configuration. Otherwise, create a new one.
+    wlmbe_output_config_t *config_ptr = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &backend_ptr->ephemeral_output_configs,
+            wlmbe_output_config_equals,
+            wlr_output_ptr));
+    if (NULL != config_ptr &&
+        !wlmbe_output_config_attributes(config_ptr)->enabled) {
+        // Explicitly configured to be disabled. Skip that output.
+        wlr_output_destroy(wlr_output_ptr);
+        return;
+    }
+    if (NULL == config_ptr) {
+        config_ptr = wlmbe_output_config_create_from_wlr(wlr_output_ptr);
+        bs_dllist_push_front(
+            &backend_ptr->ephemeral_output_configs,
+            wlmbe_dlnode_from_output_config(config_ptr));
+    }
+
+    // See if we have a corresponding entry among configured outputs. If yes,
+    // apply the attributes to our new config.
+    wlmbe_output_config_t *outputs_config_ptr =
+        wlmbe_output_config_from_dlnode(
+            bs_dllist_find(
+                &backend_ptr->output_configs,
+                wlmbe_output_config_fnmatches,
+                wlr_output_ptr));
+    if (NULL != outputs_config_ptr) {
+        *wlmbe_output_config_attributes(config_ptr) =
+            *wlmbe_output_config_attributes(outputs_config_ptr);
+    }
+
     wlmbe_output_t *output_ptr = wlmbe_output_create(
         wlr_output_ptr,
         backend_ptr->wlr_allocator_ptr,
         backend_ptr->wlr_renderer_ptr,
         backend_ptr->wlr_scene_ptr,
+        config_ptr,
         backend_ptr->width,
-        backend_ptr->height,
-        &backend_ptr->output_config);
-    if (NULL == output_ptr) return;
-
-    if (!_wlmbe_backend_add_output(backend_ptr, output_ptr)) {
+        backend_ptr->height);
+    if (NULL != output_ptr) {
+        if (_wlmbe_backend_add_output(backend_ptr, output_ptr)) return;
         wlmbe_output_destroy(output_ptr);
     }
+    wlr_output_destroy(wlr_output_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr)
+/** Decodes an item of `Outputs`. */
+bool _wlmbe_backend_decode_item(
+    bspl_object_t *obj_ptr,
+    size_t i,
+    void *dest_ptr)
 {
-    return wl_list_length(&wlr_output_layout_ptr->outputs);
+    bs_dllist_t *dllist_ptr = dest_ptr;
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(obj_ptr);
+    if (NULL == dict_ptr) {
+        bs_log(BS_WARNING, "Element %zu is not a dict", i);
+        return false;
+    }
+
+    wlmbe_output_config_t *config_ptr =
+        wlmbe_output_config_create_from_plist(dict_ptr);
+    if (NULL != config_ptr) {
+        bs_dllist_push_back(
+            dllist_ptr,
+            wlmbe_dlnode_from_output_config(config_ptr));
+
+        return true;
+    }
+    return false;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Frees all resources of the @ref wlmbe_output_config_t in the list. */
+void _wlmbe_backend_decode_fini(void *dest_ptr)
+{
+    bs_dllist_t *dllist_ptr = dest_ptr;
+    bs_dllist_for_each(dllist_ptr,
+        _wlmbe_backend_config_dlnode_destroy,
+        NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Iterator callback: Destroys a @ref wlmbe_output_config_t.
+ *
+ * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode, and
+ *                            identifies the config node to destroy.
+ * @param ud_ptr              unused.
+ */
+void _wlmbe_backend_config_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    wlmbe_output_config_destroy(wlmbe_output_config_from_dlnode(dlnode_ptr));
+}
+
+/* == Unit tests =========================================================== */
+
+static void _wlmbe_backend_test_find(bs_test_t *test_ptr);
+
+const bs_test_case_t          wlmbe_backend_test_cases[] = {
+    { 1, "find", _wlmbe_backend_test_find },
+    { 0, NULL, NULL }
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests that output configurations are found as desired. */
+void _wlmbe_backend_test_find(bs_test_t *test_ptr)
+{
+    wlmbe_backend_t be = {};
+    bspl_dict_t *config_dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{Outputs = ("
+            "{Transformation=Normal; Scale=1.0; Name=\"DP-*\"},"
+            ")}"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, config_dict_ptr);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        bspl_decode_dict(config_dict_ptr, _wlmbe_output_configs_desc, &be));
+
+    bspl_dict_t *state_dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{Outputs = ("
+            "{Transformation=Normal; Scale=2.0; Name=\"DP-0\"},"
+            "{Transformation=Flip; Scale=3.0; Name=\"DP-1\"},"
+            ")}"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, state_dict_ptr);
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        bspl_decode_dict(state_dict_ptr, _wlmbe_outputs_state_desc, &be));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 2, bs_dllist_size(&be.ephemeral_output_configs));
+
+    wlmbe_output_config_t *o;
+    struct wlr_output wlr_output = {};
+
+    // These are found in the configured state.
+    wlr_output.name = "DP-0";
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.ephemeral_output_configs,
+            wlmbe_output_config_equals,
+            &wlr_output));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_EQ(test_ptr, 2.0, wlmbe_output_config_attributes(o)->scale);
+
+
+    wlr_output.name = "DP-1";
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.ephemeral_output_configs,
+            wlmbe_output_config_equals,
+            &wlr_output));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_EQ(test_ptr, 3.0, wlmbe_output_config_attributes(o)->scale);
+
+    // Only has a fit through config match. Will add a state entry.
+    wlr_output.name = "DP-2";
+    o = wlmbe_output_config_from_dlnode(
+        bs_dllist_find(
+            &be.output_configs,
+            wlmbe_output_config_fnmatches,
+            &wlr_output));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    BS_TEST_VERIFY_EQ(test_ptr, 1.0, wlmbe_output_config_attributes(o)->scale);
+
+    bspl_decoded_destroy(_wlmbe_outputs_state_desc, &be);
+    bspl_decoded_destroy(_wlmbe_output_configs_desc, &be);
+    bspl_dict_unref(state_dict_ptr);
+    bspl_dict_unref(config_dict_ptr);
+}
 
 /* == End of backend.c ===================================================== */

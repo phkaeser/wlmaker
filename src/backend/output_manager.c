@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <backend/output.h>
 #include <backend/output_manager.h>
 #include <libbase/libbase.h>
 #include <toolkit/toolkit.h>
@@ -272,11 +273,34 @@ static bool _wlmaker_output_manager_config_head_apply(
         wlr_output_layout_remove(wlr_output_layout_ptr, wlr_output_ptr);
     }
 
-    bs_log(BS_INFO, "Applied: Output '%s' %s to %dx%d@%.2f position (%d,%d)",
-           wlr_output_ptr->name,
-           head_v1_ptr->state.enabled ? "enabled" : "disabled",
+    wlmbe_output_config_attributes_t *attr_ptr =
+        wlmbe_output_config_attributes(wlr_output_ptr->data);
+    attr_ptr->enabled = wlr_output_ptr->enabled;
+    attr_ptr->position.x = x;
+    attr_ptr->position.y = y;
+
+    attr_ptr->mode.width = wlr_output_ptr->width;
+    attr_ptr->mode.height = wlr_output_ptr->height;
+    attr_ptr->mode.refresh = wlr_output_ptr->refresh;
+    attr_ptr->has_mode = true;
+
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        wlr_output_layout_get(
+            arg_ptr->wlr_output_layout_ptr,
+            wlr_output_ptr);
+    if (NULL != wlr_output_layout_output_ptr) {
+        attr_ptr->has_position =
+            !wlr_output_layout_output_ptr->auto_configured;
+    }
+
+    bs_log(BS_INFO,
+           "Applied: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
+           wlmbe_output_description(wlr_output_ptr->data),
+           wlr_output_ptr->enabled ? "enabled" : "disabled",
            wlr_output_ptr->width, wlr_output_ptr->height,
-           1e-3 * wlr_output_ptr->refresh, x, y);
+           1e-3 * wlr_output_ptr->refresh,
+           x, y,
+           attr_ptr->has_position ? "explicit" : "auto");
     return true;
 }
 

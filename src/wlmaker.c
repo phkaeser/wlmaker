@@ -148,9 +148,9 @@ typedef struct {
 /** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
 static const bspl_desc_t wlmaker_workspace_style_desc[] = {
     BSPL_DESC_CHARBUF(
-        "Name", true, wlmaker_workspace_style_t, name, 32, NULL),
+        "Name", true, wlmaker_workspace_style_t, name, name, 32, NULL),
     BSPL_DESC_ARGB32(
-        "Color", false, wlmaker_workspace_style_t, color, 0),
+        "Color", false, wlmaker_workspace_style_t, color, color, 0),
     BSPL_DESC_SENTINEL()
 };
 

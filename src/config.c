@@ -66,7 +66,7 @@ static const bspl_enum_desc_t _wlmaker_config_font_weight_desc[] = {
 
 /** Plist decoding descriptor of the fill style. */
 static const bspl_desc_t _wlmaker_config_fill_style_desc[] = {
-    BSPL_DESC_ENUM("Type", true, wlmtk_style_fill_t, type,
+    BSPL_DESC_ENUM("Type", true, wlmtk_style_fill_t, type, type,
                      WLMTK_STYLE_COLOR_SOLID,
                      _wlmaker_config_fill_type_desc),
     BSPL_DESC_SENTINEL()
@@ -75,29 +75,29 @@ static const bspl_desc_t _wlmaker_config_fill_style_desc[] = {
 /** Plist decoding descriptor of the solid color. */
 static const bspl_desc_t _wlmaker_config_style_color_solid_desc[] = {
     BSPL_DESC_ARGB32(
-        "Color", true, wlmtk_style_color_solid_data_t, color, 0),
+        "Color", true, wlmtk_style_color_solid_data_t, color, color, 0),
     BSPL_DESC_SENTINEL()
 };
 
 /** Plist decoding descriptor of a color gradient. */
 static const bspl_desc_t _wlmaker_config_style_color_gradient_desc[] = {
     BSPL_DESC_ARGB32(
-        "From", true, wlmtk_style_color_gradient_data_t, from, 0),
+        "From", true, wlmtk_style_color_gradient_data_t, from, from, 0),
     BSPL_DESC_ARGB32(
-        "To", true, wlmtk_style_color_gradient_data_t, to, 0),
+        "To", true, wlmtk_style_color_gradient_data_t, to, to, 0),
     BSPL_DESC_SENTINEL()
 };
 
 /** Plist decoding descriptor of a tile style. */
 static const bspl_desc_t _wlmaker_config_tile_style_desc[] = {
     BSPL_DESC_UINT64(
-        "Size", true, wlmtk_tile_style_t, size, 64),
+        "Size", true, wlmtk_tile_style_t, size, size, 64),
     BSPL_DESC_UINT64(
-        "ContentSize", true, wlmtk_tile_style_t, content_size, 48),
+        "ContentSize", true, wlmtk_tile_style_t, content_size, content_size, 48),
     BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_tile_style_t, bezel_width, 2),
+        "BezelWidth", true, wlmtk_tile_style_t, bezel_width, bezel_width, 2),
     BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_tile_style_t, fill,
+        "Fill", true, wlmtk_tile_style_t, fill, fill,
         _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_SENTINEL()
 };
@@ -105,16 +105,16 @@ static const bspl_desc_t _wlmaker_config_tile_style_desc[] = {
 /** Plist decoding descriptor of a margin's style. */
 static const bspl_desc_t _wlmaker_config_margin_style_desc[] = {
     BSPL_DESC_UINT64(
-        "Width", true, wlmtk_margin_style_t, width, 0),
+        "Width", true, wlmtk_margin_style_t, width, width, 0),
     BSPL_DESC_ARGB32(
-        "Color", true, wlmtk_margin_style_t, color, 0xff000000),
+        "Color", true, wlmtk_margin_style_t, color, color, 0xff000000),
     BSPL_DESC_SENTINEL()
 };
 
 /** Plist decoding descriptor of the dock's style. */
 static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
     BSPL_DESC_DICT(
-        "Margin", true, wlmtk_dock_style_t, margin,
+        "Margin", true, wlmtk_dock_style_t, margin, margin,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_SENTINEL()
 };
@@ -122,13 +122,13 @@ static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
 /** Descriptor for decoding "Font" sections. */
 static const bspl_desc_t _wlmaker_config_font_style_desc[] = {
     BSPL_DESC_CHARBUF(
-        "Face", true, wlmtk_style_font_t, face,
+        "Face", true, wlmtk_style_font_t, face, face,
         WLMTK_STYLE_FONT_FACE_LENGTH, NULL),
     BSPL_DESC_ENUM(
-        "Weight", true, wlmtk_style_font_t, weight,
+        "Weight", true, wlmtk_style_font_t, weight, weight,
         WLMTK_FONT_WEIGHT_NORMAL, _wlmaker_config_font_weight_desc),
     BSPL_DESC_UINT64(
-        "Size", true, wlmtk_style_font_t, size, 10),
+        "Size", true, wlmtk_style_font_t, size, size, 10),
     BSPL_DESC_SENTINEL()
 };
 
@@ -136,25 +136,26 @@ static const bspl_desc_t _wlmaker_config_font_style_desc[] = {
 static const bspl_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
     BSPL_DESC_CUSTOM(
         "FocussedFill", true, wlmtk_titlebar_style_t, focussed_fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL),
+        focussed_fill, _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_ARGB32(
         "FocussedTextColor", true, wlmtk_titlebar_style_t,
-        focussed_text_color, 0),
+        focussed_text_color, focussed_text_color, 0),
     BSPL_DESC_CUSTOM(
         "BlurredFill", true, wlmtk_titlebar_style_t, blurred_fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL),
+        blurred_fill, _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_ARGB32(
         "BlurredTextColor", true, wlmtk_titlebar_style_t,
-        blurred_text_color, 0),
+        blurred_text_color, blurred_text_color, 0),
     BSPL_DESC_UINT64(
-        "Height", true, wlmtk_titlebar_style_t, height, 22),
+        "Height", true, wlmtk_titlebar_style_t, height, height, 22),
     BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, 1),
+        "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, bezel_width,
+        1),
     BSPL_DESC_DICT(
-        "Margin", true, wlmtk_titlebar_style_t, margin,
+        "Margin", true, wlmtk_titlebar_style_t, margin, margin,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_DICT(
-        "Font", true, wlmtk_titlebar_style_t, font,
+        "Font", true, wlmtk_titlebar_style_t, font, font,
         _wlmaker_config_font_style_desc),
     BSPL_DESC_SENTINEL()
  };
@@ -162,30 +163,32 @@ static const bspl_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
 /** Descroptor for decoding the "TitleBar" dict below "Window". */
 static const bspl_desc_t _wlmaker_config_window_resize_style_desc[] = {
     BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_resizebar_style_t, fill,
+        "Fill", true, wlmtk_resizebar_style_t, fill, fill,
         _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_UINT64(
-        "Height", true, wlmtk_resizebar_style_t, height, 7),
+        "Height", true, wlmtk_resizebar_style_t, height, height, 7),
     BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_resizebar_style_t, bezel_width, 1),
+        "BezelWidth", true, wlmtk_resizebar_style_t, bezel_width, bezel_width,
+        1),
     BSPL_DESC_UINT64(
-        "CornerWidth", true, wlmtk_resizebar_style_t, corner_width, 1),
+        "CornerWidth", true, wlmtk_resizebar_style_t, corner_width,
+        corner_width, 1),
     BSPL_DESC_SENTINEL()
 };
 
 /** Descriptor for decoding the "Window" dictionary. */
 static const bspl_desc_t _wlmaker_config_window_style_desc[] = {
     BSPL_DESC_DICT(
-        "TitleBar", true, wlmtk_window_style_t, titlebar,
+        "TitleBar", true, wlmtk_window_style_t, titlebar, titlebar,
         _wlmaker_config_window_titlebar_style_desc),
     BSPL_DESC_DICT(
-        "ResizeBar", true, wlmtk_window_style_t, resizebar,
+        "ResizeBar", true, wlmtk_window_style_t, resizebar, resizebar,
         _wlmaker_config_window_resize_style_desc),
     BSPL_DESC_DICT(
-        "Border", true, wlmtk_window_style_t, border,
+        "Border", true, wlmtk_window_style_t, border, border,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_DICT(
-        "Margin", true, wlmtk_window_style_t, margin,
+        "Margin", true, wlmtk_window_style_t, margin, margin,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_SENTINEL()
 };
@@ -193,42 +196,43 @@ static const bspl_desc_t _wlmaker_config_window_style_desc[] = {
 /** Descriptor for decoding the "Item" dictionary. */
 static const bspl_desc_t _wlmaker_config_menu_item_style_desc[] = {
     BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_menu_item_style_t, fill,
+        "Fill", true, wlmtk_menu_item_style_t, fill, fill,
         _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_CUSTOM(
         "HighlightedFill", true, wlmtk_menu_item_style_t, highlighted_fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL),
+         highlighted_fill, _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_DICT(
-        "Font", true, wlmtk_menu_item_style_t, font,
+        "Font", true, wlmtk_menu_item_style_t, font, font,
         _wlmaker_config_font_style_desc),
     BSPL_DESC_ARGB32(
         "EnabledTextColor", true, wlmtk_menu_item_style_t,
-        enabled_text_color, 0),
+        enabled_text_color, enabled_text_color, 0),
     BSPL_DESC_ARGB32(
         "HighlightedTextColor", true, wlmtk_menu_item_style_t,
-        highlighted_text_color, 0),
+        highlighted_text_color, highlighted_text_color, 0),
     BSPL_DESC_ARGB32(
         "DisabledTextColor", true, wlmtk_menu_item_style_t,
-        disabled_text_color, 0),
+        disabled_text_color, disabled_text_color, 0),
     BSPL_DESC_UINT64(
-        "Height", true, wlmtk_menu_item_style_t, height, 20),
+        "Height", true, wlmtk_menu_item_style_t, height, height, 20),
     BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_menu_item_style_t, bezel_width, 1),
+        "BezelWidth", true, wlmtk_menu_item_style_t,
+        bezel_width, bezel_width, 1),
     BSPL_DESC_UINT64(
-        "Width", true, wlmtk_menu_item_style_t, width, 80),
+        "Width", true, wlmtk_menu_item_style_t, width, width, 80),
     BSPL_DESC_SENTINEL()
 };
 
 /** Descriptor for decoding the "Menu" dictionary. */
 static const bspl_desc_t _wlmaker_config_menu_style_desc[] = {
     BSPL_DESC_DICT(
-        "Item", true, wlmtk_menu_style_t, item,
+        "Item", true, wlmtk_menu_style_t, item, item,
         _wlmaker_config_menu_item_style_desc),
     BSPL_DESC_DICT(
-        "Margin", true, wlmtk_menu_style_t, margin,
+        "Margin", true, wlmtk_menu_style_t, margin, margin,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_DICT(
-        "Border", true, wlmtk_menu_style_t, border,
+        "Border", true, wlmtk_menu_style_t, border, border,
         _wlmaker_config_margin_style_desc),
     BSPL_DESC_SENTINEL()
 };
@@ -236,61 +240,63 @@ static const bspl_desc_t _wlmaker_config_menu_style_desc[] = {
 /** Descriptor for decoding the "TaskList" dictionary. */
 static const bspl_desc_t _wlmaker_task_list_style_desc[] = {
     BSPL_DESC_CUSTOM(
-        "Fill", true, wlmaker_config_task_list_style_t, fill,
+        "Fill", true, wlmaker_config_task_list_style_t, fill, fill,
         _wlmaker_config_decode_fill_style, NULL, NULL),
     BSPL_DESC_DICT(
-        "Font", true, wlmaker_config_task_list_style_t, font,
+        "Font", true, wlmaker_config_task_list_style_t, font, font,
         _wlmaker_config_font_style_desc),
     BSPL_DESC_ARGB32(
         "TextColor", true, wlmaker_config_task_list_style_t,
-        text_color, 0),
+        text_color, text_color, 0),
     BSPL_DESC_SENTINEL()
 };
 
 /** Descriptor for decoding the "Clip" dictionary. */
 static const bspl_desc_t _wlmaker_clip_style_desc[] = {
     BSPL_DESC_DICT(
-        "Font", true, wlmaker_config_clip_style_t, font,
+        "Font", true, wlmaker_config_clip_style_t, font, font,
         _wlmaker_config_font_style_desc),
     BSPL_DESC_ARGB32(
         "TextColor", true, wlmaker_config_clip_style_t,
-        text_color, 0),
+        text_color, text_color, 0),
     BSPL_DESC_SENTINEL()
 };
 
 /** Descriptor for decoding the "Cursor" dictionary. */
 static const bspl_desc_t _wlmaker_cursor_style_desc[] = {
     BSPL_DESC_STRING(
-        "Name", true, wlmaker_config_cursor_style_t, name_ptr, "default"),
+        "Name", true, wlmaker_config_cursor_style_t, name_ptr, name_ptr,
+        "default"),
     BSPL_DESC_UINT64(
-        "Size", true, wlmaker_config_cursor_style_t, size, 24),
+        "Size", true, wlmaker_config_cursor_style_t, size, size, 24),
     BSPL_DESC_SENTINEL()
 };
 
 /** Desciptor for decoding the style information from a plist. */
 const bspl_desc_t wlmaker_config_style_desc[] = {
     BSPL_DESC_ARGB32(
-        "BackgroundColor", true, wlmaker_config_style_t, background_color, 0),
+        "BackgroundColor", true, wlmaker_config_style_t, background_color,
+        background_color, 0),
     BSPL_DESC_DICT(
-        "Tile", true, wlmaker_config_style_t, tile,
+        "Tile", true, wlmaker_config_style_t, tile, tile,
         _wlmaker_config_tile_style_desc),
     BSPL_DESC_DICT(
-        "Dock", true, wlmaker_config_style_t, dock,
+        "Dock", true, wlmaker_config_style_t, dock, dock,
         _wlmaker_config_dock_style_desc),
     BSPL_DESC_DICT(
-        "Window", true, wlmaker_config_style_t, window,
+        "Window", true, wlmaker_config_style_t, window, window,
         _wlmaker_config_window_style_desc),
     BSPL_DESC_DICT(
-        "Menu", true, wlmaker_config_style_t, menu,
+        "Menu", true, wlmaker_config_style_t, menu, menu,
         _wlmaker_config_menu_style_desc),
     BSPL_DESC_DICT(
-        "TaskList", true, wlmaker_config_style_t, task_list,
+        "TaskList", true, wlmaker_config_style_t, task_list, task_list,
         _wlmaker_task_list_style_desc),
     BSPL_DESC_DICT(
-        "Clip", true, wlmaker_config_style_t, clip,
+        "Clip", true, wlmaker_config_style_t, clip, clip,
         _wlmaker_clip_style_desc),
     BSPL_DESC_DICT(
-        "Cursor", true, wlmaker_config_style_t, cursor,
+        "Cursor", true, wlmaker_config_style_t, cursor, cursor,
         _wlmaker_cursor_style_desc),
     BSPL_DESC_SENTINEL()
 };

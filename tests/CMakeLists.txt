@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ADD_EXECUTABLE(backend_test backend_test.c)
+ADD_DEPENDENCIES(backend_test backend)
+TARGET_LINK_LIBRARIES(backend_test backend)
+ADD_TEST(NAME backend_test COMMAND backend_test)
+
 ADD_EXECUTABLE(toolkit_test toolkit_test.c)
 TARGET_LINK_LIBRARIES(toolkit_test toolkit)
 TARGET_COMPILE_DEFINITIONS(

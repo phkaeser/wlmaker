@@ -59,9 +59,9 @@ struct _wlmaker_launcher_t {
 /** Plist descroptor for a launcher. */
 static const bspl_desc_t _wlmaker_launcher_plist_desc[] = {
     BSPL_DESC_STRING(
-        "CommandLine", true, wlmaker_launcher_t, cmdline_ptr, ""),
+        "CommandLine", true, wlmaker_launcher_t, cmdline_ptr, cmdline_ptr, ""),
     BSPL_DESC_STRING(
-        "Icon", true, wlmaker_launcher_t, icon_path_ptr, ""),
+        "Icon", true, wlmaker_launcher_t, icon_path_ptr, icon_path_ptr, ""),
     BSPL_DESC_SENTINEL(),
 };
 

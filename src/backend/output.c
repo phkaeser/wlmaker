@@ -44,11 +44,16 @@ struct _wlmbe_output_t {
     /** Listener for `request_state` signals raised by `wlr_output`. */
     struct wl_listener        output_request_state_listener;
 
+    /** Descriptive name, showing manufacturer, model and serial. */
+    char                      *description_ptr;
+
     // Below: Not owned by @ref wlmbe_output_t.
     /** Refers to the compositor output region, from wlroots. */
     struct wlr_output         *wlr_output_ptr;
     /** Refers to the scene graph used. */
     struct wlr_scene          *wlr_scene_ptr;
+    /** Attributes of the output configuration. */
+    wlmbe_output_config_attributes_t *attributes_ptr;
 };
 
 static void _wlmbe_output_handle_destroy(
@@ -61,6 +66,8 @@ static void _wlmbe_output_handle_request_state(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+/* == Data ================================================================= */
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -69,14 +76,27 @@ wlmbe_output_t *wlmbe_output_create(
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
     struct wlr_scene *wlr_scene_ptr,
+    wlmbe_output_config_t *config_ptr,
     int width,
-    int height,
-    wlmbe_output_config_t *config_ptr)
+    int height)
 {
     wlmbe_output_t *output_ptr = logged_calloc(1, sizeof(wlmbe_output_t));
     if (NULL == output_ptr) return NULL;
     output_ptr->wlr_output_ptr = wlr_output_ptr;
     output_ptr->wlr_scene_ptr = wlr_scene_ptr;
+    output_ptr->attributes_ptr = wlmbe_output_config_attributes(config_ptr);
+    output_ptr->wlr_output_ptr->data = output_ptr;
+
+    output_ptr->description_ptr = bs_strdupf(
+        "\"%s\": Manufacturer: \"%s\", Model \"%s\", Serial \"%s\"",
+        wlr_output_ptr->name,
+        wlr_output_ptr->make ? wlr_output_ptr->make : "Unknown",
+        wlr_output_ptr->model ? wlr_output_ptr->model : "Unknown",
+        wlr_output_ptr->serial ? wlr_output_ptr->serial : "Unknown");
+    if (NULL == output_ptr->description_ptr) {
+        wlmbe_output_destroy(output_ptr);
+        return NULL;
+    }
 
     wlmtk_util_connect_listener_signal(
         &output_ptr->wlr_output_ptr->events.destroy,
@@ -106,12 +126,13 @@ wlmbe_output_t *wlmbe_output_create(
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
-    wlr_output_state_set_enabled(&state, true);
-    wlr_output_state_set_scale(&state, config_ptr->scale);
+    wlr_output_state_set_enabled(&state, output_ptr->attributes_ptr->enabled);
+    wlr_output_state_set_scale(&state, output_ptr->attributes_ptr->scale);
 
     // Issue #97: Found that X11 and transformations do not translate
     // cursor coordinates well. Force it to 'Normal'.
-    enum wl_output_transform transformation = config_ptr->transformation;
+    enum wl_output_transform transformation =
+        output_ptr->attributes_ptr->transformation;
     if (wlr_output_is_x11(wlr_output_ptr) &&
         transformation != WL_OUTPUT_TRANSFORM_NORMAL) {
         bs_log(BS_WARNING, "X11 backend: Transformation changed to 'Normal'.");
@@ -120,15 +141,23 @@ wlmbe_output_t *wlmbe_output_create(
     wlr_output_state_set_transform(&state, transformation);
 
     // Set modes for backends that have them.
-    if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
-        struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
-            output_ptr->wlr_output_ptr);
-        bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
-               mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
-        wlr_output_state_set_mode(&state, mode_ptr);
+    if (output_ptr->attributes_ptr->has_mode) {
+        wlr_output_state_set_custom_mode(
+            &state,
+            output_ptr->attributes_ptr->mode.width,
+            output_ptr->attributes_ptr->mode.height,
+            output_ptr->attributes_ptr->mode.refresh);
     } else {
-        bs_log(BS_INFO, "No modes available on %s",
-               output_ptr->wlr_output_ptr->name);
+        if (!wl_list_empty(&output_ptr->wlr_output_ptr->modes)) {
+            struct wlr_output_mode *mode_ptr = wlr_output_preferred_mode(
+                output_ptr->wlr_output_ptr);
+            bs_log(BS_INFO, "Setting mode %dx%d @ %.2fHz",
+                   mode_ptr->width, mode_ptr->height, 1e-3 * mode_ptr->refresh);
+            wlr_output_state_set_mode(&state, mode_ptr);
+        } else {
+            bs_log(BS_INFO, "No modes available on %s",
+                   output_ptr->wlr_output_ptr->name);
+        }
     }
 
     if ((wlr_output_is_x11(wlr_output_ptr) ||
@@ -169,13 +198,31 @@ void wlmbe_output_destroy(wlmbe_output_t *output_ptr)
     }
 
     _wlmbe_output_handle_destroy(&output_ptr->output_destroy_listener, NULL);
+
+    if (NULL != output_ptr->description_ptr) {
+        free(output_ptr->description_ptr);
+        output_ptr->description_ptr = NULL;
+    }
     free(output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+const char *wlmbe_output_description(wlmbe_output_t *output_ptr)
+{
+    return output_ptr->description_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr)
 {
     return output_ptr->wlr_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmbe_output_config_attributes_t *wlmbe_output_attributes(
+    wlmbe_output_t *output_ptr)
+{
+    return output_ptr->attributes_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -252,7 +299,17 @@ void _wlmbe_output_handle_request_state(
         listener_ptr, wlmbe_output_t, output_request_state_listener);
 
     const struct wlr_output_event_request_state *event_ptr = data_ptr;
-    wlr_output_commit_state(output_ptr->wlr_output_ptr, event_ptr->state);
+
+    if (wlr_output_commit_state(output_ptr->wlr_output_ptr,
+                                event_ptr->state)) {
+        output_ptr->attributes_ptr->transformation =
+            event_ptr->state->transform;
+        output_ptr->attributes_ptr->scale = event_ptr->state->scale;
+        output_ptr->attributes_ptr->enabled = event_ptr->state->enabled;
+    } else {
+        bs_log(BS_WARNING, "Failed wlr_output_commit_state('%s', %p)",
+               output_ptr->wlr_output_ptr->name, event_ptr->state);
+    }
 }
 
 /* == End of output.c ====================================================== */

@@ -75,12 +75,17 @@ static const bspl_enum_desc_t _wlmaker_dock_edges[] = {
 
 /** Descriptor for the dock's plist. */
 const bspl_desc_t _wlmaker_dock_desc[] = {
-    BSPL_DESC_ENUM("Edge", true, parse_args, positioning.edge,
-                     WLR_EDGE_NONE, _wlmaker_dock_edges),
-    BSPL_DESC_ENUM("Anchor", true, parse_args, positioning.anchor,
-                     WLR_EDGE_NONE, _wlmaker_dock_edges),
+    BSPL_DESC_ENUM("Edge", true, parse_args,
+                   positioning.edge, positioning.edge,
+                   WLR_EDGE_NONE, _wlmaker_dock_edges),
+    BSPL_DESC_ENUM("Anchor", true, parse_args,
+                   positioning.anchor, positioning.anchor,
+                   WLR_EDGE_NONE, _wlmaker_dock_edges),
     BSPL_DESC_CUSTOM("Launchers", true, parse_args, launchers_array_ptr,
-                       _wlmaker_dock_decode_launchers, NULL, NULL),
+                     launchers_array_ptr,
+                     _wlmaker_dock_decode_launchers,
+                     NULL,
+                     NULL),
     BSPL_DESC_SENTINEL(),
 };
 

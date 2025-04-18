@@ -35,7 +35,7 @@ Support for visual effects to improve usability, but not for pure show.
     * [done] per-monitor transformation setting.
   * [done] `wlr-layer-shell-unstable-v1` implementation fixes:
     * [done] Update layer positioning to be respective to the panel's configured output.
-  * Permit `wlmaker.plist` per-output configuration, to persist layout.
+  * [done] Permit `wlmaker.plist` per-output configuration, to persist layout.
   * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
   * Window (toplevel) handling on multiple outputs:
@@ -405,7 +405,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Application ID (from XDG shell and/or X11).
 
 * Configuration file and parser:
-  * Permit dock and clip to save state to configuration files.
+  * Permit dock, clip and output state to save state to configuration files.
   * Support different background styles (fill, image).
   * Make semicolon-after-value required, for consistency with GNUstep.
   * Theme.
