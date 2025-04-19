@@ -593,6 +593,7 @@ void handle_toplevel_request_maximize(
         listener_ptr,
         xdg_toplevel_surface_t,
         toplevel_request_maximize_listener);
+
     wlmtk_window_request_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,
         !wlmtk_window_is_maximized(
@@ -619,7 +620,7 @@ void handle_toplevel_request_fullscreen(
     xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr,
         xdg_toplevel_surface_t,
-        toplevel_request_maximize_listener);
+        toplevel_request_fullscreen_listener);
 
     wlmtk_window_request_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
