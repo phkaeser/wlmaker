@@ -21,7 +21,10 @@
 #define __WLMTK_ELEMENT_H__
 
 #include <libbase/libbase.h>
-#include <wayland-server.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
 
 #define WLR_USE_UNSTABLE

@@ -14,6 +14,13 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
+FIND_PROGRAM(iwyu_executable NAMES include-what-you-use iwyu OPTIONAL)
+IF(iwyu_executable)
+  SET(iwyu_path_and_options
+    ${iwyu_executable}
+    -Xiwyu --error=1 -Xiwyu --transitive_includes_only)
+ENDIF(iwyu_executable)
+
 SET(PUBLIC_HEADER_FILES
   bordered.h
   box.h
@@ -113,3 +120,9 @@ TARGET_LINK_LIBRARIES(
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND
 )
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    toolkit PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)
