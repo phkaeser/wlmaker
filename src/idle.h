@@ -20,10 +20,12 @@
 #ifndef __IDLE_H__
 #define __IDLE_H__
 
+#include <stdbool.h>
+
 /** Forward declaration: Idle monitor handle. */
 typedef struct _wlmaker_idle_monitor_t wlmaker_idle_monitor_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

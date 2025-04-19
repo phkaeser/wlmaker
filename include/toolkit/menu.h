@@ -23,10 +23,16 @@
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
-#include "box.h"
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <wayland-server-core.h>
+
+#include "box.h"  // IWYU pragma: keep
+#include "element.h"
 #include "env.h"
-#include "menu_item.h"
+#include "menu_item.h"  // IWYU pragma: keep
 #include "pane.h"
+#include "style.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +47,17 @@ typedef struct  {
     /** Item's style. */
     wlmtk_menu_item_style_t   item;
 } wlmtk_menu_style_t;
+
+/** Modes of the menu. */
+enum wlmtk_menu_mode {
+    /** Normal (window) mode of a menu: Left button click triggers items. */
+    WLMTK_MENU_MODE_NORMAL,
+    /**
+     * Right-click mode of menu: Menu is invoked while right button is pressed.
+     * Releasing the right button triggers items.
+     */
+    WLMTK_MENU_MODE_RIGHTCLICK
+};
 
 /** Events of the popup menu. */
 typedef struct {
@@ -100,10 +117,10 @@ bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr);
  * @param mode
  */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
-                         wlmtk_menu_mode_t mode);
+                         enum wlmtk_menu_mode mode);
 
 /** @return mode of the menu. @see wlmtk_menu_set_mode. */
-wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr);
+enum wlmtk_menu_mode wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr);
 
 /**
  * Adds a menu item to the menu.

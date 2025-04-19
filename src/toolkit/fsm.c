@@ -19,7 +19,9 @@
  * limitations under the License.
  */
 
-#include <toolkit/fsm.h>
+#include "fsm.h"
+
+#include <libbase/libbase.h>
 
 /* == Exported methods ===================================================== */
 

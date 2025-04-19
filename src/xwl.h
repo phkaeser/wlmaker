@@ -22,20 +22,21 @@
 #ifndef __XWL_H__
 #define __XWL_H__
 
+#include <stdbool.h>
+#include <xcb/xproto.h>
+
 /** Forward declaration: XWayland interface. */
 typedef struct _wlmaker_xwl_t wlmaker_xwl_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
+
+struct wlr_xwayland_surface;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 #if defined(WLMAKER_HAVE_XWAYLAND)
-
-#define WLR_USE_UNSTABLE
-#include <wlr/xwayland.h>
-#undef WLR_USE_UNSTABLE
 
 /** XCB Atom identifiers. */
 typedef enum {

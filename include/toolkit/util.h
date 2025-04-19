@@ -21,7 +21,11 @@
 #define __WLMTK_UTIL_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <sys/types.h>
 #include <wayland-server-core.h>
+
+struct wl_list;
 
 #ifdef __cplusplus
 extern "C" {

@@ -20,7 +20,12 @@
 #ifndef __WLCLIENT_BUFFER_H__
 #define __WLCLIENT_BUFFER_H__
 
+#include <libbase/libbase.h>
+
 #include "libwlclient.h"
+
+/** Forward declaration of a wayland surface. */
+struct wl_surface;
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,9 +33,6 @@ extern "C" {
 
 /** Forward declaration of the buffer state. */
 typedef struct _wlclient_buffer_t wlclient_buffer_t;
-
-/** Forward declaration of a wayland surface. */
-struct wl_surface;
 
 /** Callback to report that a buffer is ready to draw into. */
 typedef void (*wlclient_buffer_ready_callback_t)(void *ud_ptr);

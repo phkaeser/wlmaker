@@ -4,10 +4,13 @@
  * Copyright (c) 2025 by Philipp Kaeser <kaeser@gubbe.ch>
  */
 
-#include <backend/output_config.h>
-#include <libbase/libbase.h>
-#include <fnmatch.h>
+#include "output_config.h"
 
+#include <fnmatch.h>
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdlib.h>
+#include <string.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #undef WLR_USE_UNSTABLE

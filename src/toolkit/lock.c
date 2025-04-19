@@ -18,16 +18,27 @@
  * limitations under the License.
  */
 
-#include <toolkit/container.h>
-#include <toolkit/lock.h>
-#include <toolkit/surface.h>
-#include <toolkit/util.h>
+#include "lock.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #undef WLR_USE_UNSTABLE
+#include "libbase/libbase.h"
+
+#include "container.h"
+#include "content.h"
+#include "surface.h"
+#include "util.h"
+
+struct _wlmtk_lock_surface_t;
 
 /* == Declarations ========================================================= */
 

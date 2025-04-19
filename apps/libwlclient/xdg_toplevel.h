@@ -20,9 +20,9 @@
 #ifndef __LIBWLCLIENT_XDG_TOPLEVEL_H__
 #define __LIBWLCLIENT_XDG_TOPLEVEL_H__
 
-#include <libbase/libbase.h>
+#include <stdbool.h>
 
-#include "libwlclient.h"
+#include "libwlclient.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

@@ -23,6 +23,8 @@
 #include "server.h"
 #include "toolkit/toolkit.h"
 
+struct wlr_xdg_toplevel;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus

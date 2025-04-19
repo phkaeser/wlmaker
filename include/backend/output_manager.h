@@ -20,12 +20,10 @@
 #ifndef __WLMBE_OUTPUT_MANAGER_H__
 #define __WLMBE_OUTPUT_MANAGER_H__
 
-#include <wayland-server-core.h>
-
-#include <toolkit/toolkit.h>
-
-struct wlr_allocator;
+struct wl_display;
 struct wlr_backend;
+struct wlr_output_layout;
+struct wlr_scene;
 
 /** Forward declaration: Handle for output managers. */
 typedef struct _wlmbe_output_manager_t wlmbe_output_manager_t;

@@ -20,10 +20,15 @@
 
 #include "xdg_toplevel.h"
 
-#include <wayland-client.h>
-#include "xdg-shell-client-protocol.h"
+#include <libbase/libbase.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-client-protocol.h>
 
 #include "buffer.h"
+#include "xdg-shell-client-protocol.h"
+
+struct xdg_surface;
 
 /* == Declarations ========================================================= */
 

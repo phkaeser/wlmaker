@@ -18,15 +18,23 @@
  * limitations under the License.
  */
 
-#include <toolkit/container.h>
-#include <toolkit/layer.h>
-#include <toolkit/test.h>
+#include "layer.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>  // IWYU pragma: keep
 #define WLR_USE_UNSTABLE
-#include <wlr/util/box.h>
-#include <wlr/util/edges.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
+
+#include "container.h"
+#include "panel.h"
+#include "test.h"  // IWYU pragma: keep
+#include "util.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 

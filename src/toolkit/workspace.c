@@ -18,16 +18,26 @@
  * limitations under the License.
  */
 
-#include <toolkit/fsm.h>
-#include <toolkit/layer.h>
-#include <toolkit/workspace.h>
+#include "workspace.h"
 
+#include <libbase/libbase.h>
+#include <linux/input-event-codes.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
+
+#include "container.h"
+#include "content.h"
+#include "fsm.h"
+#include "input.h"
+#include "layer.h"
+#include "surface.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 

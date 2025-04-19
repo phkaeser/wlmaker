@@ -21,7 +21,13 @@
 #include "root_menu.h"
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
 
+#include "action.h"
 #include "action_item.h"
 
 /* == Declarations ========================================================= */

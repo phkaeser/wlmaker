@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <wayland-client-protocol.h>
 

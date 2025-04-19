@@ -18,12 +18,13 @@
  * limitations under the License.
  */
 
-#include <libbase/libbase.h>
-#include <toolkit/env.h>
+#include "env.h"
 
+#include <libbase/libbase.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #undef WLR_USE_UNSTABLE
+#include <stdlib.h>
 
 /* == Declarations ========================================================= */
 

@@ -20,14 +20,16 @@
 
 #include "xdg_shell.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-util.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/version.h>
+#undef WLR_USE_UNSTABLE
+
 #include "toolkit/toolkit.h"
 #include "xdg_popup.h"
 #include "xdg_toplevel.h"
-
-#include <libbase/libbase.h>
-#include <limits.h>
-
-#include <wlr/version.h>
 
 /* == Declarations ========================================================= */
 

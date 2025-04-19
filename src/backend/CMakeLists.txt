@@ -34,6 +34,12 @@ TARGET_INCLUDE_DIRECTORIES(
   ${WLROOTS_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
 )
+TARGET_INCLUDE_DIRECTORIES(
+  backend
+  PRIVATE
+  ${PROJECT_SOURCE_DIR}/include/backend
+)
+
 SET_TARGET_PROPERTIES(
   backend PROPERTIES
   VERSION 1.0
@@ -54,3 +60,9 @@ TARGET_LINK_LIBRARIES(
   libbase
   toolkit
   PkgConfig::WLROOTS)
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    backend PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

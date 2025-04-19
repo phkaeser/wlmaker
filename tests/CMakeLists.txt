@@ -19,6 +19,8 @@ ADD_TEST(NAME backend_test COMMAND backend_test)
 
 ADD_EXECUTABLE(toolkit_test toolkit_test.c)
 TARGET_LINK_LIBRARIES(toolkit_test toolkit)
+TARGET_INCLUDE_DIRECTORIES(
+  toolkit_test PRIVATE ${PROJECT_SOURCE_DIR}/include/toolkit)
 TARGET_COMPILE_DEFINITIONS(
   toolkit_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 ADD_TEST(NAME toolkit_test COMMAND toolkit_test)
@@ -31,3 +33,15 @@ TARGET_LINK_LIBRARIES(wlmaker_test PRIVATE wlmaker_lib)
 TARGET_COMPILE_DEFINITIONS(
   wlmaker_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 ADD_TEST(NAME wlmaker_test COMMAND wlmaker_test)
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    backend_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    toolkit_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    wlmaker_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

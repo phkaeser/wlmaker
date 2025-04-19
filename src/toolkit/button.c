@@ -18,13 +18,18 @@
  * limitations under the License.
  */
 
-#include <libbase/libbase.h>
-#include <toolkit/button.h>
-#include <toolkit/gfxbuf.h>
+#include "button.h"
 
+#include <linux/input-event-codes.h>
+#include <math.h>
+#include <string.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
+
+#include "gfxbuf.h"  // IWYU pragma: keep
+#include "input.h"
+#include "libbase/libbase.h"
 
 /* == Declarations ========================================================= */
 

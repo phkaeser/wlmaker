@@ -18,12 +18,19 @@
  * limitations under the License.
  */
 
-#include <toolkit/buffer.h>
-#include <toolkit/util.h>
+#include "buffer.h"
 
+#include <math.h>
+#include <stdint.h>
+#include <string.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
+
+#include "libbase/libbase.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 

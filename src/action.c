@@ -20,16 +20,29 @@
 
 #include "action.h"
 
-#include "default_configuration.h"
-#include "root_menu.h"
-#include "server.h"
-
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <wayland-server-core.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
-
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
+
+#include "backend/backend.h"
+#include "cursor.h"
+#include "default_configuration.h"
+#include "idle.h"
+#include "keyboard.h"
+#include "root_menu.h"
+#include "server.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

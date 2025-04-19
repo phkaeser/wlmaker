@@ -20,11 +20,15 @@
 
 #include "lock_mgr.h"
 
+#include <stdlib.h>
 #include <libbase/libbase.h>
-
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_session_lock_v1.h>
 #undef WLR_USE_UNSTABLE
+
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

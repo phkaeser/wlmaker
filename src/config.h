@@ -21,9 +21,9 @@
 #define __CONFIG_H__
 
 #include <inttypes.h>
+#include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <stdbool.h>
-#include <xkbcommon/xkbcommon.h>
+#include <stddef.h>
 
 #include "toolkit/toolkit.h"
 

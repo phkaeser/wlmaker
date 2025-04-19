@@ -20,11 +20,18 @@
 #ifndef __WLMTK_TILE_H__
 #define __WLMTK_TILE_H__
 
+struct _wlmtk_tile_t;
 /** Forward declaration: State of a tile. */
 typedef struct _wlmtk_tile_t wlmtk_tile_t;
 
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "buffer.h"
 #include "container.h"
+#include "element.h"
+#include "env.h"
 #include "style.h"
 
 #ifdef __cplusplus

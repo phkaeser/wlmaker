@@ -122,6 +122,72 @@ typedef struct {
     wlmtk_margin_style_t      margin;
 } wlmtk_dock_style_t;
 
+/** Menu item style. */
+typedef struct {
+    /** Fill style. */
+    wlmtk_style_fill_t        fill;
+    /** Fill style when disabled. */
+    wlmtk_style_fill_t        highlighted_fill;
+    /** Style of the font used in the menu item. */
+    wlmtk_style_font_t        font;
+    /** Height of the menu item, in pixels. */
+    uint64_t                  height;
+    /** Width of the bezel, in pixels. */
+    uint64_t                  bezel_width;
+    /** Text color. */
+    uint32_t                  enabled_text_color;
+    /** Text color when highlighted. */
+    uint32_t                  highlighted_text_color;
+    /** Text color when disabled. */
+    uint32_t                  disabled_text_color;
+    /** Width of the item. */
+    uint64_t                  width;
+} wlmtk_menu_item_style_t;
+
+/** Style options for the resizebar. */
+typedef struct {
+    /** Fill style for the complete resizebar. */
+    wlmtk_style_fill_t        fill;
+    /** Height of the resize bar. */
+    uint64_t                  height;
+    /** Width of the corners. */
+    uint64_t                  corner_width;
+    /** Width of the bezel. */
+    uint64_t                  bezel_width;
+} wlmtk_resizebar_style_t;
+
+/** Style options for the titlebar. */
+typedef struct {
+    /** Fill style for when the titlebar is focussed (activated). */
+    wlmtk_style_fill_t        focussed_fill;
+    /** Fill style for when the titlebar is blurred (not activated). */
+    wlmtk_style_fill_t        blurred_fill;
+    /** Color of the title text when focussed. */
+    uint32_t                  focussed_text_color;
+    /** Color of the title text when blurred. */
+    uint32_t                  blurred_text_color;
+    /** Height of the title bar, in pixels. */
+    uint64_t                  height;
+    /** Width of the bezel. */
+    uint64_t                  bezel_width;
+    /** Style of the margin within the resizebar. */
+    wlmtk_margin_style_t      margin;
+    /** Font style for the titlebar's title. */
+    wlmtk_style_font_t       font;
+} wlmtk_titlebar_style_t;
+
+/** Style options for the window. */
+typedef struct {
+    /** The titlebar's style. */
+    wlmtk_titlebar_style_t    titlebar;
+    /** The resizebar's style. */
+    wlmtk_resizebar_style_t    resizebar;
+    /** Style of the window border. */
+    wlmtk_margin_style_t       border;
+    /** Style of the margins between titlebar, window and resizebar. */
+    wlmtk_margin_style_t       margin;
+} wlmtk_window_style_t;
+
 /** Translates the font weight from toolkit into cairo enum. */
 cairo_font_weight_t wlmtk_style_font_weight_cairo_from_wlmtk(
     wlmtk_style_font_weight_t weight);

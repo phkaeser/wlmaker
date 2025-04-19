@@ -21,10 +21,10 @@
  */
 
 #include <libbase/libbase.h>
-#include <libwlclient/libwlclient.h>
+#include <stdlib.h>
 
-#include <math.h>
-#include <sys/time.h>
+#include "libwlclient/xdg_toplevel.h"
+#include "libwlclient/libwlclient.h"
 
 /* == Main program ========================================================= */
 /** Main program. */

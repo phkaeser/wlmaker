@@ -26,7 +26,10 @@ typedef struct _wlmtk_titlebar_title_t wlmtk_titlebar_title_t;
 #include <stdbool.h>
 #include <libbase/libbase.h>
 
-#include "titlebar.h"
+#include "element.h"
+#include "env.h"
+#include "style.h"
+#include "window.h"
 
 #ifdef __cplusplus
 extern "C" {

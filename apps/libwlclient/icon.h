@@ -20,7 +20,10 @@
 #ifndef __LIBWLCLIENT_ICON_H__
 #define __LIBWLCLIENT_ICON_H__
 
-#include "libwlclient.h"
+#include <libbase/libbase.h>
+#include <stdbool.h>
+
+#include "libwlclient.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

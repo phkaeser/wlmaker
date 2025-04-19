@@ -21,12 +21,15 @@
 #define __WLMTK_RESIZEBAR_AREA_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>          // for bool
+#include <stdint.h>           // for uint32_t
 
 /** Forward declaration: Element of the resizebar. */
 typedef struct _wlmtk_resizebar_area_t wlmtk_resizebar_area_t ;
 
-
-#include "resizebar.h"
+#include "element.h"
+#include "env.h"
+#include "style.h"
 #include "window.h"
 
 #ifdef __cplusplus

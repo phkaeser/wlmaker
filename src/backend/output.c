@@ -18,15 +18,22 @@
  * limitations under the License.
  */
 
-#include <backend/output.h>
-#include <backend/output_manager.h>
-#include <libbase/libbase.h>
-#include <toolkit/toolkit.h>
+#include "output.h"
 
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
+#include <toolkit/toolkit.h>
+#include <wayland-client-protocol.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend/wayland.h>
 #include <wlr/backend/x11.h>
 #include <wlr/render/allocator.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 

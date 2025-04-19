@@ -1,0 +1,6 @@
+# -*- mode: python; -*-
+[
+    # Weird iwyu complaint to add "#include <bits/types/struct_tm.h>  // for tm"
+    { "symbol": ["tm", "public", "<sys/time.h>", "public" ]},
+    { "symbol": ["wl_list", "public", "<wayland-util.h>", "public" ]},
+]

@@ -18,8 +18,13 @@
  * limitations under the License.
  */
 
-#include <toolkit/menu.h>
-#include <toolkit/style.h>
+#include "menu.h"
+
+#include <libbase/libbase.h>
+#include <linux/input-event-codes.h>
+#include <stdlib.h>
+
+#include "input.h"
 
 /* == Declarations ========================================================= */
 
@@ -43,7 +48,7 @@ struct _wlmtk_menu_t {
     /** The currently-highlighted menu item, or NULL if none. */
     wlmtk_menu_item_t         *highlighted_menu_item_ptr;
     /** Current mode of the menu. */
-    wlmtk_menu_mode_t         mode;
+    enum wlmtk_menu_mode      mode;
 };
 
 static void _wlmtk_menu_eliminate_item(
@@ -159,7 +164,7 @@ bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
-                         wlmtk_menu_mode_t mode)
+                         enum wlmtk_menu_mode mode)
 {
     if (menu_ptr->mode == mode) return;
     menu_ptr->mode = mode;
@@ -170,7 +175,7 @@ void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_mode_t wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr)
+enum wlmtk_menu_mode wlmtk_menu_get_mode(wlmtk_menu_t *menu_ptr)
 {
     return menu_ptr->mode;
 }

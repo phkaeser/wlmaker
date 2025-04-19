@@ -18,16 +18,19 @@
  * limitations under the License.
  */
 
-#include "layer_panel.h"
 #include "layer_shell.h"
 
-#include "toolkit/toolkit.h"
-
 #include <libbase/libbase.h>
-
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_layer_shell_v1.h>
 #undef WLR_USE_UNSTABLE
+
+#include "layer_panel.h"
+#include "toolkit/toolkit.h"
+
 
 /* == Declarations ========================================================= */
 

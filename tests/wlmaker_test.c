@@ -18,15 +18,18 @@
  * limitations under the License.
  */
 
+#include <libbase/libbase.h>
+#include <stddef.h>
+
 #include "action.h"
 #include "action_item.h"
 #include "clip.h"
 #include "config.h"
 #include "corner.h"
 #include "dock.h"
-#include "keyboard.h"
 #include "launcher.h"
 #include "layer_panel.h"
+#include "server.h"
 #include "xwl_content.h"
 
 /** WLMaker unit tests. */

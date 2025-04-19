@@ -20,14 +20,14 @@
 #ifndef __WLMAKER_KEYBOARD_H__
 #define __WLMAKER_KEYBOARD_H__
 
-#include "server.h"
-
-#include <libbase/libbase.h>
-
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
+
+#include "server.h"  // IWYU pragma: keep
+
+struct wlr_keyboard;
 
 /** Type of the keyboard handle. */
 typedef struct _wlmaker_keyboard_t wlmaker_keyboard_t;

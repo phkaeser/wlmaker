@@ -20,6 +20,9 @@
 #ifndef __WLMAKER_ACTION_H__
 #define __WLMAKER_ACTION_H__
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+
 #include "server.h"
 
 #ifdef __cplusplus

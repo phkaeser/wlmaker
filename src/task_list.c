@@ -23,16 +23,23 @@
 
 #include "task_list.h"
 
-#include "config.h"
-#include "toolkit/toolkit.h"
-
+#include <cairo.h>
+#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <limits.h>
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 /// Include unstable interfaces of wlroots.
 #define WLR_USE_UNSTABLE
+#include <wlr/util/edges.h>
 #include <wlr/interfaces/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
+
+#include "config.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

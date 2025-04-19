@@ -20,16 +20,25 @@
 
 #include "server.h"
 
-#include "config.h"
-#include "toolkit/toolkit.h"
-
+#include <inttypes.h>
 #include <libbase/libbase.h>
-
+#include <libbase/plist.h>
+#include <linux/input-event-codes.h>
+#include <stdlib.h>
+#include <wayland-server-protocol.h>
+#include <wayland-util.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/backend.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
+
+#include "keyboard.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

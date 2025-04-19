@@ -20,12 +20,10 @@
 #ifndef __LOCK_MGR_H__
 #define __LOCK_MGR_H__
 
-#include "toolkit/toolkit.h"
-
 /** Forward declaration: State of the session lock manager. */
 typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

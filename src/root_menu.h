@@ -25,7 +25,7 @@
 /** Forward declaration: State of root menu. */
 typedef struct _wlmaker_root_menu_t wlmaker_root_menu_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

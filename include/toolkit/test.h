@@ -20,7 +20,8 @@
 #ifndef __WLMTK_TEST_H__
 #define __WLMTK_TEST_H__
 
-#include <libbase/libbase.h>
+#include <libbase/libbase.h>  // IWYU pragma: keep
+#include <stdbool.h>
 
 /** Forward declaration. */
 struct wlr_output;

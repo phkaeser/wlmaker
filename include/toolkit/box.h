@@ -20,11 +20,18 @@
 #ifndef __WLMTK_BOX_H__
 #define __WLMTK_BOX_H__
 
-/** Forward declaration: Box. */
-typedef struct _wlmtk_box_t wlmtk_box_t;
+#include <stdbool.h>
+
+#include "libbase/libbase.h"
 
 #include "container.h"
+#include "element.h"
+#include "env.h"
 #include "style.h"
+
+struct _wlmtk_box_t;
+/** Forward declaration: Box. */
+typedef struct _wlmtk_box_t wlmtk_box_t;
 
 #ifdef __cplusplus
 extern "C" {

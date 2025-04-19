@@ -20,12 +20,13 @@
 #ifndef __WLMTK_GFXBUF_H__
 #define __WLMTK_GFXBUF_H__
 
-#include <libbase/libbase.h>
 #include <cairo.h>
-
+#include <libbase/libbase.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
+
+struct wlr_buffer;
 
 #ifdef __cplusplus
 extern "C" {

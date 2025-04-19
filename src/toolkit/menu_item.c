@@ -18,10 +18,20 @@
  * limitations under the License.
  */
 
-#include <toolkit/menu_item.h>
-#include <toolkit/gfxbuf.h>
-#include <toolkit/primitives.h>
-#include <toolkit/util.h>
+#include "menu_item.h"
+
+#include <cairo.h>
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <linux/input-event-codes.h>
+#include <stdlib.h>
+
+#include "buffer.h"
+#include "gfxbuf.h"  // IWYU pragma: keep
+#include "input.h"
+#include "pane.h"
+#include "primitives.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 
@@ -51,7 +61,7 @@ struct _wlmtk_menu_item_t {
     /** Width of the item element, in pixels. */
     int                       width;
     /** Mode of the menu (and the item). */
-    wlmtk_menu_mode_t         mode;
+    enum wlmtk_menu_mode      mode;
 
     /** Texture buffer holding the item in enabled state. */
     struct wlr_buffer         *enabled_wlr_buffer_ptr;
@@ -260,7 +270,7 @@ void wlmtk_menu_item_set_submenu(
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_item_set_mode(
     wlmtk_menu_item_t *menu_item_ptr,
-    wlmtk_menu_mode_t mode)
+    enum wlmtk_menu_mode mode)
 {
     menu_item_ptr->mode = mode;
     if (NULL != menu_item_ptr->submenu_ptr) {
@@ -269,7 +279,7 @@ void wlmtk_menu_item_set_mode(
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
+enum wlmtk_menu_mode wlmtk_menu_item_get_mode(
     wlmtk_menu_item_t *menu_item_ptr)
 {
     return menu_item_ptr->mode;

@@ -20,11 +20,12 @@
 #ifndef __WLMBE_BACKEND_H__
 #define __WLMBE_BACKEND_H__
 
+#include <stddef.h>
+#include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <wayland-server-core.h>
+//#include <wayland-server-core.h>
 
-struct wlr_backend;
-struct wlr_compositor;
+struct wl_display;
 struct wlr_output_layout;
 struct wlr_scene;
 

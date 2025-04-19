@@ -18,13 +18,18 @@
  * limitations under the License.
  */
 
-#include <toolkit/container.h>
-#include <toolkit/rectangle.h>
-#include <toolkit/util.h>
+#include "rectangle.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
+
+#include "container.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 

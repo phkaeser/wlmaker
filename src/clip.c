@@ -22,11 +22,22 @@
 
 #include <limits.h>
 
-#include "toolkit/toolkit.h"
-
+#include <cairo.h>
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <linux/input-event-codes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
+
+#include "backend/backend.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

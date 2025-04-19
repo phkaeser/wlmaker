@@ -20,25 +20,27 @@
 #ifndef __WLMTK_WORKSPACE_H__
 #define __WLMTK_WORKSPACE_H__
 
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <libbase/libbase.h>
+
 /** State of the workspace. */
 typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
+
+#include "element.h"
+#include "env.h"
+#include "layer.h"  // IWYU pragma: keep
+#include "root.h"  // IWYU pragma: keep
+#include "tile.h"
+#include "window.h"  // IWYU pragma: keep
+
 /** Forward declaration: wlr output layout. */
 struct wlr_output_layout;
-
-#include "container.h"
-#include "panel.h"
-#include "root.h"
-#include "tile.h"
-#include "window.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration. */
-struct wlr_pointer_button_event;
-/** Forward declaration. */
-struct wlr_box;
 
 /**
  * Indicates which layer the view shall be rendered in.

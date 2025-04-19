@@ -20,12 +20,15 @@
 #ifndef __WLMAKER_ACTION_ITEM_H__
 #define __WLMAKER_ACTION_ITEM_H__
 
+#include <stddef.h>
+#include <libbase/libbase.h>
+
 /** Forward declaration: An action-triggering menu item. */
 typedef struct _wlmaker_action_item_t wlmaker_action_item_t;
 
-#include "toolkit/toolkit.h"
-
 #include "action.h"
+#include "server.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {

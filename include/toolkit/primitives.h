@@ -22,6 +22,8 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "style.h"
 

@@ -20,6 +20,9 @@
 #ifndef __LAUNCHER_H__
 #define __LAUNCHER_H__
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+
 #include "subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 

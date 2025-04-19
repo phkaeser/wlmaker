@@ -21,12 +21,19 @@
 #define __WLMTK_ELEMENT_H__
 
 #include <libbase/libbase.h>
-#include <wayland-server.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
 
 #define WLR_USE_UNSTABLE
 #include "wlr/util/box.h"
 #undef WLR_USE_UNSTABLE
+
+struct _wlmtk_element_t;
+struct _wlmtk_element_vmt_t;
+struct wlr_scene_tree;
 
 /** Forward declaration: Element. */
 typedef struct _wlmtk_element_t wlmtk_element_t;
@@ -35,9 +42,6 @@ typedef struct _wlmtk_element_vmt_t wlmtk_element_vmt_t;
 
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
-struct wlr_scene_tree;
-/** Forward declaration: Axis event. */
-struct wlr_pointer_axis_event;
 /** Forward declaration: Wlroots keyboard event. */
 struct wlr_keyboard_key_event;
 

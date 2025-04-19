@@ -20,8 +20,14 @@
 #ifndef __WLMTK_BUTTON_H__
 #define __WLMTK_BUTTON_H__
 
+#include <stdbool.h>
+
 #include "buffer.h"
 #include "element.h"
+#include "env.h"
+#include "libbase/libbase.h"
+
+struct _wlmtk_button_t;
 
 #ifdef __cplusplus
 extern "C" {

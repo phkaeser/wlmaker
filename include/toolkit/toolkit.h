@@ -22,9 +22,7 @@
 #ifndef __WLMTK_TOOLKIT_H__
 #define __WLMTK_TOOLKIT_H__
 
-#include <libbase/libbase.h>
-#include <wayland-server.h>
-
+// IWYU pragma: begin_exports
 #include "bordered.h"
 #include "box.h"
 #include "buffer.h"
@@ -38,6 +36,7 @@
 #include "gfxbuf.h"
 #include "image.h"
 #include "input.h"
+#include "layer.h"
 #include "lock.h"
 #include "menu.h"
 #include "menu_item.h"
@@ -59,6 +58,7 @@
 #include "util.h"
 #include "window.h"
 #include "workspace.h"
+// IWYU pragma: end_exports
 
 #ifdef __cplusplus
 extern "C" {

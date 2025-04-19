@@ -20,19 +20,24 @@
 #ifndef __WLMTK_LAYER_H__
 #define __WLMTK_LAYER_H__
 
+#include <stdbool.h>
+#include <libbase/libbase.h>
+
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_t wlmtk_layer_t;
 /** Forward declaration: Layer state. */
 typedef struct _wlmtk_layer_output_t wlmtk_layer_output_t;
+
+#include "element.h"
+#include "env.h"
+#include "panel.h"  // IWYU pragma: keep
+#include "workspace.h"  // IWYU pragma: keep
+
 /** Forward declaration: wlr output layout. */
 struct wlr_output_layout;
 /** Forward declaration: wlr output. */
 struct wlr_output;
 
-#include "element.h"
-#include "env.h"
-#include "panel.h"
-#include "workspace.h"
 
 #ifdef __cplusplus
 extern "C" {

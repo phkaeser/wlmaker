@@ -20,14 +20,19 @@
 #ifndef __WLMTK_DOCK_H__
 #define __WLMTK_DOCK_H__
 
+#include <libbase/libbase.h>
+#define WLR_USE_UNSTABLE
 #include <wlr/util/edges.h>
+#undef WLR_USE_UNSTABLE
+
+#include "element.h"
+#include "env.h"
+#include "panel.h"
+#include "style.h"
+#include "tile.h"
 
 /** Forward declaration: Dock handle. */
 typedef struct _wlmtk_dock_t wlmtk_dock_t;
-
-#include "env.h"
-#include "panel.h"
-#include "tile.h"
 
 #ifdef __cplusplus
 extern "C" {

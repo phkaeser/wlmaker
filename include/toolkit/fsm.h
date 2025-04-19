@@ -21,9 +21,11 @@
 #ifndef __WLMTK_FSM_H__
 #define __WLMTK_FSM_H__
 
+#include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <libbase/libbase.h>
+
+struct _wlmtk_fsm_t;
 
 #ifdef __cplusplus
 extern "C" {

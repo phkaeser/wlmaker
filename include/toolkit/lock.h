@@ -24,14 +24,15 @@
 typedef struct _wlmtk_lock_t wlmtk_lock_t;
 
 #include "element.h"
-#include "root.h"
+#include "env.h"
+#include "root.h"  // IWYU pragma: keep
+
+/** Forward declaration: Session lock handle. */
+struct wlr_session_lock_v1;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration: Session lock handle. */
-struct wlr_session_lock_v1;
 
 /**
  * Creates a session lock handle.

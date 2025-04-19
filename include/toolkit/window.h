@@ -20,19 +20,21 @@
 #ifndef __WLMTK_WINDOW_H__
 #define __WLMTK_WINDOW_H__
 
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <wayland-server-core.h>
+
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
 
-#include "bordered.h"
-#include "box.h"
-#include "content.h"
+#include "content.h"  // IWYU pragma: keep
 #include "element.h"
+#include "env.h"
 #include "menu.h"
-#include "resizebar.h"
-#include "surface.h"
-#include "titlebar.h"
+#include "style.h"
 #include "util.h"
-#include "workspace.h"
+#include "workspace.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,18 +57,6 @@ typedef struct {
      */
     struct wl_signal          state_changed;
 } wlmtk_window_events_t;
-
-/** Style options for the window. */
-typedef struct {
-    /** The titlebar's style. */
-    wlmtk_titlebar_style_t    titlebar;
-    /** The resizebar's style. */
-    wlmtk_resizebar_style_t    resizebar;
-    /** Style of the window border. */
-    wlmtk_margin_style_t       border;
-    /** Style of the margins between titlebar, window and resizebar. */
-    wlmtk_margin_style_t       margin;
-} wlmtk_window_style_t;
 
 /** Window properties. */
 typedef enum {

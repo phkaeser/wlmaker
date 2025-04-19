@@ -21,6 +21,16 @@
 #define __WLMTK_PANEL_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "container.h"
+#include "element.h"
+#include "env.h"
+struct _wlmtk_fake_panel_t;
+struct _wlmtk_panel_positioning_t;
+struct _wlmtk_panel_t;
+struct _wlmtk_panel_vmt_t;
 
 /** Forward declaration: An element of a layer, we call it: Panel. */
 typedef struct _wlmtk_panel_t wlmtk_panel_t;
@@ -29,8 +39,7 @@ typedef struct _wlmtk_panel_vmt_t wlmtk_panel_vmt_t;
 /** Forward declaration: The panel's positioning parameters. */
 typedef struct _wlmtk_panel_positioning_t wlmtk_panel_positioning_t;
 
-#include "container.h"
-#include "layer.h"
+#include "layer.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

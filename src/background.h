@@ -20,7 +20,11 @@
 #ifndef __BACKGROUND_H__
 #define __BACKGROUND_H__
 
+#include <stdint.h>
+
 #include "toolkit/toolkit.h"
+
+struct wlr_output_layout;
 
 #ifdef __cplusplus
 extern "C" {

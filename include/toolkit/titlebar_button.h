@@ -20,13 +20,18 @@
 #ifndef __WLMTK_TITLEBAR_BUTTON_H__
 #define __WLMTK_TITLEBAR_BUTTON_H__
 
-#include <stdbool.h>
+#include <cairo.h>
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "element.h"
+#include "env.h"
+#include "style.h"
+#include "window.h"
 
 /** Forward declaration. */
 typedef struct _wlmtk_titlebar_button_t wlmtk_titlebar_button_t;
-
-#include "titlebar.h"
 
 #ifdef __cplusplus
 extern "C" {

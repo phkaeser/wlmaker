@@ -20,10 +20,19 @@
 
 #include "subprocess_monitor.h"
 
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
+
 #include "toolkit/toolkit.h"
 
-#include <signal.h>
-#include <unistd.h>
+struct wl_event_loop;
+struct wl_event_source;
 
 /* == Declarations ========================================================= */
 

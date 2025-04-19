@@ -18,13 +18,29 @@
  * limitations under the License.
 */
 
-#include <toolkit/root.h>
+#include "root.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
+#include <xkbcommon/xkbcommon.h>
+
+#include "container.h"
+#include "content.h"
+#include "input.h"
+#include "lock.h"
+#include "rectangle.h"
+#include "surface.h"
+#include "tile.h"
+#include "util.h"
+#include "workspace.h"
+
+struct wlr_keyboard_key_event;
 
 /* == Declarations ========================================================= */
 

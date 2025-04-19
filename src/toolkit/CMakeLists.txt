@@ -96,6 +96,10 @@ TARGET_INCLUDE_DIRECTORIES(
   ${CAIRO_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
 )
+TARGET_INCLUDE_DIRECTORIES(
+  toolkit PRIVATE
+  ${PROJECT_SOURCE_DIR}/include/toolkit
+)
 SET_TARGET_PROPERTIES(
   toolkit PROPERTIES
   VERSION 1.0
@@ -113,3 +117,9 @@ TARGET_LINK_LIBRARIES(
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND
 )
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    toolkit PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)
