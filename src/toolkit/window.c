@@ -21,9 +21,11 @@
 #include <toolkit/rectangle.h>
 #include <toolkit/window.h>
 #include <toolkit/workspace.h>
+#include <toolkit/test.h>
 
 /// Include unstable interfaces of wlroots.
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
@@ -1371,6 +1373,11 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 0, NULL, NULL }
 };
 
+/** Tile style used in tests. */
+static const wlmtk_tile_style_t _wlmtk_workspace_test_tile_style = {
+    .size = 64
+};
+
 /* ------------------------------------------------------------------------- */
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
@@ -1453,7 +1460,17 @@ void test_set_activated(bs_test_t *test_ptr)
 /** Tests enabling and disabling server-side decoration. */
 void test_server_side_decorated(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
@@ -1502,13 +1519,24 @@ void test_server_side_decorated(bs_test_t *test_ptr)
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests server-side decoration depending on properties. */
 void test_server_side_decorated_properties(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
@@ -1533,6 +1561,7 @@ void test_server_side_decorated_properties(bs_test_t *test_ptr)
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1542,7 +1571,17 @@ void test_maximize(bs_test_t *test_ptr)
     struct wlr_box box;
     wlmtk_util_test_listener_t l;
 
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
@@ -1622,6 +1661,7 @@ void test_maximize(bs_test_t *test_ptr)
     wlmtk_util_disconnect_test_listener(&l);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1631,8 +1671,19 @@ void test_fullscreen(bs_test_t *test_ptr)
     struct wlr_box box;
     wlmtk_util_test_listener_t l;
 
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
@@ -1724,6 +1775,7 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1732,8 +1784,19 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 {
     struct wlr_box box;
 
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
@@ -1769,6 +1832,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw_ptr);
 
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

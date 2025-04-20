@@ -56,6 +56,7 @@ typedef enum {
 /**
  * Creates a workspace.
  *
+ * @param wlr_output_layout_ptr Output layout. Must outlive the workspace.
  * @param name_ptr
  * @param tile_style_ptr
  * @param env_ptr
@@ -64,6 +65,7 @@ typedef enum {
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
     const char *name_ptr,
     const wlmtk_tile_style_t *tile_style_ptr,
     wlmtk_env_t *env_ptr);
@@ -296,20 +298,6 @@ bs_dllist_node_t *wlmtk_dlnode_from_workspace(
 /** @return Poitner to the @ref wlmtk_workspace_t of the `dlnode_ptr`. */
 wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr);
-
-/**
- * Creates a workspace with defined extents, suitably for tests.
- *
- * @param width
- * @param height
- * @param env_ptr
- *
- * @return A pointer to a @ref wlmtk_workspace_t or NULL on error.
- */
-wlmtk_workspace_t *wlmtk_workspace_create_for_test(
-    int width,
-    int height,
-    wlmtk_env_t *env_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

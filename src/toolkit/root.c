@@ -748,8 +748,8 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     struct wl_display *wl_display_ptr = wl_display_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(wl_display_ptr);
     wlmtk_root_t *root_ptr = wlmtk_root_create(
         wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
@@ -760,7 +760,8 @@ void test_workspaces(bs_test_t *test_ptr)
         &wlmtk_root_events(root_ptr)->workspace_changed, &l);
 
     static const wlmtk_tile_style_t tstyle = {};
-    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create("1", &tstyle, NULL);
+    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "1", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
     wlmtk_root_add_workspace(root_ptr, ws1_ptr);
     BS_TEST_VERIFY_EQ(
@@ -771,7 +772,8 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, ws1_ptr, l.last_data_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
-    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create("2", &tstyle, NULL);
+    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "2", &tstyle, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_root_add_workspace(root_ptr, ws2_ptr);
     BS_TEST_VERIFY_EQ(
@@ -802,6 +804,7 @@ void test_workspaces(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_test_listener(&l);
     wlmtk_root_destroy(root_ptr);
+    wlr_output_layout_destroy(wlr_output_layout_ptr);
     wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }

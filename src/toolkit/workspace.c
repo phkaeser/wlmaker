@@ -21,6 +21,7 @@
 #include <toolkit/fsm.h>
 #include <toolkit/layer.h>
 #include <toolkit/workspace.h>
+#include <toolkit/test.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
@@ -103,6 +104,9 @@ struct _wlmtk_workspace_t {
 
     /** Copy of the tile's style, for dimensions; */
     wlmtk_tile_style_t        tile_style;
+
+    /** Output layout. */
+    struct wlr_output_layout *wlr_output_layout_ptr;
 };
 
 static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
@@ -179,6 +183,7 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_workspace_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
     const char *name_ptr,
     const wlmtk_tile_style_t *tile_style_ptr,
     wlmtk_env_t *env_ptr)
@@ -186,6 +191,7 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     wlmtk_workspace_t *workspace_ptr =
         logged_calloc(1, sizeof(wlmtk_workspace_t));
     if (NULL == workspace_ptr) return NULL;
+    workspace_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
     workspace_ptr->tile_style = *tile_style_ptr;
     workspace_ptr->name_ptr = logged_strdup(name_ptr);
     if (NULL == workspace_ptr->name_ptr) {
@@ -282,6 +288,10 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     wlmtk_layer_set_workspace(workspace_ptr->overlay_layer_ptr, workspace_ptr);
 
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
+
+    wlmtk_workspace_update_output_layout(
+        workspace_ptr,
+        workspace_ptr->wlr_output_layout_ptr);
     return workspace_ptr;
 }
 
@@ -763,24 +773,6 @@ wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_workspace_t, dlnode);
 }
 
-/* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmtk_workspace_create_for_test(
-    int width,
-    int height,
-    wlmtk_env_t *env_ptr)
-{
-    static const wlmtk_tile_style_t ts = { .size = 64 };
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        "test", &ts, env_ptr);
-    if (NULL == workspace_ptr) return NULL;
-
-    workspace_ptr->x2 = width;
-    workspace_ptr->y2 = height;
-    wlmtk_workspace_enable(workspace_ptr, true);
-
-    return workspace_ptr;
-}
-
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -1054,8 +1046,14 @@ static const wlmtk_tile_style_t _wlmtk_workspace_test_tile_style = {
 /** Exercises workspace create & destroy methods. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        "test", &_wlmtk_workspace_test_tile_style, NULL);
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
@@ -1088,10 +1086,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     int index;
     wlmtk_workspace_set_details(workspace_ptr, 42);
     wlmtk_workspace_get_details(workspace_ptr, &name_ptr, &index);
-    BS_TEST_VERIFY_STREQ(test_ptr, "test", name_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "t", name_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 42, index);
 
     wlmtk_workspace_destroy(workspace_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1102,13 +1101,13 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     struct wl_display *wl_display_ptr = wl_display_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(wl_display_ptr);
     wlmtk_root_t *root_ptr = wlmtk_root_create(
         wlr_scene_ptr, wlr_output_layout_ptr, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-        "test", &_wlmtk_workspace_test_tile_style, NULL);
+        wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
     wlmtk_root_add_workspace(root_ptr, workspace_ptr);
 
@@ -1165,7 +1164,18 @@ void test_map_unmap(bs_test_t *test_ptr)
 /** Tests moving a window. */
 void test_move(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
+
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
@@ -1205,13 +1215,24 @@ void test_move(bs_test_t *test_ptr)
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests moving a window that unmaps during the move. */
 void test_unmap_during_move(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
@@ -1248,13 +1269,24 @@ void test_unmap_during_move(bs_test_t *test_ptr)
 
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests resizing a window. */
 void test_resize(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
 
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
@@ -1303,13 +1335,24 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests enabling or disabling the workspace. */
 void test_enable(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_workspace_enable(ws_ptr, false);
 
@@ -1360,14 +1403,26 @@ void test_enable(bs_test_t *test_ptr)
     wlmtk_workspace_unmap_window(ws_ptr, fw1_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests window activation. */
 void test_activate(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
 
     // Window 1: from (0, 0) to (100, 100)
     wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
@@ -1446,14 +1501,26 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw2_ptr);
     wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests cycling through windows. */
 void test_activate_cycling(bs_test_t *test_ptr)
 {
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create_for_test(1024, 768, 0);
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
     bs_dllist_t *windows_ptr = wlmtk_workspace_get_windows_dllist(
         ws_ptr);
 
@@ -1546,6 +1613,7 @@ void test_activate_cycling(bs_test_t *test_ptr)
     wlmtk_fake_window_destroy(fw2_ptr);
     wlmtk_fake_window_destroy(fw1_ptr);
     wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* == End of workspace.c =================================================== */
