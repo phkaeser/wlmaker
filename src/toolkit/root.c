@@ -64,9 +64,6 @@ struct _wlmtk_root_t {
 static void _wlmtk_root_switch_to_workspace(
     wlmtk_root_t *root_ptr,
     wlmtk_workspace_t *workspace_ptr);
-static void _wlmtk_root_workspace_update_output_layout(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
 static void _wlmtk_root_enumerate_workspaces(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -285,9 +282,6 @@ void wlmtk_root_add_workspace(
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
     }
-
-    wlmtk_workspace_update_output_layout(
-        workspace_ptr, root_ptr->wlr_output_layout_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -486,24 +480,6 @@ void _wlmtk_root_switch_to_workspace(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Callback for `bs_dllist_for_each` to update the output layout of the
- * workspace.
- *
- * @param dlnode_ptr
- * @param ud_ptr              A pointer to struct wlr_output_layout.
- */
-void _wlmtk_root_workspace_update_output_layout(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    struct wlr_output_layout *wlr_output_layout_ptr = ud_ptr;
-    wlmtk_workspace_update_output_layout(
-        wlmtk_workspace_from_dlnode(dlnode_ptr),
-        wlr_output_layout_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Callback for bs_dllist_for_each: Destroys the workspace. */
 void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
 {
@@ -696,11 +672,6 @@ void _wlmtk_root_handle_output_layout_change(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width,
         root_ptr->extents.height);
-
-    bs_dllist_for_each(
-        &root_ptr->workspaces,
-        _wlmtk_root_workspace_update_output_layout,
-        wlr_output_layout_ptr);
 }
 
 /* == Unit tests =========================================================== */

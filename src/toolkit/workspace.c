@@ -105,6 +105,10 @@ struct _wlmtk_workspace_t {
     /** Copy of the tile's style, for dimensions; */
     wlmtk_tile_style_t        tile_style;
 
+    /** Listener for wlr_output_layout::events.change. */
+    struct wl_listener        output_layout_change_listener;
+
+    // Elements below not owned by wlmtk_workspace_t.
     /** Output layout. */
     struct wlr_output_layout *wlr_output_layout_ptr;
 };
@@ -131,6 +135,10 @@ static bool _wlmtk_workspace_element_pointer_button(
     const wlmtk_button_event_t *button_event_ptr);
 static void _wlmtk_workspace_element_pointer_leave(
     wlmtk_element_t *element_ptr);
+
+static void _wlmtk_workspace_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
@@ -289,9 +297,14 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
 
-    wlmtk_workspace_update_output_layout(
-        workspace_ptr,
+    wlmtk_util_connect_listener_signal(
+        &workspace_ptr->wlr_output_layout_ptr->events.change,
+        &workspace_ptr->output_layout_change_listener,
+        _wlmtk_workspace_handle_output_layout_change);
+    _wlmtk_workspace_handle_output_layout_change(
+        &workspace_ptr->output_layout_change_listener,
         workspace_ptr->wlr_output_layout_ptr);
+
     return workspace_ptr;
 }
 
@@ -370,41 +383,6 @@ void wlmtk_workspace_get_details(
 {
     *index_ptr = workspace_ptr->index;
     *name_ptr_ptr = workspace_ptr->name_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Add test to verify layers are reconfigured.
-void wlmtk_workspace_update_output_layout(
-    wlmtk_workspace_t *workspace_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr)
-{
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
-    workspace_ptr->x1 = extents.x;
-    workspace_ptr->y1 = extents.y;
-    workspace_ptr->x2 = extents.x + extents.width;
-    workspace_ptr->y2 = extents.y + extents.height;
-
-    if (NULL != workspace_ptr->background_layer_ptr) {
-        wlmtk_layer_update_output_layout(
-            workspace_ptr->background_layer_ptr,
-            wlr_output_layout_ptr);
-    }
-    if (NULL != workspace_ptr->bottom_layer_ptr) {
-        wlmtk_layer_update_output_layout(
-            workspace_ptr->bottom_layer_ptr,
-            wlr_output_layout_ptr);
-    }
-    if (NULL != workspace_ptr->top_layer_ptr) {
-        wlmtk_layer_update_output_layout(
-            workspace_ptr->top_layer_ptr,
-            wlr_output_layout_ptr);
-    }
-    if (NULL != workspace_ptr->overlay_layer_ptr) {
-        wlmtk_layer_update_output_layout(
-            workspace_ptr->overlay_layer_ptr,
-            wlr_output_layout_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -893,6 +871,45 @@ void _wlmtk_workspace_element_pointer_leave(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
     workspace_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles output changes: Updates own extents, updates layers. */
+void _wlmtk_workspace_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_workspace_t, output_layout_change_listener);
+    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
+
+    struct wlr_box extents;
+    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
+    workspace_ptr->x1 = extents.x;
+    workspace_ptr->y1 = extents.y;
+    workspace_ptr->x2 = extents.x + extents.width;
+    workspace_ptr->y2 = extents.y + extents.height;
+
+    if (NULL != workspace_ptr->background_layer_ptr) {
+        wlmtk_layer_update_output_layout(
+            workspace_ptr->background_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->bottom_layer_ptr) {
+        wlmtk_layer_update_output_layout(
+            workspace_ptr->bottom_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->top_layer_ptr) {
+        wlmtk_layer_update_output_layout(
+            workspace_ptr->top_layer_ptr,
+            wlr_output_layout_ptr);
+    }
+    if (NULL != workspace_ptr->overlay_layer_ptr) {
+        wlmtk_layer_update_output_layout(
+            workspace_ptr->overlay_layer_ptr,
+            wlr_output_layout_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

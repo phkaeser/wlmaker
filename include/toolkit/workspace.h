@@ -100,21 +100,6 @@ void wlmtk_workspace_get_details(
     int *index_ptr);
 
 /**
- * Updates the set of outputs.
- *
- * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
- *
- * @param workspace_ptr
- * @param wlr_output_layout_ptr The output layout. @ref wlmtk_workspace_t
- *                            expects all referred outputs to live until the
- *                            next call to wlmtk_workspace_update_layout, or
- *                            until @ref wlmtk_workspace_destroy is called.
- */
-void wlmtk_workspace_update_output_layout(
-    wlmtk_workspace_t *workspace_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
-
-/**
  * Returns the extents of the workspace available for maximized windows.
  *
  * @param workspace_ptr
