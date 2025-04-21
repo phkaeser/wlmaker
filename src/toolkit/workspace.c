@@ -394,17 +394,36 @@ void wlmtk_workspace_get_details(
 
 /* ------------------------------------------------------------------------- */
 struct wlr_box wlmtk_workspace_get_maximize_extents(
-    wlmtk_workspace_t *workspace_ptr)
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr)
 {
-    // TODO(kaeser@gubbe.ch): Well, actually compute something sensible.
-    struct wlr_box box = {
-        .x = workspace_ptr->x1,
-        .y = workspace_ptr->y1,
-        .width = (workspace_ptr->x2 - workspace_ptr->x1 -
-                  workspace_ptr->tile_style.size),
-        .height = (workspace_ptr->y2 - workspace_ptr->y1 -
-                   workspace_ptr->tile_style.size) };
-    return box;
+    struct wlr_box extents = {};
+
+    // No output provided. Pick the primary (first one in layout).
+    if (NULL == wlr_output_ptr) {
+        if (wl_list_empty(&workspace_ptr->wlr_output_layout_ptr->outputs)) {
+            return extents;
+        }
+
+        struct wlr_output_layout_output *wol_output_ptr = BS_CONTAINER_OF(
+            workspace_ptr->wlr_output_layout_ptr->outputs.next,
+            struct wlr_output_layout_output,
+            link);
+        wlr_output_ptr = wol_output_ptr->output;
+    }
+
+    wlr_output_layout_get_box(
+        workspace_ptr->wlr_output_layout_ptr,
+        wlr_output_ptr,
+        &extents);
+
+    if (!wlr_box_empty(&extents)) {
+        // TODO(kaeser@gubbe.ch): Well, actually compute something sensible.
+        extents.width -= workspace_ptr->tile_style.size;
+        extents.height -= workspace_ptr->tile_style.size;
+
+    }
+    return extents;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1054,6 +1073,9 @@ void test_create_destroy(bs_test_t *test_ptr)
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 100, .height = 200, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, -10, -20);
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
@@ -1073,7 +1095,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 90, x2);
     BS_TEST_VERIFY_EQ(test_ptr, 180, y2);
 
-    box = wlmtk_workspace_get_maximize_extents(workspace_ptr);
+    box = wlmtk_workspace_get_maximize_extents(workspace_ptr, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, -10, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, -20, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 36, box.width);

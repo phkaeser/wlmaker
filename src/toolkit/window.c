@@ -444,7 +444,7 @@ void wlmtk_window_request_maximized(
 
     struct wlr_box box;
     if (maximized) {
-        box = wlmtk_workspace_get_maximize_extents(workspace_ptr);
+        box = wlmtk_workspace_get_maximize_extents(workspace_ptr, NULL);
     } else {
         box = window_ptr->organic_size;
     }
