@@ -497,7 +497,7 @@ void wlmtk_window_request_fullscreen(
 
     if (fullscreen) {
         box = wlmtk_workspace_get_fullscreen_extents(
-            wlmtk_window_get_workspace(window_ptr));
+            wlmtk_window_get_workspace(window_ptr), NULL);
         serial = wlmtk_content_request_size(
             window_ptr->content_ptr, box.width, box.height);
         pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);

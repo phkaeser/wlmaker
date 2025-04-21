@@ -434,7 +434,11 @@ void wlmtk_workspace_confine_within(
     // Only act if the window belongs to this workspace.
     if (workspace_ptr != wlmtk_window_get_workspace(window_ptr)) return;
 
-    struct wlr_box box = wlmtk_workspace_get_fullscreen_extents(workspace_ptr);
+    struct wlr_box box = {
+        .x = workspace_ptr->x1,
+        .y = workspace_ptr->y1,
+        .width = workspace_ptr->x2 - workspace_ptr->x1,
+        .height = workspace_ptr->y2 - workspace_ptr->y1 };
 
     struct wlr_box elem_box = wlmtk_element_get_dimensions_box(
         wlmtk_window_element(window_ptr));
@@ -453,14 +457,29 @@ void wlmtk_workspace_confine_within(
 
 /* ------------------------------------------------------------------------- */
 struct wlr_box wlmtk_workspace_get_fullscreen_extents(
-    wlmtk_workspace_t *workspace_ptr)
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr)
 {
-    struct wlr_box box = {
-        .x = workspace_ptr->x1,
-        .y = workspace_ptr->y1,
-        .width = workspace_ptr->x2 - workspace_ptr->x1,
-        .height = workspace_ptr->y2 - workspace_ptr->y1 };
-    return box;
+    struct wlr_box extents = {};
+
+    // No output provided. Pick the primary (first one in layout).
+    if (NULL == wlr_output_ptr) {
+        if (wl_list_empty(&workspace_ptr->wlr_output_layout_ptr->outputs)) {
+            return extents;
+        }
+
+        struct wlr_output_layout_output *wol_output_ptr = BS_CONTAINER_OF(
+            workspace_ptr->wlr_output_layout_ptr->outputs.next,
+            struct wlr_output_layout_output,
+            link);
+        wlr_output_ptr = wol_output_ptr->output;
+    }
+
+    wlr_output_layout_get_box(
+        workspace_ptr->wlr_output_layout_ptr,
+        wlr_output_ptr,
+        &extents);
+    return extents;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1103,7 +1122,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 36, box.width);
     BS_TEST_VERIFY_EQ(test_ptr, 136, box.height);
 
-    box = wlmtk_workspace_get_fullscreen_extents(workspace_ptr);
+    box = wlmtk_workspace_get_fullscreen_extents(workspace_ptr, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, -10, box.x);
     BS_TEST_VERIFY_EQ(test_ptr, -20, box.y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, box.width);
