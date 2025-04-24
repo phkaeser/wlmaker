@@ -455,6 +455,14 @@ void wlmtk_workspace_confine_within(
     wlmtk_element_set_position(wlmtk_window_element(window_ptr), x, y);
 }
 
+
+/* ------------------------------------------------------------------------- */
+struct wlr_output_layout *wlmtk_workspace_get_wlr_output_layout(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    return workspace_ptr->wlr_output_layout_ptr;
+}
+
 /* ------------------------------------------------------------------------- */
 struct wlr_box wlmtk_workspace_get_fullscreen_extents(
     wlmtk_workspace_t *workspace_ptr,
@@ -1100,7 +1108,12 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, workspace_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        wlr_output_layout_ptr,
+        wlmtk_workspace_get_wlr_output_layout(workspace_ptr));
 
     struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
     workspace_ptr->x1 = -10;
