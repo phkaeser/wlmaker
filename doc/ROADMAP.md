@@ -40,8 +40,8 @@ Support for visual effects to improve usability, but not for pure show.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
   * Window (toplevel) handling on multiple outputs:
     * Support and handle `wl_output` arg to `xdg_toplevel::set_fullscreen`.
-    * 'fullscreen': Fill the configured (or active) output.
-    * 'maximized': Maximize on configured (or active) output.
+    * [done] 'fullscreen': Fill the configured (or active) output.
+    * [done] 'maximized': Maximize on configured (or active) output.
     * When an output is removed: Re-position toplevels into visible area.
   * Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
