@@ -102,24 +102,30 @@ void wlmtk_workspace_get_details(
     int *index_ptr);
 
 /**
- * Returns the extents of the workspace available for maximized windows.
+ * Returns the workspace'soutput extents available for maximized windows.
  *
  * @param workspace_ptr
+ * @param wlr_output_ptr      Output to lookup the extents for. May be NULL,
+ *                            in which case the primary output is used.
  *
  * @return A `struct wlr_box` that lines out the available space and position.
  */
 struct wlr_box wlmtk_workspace_get_maximize_extents(
-    wlmtk_workspace_t *workspace_ptr);
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /**
  * Returns the extents of the workspace available for fullscreen windows.
  *
  * @param workspace_ptr
+ * @param wlr_output_ptr      Output to lookup the extents for. May be NULL,
+ *                            in which case the primary output is used.
  *
  * @return A `struct wlr_box` that lines out the available space and position.
  */
 struct wlr_box wlmtk_workspace_get_fullscreen_extents(
-    wlmtk_workspace_t *workspace_ptr);
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /**
  * Confines the window to remain entirely within workspace extents.
@@ -132,6 +138,10 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
 void wlmtk_workspace_confine_within(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
+
+/** Returns @ref wlmtk_workspace_t::wlr_output_layout_ptr. */
+struct wlr_output_layout *wlmtk_workspace_get_wlr_output_layout(
+    wlmtk_workspace_t *workspace_ptr);
 
 /**
  * Enabled or disables the workspace.

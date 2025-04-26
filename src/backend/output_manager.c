@@ -282,7 +282,7 @@ static bool _wlmaker_output_manager_config_head_apply(
     }
 
     wlmbe_output_config_attributes_t *attr_ptr =
-        wlmbe_output_config_attributes(wlr_output_ptr->data);
+        wlmbe_output_attributes(wlr_output_ptr->data);
     attr_ptr->enabled = wlr_output_ptr->enabled;
     attr_ptr->position.x = x;
     attr_ptr->position.y = y;
