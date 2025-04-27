@@ -138,6 +138,17 @@ wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr);
 
 /**
+ * Sets the output for the window. Used for fullscreen requests.
+ *
+ * @param window_ptr
+ * @param wlr_output_ptr      Output to consider when requesting a window as
+ *                            fullscreen. Can be NULL to indicate no preference.
+ */
+void wlmtk_window_set_output(
+    wlmtk_window_t *window_ptr,
+    struct wlr_output *wlr_output_ptr);
+
+/**
  * Sets the window as activated, depending on the argument's value.
  *
  * An activated window will have keyboard focus and would have distinct
