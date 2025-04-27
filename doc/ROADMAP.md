@@ -39,7 +39,7 @@ Support for visual effects to improve usability, but not for pure show.
   * [done] Explore if wlroots permits mirroring layouts. If yes: Implement.
     (Via outputs sharing the same position, through `wlr-randr` or `wdisplays`).
   * Window (toplevel) handling on multiple outputs:
-    * Support and handle `wl_output` arg to `xdg_toplevel::set_fullscreen`.
+    * [done] Support and handle `wl_output` arg to `xdg_toplevel::set_fullscreen`.
     * [done] 'fullscreen': Fill the configured (or active) output.
     * [done] 'maximized': Maximize on configured (or active) output.
     * When an output is removed: Re-position toplevels into visible area.

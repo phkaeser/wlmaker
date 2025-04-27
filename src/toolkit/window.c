@@ -102,6 +102,9 @@ struct _wlmtk_window_t {
     /** Listener for then the popup menu requests to be closed. */
     struct wl_listener        menu_request_close_listener;
 
+    /** Preferred output. See @ref wlmtk_window_set_output. */
+    struct wlr_output         *wlr_output_ptr;
+
     /** Window title. Set through @ref wlmtk_window_set_title. */
     char                      *title_ptr;
 
@@ -314,6 +317,14 @@ bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window_set_output(
+    wlmtk_window_t *window_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
+    window_ptr->wlr_output_ptr = wlr_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_window_set_activated(
     wlmtk_window_t *window_ptr,
     bool activated)
@@ -500,9 +511,19 @@ void wlmtk_window_request_fullscreen(
     wlmtk_content_request_fullscreen(window_ptr->content_ptr, fullscreen);
 
     if (fullscreen) {
+
+        struct wlr_output *wlr_output_ptr = window_ptr->wlr_output_ptr;
+        if (NULL == wlr_output_ptr ||
+            NULL == wlr_output_layout_get(
+                wlmtk_workspace_get_wlr_output_layout(
+                    wlmtk_window_get_workspace(window_ptr)),
+                wlr_output_ptr)) {
+            wlr_output_ptr = _wlmtk_window_get_wlr_output(window_ptr);
+        }
+
         box = wlmtk_workspace_get_fullscreen_extents(
             wlmtk_window_get_workspace(window_ptr),
-            _wlmtk_window_get_wlr_output(window_ptr));
+            wlr_output_ptr);
         serial = wlmtk_content_request_size(
             window_ptr->content_ptr, box.width, box.height);
         pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
@@ -1217,7 +1238,7 @@ void _wlmtk_window_menu_request_close_handler(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Gets the struct wlr_output that the window is on.
+ * Gets the struct wlr_output that the window prefers, or is on.
  *
  * @param window_ptr
  *
@@ -1234,6 +1255,7 @@ struct wlr_output *_wlmtk_window_get_wlr_output(
         wlmtk_workspace_get_wlr_output_layout(workspace_ptr);
     BS_ASSERT(NULL != wlr_output_layout_ptr);
 
+    // Otherwise, return the output the window is on.
     struct wlr_box wbox = wlmtk_window_get_position_and_size(window_ptr);
     double dest_x, dest_y;
     wlr_output_layout_closest_point(
@@ -1765,6 +1787,21 @@ void test_maximize_outputs(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr, &o2, _wlmtk_window_get_wlr_output(fw_ptr->window_ptr));
 
+    // Set 1st output as preferred. Must not make a difference.
+    wlmtk_window_request_maximized(fw_ptr->window_ptr, false);
+    wlmtk_fake_window_commit_size(fw_ptr);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, false);
+    wlmtk_window_request_position_and_size(
+        fw_ptr->window_ptr, 1044, 10, 200, 100);
+    wlmtk_fake_window_commit_size(fw_ptr);
+
+    wlmtk_window_set_output(fw_ptr->window_ptr, &o1);
+    wlmtk_window_request_maximized(fw_ptr->window_ptr, true);
+    wlmtk_fake_window_commit_size(fw_ptr);
+    wlmtk_window_commit_maximized(fw_ptr->window_ptr, true);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1024, 0, 960, 704, box);
+
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);
     wlmtk_workspace_destroy(ws_ptr);
@@ -1938,6 +1975,21 @@ void test_fullscreen_outputs(bs_test_t *test_ptr)
     wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
     box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1024, 0, 1024, 768, box);
+
+    // Set 1st output as preferred. Must not make a difference.
+    wlmtk_window_request_fullscreen(fw_ptr->window_ptr, false);
+    wlmtk_fake_window_commit_size(fw_ptr);
+    wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, false);
+    wlmtk_window_request_position_and_size(
+        fw_ptr->window_ptr, 1044, 10, 200, 100);
+    wlmtk_fake_window_commit_size(fw_ptr);
+
+    wlmtk_window_set_output(fw_ptr->window_ptr, &o1);
+    wlmtk_window_request_fullscreen(fw_ptr->window_ptr, true);
+    wlmtk_fake_window_commit_size(fw_ptr);
+    wlmtk_window_commit_fullscreen(fw_ptr->window_ptr, true);
+    box = wlmtk_window_get_position_and_size(fw_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 1024, 768, box);
 
     wlmtk_workspace_unmap_window(ws_ptr, fw_ptr->window_ptr);
     wlmtk_fake_window_destroy(fw_ptr);

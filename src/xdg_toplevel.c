@@ -580,8 +580,7 @@ void handle_toplevel_request_maximize(
 
     wlmtk_window_request_maximized(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        !wlmtk_window_is_maximized(
-            xdg_tl_surface_ptr->super_content.window_ptr));
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
 
     // Protocol expects an `ack_configure`. Depending on current state, that
     // may not have been sent throught @ref wlmtk_window_request_maximized,
@@ -606,10 +605,14 @@ void handle_toplevel_request_fullscreen(
         xdg_toplevel_surface_t,
         toplevel_request_fullscreen_listener);
 
+    // Sets the requested output. Or NULL, if no preference indicated.
+    wlmtk_window_set_output(
+        xdg_tl_surface_ptr->super_content.window_ptr,
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output);
+
     wlmtk_window_request_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
-        !wlmtk_window_is_fullscreen(
-            xdg_tl_surface_ptr->super_content.window_ptr));
+        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
 
     // Protocol expects an `ack_configure`. Depending on current state, that
     // may not have been sent throught @ref wlmtk_window_request_maximized,
