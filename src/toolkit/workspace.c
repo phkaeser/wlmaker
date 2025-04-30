@@ -139,6 +139,9 @@ static void _wlmtk_workspace_element_pointer_leave(
 static void _wlmtk_workspace_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmtk_window_reposition_window(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
@@ -942,7 +945,59 @@ void _wlmtk_workspace_handle_output_layout_change(
     workspace_ptr->y1 = extents.y;
     workspace_ptr->x2 = extents.x + extents.width;
     workspace_ptr->y2 = extents.y + extents.height;
+
+    bs_dllist_for_each(
+        &workspace_ptr->windows,
+        _wlmtk_window_reposition_window,
+        workspace_ptr);
 }
+
+/* ------------------------------------------------------------------------- */
+/** Repositions the window. To be called when output layout changes. */
+void _wlmtk_window_reposition_window(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
+    wlmtk_workspace_t *workspace_ptr = ud_ptr;
+
+    // Fullscreen window? Re-position it.
+    if (wlmtk_window_is_fullscreen(window_ptr)) {
+        wlmtk_window_request_fullscreen_position(window_ptr);
+        return;
+    }
+
+    // Otherwise: See if the window dimensions (still) intersect. If yes: OK.
+    struct wlr_box wbox = wlmtk_window_get_position_and_size(window_ptr);
+    if (wlr_output_layout_intersects(
+            workspace_ptr->wlr_output_layout_ptr, NULL, &wbox)) return;
+
+    // Otherwise: Re-position.
+    double closest_x, closest_y;
+    wlr_output_layout_closest_point(
+        workspace_ptr->wlr_output_layout_ptr,
+        NULL,  // reference.
+        wbox.x + wbox.width / 2.0, wbox.y + wbox.height / 2.0,
+        &closest_x, &closest_y);
+
+    // May return NULL, but that's handled by wlr_output_layout_get_box().
+    struct wlr_output *closest_wlr_output_ptr = wlr_output_layout_output_at(
+        workspace_ptr->wlr_output_layout_ptr, closest_x, closest_y);
+    struct wlr_box output_box;
+    wlr_output_layout_get_box(
+        workspace_ptr->wlr_output_layout_ptr,
+        closest_wlr_output_ptr,
+        &output_box);
+    if (wlr_box_empty(&output_box)) {
+        bs_log(BS_WARNING, "No nearby output found to re-position window %p",
+               window_ptr);
+        return;
+    }
+
+    wlmtk_window_request_position_and_size(
+        window_ptr, output_box.x, output_box.y, wbox.width, wbox.height);
+}
+
 
 /* ------------------------------------------------------------------------- */
 /** Initiates a move. */
@@ -1074,6 +1129,7 @@ static void test_enable(bs_test_t *test_ptr);
 static void test_activate(bs_test_t *test_ptr);
 static void test_activate_cycling(bs_test_t *test_ptr);
 static void test_multi_output_extents(bs_test_t *test_ptr);
+static void test_multi_output_reposition(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
@@ -1085,6 +1141,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "activate", test_activate },
     { 1, "activate_cycling", test_activate_cycling },
     { 1, "multi_output_extents", test_multi_output_extents },
+    { 1, "multi_output_reposition", test_multi_output_reposition },
     { 0, NULL, NULL }
 };
 
@@ -1758,4 +1815,65 @@ void test_multi_output_extents(bs_test_t *test_ptr)
     wl_display_destroy(display_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Verifies that windows are re-positioned when output is removed. */
+void test_multi_output_reposition(bs_test_t *test_ptr)
+{
+    struct wlr_box result;
+
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style, NULL);
+
+    struct wlr_output o1 = { .width = 100, .height = 200, .scale = 1 };
+    wlmtk_test_wlr_output_init(&o1);
+    wlr_output_layout_add(wlr_output_layout_ptr, &o1, -10, -20);
+    struct wlr_output o2 = { .width = 300, .height = 250, .scale = 1 };
+    wlmtk_test_wlr_output_init(&o2);
+    wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 0);
+
+    // A fullscreen window, on o1.
+    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw1_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw1_ptr->window_ptr);
+    wlmtk_window_request_fullscreen(fw1_ptr->window_ptr, true);
+    wlmtk_fake_window_commit_size(fw1_ptr);
+    wlmtk_window_commit_fullscreen(fw1_ptr->window_ptr, true);
+    result = wlmtk_window_get_position_and_size(fw1_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 200, result);
+
+    // A normal window, on o1.
+    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw2_ptr);
+    wlmtk_workspace_map_window(ws_ptr, fw2_ptr->window_ptr);
+    wlmtk_window_request_position_and_size(fw2_ptr->window_ptr, 10, 20, 30, 40);
+    wlmtk_fake_window_commit_size(fw2_ptr);
+    result = wlmtk_window_get_position_and_size(fw2_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 10, 20, 30, 40, result);
+
+    // Remove o1.
+    wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
+    wlmtk_fake_window_commit_size(fw1_ptr);
+    wlmtk_window_commit_fullscreen(fw1_ptr->window_ptr, true);
+    wlmtk_fake_window_commit_size(fw2_ptr);
+
+    // Now both windows must be on o2.
+    result = wlmtk_window_get_position_and_size(fw1_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, result);
+    result = wlmtk_window_get_position_and_size(fw2_ptr->window_ptr);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 30, 40, result);
+
+    wlmtk_workspace_unmap_window(ws_ptr, fw2_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw2_ptr);
+    wlmtk_workspace_unmap_window(ws_ptr, fw1_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw1_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
+    wlr_output_layout_destroy(wlr_output_layout_ptr);
+    wl_display_destroy(display_ptr);
+}
 /* == End of workspace.c =================================================== */
