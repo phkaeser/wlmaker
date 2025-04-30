@@ -511,10 +511,6 @@ void wlmtk_window_request_fullscreen(
     wlmtk_window_t *window_ptr,
     bool fullscreen)
 {
-    struct wlr_box box;
-    uint32_t serial;
-    wlmtk_pending_update_t *pending_update_ptr;
-
     if (window_ptr->shaded) return;
 
     // Must be mapped.
@@ -526,38 +522,46 @@ void wlmtk_window_request_fullscreen(
     wlmtk_content_request_fullscreen(window_ptr->content_ptr, fullscreen);
 
     if (fullscreen) {
-
-        struct wlr_output *wlr_output_ptr = window_ptr->wlr_output_ptr;
-        if (NULL == wlr_output_ptr ||
-            NULL == wlr_output_layout_get(
-                wlmtk_workspace_get_wlr_output_layout(
-                    wlmtk_window_get_workspace(window_ptr)),
-                wlr_output_ptr)) {
-            wlr_output_ptr = _wlmtk_window_get_wlr_output(window_ptr);
-        }
-
-        box = wlmtk_workspace_get_fullscreen_extents(
-            wlmtk_window_get_workspace(window_ptr),
-            wlr_output_ptr);
-        serial = wlmtk_content_request_size(
-            window_ptr->content_ptr, box.width, box.height);
-        pending_update_ptr = _wlmtk_window_prepare_update(window_ptr);
-        pending_update_ptr->serial = serial;
-        pending_update_ptr->x = box.x;
-        pending_update_ptr->y = box.y;
-        pending_update_ptr->width = box.width;
-        pending_update_ptr->height = box.height;
-
+        wlmtk_window_request_fullscreen_position(window_ptr);
     } else {
 
-        box = window_ptr->organic_size;
+        // TODO(kaeser@gubbe.ch): If the layout changes, the position may no
+        // longer be in the layout. Should be confined to layout.
+        struct wlr_box box = window_ptr->organic_size;
         _wlmtk_window_request_position_and_size_decorated(
             window_ptr, box.x, box.y, box.width, box.height,
             window_ptr->server_side_decorated,
             window_ptr->server_side_decorated,
             true);
     }
+}
 
+/* ------------------------------------------------------------------------- */
+// TODO(kaeser@gubbe.ch): Move the positioning entirely into workspace.
+void wlmtk_window_request_fullscreen_position(
+    wlmtk_window_t *window_ptr)
+{
+    struct wlr_output *wlr_output_ptr = window_ptr->wlr_output_ptr;
+    if (NULL == wlr_output_ptr ||
+        NULL == wlr_output_layout_get(
+            wlmtk_workspace_get_wlr_output_layout(
+                wlmtk_window_get_workspace(window_ptr)),
+            wlr_output_ptr)) {
+        wlr_output_ptr = _wlmtk_window_get_wlr_output(window_ptr);
+    }
+
+    struct wlr_box box = wlmtk_workspace_get_fullscreen_extents(
+        wlmtk_window_get_workspace(window_ptr),
+        wlr_output_ptr);
+    uint32_t serial = wlmtk_content_request_size(
+        window_ptr->content_ptr, box.width, box.height);
+    wlmtk_pending_update_t *pending_update_ptr = _wlmtk_window_prepare_update(
+        window_ptr);
+    pending_update_ptr->serial = serial;
+    pending_update_ptr->x = box.x;
+    pending_update_ptr->y = box.y;
+    pending_update_ptr->width = box.width;
+    pending_update_ptr->height = box.height;
 }
 
 /* ------------------------------------------------------------------------- */

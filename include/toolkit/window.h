@@ -323,6 +323,14 @@ void wlmtk_window_request_fullscreen(
     bool fullscreen);
 
 /**
+ * Requests to (re)position a fullscreen window. A no-op if not fullscreen.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window_request_fullscreen_position(
+    wlmtk_window_t *window_ptr);
+
+/**
  * Commits the fullscreen mode for the window.
  *
  * This is the "commit" part of the potentially asynchronous operation. To be
