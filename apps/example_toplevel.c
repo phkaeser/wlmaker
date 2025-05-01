@@ -26,6 +26,20 @@
 #include <math.h>
 #include <sys/time.h>
 
+/* ------------------------------------------------------------------------- */
+/** Draws something into the buffer. */
+static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
+{
+    wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
+    bs_log(BS_ERROR, "FIXME: callback %p", gfxbuf_ptr);
+
+    bs_gfxbuf_clear(gfxbuf_ptr, 0xc0a08060);
+
+    wlclient_xdg_toplevel_register_ready_callback(
+        toplevel_ptr, _callback, toplevel_ptr);
+    return true;
+}
+
 /* == Main program ========================================================= */
 /** Main program. */
 int main(__UNUSED__ int argc, __UNUSED__ char **argv)
@@ -37,7 +51,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     if (wlclient_xdg_supported(wlclient_ptr)) {
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
-            wlclient_ptr);
+            wlclient_ptr, 640, 400);
+
+        bs_log(BS_ERROR, "FIXME: toplevel created.");
+        wlclient_xdg_toplevel_register_ready_callback(
+            toplevel_ptr, _callback, toplevel_ptr);
+
         if (NULL != toplevel_ptr) {
             wlclient_run(wlclient_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
