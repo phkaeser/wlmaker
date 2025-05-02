@@ -207,7 +207,7 @@ static const object_t objects[] = {
       offsetof(wlclient_attributes_t, wl_shm_ptr), NULL },
     { &xdg_wm_base_interface, 1,
       offsetof(wlclient_attributes_t, xdg_wm_base_ptr), NULL },
-    { &wl_seat_interface, 7,
+    { &wl_seat_interface, 5,
       offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
       offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
