@@ -186,7 +186,6 @@ void _wlclient_xdg_surface_configure(
     uint32_t serial)
 {
     __UNUSED__ wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
-    bs_log(BS_ERROR, "Configure + ACK %"PRIu32, serial);
     xdg_surface_ack_configure(xdg_surface_ptr, serial);
 
     toplevel_ptr->configured = true;
