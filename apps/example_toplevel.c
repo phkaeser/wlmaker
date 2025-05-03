@@ -31,10 +31,9 @@
 static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
-    bs_log(BS_ERROR, "FIXME: callback %p", gfxbuf_ptr);
+    bs_log(BS_INFO, "Callback gfxbuf %p", gfxbuf_ptr);
 
     bs_gfxbuf_clear(gfxbuf_ptr, 0xc0a08060);
-
     wlclient_xdg_toplevel_register_ready_callback(
         toplevel_ptr, _callback, toplevel_ptr);
     return true;
@@ -53,7 +52,6 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
             wlclient_ptr, 640, 400);
 
-        bs_log(BS_ERROR, "FIXME: toplevel created.");
         wlclient_xdg_toplevel_register_ready_callback(
             toplevel_ptr, _callback, toplevel_ptr);
 
