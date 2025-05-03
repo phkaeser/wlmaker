@@ -241,8 +241,6 @@ void _wlcl_dblbuf_callback_if_ready(wlcl_dblbuf_t *dblbuf_ptr)
         dblbuf_ptr);
     dblbuf_ptr->frame_is_due = false;
 
-    bs_log(BS_ERROR, "FIXME: attach + commit %p from %p",
-           dblbuf_ptr->wl_surface_ptr, buffer_ptr);
     wl_surface_attach(
         dblbuf_ptr->wl_surface_ptr,
         buffer_ptr->wl_buffer_ptr, 0, 0);
@@ -328,8 +326,6 @@ static void _wlcl_dblbuf_handle_wl_buffer_release(
     void *data_ptr,
     struct wl_buffer *wl_buffer_ptr)
 {
-    bs_log(BS_ERROR, "FIXME: releasing %p", data_ptr);
-
     wlcl_buffer_t *buffer_ptr = data_ptr;
     BS_ASSERT(buffer_ptr->wl_buffer_ptr == wl_buffer_ptr);
     wlcl_dblbuf_t *dblbuf_ptr = buffer_ptr->dblbuf_ptr;
