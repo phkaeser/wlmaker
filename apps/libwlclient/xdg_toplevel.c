@@ -84,6 +84,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     }
 
     toplevel_ptr->dblbuf_ptr = wlcl_dblbuf_create(
+        wlclient_attributes(wlclient_ptr)->app_id_ptr,
         toplevel_ptr->wl_surface_ptr,
         wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
         width,

@@ -43,6 +43,7 @@ typedef bool (*wlcl_dblbuf_ready_callback_t)(
 /**
  * Creates a double buffer for the surface with provided dimensions.
  *
+ * @param app_id_ptr
  * @param wl_surface_ptr
  * @param wl_shm_ptr
  * @param width
@@ -52,6 +53,7 @@ typedef bool (*wlcl_dblbuf_ready_callback_t)(
  *     @ref wlcl_dblbuf_destroy for freeing up the associated resources.
  */
 wlcl_dblbuf_t *wlcl_dblbuf_create(
+    const char *app_id_ptr,
     struct wl_surface *wl_surface_ptr,
     struct wl_shm *wl_shm_ptr,
     unsigned width,
