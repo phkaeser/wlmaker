@@ -60,7 +60,7 @@ Support for visual effects to improve usability, but not for pure show.
   * Test handling of mouse position when changing element visibility. Making
     an element visible should re-trigger focus computation.
   * Verify handling of element motion() and button() return values.
-  * Fix non-updating wlmclock observed on non-accelerated graphics stack.
+  * [done] Fix non-updating wlmclock observed on non-accelerated graphics stack.
 
 ## [0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5)
 

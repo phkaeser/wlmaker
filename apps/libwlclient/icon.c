@@ -20,7 +20,7 @@
 
 #include "icon.h"
 
-#include "buffer.h"
+#include "dblbuf.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 
 /* == Declarations ========================================================= */
@@ -41,19 +41,13 @@ typedef struct _wlclient_icon_t {
     unsigned                  height;
 
     /** Callback for when the icon's buffer is ready to be drawn into. */
-    wlclient_icon_gfxbuf_callback_t buffer_ready_callback;
+    wlcl_dblbuf_ready_callback_t ready_callback;
     /** Argument to that callback. */
-    void                      *buffer_ready_callback_ud_ptr;
+    void                      *ready_callback_ud_ptr;
 
-    /** The buffer backing the icon. */
-    wlclient_buffer_t        *buffer_ptr;
+    /** Double-buffered state of the surface. */
+    wlcl_dblbuf_t             *dblbuf_ptr;
 
-    /** Outstanding frames to display. Considered ready to draw when zero. */
-    int                       pending_frames;
-    /** Whether the buffer was reported as ready. */
-    bool                      buffer_ready;
-    /** Whether there is currently a callback in progress. */
-    bool                      callback_in_progress;
 } wlclient_icon_t;
 
 static void handle_toplevel_icon_configure(
@@ -62,23 +56,12 @@ static void handle_toplevel_icon_configure(
     int32_t width,
     int32_t height,
     uint32_t serial);
-static void handle_frame_done(
-    void *data_ptr,
-    struct wl_callback *callback,
-    uint32_t time);
-static void handle_buffer_ready(void *data_ptr);
-static void state(wlclient_icon_t *icon_ptr);
 
 /* == Data ================================================================= */
 
 /** Listener implementation for toplevel icon. */
 static const struct zwlmaker_toplevel_icon_v1_listener toplevel_icon_listener={
     .configure = handle_toplevel_icon_configure,
-};
-
-/** Listener implementation for the frame. */
-static const struct wl_callback_listener frame_listener = {
-    .done = handle_frame_done
 };
 
 /* == Exported methods ===================================================== */
@@ -134,6 +117,11 @@ void wlclient_icon_destroy(wlclient_icon_t *icon_ptr)
         icon_ptr->toplevel_icon_ptr = NULL;
     }
 
+    if (NULL != icon_ptr->dblbuf_ptr) {
+        wlcl_dblbuf_destroy(icon_ptr->dblbuf_ptr);
+        icon_ptr->dblbuf_ptr = NULL;
+    }
+
     if (NULL != icon_ptr->wl_surface_ptr) {
         wl_surface_destroy(icon_ptr->wl_surface_ptr);
         icon_ptr->wl_surface_ptr = NULL;
@@ -150,15 +138,18 @@ bool wlclient_icon_supported(
 }
 
 /* ------------------------------------------------------------------------ */
-void wlclient_icon_callback_when_ready(
+void wlclient_icon_register_ready_callback(
     wlclient_icon_t *icon_ptr,
-    wlclient_icon_gfxbuf_callback_t callback,
+    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
     void *ud_ptr)
 {
-    icon_ptr->buffer_ready_callback = callback;
-    icon_ptr->buffer_ready_callback_ud_ptr = ud_ptr;
-
-    state(icon_ptr);
+    if (NULL != icon_ptr->dblbuf_ptr) {
+        wlcl_dblbuf_register_ready_callback(
+            icon_ptr->dblbuf_ptr, callback, ud_ptr);
+    } else {
+        icon_ptr->ready_callback = callback;
+        icon_ptr->ready_callback_ud_ptr = ud_ptr;
+    }
 }
 
 /* == Local (static) methods =============================================== */
@@ -189,92 +180,28 @@ void handle_toplevel_icon_configure(
 
     wlclient_t *wlclient_ptr = icon_ptr->wlclient_ptr;
 
-    icon_ptr->buffer_ptr = wlclient_buffer_create(
-        wlclient_ptr, icon_ptr->width, icon_ptr->height,
-        handle_buffer_ready, icon_ptr);
-    if (NULL == icon_ptr->buffer_ptr) {
-        bs_log(BS_FATAL, "Failed wlclient_buffer_create(%p, %u, %u)",
-               wlclient_ptr, icon_ptr->width, icon_ptr->height);
+    icon_ptr->dblbuf_ptr = wlcl_dblbuf_create(
+        icon_ptr->wl_surface_ptr,
+        wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
+        icon_ptr->width,
+        icon_ptr->height);
+    if (NULL == icon_ptr->dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlcl_dblbuf_create(%p, %p, %u, %u)",
+               icon_ptr->wl_surface_ptr,
+               wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
+               icon_ptr->width,
+               icon_ptr->height);
         // TODO(kaeser@gubbe.ch): Error handling.
-        return;
     }
 
-    state(icon_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Updates the information that there is a buffer ready to be drawn into.
- *
- * @param data_ptr
- */
-void handle_buffer_ready(void *data_ptr)
-{
-    wlclient_icon_t *icon_ptr = data_ptr;
-    icon_ptr->buffer_ready = true;
-    state(icon_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Registers the frame got displayed, potentially triggers the callback.
- *
- * @param data_ptr
- * @param callback
- * @param time
- */
-void handle_frame_done(
-    void *data_ptr,
-    struct wl_callback *callback,
-    __UNUSED__ uint32_t time)
-{
-    wl_callback_destroy(callback);
-
-    wlclient_icon_t *icon_ptr = data_ptr;
-    icon_ptr->pending_frames--;
-    state(icon_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Runs the ready callback, if due.
- *
- * @param icon_ptr
- */
-void state(wlclient_icon_t *icon_ptr)
-{
-    // Not fully initialized, skip this attempt.
-    if (NULL == icon_ptr->buffer_ptr) return;
-    // ... or, no callback...
-    if (NULL == icon_ptr->buffer_ready_callback) return;
-    // ... or, actually not ready.
-    if (0 < icon_ptr->pending_frames || !icon_ptr->buffer_ready) return;
-    // ... or, a callback is currently in progress.
-    if (icon_ptr->callback_in_progress) return;
-
-    wlclient_icon_gfxbuf_callback_t callback = icon_ptr->buffer_ready_callback;
-    void *ud_ptr = icon_ptr->buffer_ready_callback_ud_ptr;
-    icon_ptr->buffer_ready_callback = NULL;
-    icon_ptr->buffer_ready_callback_ud_ptr = NULL;
-    icon_ptr->callback_in_progress = true;
-    bool rv = callback(
-        icon_ptr, bs_gfxbuf_from_wlclient_buffer(icon_ptr->buffer_ptr), ud_ptr);
-    icon_ptr->callback_in_progress = false;
-    if (!rv) return;
-
-    struct wl_callback *wl_callback = wl_surface_frame(
-        icon_ptr->wl_surface_ptr);
-    wl_callback_add_listener(wl_callback, &frame_listener, icon_ptr);
-
-    wl_surface_damage_buffer(
-        icon_ptr->wl_surface_ptr,
-        0, 0, INT32_MAX, INT32_MAX);
-
-    icon_ptr->pending_frames++;
-    icon_ptr->buffer_ready = false;
-    wlclient_buffer_attach_to_surface_and_commit(
-        icon_ptr->buffer_ptr,
-        icon_ptr->wl_surface_ptr);
+    wlcl_dblbuf_ready_callback_t callback = icon_ptr->ready_callback;
+    if (NULL != callback) {
+        icon_ptr->ready_callback = NULL;
+        wlcl_dblbuf_register_ready_callback(
+            icon_ptr->dblbuf_ptr,
+            callback,
+            icon_ptr->ready_callback_ud_ptr);
+    }
 }
 
 /* == End of icon.c ======================================================== */
