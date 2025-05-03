@@ -91,7 +91,7 @@ static bool _wlcl_dblbuf_create_buffer(
 static void _wlcl_dblbuf_handle_wl_buffer_release(
     void *data_ptr,
     struct wl_buffer *wl_buffer_ptr);
-static int _wlcl_dblbuf_shm_create(size_t size);
+static int _wlcl_dblbuf_shm_create(const char *app_id_ptr, size_t size);
 
 /* == Data ================================================================= */
 
@@ -112,6 +112,7 @@ static const struct wl_callback_listener _wlcl_dblbuf_frame_listener = {
 
 /* ------------------------------------------------------------------------- */
 wlcl_dblbuf_t *wlcl_dblbuf_create(
+    const char *app_id_ptr,
     struct wl_surface *wl_surface_ptr,
     struct wl_shm *wl_shm_ptr,
     unsigned width,
@@ -124,7 +125,7 @@ wlcl_dblbuf_t *wlcl_dblbuf_create(
     dblbuf_ptr->wl_surface_ptr = BS_ASSERT_NOTNULL(wl_surface_ptr);
 
     dblbuf_ptr->data_size = 2 * width * height * sizeof(uint32_t);
-    int fd = _wlcl_dblbuf_shm_create(dblbuf_ptr->data_size);
+    int fd = _wlcl_dblbuf_shm_create(app_id_ptr, dblbuf_ptr->data_size);
     if (0 >= fd) goto error;
 
     dblbuf_ptr->data_ptr = mmap(
@@ -338,12 +339,13 @@ static void _wlcl_dblbuf_handle_wl_buffer_release(
 /**
  * Creates a POSIX shared memory object and allocates `size` bytes to it.
  *
+ * @param app_id_ptr
  * @param size
  *
  * @return The file descriptor (a non-negative integer) on success, or -1 on
  *     failure. The file descriptor must be closed with close(2).
  */
-int _wlcl_dblbuf_shm_create(size_t size)
+int _wlcl_dblbuf_shm_create(const char *app_id_ptr, size_t size)
 {
     char shm_name[NAME_MAX];
     int fd = -1;
@@ -351,7 +353,7 @@ int _wlcl_dblbuf_shm_create(size_t size)
     shm_name[0] = '\0';
     for (uint32_t sequence = 0; sequence < SHM_OPEN_RETRIES; ++sequence) {
         snprintf(shm_name, NAME_MAX, "/%s_%"PRIdMAX"_shm_%"PRIx64"_%"PRIu32,
-                 "wlclient",  // TODO: Use provided identifier.
+                 app_id_ptr ? app_id_ptr : "wlclient",
                  (intmax_t)getpid(), bs_usec(), sequence);
         fd = shm_open(shm_name, O_RDWR|O_CREAT|O_EXCL, 0600);
         if (0 > fd && errno == EEXIST) continue;
