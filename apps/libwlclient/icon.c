@@ -181,6 +181,7 @@ void handle_toplevel_icon_configure(
     wlclient_t *wlclient_ptr = icon_ptr->wlclient_ptr;
 
     icon_ptr->dblbuf_ptr = wlcl_dblbuf_create(
+        wlclient_attributes(wlclient_ptr)->app_id_ptr,
         icon_ptr->wl_surface_ptr,
         wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
         icon_ptr->width,
