@@ -23,6 +23,8 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <libbase/libbase.h>
+#include <wayland-server-core.h>
+#include <xkbcommon/xkbcommon.h>
 
 /** Forward declaration: Wayland client handle. */
 typedef struct _wlclient_t wlclient_t;
@@ -63,6 +65,20 @@ typedef struct {
     const char                *app_id_ptr;
 } wlclient_attributes_t;
 
+/** Events of the client. */
+typedef struct {
+    /** A key was pressed. */
+    struct wl_signal          key;
+} wlclient_events_t;
+
+/** Key event. */
+typedef struct{
+    /** The key. */
+    xkb_keysym_t              keysym;
+    /** Wheter it was pressed (true) or released. */
+    bool                      pressed;
+} wlclient_key_event_t;
+
 /**
  * Creates a wayland client for simple buffer interactions.
  *
@@ -90,12 +106,23 @@ void wlclient_destroy(wlclient_t *wlclient_ptr);
 const wlclient_attributes_t *wlclient_attributes(
     const wlclient_t *wlclient_ptr);
 
+/** @return A pointer to @ref wlclient_t::events. */
+wlclient_events_t *wlclient_events(wlclient_t *wlclient_ptr);
+
 /**
  * Runs the client's mainloop.
  *
  * @param wlclient_ptr
  */
 void wlclient_run(wlclient_t *wlclient_ptr);
+
+/**
+ * Requests termination of the client-s mainloop. This takes effect only once
+ * the mainloop wraps up an iteration.
+ *
+ * @param wlclient_ptr
+ */
+void wlclient_request_terminate(wlclient_t *wlclient_ptr);
 
 /**
  * Registers a timer with the client.

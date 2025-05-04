@@ -24,7 +24,9 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <sys/mman.h>
 #include <sys/signalfd.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include <wayland-client.h>
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
@@ -37,10 +39,22 @@ struct _wlclient_t {
     /** Shareable attributes. */
     wlclient_attributes_t     attributes;
 
+    /** Events. */
+    wlclient_events_t         events;
+
+    /** XKB context. */
+    struct xkb_context        *xkb_context_ptr;
+    /** XKB keymap. */
+    struct xkb_keymap         *xkb_keymap_ptr;
+    /** XKB state. */
+    struct xkb_state          *xkb_state_ptr;
+
     /** Registry singleton for the above connection. */
     struct wl_registry        *wl_registry_ptr;
     /** Pointer state, if & when the seat has the capability. */
     struct wl_pointer         *wl_pointer_ptr;
+    /** Keyboard state, if & when the seat has the capability. */
+    struct wl_keyboard        *wl_keyboard_ptr;
 
     /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
     bs_dllist_t               timers;
@@ -158,6 +172,44 @@ static void wlc_pointer_handle_axis_discrete(
     uint32_t axis,
     int32_t discrete);
 
+static void _wlc_keyboard_handle_keymap(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t format,
+    int32_t fd,
+    uint32_t size);
+static void _wlc_keyboard_handle_enter(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t serial,
+    struct wl_surface *wl_surface_ptr,
+    struct wl_array *keys);
+static void _wlc_keyboard_handle_leave(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t serial,
+    struct wl_surface *wl_surface_ptr);
+static void _wlc_keyboard_handle_key(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t serial,
+    uint32_t time,
+    uint32_t key,
+    uint32_t state);
+static void _wlc_keyboard_handle_modifiers(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t serial,
+    uint32_t mods_depressed,
+    uint32_t mods_latched,
+    uint32_t mods_locked,
+    uint32_t group);
+static void _wlc_keyboard_handle_repeat_info(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    int32_t rate,
+    int32_t delay);
+
 /* == Data ================================================================= */
 
 /** Listener for the registry, taking note of registry updates. */
@@ -185,6 +237,16 @@ static const struct wl_pointer_listener wlc_pointer_listener = {
     .axis_discrete = wlc_pointer_handle_axis_discrete,
 };
 
+/** Listeners for the keyboard. */
+static const struct wl_keyboard_listener wlc_keyboard_listener = {
+    .keymap = _wlc_keyboard_handle_keymap,
+    .enter = _wlc_keyboard_handle_enter,
+    .leave = _wlc_keyboard_handle_leave,
+    .key = _wlc_keyboard_handle_key,
+    .modifiers = _wlc_keyboard_handle_modifiers,
+    .repeat_info = _wlc_keyboard_handle_repeat_info
+};
+
 /** List of wayland objects we want to bind to. */
 static const object_t objects[] = {
     { &wl_compositor_interface, 4,
@@ -208,6 +270,8 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
     wlclient_t *wlclient_ptr = logged_calloc(1, sizeof(wlclient_t));
     if (NULL == wlclient_ptr) return NULL;
     wl_log_set_handler_client(wl_to_bs_log);
+
+    wl_signal_init(&wlclient_ptr->events.key);
 
     if (NULL != app_id_ptr) {
         wlclient_ptr->attributes.app_id_ptr = logged_strdup(app_id_ptr);
@@ -239,6 +303,13 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
     if (0 >= wlclient_ptr->signal_fd) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed signalfd(-1, %p, SFD_NONBLOCK)",
                &signal_set);
+        wlclient_destroy(wlclient_ptr);
+        return NULL;
+    }
+
+    wlclient_ptr->xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (NULL == wlclient_ptr->xkb_context_ptr) {
+        bs_log(BS_ERROR, "Failex xkb_context_new(XKB_CONTEXT_NO_FLAGS)");
         wlclient_destroy(wlclient_ptr);
         return NULL;
     }
@@ -309,6 +380,19 @@ void wlclient_destroy(wlclient_t *wlclient_ptr)
         wlclient_ptr->attributes.wl_display_ptr = NULL;
     }
 
+    if (NULL != wlclient_ptr->xkb_state_ptr) {
+        xkb_state_unref(wlclient_ptr->xkb_state_ptr);
+        wlclient_ptr->xkb_state_ptr = NULL;
+    }
+    if (NULL != wlclient_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(wlclient_ptr->xkb_keymap_ptr);
+        wlclient_ptr->xkb_keymap_ptr = NULL;
+    }
+    if (NULL != wlclient_ptr->xkb_context_ptr) {
+        xkb_context_unref(wlclient_ptr->xkb_context_ptr);
+        wlclient_ptr->xkb_context_ptr = NULL;
+    }
+
     if (0 < wlclient_ptr->signal_fd) {
         close(wlclient_ptr->signal_fd);
         wlclient_ptr->signal_fd = 0;
@@ -328,6 +412,12 @@ const wlclient_attributes_t *wlclient_attributes(
     const wlclient_t *wlclient_ptr)
 {
     return &wlclient_ptr->attributes;
+}
+
+/* ------------------------------------------------------------------------- */
+wlclient_events_t *wlclient_events(wlclient_t *wlclient_ptr)
+{
+    return &wlclient_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -431,6 +521,12 @@ void wlclient_run(wlclient_t *wlclient_ptr)
         }
 
     } while (wlclient_ptr->keep_running);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlclient_request_terminate(wlclient_t *wlclient_ptr)
+{
+    wlclient_ptr->keep_running = false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -624,6 +720,18 @@ void wlc_seat_handle_capabilities(
         wl_pointer_release(client_ptr->wl_pointer_ptr);
         client_ptr->wl_pointer_ptr = NULL;
     }
+
+    bool supports_keyboard = capabilities & WL_SEAT_CAPABILITY_KEYBOARD;
+    if (supports_keyboard && NULL == client_ptr->wl_keyboard_ptr) {
+        client_ptr->wl_keyboard_ptr = wl_seat_get_keyboard(wl_seat_ptr);
+        wl_keyboard_add_listener(
+            client_ptr->wl_keyboard_ptr,
+            &wlc_keyboard_listener,
+            client_ptr);
+    } else if (!supports_keyboard && NULL != client_ptr->wl_pointer_ptr) {
+        wl_keyboard_release(client_ptr->wl_keyboard_ptr);
+        client_ptr->wl_keyboard_ptr = NULL;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -737,6 +845,148 @@ void wlc_pointer_handle_axis_discrete(
     __UNUSED__ int32_t discrete)
 {
     /* Currently nothing done. */
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when compositor provides a keymap to memory-map. */
+void _wlc_keyboard_handle_keymap(
+    void *data_ptr,
+    struct wl_keyboard *wl_keyboard_ptr,
+    uint32_t format,
+    int32_t fd,
+    uint32_t size)
+{
+    // Guard clause. So far, we only understand xkb maps.
+    if (WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1 != format) {
+        bs_log(BS_FATAL, "Unsupported keymap: %"PRIu32, format);
+        return;
+    }
+
+    wlclient_t *client_ptr = BS_ASSERT_NOTNULL(data_ptr);
+
+    void *desc_ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (MAP_FAILED == desc_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO,
+               "Failed mmap(NULL, %"PRIu32", PROT_READ, MAP_PRIVATE, %d, 0)",
+               size, fd);
+        close(fd);
+        return;
+    }
+
+    if (NULL != client_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(client_ptr->xkb_keymap_ptr);
+    }
+    client_ptr->xkb_keymap_ptr = xkb_keymap_new_from_string(
+        client_ptr->xkb_context_ptr,
+        desc_ptr,
+        XKB_KEYMAP_FORMAT_TEXT_V1,
+        XKB_KEYMAP_COMPILE_NO_FLAGS);
+    munmap(desc_ptr, size);
+    close(fd);
+    if (NULL == client_ptr->xkb_keymap_ptr) {
+        bs_log(BS_FATAL, "Failed xkb_keymap_new_from_string()");
+        return;
+    }
+
+    if (NULL != client_ptr->xkb_state_ptr) {
+        xkb_state_unref(client_ptr->xkb_state_ptr);
+    }
+    client_ptr->xkb_state_ptr = xkb_state_new(client_ptr->xkb_keymap_ptr);
+    if (NULL == client_ptr->xkb_state_ptr) {
+        bs_log(BS_FATAL, "Failed xkb_state_new()");
+        return;
+    }
+
+    bs_log(BS_DEBUG, "Keyboard %p with keymap \"%s\"",
+           wl_keyboard_ptr,
+           xkb_keymap_layout_get_name(client_ptr->xkb_keymap_ptr, 0));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the given surface gained keyboard focus. */
+void _wlc_keyboard_handle_enter(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ struct wl_surface *wl_surface_ptr,
+    __UNUSED__ struct wl_array *keys)
+{
+    // Currently unused.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the given surface lost keyboard focus. */
+void _wlc_keyboard_handle_leave(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ struct wl_surface *wl_surface_ptr)
+{
+    // Currently unused.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when a key was pressed or released. */
+void _wlc_keyboard_handle_key(
+    void *data_ptr,
+    __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
+    __UNUSED__ uint32_t serial,
+    __UNUSED__ uint32_t time,
+    uint32_t key,
+    uint32_t state)
+{
+    wlclient_t *client_ptr = data_ptr;
+
+    const xkb_keysym_t *key_syms;
+    int key_syms_count = xkb_state_key_get_syms(
+        client_ptr->xkb_state_ptr, key + 8, &key_syms);
+    for (int i = 0; i < key_syms_count; ++i) {
+        wlclient_key_event_t event = {
+            .keysym = key_syms[i],
+            .pressed = state == WL_KEYBOARD_KEY_STATE_PRESSED
+        };
+        wl_signal_emit(&client_ptr->events.key, &event);
+    }
+
+    static const enum xkb_key_direction translate_state[2] = {
+        [WL_KEYBOARD_KEY_STATE_RELEASED] = XKB_KEY_UP,
+        [WL_KEYBOARD_KEY_STATE_PRESSED] = XKB_KEY_DOWN,
+    };
+    BS_ASSERT(state < sizeof(translate_state)/sizeof(enum xkb_key_direction));
+    xkb_state_update_key(client_ptr->xkb_state_ptr, key + 8, state);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the modifier or group state has changed. */
+void _wlc_keyboard_handle_modifiers(
+    void *data_ptr,
+    __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
+    __UNUSED__ uint32_t serial,
+    uint32_t mods_depressed,
+    uint32_t mods_latched,
+    uint32_t mods_locked,
+    uint32_t group)
+{
+    wlclient_t *client_ptr = data_ptr;
+    xkb_state_update_mask(
+        client_ptr->xkb_state_ptr,
+        mods_depressed,
+        mods_latched,
+        mods_locked,
+        0,  // depressesd_layout.
+        0,  // latched_layout.
+        group);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called to configure repeat and delay settings. */
+void _wlc_keyboard_handle_repeat_info(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
+    __UNUSED__ int32_t rate,
+    __UNUSED__ int32_t delay)
+{
+    // Currently unused.
 }
 
 /* == End of client.c ====================================================== */
