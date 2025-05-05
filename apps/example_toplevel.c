@@ -57,10 +57,29 @@ static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
 /** Draws something into the buffer. */
 static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 {
+    static uint64_t ns_base = 0;
     wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
 
     bs_gfxbuf_copy(gfxbuf_ptr, background_colors);
+
+    cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
+    if (NULL == cairo_ptr) return false;
+
+    cairo_select_font_face(
+        cairo_ptr, "Helvetica", CAIRO_FONT_SLANT_NORMAL,
+        CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cairo_ptr, 32);
+    cairo_set_source_argb8888(cairo_ptr, 0xffffffff);
+
+    if (0 == ns_base) ns_base = bs_mono_nsec();
+    cairo_move_to(
+        cairo_ptr,
+        100,
+        200 + 100 * sin(1.5e-9 * bs_mono_nsec() - ns_base));
+    cairo_show_text(cairo_ptr, "wlmaker Toplevel Example");
+
+    cairo_destroy(cairo_ptr);
 
     wlclient_xdg_toplevel_register_ready_callback(
         toplevel_ptr, _callback, toplevel_ptr);
