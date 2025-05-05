@@ -28,6 +28,7 @@
 
 /** Forward declaration: Wayland client handle. */
 typedef struct _wlclient_t wlclient_t;
+struct zxdg_toplevel_decoration_v1;
 
 #include "icon.h"
 #include "xdg_toplevel.h"
@@ -60,6 +61,8 @@ typedef struct {
     struct wl_seat            *wl_seat_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
+    /** The bound XDG decoration manager. NULL if not supported. */
+    struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
