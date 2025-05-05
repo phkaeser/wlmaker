@@ -30,6 +30,8 @@
 wlclient_t                    *wlclient_ptr;
 /** Listener for key events. */
 static struct wl_listener     _key_listener;
+/** A colorful background. */
+static bs_gfxbuf_t            *background_colors;
 
 /* ------------------------------------------------------------------------- */
 /** Handles key events. */
@@ -58,10 +60,42 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
     wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
 
-    bs_gfxbuf_clear(gfxbuf_ptr, 0xc0a08060);
+    bs_gfxbuf_copy(gfxbuf_ptr, background_colors);
+
     wlclient_xdg_toplevel_register_ready_callback(
         toplevel_ptr, _callback, toplevel_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Creates a colorful background. */
+bs_gfxbuf_t *_create_background(unsigned w, unsigned h)
+{
+    bs_gfxbuf_t *b = bs_gfxbuf_create(w, h);
+    if (NULL == b) return NULL;
+
+    uint32_t t = 0xc0000000;  // Transparency.
+    for (unsigned y = 0; y < h / 2; ++y) {
+        for (unsigned x = 0; x < w / 2; ++x) {
+            unsigned rel_y = y * 2 * 256 / h;
+            unsigned rel_x = x * 2 * 256 / w;
+            // Upper left: red (horizontal), green (vertical).
+            b->data_ptr[y * b->pixels_per_line + x] =
+                (rel_x << 16) + (rel_y << 8) + t;
+            // Upper right: green (horizontal), blue (vertical).
+            b->data_ptr[y * b->pixels_per_line + x + w / 2] =
+                (rel_x << 8) + rel_y + t;
+            // Bottom left: blue (horizontal), red (vertical).
+            b->data_ptr[(y + h / 2)* b->pixels_per_line + x] =
+                (rel_y << 16) + rel_x + t;
+            // Bottom left: rgb (both horizontal + vertical)
+            b->data_ptr[(y + h / 2) * b->pixels_per_line + x + w / 2] =
+                (((rel_x + rel_y) << 15) & 0xff0000) +
+                (((rel_x + rel_y) << 7) & 0x00ff00) +
+                (((rel_x + rel_y) >> 1) & 0x0000ff) + t;
+       }
+    }
+    return b;
 }
 
 /* == Main program ========================================================= */
@@ -70,11 +104,16 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
     bs_log_severity = BS_INFO;
 
+    background_colors = _create_background(640, 400);
+    if (NULL == background_colors) return EXIT_FAILURE;
+
     wlclient_ptr = wlclient_create("example_toplevel");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     _key_listener.notify = _handle_key;
     wl_signal_add(&wlclient_events(wlclient_ptr)->key, &_key_listener);
+
+
 
     if (wlclient_xdg_supported(wlclient_ptr)) {
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
