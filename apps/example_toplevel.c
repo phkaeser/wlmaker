@@ -136,7 +136,7 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     if (wlclient_xdg_supported(wlclient_ptr)) {
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
-            wlclient_ptr, 640, 400);
+            wlclient_ptr, "wlmaker Toplevel Example", 640, 400);
 
         wlclient_xdg_toplevel_register_ready_callback(
             toplevel_ptr, _callback, toplevel_ptr);
