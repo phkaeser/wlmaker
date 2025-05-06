@@ -23,6 +23,6 @@ TARGET_LINK_LIBRARIES(wlmclock libwlclient primitives m)
 
 ADD_EXECUTABLE(example_toplevel example_toplevel.c)
 TARGET_INCLUDE_DIRECTORIES(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(example_toplevel libwlclient)
+TARGET_LINK_LIBRARIES(example_toplevel m libwlclient)
 
 INSTALL(TARGETS wlmclock DESTINATION bin)

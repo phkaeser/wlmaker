@@ -33,6 +33,9 @@ struct _wlclient_xdg_toplevel_t {
     /** Back-link to the client. */
     wlclient_t                *wlclient_ptr;
 
+    /** Window title of the toplevel. */
+    char                      *title_ptr;
+
     /** Surface. */
     struct wl_surface         *wl_surface_ptr;
     /** Wrapped as XDG surface. */
@@ -109,12 +112,19 @@ _wlc_xdg_toplevel_decoration_v1_listener = {
 /* ------------------------------------------------------------------------- */
 wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     wlclient_t *wlclient_ptr,
-    unsigned width, unsigned height)
+    const char *title_ptr,
+    unsigned width,
+    unsigned height)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = logged_calloc(
         1, sizeof(wlclient_xdg_toplevel_t));
     if (NULL == toplevel_ptr) return NULL;
     toplevel_ptr->wlclient_ptr = wlclient_ptr;
+    toplevel_ptr->title_ptr = logged_strdup(title_ptr);
+    if (NULL == toplevel_ptr->title_ptr) {
+        wlclient_xdg_toplevel_destroy(toplevel_ptr);
+        return NULL;
+    }
 
     toplevel_ptr->wl_surface_ptr = wl_compositor_create_surface(
         wlclient_attributes(wlclient_ptr)->wl_compositor_ptr);
@@ -198,6 +208,14 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         }
     }
 
+    xdg_toplevel_set_title(toplevel_ptr->xdg_toplevel_ptr,
+                           toplevel_ptr->title_ptr);
+    if (NULL != wlclient_attributes(wlclient_ptr)->app_id_ptr) {
+        xdg_toplevel_set_app_id(
+            toplevel_ptr->xdg_toplevel_ptr,
+            wlclient_attributes(wlclient_ptr)->app_id_ptr);
+    }
+
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
     return toplevel_ptr;
 }
@@ -224,6 +242,11 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
     if (NULL != toplevel_ptr->wl_surface_ptr) {
         wl_surface_destroy(toplevel_ptr->wl_surface_ptr);
         toplevel_ptr->wl_surface_ptr = NULL;
+    }
+
+    if (NULL != toplevel_ptr->title_ptr) {
+        free(toplevel_ptr->title_ptr);
+        toplevel_ptr->title_ptr = NULL;
     }
 
     free(toplevel_ptr);
