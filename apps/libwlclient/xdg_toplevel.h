@@ -35,6 +35,7 @@ typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
  * Creates a XDG toplevel.
  *
  * @param wlclient_ptr
+ * @param title_ptr
  * @param width
  * @param height
  *
@@ -42,6 +43,7 @@ typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
  */
 wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     wlclient_t *wlclient_ptr,
+    const char *title_ptr,
     unsigned width,
     unsigned height);
 
