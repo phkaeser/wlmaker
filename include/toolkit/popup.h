@@ -20,10 +20,14 @@
 #ifndef __WLMTK_POPUP_H__
 #define __WLMTK_POPUP_H__
 
+#include <stdbool.h>
+
+struct _wlmtk_popup_t;
 /** Forward declaration: Popup. */
 typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
-#include "container.h"
+#include "container.h"  // IWYU pragma: keep
+#include "element.h"
 #include "env.h"
 
 #ifdef __cplusplus

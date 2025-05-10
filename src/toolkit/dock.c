@@ -18,8 +18,16 @@
  * limitations under the License.
  */
 
-#include <toolkit/dock.h>
-#include <toolkit/box.h>
+
+#include "dock.h"
+
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include "box.h"
+#include "container.h"
 
 /* == Declarations ========================================================= */
 

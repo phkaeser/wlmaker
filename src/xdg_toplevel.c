@@ -18,12 +18,28 @@
  * limitations under the License.
  */
 
-#include "xdg_shell.h"
+#include "xdg_toplevel.h"
 
-#include "tl_menu.h"
-#include "xdg_popup.h"
-
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
+#include <wayland-server.h>
+#include <wayland-util.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/util/box.h>
 #include <wlr/version.h>
+#undef WLR_USE_UNSTABLE
+
+#include "config.h"
+#include "server.h"
+#include "tl_menu.h"
+#include "toolkit/toolkit.h"
+#include "xdg_popup.h"
 
 /* == Declarations ========================================================= */
 

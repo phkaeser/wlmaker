@@ -18,7 +18,10 @@
  * limitations under the License.
  */
 
-#include <toolkit/pane.h>
+#include "pane.h"
+
+#include <string.h>
+#include <libbase/libbase.h>
 
 /* == Exported methods ===================================================== */
 

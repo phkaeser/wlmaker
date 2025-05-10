@@ -26,3 +26,12 @@ TARGET_INCLUDE_DIRECTORIES(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(example_toplevel m libwlclient)
 
 INSTALL(TARGETS wlmclock DESTINATION bin)
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    wlmclock PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    example_toplevel PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

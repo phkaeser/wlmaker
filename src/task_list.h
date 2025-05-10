@@ -23,6 +23,7 @@
 /** Forward definition: Task list handle. */
 typedef struct _wlmaker_task_list_t wlmaker_task_list_t;
 
+#include "config.h"
 #include "server.h"
 
 #ifdef __cplusplus

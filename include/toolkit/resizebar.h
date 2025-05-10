@@ -22,27 +22,15 @@
 
 /** Forward declaration: Title bar. */
 typedef struct _wlmtk_resizebar_t wlmtk_resizebar_t;
-/** Forward declaration. */
-struct wlr_cursor;
-/** Forward declaration. */
-struct wlr_xcursor_manager;
+
+#include <libbase/libbase.h>
+#include <stdbool.h>
 
 #include "element.h"
-#include "primitives.h"
+#include "env.h"
+#include "style.h"
 
-/** Style options for the resizebar. */
-typedef struct {
-    /** Fill style for the complete resizebar. */
-    wlmtk_style_fill_t        fill;
-    /** Height of the resize bar. */
-    uint64_t                  height;
-    /** Width of the corners. */
-    uint64_t                  corner_width;
-    /** Width of the bezel. */
-    uint64_t                  bezel_width;
-} wlmtk_resizebar_style_t;
-
-#include "window.h"
+#include "window.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

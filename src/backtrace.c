@@ -21,8 +21,10 @@
 
 #include "backtrace.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #if defined(WLMAKER_HAVE_LIBBACKTRACE)
 #include <backtrace.h>

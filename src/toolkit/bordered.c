@@ -18,7 +18,11 @@
  * limitations under the License.
  */
 
-#include <toolkit/bordered.h>
+#include "bordered.h"
+
+#include <string.h>
+
+#include "libbase/libbase.h"
 
 /* == Declarations ========================================================= */
 

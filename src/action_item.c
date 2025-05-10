@@ -20,6 +20,14 @@
 
 #include "action_item.h"
 
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+
+#include "root_menu.h"
+
 /* == Declarations ========================================================= */
 
 /** State of an action item that triggers a @ref wlmaker_action_t. */

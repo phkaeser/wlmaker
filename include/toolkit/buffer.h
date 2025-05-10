@@ -21,16 +21,17 @@
 #define __WLMTK_BUFFER_H__
 
 #include <stdbool.h>
+#include <wayland-server-core.h>
 
+#include "element.h"
+#include "env.h"
+
+struct _wlmtk_buffer_t;
 /** Forward declaration: Buffer state. */
 typedef struct _wlmtk_buffer_t wlmtk_buffer_t;
 
-#include "element.h"
-
 /** Forward declaration. */
 struct wlr_buffer;
-/** Forward declaration. */
-struct wlr_scene_buffer;
 
 #ifdef __cplusplus
 extern "C" {

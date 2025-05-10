@@ -18,12 +18,18 @@
  * limitations under the License.
  */
 
-#include <drm_fourcc.h>
-#include <toolkit/gfxbuf.h>
+#include "gfxbuf.h"
 
+#include <drm_fourcc.h>
+#include <libbase/libbase.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
+#include <wlr/types/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* == Declarations ========================================================= */
 

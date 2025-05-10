@@ -18,10 +18,14 @@
  * limitations under the License.
  */
 
-#include <toolkit/panel.h>
-#include <toolkit/test.h>
+#include "panel.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <string.h>
 #include <wlr/util/edges.h>
+
+#include "test.h"  // IWYU pragma: keep.
 
 /* == Declarations ========================================================= */
 

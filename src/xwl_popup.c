@@ -21,6 +21,9 @@
 
 #include "xwl_popup.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+
 /* == Declarations ========================================================= */
 
 /** State of an XWayland popup (child window). */

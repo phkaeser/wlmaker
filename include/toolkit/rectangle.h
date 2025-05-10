@@ -20,6 +20,9 @@
 #ifndef __WLMTK_RECTANGLE_H__
 #define __WLMTK_RECTANGLE_H__
 
+#include <libbase/libbase.h>
+#include <stdint.h>
+
 #include "element.h"
 #include "env.h"
 

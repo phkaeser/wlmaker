@@ -18,7 +18,10 @@
  * limitations under the License.
  */
 
-#include <toolkit/popup.h>
+#include "popup.h"
+
+#include <libbase/libbase.h>
+#include <string.h>
 
 /* == Declarations ========================================================= */
 

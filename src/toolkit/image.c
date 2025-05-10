@@ -18,9 +18,15 @@
  * limitations under the License.
  */
 
-#include <toolkit/buffer.h>
-#include <toolkit/gfxbuf.h>
-#include <toolkit/image.h>
+#include "image.h"
+
+#include <cairo.h>
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include "buffer.h"
+#include "gfxbuf.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

@@ -23,25 +23,31 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <wlr/util/log.h>
-
 #include <limits.h>
 #include <regex.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <wayland-server-core.h>
+/// Use non-stable features of wlroots.
+#define WLR_USE_UNSTABLE
+#include <wlr/util/log.h>
+#undef WLR_USE_UNSTABLE
 
+#include "../etc/root_menu.h"
+#include "../etc/style.h"  // IWYU pragma: keep
 #include "action.h"
+#include "backend/backend.h"
 #include "background.h"
 #include "backtrace.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
+#include "root_menu.h"
 #include "server.h"
 #include "task_list.h"
-
-#include "../etc/style.h"
-#include "../etc/root_menu.h"
+#include "toolkit/toolkit.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;

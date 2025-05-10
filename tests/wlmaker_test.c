@@ -18,16 +18,21 @@
  * limitations under the License.
  */
 
+#include <libbase/libbase.h>
+#include <stddef.h>
+
 #include "action.h"
 #include "action_item.h"
 #include "clip.h"
 #include "config.h"
 #include "corner.h"
 #include "dock.h"
-#include "keyboard.h"
 #include "launcher.h"
 #include "layer_panel.h"
+#include "server.h"
+#if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_content.h"
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {

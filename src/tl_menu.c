@@ -20,7 +20,14 @@
 
 #include "tl_menu.h"
 
+#include <libbase/libbase.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+
+#include "action.h"
 #include "action_item.h"
+#include "config.h"
 
 /* == Declarations ========================================================= */
 

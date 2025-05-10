@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#include <libbase/libbase.h>
+#include <stddef.h>
+
 #include "segment_display.h"
 
 /** Unit tests. */

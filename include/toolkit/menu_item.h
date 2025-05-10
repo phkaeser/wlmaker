@@ -21,18 +21,22 @@
 #define __WLMTK_MENU_ITEM_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <wayland-server-core.h>
 
-/** Forward declaration: State of the menu item. */
-typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
-/** Forward declaration: Virtual method table of the menu item. */
-typedef struct _wlmtk_menu_item_vmt_t wlmtk_menu_item_vmt_t;
-/** Forward declaration: Style of a menu item. */
-typedef struct _wlmtk_menu_item_style_t wlmtk_menu_item_style_t;
-
-#include "buffer.h"
 #include "element.h"
 #include "env.h"
 #include "style.h"
+
+/** Forward declaration: State of the menu item. */
+typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
+
+#include "menu.h"  // IWYU pragma: keep
+
+enum wlmtk_menu_mode;
+
+/** Forward declaration: Virtual method table of the menu item. */
+typedef struct _wlmtk_menu_item_vmt_t wlmtk_menu_item_vmt_t;
 
 /** States a menu item can be in. */
 typedef enum {
@@ -41,17 +45,6 @@ typedef enum {
     WLMTK_MENU_ITEM_DISABLED
 } wlmtk_menu_item_state_t;
 
-/** Modes of the menu. */
-typedef enum {
-    /** Normal (window) mode of a menu: Left button click triggers items. */
-    WLMTK_MENU_MODE_NORMAL,
-    /**
-     * Right-click mode of menu: Menu is invoked while right button is pressed.
-     * Releasing the right button triggers items.
-     */
-    WLMTK_MENU_MODE_RIGHTCLICK
-} wlmtk_menu_mode_t;
-
 /** Events of the menu item. */
 typedef struct {
     /** The menu item was triggered, by a click or key action. */
@@ -59,30 +52,6 @@ typedef struct {
     /** The menu item is being destroyed. */
     struct wl_signal          destroy;
 } wlmtk_menu_item_events_t;
-
-/** Menu item style. */
-struct _wlmtk_menu_item_style_t {
-    /** Fill style. */
-    wlmtk_style_fill_t        fill;
-    /** Fill style when disabled. */
-    wlmtk_style_fill_t        highlighted_fill;
-    /** Style of the font used in the menu item. */
-    wlmtk_style_font_t        font;
-    /** Height of the menu item, in pixels. */
-    uint64_t                  height;
-    /** Width of the bezel, in pixels. */
-    uint64_t                  bezel_width;
-    /** Text color. */
-    uint32_t                  enabled_text_color;
-    /** Text color when highlighted. */
-    uint32_t                  highlighted_text_color;
-    /** Text color when disabled. */
-    uint32_t                  disabled_text_color;
-    /** Width of the item. */
-    uint64_t                  width;
-};
-
-#include "menu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,10 +116,10 @@ void wlmtk_menu_item_set_submenu(
  */
 void wlmtk_menu_item_set_mode(
     wlmtk_menu_item_t *menu_item_ptr,
-    wlmtk_menu_mode_t mode);
+    enum wlmtk_menu_mode mode);
 
 /** @return the mode of this item. */
-wlmtk_menu_mode_t wlmtk_menu_item_get_mode(
+enum wlmtk_menu_mode wlmtk_menu_item_get_mode(
     wlmtk_menu_item_t *menu_item_ptr);
 
 /** @return The state of the item, @ref wlmtk_menu_item_t::state. */

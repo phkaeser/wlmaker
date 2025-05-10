@@ -22,11 +22,18 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <wayland-client.h>
+#include <unistd.h>
+#include <wayland-client-protocol.h>
+
+struct wl_buffer;
+struct wl_callback;
+struct wl_shm_pool;
 
 /* == Declarations ========================================================= */
 

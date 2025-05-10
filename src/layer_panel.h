@@ -20,6 +20,8 @@
 #ifndef __LAYER_PANEL_H__
 #define __LAYER_PANEL_H__
 
+#include <libbase/libbase.h>
+
 /** Handler for a layer panel. */
 typedef struct _wlmaker_layer_panel_t wlmaker_layer_panel_t;
 

@@ -21,10 +21,11 @@
 #define __XWL_TOPLEVEL_H__
 #if defined(WLMAKER_HAVE_XWAYLAND)
 
-#include "xwl_toplevel.h"
+#include <stdbool.h>
 
-#include "xwl_content.h"
+#include "server.h"
 #include "toolkit/toolkit.h"
+#include "xwl_content.h"
 
 #ifdef __cplusplus
 extern "C" {

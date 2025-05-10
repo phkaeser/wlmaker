@@ -20,9 +20,22 @@
 
 #include "keyboard.h"
 
-#include "config.h"
-#include "toolkit/toolkit.h"
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
+#include <wayland-util.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_keyboard.h>
+#undef WLR_USE_UNSTABLE
+#include <xkbcommon/xkbcommon.h>
+
+#include "idle.h"
 #include "server.h"
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

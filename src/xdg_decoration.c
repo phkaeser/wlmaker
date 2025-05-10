@@ -21,13 +21,19 @@
 #include "xdg_decoration.h"
 
 #include <libbase/libbase.h>
-
-#include "config.h"
-#include "toolkit/toolkit.h"
-
+#include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #undef WLR_USE_UNSTABLE
+
+#include "config.h"
+#include "server.h"
+#include "toolkit/toolkit.h"
+#include "xdg_shell.h"
 
 /* == Declarations ========================================================= */
 

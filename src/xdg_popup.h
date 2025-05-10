@@ -20,18 +20,22 @@
 #ifndef __XDG_POPUP_H__
 #define __XDG_POPUP_H__
 
-#include "toolkit/toolkit.h"
-
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
+#include "toolkit/toolkit.h"
+
+struct wlr_xdg_popup;
+
+struct _wlmaker_xdg_popup_t;
+/** Forward declaration: State of the toolkit's XDG popup. */
+typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration: State of the toolkit's XDG popup. */
-typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 
 /** State of toolkit popup. */
 struct _wlmaker_xdg_popup_t {

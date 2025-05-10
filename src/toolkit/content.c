@@ -18,12 +18,17 @@
  * limitations under the License.
  */
 
-#include <toolkit/content.h>
-#include <toolkit/surface.h>
+#include "content.h"
 
+#include <stdlib.h>           // for free
+#include <string.h>           // for memset
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #undef WLR_USE_UNSTABLE
+
+#include "surface.h"
+#include "window.h"
+
 
 /* == Declarations ========================================================= */
 

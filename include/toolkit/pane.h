@@ -20,11 +20,16 @@
 #ifndef __WLMTK_PANE_H__
 #define __WLMTK_PANE_H__
 
+struct _wlmtk_pane_t;
 /** Forward declaration: State of a (window or popup) pane. */
 typedef struct _wlmtk_pane_t wlmtk_pane_t;
 
-#include "container.h"
+#include <libbase/libbase.h>
+#include <stdbool.h>
+
+#include "container.h"  // IWYU pragma: keep
 #include "element.h"
+#include "env.h"
 
 #ifdef __cplusplus
 extern "C" {

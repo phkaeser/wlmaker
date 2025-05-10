@@ -18,7 +18,11 @@
  * limitations under the License.
  */
 
-#include <toolkit/util.h>
+#include "util.h"
+
+#include <libbase/libbase.h>
+#include <stddef.h>
+#include <wayland-util.h>
 
 /* == Declarations ========================================================= */
 

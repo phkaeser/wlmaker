@@ -20,9 +20,7 @@
 #ifndef __WLMBE_OUTPUT_H__
 #define __WLMBE_OUTPUT_H__
 
-#include <wayland-client-protocol.h>
 #include <libbase/libbase.h>
-#include <libbase/plist.h>
 
 #include "output_config.h"
 
@@ -30,7 +28,6 @@
 typedef struct _wlmbe_output_t wlmbe_output_t;
 
 struct wlr_output;
-struct wlr_output_layout;
 struct wlr_allocator;
 struct wlr_renderer;
 struct wlr_scene;

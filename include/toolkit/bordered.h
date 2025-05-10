@@ -20,10 +20,17 @@
 #ifndef __WLMTK_BORDERED_H__
 #define __WLMTK_BORDERED_H__
 
+#include <stdbool.h>
+
+#include "libbase/libbase.h"
+
+#include "element.h"
+#include "env.h"
 #include "container.h"
 #include "rectangle.h"
 #include "style.h"
 
+struct _wlmtk_bordered_t;
 /** Forward declaration: Bordered container state. */
 typedef struct _wlmtk_bordered_t wlmtk_bordered_t;
 

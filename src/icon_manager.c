@@ -20,14 +20,23 @@
 
 #include "icon_manager.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
-
+#include <stdbool.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
+#include "config.h"
 #include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
+#include "xdg_shell.h"
+
+struct wl_client;
+struct wl_resource;
 
 /* == Declarations ========================================================= */
 

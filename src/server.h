@@ -22,20 +22,21 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <wayland-server-core.h>
-
-#include "toolkit/toolkit.h"
-#include <backend/backend.h>
-
+#include <xkbcommon/xkbcommon.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
+struct _wlmaker_server_t;
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
+struct _wlmaker_key_combo_t;
 /** A key combination. */
 typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
 /** Handle for a key binding. */
@@ -50,21 +51,20 @@ typedef struct _wlmaker_key_binding_t wlmaker_key_binding_t;
  */
 typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 
+#include "backend/backend.h"
 #include "config.h"
-#include "corner.h"
-#include "cursor.h"
-#include "idle.h"
-#include "keyboard.h"
-#include "layer_shell.h"
-#include "lock_mgr.h"
-#include "root_menu.h"
-#include "subprocess_monitor.h"
-#include "icon_manager.h"
-#include "xdg_decoration.h"
-#include "xdg_shell.h"
-#include "xwl.h"
-
+#include "corner.h"  // IWYU pragma: keep
+#include "cursor.h"  // IWYU pragma: keep
+#include "icon_manager.h"  // IWYU pragma: keep
+#include "idle.h"  // IWYU pragma: keep
+#include "layer_shell.h"  // IWYU pragma: keep
+#include "lock_mgr.h"  // IWYU pragma: keep
+#include "root_menu.h"  // IWYU pragma: keep
+#include "subprocess_monitor.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
+#include "xdg_decoration.h"  // IWYU pragma: keep
+#include "xdg_shell.h"  // IWYU pragma: keep
+#include "xwl.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

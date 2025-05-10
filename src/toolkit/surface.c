@@ -18,17 +18,28 @@
  * limitations under the License.
  */
 
-#include <toolkit/element.h>
-#include <toolkit/gfxbuf.h>
-#include <toolkit/surface.h>
-#include <toolkit/util.h>
+#include "surface.h"
 
+#include <libbase/libbase.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wayland-server-protocol.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
+#include <xkbcommon/xkbcommon.h>
+
+#include "element.h"
+#include "container.h"
+#include "gfxbuf.h"  // IWYU pragma: keep
+#include "input.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 

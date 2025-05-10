@@ -20,8 +20,15 @@
 
 #include "icon.h"
 
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-client-protocol.h>
+
 #include "dblbuf.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
+
+struct zwlmaker_toplevel_icon_v1;
 
 /* == Declarations ========================================================= */
 

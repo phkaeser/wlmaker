@@ -23,12 +23,12 @@
 #define __WLCL_DBLBUF_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-struct wl_buffer;
 struct wl_shm;
 struct wl_surface;
 

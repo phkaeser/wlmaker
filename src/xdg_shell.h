@@ -20,14 +20,16 @@
 #ifndef __XDG_SHELL_H__
 #define __XDG_SHELL_H__
 
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
+struct _wlmaker_xdg_shell_t;
 /** Handle for XDG Shell server handler. */
 typedef struct _wlmaker_xdg_shell_t wlmaker_xdg_shell_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

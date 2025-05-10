@@ -18,9 +18,15 @@
  * limitations under the License.
  */
 
-#include <toolkit/gfxbuf.h>
-#include <toolkit/primitives.h>
-#include <toolkit/tile.h>
+#include "tile.h"
+
+#include <cairo.h>
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <string.h>
+
+#include "gfxbuf.h"  // IWYU pragma: keep
+#include "primitives.h"
 
 /* == Declarations ========================================================= */
 

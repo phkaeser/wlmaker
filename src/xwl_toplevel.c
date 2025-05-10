@@ -21,6 +21,12 @@
 
 #include "xwl_toplevel.h"
 
+#include <libbase/libbase.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
+
+#include "config.h"
 #include "tl_menu.h"
 
 /* == Declarations ========================================================= */

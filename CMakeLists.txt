@@ -69,6 +69,13 @@ ELSE()
   MESSAGE(STATUS "libbacktrace not found. Will compile without.")
 ENDIF()
 
+# Pruning includes.
+FIND_PROGRAM(iwyu_executable NAMES include-what-you-use iwyu OPTIONAL)
+IF(iwyu_executable)
+  SET(iwyu_path_and_options
+    ${iwyu_executable}
+    -Xiwyu --error=1 -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
+ENDIF(iwyu_executable)
 
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)

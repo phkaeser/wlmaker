@@ -20,12 +20,20 @@
 
 #include "layer_panel.h"
 
-#include "wlr-layer-shell-unstable-v1-protocol.h"
-
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
+#include "toolkit/toolkit.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "xdg_popup.h"
 
 /* == Declarations ========================================================= */

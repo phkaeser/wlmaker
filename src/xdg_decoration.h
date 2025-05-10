@@ -23,7 +23,7 @@
 /** The decoration manager handle. */
 typedef struct _wlmaker_xdg_decoration_manager_t wlmaker_xdg_decoration_manager_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

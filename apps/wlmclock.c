@@ -20,13 +20,21 @@
  * limitations under the License.
  */
 
+#include <cairo.h>
 #include <libbase/libbase.h>
 #include <libwlclient/libwlclient.h>
+#include <math.h>
 #include <primitives/primitives.h>
 #include <primitives/segment_display.h>
-
-#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
+#include <time.h>
+
+#include "libwlclient/icon.h"
 
 /** Foreground color of a LED in the VFD-style display. */
 static const uint32_t color_led = 0xff55ffff;

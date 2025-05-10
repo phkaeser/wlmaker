@@ -22,16 +22,23 @@
 
 #include "xwl_content.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
+#include <xcb/xproto.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/xwayland/xwayland.h>
+#undef WLR_USE_UNSTABLE
 
 #include "xwl_popup.h"
 #include "xwl_toplevel.h"
 #include "toolkit/toolkit.h"
 
-#define WLR_USE_UNSTABLE
-#include <wlr/xwayland.h>
-#include <wlr/types/wlr_compositor.h>
-#undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
 

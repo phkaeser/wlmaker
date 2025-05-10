@@ -20,11 +20,15 @@
 
 #include "launcher.h"
 
-#include <limits.h>
+#include <cairo.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include "toolkit/toolkit.h"
+#include <limits.h>
+#include <linux/input-event-codes.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 

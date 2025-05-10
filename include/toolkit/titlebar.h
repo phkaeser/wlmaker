@@ -20,11 +20,17 @@
 #ifndef __WLMTK_TITLEBAR_H__
 #define __WLMTK_TITLEBAR_H__
 
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+
 /** Forward declaration: Title bar. */
 typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 
 #include "element.h"
-#include "primitives.h"
+#include "env.h"
+#include "style.h"
+#include "window.h"  // IWYU pragma: keep
 
 /** Properties of the titlebar: Which buttons to show. */
 typedef enum {
@@ -33,28 +39,6 @@ typedef enum {
     /** Whether the 'close' button is shown. */
     WLMTK_TITLEBAR_PROPERTY_CLOSE = UINT32_C(1) << 1
 } wlmtk_titlebar_property_t;
-
-/** Style options for the titlebar. */
-typedef struct {
-    /** Fill style for when the titlebar is focussed (activated). */
-    wlmtk_style_fill_t        focussed_fill;
-    /** Fill style for when the titlebar is blurred (not activated). */
-    wlmtk_style_fill_t        blurred_fill;
-    /** Color of the title text when focussed. */
-    uint32_t                  focussed_text_color;
-    /** Color of the title text when blurred. */
-    uint32_t                  blurred_text_color;
-    /** Height of the title bar, in pixels. */
-    uint64_t                  height;
-    /** Width of the bezel. */
-    uint64_t                  bezel_width;
-    /** Style of the margin within the resizebar. */
-    wlmtk_margin_style_t      margin;
-    /** Font style for the titlebar's title. */
-    wlmtk_style_font_t       font;
-} wlmtk_titlebar_style_t;
-
-#include "window.h"
 
 #ifdef __cplusplus
 extern "C" {

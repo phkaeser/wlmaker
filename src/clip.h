@@ -26,6 +26,9 @@
 #ifndef __CLIP_H__
 #define __CLIP_H__
 
+#include <libbase/plist.h>
+#include <libbase/libbase.h>
+
 /** Forward definition: Clip handle. */
 typedef struct _wlmaker_clip_t wlmaker_clip_t;
 

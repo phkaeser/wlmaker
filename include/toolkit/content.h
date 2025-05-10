@@ -20,23 +20,35 @@
 #ifndef __WLMTK_CONTENT_H__
 #define __WLMTK_CONTENT_H__
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
+struct _wlmtk_content_t;
 /** Forward declaration: Content state. */
 typedef struct _wlmtk_content_t wlmtk_content_t;
-/** Forward declaration: Content virtual method table. */
-typedef struct _wlmtk_content_vmt_t wlmtk_content_vmt_t;
-/** Forward declaration: Window. */
-typedef struct _wlmtk_window_t wlmtk_window_t
-;/** Forward declaration: State of a toolkit's WLR surface. */
-typedef struct _wlmtk_surface_t wlmtk_surface_t;
-
+struct _wlmtk_fake_content_t;
 /** Forward declaration: Fake content, for tests. */
 typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
-#include "container.h"
+#include "container.h"  // IWYU pragma: keep
+#include "element.h"
+#include "env.h"
+#include "libbase/libbase.h"
 #include "popup.h"
 #include "surface.h"
 #include "util.h"
+#include "window.h"  // IWYU pragma: keep
+
+struct _wlmtk_content_vmt_t;
+
+/** Forward declaration: Content virtual method table. */
+typedef struct _wlmtk_content_vmt_t wlmtk_content_vmt_t;
+;/** Forward declaration: State of a toolkit's WLR surface. */
+typedef struct _wlmtk_surface_t wlmtk_surface_t;
+
+;/** Forward declaration: Fake surface, for tests. */
+typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 
 #ifdef __cplusplus
 extern "C" {

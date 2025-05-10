@@ -42,3 +42,12 @@ TARGET_LINK_LIBRARIES(
 ADD_TEST(
   NAME segment_display_test
   COMMAND segment_display_test)
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    primitives PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    segment_display_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

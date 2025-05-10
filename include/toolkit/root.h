@@ -23,12 +23,19 @@
 /** Forward declaration: Root element (technically: container). */
 typedef struct _wlmtk_root_t wlmtk_root_t;
 /** Forward declaration: wlr output layout. */
+
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <wayland-server-core.h>
+
+#include "element.h"
+#include "env.h"
+#include "lock.h"  // IWYU pragma: keep
+#include "surface.h"  // IWYU pragma: keep
+#include "workspace.h"  // IWYU pragma: keep
+
 struct wlr_output_layout;
-
-#include "lock.h"
-
-#include "surface.h"
-
 /** Forward declaration: Wlroots scene. */
 struct wlr_scene;
 

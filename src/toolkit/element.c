@@ -18,14 +18,22 @@
  * limitations under the License.
  */
 
-#include <toolkit/container.h>
-#include <toolkit/element.h>
-#include <toolkit/util.h>
+#include "container.h"
+#include "element.h"
+#include "env.h"
+#include "input.h"
+#include "util.h"
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
+#include <wlr/util/box.h>
+#include <libbase/libbase.h>
 
 /* == Declarations ========================================================= */
 

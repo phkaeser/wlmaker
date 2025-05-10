@@ -20,9 +20,15 @@
 #ifndef __WLMTK_CONTAINER_H__
 #define __WLMTK_CONTAINER_H__
 
-#include <libbase/libbase.h>
-#include <wayland-server.h>
+#include <stdbool.h>
+#include <wayland-server-core.h>
 
+#include "env.h"
+#include "libbase/libbase.h"
+
+struct _wlmtk_container_t;
+struct _wlmtk_container_vmt_t;
+struct wlr_scene_tree;
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;
 /** Forward declaration: Container virtual method table. */

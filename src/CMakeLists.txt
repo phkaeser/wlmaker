@@ -82,6 +82,11 @@ SET_TARGET_PROPERTIES(
   wlmaker_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    wlmaker_lib PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)
 
 ADD_DEPENDENCIES(
   wlmaker_lib
@@ -144,5 +149,10 @@ IF(LIBBACKTRACE)
   TARGET_COMPILE_DEFINITIONS(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
   TARGET_LINK_LIBRARIES(wlmaker PRIVATE ${LIBBACKTRACE})
 ENDIF()
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    wlmaker PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)
 
 INSTALL(TARGETS wlmaker DESTINATION bin)

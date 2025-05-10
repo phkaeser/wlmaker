@@ -21,17 +21,33 @@
 #include "libwlclient.h"
 
 #include <errno.h>
+#include <inttypes.h>
+#include <libbase/libbase.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
+#include <unistd.h>
+#include <wayland-client-core.h>
+#include <wayland-client-protocol.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include <wayland-client.h>
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
+
+struct wl_keyboard;
+struct wl_pointer;
+struct wl_registry;
+struct wl_seat;
+struct wl_surface;
 
 /* == Declarations ========================================================= */
 

@@ -18,13 +18,22 @@
  * limitations under the License.
  */
 
-#include <toolkit/container.h>
-#include <toolkit/util.h>
+#include "container.h"
 
+#include <linux/input-event-codes.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <toolkit/util.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
+#include <xkbcommon/xkbcommon.h>
+
+#include "input.h"
 
 /* == Declarations ========================================================= */
 

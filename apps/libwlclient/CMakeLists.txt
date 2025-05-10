@@ -68,3 +68,9 @@ IF(NOT HAVE_SIGNALFD)
   PKG_CHECK_MODULES(EPOLL REQUIRED IMPORTED_TARGET epoll-shim)
   TARGET_LINK_LIBRARIES(libwlclient PkgConfig::EPOLL)
 ENDIF()
+
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    libwlclient PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

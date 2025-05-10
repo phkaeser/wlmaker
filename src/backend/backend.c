@@ -18,25 +18,33 @@
  * limitations under the License.
  */
 
-#include <backend/backend.h>
-#include <backend/output.h>
-#include <backend/output_manager.h>
+#include "backend.h"
+
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <toolkit/toolkit.h>
-
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
+
+#include "output.h"
+#include "output_config.h"
+#include "output_manager.h"
 
 /* == Declarations ========================================================= */
 

@@ -18,16 +18,25 @@
  * limitations under the License.
  */
 
-#include <toolkit/buffer.h>
-#include <toolkit/gfxbuf.h>
-#include <toolkit/primitives.h>
-#include <toolkit/titlebar_title.h>
-#include <toolkit/window.h>
+#include "titlebar_title.h"
 
+#include <cairo.h>
+#include <libbase/libbase.h>
+#include <linux/input-event-codes.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
+
+#include "buffer.h"
+#include "gfxbuf.h"  // IWYU pragma: keep
+#include "input.h"
+#include "menu.h"
+#include "primitives.h"
+#include "window.h"
 
 /* == Declarations ========================================================= */
 

@@ -26,6 +26,9 @@
 #ifndef __DOCK_H__
 #define __DOCK_H__
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+
 /** Forward definition: Dock handle. */
 typedef struct _wlmaker_dock_t wlmaker_dock_t;
 

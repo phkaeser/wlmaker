@@ -24,15 +24,18 @@
 
 #include "config.h"
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <limits.h>
-
+#include <stdbool.h>
+#include <stdlib.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
 
 #include "default_configuration.h"
 #include "default_state.h"
-#include "../etc/style.h"
+#include "../etc/style.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

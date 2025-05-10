@@ -21,11 +21,16 @@
 #include "background.h"
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <wayland-server-core.h>
-
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
+
+struct wl_list;
+struct wlr_output;
 
 /* == Declarations ========================================================= */
 

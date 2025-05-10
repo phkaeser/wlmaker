@@ -18,17 +18,31 @@
  * limitations under the License.
  */
 
-#include <toolkit/rectangle.h>
-#include <toolkit/window.h>
-#include <toolkit/workspace.h>
-#include <toolkit/test.h>
+#include "window.h"
 
+#include <libbase/libbase.h>
+#include <linux/input-event-codes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 /// Include unstable interfaces of wlroots.
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
-#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
+
+#include "bordered.h"
+#include "box.h"
+#include "container.h"
+#include "input.h"
+#include "resizebar.h"
+#include "surface.h"
+#include "test.h"  // IWYU pragma: keep
+#include "tile.h"
+#include "titlebar.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 

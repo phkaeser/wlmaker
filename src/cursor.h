@@ -20,10 +20,16 @@
 #ifndef __CURSOR_H__
 #define __CURSOR_H__
 
+#include <wayland-server-core.h>
+
+struct _wlmaker_cursor_t;
 /** Forward declaration of wlmaker cursor state. */
 typedef struct _wlmaker_cursor_t wlmaker_cursor_t;
 
-#include "server.h"
+#include "server.h"  // IWYU pragma: keep
+
+struct wlr_input_device;
+struct wlr_output_layout;
 
 #ifdef __cplusplus
 extern "C" {
