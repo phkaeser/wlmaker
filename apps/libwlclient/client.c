@@ -40,6 +40,7 @@
 
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-client-protocol.h"
 
 struct wl_pointer;
 struct wl_registry;
@@ -273,7 +274,10 @@ static const object_t objects[] = {
       offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
       offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
+    { &zxdg_decoration_manager_v1_interface, 1,
+      offsetof(wlclient_attributes_t, xdg_decoration_manager_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
+
 };
 
 /* == Exported methods ===================================================== */
@@ -617,7 +621,7 @@ void handle_global_announce(
 
         ((void**)((uint8_t*)data_ptr + object_ptr->bound_ptr_offset))[0] =
             bound_ptr;
-        bs_log(BS_DEBUG, "Bound interface %s to %p",
+        bs_log(BS_INFO, "Bound interface %s to %p",
                interface_name_ptr, bound_ptr);
 
         if (NULL != object_ptr->setup) object_ptr->setup(data_ptr);

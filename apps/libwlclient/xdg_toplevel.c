@@ -24,9 +24,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
+#include <wayland-client.h>
 
 #include "dblbuf.h"
 #include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-client-protocol.h"
 
 struct xdg_surface;
 
@@ -43,12 +45,16 @@ struct _wlclient_xdg_toplevel_t {
     struct xdg_surface        *xdg_surface_ptr;
     /** The XDG toplevel. */
     struct xdg_toplevel       *xdg_toplevel_ptr;
+    /** The XDG toplevel'ss decoration handle. */
+    struct zxdg_toplevel_decoration_v1 *xdg_toplevel_decoration_v1_ptr;
 
     /** The double-buffer wrapper for the surface. */
     wlcl_dblbuf_t             *dblbuf_ptr;
 
     /** Whether the surface had been configured. Can only use after that. */
     bool                      configured;
+    /** Whether the decoration has gotten configured. */
+    bool                      decoration_configured;
     /** Callback for when the buffer is ready to draw into. */
     wlcl_dblbuf_ready_callback_t callback;
     /** Client-provied argument to @ref wlclient_xdg_toplevel_t::callback. */
@@ -59,12 +65,49 @@ static void _wlclient_xdg_surface_configure(
     void *data,
     struct xdg_surface *xdg_surface,
     uint32_t serial);
+static void _wlc_xdg_toplevel_decoration_v1_configure(
+    void *data_ptr,
+    struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration_v1_ptr,
+    uint32_t mode);
+
+static void _xdg_toplevel_handle_configure(
+    void *data_ptr,
+    struct xdg_toplevel *xdg_toplevel_ptr,
+    int32_t width,
+    int32_t height,
+    struct wl_array *states);
+static void _xdg_toplevel_handle_close(
+    void *data_ptr,
+    struct xdg_toplevel *xdg_toplevel_ptr);
+static void _xdg_toplevel_handle_configure_bounds(
+    void *data_ptr,
+    struct xdg_toplevel *xdg_toplevel_ptr,
+    int32_t width,
+    int32_t height);
+static void _xdg_toplevel_handle_wm_capabilities(
+    void *data_ptr,
+    struct xdg_toplevel *xdg_toplevel_ptr,
+    struct wl_array *capabilities);
 
 /* == Data ================================================================= */
+
+/** Listeners for the XDG toplevel. */
+static const struct xdg_toplevel_listener _wlc_xdg_toplevel_listener = {
+    .configure = _xdg_toplevel_handle_configure,
+    .close = _xdg_toplevel_handle_close,
+    .configure_bounds = _xdg_toplevel_handle_configure_bounds,
+    .wm_capabilities = _xdg_toplevel_handle_wm_capabilities
+};
 
 /** Listeners for the XDG surface. */
 static const struct xdg_surface_listener _wlclient_xdg_surface_listener = {
     .configure = _wlclient_xdg_surface_configure,
+};
+
+/** Listeners for the XDG decoration manager. */
+static const struct zxdg_toplevel_decoration_v1_listener
+_wlc_xdg_toplevel_decoration_v1_listener = {
+    .configure = _wlc_xdg_toplevel_decoration_v1_configure,
 };
 
 /* == Exported methods ===================================================== */
@@ -118,6 +161,7 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         toplevel_ptr->xdg_surface_ptr,
         &_wlclient_xdg_surface_listener,
         toplevel_ptr);
+
     toplevel_ptr->xdg_toplevel_ptr = xdg_surface_get_toplevel(
         toplevel_ptr->xdg_surface_ptr);
     if (NULL == toplevel_ptr->xdg_toplevel_ptr) {
@@ -127,6 +171,39 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
         return NULL;
     }
 
+    xdg_surface_set_window_geometry(
+        toplevel_ptr->xdg_surface_ptr, 0, 0, width, height);
+
+    if (0 != xdg_toplevel_add_listener(
+            toplevel_ptr->xdg_toplevel_ptr,
+            &_wlc_xdg_toplevel_listener,
+            toplevel_ptr)) {
+        wlclient_xdg_toplevel_destroy(toplevel_ptr);
+        return NULL;
+    }
+
+    if (NULL != wlclient_attributes(wlclient_ptr)->xdg_decoration_manager_ptr) {
+        toplevel_ptr->xdg_toplevel_decoration_v1_ptr =
+            zxdg_decoration_manager_v1_get_toplevel_decoration(
+                wlclient_attributes(wlclient_ptr)->xdg_decoration_manager_ptr,
+                toplevel_ptr->xdg_toplevel_ptr);
+        if (NULL == toplevel_ptr->xdg_toplevel_decoration_v1_ptr) {
+            bs_log(BS_ERROR, "Failed "
+                   "zxdg_decoration_manager_v1_get_toplevel_decoration()");
+            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            return NULL;
+        }
+
+        if (0 != zxdg_toplevel_decoration_v1_add_listener(
+                toplevel_ptr->xdg_toplevel_decoration_v1_ptr,
+                &_wlc_xdg_toplevel_decoration_v1_listener,
+                toplevel_ptr)) {
+            bs_log(BS_ERROR, "Failed zxdg_toplevel_decoration_v1_add_listener");
+            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            return NULL;
+        }
+    }
+
     wl_surface_commit(toplevel_ptr->wl_surface_ptr);
     return toplevel_ptr;
 }
@@ -134,6 +211,17 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
 /* ------------------------------------------------------------------------- */
 void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
 {
+    if (NULL != toplevel_ptr->xdg_toplevel_decoration_v1_ptr) {
+        zxdg_toplevel_decoration_v1_destroy(
+            toplevel_ptr->xdg_toplevel_decoration_v1_ptr);
+        toplevel_ptr->xdg_toplevel_decoration_v1_ptr = NULL;
+    }
+
+    if (NULL != toplevel_ptr->xdg_toplevel_ptr) {
+        xdg_toplevel_destroy(toplevel_ptr->xdg_toplevel_ptr);
+        toplevel_ptr->xdg_toplevel_ptr = NULL;
+    }
+
     if (NULL != toplevel_ptr->dblbuf_ptr) {
         wlcl_dblbuf_destroy(toplevel_ptr->dblbuf_ptr);
         toplevel_ptr->dblbuf_ptr = NULL;
@@ -186,8 +274,17 @@ void _wlclient_xdg_surface_configure(
     struct xdg_surface *xdg_surface_ptr,
     uint32_t serial)
 {
-    __UNUSED__ wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
     xdg_surface_ack_configure(xdg_surface_ptr, serial);
+
+    if (!toplevel_ptr->decoration_configured &&
+        NULL != toplevel_ptr->xdg_toplevel_decoration_v1_ptr) {
+        zxdg_toplevel_decoration_v1_set_mode(
+            toplevel_ptr->xdg_toplevel_decoration_v1_ptr,
+            ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+        toplevel_ptr->decoration_configured = true;
+        return;
+    }
 
     toplevel_ptr->configured = true;
     if (NULL != toplevel_ptr->callback) {
@@ -197,6 +294,73 @@ void _wlclient_xdg_surface_configure(
             toplevel_ptr->callback_ud_ptr);
         toplevel_ptr->callback = NULL;
     }
+
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the decoration mode change listener. */
+void _wlc_xdg_toplevel_decoration_v1_configure(
+    void *data_ptr,
+    __UNUSED__ struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration_v1_ptr,
+    uint32_t mode)
+{
+    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+
+    static const char* decoration_modes[3] = {
+        [0] = "(unknown)",
+        [ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE] = (
+            "ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE"),
+        [ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE] = (
+            "ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE")
+    };
+
+    if (mode >= sizeof(decoration_modes) / sizeof(char*)) mode = 0;
+    bs_log(BS_INFO, "XDG toplevel %p configured decoration mode %s",
+           toplevel_ptr->xdg_toplevel_ptr,
+           decoration_modes[mode]);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles XDG toplevel's configure event. */
+void _xdg_toplevel_handle_configure(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct xdg_toplevel *xdg_toplevel_ptr,
+    __UNUSED__ int32_t width,
+    __UNUSED__ int32_t height,
+    __UNUSED__ struct wl_array *states)
+{
+    // Currently unused.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the action of the 'close' button. */
+void _xdg_toplevel_handle_close(
+    void *data_ptr,
+    __UNUSED__ struct xdg_toplevel *xdg_toplevel_ptr)
+{
+    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+    wlclient_request_terminate(toplevel_ptr->wlclient_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles 'configure_bounds' of the toplevel. */
+void _xdg_toplevel_handle_configure_bounds(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct xdg_toplevel *xdg_toplevel_ptr,
+    __UNUSED__ int32_t width,
+    __UNUSED__ int32_t height)
+{
+    // Currently unused.
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the 'wm_capabilities' request. */
+void _xdg_toplevel_handle_wm_capabilities(
+    __UNUSED__ void *data_ptr,
+    __UNUSED__ struct xdg_toplevel *xdg_toplevel_ptr,
+    __UNUSED__ struct wl_array *capabilities)
+{
+    // Currently unused.
 }
 
 /* == End of xdg_toplevel.c ================================================== */

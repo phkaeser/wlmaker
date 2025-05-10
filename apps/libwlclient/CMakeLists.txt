@@ -36,6 +36,11 @@ SET(SOURCES
 )
 WaylandProtocol_ADD(
   SOURCES
+  BASE_NAME xdg-decoration
+  PROTOCOL_FILE "${WAYLAND_PROTOCOL_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
+  SIDE client)
+WaylandProtocol_ADD(
+  SOURCES
   BASE_NAME xdg-shell
   PROTOCOL_FILE "${WAYLAND_PROTOCOL_DIR}/stable/xdg-shell/xdg-shell.xml"
   SIDE client)
