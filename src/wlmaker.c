@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
+/// Use non-stable features of wlroots.
 #define WLR_USE_UNSTABLE
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
