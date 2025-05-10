@@ -25,14 +25,11 @@
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <limits.h>
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <wayland-client-protocol.h>
-#include <wayland-client.h>
 
 struct wl_buffer;
 struct wl_callback;
