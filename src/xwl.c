@@ -60,24 +60,26 @@
 #include "xwl.h"
 
 #if defined(WLMAKER_HAVE_XWAYLAND)
-
 #define WLR_USE_UNSTABLE
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
-
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
-#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <stdlib.h>
+
+#if defined(WLMAKER_HAVE_XWAYLAND)
+#include <inttypes.h>
 #include <string.h>
 #include <wayland-server-core.h>
 #include <xcb/xcb.h>
 
 #include "backend/backend.h"
 #include "toolkit/toolkit.h"
-#include "x11_cursor.xpm"
 #include "xwl_content.h"
+
+#include "x11_cursor.xpm"
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
 /* == Declarations ========================================================= */
 

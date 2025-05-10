@@ -22,15 +22,17 @@
 #ifndef __XWL_H__
 #define __XWL_H__
 
+#if defined(WLMAKER_HAVE_XWAYLAND)
 #include <stdbool.h>
 #include <xcb/xproto.h>
 
+struct wlr_xwayland_surface;
+
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
+
 /** Forward declaration: XWayland interface. */
 typedef struct _wlmaker_xwl_t wlmaker_xwl_t;
-
 #include "server.h"  // IWYU pragma: keep
-
-struct wlr_xwayland_surface;
 
 #ifdef __cplusplus
 extern "C" {

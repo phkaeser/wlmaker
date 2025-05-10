@@ -30,7 +30,9 @@
 #include "launcher.h"
 #include "layer_panel.h"
 #include "server.h"
+#if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_content.h"
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {
