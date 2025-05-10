@@ -28,8 +28,8 @@
 #include "dblbuf.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 
-struct wl_callback;
 struct zwlmaker_toplevel_icon_v1;
+
 /* == Declarations ========================================================= */
 
 /** State of the icon. */

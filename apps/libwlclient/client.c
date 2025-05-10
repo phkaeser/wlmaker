@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
+#include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <xkbcommon/xkbcommon.h>
 
@@ -42,6 +43,7 @@
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 
+struct wl_keyboard;
 struct wl_pointer;
 struct wl_registry;
 struct wl_seat;

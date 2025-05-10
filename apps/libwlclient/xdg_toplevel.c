@@ -24,13 +24,15 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
-#include <wayland-client.h>
 
 #include "dblbuf.h"
-#include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
+#include "xdg-shell-client-protocol.h"
 
+struct wl_array;
 struct xdg_surface;
+struct xdg_toplevel;
+struct zxdg_toplevel_decoration_v1;
 
 /* == Declarations ========================================================= */
 

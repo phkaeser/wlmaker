@@ -24,6 +24,8 @@
 #include <linux/input-event-codes.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
+#include <wayland-util.h>
+
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>

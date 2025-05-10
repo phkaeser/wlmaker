@@ -20,8 +20,16 @@
  * limitations under the License.
  */
 
+#include <cairo.h>
 #include <libbase/libbase.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include "libwlclient/xdg_toplevel.h"
 #include "libwlclient/libwlclient.h"

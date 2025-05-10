@@ -36,6 +36,7 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 #include "window.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
+struct wlr_output;
 struct wlr_output_layout;
 
 #ifdef __cplusplus
