@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
 
-#include "buffer.h"
+#include "dblbuf.h"
 #include "xdg-shell-client-protocol.h"
 
 struct xdg_surface;
@@ -43,6 +43,16 @@ struct _wlclient_xdg_toplevel_t {
     struct xdg_surface        *xdg_surface_ptr;
     /** The XDG toplevel. */
     struct xdg_toplevel       *xdg_toplevel_ptr;
+
+    /** The double-buffer wrapper for the surface. */
+    wlcl_dblbuf_t             *dblbuf_ptr;
+
+    /** Whether the surface had been configured. Can only use after that. */
+    bool                      configured;
+    /** Callback for when the buffer is ready to draw into. */
+    wlcl_dblbuf_ready_callback_t callback;
+    /** Client-provied argument to @ref wlclient_xdg_toplevel_t::callback. */
+    void                      *callback_ud_ptr;
 };
 
 static void _wlclient_xdg_surface_configure(
@@ -61,7 +71,8 @@ static const struct xdg_surface_listener _wlclient_xdg_surface_listener = {
 
 /* ------------------------------------------------------------------------- */
 wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
-    wlclient_t *wlclient_ptr)
+    wlclient_t *wlclient_ptr,
+    unsigned width, unsigned height)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = logged_calloc(
         1, sizeof(wlclient_xdg_toplevel_t));
@@ -73,6 +84,21 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
     if (NULL == toplevel_ptr->wl_surface_ptr) {
         bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p).",
                wlclient_attributes(wlclient_ptr)->wl_compositor_ptr);
+        wlclient_xdg_toplevel_destroy(toplevel_ptr);
+        return NULL;
+    }
+
+    toplevel_ptr->dblbuf_ptr = wlcl_dblbuf_create(
+        toplevel_ptr->wl_surface_ptr,
+        wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == toplevel_ptr->dblbuf_ptr) {
+        bs_log(BS_ERROR, "Failed wlcl_dblbuf_create(%p, %p, %u, %u)",
+        toplevel_ptr->wl_surface_ptr,
+        wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
         wlclient_xdg_toplevel_destroy(toplevel_ptr);
         return NULL;
     }
@@ -107,6 +133,11 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
 /* ------------------------------------------------------------------------- */
 void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
 {
+    if (NULL != toplevel_ptr->dblbuf_ptr) {
+        wlcl_dblbuf_destroy(toplevel_ptr->dblbuf_ptr);
+        toplevel_ptr->dblbuf_ptr = NULL;
+    }
+
     if (NULL != toplevel_ptr->wl_surface_ptr) {
         wl_surface_destroy(toplevel_ptr->wl_surface_ptr);
         toplevel_ptr->wl_surface_ptr = NULL;
@@ -119,6 +150,24 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr)
 bool wlclient_xdg_supported(wlclient_t *wlclient_ptr)
 {
     return (NULL != wlclient_attributes(wlclient_ptr)->xdg_wm_base_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlclient_xdg_toplevel_register_ready_callback(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
+    void *callback_ud_ptr)
+{
+    if (toplevel_ptr->configured) {
+        wlcl_dblbuf_register_ready_callback(
+            toplevel_ptr->dblbuf_ptr,
+            callback,
+            callback_ud_ptr);
+        return;
+    }
+
+    toplevel_ptr->callback = callback;
+    toplevel_ptr->callback_ud_ptr = callback_ud_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -136,26 +185,18 @@ void _wlclient_xdg_surface_configure(
     struct xdg_surface *xdg_surface_ptr,
     uint32_t serial)
 {
-    wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+    __UNUSED__ wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
+    bs_log(BS_ERROR, "Configure + ACK %"PRIu32, serial);
     xdg_surface_ack_configure(xdg_surface_ptr, serial);
 
-    wlclient_buffer_t *buffer_ptr = wlclient_buffer_create(
-        toplevel_ptr->wlclient_ptr, 640, 480, NULL, NULL);
-    if (NULL == buffer_ptr) {
-        bs_log(BS_FATAL, "Failed wlclient_buffer_create(%p, %u, %u)",
-               toplevel_ptr->wlclient_ptr, 640, 480);
-        // TODO(kaeser@gubbe.ch): Error handling.
-        return;
+    toplevel_ptr->configured = true;
+    if (NULL != toplevel_ptr->callback) {
+        wlcl_dblbuf_register_ready_callback(
+            toplevel_ptr->dblbuf_ptr,
+            toplevel_ptr->callback,
+            toplevel_ptr->callback_ud_ptr);
+        toplevel_ptr->callback = NULL;
     }
-
-    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_from_wlclient_buffer(buffer_ptr);
-    bs_gfxbuf_clear(gfxbuf_ptr, 0xff4080c0);
-
-    wl_surface_damage_buffer(
-        toplevel_ptr->wl_surface_ptr, 0, 0, INT32_MAX, INT32_MAX);
-    wlclient_buffer_attach_to_surface_and_commit(
-        buffer_ptr,
-        toplevel_ptr->wl_surface_ptr);
 }
 
 /* == End of xdg_toplevel.c ================================================== */

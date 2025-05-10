@@ -54,12 +54,10 @@ uint64_t next_draw_time(void)
 /**
  * Draws contents into the icon buffer.
  *
- * @param icon_ptr
  * @param gfxbuf_ptr
  * @param ud_ptr
  */
 bool icon_callback(
-    __UNUSED__ wlclient_icon_t *icon_ptr,
     bs_gfxbuf_t *gfxbuf_ptr,
     __UNUSED__ void *ud_ptr)
 {
@@ -201,7 +199,7 @@ void timer_callback(wlclient_t *client_ptr, void *ud_ptr)
 {
     wlclient_icon_t *icon_ptr = ud_ptr;
 
-    wlclient_icon_callback_when_ready(icon_ptr, icon_callback, NULL);
+    wlclient_icon_register_ready_callback(icon_ptr, icon_callback, NULL);
     wlclient_register_timer(
         client_ptr, next_draw_time(), timer_callback, icon_ptr);
 }
@@ -220,7 +218,8 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         if (NULL == icon_ptr) {
             bs_log(BS_ERROR, "Failed wlclient_icon_create(%p)", wlclient_ptr);
         } else {
-            wlclient_icon_callback_when_ready(icon_ptr, icon_callback, NULL);
+            wlclient_icon_register_ready_callback(
+                icon_ptr, icon_callback, NULL);
 
             wlclient_register_timer(
                 wlclient_ptr, next_draw_time(), timer_callback, icon_ptr);

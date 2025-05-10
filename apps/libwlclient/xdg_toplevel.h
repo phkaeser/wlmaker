@@ -35,11 +35,15 @@ typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
  * Creates a XDG toplevel.
  *
  * @param wlclient_ptr
+ * @param width
+ * @param height
  *
  * @return State of the toplevel or NULL on error.
  */
 wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
-    wlclient_t *wlclient_ptr);
+    wlclient_t *wlclient_ptr,
+    unsigned width,
+    unsigned height);
 
 /**
  * Destroys the XDG toplevel.
@@ -54,6 +58,18 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr);
  * @param wlclient_ptr
  */
 bool wlclient_xdg_supported(wlclient_t *wlclient_ptr);
+
+/**
+ * Registers the callback to notify when the buffer is ready to draw into.
+ *
+ * @param toplevel_ptr
+ * @param callback
+ * @param callback_ud_ptr
+ */
+void wlclient_xdg_toplevel_register_ready_callback(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
+    void *callback_ud_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -18,7 +18,7 @@ INCLUDE(WaylandProtocol)
 ADD_LIBRARY(libwlclient STATIC)
 
 SET(PUBLIC_HEADER_FILES
-  buffer.h
+  dblbuf.h
   icon.h
   libwlclient.h
   xdg_toplevel.h
@@ -29,8 +29,8 @@ SET_TARGET_PROPERTIES(
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
 
 SET(SOURCES
-  buffer.c
   client.c
+  dblbuf.c
   icon.c
   xdg_toplevel.c
 )

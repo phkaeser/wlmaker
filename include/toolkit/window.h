@@ -36,6 +36,8 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "util.h"
 #include "workspace.h"  // IWYU pragma: keep
 
+struct wlr_output;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
