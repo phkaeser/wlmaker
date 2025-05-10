@@ -31,7 +31,6 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_seat.h>
-#include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
 #include "bordered.h"

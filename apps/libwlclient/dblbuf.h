@@ -29,6 +29,7 @@
 extern "C" {
 #endif  // __cplusplus
 
+struct wl_buffer;
 struct wl_shm;
 struct wl_surface;
 

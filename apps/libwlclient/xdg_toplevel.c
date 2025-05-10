@@ -28,6 +28,7 @@
 #include "dblbuf.h"
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-client-protocol.h"
 
 struct wl_array;
 struct xdg_surface;
