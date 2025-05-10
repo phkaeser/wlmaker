@@ -58,6 +58,7 @@ typedef enum {
 /**
  * Creates a workspace.
  *
+ * @param wlr_output_layout_ptr Output layout. Must outlive the workspace.
  * @param name_ptr
  * @param tile_style_ptr
  * @param env_ptr
@@ -66,6 +67,7 @@ typedef enum {
  *     via @ref wlmtk_workspace_destroy.
  */
 wlmtk_workspace_t *wlmtk_workspace_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
     const char *name_ptr,
     const wlmtk_tile_style_t *tile_style_ptr,
     wlmtk_env_t *env_ptr);
@@ -98,21 +100,6 @@ void wlmtk_workspace_get_details(
     wlmtk_workspace_t *workspace_ptr,
     const char **name_ptr_ptr,
     int *index_ptr);
-
-/**
- * Updates the set of outputs.
- *
- * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
- *
- * @param workspace_ptr
- * @param wlr_output_layout_ptr The output layout. @ref wlmtk_workspace_t
- *                            expects all referred outputs to live until the
- *                            next call to wlmtk_workspace_update_layout, or
- *                            until @ref wlmtk_workspace_destroy is called.
- */
-void wlmtk_workspace_update_output_layout(
-    wlmtk_workspace_t *workspace_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Returns the extents of the workspace available for maximized windows.
@@ -298,20 +285,6 @@ bs_dllist_node_t *wlmtk_dlnode_from_workspace(
 /** @return Poitner to the @ref wlmtk_workspace_t of the `dlnode_ptr`. */
 wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr);
-
-/**
- * Creates a workspace with defined extents, suitably for tests.
- *
- * @param width
- * @param height
- * @param env_ptr
- *
- * @return A pointer to a @ref wlmtk_workspace_t or NULL on error.
- */
-wlmtk_workspace_t *wlmtk_workspace_create_for_test(
-    int width,
-    int height,
-    wlmtk_env_t *env_ptr);
 
 /** Unit tests for the workspace. */
 extern const bs_test_case_t wlmtk_workspace_test_cases[];

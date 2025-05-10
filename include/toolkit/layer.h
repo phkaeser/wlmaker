@@ -46,11 +46,14 @@ extern "C" {
 /**
  * Creates a layer. Layers contain panels, such as layer shells.
  *
+ * @param wlr_output_layout_ptr The output layout.
  * @param env_ptr
  *
  * @return Pointer to the layer handle or NULL on error.
  */
-wlmtk_layer_t *wlmtk_layer_create(wlmtk_env_t *env_ptr);
+wlmtk_layer_t *wlmtk_layer_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
+    wlmtk_env_t *env_ptr);
 
 /**
  * Destroys the layer.
@@ -108,21 +111,6 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
  * @param layer_output_ptr
  */
 void wlmtk_layer_output_reconfigure(wlmtk_layer_output_t *layer_output_ptr);
-
-/**
- * Updates the set of outputs.
- *
- * TODO(kaeser@gubbe.ch): Maybe rather wire this up with the event handler?
- *
- * @param layer_ptr
- * @param wlr_output_layout_ptr The output layout. @ref wlmtk_layer_t
- *                            expects all referred outputs to live until the
- *                            next call to wlmtk_workspace_update_layout, or
- *                            until @ref wlmtk_layer_destroy is called.
- */
-void wlmtk_layer_update_output_layout(
-    wlmtk_layer_t *layer_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Sets the parent workspace for the layer.
