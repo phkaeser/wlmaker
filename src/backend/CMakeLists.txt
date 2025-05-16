@@ -31,6 +31,7 @@ TARGET_INCLUDE_DIRECTORIES(
   PUBLIC
   ${PROJECT_SOURCE_DIR}/include
   PRIVATE
+  ${WAYLAND_INCLUDE_DIRS}
   ${WLROOTS_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
 )
@@ -55,9 +56,10 @@ TARGET_COMPILE_OPTIONS(
 TARGET_LINK_LIBRARIES(
   backend
   PUBLIC
-  libbase_plist
-  PRIVATE
   libbase
+  libbase_plist
+  PkgConfig::WAYLAND
+  PRIVATE
   toolkit
   PkgConfig::WLROOTS)
 
