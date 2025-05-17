@@ -1,4 +1,4 @@
-name: Build for openSUSE Tubmleweed
+name: Build for openSUSE Tumbleweed
 
 on:
   push:
