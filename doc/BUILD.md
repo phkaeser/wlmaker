@@ -9,9 +9,10 @@ For compiling on **Debian Bookworm**, further dependencies need to be
 compiled, built and installed. This is described
 [further below](BUILD.md#build-on-debian-bookworm-stable).
 
-Consult the worfklows for [FreeBSD](../.github/workflows/build-for-freebsd.yml)
-and [Fedora41](../.github/workflows/build-for-fedora41.yml) about setup for
-these systems.
+Consult the worfklows for [FreeBSD](../.github/workflows/build-for-freebsd.yml),
+[Fedora41](../.github/workflows/build-for-fedora41.yml) or
+[openSUSE Tumbleweed](../.github/workflows/build-for-opensuse-tumbleweed.yml)
+about packages and setup for these systems.
 
 ## Build on Debian Trixie
 
