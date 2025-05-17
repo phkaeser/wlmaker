@@ -14,6 +14,22 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
+# Further dependency versions, as submodules:
+# * drm at libdrm-2.4.117
+# * hwdata at v0.371
+# * libdisplay-info at 0.2.0
+# * pixman at pixman-0.43.0
+
+PKG_CHECK_MODULES(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
+# We build for wlroots 0.18.
+PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
+PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
+# XWayland considered optional.
+PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
+
+ADD_SUBDIRECTORY(backend)
+ADD_SUBDIRECTORY(toolkit)
+
 SET(PUBLIC_HEADER_FILES
   action.h
   action_item.h
@@ -113,7 +129,7 @@ TARGET_LINK_LIBRARIES(
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
-  PkgConfig::WAYLAND
+  PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
   PkgConfig::XCB
   PkgConfig::XKBCOMMON)
@@ -125,7 +141,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
-  ${WAYLAND_INCLUDE_DIRS}
+  ${WAYLAND_SERVER_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}
 )
@@ -142,8 +158,8 @@ ADD_EXECUTABLE(wlmaker wlmaker.c)
 ADD_DEPENDENCIES(wlmaker wlmaker_lib)
 TARGET_COMPILE_OPTIONS(
   wlmaker PRIVATE
-  ${WAYLAND_CFLAGS}
-  ${WAYLAND_CFLAGS_OTHER})
+  ${WAYLAND_SERVER_CFLAGS}
+  ${WAYLAND_SERVER_CFLAGS_OTHER})
 TARGET_LINK_LIBRARIES(wlmaker PRIVATE libbase libbase_plist wlmaker_lib)
 IF(LIBBACKTRACE)
   TARGET_COMPILE_DEFINITIONS(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)

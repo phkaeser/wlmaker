@@ -38,27 +38,8 @@ INCLUDE(CTest)
 
 FIND_PACKAGE(PkgConfig REQUIRED)
 
-# Further dependency versions, as submodules:
-# * drm at libdrm-2.4.117
-# * hwdata at v0.371
-# * libdisplay-info at 0.2.0
-# * pixman at pixman-0.43.0
-
 PKG_CHECK_MODULES(CAIRO REQUIRED IMPORTED_TARGET cairo>=1.16.0)
-PKG_CHECK_MODULES(
-  WAYLAND REQUIRED IMPORTED_TARGET
-  wayland-client>=1.22.0
-  wayland-protocols>=1.32
-  wayland-server>=1.22.0)
-PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
-PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
-
-# XWayland considered optional.
-PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
-
-# We build for wlroots 0.18.
-PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.18>=0.18)
 
 # https://github.com/ianlancetaylor/libbacktrace.
 # The REQUIRED arg is available only from cmake 3.28.
@@ -117,8 +98,6 @@ ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(share)
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(src/backend)
-ADD_SUBDIRECTORY(src/toolkit)
 ADD_SUBDIRECTORY(tests)
 
 # Adds submodules last, to permit checking on already-existing targets.
