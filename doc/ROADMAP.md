@@ -5,6 +5,8 @@ Maker, and fully theme-able and configurable.
 
 Support for visual effects to improve usability, but not for pure show.
 
+See the [Detailed Feature List](FEATURES.md) for details.
+
 ## Plan for 0.7
 
 * Cleanups:
