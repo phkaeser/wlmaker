@@ -4,7 +4,7 @@ This document lists features implemented, planned or proposed for wlmaker,
 and sets them in reference to documented [Window Maker](https://www.windowmaker.org/)
 features, where available.
 
-Features should be in the following state(s):
+Features should be in any of the following state(s):
 
 * [ ] -- **Listed**: A desired feature for the future.
 * [ ] :clock3: -- **Planned**: Listed on the roadmap for an upcoming version.
@@ -90,7 +90,10 @@ TBD: Raise/Lower.
 
 ### Moving a Window
 
-TBD.
+* [x] :white_check_mark: Left-dragging the title bar moves the window.
+* [x] :white_check_mark: Holding Alt and left-dragging while anywhere on the window
+  moves the window.
+* [ ] The modifier key for left-dragging anywhere on the content is configurable.
 
 ### Shading a Window
 
@@ -101,7 +104,10 @@ TBD.
 
 ### Miniaturizing a Window
 
-TBD.
+* [ ] Left-click on the miniaturize button collapses the window into a mini-window.
+* [ ] The transition to a mini-window (and back) is animated.
+* [ ] The mini-window is shown in the *Icon Area* and is distinguishable
+  from an application icon.
 
 ### Closing a Window
 
@@ -122,4 +128,197 @@ TBD.
 
 ### Window Placement
 
+* [ ] New windows are placed on a suitable free spot, if available.
+* [ ] Once screen is full, windows are stacked with a moderate displacement between each.
+* [ ] "Gravity" to snap and stick to borders.
+* [ ] Pulling a window towards an edge of an output sets window to occupy that edge.
+
+### Window attributes
+
+* [ ] Permit to configure attributes by application ID and/or window title.
+* [ ] Permit to disable titlebar, resizebar, close button, miniaturize button.
+* [ ] Option to keep on top.
+* [ ] Option to be "omnipresent", ie. shown across all workspaces.
+* [ ] To determine: Start miniaturized.
+* [ ] To determine: Skip window list.
+* [ ] Specify an icon, where not provided.
+* [ ] Specify initial workspace.
+* [ ] Scaling factor (fractional scale).
+* [ ] Use *XDG Shell* `wm_capabilities` to advertise capabilities, as attributes permit.
+
+## Workspaces
+
+* [x] :white_check_mark: Workspaces for startup are configurable in the *state*
+  configuration file.
+* [x] :white_check_mark: Navigate between workspaces using a configurable key
+  combination (ctrl-arrow).
+* [ ] Navigate between workspaces through scrollwheel or buttons on the *Clip*.
+* [ ] When saving state, the current workspace configuation is saved to the *state*
+  configuration file.
+
+## Workspaces menu
+
+* [ ] "New", to create a new workspace.
+* [ ] "Destroy" or "Destroy last" for destroying a workspace.
+* [ ] Menu item to navigate to the provided workspace.
+* [ ] Ctrl-click on menu item to rename the workspace, through a dialog.
+
+## Navigating workspaces
+
+* [ ] Optional display the workspace name after moving to a new workspace.
+* [ ] The transition between workspaces is animated.
+
+## Window assignments
+
+* [ ] Send window to another workspace through ctrl-shift-arrow (or configurable combination)
+* [ ] Navigate to workspace using key combination (eg. Alt-<number>)
+* [ ] Navigate to same workspace in next group, using key combination.
+* [ ] Support workspace groups, addressable by an extra modifier of key combinations.
+
+## Menu contents
+
+### Root menu
+
+* [*] :white_check_mark: Menu configurable as a plist.
+* [ ] Generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
+
+### Window commands
+
+* [*] :white_check_mark: Static contents, shown when right-clicking on title bar.
+* [ ] Items and contents adapting to state (eg. no "maximize" when maximized).
+
+## Wayland protocol support
+
+### `ext-idle-notify-v1`
+
+* [ ] Implement.
+
+### `ext-session-lock-v1`
+
+* [x] :white_check_mark: Implement, verified on single output.
+* [ ] Make it work on multiple outputs: Lock surface shown on each.
+
+### `idle-inhibit-unstable-v1`
+
+* [x] :white_check_mark: Implement.
+* [ ] Test it. Didn't have a tool when adding it.
+
+### `wlr-foreign-toplevel-management-unstable-v1`
+
+* [ ] Implement.
+
+### `wlr-layer-shell-unstable-v1`
+
+* [x] :white_check_mark: Support layer panels.
+* [ ] Support `keyboard_interactivity` for upper layers.
+
+### `wlr-output-management-unstable-v1`
+
+* [x] :white_check_mark: Implemented, and verified with `wlr-randr` and `wldisplays`.
+* [x] :white_check_mark: Scale, transformation and mode of output is configurable
+  in *config* file, by matching output attributes.
+
+### ``wlr-screencopy-unstable-v1`
+
+* [x] :white_check_mark: Implemented, works for `wdisplays`.
+
+### `xdg-activation-v1`
+
+* [ ] Implement.
+
+### `xdg-decoration`
+
+* [x] Implemented.
+
+### `xdg-shell`
+
+* [x] :white_check_mark: Support toplevel shell and popups.
+* [ ] Refactor: split `xdg_surface` off `xdg_toplevel`, encode as separate classes.
+* [ ] Accept state (maximize, fullscreen, ...) before mapping the surface, but apply
+  them only after first commit.
+* [ ] Accept decoration requests before first commit, and forward them after the first
+  commit was received (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
+* [ ] Support `set_parent`, associating a child `wlmtk_window_t` with a paraent.
+* [ ] Consider suggested position on `show_window_menu`
+
+## X11 client support (XWayland)
+
+* [x] :white_check_mark: Support windows and popups, enough for `xterm` and `emacs`.
+* [ ] Modal windows should be a child `wlmtk_window_t`
+* [ ] Investigate if the connection can identify the real X client, not the
+  XWayland connection.
+
+## Dock, Clip, Icon Area
+
+* [x] :white_check_mark: Launcher item display when the app is "launching", and "running".
+* [ ] Drag-and-drop icons between icon area, dock app and clip.
+* [ ] Investigate if & how to use icons specified in XDG desktop entry.
+* [ ] Aspirational: Aim to have *Dock* and *Clip* running as separate process(es).
+* [ ] Entries in Dock/Clip have a settings menu to define path & icon.
+
+### Dock
+
+* [x] :white_check_mark: The entries in the dock are loaded from the *state* file.
+* [x] :white_check_mark: Edge and anchor are configured in *state* config file.
+* [x] :white_check_mark: Entries have configurable icon image, for when app isn't running.
+* [ ] Entries can be configured to autostart upon wlmaker startup.
+* [ ] Entries can be configured to be "locked", preventing accidental removal.
+* [ ] Entries can have a drawer, to nest a second layer of entries.
+* [ ] When saving state, dock entries are saved into *state* config file.
+
+### Clip
+
+* [x] :white_check_mark: edge and anchor are configured in *state* config file.
+* [ ] Entries can be configured to be "omnipresent", but are per-workspace by default.
+* [ ] When saving state, clip entries are saved into *state* config file.
+
+### Icon Area
+
+* [ ] Display running apps using the configured icon.
+* [ ] Consider showing a miniature of the toplevel surface in the icon.
 TBD.
+
+### Dock Apps
+
+* [x] :white_check_mark: Have a demo app using the icon protocol (`wlmclock`)
+* [ ] Configurable to show in Dock or Clip.
+* [ ] When starting from anywhere, dock apps show in icon area.
+* [ ] When starting from a docked or clipped position, show there.
+* [ ] Add another demo DockApp (julia set).
+
+## Toolkit
+
+* [ ] Use pango proper over cairo toy interface. Use relative sizes to scale.
+* [ ] Support configurable fractional scale for all decoration elements.
+* [ ] Text strings are looked up from a table, for internationalization.
+
+### Menu
+
+* [ ] Permit navigation by keys
+* [ ] Position all menus to remain within output.
+* [ ] Re-position to remain within output when submenu opens.
+* [ ] Handle case of too manu menu items that exceed output space.
+
+## Devices
+
+### Multiple outputs ([#122](https://github.com/phkaeser/wlmaker/issues/122))
+
+* [x] :white_check_mark: Output layout configurable via third-party tool, eg. `wlr-randr`.
+* [ ] When saving state, store the current layout in the *state* config file.
+
+
+## General
+
+* [ ] Use SVG as principal format for icons.
+* [ ] Add a logo.
+* [ ] Add an info panel, showing version, name, copyright and link to documentation.
+* [ ] Upon first launch, show an onboarding screen with basic instructions
+  ([#131](https://github.com/phkaeser/wlmaker/issues/131)).
+
+### CI/CD
+
+* [x] :white_check_mark Have github workflows to build with GCC and Clang, x86_64
+  and arm64, and Linux + *BSD.
+* [ ] Generate the screenshots (extend wlroots for a PNG backend?)
+* [ ] Provide a binary package of wlmaker, from HEAD.
+* [ ] Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).

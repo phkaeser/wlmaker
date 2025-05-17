@@ -51,9 +51,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
 * Menu
-  * Keyboard navigation.
+  * Permit navigation by keys
   * Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
-  * Re-position to remain within output when adding submenus.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
@@ -325,60 +324,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 ## Window Maker features
 
-* "sloppy focus": Focus that follows mouse, and activates windows after a configurable delay (eg. 200ms). Also to auto-raise activated windows.
-* "workspace groups": Up to 10 workspaces are directly indexable. A further layer of key combos moves to workspace N+10/N-10.
-
 ## Overall
 
-* wlroots handling
-  * Split xdg_surface off xdg_toplevel.
-  * Accept state changes (maximize, fullscreen, ...) also before being mapped.
-    Apply when mapping.
-  * Accept decoration requests before first commit. And forward them after
-    the first commit (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
-
-* Full support for multiple outputs ([#122](https://github.com/phkaeser/wlmaker/issues/122))
-  * Permit layout configuration via third-party tool (eg. wlr-randr).
-  * Test & scope the changes required.
-
-* Wayland protocol adherence.
-  * Support XDG `wm_capabilities` and advertise the compositor features.
-  * Fullscreen: Hide all other visuals when a window takes fullscreen.
-  * `xdg-shell`: set_parent, by child wlmtk_window_t.
-  * `xdg-shell`: consider suggested position on `show_window_menu`.
-  * Test `idle-inhibit-unstable-v1`. Didn't have a tool when adding.xs
-  * Add `ext-idle-notify-v1` support.
-  * Add `xdg-activation-v1` support.
-  * Add `wlr-foreign-toplevel-management-unstable-v1` support.
-  * Support `keyboard_interactivity` for `wlr-layer-shell-unstable-v1`.
-
-* XWayland support (X11 clients).
-  * Proper handling of modal windows: Should be a child wlmtk_window_t to itself.
-  * Permit identifying the real X client, not the XWayland connection.
-  * Have a test matrix build that verifies the build works without XWayland.
-  * Fix bug with emacs hanging on saving clipboard (observed once).
-
-* Dock Apps.
-  * Attached to dock (visible across workspaces) or clip (per workspace).
-  * Configurable to show permanently also in clip.
-  * Drag-and-drop between clip and dock.
-  * Ideally: With a Wayland protocol that permits running the dock and clip as
-    separate binary, independent of the compositor.
-  * Second Demo DockApp (julia set).
-
-* Visualization / icons for running apps.
-  * Re-build this unsing wlmtk.
-  * Show in 'iconified' area.
-  * Drag-and-drop into clip or dock area.
-  * Consider running this as task selector, as separate binary.
-
 * Window attributes
-  * Determine how to detect client preferences.
-  * Configurable and overridable (titlebar, resizebar, buttons, ...).
-  * Scaling factor per application.
   * Build and test a clear model for `organic`/`maximized`/`fullscreen` state
     switches and precedence.
-  * Window menu, adapting to state (eg. no "maximize" when maximized).
 
 * Application support.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).
@@ -386,28 +336,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * XDG Complianace
   * Review and define what to support from https://specifications.freedesktop.org.
-  * Autostart.
   * System Tray (potentially through a Dock App)
   * Icon Themes
   * Notifications (potentially through a Dock App)
 
-* Application launcher
-  * Show icon from XDG desktop entry.
-  * For running apps, consider showing the surface on the tile.
-  * Configuration menu: Commandline, and further settings.
-  * Use SVG as principal icon format, and scale without quality loss.
-
-* A logo and info panel.
-
-* Window actions
-  * Send to another workspace, using menu or key combinations.
-  * Window *shade* triggered by double-click, and animated.
-  * Minimize (*iconify*) windows, using wlmtk.
-  * Window menu.
-  * Application ID (from XDG shell and/or X11).
-
 * Configuration file and parser:
-  * Permit dock, clip and output state to save state to configuration files.
   * Support different background styles (fill, image).
   * Make semicolon-after-value required, for consistency with GNUstep.
   * Theme.
@@ -419,21 +352,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Verify support of multi-layout configurations (eg. `shift_caps_toggle`)
   * Support ChromeOS layout switch hotkey (`Ctrl+Shift+Space`)
 
-* Window placement
-  * Automatic placement on a free spot.
-  * Gravity to snap to and stick to borders.
-  * Mouse pull to sides or corners will set window to half or quarter screen.
-
 * Configuration tool, similar to WPrefs.
 
 * Compositor features
   * Bindable hotkeys.
   * Pointer position, to support apps like wmscreen or xeyes.
-  * Evaluate "snap layout" mechanism, for pre-arranged Window placement.
-
-* Internationalization and solid font support
-  * Move from cairo toy interface to using pango proper.
-  * All text strings to be configurable and swappable.
 
 * Commandline flags to support:
   * icon lookup paths beyond the hardcoded defaults.
@@ -444,13 +367,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Exploratory ideas
   * Stretch: Consider supporting XScreenSaver (or visualization modules).
-
-* Toolkit improvements
-  * Menu
-    * Permit navigation by keys
-    * Position all menus to remain within output.
-    * Re-position to remain within output when submenu opens.
-    * Handle case of too manu menu items that exceed output space.
 
 ## Visualization and effects
 
@@ -475,13 +391,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Network monitor.
 * Laptop battery status.
 * Julia set.
-
-## Build, compile, deployment
-
-* Run static checks and enforce them on pull requests (eg. https://www.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/).
-* Provide binary package of wlmaker.
-* Run github workflows to build with GCC and Clang, x86_64 and arm64, and Linux + *BSD.
-* Look into whether the screenshots can be scripted.
 
 ## Non-Goals
 
