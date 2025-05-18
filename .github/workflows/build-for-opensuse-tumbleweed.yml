@@ -22,7 +22,10 @@ jobs:
           flex \
           gcc \
           git \
+          libxcb-devel \
+          libxkbcommon-devel \
           ncurses-devel \
+          wayland-devel \
           wayland-protocols-devel \
           wlroots-devel \
           xwayland-devel
