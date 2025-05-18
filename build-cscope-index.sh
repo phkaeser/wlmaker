@@ -5,6 +5,7 @@ set -o errexit
 
 SUBPATHS="\
 dependencies \
+include \
 src \
 submodules"
 
