@@ -31,7 +31,6 @@
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
-#include <xkbcommon/xkbcommon.h>
 
 #include "input.h"
 
@@ -72,10 +71,7 @@ static void _wlmtk_container_element_keyboard_blur(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_container_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
-    uint32_t modifiers);
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
 
 static void handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -727,10 +723,7 @@ void _wlmtk_container_element_keyboard_blur(wlmtk_element_t *element_ptr)
 /** Handler for keyboard events: Pass to keyboard-focussed element, if any. */
 bool _wlmtk_container_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
-    uint32_t modifiers)
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
@@ -739,10 +732,7 @@ bool _wlmtk_container_element_keyboard_event(
 
     return wlmtk_element_keyboard_event(
         container_ptr->keyboard_focus_element_ptr,
-        wlr_keyboard_key_event_ptr,
-        key_syms,
-        key_syms_count,
-        modifiers);
+        wlr_keyboard_key_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1880,20 +1870,20 @@ void test_keyboard_event(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_event_called);
 
     wlmtk_fake_element_grab_keyboard(fe_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_event_called);
 
     fe_ptr->keyboard_event_called = false;
     wlmtk_container_set_keyboard_focus_element(&container, NULL);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_event_called);
 
     wlmtk_container_remove_element(&container, &fe_ptr->element);

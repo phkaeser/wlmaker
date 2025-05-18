@@ -283,8 +283,11 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
                 keyboard_ptr->server_ptr, key_syms[i], modifiers)) {
             processed |= true;
         } else {
-            // TODO(kaeser@gubbe.ch): Pass key_syms[i] keysym, modifier and
-            // direction down to the element having keyboard focus.
+            processed |= wlmtk_element_keyboard_sym(
+                wlmtk_root_element(keyboard_ptr->server_ptr->root_ptr),
+                key_syms[i],
+                direction,
+                modifiers);
         }
     }
 
@@ -292,10 +295,7 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 
     wlmtk_element_keyboard_event(
         wlmtk_root_element(keyboard_ptr->server_ptr->root_ptr),
-        wlr_keyboard_key_event_ptr,
-        NULL,
-        0,
-        modifiers);
+        wlr_keyboard_key_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
