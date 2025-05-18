@@ -33,7 +33,6 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
-#include <xkbcommon/xkbcommon.h>
 
 #include "element.h"
 #include "container.h"
@@ -79,10 +78,7 @@ static bool _wlmtk_surface_element_pointer_axis(
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 static bool _wlmtk_surface_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
-    uint32_t modifiers);
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
 
 static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -180,14 +176,19 @@ void wlmtk_surface_set_activated(
         if (NULL != surface_ptr->super_element.parent_container_ptr) {
             wlmtk_container_set_keyboard_focus_element(
                 surface_ptr->super_element.parent_container_ptr,
-                &surface_ptr->super_element);
+                &surface_ptr->super_element,
+                true);
         }
     } else {
         if (wlr_seat_ptr->keyboard_state.focused_surface ==
             surface_ptr->wlr_surface_ptr) {
             wlr_seat_keyboard_clear_focus(wlr_seat_ptr);
+        }
+        if (NULL != surface_ptr->super_element.parent_container_ptr) {
             wlmtk_container_set_keyboard_focus_element(
-                surface_ptr->super_element.parent_container_ptr, NULL);
+                surface_ptr->super_element.parent_container_ptr,
+                &surface_ptr->super_element,
+                false);
         }
     }
 
@@ -587,21 +588,17 @@ bool _wlmtk_surface_element_pointer_axis(
  *
  * @param element_ptr
  * @param wlr_keyboard_key_event_ptr
- * @param key_syms
- * @param key_syms_count
- * @param modifiers
  *
  * @return true if the axis event was handled.
  */
 bool _wlmtk_surface_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    __UNUSED__ const xkb_keysym_t *key_syms,
-    __UNUSED__ size_t key_syms_count,
-    __UNUSED__ uint32_t modifiers)
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
+
+    if (!surface_ptr->activated) return false;
 
     struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(element_ptr->env_ptr);
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
@@ -609,16 +606,6 @@ bool _wlmtk_surface_element_keyboard_event(
 
     if (NULL == wlr_keyboard_ptr) return false;
 
-    wlr_seat_keyboard_notify_enter(
-        wlr_seat_ptr,
-        surface_ptr->wlr_surface_ptr,
-        wlr_keyboard_ptr->keycodes,
-        wlr_keyboard_ptr->num_keycodes,
-        &wlr_keyboard_ptr->modifiers);
-
-    wlr_seat_set_keyboard(
-        wlr_seat_ptr,
-        wlr_keyboard_ptr);
     wlr_seat_keyboard_notify_key(
         wlr_seat_ptr,
         wlr_keyboard_key_event_ptr->time_msec,

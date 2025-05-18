@@ -228,16 +228,23 @@ void wlmtk_container_pointer_grab_release(
 
 
 /**
- * Reports `element_ptr` as having keyboard focus, and registers it as such in
- * this container. Will propagate @ref wlmtk_container_t::super_element to
- * this container's parent as element having keyboard focus.
+ * Sets or disables keyboard focus for `element_ptr` for the container.
+ *
+ * If `enabled`, calls @ref wlmtk_element_keyboard_blur for the element
+ * currently having keyboard focus, and updates
+ * @ref wlmtk_container_t::keyboard_focus_element_ptr to `element_ptr`.
+ * Otherwise, evaluates whether the focus is currently held by `element_ptr`,
+ * and (if yes) clears this container's focus.
+ * Propagates the event to the container's parent.
  *
  * @param container_ptr
  * @param element_ptr
+ * @param enabled
  */
 void wlmtk_container_set_keyboard_focus_element(
     wlmtk_container_t *container_ptr,
-    wlmtk_element_t *element_ptr);
+    wlmtk_element_t *element_ptr,
+    bool enabled);
 
 /**
  * Updates the layout of the container.

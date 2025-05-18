@@ -22,7 +22,10 @@
 
 #include <libbase/libbase.h>
 #include <linux/input-event-codes.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 #include "input.h"
 
@@ -63,13 +66,24 @@ static void _wlmtk_menu_element_destroy(
 static bool _wlmtk_menu_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmtk_menu_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    uint32_t modifiers);
 
 /* == Data ================================================================= */
 
 /** The superclass' element virtual method table. */
 static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
     .destroy = _wlmtk_menu_element_destroy,
-    .pointer_button = _wlmtk_menu_element_pointer_button
+    .pointer_button = _wlmtk_menu_element_pointer_button,
+};
+
+/** Extra override for the contained element. */
+// TODO(kaeser@gube.ch): Migrate into @ref _wlmtk_menu_element_vmt. */
+static const wlmtk_element_vmt_t _wlmtk_menu_box_element_vmt = {
+    .keyboard_sym = _wlmtk_menu_element_keyboard_sym,
 };
 
 /* == Exported methods ===================================================== */
@@ -101,6 +115,12 @@ wlmtk_menu_t *wlmtk_menu_create(
     }
     menu_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
+    // TODO(kaeser@gubbe.ch): That should work directly on the pane. Update
+    // this, once having eliminated wlmtk_content_t and the ugly hack in
+    // @ref wlmaker_root_menu_create.
+    wlmtk_element_extend(
+        wlmtk_box_element(&menu_ptr->box),
+        &_wlmtk_menu_box_element_vmt);
 
     wl_signal_init(&menu_ptr->events.open_changed);
     wl_signal_init(&menu_ptr->events.request_close);
@@ -296,6 +316,24 @@ bool _wlmtk_menu_element_pointer_button(
     }
 
     return rv;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::keyboard_sym. Translated keys. */
+bool _wlmtk_menu_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    __UNUSED__ uint32_t modifiers)
+{
+    wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_t, box.super_container.super_element);
+
+    if (XKB_KEY_Escape == keysym && XKB_KEY_DOWN == direction) {
+        wl_signal_emit(&menu_ptr->events.request_close, NULL);
+        return true;
+    }
+    return false;
 }
 
 /* == Unit tests =========================================================== */

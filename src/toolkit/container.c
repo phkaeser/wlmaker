@@ -72,9 +72,11 @@ static void _wlmtk_container_element_keyboard_blur(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_container_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+static bool _wlmtk_container_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
     uint32_t modifiers);
 
 static void handle_wlr_scene_tree_node_destroy(
@@ -99,6 +101,7 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .pointer_grab_cancel = _wlmtk_container_element_pointer_grab_cancel,
     .keyboard_blur = _wlmtk_container_element_keyboard_blur,
     .keyboard_event = _wlmtk_container_element_keyboard_event,
+    .keyboard_sym = _wlmtk_container_element_keyboard_sym,
 };
 
 /** Default virtual method table. Initializes non-abstract methods. */
@@ -262,7 +265,8 @@ void wlmtk_container_remove_element(
         container_ptr->left_button_element_ptr = NULL;
     }
     if (container_ptr->keyboard_focus_element_ptr == element_ptr) {
-        wlmtk_container_set_keyboard_focus_element(container_ptr, NULL);
+        wlmtk_container_set_keyboard_focus_element(
+            container_ptr, element_ptr, false);
     }
 
     wlmtk_container_update_layout(container_ptr);
@@ -367,24 +371,32 @@ void wlmtk_container_pointer_grab_release(
 /* ------------------------------------------------------------------------- */
 void wlmtk_container_set_keyboard_focus_element(
     wlmtk_container_t *container_ptr,
-    wlmtk_element_t *element_ptr)
+    wlmtk_element_t *element_ptr,
+    bool enabled)
 {
-    if (NULL != element_ptr) {
-        BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
-    }
-    if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
+    BS_ASSERT(NULL != element_ptr);
+    if (enabled) {
+        // Guard clause: Nothing to do, if that element already has focus.
+        if (container_ptr->keyboard_focus_element_ptr == element_ptr) return;
 
-    if (NULL != container_ptr->keyboard_focus_element_ptr) {
-        wlmtk_element_keyboard_blur(container_ptr->keyboard_focus_element_ptr);
+        if (NULL != container_ptr->keyboard_focus_element_ptr) {
+            wlmtk_element_keyboard_blur
+                (container_ptr->keyboard_focus_element_ptr);
+        }
+        container_ptr->keyboard_focus_element_ptr = element_ptr;
+
+    } else {
+        // Guard clause: Nothing to do if that element does NOT have focus.
+        if (container_ptr->keyboard_focus_element_ptr != element_ptr) return;
+
+        container_ptr->keyboard_focus_element_ptr = NULL;
     }
-    container_ptr->keyboard_focus_element_ptr = element_ptr;
 
     if (NULL != container_ptr->super_element.parent_container_ptr) {
-        if (NULL != element_ptr) {
-            element_ptr = &container_ptr->super_element;
-        }
         wlmtk_container_set_keyboard_focus_element(
-            container_ptr->super_element.parent_container_ptr, element_ptr);
+            container_ptr->super_element.parent_container_ptr,
+            &container_ptr->super_element,
+            enabled);
     }
 }
 
@@ -727,10 +739,7 @@ void _wlmtk_container_element_keyboard_blur(wlmtk_element_t *element_ptr)
 /** Handler for keyboard events: Pass to keyboard-focussed element, if any. */
 bool _wlmtk_container_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
-    uint32_t modifiers)
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
@@ -739,10 +748,25 @@ bool _wlmtk_container_element_keyboard_event(
 
     return wlmtk_element_keyboard_event(
         container_ptr->keyboard_focus_element_ptr,
-        wlr_keyboard_key_event_ptr,
-        key_syms,
-        key_syms_count,
-        modifiers);
+        wlr_keyboard_key_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for translated keyboard events: To keyboard-focussed, if any. */
+bool _wlmtk_container_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    uint32_t modifiers)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+    // Guard clause: No focus here, return right away.
+    if (NULL == container_ptr->keyboard_focus_element_ptr) return false;
+
+    return wlmtk_element_keyboard_sym(
+        container_ptr->keyboard_focus_element_ptr,
+        keysym, direction, modifiers);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1880,21 +1904,63 @@ void test_keyboard_event(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_event_called);
 
+    // Obtains keyboard focus for the fake element.
     wlmtk_fake_element_grab_keyboard(fe_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_event_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(parent_elptr, 0, 0, 0));
+    BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_sym_called);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &fe_ptr->element,
+        container.keyboard_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &container.super_element,
+        parent.keyboard_focus_element_ptr);
 
+    // Release keyboard focus for *not* this element: Retains focus.
     fe_ptr->keyboard_event_called = false;
-    wlmtk_container_set_keyboard_focus_element(&container, NULL);
+    fe_ptr->keyboard_sym_called = false;
+    wlmtk_container_set_keyboard_focus_element(&container, parent_elptr, false);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_event(parent_elptr, &event));
+    BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_event_called);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(parent_elptr, 0, 0, 0));
+    BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->keyboard_sym_called);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &fe_ptr->element,
+        container.keyboard_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &container.super_element,
+        parent.keyboard_focus_element_ptr);
+
+    // Release keyboard focus for *this* element: Releases focus.
+    fe_ptr->keyboard_event_called = false;
+    fe_ptr->keyboard_sym_called = false;
+    wlmtk_container_set_keyboard_focus_element(&container, &fe_ptr->element, false);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_event(parent_elptr, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(parent_elptr, &event));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_event_called);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(parent_elptr, 0, 0, 0));
+    BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->keyboard_sym_called);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, container.keyboard_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, parent.keyboard_focus_element_ptr);
 
     wlmtk_container_remove_element(&container, &fe_ptr->element);
     wlmtk_element_destroy(&fe_ptr->element);

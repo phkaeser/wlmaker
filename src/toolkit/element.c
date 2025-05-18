@@ -61,9 +61,11 @@ static void _wlmtk_element_pointer_leave(
 static void _wlmtk_element_keyboard_blur(wlmtk_element_t *element_ptr);
 static bool _wlmtk_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+static bool _wlmtk_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
     uint32_t modifiers);
 
 static void handle_wlr_scene_node_destroy(
@@ -82,6 +84,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .pointer_leave = _wlmtk_element_pointer_leave,
     .keyboard_blur = _wlmtk_element_keyboard_blur,
     .keyboard_event = _wlmtk_element_keyboard_event,
+    .keyboard_sym = _wlmtk_element_keyboard_sym,
 };
 
 /* == Exported methods ===================================================== */
@@ -146,6 +149,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->keyboard_event) {
         element_ptr->vmt.keyboard_event = element_vmt_ptr->keyboard_event;
+    }
+    if (NULL != element_vmt_ptr->keyboard_sym) {
+        element_ptr->vmt.keyboard_sym = element_vmt_ptr->keyboard_sym;
     }
 
     return orig_vmt;
@@ -384,9 +390,17 @@ void _wlmtk_element_keyboard_blur(__UNUSED__ wlmtk_element_t *element_ptr)
 /** Handler for keyboard events. By default: Nothing is handled. */
 bool _wlmtk_element_keyboard_event(
     __UNUSED__ wlmtk_element_t *element_ptr,
-    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    __UNUSED__ const xkb_keysym_t *key_syms,
-    __UNUSED__ size_t key_syms_count,
+    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
+{
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handler for translated keys. By default: Nothing is handled. */
+static bool _wlmtk_element_keyboard_sym(
+    __UNUSED__ wlmtk_element_t *element_ptr,
+    __UNUSED__ xkb_keysym_t keysym,
+    __UNUSED__ enum xkb_key_direction direction,
     __UNUSED__ uint32_t modifiers)
 {
     return false;
@@ -448,9 +462,11 @@ static void fake_keyboard_blur(
     wlmtk_element_t *element_ptr);
 static bool fake_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+static bool fake_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
     uint32_t modifiers);
 
 /** Virtual method table for the fake element. */
@@ -467,6 +483,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .pointer_grab_cancel = fake_pointer_grab_cancel,
     .keyboard_blur = fake_keyboard_blur,
     .keyboard_event = fake_keyboard_event,
+    .keyboard_sym = fake_keyboard_sym,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -494,7 +511,8 @@ void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
     if (NULL != fake_element_ptr->element.parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
             fake_element_ptr->element.parent_container_ptr,
-            &fake_element_ptr->element);
+            &fake_element_ptr->element,
+            true);
     }
 }
 
@@ -652,14 +670,25 @@ void fake_keyboard_blur(wlmtk_element_t *element_ptr)
 /** Handles 'keyboard_event' events for the fake element. */
 bool fake_keyboard_event(
     wlmtk_element_t *element_ptr,
-    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    __UNUSED__ const xkb_keysym_t *key_syms,
-    __UNUSED__ size_t key_syms_count,
-    __UNUSED__ uint32_t modifiers)
+    __UNUSED__ struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
     fake_element_ptr->keyboard_event_called = true;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles 'keyboard_sym' events for the fake element. */
+bool fake_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    __UNUSED__ xkb_keysym_t keysym,
+    __UNUSED__ enum xkb_key_direction direction,
+    __UNUSED__ uint32_t modifiers)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->keyboard_sym_called = true;
     return true;
 }
 
@@ -674,7 +703,7 @@ static void test_pointer_motion_leave(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
 static void test_keyboard_focus(bs_test_t *test_ptr);
-static void test_keyboard_event(bs_test_t *test_ptr);
+static void test_keyboard_activity(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -686,7 +715,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_axis", test_pointer_axis },
     { 1, "keyboard_focus", test_keyboard_focus },
-    { 1, "keyboard_event", test_keyboard_event },
+    { 1, "keyboard_activity", test_keyboard_activity },
     { 0, NULL, NULL }
 };
 
@@ -935,8 +964,8 @@ void test_keyboard_focus(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Exercises "keyboard_event" method. */
-void test_keyboard_event(bs_test_t *test_ptr)
+/** Exercises "keyboard_event" and "keyboard_sym" methods. */
+void test_keyboard_activity(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
@@ -944,9 +973,16 @@ void test_keyboard_event(bs_test_t *test_ptr)
     struct wlr_keyboard_key_event event = {};
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_event(
-            &fake_element_ptr->element, &event, NULL, 0, 0));
+        wlmtk_element_keyboard_event(&fake_element_ptr->element, &event));
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->keyboard_event_called);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->keyboard_sym_called);
+
+    fake_element_ptr->keyboard_event_called = false;
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(&fake_element_ptr->element, 0, 0, 0));
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->keyboard_event_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->keyboard_sym_called);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }
