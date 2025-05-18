@@ -50,6 +50,10 @@ struct _wlmaker_root_menu_t {
 
 static void _wlmaker_root_menu_content_request_close(
     wlmtk_content_t *content_ptr);
+static void _wlmaker_root_menu_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated);
+
 static void _wlmaker_root_menu_handle_menu_open_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -66,7 +70,8 @@ static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
 
 /** Virtual method of the root menu's window content. */
 static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
-    .request_close = _wlmaker_root_menu_content_request_close
+    .request_close = _wlmaker_root_menu_content_request_close,
+    .set_activated = _wlmaker_root_menu_content_set_activated,
 };
 
 /* == Exported methods ===================================================== */
@@ -226,6 +231,22 @@ void _wlmaker_root_menu_content_request_close(
         content_ptr, wlmaker_root_menu_t, content);
 
     wlmtk_menu_set_open(root_menu_ptr->menu_ptr, false);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Imlements @ref wlmtk_content_vmt_t::set_activated. Gets keyboard focus. */
+void _wlmaker_root_menu_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated)
+{
+    wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_root_menu_t, content);
+
+    wlmtk_element_t *e = wlmtk_menu_pane(root_menu_ptr->menu_ptr)->element_ptr;
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_set_keyboard_focus_element(
+            e->parent_container_ptr, e, activated);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

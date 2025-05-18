@@ -488,18 +488,20 @@ static inline bool wlmtk_element_keyboard_event(
 static inline bool wlmtk_element_keyboard_sym(
     wlmtk_element_t *element_ptr,
     xkb_keysym_t keysym,
-    bool pressed,
+    enum xkb_key_direction direction,
     uint32_t modifiers)
 {
     return element_ptr->vmt.keyboard_sym(
-        element_ptr, keysym, pressed, modifiers);
+        element_ptr, keysym, direction, modifiers);
 }
 
 /** Calls @ref wlmtk_element_vmt_t::keyboard_blur. */
 static inline void wlmtk_element_keyboard_blur(
     wlmtk_element_t *element_ptr)
 {
-    element_ptr->vmt.keyboard_blur(element_ptr);
+    if (NULL != element_ptr->vmt.keyboard_blur) {
+        element_ptr->vmt.keyboard_blur(element_ptr);
+    }
 }
 
 /**
