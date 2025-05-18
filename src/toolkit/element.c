@@ -511,7 +511,8 @@ void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
     if (NULL != fake_element_ptr->element.parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
             fake_element_ptr->element.parent_container_ptr,
-            &fake_element_ptr->element);
+            &fake_element_ptr->element,
+            true);
     }
 }
 
