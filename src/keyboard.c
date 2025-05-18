@@ -261,19 +261,30 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
         wlmaker_server_deactivate_task_list(keyboard_ptr->server_ptr);
     }
 
+    // Translates libinput keycode -> xkbcommon.
+    uint32_t keycode = wlr_keyboard_key_event_ptr->keycode + 8;
+
     // For key presses: Pass them on to the server, for potential key bindings.
     bool processed = false;
-    if (WL_KEYBOARD_KEY_STATE_PRESSED == wlr_keyboard_key_event_ptr->state) {
-        // Translates libinput keycode -> xkbcommon.
-        uint32_t keycode = wlr_keyboard_key_event_ptr->keycode + 8;
+    const xkb_keysym_t *key_syms;
+    int key_syms_count = xkb_state_key_get_syms(
+        keyboard_ptr->wlr_keyboard_ptr->xkb_state, keycode, &key_syms);
+    for (int i = 0; i < key_syms_count; ++i) {
+        enum xkb_key_direction direction =
+            wlr_keyboard_key_event_ptr->state == WL_KEYBOARD_KEY_STATE_RELEASED ?
+            XKB_KEY_UP : XKB_KEY_DOWN;
+        xkb_state_update_key(
+            keyboard_ptr->wlr_keyboard_ptr->xkb_state,
+            keycode,
+            direction);
 
-        // A key may have multiple syms associated; get them here.
-        const xkb_keysym_t *key_syms;
-        int key_syms_count = xkb_state_key_get_syms(
-            keyboard_ptr->wlr_keyboard_ptr->xkb_state, keycode, &key_syms);
-        for (int i = 0; i < key_syms_count; ++i) {
-            processed = wlmaker_keyboard_process_bindings(
-                keyboard_ptr->server_ptr, key_syms[i], modifiers);
+        if (WL_KEYBOARD_KEY_STATE_PRESSED == wlr_keyboard_key_event_ptr->state &&
+            wlmaker_keyboard_process_bindings(
+                keyboard_ptr->server_ptr, key_syms[i], modifiers)) {
+            processed |= true;
+        } else {
+            // TODO(kaeser@gubbe.ch): Pass key_syms[i] keysym, modifier and
+            // direction down to the element having keyboard focus.
         }
     }
 
