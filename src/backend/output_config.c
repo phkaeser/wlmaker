@@ -60,6 +60,7 @@ static bool _wlmbe_output_mode_decode_init(void *dest_ptr);
 /* == Data ================================================================= */
 
 /** Descriptor for output transformations. */
+/** [OutputTransformation] */
 static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
     BSPL_ENUM("Normal", WL_OUTPUT_TRANSFORM_NORMAL),
     BSPL_ENUM("Rotate90", WL_OUTPUT_TRANSFORM_90),
@@ -71,6 +72,7 @@ static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
     BSPL_ENUM("FlipAndRotate270", WL_OUTPUT_TRANSFORM_FLIPPED_270),
     BSPL_ENUM_SENTINEL(),
 };
+/** [OutputTransformation] */
 
 /** Descriptor for the output configuration. */
 static const bspl_desc_t    _wlmbe_output_config_desc[] = {
