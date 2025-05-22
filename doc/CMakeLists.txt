@@ -57,6 +57,13 @@ IF(DOXYGEN_FOUND)
     COMMENT "Generating API documentation with Doxygen."
     VERBATIM)
 
+  FILE(
+    COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_close_icon.png
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
+  FILE(
+    COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_minimize_icon.png
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
+
 ELSE()
   MESSAGE(NOTICE "Doxygen not found. Not adding 'doc' target to generate API documentation.")
 ENDIF(DOXYGEN_FOUND)

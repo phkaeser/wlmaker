@@ -1,86 +1,91 @@
+//! @page etc_wlmaker_plist etc/wlmaker.plist
+//! Compiled-in default configuration. See @ref config_precedence for details.
+//! @include etc/wlmaker.plist
 // Base configuration for wlmaker: Keyboard and autostarted applications.
 {
-  Keyboard = {
-    XkbRMLVO = {
-      Rules = "evdev";
-      Model = "pc105";
-      Layout = "us";
-      Variant = "intl";
-      Options = "";
+    Keyboard = {
+        XkbRMLVO = {
+            Rules = "evdev";
+            Model = "pc105";
+            Layout = "us";
+            Variant = "intl";
+            Options = "";
+        };
+        Repeat = {
+            // Delay before initiating repeats, in milliseconds.
+            Delay = 300;
+            // Repeats per second.
+            Rate = 25;
+        };
     };
-    Repeat = {
-      // Delay before initiating repeats, in milliseconds.
-      Delay = 300;
-      // Repeats per second.
-      Rate = 25;
+    // Configuration for XDG decoration protocol: Server or client-side?
+    Decoration = {
+        Mode = SuggestServer;
     };
-  };
-  // Configuration for XDG decoration protocol: Server or client-side?
-  Decoration = {
-    Mode = SuggestServer;
-  };
-  KeyBindings = {
-    "Ctrl+Alt+Logo+Q" = Quit;
-    "Ctrl+Alt+Logo+L" = LockScreen;
-    "Ctrl+Alt+Logo+T" = LaunchTerminal;
+    KeyBindings = {
+        "Ctrl+Alt+Logo+Q" = Quit;
+        "Ctrl+Alt+Logo+L" = LockScreen;
+        "Ctrl+Alt+Logo+T" = LaunchTerminal;
 
-    "Ctrl+Alt+Logo+Left" = WorkspacePrevious;
-    "Ctrl+Alt+Logo+Right" = WorkspaceNext;
+        "Ctrl+Alt+Logo+Left" = WorkspacePrevious;
+        "Ctrl+Alt+Logo+Right" = WorkspaceNext;
 
-    "Ctrl+Alt+Logo+Escape" = TaskNext;
-    "Shift+Ctrl+Alt+Logo+Escape" = TaskPrevious;
+        "Ctrl+Alt+Logo+Escape" = TaskNext;
+        "Shift+Ctrl+Alt+Logo+Escape" = TaskPrevious;
 
-    "Alt+Logo+Up" = WindowRaise;
-    "Alt+Logo+Down" = WindowLower;
-    "Ctrl+Alt+Logo+F" = WindowToggleFullscreen;
-    "Ctrl+Alt+Logo+M" = WindowToggleMaximized;
+        "Alt+Logo+Up" = WindowRaise;
+        "Alt+Logo+Down" = WindowLower;
+        "Ctrl+Alt+Logo+F" = WindowToggleFullscreen;
+        "Ctrl+Alt+Logo+M" = WindowToggleMaximized;
 
-    // TODO(kaeser@gubbe.ch): Swap with F12, to match Window Maker's behaviour.
-    "Ctrl+Alt+Logo+R" = RootMenu;
+        // TODO(kaeser@gubbe.ch): Swap with F12, to match Window Maker's behaviour.
+        "Ctrl+Alt+Logo+R" = RootMenu;
 
-    // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
-    // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
-    // listed. Should determine how to handle that w/o modifiers.
-    "Ctrl+Alt+XF86Switch_VT_1" = SwitchToVT1;
-    "Ctrl+Alt+XF86Switch_VT_2" = SwitchToVT2;
-    "Ctrl+Alt+XF86Switch_VT_3" = SwitchToVT3;
-    "Ctrl+Alt+XF86Switch_VT_4" = SwitchToVT4;
-    "Ctrl+Alt+XF86Switch_VT_5" = SwitchToVT5;
-    "Ctrl+Alt+XF86Switch_VT_6" = SwitchToVT6;
-    "Ctrl+Alt+XF86Switch_VT_7" = SwitchToVT7;
-    "Ctrl+Alt+XF86Switch_VT_8" = SwitchToVT8;
-    "Ctrl+Alt+XF86Switch_VT_9" = SwitchToVT9;
-    "Ctrl+Alt+XF86Switch_VT_10" = SwitchToVT10;
-    "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
-    "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
-  };
-  HotCorner = {
-    // Delay for the pointer occupying a corner before triggering 'Enter'.
-    TriggerDelay = 500;
-    // For each corner 'TopLeft', 'TopRight', 'BottomLeft' and 'BottomRight'
-    // there are 'Enter' and 'Leave' events that can be bound to an action.
-    TopLeftEnter = LockScreen;
-    TopLeftLeave = None;
-    TopRightEnter = InhibitLockBegin;
-    TopRightLeave = InhibitLockEnd;
-    BottomLeftEnter = None;
-    BottomLeftLeave = None;
-    BottomRightEnter = None;
-    BottomRightLeave = None;
-  };
-  ScreenLock = {
-    IdleSeconds = 300;
-    Command = "/usr/bin/swaylock";
-  };
-  // Optional array: Commands to start once wlmaker is running.
-  Autostart = (
-    "/usr/bin/foot"
-  );
-  Outputs = (
-    {
-      Name = "*";
-      Transformation = Normal;
-      Scale = 1.0;
-    },
-  );
+        // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
+        // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
+        // listed. Should determine how to handle that w/o modifiers.
+        "Ctrl+Alt+XF86Switch_VT_1" = SwitchToVT1;
+        "Ctrl+Alt+XF86Switch_VT_2" = SwitchToVT2;
+        "Ctrl+Alt+XF86Switch_VT_3" = SwitchToVT3;
+        "Ctrl+Alt+XF86Switch_VT_4" = SwitchToVT4;
+        "Ctrl+Alt+XF86Switch_VT_5" = SwitchToVT5;
+        "Ctrl+Alt+XF86Switch_VT_6" = SwitchToVT6;
+        "Ctrl+Alt+XF86Switch_VT_7" = SwitchToVT7;
+        "Ctrl+Alt+XF86Switch_VT_8" = SwitchToVT8;
+        "Ctrl+Alt+XF86Switch_VT_9" = SwitchToVT9;
+        "Ctrl+Alt+XF86Switch_VT_10" = SwitchToVT10;
+        "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
+        "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
+    };
+    HotCorner = {
+        // Delay for the pointer occupying a corner before triggering 'Enter'.
+        TriggerDelay = 500;
+        // For each corner 'TopLeft', 'TopRight', 'BottomLeft' and 'BottomRight'
+        // there are 'Enter' and 'Leave' events that can be bound to an action.
+        TopLeftEnter = LockScreen;
+        TopLeftLeave = None;
+        TopRightEnter = InhibitLockBegin;
+        TopRightLeave = InhibitLockEnd;
+        BottomLeftEnter = None;
+        BottomLeftLeave = None;
+        BottomRightEnter = None;
+        BottomRightLeave = None;
+    };
+    ScreenLock = {
+        IdleSeconds = 300;
+        Command = "/usr/bin/swaylock";
+    };
+    // Optional array: Commands to start once wlmaker is running.
+    Autostart = (
+        "/usr/bin/foot"
+    );
+    //! [Outputs]
+    Outputs = (
+        {
+            Name = "*";
+            Transformation = Normal;
+            Scale = 1.0;
+        },
+    );
+    //! [Outputs]
 }
