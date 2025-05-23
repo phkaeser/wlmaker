@@ -305,11 +305,13 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
 };
 
 /** Lookup paths for the configuration file. */
+/** [LookupPathsConfig] */
 static const char *_wlmaker_config_fname_ptrs[] = {
     "~/.wlmaker.plist",
     "/usr/share/wlmaker/wlmaker.plist",
     NULL  // Sentinel.
 };
+/** [LookupPathsConfig] */
 
 /** Lookup paths for the configuration file. */
 static const char *_wlmaker_state_fname_ptrs[] = {
