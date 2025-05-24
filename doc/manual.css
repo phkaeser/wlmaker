@@ -1,0 +1,37 @@
+/* Doxygen extra stylesheet */
+
+body {
+    background-color: #505080;
+    margin: 0;
+}
+
+div.contents {
+    background-color: #a6a6b6;
+    border-color: black;
+    border: 1px solid;
+    color: black;
+    filter: drop-shadow(4px 4px 4px black);
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    width: 960px;
+}
+
+div.fragment {
+    background-color: #202020;
+    border: 0px none;
+    padding: 8px;
+}
+
+/* hides titlearea and the main navigation. */
+#top {
+    display: none;
+}
+
+hr.footer {
+    display: none;
+}
+
+.footer {
+    display: none;
+}
