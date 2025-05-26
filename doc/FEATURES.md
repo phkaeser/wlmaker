@@ -315,6 +315,22 @@ TBD.
 * [ ] Upon first launch, show an onboarding screen with basic instructions
   ([#131](https://github.com/phkaeser/wlmaker/issues/131)).
 
+### Configuration files
+
+* [ ] Change KeyBindings format to be similar to menu actions: Lists, where item 1+
+  holds the action and optional parameters.
+* [ ] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
+
+
+### System integration
+
+* [ ] Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
+      FreeDesktop specification ([#262](https://github.com/phkaeser/wlmaker/issues/262)).
+* [ ] Review and define what to support from https://specifications.freedesktop.org.
+* [ ] System Tray (potentially through a Dock App)
+* [ ] Notifications (potentially through a Dock App)
+* [ ] Review whether to support Icon themes.
+
 ### CI/CD
 
 * [x] :white_check_mark Have github workflows to build with GCC and Clang, x86_64

@@ -1,8 +1,5 @@
-//! @page etc_wlmaker_plist etc/wlmaker.plist
-//! Compiled-in default configuration. See @ref config_file for details.
-//! @include etc/wlmaker.plist
-// Base configuration for wlmaker: Keyboard and autostarted applications.
 {
+    //! [Keyboard]
     Keyboard = {
         XkbRMLVO = {
             Rules = "evdev";
@@ -18,10 +15,16 @@
             Rate = 25;
         };
     };
+    //! [Keyboard]
+
+    //! [Decoration]
     // Configuration for XDG decoration protocol: Server or client-side?
     Decoration = {
         Mode = SuggestServer;
     };
+    //! [Decoration]
+
+    //! [KeyBindings]
     KeyBindings = {
         "Ctrl+Alt+Logo+Q" = Quit;
         "Ctrl+Alt+Logo+L" = LockScreen;
@@ -57,6 +60,9 @@
         "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
         "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
     };
+    //! [KeyBindings]
+
+    //! [HotCorner]
     HotCorner = {
         // Delay for the pointer occupying a corner before triggering 'Enter'.
         TriggerDelay = 500;
@@ -71,19 +77,52 @@
         BottomRightEnter = None;
         BottomRightLeave = None;
     };
+    //! [HotCorner]
+
+    //! [ScreenLock]
     ScreenLock = {
         IdleSeconds = 300;
         Command = "/usr/bin/swaylock";
     };
+    //! [ScreenLock]
+
+    //! [Autostart]
     // Optional array: Commands to start once wlmaker is running.
     Autostart = (
         "/usr/bin/foot"
     );
+    //! [Autostart]
+
+    //! [Outputs]
     Outputs = (
+        // The "Eizo EV2785" monitor on the DisplayPort connection: Configure
+        // for a resolution of 1920x1080 (at any supported refresh rate), scale
+        // with a factor of 2.0, and place it's top-left corner at (0, 0).
+        {
+            Manufacturer = "Eizo*";
+            Model = "EV2785";
+            Name = "DP-*";
+            Position = "0,0";
+            // Note: Mode applies before scaling: The effective resolution
+            // visible to clients becomes 1920x1080.
+            Mode = "3840x2160@59.997";
+            Scale = 2.0;
+            Transformation = Normal;
+        },
+        // Any output at HDMI will also be placed at 0,0; mirroring the "Eizo".
+        {
+            Name = "HDMI-*";
+            Position = "0,0";
+            Scale = 1.0;
+            Transformation = Normal;
+        },
+        // Any further monitor will be automatically placed; to the right of
+        // above setup.
         {
             Name = "*";
-            Transformation = Normal;
             Scale = 1.0;
+            Transformation = Normal;
         },
     );
+    //! [Outputs]
 }
