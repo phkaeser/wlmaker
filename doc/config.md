@@ -44,3 +44,21 @@ with a scale of `1.0`.
 * *Optional* `Mode`: A string of the format `<WIDTH>x<HEIGHT>[@<RATE>]`,
   denoting a resolution of `WIDTH` x `HEIGHT`, optionally with explicitly
   specified refresh rate `<RATE>` in Hz.
+
+
+FIXME: Document sections for...
+* Keyboard
+* Decoration
+* KeyBindings
+* HotCorner
+* ScreenLock
+* Autostart
+* Output config: Clarify dyamic config through wlr-randr, ...
+
+FIXME: Add page on protocol support, includinng
+* output layout
+* screen lock
+* inhibit
+* decoration
+
+FIXME: Push generated documentation to github.
