@@ -335,12 +335,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Icons retrieved and used for iconified windows. See [themes](https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html).
   * Make use of XDG Desktop Entry [specification](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html).
 
-* XDG Complianace
-  * Review and define what to support from https://specifications.freedesktop.org.
-  * System Tray (potentially through a Dock App)
-  * Icon Themes
-  * Notifications (potentially through a Dock App)
-
 * Configuration file and parser:
   * Support different background styles (fill, image).
   * Make semicolon-after-value required, for consistency with GNUstep.
