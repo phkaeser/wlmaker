@@ -1,8 +1,5 @@
-//! @page etc_wlmaker_plist etc/wlmaker.plist
-//! Compiled-in default configuration. See @ref config_file for details.
-//! @include etc/wlmaker.plist
-// Base configuration for wlmaker: Keyboard and autostarted applications.
 {
+    //! [Keyboard]
     Keyboard = {
         XkbRMLVO = {
             Rules = "evdev";
@@ -18,10 +15,15 @@
             Rate = 25;
         };
     };
+    //! [Keyboard]
+
+    //! [Decoration]
     // Configuration for XDG decoration protocol: Server or client-side?
     Decoration = {
         Mode = SuggestServer;
     };
+    //! [Decoration]
+
     KeyBindings = {
         "Ctrl+Alt+Logo+Q" = Quit;
         "Ctrl+Alt+Logo+L" = LockScreen;
@@ -57,6 +59,7 @@
         "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
         "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
     };
+    
     HotCorner = {
         // Delay for the pointer occupying a corner before triggering 'Enter'.
         TriggerDelay = 500;
@@ -71,14 +74,18 @@
         BottomRightEnter = None;
         BottomRightLeave = None;
     };
+
     ScreenLock = {
         IdleSeconds = 300;
         Command = "/usr/bin/swaylock";
     };
+
     // Optional array: Commands to start once wlmaker is running.
     Autostart = (
         "/usr/bin/foot"
     );
+
+    //! [Outputs]
     Outputs = (
         {
             Name = "*";
@@ -86,4 +93,5 @@
             Scale = 1.0;
         },
     );
+    //! [Outputs]
 }

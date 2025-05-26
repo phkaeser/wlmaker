@@ -1,9 +1,9 @@
 # Configuring wlmaker {#config}
 
-## Configuration files {#config_precedence}
+# Configuration file {#config_file}
 
 wlmaker is highly configurable, and uses a human-readable configuration file in
-[human-readable Property List](https://en.wikipedia.org/wiki/Property_liste)
+[human-readable Property List](https://en.wikipedia.org/wiki/Property_list)
 format.
 
 wlmaker will load try loading a configuration file from these locations:
@@ -12,7 +12,39 @@ wlmaker will load try loading a configuration file from these locations:
   @snippet{trimleft} src/config.c LookupPathsConfig
 * Otherwise, compiled-in setttings from @ref etc_wlmaker_plist will be loaded.
 
-## Output configuration
+The configuration file is a dictionary that may hold values for the following
+keys:
+* @ref config_keyboard
+* @ref config_decoration
+* @ref config_output
+
+## Keyboard {#config_keyboard}
+
+Example:
+@snippet{trimleft} etc/wlmaker-example.plist Keyboard
+
+## Decoration {#config_decoration}
+
+By default, Wayland clients (using the
+[XDG Shell](https://wayland.app/protocols/xdg-shell)) will draw window
+decorations themselves. For clients that implement and obey the
+[XDG decoration](https://wayland.app/protocols/xdg-decoration-unstable-v1)
+protocol, wlmaker can whether decorations are drawn by the server, ie. by
+wlmaker.
+
+For X11 clients, wlmaker will add decorations if the client requests.
+
+Permitted modes:
+* `SuggestClient`: Requests the client to draw decoration.
+* `SuggestServer`: Requests wlmaker to add decorations.
+* `EnforceClient`: wlmaker will refuse to draw decorations, even if the client
+  requests.
+* `EnforceServer`: wlmaker will add decorations, even if the client refuses.
+
+Example:
+@snippet{trimleft} etc/wlmaker-example.plist Decoration
+
+## Outputs {#config_output}
 
 Using the `Outputs` array, wlmaker will configure and combine monitors into a
 multi-monitor setup as configured. When an output (monitor) is detected,
@@ -22,7 +54,7 @@ that output should be used. If so, the settings from `Scale`, `Transformation`,
 `Position` and `Mode` will be applied.
 
 Example:
-@snippet{trimleft} etc/wlmaker.plist Outputs
+@snippet{trimleft} etc/wlmaker-example.plist Outputs
 
 That example will configure any added output to use `Normal` transformation
 with a scale of `1.0`.

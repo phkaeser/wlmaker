@@ -858,7 +858,8 @@ WARN_LOGFILE           =
 
 INPUT                  = @PROJECT_SOURCE_DIR@/doc/manual.md \
                          @PROJECT_SOURCE_DIR@/doc/config.md \
-                         @PROJECT_SOURCE_DIR@/etc/wlmaker.plist
+                         @PROJECT_SOURCE_DIR@/etc/wlmaker.plist \
+                         @PROJECT_SOURCE_DIR@/etc/wlmaker-example.plist \
                          @PROJECT_SOURCE_DIR@/src \
                          @PROJECT_SOURCE_DIR@/include/backend \
                          @PROJECT_SOURCE_DIR@/src/backend \
