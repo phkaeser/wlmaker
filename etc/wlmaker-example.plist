@@ -24,6 +24,7 @@
     };
     //! [Decoration]
 
+    //! [KeyBindings]
     KeyBindings = {
         "Ctrl+Alt+Logo+Q" = Quit;
         "Ctrl+Alt+Logo+L" = LockScreen;
@@ -59,7 +60,9 @@
         "Ctrl+Alt+XF86Switch_VT_11" = SwitchToVT11;
         "Ctrl+Alt+XF86Switch_VT_12" = SwitchToVT12;
     };
+    //! [KeyBindings]
     
+    //! [HotCorner]
     HotCorner = {
         // Delay for the pointer occupying a corner before triggering 'Enter'.
         TriggerDelay = 500;
@@ -74,16 +77,21 @@
         BottomRightEnter = None;
         BottomRightLeave = None;
     };
+    //! [HotCorner]
 
+    //! [ScreenLock]
     ScreenLock = {
         IdleSeconds = 300;
         Command = "/usr/bin/swaylock";
     };
+    //! [ScreenLock]
 
+    //! [Autostart]
     // Optional array: Commands to start once wlmaker is running.
     Autostart = (
         "/usr/bin/foot"
     );
+    //! [Autostart]
 
     //! [Outputs]
     Outputs = (

@@ -75,6 +75,13 @@ IF(PLDES)
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
+    NAME wlmaker_example_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-example.plist")
+  SET_PROPERTY(
+    TEST wlmaker_example_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
     NAME wlmaker_home_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-home.plist")
   SET_PROPERTY(
