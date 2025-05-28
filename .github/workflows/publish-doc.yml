@@ -49,21 +49,8 @@ jobs:
     - name: Build documentation.
       run: cmake --build build/ --target doc
 
-    - name: Upload static files as artifact
-      id: deployment
-      uses: actions/upload-pages-artifact@v3
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v1
       with:
-        path: build/doc/html/
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: generate_doc
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4    
-
-
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        build_path: build/doc/html
