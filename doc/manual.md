@@ -12,12 +12,13 @@ interface.
 
 * Compositor for windows in stacking mode.
 * Easy to use, lightweight, low on gimmicks and fast.
-* Highly configurable and human-readable [config files](#config_precedence).
+* Highly configurable and human-readable [config files](#config_file).
 * Dock and clip, with support for dockable apps.
 
 ## Manual
 
 * @ref config
+* @ref protocols
 
 ## Download
 
