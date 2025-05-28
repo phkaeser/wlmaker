@@ -26,6 +26,7 @@ jobs:
           bison \
           clang \
           cmake \
+          doxygen \
           flex \
           gcc \
           git \
