@@ -15,8 +15,6 @@ permissions:
 jobs:
   generate_doc:
     runs-on: ubuntu-latest
-    container:
-      image: debian:trixie
 
     steps:
     - name: Install package dependencies.
@@ -49,8 +47,14 @@ jobs:
     - name: Build documentation.
       run: cmake --build build/ --target doc
 
+    - name: Upload
+      id: deployment
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: build/doc/html/
+
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
         build_path: build/doc/html
