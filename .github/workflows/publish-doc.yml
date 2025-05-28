@@ -15,6 +15,8 @@ permissions:
 jobs:
   generate_doc:
     runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
 
     steps:
     - name: Install package dependencies.
@@ -55,6 +57,3 @@ jobs:
 
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v1
-      with:
-        token: ${{ github.token }}
-        build_path: build/doc/html
