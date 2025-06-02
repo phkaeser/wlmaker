@@ -75,17 +75,23 @@ h1 { font-size: 1.4em; }
 h2 { font-size: 1.2em; }
 h3 { font-size: 1.1em; }
 
+div.line {
+    font: 12pt Monospace, fixed;
+    line-height: normal;
+}
+
 /* Colorization */
+.contents a:visited { color: #505080; }
 a { color: #3c3c60; text-decoration: underline; }
 a:hover { text-decoration: underline dashed; }
 a:visited { color: #505080; }
 code { background-color: #9898a0; }
 div.line { font-size: 12pt; min-height: 14pt; }
-span.lineno { color: gray; background-color: #202020; border-right: 2px solid gray; }
 span.charliteral { color: lightskyblue; }
 span.comment { color: gray; }
 span.keyword { color: lightgreen; }
 span.keywordtype { color: limegreen; }
+span.lineno { color: gray; background-color: #202020; border-right: 2px solid gray; }
 span.stringliteral { color: lightskyblue; }
 
 /* hides titlearea and the main navigation. */
