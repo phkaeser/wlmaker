@@ -384,22 +384,23 @@ bool _wlmbe_output_mode_decode(
         return false;
     }
 
-    int64_t w, h, r;
+    int64_t w, h;
+    double r;
     if (!bs_strconvert_int64(width, &w, 10) ||
         !bs_strconvert_int64(height, &h, 10) ||
-        !bs_strconvert_int64(s, &r, 10)) {
+        !bs_strconvert_double(s, &r)) {
         bs_log(BS_WARNING, "Failed to decode mode \"%s\"", full_s);
         return false;
     }
     if (w < INT32_MIN || w > INT32_MAX ||
         h < INT32_MIN || h > INT32_MAX ||
-        r < INT32_MIN || r > INT32_MAX) {
+        r < 0 || r > INT32_MAX / 1000) {
         bs_log(BS_WARNING, "Mode values out of range for \"%s\"", full_s);
         return false;
     }
     wlmbe_output_config_mode_t *mode_ptr = dest_ptr;
     *mode_ptr = (wlmbe_output_config_mode_t){
-        .width = w, .height = h, .refresh = r
+        .width = w, .height = h, .refresh = r * 1000  // Hz -> mHz.
     };
     return true;
 }
@@ -487,21 +488,21 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, m.height);
     BS_TEST_VERIFY_EQ(test_ptr, 0, m.refresh);
 
-    bspl_object_t *o = bspl_object_from_string(bspl_string_create("1x2@3"));
+    bspl_object_t *o = bspl_object_from_string(bspl_string_create("1x2@3.4"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
     BS_TEST_VERIFY_EQ(test_ptr, 1, m.width);
     BS_TEST_VERIFY_EQ(test_ptr, 2, m.height);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, m.refresh);
+    BS_TEST_VERIFY_EQ(test_ptr, 3400, m.refresh);
     bspl_object_unref(o);
 
     o = bspl_object_from_string(
-        bspl_string_create("2147483647x-2147483648@2147483647"));
+        bspl_string_create("2147483647x-2147483648@2147483"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
     BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, m.width);
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MIN, m.height);
-    BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, m.refresh);
+    BS_TEST_VERIFY_EQ(test_ptr, 2147483000, m.refresh);
     bspl_object_unref(o);
 
     o = bspl_object_from_string(
