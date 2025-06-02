@@ -315,6 +315,12 @@ TBD.
 * [ ] Upon first launch, show an onboarding screen with basic instructions
   ([#131](https://github.com/phkaeser/wlmaker/issues/131)).
 
+### Configuration files
+
+* [ ] Change KeyBindings format to be similar to menu actions: Lists, where item 1+
+  holds the action and optional parameters.
+* [ ] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
+
 ### System integration
 
 * [ ] Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
