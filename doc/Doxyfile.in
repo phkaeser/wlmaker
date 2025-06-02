@@ -856,16 +856,19 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = @PROJECT_SOURCE_DIR@/doc/manual.md \
-                         @PROJECT_SOURCE_DIR@/doc/config.md \
-                         @PROJECT_SOURCE_DIR@/etc/wlmaker.plist
-                         @PROJECT_SOURCE_DIR@/src \
-                         @PROJECT_SOURCE_DIR@/include/backend \
-                         @PROJECT_SOURCE_DIR@/src/backend \
-                         @PROJECT_SOURCE_DIR@/include/toolkit \
-                         @PROJECT_SOURCE_DIR@/src/toolkit \
+INPUT                  = \
                          @PROJECT_SOURCE_DIR@/apps/ \
-                         @PROJECT_SOURCE_DIR@/apps/libwlclient
+                         @PROJECT_SOURCE_DIR@/apps/libwlclient \
+                         @PROJECT_SOURCE_DIR@/doc/commandline.md \
+                         @PROJECT_SOURCE_DIR@/doc/config.md \
+                         @PROJECT_SOURCE_DIR@/doc/manual.md \
+                         @PROJECT_SOURCE_DIR@/doc/protocols.md \
+                         @PROJECT_SOURCE_DIR@/etc/wlmaker.plist \
+                         @PROJECT_SOURCE_DIR@/include/backend \
+                         @PROJECT_SOURCE_DIR@/include/toolkit \
+                         @PROJECT_SOURCE_DIR@/src \
+                         @PROJECT_SOURCE_DIR@/src/backend \
+                         @PROJECT_SOURCE_DIR@/src/toolkit \
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
