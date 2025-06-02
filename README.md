@@ -41,15 +41,13 @@ Highlights for current version ([0.5](https://github.com/phkaeser/wlmaker/releas
   Use `--start_xwayland` argument to enable XWayland, it's off by default.
 * A prototype DockApp (`apps/wlmclock`).
 
-### Wayland protocols
+### All the details?
 
-* `ext-session-lock-v1`: Implemented & tested.
-* `idle-inhibit-unstable-v1`: Implemented, untested.
-* `wlr-layer-shell-unstable-v1`: Largely implemented & tested.
-* `wlr-output-management-unstable-v1`: Implemented & tested, for v0.6.
-* `wlr-screencopy-unstable-v1` : Implemented & tested, for v0.6.
-* `xdg-decoration-unstable-v1`: Implemented & tested.
-* `xdg-shell`: Largely implemented & tested.
+See http://phkaeser.github.io/wlmaker for:
+
+* How to configure wlmaker.
+* Startup options.
+* Supported Wayland protocols.
 
 ### Build & use it!
 
