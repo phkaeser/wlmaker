@@ -321,7 +321,6 @@ TBD.
   holds the action and optional parameters.
 * [ ] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
 
-
 ### System integration
 
 * [ ] Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
