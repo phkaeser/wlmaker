@@ -241,19 +241,6 @@ void wlmtk_root_lock_unreference(
     wlmtk_root_t *root_ptr,
     wlmtk_element_t *element_ptr);
 
-/**
- * Temporary: Set the lock surface, so events get passed correctly.
- *
- * TODO(kaeser@gubbe.ch): Remove the method, events should get passed via
- * the container.
- *
- * @param root_ptr
- * @param surface_ptr
- */
-void wlmtk_root_set_lock_surface(
-    wlmtk_root_t *root_ptr,
-    wlmtk_surface_t *surface_ptr);
-
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
 

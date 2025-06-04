@@ -228,13 +228,10 @@ void _wlmtk_lock_report_surface_locked(
             lock_ptr->root_ptr, wlmtk_lock_element(lock_ptr));
         return;
     }
-
-    __UNUSED__ wlmtk_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
+    // Grant keyboard focus to the lock's surface.
+    wlmtk_lock_surface_t *first_surface_ptr = BS_CONTAINER_OF(
         lock_ptr->lock_surfaces.head_ptr, wlmtk_lock_surface_t, dlnode);
-
-    wlmtk_root_set_lock_surface(
-        lock_ptr->root_ptr,
-        first_surface_ptr->wlmtk_surface_ptr);
+    wlmtk_surface_set_activated(first_surface_ptr->wlmtk_surface_ptr, true);
 
     // Root is locked. Send confirmation to the client.
     wlr_session_lock_v1_send_locked(lock_ptr->wlr_session_lock_v1_ptr);
