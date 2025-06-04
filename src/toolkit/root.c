@@ -31,10 +31,8 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "container.h"
-#include "content.h"
 #include "input.h"
 #include "rectangle.h"
-#include "surface.h"
 #include "tile.h"
 #include "util.h"
 #include "workspace.h"
@@ -445,14 +443,6 @@ void wlmtk_root_lock_unreference(
         &root_ptr->container,
         root_ptr->lock_element_ptr);
     root_ptr->lock_element_ptr = NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_set_lock_surface(
-    __UNUSED__ wlmtk_root_t *root_ptr,
-    wlmtk_surface_t *surface_ptr)
-{
-    wlmtk_surface_set_activated(surface_ptr, true);
 }
 
 /* ------------------------------------------------------------------------- */
