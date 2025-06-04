@@ -31,7 +31,6 @@ typedef struct _wlmtk_root_t wlmtk_root_t;
 
 #include "element.h"
 #include "env.h"
-#include "lock.h"  // IWYU pragma: keep
 #include "surface.h"  // IWYU pragma: keep
 #include "workspace.h"  // IWYU pragma: keep
 
@@ -195,51 +194,52 @@ void wlmtk_root_for_each_workspace(
     void *ud_ptr);
 
 /**
- * Locks the root, using the provided lock.
+ * Locks the root, using the provided element.
  *
  * The root must not be locked already. If locked successfully, the root will
- * keep a reference to `lock_ptr`. The lock must call @ref wlmtk_root_unlock
+ * keep a reference to `element_ptr`. The lock must call @ref wlmtk_root_unlock
  * to unlock root, and for releasing the reference.
  *
  * @param root_ptr
- * @param lock_ptr
+ * @param element_ptr
  *
  * @return Whether the lock was established.
  */
 bool wlmtk_root_lock(
     wlmtk_root_t *root_ptr,
-    wlmtk_lock_t *lock_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Unlocks the root, and releases the reference from @ref wlmtk_root_lock.
  *
- * Unlocking can only be done with `lock_ptr` matching the `lock_ptr` argument
- * from @ref wlmtk_root_lock.
+ * Unlocking can only be done with `element_ptr` matching the `element_ptr`
+ * argument from @ref wlmtk_root_lock.
  *
  * @param root_ptr
- * @param lock_ptr
+ * @param element_ptr
  *
  * @return Whether the lock was lifted.
  */
 bool wlmtk_root_unlock(
     wlmtk_root_t *root_ptr,
-    wlmtk_lock_t *lock_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Releases the lock reference, but keeps the root locked.
  *
  * This is in accordance with the session lock protocol specification [1],
  * stating the session should remain locked if the client dies.
- * This call is a no-op if `lock_ptr` is not currently the lock of `root_ptr`.
+ * This call is a no-op if `element_ptr` is not currently the lock of
+ * `root_ptr`.
  *
  * [1] https://wayland.app/protocols/ext-session-lock-v1
  *
  * @param root_ptr
- * @param lock_ptr
+ * @param element_ptr
  */
 void wlmtk_root_lock_unreference(
     wlmtk_root_t *root_ptr,
-    wlmtk_lock_t *lock_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Temporary: Set the lock surface, so events get passed correctly.

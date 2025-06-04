@@ -162,7 +162,8 @@ void wlmtk_lock_destroy(wlmtk_lock_t *lock_ptr)
     wl_list_remove(&lock_ptr->unlock_listener.link);
     wl_list_remove(&lock_ptr->new_surface_listener.link);
 
-    wlmtk_root_lock_unreference(lock_ptr->root_ptr, lock_ptr);
+    wlmtk_root_lock_unreference(lock_ptr->root_ptr,
+                                wlmtk_lock_element(lock_ptr));
     wlmtk_container_fini(&lock_ptr->container);
 
     free(lock_ptr);
@@ -219,12 +220,12 @@ void _wlmtk_lock_report_surface_locked(
     /* if (bs_dllist_size(&lock_ptr->lock_surfaces) < */
     /*     bs_dllist_size(&lock_ptr->lock_mgr_ptr->server_ptr->outputs)) return; */
 
-    if (!wlmtk_root_lock(lock_ptr->root_ptr, lock_ptr)) {
+    if (!wlmtk_root_lock(lock_ptr->root_ptr, wlmtk_lock_element(lock_ptr))) {
         wl_resource_post_error(
             lock_surface_ptr->wlr_session_lock_surface_v1_ptr->resource,
             WL_DISPLAY_ERROR_INVALID_METHOD,
             "Failed wlmtk_root_lock(%p, %p): Already locked?",
-            lock_ptr->root_ptr, lock_ptr);
+            lock_ptr->root_ptr, wlmtk_lock_element(lock_ptr));
         return;
     }
 
@@ -287,7 +288,7 @@ void _wlmtk_lock_handle_unlock(
     __UNUSED__ wlmtk_lock_t *lock_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_lock_t, unlock_listener);
 
-    wlmtk_root_unlock(lock_ptr->root_ptr, lock_ptr);
+    wlmtk_root_unlock(lock_ptr->root_ptr, wlmtk_lock_element(lock_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
