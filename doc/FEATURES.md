@@ -196,7 +196,7 @@ TBD: Raise/Lower.
 ### `ext-session-lock-v1`
 
 * [x] :white_check_mark: Implement, verified on single output.
-* [ ] Make it work on multiple outputs: Lock surface shown on each.
+* [x] :white_check_mark: Make it work on multiple outputs: Lock surface shown on each.
 
 ### `idle-inhibit-unstable-v1`
 
