@@ -523,6 +523,12 @@ void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled)
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr)
+{
+    return workspace_ptr->enabled;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                                 wlmtk_window_t *window_ptr)
 {

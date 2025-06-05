@@ -156,6 +156,9 @@ struct wlr_output_layout *wlmtk_workspace_get_wlr_output_layout(
  */
 void wlmtk_workspace_enable(wlmtk_workspace_t *workspace_ptr, bool enabled);
 
+/** @return whether this workspace is enabled. */
+bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr);
+
 /**
  * Maps the window: Adds it to the workspace container and makes it visible.
  *
