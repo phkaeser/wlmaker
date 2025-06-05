@@ -20,6 +20,8 @@
 #ifndef __LOCK_MGR_H__
 #define __LOCK_MGR_H__
 
+#include <libbase/libbase.h>
+
 /** Forward declaration: State of the session lock manager. */
 typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
 
@@ -45,6 +47,10 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
  * @param lock_mgr_ptr
  */
 void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr);
+
+/** Unit test cases for @ref wlmaker_lock_mgr_t. */
+extern const bs_test_case_t wlmaker_lock_mgr_test_cases[];
+
 
 #ifdef __cplusplus
 }  // extern "C"

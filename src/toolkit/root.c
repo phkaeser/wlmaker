@@ -124,12 +124,19 @@ wlmtk_root_t *wlmtk_root_create(
     if (NULL == root_ptr) return NULL;
     root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
-    if (!wlmtk_container_init_attached(
-            &root_ptr->container,
-            env_ptr,
-            &wlr_scene_ptr->tree)) {
-        wlmtk_root_destroy(root_ptr);
-        return NULL;
+    if (NULL != wlr_scene_ptr) {
+        if (!wlmtk_container_init_attached(
+                &root_ptr->container,
+                env_ptr,
+                &wlr_scene_ptr->tree)) {
+            wlmtk_root_destroy(root_ptr);
+            return NULL;
+        }
+    } else {
+        if (!wlmtk_container_init(&root_ptr->container, env_ptr)) {
+            wlmtk_root_destroy(root_ptr);
+            return NULL;
+        }
     }
     wlmtk_element_set_visible(&root_ptr->container.super_element, true);
     root_ptr->orig_super_element_vmt = wlmtk_element_extend(
@@ -426,6 +433,12 @@ bool wlmtk_root_unlock(
 
     wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_root_locked(wlmtk_root_t *root_ptr)
+{
+    return root_ptr->locked;
 }
 
 /* ------------------------------------------------------------------------- */

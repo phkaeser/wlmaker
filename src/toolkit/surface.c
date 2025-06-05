@@ -161,6 +161,9 @@ void wlmtk_surface_set_activated(
 {
     if (surface_ptr->activated == activated) return;
 
+    // Guard clause, for tests.
+    if (NULL == surface_ptr->env_ptr) return;
+
     struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(surface_ptr->env_ptr);
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(wlr_seat_ptr);
     if (activated) {
