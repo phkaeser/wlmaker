@@ -224,6 +224,9 @@ bool wlmtk_root_unlock(
     wlmtk_root_t *root_ptr,
     wlmtk_element_t *element_ptr);
 
+/** @return Whether root is locked. */
+bool wlmtk_root_locked(wlmtk_root_t *root_ptr);
+
 /**
  * Releases the lock reference, but keeps the root locked.
  *
