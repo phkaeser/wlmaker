@@ -29,7 +29,6 @@ SET(PUBLIC_HEADER_FILES
   image.h
   input.h
   layer.h
-  lock.h
   menu.h
   menu_item.h
   pane.h
@@ -68,7 +67,6 @@ TARGET_SOURCES(toolkit PRIVATE
   gfxbuf.c
   image.c
   layer.c
-  lock.c
   menu.c
   menu_item.c
   pane.c
