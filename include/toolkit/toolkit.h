@@ -37,7 +37,6 @@
 #include "image.h"
 #include "input.h"
 #include "layer.h"
-#include "lock.h"
 #include "menu.h"
 #include "menu_item.h"
 #include "pane.h"
