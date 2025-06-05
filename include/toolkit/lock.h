@@ -27,6 +27,7 @@ typedef struct _wlmtk_lock_t wlmtk_lock_t;
 #include "env.h"
 #include "root.h"  // IWYU pragma: keep
 
+struct wlr_output_layout;
 /** Forward declaration: Session lock handle. */
 struct wlr_session_lock_v1;
 
@@ -38,6 +39,7 @@ extern "C" {
  * Creates a session lock handle.
  *
  * @param wlr_session_lock_v1_ptr
+ * @param wlr_output_layout_ptr
  * @param root_ptr
  * @param env_ptr
  *
@@ -45,6 +47,7 @@ extern "C" {
  */
 wlmtk_lock_t *wlmtk_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr,
     wlmtk_root_t *root_ptr,
     wlmtk_env_t *env_ptr);
 

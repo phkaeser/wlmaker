@@ -116,6 +116,7 @@ void _wlmaker_lock_mgr_handle_new_lock(
 
     wlmtk_lock_t *lock_ptr = wlmtk_lock_create(
         wlr_session_lock_v1_ptr,
+        lock_mgr_ptr->server_ptr->wlr_output_layout_ptr,
         lock_mgr_ptr->server_ptr->root_ptr,
         lock_mgr_ptr->server_ptr->env_ptr);
     if (NULL == lock_ptr) {
