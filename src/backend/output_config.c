@@ -577,9 +577,9 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
 /** Tests @ref wlmbe_output_description_first_fnmatch. */
 void _wlmbe_output_test_first_fnmatch(bs_test_t *test_ptr)
 {
-    struct wl_display *d = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
-    struct wlr_output_layout *wol_ptr = wlr_output_layout_create(d);
+    struct wl_display *display = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display);
+    struct wlr_output_layout *wol_ptr = wlr_output_layout_create(display);
 
     struct wlr_output o1 = { .name = "Name1" };
     wlmtk_test_wlr_output_init(&o1);
@@ -591,17 +591,20 @@ void _wlmbe_output_test_first_fnmatch(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&o3);
     wlr_output_layout_add_auto(wol_ptr, &o3);
 
-    wlmbe_output_description_t desc = { .name_ptr = "Oth*", .has_name = true };
+    wlmbe_output_description_t d = {};
     BS_TEST_VERIFY_EQ(
-        test_ptr, &o2, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
-    desc.name_ptr = "Name1";
+        test_ptr, &o1, wlmbe_output_description_first_fnmatch(&d, wol_ptr));
+    d = (wlmbe_output_description_t){ .name_ptr = "Oth*", .has_name = true };
     BS_TEST_VERIFY_EQ(
-        test_ptr, &o1, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
-    desc.name_ptr = "*2";
+        test_ptr, &o2, wlmbe_output_description_first_fnmatch(&d, wol_ptr));
+    d.name_ptr = "Name1";
     BS_TEST_VERIFY_EQ(
-        test_ptr, &o3, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
+        test_ptr, &o1, wlmbe_output_description_first_fnmatch(&d, wol_ptr));
+    d.name_ptr = "*2";
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &o3, wlmbe_output_description_first_fnmatch(&d, wol_ptr));
 
-    wl_display_destroy(d);
+    wl_display_destroy(display);
 }
 
 /* == End of output_config.c =============================================== */
