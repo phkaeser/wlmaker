@@ -45,8 +45,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] 'fullscreen': Fill the configured (or active) output.
     * [done] 'maximized': Maximize on configured (or active) output.
     * [done] When an output is removed: Re-position toplevels into visible area.
-  * [done] Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs. (it will be shown only on one, but locking works correctly with multiple outputs).
-  * Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
+  * [done] Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
+  * [done] Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
   * Add "scaling" actions, configurable as hotkey and in root menu.
   * Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
