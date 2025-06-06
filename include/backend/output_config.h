@@ -53,6 +53,27 @@ typedef struct {
     int32_t                   refresh;
 } wlmbe_output_config_mode_t;
 
+/** Description of an output, useful to identify an output. */
+typedef struct {
+    /** Name of this output. */
+    char                      *name_ptr;
+    /** Whether a 'Name' entry was present. */
+    bool                      has_name;
+
+    /** Manufacturer of this output. That is 'make' in WLR speech. */
+    char                      *manufacturer_ptr;
+    /** Whether the 'Manufacturer' entry was present. */
+    bool                      has_manufacturer;
+    /** The model of this output. */
+    char                      *model_ptr;
+    /** Whether the 'Model' entry was present. */
+    bool                      has_model;
+    /** The serial of this output. */
+    char                      *serial_ptr;
+    /** Whether the 'Serial' entry was present. */
+    bool                      has_serial;
+} wlmbe_output_description_t;
+
 /** Attributes of the output. */
 typedef struct {
     /** Default transformation for the output(s). */
@@ -97,19 +118,6 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_wlr(
     struct wlr_output *wlr_output_ptr);
 
 /**
- * Creates a new output config from the plist dictionnary `dict_ptr`.
- *
- * @param dict_ptr
- *
- * @return New output configuration or NULL on error.
- */
-wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
-    bspl_dict_t *dict_ptr);
-
-/** Destroys the output configuration. */
-void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr);
-
-/**
  * Returns whether the backend configuration equals the wlr_output attributes.
  *
  * @param dlnode_ptr          To @ref wlmbe_output_config_t::dlnode.
@@ -132,6 +140,62 @@ bool wlmbe_output_config_equals(
 bool wlmbe_output_config_fnmatches(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+
+/**
+ * Creates a new output config from the plist dictionnary `dict_ptr`.
+ *
+ * @param dict_ptr
+ *
+ * @return New output configuration or NULL on error.
+ */
+wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
+    bspl_dict_t *dict_ptr);
+
+/** Destroys the output configuration. */
+void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr);
+
+/**
+ * Initializes the output description from the plist dictionary.
+ *
+ * @param desc_ptr
+ * @param dict_ptr            Dictionary describing the output. It may contain
+ *                            keys and values beyond of what's described in
+ *                            @ref _wlmbe_output_description_desc.
+ */
+bool wlmbe_output_description_init_from_plist(
+    wlmbe_output_description_t *desc_ptr,
+    bspl_dict_t *dict_ptr);
+
+/** Un-initializes the output description. */
+void wlmbe_output_description_fini(wlmbe_output_description_t *desc_ptr);
+
+/**
+ * Returns whether the output description equals the `wlr_output`'s attributes.
+ *
+ * @param desc_ptr
+ * @param wlr_output_ptr
+ *
+ * @return True if all fields (Name, Manufacturer, Model, Serial) have the
+ * same presence in both description and `wlr_output_ptr`, and (if present)
+ * their values are equal.
+ */
+bool wlmbe_output_description_equals(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output *wlr_output_ptr);
+
+/**
+ * Returns whether the output description matches the `wlr_output`'s attributes.
+ *
+ * @param desc_ptr
+ * @param wlr_output_ptr
+ *
+ * @return For all fields present in the description, returns the aggregate AND
+ * of whether a fnmatch() of the field matches the corresponding `wlr_output`
+ * field.
+ */
+bool wlmbe_output_description_fnmatches(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /** Unit tests for the output module. */
 extern const bs_test_case_t wlmbe_output_config_test_cases[];
