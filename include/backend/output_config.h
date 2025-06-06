@@ -30,6 +30,7 @@
 typedef struct _wlmbe_output_config_t wlmbe_output_config_t;
 
 struct wlr_output;
+struct wlr_output_layout;
 
 #ifdef __cplusplus
 extern "C" {
@@ -196,6 +197,20 @@ bool wlmbe_output_description_equals(
 bool wlmbe_output_description_fnmatches(
     wlmbe_output_description_t *desc_ptr,
     struct wlr_output *wlr_output_ptr);
+
+/**
+ * Returns the first `wlr_output_layout` output that matches `desc_ptr`.
+ *
+ * @param desc_ptr
+ * @param wlr_output_layout_ptr
+ *
+ * @return A pointer to the first `wlr_output` found in `wlr_output_layout_ptr`
+ * that matches `desc_ptr`. See @ref wlmbe_output_description_fnmatches for
+ * matching details.
+ */
+struct wlr_output *wlmbe_output_description_first_fnmatch(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /** Unit tests for the output module. */
 extern const bs_test_case_t wlmbe_output_config_test_cases[];
