@@ -37,6 +37,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "backend/backend.h"
+#include "backend/output_config.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -65,6 +66,9 @@ struct _wlmaker_clip_t {
     wlmtk_buffer_t            overlay_buffer;
     /** Clip image. */
     wlmtk_image_t             *image_ptr;
+
+    /** Description of the desired output, if any. */
+    wlmbe_output_description_t output_description;
 
     /** Whether the pointer is currently inside the 'prev' button. */
     bool                      pointer_inside_prev_button;
@@ -189,6 +193,14 @@ wlmaker_clip_t *wlmaker_clip_create(
         return NULL;
     }
     bspl_decode_dict(dict_ptr, _wlmaker_clip_desc, &args);
+    bspl_dict_t *output_dict_ptr = bspl_dict_get_dict(dict_ptr, "Output");
+    if (NULL != output_dict_ptr) {
+        if (!wlmbe_output_description_init_from_plist(
+                &clip_ptr->output_description, output_dict_ptr)) {
+            wlmaker_clip_destroy(clip_ptr);
+            return NULL;
+        }
+    }
 
     clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
@@ -220,6 +232,13 @@ wlmaker_clip_t *wlmaker_clip_create(
     wlmtk_element_set_visible(
         wlmtk_buffer_element(&clip_ptr->overlay_buffer), true);
 
+    struct wlr_output *wlr_output_ptr = wlmbe_output_description_first_fnmatch(
+        &clip_ptr->output_description, server_ptr->wlr_output_layout_ptr);
+    if (NULL == wlr_output_ptr) {
+        wlr_output_ptr = wlmbe_primary_output(
+            server_ptr->wlr_output_layout_ptr);
+    }
+
     wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
@@ -227,8 +246,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
-            wlmbe_primary_output(
-                clip_ptr->server_ptr->wlr_output_layout_ptr))) {
+            wlr_output_ptr)) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
@@ -320,6 +338,7 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
         clip_ptr->next_pressed_tile_buffer_ptr = NULL;
     }
 
+    wlmbe_output_description_fini(&clip_ptr->output_description);
     free(clip_ptr);
 }
 

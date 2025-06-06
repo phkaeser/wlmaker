@@ -1,5 +1,8 @@
 {
   Dock = {
+    Output = {
+      Name = "*";
+    };
     Edge = RIGHT;
     Anchor = TOP;
     Launchers = (
@@ -18,6 +21,9 @@
     );
   };
   Clip = {
+    Output = {
+      Name = "*";
+    };
     Edge = BOTTOM;
     Anchor = RIGHT;
   };
