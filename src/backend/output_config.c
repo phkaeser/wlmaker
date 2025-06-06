@@ -11,9 +11,14 @@
 #include <libbase/plist.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #undef WLR_USE_UNSTABLE
+
+#include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 
@@ -333,6 +338,26 @@ bool wlmbe_output_description_fnmatches(
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+struct wlr_output *wlmbe_output_description_first_fnmatch(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output_layout *wlr_output_layout_ptr)
+{
+    struct wl_list *link_ptr;
+    for (link_ptr = wlr_output_layout_ptr->outputs.next;
+         link_ptr != &wlr_output_layout_ptr->outputs;
+         link_ptr = link_ptr->next) {
+        struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+            BS_CONTAINER_OF(link_ptr, struct wlr_output_layout_output, link);
+        if (wlmbe_output_description_fnmatches(
+                desc_ptr,
+                wlr_output_layout_output_ptr->output)) {
+            return wlr_output_layout_output_ptr->output;
+        }
+    }
+    return NULL;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -445,11 +470,13 @@ bool _wlmbe_output_mode_decode_init(void *dest_ptr)
 static void _wlmbe_output_test_config_parse(bs_test_t *test_ptr);
 static void _wlmbe_output_test_decode_position(bs_test_t *test_ptr);
 static void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr);
+static void _wlmbe_output_test_first_fnmatch(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_output_config_test_cases[] = {
     { 1, "config_parse", _wlmbe_output_test_config_parse },
     { 1, "decode_position", _wlmbe_output_test_decode_position },
     { 1, "decode_mode", _wlmbe_output_test_decode_mode },
+    { 1, "first_fnmatch", _wlmbe_output_test_first_fnmatch },
     { 0, NULL, NULL }
 };
 
@@ -544,6 +571,37 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 4, m.height);
     BS_TEST_VERIFY_EQ(test_ptr, 0, m.refresh);
     bspl_object_unref(o);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests @ref wlmbe_output_description_first_fnmatch. */
+void _wlmbe_output_test_first_fnmatch(bs_test_t *test_ptr)
+{
+    struct wl_display *d = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+    struct wlr_output_layout *wol_ptr = wlr_output_layout_create(d);
+
+    struct wlr_output o1 = { .name = "Name1" };
+    wlmtk_test_wlr_output_init(&o1);
+    wlr_output_layout_add_auto(wol_ptr, &o1);
+    struct wlr_output o2 = { .name = "Other1" };
+    wlmtk_test_wlr_output_init(&o2);
+    wlr_output_layout_add_auto(wol_ptr, &o2);
+    struct wlr_output o3 = { .name = "Other2" };
+    wlmtk_test_wlr_output_init(&o3);
+    wlr_output_layout_add_auto(wol_ptr, &o3);
+
+    wlmbe_output_description_t desc = { .name_ptr = "Oth*", .has_name = true };
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &o2, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
+    desc.name_ptr = "Name1";
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &o1, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
+    desc.name_ptr = "*2";
+    BS_TEST_VERIFY_EQ(
+        test_ptr, &o3, wlmbe_output_description_first_fnmatch(&desc, wol_ptr));
+
+    wl_display_destroy(d);
 }
 
 /* == End of output_config.c =============================================== */
