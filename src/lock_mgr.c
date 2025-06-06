@@ -33,6 +33,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_session_lock_v1.h>
+#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
 #include "toolkit/toolkit.h"
@@ -126,6 +127,8 @@ typedef struct {
     wlmaker_lock_t              *lock_ptr;
     /** The former lock surface tree. */
     bs_avltree_t              *former_lock_surface_tree_ptr;
+    /** Whether there was an activated (keyboard-focussed) surface. */
+    bool                      has_activated_surface;
 } wlmaker_lock_update_output_arg_t;
 
 static void _wlmaker_lock_mgr_handle_new_lock(
@@ -407,6 +410,17 @@ void _wlmaker_lock_register_lock_surface(
     wlmaker_lock_t *lock_ptr,
     wlmaker_lock_surface_t *lock_surface_ptr)
 {
+    // Guard clause: Refuse surfaces for outputs not in layout.
+    if (NULL == wlr_output_layout_get(
+            lock_ptr->wlr_output_layout_ptr,
+            lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output)) {
+        bs_log(BS_WARNING,
+               "Invalid wlr_output %p for lock surface %p. Ignoring.",
+               lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output,
+               lock_surface_ptr->wlr_session_lock_surface_v1_ptr);
+        return;
+    }
+
     // Guard clause: Don't register more than once.
     bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
         lock_ptr->lock_surface_tree_ptr,
@@ -550,7 +564,8 @@ void _wlmaker_lock_handle_output_layout_change(
 
     wlmaker_lock_update_output_arg_t arg = {
         .lock_ptr = lock_ptr,
-        .former_lock_surface_tree_ptr = lock_ptr->lock_surface_tree_ptr
+        .former_lock_surface_tree_ptr = lock_ptr->lock_surface_tree_ptr,
+        .has_activated_surface = false
     };
 
     lock_ptr->lock_surface_tree_ptr = bs_avltree_create(
@@ -562,6 +577,15 @@ void _wlmaker_lock_handle_output_layout_change(
                   &lock_ptr->wlr_output_layout_ptr->outputs,
                   _wlmaker_lock_update_output,
                   &arg));
+
+    if (!arg.has_activated_surface &&
+        0 < bs_avltree_size(lock_ptr->lock_surface_tree_ptr)) {
+        bs_avltree_node_t *avlnode_ptr = BS_ASSERT_NOTNULL(
+            bs_avltree_min(lock_ptr->lock_surface_tree_ptr));
+        wlmaker_lock_surface_t *lock_surface_ptr = BS_CONTAINER_OF(
+            avlnode_ptr, wlmaker_lock_surface_t, avlnode);
+        wlmtk_surface_set_activated(lock_surface_ptr->wlmtk_surface_ptr, true);
+    }
 
     bs_avltree_destroy(arg.former_lock_surface_tree_ptr);
 }
@@ -606,6 +630,19 @@ bool _wlmaker_lock_update_output(
         lock_surface_ptr->wlr_session_lock_surface_v1_ptr,
         lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output->width,
         lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output->height);
+
+    struct wlr_box box;
+    wlr_output_layout_get_box(
+        arg_ptr->lock_ptr->wlr_output_layout_ptr,
+        lock_surface_ptr->wlr_session_lock_surface_v1_ptr->output,
+        &box);
+    wlmtk_element_set_position(
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr),
+        box.x, box.y);
+
+    if (lock_surface_ptr->wlmtk_surface_ptr->activated) {
+        arg_ptr->has_activated_surface = true;
+    }
 
     return bs_avltree_insert(
         arg_ptr->lock_ptr->lock_surface_tree_ptr,
@@ -672,6 +709,14 @@ wlmaker_lock_surface_t *_wlmaker_lock_surface_create(
     lock_surface_ptr->configure_serial = lock_ptr->injected_surface_configure(
         wlr_session_lock_surface_v1_ptr, w, h);
 
+    struct wlr_box box;
+    wlr_output_layout_get_box(
+        lock_ptr->wlr_output_layout_ptr,
+        wlr_session_lock_surface_v1_ptr->output,
+        &box);
+    wlmtk_element_set_position(
+        wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr),
+        box.x, box.y);
     return lock_surface_ptr;
 }
 
@@ -779,6 +824,7 @@ void _wlmaker_lock_surface_avlnode_destroy(
 
 static void test_lock_unlock(bs_test_t *test_ptr);
 static void test_lock_crash(bs_test_t *test_ptr);
+static void test_lock_multi_output(bs_test_t *test_ptr);
 
 static uint32_t _mock_wlr_session_lock_surface_v1_configure(
     struct wlr_session_lock_surface_v1 *lock_surface,
@@ -792,6 +838,7 @@ static void _init_test_surface(struct wlr_surface *wlr_surface_ptr);
 const bs_test_case_t wlmaker_lock_mgr_test_cases[] = {
     { 1, "lock_unlock", test_lock_unlock },
     { 1, "lock_crash", test_lock_crash },
+    { 1, "lock_multi_output", test_lock_multi_output },
     { 0, NULL, NULL }
 };
 
@@ -980,14 +1027,7 @@ void test_lock_crash(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1024, _mock_configure_width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, _mock_configure_height);
 
-    // A commit, but with too-low serial. Will be ignored.
-    lock_surface.current.configure_serial = 41;
-    wl_signal_emit(&wlr_surface.events.commit, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
-
-    // Another commit, with matching serial. Will mark as locked.
+    // Commit with matching serial. Will mark as locked.
     wlr_surface.current.width = 1024;
     wlr_surface.current.height = 768;
     lock_surface.current.configure_serial = 42;
@@ -1001,6 +1041,187 @@ void test_lock_crash(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
 
+    wlmtk_root_remove_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_root_destroy(server.root_ptr);
+    wl_display_destroy(server.wl_display_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests locking with multiple outputs. Lock only when all outputs covered. */
+void test_lock_multi_output(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server = { .wl_display_ptr = wl_display_create() };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
+    server.wlr_output_layout_ptr = wlr_output_layout_create(
+        server.wl_display_ptr);
+    struct wlr_output o1 = { .width = 1024, .height = 768, .scale = 1 };
+    struct wlr_output o2 = { .width = 1024, .height = 768, .scale = 1 };
+    struct wlr_output o3 = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&o1);
+    wlmtk_test_wlr_output_init(&o2);
+    wlmtk_test_wlr_output_init(&o3);
+    wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o1);
+    // But not: o2.
+    wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o3);
+    server.root_ptr = wlmtk_root_create(
+        NULL,
+        server.wlr_output_layout_ptr,
+        NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+
+    wlmtk_tile_style_t tile_style = {};
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        server.wlr_output_layout_ptr, "name", &tile_style, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
+    wlmtk_root_add_workspace(server.root_ptr, workspace_ptr);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    struct wlr_session_lock_v1 wlr_session_lock_v1 = {};
+    _init_test_session_lock(&wlr_session_lock_v1);
+
+    wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
+        &wlr_session_lock_v1,
+        server.wlr_output_layout_ptr,
+        server.root_ptr,
+        NULL,
+        _mock_wlr_session_lock_surface_v1_configure,
+        _mock_wlr_session_lock_v1_send_locked);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lock_ptr);
+
+    struct wlr_surface wlr_surface1 = {};
+    _init_test_surface(&wlr_surface1);
+    struct wlr_session_lock_surface_v1 lock_surface1 = {
+        .surface = &wlr_surface1,
+        .output = &o1,
+    };
+    wl_signal_init(&lock_surface1.events.destroy);
+    struct wlr_surface wlr_surface2 = {};
+    _init_test_surface(&wlr_surface2);
+    struct wlr_session_lock_surface_v1 lock_surface2 = {
+        .surface = &wlr_surface2,
+        .output = &o2,
+    };
+    wl_signal_init(&lock_surface2.events.destroy);
+    struct wlr_surface wlr_surface3 = {};
+    _init_test_surface(&wlr_surface3);
+    struct wlr_session_lock_surface_v1 lock_surface3 = {
+        .surface = &wlr_surface3,
+        .output = &o3,
+    };
+    wl_signal_init(&lock_surface3.events.destroy);
+
+    // Surface 1. Create, configure, commit. No lock yet.
+    _mock_configure_serial = 42;
+    _mock_send_locked_lock = NULL;
+    wl_signal_emit(&wlr_session_lock_v1.events.new_surface, &lock_surface1);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock_surface1, _mock_configure_lock_surface);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, _mock_configure_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, _mock_configure_height);
+
+    wlr_surface1.current.width = 1024;
+    wlr_surface1.current.height = 768;
+    lock_surface1.current.configure_serial = 42;
+    wl_signal_emit(&wlr_surface1.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    wlmtk_surface_t *wlmtk_surface_ptr = wlr_surface1.data;
+    int x, y;
+    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, y);
+
+    // Surface 2. Create, configure, commit. Non-layout output -> ignored.
+    _mock_configure_serial = 42;
+    _mock_send_locked_lock = NULL;
+    wl_signal_emit(&wlr_session_lock_v1.events.new_surface, &lock_surface2);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock_surface2, _mock_configure_lock_surface);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, _mock_configure_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, _mock_configure_height);
+
+    wlr_surface2.current.width = 1024;
+    wlr_surface2.current.height = 768;
+    lock_surface2.current.configure_serial = 42;
+    wl_signal_emit(&wlr_surface2.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    wl_signal_emit(&lock_surface2.events.destroy, NULL);
+
+    // Surface 3.
+    _mock_configure_serial = 42;
+    _mock_send_locked_lock = NULL;
+    wl_signal_emit(&wlr_session_lock_v1.events.new_surface, &lock_surface3);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock_surface3, _mock_configure_lock_surface);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, _mock_configure_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 768, _mock_configure_height);
+
+    wlr_surface3.current.width = 1024;
+    wlr_surface3.current.height = 768;
+    lock_surface3.current.configure_serial = 42;
+    wl_signal_emit(&wlr_surface3.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, &wlr_session_lock_v1, _mock_send_locked_lock);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    wlmtk_surface_ptr = wlr_surface3.data;
+    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 1024, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, y);
+
+    // o3 changes size & position. Test configure(). Remains locked.
+    o3.width = 1920;
+    o3.height = 1080;
+    wlr_output_layout_add(server.wlr_output_layout_ptr, &o3, 1200, 200);
+    _mock_configure_serial = 43;
+    _mock_configure_lock_surface = NULL;
+    wl_signal_emit(&server.wlr_output_layout_ptr->events.change,
+                   server.wlr_output_layout_ptr);
+    // Note: Issues two configure() events, the second one is for o3.
+    BS_TEST_VERIFY_EQ(test_ptr, &lock_surface3, _mock_configure_lock_surface);
+    BS_TEST_VERIFY_EQ(test_ptr, 1920, _mock_configure_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 1080, _mock_configure_height);
+
+    wlr_surface3.current.width = 1024;
+    wlr_surface3.current.height = 768;
+    lock_surface3.current.configure_serial = 42;
+    _mock_send_locked_lock = NULL;
+    wl_signal_emit(&wlr_surface3.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    wlmtk_surface_ptr = wlr_surface3.data;
+    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 1200, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, y);
+
+    // Confirm: The most recently added surface is active.
+    wlmtk_surface_ptr = wlr_surface3.data;
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlmtk_surface_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_ptr->activated);
+    wlr_output_layout_remove(server.wlr_output_layout_ptr, &o3);
+    _mock_configure_serial = 44;
+    _mock_configure_lock_surface = NULL;
+    wl_signal_emit(&server.wlr_output_layout_ptr->events.change,
+                   server.wlr_output_layout_ptr);
+
+    // Now want surface1 active.
+    wlmtk_surface_ptr = wlr_surface1.data;
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlmtk_surface_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_ptr->activated);
+
+    // Unlock correctly.
+    wl_signal_emit(&wlr_session_lock_v1.events.unlock, NULL);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+
+    _wlmaker_lock_destroy(lock_ptr);
     wlmtk_root_remove_workspace(server.root_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_root_destroy(server.root_ptr);
