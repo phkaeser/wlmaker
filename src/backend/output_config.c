@@ -332,7 +332,7 @@ bool wlmbe_output_description_fnmatches(
     };
     for (size_t i = 0; i < sizeof(f) / sizeof(struct fields); ++i) {
         if (!f[i].present) continue;
-        if (NULL == f[i].cfg_val) return false;
+        if (NULL == f[i].cfg_val || NULL == f[i].o_val) return false;
         if (0 != fnmatch(f[i].cfg_val, f[i].o_val, 0)) return false;
     }
     return true;
