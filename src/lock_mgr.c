@@ -1196,6 +1196,11 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
 
+    wlmtk_surface_ptr = wlr_surface1.data;
+    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 3120, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 200, y);
+
     wlmtk_surface_ptr = wlr_surface3.data;
     wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
     BS_TEST_VERIFY_EQ(test_ptr, 1200, x);

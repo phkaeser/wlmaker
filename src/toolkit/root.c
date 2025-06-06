@@ -288,10 +288,7 @@ void wlmtk_root_add_workspace(
         wlmtk_workspace_element(workspace_ptr));
 
     // Keep the curtain on top.
-    wlmtk_container_remove_element(
-        &root_ptr->container,
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
-    wlmtk_container_add_element(
+    wlmtk_container_raise_element_to_top(
         &root_ptr->container,
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
 
@@ -694,6 +691,10 @@ void _wlmtk_root_handle_output_layout_change(
         root_ptr->curtain_rectangle_ptr,
         root_ptr->extents.width,
         root_ptr->extents.height);
+    wlmtk_element_set_position(
+        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
+        root_ptr->extents.x,
+        root_ptr->extents.y);
 }
 
 /* == Unit tests =========================================================== */
