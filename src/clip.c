@@ -20,19 +20,20 @@
 
 #include "clip.h"
 
-#include <limits.h>
-
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <limits.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
@@ -81,6 +82,8 @@ struct _wlmaker_clip_t {
 
     /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
+    /** Listener for wlr_output_layout::events.change. */
+    struct wl_listener        output_layout_change_listener;
 
     /** The clip's style. */
     wlmaker_config_clip_style_t style;
@@ -107,6 +110,9 @@ static struct wlr_buffer *_wlmaker_clip_create_tile(
     bool next_pressed);
 
 static void _wlmaker_clip_handle_workspace_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_clip_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -285,6 +291,15 @@ wlmaker_clip_t *wlmaker_clip_create(
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
 
+    // TODO(kaeser@gubbe.ch): This is a very hacky way of updating the output
+    // before the layer's handler removes all associated panels. Should be
+    // a native method of wlmtk_dock_t or wlmtk_panel_t.
+    clip_ptr->output_layout_change_listener.notify =
+        _wlmaker_clip_handle_output_layout_change;
+    wl_list_insert(
+        server_ptr->wlr_output_layout_ptr->events.change.listener_list.next,
+        &clip_ptr->output_layout_change_listener.link);
+
     server_ptr->clip_dock_ptr = clip_ptr->wlmtk_dock_ptr;
     bs_log(BS_INFO, "Created clip %p", clip_ptr);
     return clip_ptr;
@@ -297,6 +312,7 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
         clip_ptr->server_ptr->clip_dock_ptr = NULL;
     }
 
+    wlmtk_util_disconnect_listener(&clip_ptr->output_layout_change_listener);
     wlmtk_util_disconnect_listener(&clip_ptr->workspace_changed_listener);
 
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
@@ -777,6 +793,32 @@ void _wlmaker_clip_handle_workspace_changed(
                       clip_ptr->server_ptr->wlr_output_layout_ptr)));
 
     _wlmaker_clip_update_overlay(clip_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles when output layout changes; Re-computes the output to attach. */
+void _wlmaker_clip_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_clip_t, output_layout_change_listener);
+
+    struct wlr_output *wlr_output_ptr = wlmbe_output_description_first_fnmatch(
+        &clip_ptr->output_description, clip_ptr->server_ptr->wlr_output_layout_ptr);
+    if (NULL == wlr_output_ptr) {
+        wlr_output_ptr = wlmbe_primary_output(
+            clip_ptr->server_ptr->wlr_output_layout_ptr);
+    }
+    wlmtk_layer_t *layer_ptr = wlmtk_panel_get_layer(
+        wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+    wlmtk_layer_remove_panel(layer_ptr, wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+    if (NULL != wlr_output_ptr) {
+        BS_ASSERT(wlmtk_layer_add_panel(
+                      layer_ptr,
+                      wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
+                      wlr_output_ptr));
+    }
 }
 
 /* == Unit tests =========================================================== */
