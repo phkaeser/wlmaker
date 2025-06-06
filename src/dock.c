@@ -33,6 +33,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "backend/backend.h"
+#include "backend/output_config.h"
 #include "config.h"
 #include "default_state.h"
 #include "launcher.h"
@@ -47,6 +48,9 @@ struct _wlmaker_dock_t {
 
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
+
+    /** Description of the desired output, if any. */
+    wlmbe_output_description_t output_description;
 
     /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
@@ -115,6 +119,14 @@ wlmaker_dock_t *wlmaker_dock_create(
         return NULL;
     }
     bspl_decode_dict(dict_ptr, _wlmaker_dock_desc, &args);
+    bspl_dict_t *output_dict_ptr = bspl_dict_get_dict(dict_ptr, "Output");
+    if (NULL != output_dict_ptr) {
+        if (!wlmbe_output_description_init_from_plist(
+                &dock_ptr->output_description, output_dict_ptr)) {
+            wlmaker_dock_destroy(dock_ptr);
+            return NULL;
+        }
+    }
 
     dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
         &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
@@ -126,6 +138,13 @@ wlmaker_dock_t *wlmaker_dock_create(
         wlmtk_dock_element(dock_ptr->wlmtk_dock_ptr),
         true);
 
+    struct wlr_output *wlr_output_ptr = wlmbe_output_description_first_fnmatch(
+        &dock_ptr->output_description, server_ptr->wlr_output_layout_ptr);
+    if (NULL == wlr_output_ptr) {
+        wlr_output_ptr = wlmbe_primary_output(
+            server_ptr->wlr_output_layout_ptr);
+    }
+
     wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(server_ptr->root_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
@@ -133,8 +152,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(dock_ptr->wlmtk_dock_ptr),
-            wlmbe_primary_output(
-                dock_ptr->server_ptr->wlr_output_layout_ptr))) {
+            wlr_output_ptr)) {
         wlmaker_dock_destroy(dock_ptr);
         return NULL;
     }
@@ -192,6 +210,7 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
         dock_ptr->wlmtk_dock_ptr = NULL;
     }
 
+    wlmbe_output_description_fini(&dock_ptr->output_description);
     free(dock_ptr);
 }
 
