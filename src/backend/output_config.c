@@ -25,24 +25,8 @@ struct _wlmbe_output_config_t {
      */
     bs_dllist_node_t          dlnode;
 
-    /** Name of this output. */
-    char                      *name_ptr;
-    /** Whether a 'Name' entry was present. */
-    bool                      has_name;
-
-    /** Manufacturer of this output. That is 'make' in WLR speech. */
-    char                      *manufacturer_ptr;
-    /** Whether the 'Manufacturer' entry was present. */
-    bool                      has_manufacturer;
-    /** The model of this output. */
-    char                      *model_ptr;
-    /** Whether the 'Model' entry was present. */
-    bool                      has_model;
-    /** The serial of this output. */
-    char                      *serial_ptr;
-    /** Whether the 'Serial' entry was present. */
-    bool                      has_serial;
-
+    /** The output's description. */
+    wlmbe_output_description_t description;
     /** The attributes. */
     wlmbe_output_config_attributes_t attributes;
 };
@@ -74,20 +58,25 @@ static const bspl_enum_desc_t _wlmbe_output_transformation_desc[] = {
 };
 /** [OutputTransformation] */
 
-/** Descriptor for the output configuration. */
-static const bspl_desc_t    _wlmbe_output_config_desc[] = {
+/** Plist descriptor for @ref wlmbe_output_description_t. */
+static const bspl_desc_t    _wlmbe_output_description_desc[] = {
     BSPL_DESC_STRING(
-        "Name", false, wlmbe_output_config_t,
+        "Name", false, wlmbe_output_description_t,
         name_ptr, has_name, "*"),
     BSPL_DESC_STRING(
-        "Manufacturer", false, wlmbe_output_config_t,
+        "Manufacturer", false, wlmbe_output_description_t,
         manufacturer_ptr, has_manufacturer, ""),
     BSPL_DESC_STRING(
-        "Model", false, wlmbe_output_config_t,
+        "Model", false, wlmbe_output_description_t,
         model_ptr, has_model, ""),
     BSPL_DESC_STRING(
-        "Serial", false, wlmbe_output_config_t,
+        "Serial", false, wlmbe_output_description_t,
         serial_ptr, has_serial, ""),
+    BSPL_DESC_SENTINEL()
+};
+
+/** Descriptor for the output configuration. */
+static const bspl_desc_t    _wlmbe_output_config_desc[] = {
     BSPL_DESC_ENUM(
         "Transformation", true, wlmbe_output_config_t,
         attributes.transformation, attributes.transformation,
@@ -147,11 +136,12 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_wlr(
         1, sizeof(wlmbe_output_config_t));
     if (NULL == config_ptr) return NULL;
 
+    wlmbe_output_description_t *desc_ptr = &config_ptr->description;
     struct strings { char **d; const char *s; } s[4] = {
-        { .d = &config_ptr->name_ptr, .s = wlr_output_ptr->name },
-        { .d = &config_ptr->manufacturer_ptr, .s = wlr_output_ptr->make },
-        { .d = &config_ptr->model_ptr, .s = wlr_output_ptr->model },
-        { .d = &config_ptr->serial_ptr, .s = wlr_output_ptr->serial },
+        { .d = &desc_ptr->name_ptr, .s = wlr_output_ptr->name },
+        { .d = &desc_ptr->manufacturer_ptr, .s = wlr_output_ptr->make },
+        { .d = &desc_ptr->model_ptr, .s = wlr_output_ptr->model },
+        { .d = &desc_ptr->serial_ptr, .s = wlr_output_ptr->serial },
     };
     for (size_t i = 0; i < sizeof(s) / sizeof(struct strings); ++i) {
         if (NULL == s[i].s) continue;
@@ -161,10 +151,10 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_wlr(
             return NULL;
         }
     }
-    config_ptr->has_name = NULL != config_ptr->name_ptr;
-    config_ptr->has_manufacturer = NULL != config_ptr->manufacturer_ptr;
-    config_ptr->has_model = NULL != config_ptr->model_ptr;
-    config_ptr->has_serial = NULL != config_ptr->serial_ptr;
+    desc_ptr->has_name = NULL != desc_ptr->name_ptr;
+    desc_ptr->has_manufacturer = NULL != desc_ptr->manufacturer_ptr;
+    desc_ptr->has_model = NULL != desc_ptr->model_ptr;
+    desc_ptr->has_serial = NULL != desc_ptr->serial_ptr;
 
     config_ptr->attributes.transformation = wlr_output_ptr->transform;
     config_ptr->attributes.scale = wlr_output_ptr->scale;
@@ -189,7 +179,9 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
     wlmbe_output_config_t *config_ptr = logged_calloc(
         1, sizeof(wlmbe_output_config_t));
     if (NULL != config_ptr) {
-        if (bspl_decode_dict(
+        if (wlmbe_output_description_init_from_plist(
+                &config_ptr->description, dict_ptr) &&
+            bspl_decode_dict(
                 dict_ptr,
                 _wlmbe_output_config_desc,
                 config_ptr)) {
@@ -203,22 +195,7 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
 /* ------------------------------------------------------------------------- */
 void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr)
 {
-    if (NULL != config_ptr->serial_ptr) {
-        free(config_ptr->serial_ptr);
-        config_ptr->serial_ptr = NULL;
-    }
-    if (NULL != config_ptr->model_ptr) {
-        free(config_ptr->model_ptr);
-        config_ptr->model_ptr = NULL;
-    }
-    if (NULL != config_ptr->manufacturer_ptr) {
-        free(config_ptr->manufacturer_ptr);
-        config_ptr->manufacturer_ptr = NULL;
-    }
-    if (NULL != config_ptr->name_ptr) {
-        free(config_ptr->name_ptr);
-        config_ptr->name_ptr = NULL;
-    }
+    wlmbe_output_description_fini(&config_ptr->description);
     free(config_ptr);
 }
 
@@ -231,26 +208,79 @@ bool wlmbe_output_config_equals(
         wlmbe_output_config_from_dlnode(dlnode_ptr);
     struct wlr_output *wlr_output_ptr = ud_ptr;
 
+    return wlmbe_output_description_equals(
+        &config_ptr->description,
+        wlr_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_config_fnmatches(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmbe_output_config_t *config_ptr =
+        wlmbe_output_config_from_dlnode(dlnode_ptr);
+    struct wlr_output *wlr_output_ptr = ud_ptr;
+
+    return wlmbe_output_description_fnmatches(
+        &config_ptr->description, wlr_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_description_init_from_plist(
+    wlmbe_output_description_t *desc_ptr,
+    bspl_dict_t *dict_ptr)
+{
+    return bspl_decode_dict(
+        dict_ptr, _wlmbe_output_description_desc, desc_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_description_fini(wlmbe_output_description_t *desc_ptr)
+{
+    if (NULL != desc_ptr->serial_ptr) {
+        free(desc_ptr->serial_ptr);
+        desc_ptr->serial_ptr = NULL;
+    }
+    if (NULL != desc_ptr->model_ptr) {
+        free(desc_ptr->model_ptr);
+        desc_ptr->model_ptr = NULL;
+    }
+    if (NULL != desc_ptr->manufacturer_ptr) {
+        free(desc_ptr->manufacturer_ptr);
+        desc_ptr->manufacturer_ptr = NULL;
+    }
+    if (NULL != desc_ptr->name_ptr) {
+        free(desc_ptr->name_ptr);
+        desc_ptr->name_ptr = NULL;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmbe_output_description_equals(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
     // Maps the presence indicator and fields to match.
     struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
         {
-            .present = config_ptr->has_name,
-            .cfg_val = config_ptr->name_ptr,
+            .present = desc_ptr->has_name,
+            .cfg_val = desc_ptr->name_ptr,
             .o_val = wlr_output_ptr->name,
         },
         {
-            .present = config_ptr->has_manufacturer,
-            .cfg_val = config_ptr->manufacturer_ptr,
+            .present = desc_ptr->has_manufacturer,
+            .cfg_val = desc_ptr->manufacturer_ptr,
             .o_val = wlr_output_ptr->make,
         },
         {
-            .present = config_ptr->has_model,
-            .cfg_val = config_ptr->model_ptr,
+            .present = desc_ptr->has_model,
+            .cfg_val = desc_ptr->model_ptr,
             .o_val = wlr_output_ptr->model,
         },
         {
-            .present = config_ptr->has_serial,
-            .cfg_val = config_ptr->serial_ptr,
+            .present = desc_ptr->has_serial,
+            .cfg_val = desc_ptr->serial_ptr,
             .o_val = wlr_output_ptr->serial,
         },
     };
@@ -268,34 +298,30 @@ bool wlmbe_output_config_equals(
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_output_config_fnmatches(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
+bool wlmbe_output_description_fnmatches(
+    wlmbe_output_description_t *desc_ptr,
+    struct wlr_output *wlr_output_ptr)
 {
-    wlmbe_output_config_t *config_ptr =
-        wlmbe_output_config_from_dlnode(dlnode_ptr);
-    struct wlr_output *wlr_output_ptr = ud_ptr;
-
     // Maps the presence indicator and fields to match.
     struct fields { bool present; char *cfg_val; char *o_val; } f[4] = {
         {
-            .present = config_ptr->has_name,
-            .cfg_val = config_ptr->name_ptr,
+            .present = desc_ptr->has_name,
+            .cfg_val = desc_ptr->name_ptr,
             .o_val = wlr_output_ptr->name,
         },
         {
-            .present = config_ptr->has_manufacturer,
-            .cfg_val = config_ptr->manufacturer_ptr,
+            .present = desc_ptr->has_manufacturer,
+            .cfg_val = desc_ptr->manufacturer_ptr,
             .o_val = wlr_output_ptr->make,
         },
         {
-            .present = config_ptr->has_model,
-            .cfg_val = config_ptr->model_ptr,
+            .present = desc_ptr->has_model,
+            .cfg_val = desc_ptr->model_ptr,
             .o_val = wlr_output_ptr->model,
         },
         {
-            .present = config_ptr->has_serial,
-            .cfg_val = config_ptr->serial_ptr,
+            .present = desc_ptr->has_serial,
+            .cfg_val = desc_ptr->serial_ptr,
             .o_val = wlr_output_ptr->serial,
         },
     };
@@ -439,7 +465,7 @@ void _wlmbe_output_test_config_parse(bs_test_t *test_ptr)
     wlmbe_output_config_t *c = wlmbe_output_config_create_from_plist(dict_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c);
 
-    BS_TEST_VERIFY_STREQ(test_ptr, "X11", c->name_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "X11", c->description.name_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, WL_OUTPUT_TRANSFORM_FLIPPED,
         c->attributes.transformation);
