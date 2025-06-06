@@ -649,7 +649,7 @@ bool _wlmtk_root_element_keyboard_event(
         return root_ptr->orig_super_element_vmt.keyboard_event(
             element_ptr,
             wlr_keyboard_key_event_ptr);
-    } else if (NULL != root_ptr->lock_ptr) {
+    } else if (NULL != root_ptr->lock_element_ptr) {
         return wlmtk_element_keyboard_event(
             root_ptr->lock_element_ptr,
             wlr_keyboard_key_event_ptr);
