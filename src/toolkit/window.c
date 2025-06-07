@@ -100,6 +100,8 @@ struct _wlmtk_window_t {
     wlmtk_element_t           *element_ptr;
     /** Points to the workspace, if mapped. */
     wlmtk_workspace_t         *workspace_ptr;
+    /** The active seat, as provided to @ref wlmtk_window_create. */
+    struct wlr_seat           *wlr_seat_ptr;
     /** Environment, the argument passet to @ref wlmtk_window_create. */
     wlmtk_env_t               *env_ptr;
     /** Element in @ref wlmtk_workspace_t::windows, when mapped. */
@@ -252,11 +254,13 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
     window_ptr->style = *style_ptr;
+    window_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     if (!_wlmtk_window_init(
             window_ptr,
@@ -945,9 +949,9 @@ bool _wlmtk_window_element_pointer_button(
     // Permit drag-move with the (hardcoded) modifier.
     // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
     // events, with corresponding modifiers. Do so, once added to toolkit.
-    if (NULL != window_ptr->env_ptr) {
+    if (NULL != window_ptr->wlr_seat_ptr) {
         struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-            wlmtk_env_wlr_seat(window_ptr->env_ptr));
+            window_ptr->wlr_seat_ptr);
         uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
         if (BTN_LEFT == button_event_ptr->button &&
             WLMTK_BUTTON_DOWN == button_event_ptr->type &&
@@ -1470,7 +1474,8 @@ void test_create_destroy(bs_test_t *test_ptr)
         &content,
         wlmtk_surface_element(&fake_surface_ptr->surface),
         NULL);
-    wlmtk_window_t *window_ptr = wlmtk_window_create(&content, &s, &ms, NULL);
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
+        &content, &s, &ms, NULL, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, window_ptr, content.window_ptr);
 
