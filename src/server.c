@@ -190,8 +190,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     server_ptr->env_ptr = wlmtk_env_create(
         server_ptr->cursor_ptr->wlr_cursor_ptr,
-        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr,
-        server_ptr->wlr_seat_ptr);
+        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr);
     if (NULL == server_ptr->env_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
