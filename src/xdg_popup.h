@@ -27,6 +27,7 @@
 
 #include "toolkit/toolkit.h"
 
+struct wlr_seat;
 struct wlr_xdg_popup;
 
 struct _wlmaker_xdg_popup_t;
@@ -41,6 +42,9 @@ extern "C" {
 struct _wlmaker_xdg_popup_t {
     /** Super class: popup. */
     wlmtk_popup_t             super_popup;
+
+    /** Seat. */
+    struct wlr_seat           *wlr_seat_ptr;
 
     /** Surface of the popup. */
     wlmtk_surface_t           *surface_ptr;
@@ -64,6 +68,7 @@ struct _wlmaker_xdg_popup_t {
  */
 wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_env_t *env_ptr);
 
 /**

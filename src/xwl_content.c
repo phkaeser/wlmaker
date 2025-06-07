@@ -371,6 +371,7 @@ void _xwl_content_handle_associate(
 
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
         xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
+        xwl_content_ptr->server_ptr->wlr_seat_ptr,
         xwl_content_ptr->env_ptr);
     if (NULL == xwl_content_ptr->surface_ptr) {
         // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
