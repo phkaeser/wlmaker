@@ -72,6 +72,7 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         wlmtk_content_from_xwl_content(content_ptr),
         &server_ptr->style.window,
         &server_ptr->style.menu,
+        server_ptr->wlr_seat_ptr,
         env_ptr);
     if (NULL == xwl_toplevel_ptr->window_ptr) {
         wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
