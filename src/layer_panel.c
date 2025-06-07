@@ -165,6 +165,7 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
 
     layer_panel_ptr->wlmtk_surface_ptr = wlmtk_surface_create_fn(
         wlr_layer_surface_v1_ptr->surface,
+        server_ptr->wlr_seat_ptr,
         server_ptr->env_ptr);
     if (NULL == layer_panel_ptr->wlmtk_surface_ptr) {
         _wlmaker_layer_panel_destroy(layer_panel_ptr);
@@ -536,6 +537,7 @@ void _wlmaker_layer_panel_handle_new_popup(
 
     wlmaker_xdg_popup_t *popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
+        layer_panel_ptr->server_ptr->wlr_seat_ptr,
         layer_panel_ptr->server_ptr->env_ptr);
     if (NULL == popup_ptr) {
         wl_resource_post_error(

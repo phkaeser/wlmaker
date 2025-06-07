@@ -224,6 +224,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 
     xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
         wlr_xdg_toplevel_ptr->base->surface,
+        server_ptr->wlr_seat_ptr,
         server_ptr->env_ptr);
     if (NULL == xdg_tl_surface_ptr->surface_ptr) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
@@ -476,6 +477,7 @@ void handle_new_popup(
 
     wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
+        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr,
         xdg_tl_surface_ptr->server_ptr->env_ptr);
     if (NULL == xdg_popup_ptr) {
         wl_resource_post_error(

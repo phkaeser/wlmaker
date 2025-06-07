@@ -118,10 +118,12 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_surface_t *wlmtk_surface_create(
     struct wlr_surface *wlr_surface_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
     if (NULL == surface_ptr) return NULL;
+    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr, env_ptr)) {
         wlmtk_surface_destroy(surface_ptr);
@@ -398,15 +400,16 @@ void _wlmtk_surface_element_pointer_leave(wlmtk_element_t *element_ptr)
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
+    // Guard clause.
+    if (NULL == surface_ptr->wlr_seat_ptr) return;
+
     // If the current surface's parent is our surface: clear it.
     struct wlr_surface *focused_wlr_surface_ptr =
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr
-            )->pointer_state.focused_surface;
+        surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
     if (NULL != focused_wlr_surface_ptr &&
         wlr_surface_get_root_surface(focused_wlr_surface_ptr) ==
         surface_ptr->wlr_surface_ptr) {
-        wlr_seat_pointer_clear_focus(
-            wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr));
+        wlr_seat_pointer_clear_focus(surface_ptr->wlr_seat_ptr);
     }
 }
 
@@ -469,14 +472,16 @@ bool _wlmtk_surface_element_pointer_motion(
 
     BS_ASSERT(surface_ptr->wlr_surface_ptr ==
               wlr_surface_get_root_surface(wlr_scene_surface_ptr->surface));
-    wlr_seat_pointer_notify_enter(
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
-        wlr_scene_surface_ptr->surface,
-        node_x, node_y);
-    wlr_seat_pointer_notify_motion(
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
-        time_msec,
-        node_x, node_y);
+    if (NULL != surface_ptr->wlr_seat_ptr) {
+        wlr_seat_pointer_notify_enter(
+            surface_ptr->wlr_seat_ptr,
+            wlr_scene_surface_ptr->surface,
+            node_x, node_y);
+        wlr_seat_pointer_notify_motion(
+            surface_ptr->wlr_seat_ptr,
+            time_msec,
+            node_x, node_y);
+    }
     return true;
 }
 
@@ -501,8 +506,7 @@ bool _wlmtk_surface_element_pointer_button(
 
     // Complain if the surface isn't part of our responsibility.
     struct wlr_surface *focused_wlr_surface_ptr =
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr
-            )->pointer_state.focused_surface;
+        surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
     if (NULL == focused_wlr_surface_ptr) return false;
     // TODO(kaeser@gubbe.ch): Dragging the pointer from an activated window
     // over to a non-activated window will trigger the condition here on the
@@ -527,7 +531,7 @@ bool _wlmtk_surface_element_pointer_button(
             WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED;
 #endif // WLR_VERSION_NUM >= (18 << 8)
         wlr_seat_pointer_notify_button(
-            wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
+            surface_ptr->wlr_seat_ptr,
             button_event_ptr->time_msec,
             button_event_ptr->button,
             state);
@@ -556,12 +560,11 @@ bool _wlmtk_surface_element_pointer_axis(
 
     // Complain if the surface isn't part of our responsibility.
     struct wlr_surface *focused_wlr_surface_ptr =
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr
-            )->pointer_state.focused_surface;
+        surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
     if (NULL == focused_wlr_surface_ptr) return false;
 
     wlr_seat_pointer_notify_axis(
-        wlmtk_env_wlr_seat(surface_ptr->super_element.env_ptr),
+        surface_ptr->wlr_seat_ptr,
         wlr_pointer_axis_event_ptr->time_msec,
         wlr_pointer_axis_event_ptr->orientation,
         wlr_pointer_axis_event_ptr->delta,
@@ -592,16 +595,32 @@ bool _wlmtk_surface_element_keyboard_event(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
+<<<<<<< HEAD
     if (!surface_ptr->activated) return false;
 
     struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(element_ptr->env_ptr);
+=======
+>>>>>>> 4a47863 (toolkit: Makes wlr_seat_ptr an explicit arg to wlmtk_surface, and eliminate it in wlmtk_env_t.)
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-        wlr_seat_ptr);
+        surface_ptr->wlr_seat_ptr);
 
     if (NULL == wlr_keyboard_ptr) return false;
 
+<<<<<<< HEAD
+=======
+    wlr_seat_keyboard_notify_enter(
+        surface_ptr->wlr_seat_ptr,
+        surface_ptr->wlr_surface_ptr,
+        wlr_keyboard_ptr->keycodes,
+        wlr_keyboard_ptr->num_keycodes,
+        &wlr_keyboard_ptr->modifiers);
+
+    wlr_seat_set_keyboard(
+        surface_ptr->wlr_seat_ptr,
+        wlr_keyboard_ptr);
+>>>>>>> 4a47863 (toolkit: Makes wlr_seat_ptr an explicit arg to wlmtk_surface, and eliminate it in wlmtk_env_t.)
     wlr_seat_keyboard_notify_key(
-        wlr_seat_ptr,
+        surface_ptr->wlr_seat_ptr,
         wlr_keyboard_key_event_ptr->time_msec,
         wlr_keyboard_key_event_ptr->keycode,
         wlr_keyboard_key_event_ptr->state);
@@ -742,6 +761,7 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
 /* ------------------------------------------------------------------------- */
 wlmtk_surface_t *wlmtk_fake_surface_create_inject(
     __UNUSED__ struct wlr_surface *wlr_surface_ptr,
+    __UNUSED__ struct wlr_seat *wlr_seat_ptr,
     __UNUSED__ wlmtk_env_t *env_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
@@ -841,7 +861,7 @@ const bs_test_case_t wlmtk_surface_test_cases[] = {
 /** Tests ctor and dtor. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, surface_ptr);
 
     BS_TEST_VERIFY_EQ(

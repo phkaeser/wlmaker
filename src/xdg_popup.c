@@ -63,15 +63,19 @@ static void handle_surface_commit(
 /* ------------------------------------------------------------------------- */
 wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_env_t *env_ptr)
 {
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = logged_calloc(
         1, sizeof(wlmaker_xdg_popup_t));
     if (NULL == wlmaker_xdg_popup_ptr) return NULL;
+    wlmaker_xdg_popup_ptr->wlr_seat_ptr = wlr_seat_ptr;
     wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
 
     wlmaker_xdg_popup_ptr->surface_ptr = wlmtk_surface_create(
-        wlr_xdg_popup_ptr->base->surface, env_ptr);
+        wlr_xdg_popup_ptr->base->surface,
+        wlr_seat_ptr,
+        env_ptr);
     if (NULL == wlmaker_xdg_popup_ptr->surface_ptr) {
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
@@ -179,6 +183,7 @@ void handle_new_popup(
 
     wlmaker_xdg_popup_t *new_popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
+        wlmaker_xdg_popup_ptr->wlr_seat_ptr,
         wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup)->env_ptr);
     if (NULL == new_popup_ptr) {
         wl_resource_post_error(
