@@ -58,8 +58,7 @@ static const wlmtk_env_cursor_lookup_t _wlmtk_env_cursor_lookup[] = {
 /* ------------------------------------------------------------------------- */
 wlmtk_env_t *wlmtk_env_create(
     struct wlr_cursor *wlr_cursor_ptr,
-    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
-    __UNUSED__ struct wlr_seat *wlr_seat_ptr)
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr)
 {
     wlmtk_env_t *env_ptr = logged_calloc(1, sizeof(wlmtk_env_t));
     if (NULL == env_ptr) return NULL;
