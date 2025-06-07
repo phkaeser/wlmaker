@@ -75,13 +75,6 @@ void wlmtk_env_destroy(wlmtk_env_t *env_ptr);
  */
 void wlmtk_env_set_cursor(wlmtk_env_t *env_ptr, wlmtk_env_cursor_t cursor);
 
-/**
- * Returns the pointer to the wlr_seat.
- *
- * @param env_ptr
- */
-struct wlr_seat *wlmtk_env_wlr_seat(wlmtk_env_t *env_ptr);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

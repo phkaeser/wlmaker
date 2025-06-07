@@ -74,6 +74,8 @@ typedef struct _wlmaker_lock_surface_t wlmaker_lock_surface_t;
 struct _wlmaker_lock_t {
     /** The wlroots session lock. */
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr;
+    /** Seat for the session. */
+    struct wlr_seat           *wlr_seat_ptr;
     /** The root this lock is applied for. */
     wlmtk_root_t              *root_ptr;
 
@@ -141,6 +143,7 @@ static void _wlmaker_lock_mgr_handle_destroy(
 static wlmaker_lock_t *_wlmaker_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_root_t *root_ptr,
     wlmtk_env_t *env_ptr,
     _wlmaker_lock_surface_configure_t injected_surface_configure,
@@ -251,6 +254,7 @@ void _wlmaker_lock_mgr_handle_new_lock(
     wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
         wlr_session_lock_v1_ptr,
         lock_mgr_ptr->server_ptr->wlr_output_layout_ptr,
+        lock_mgr_ptr->server_ptr->wlr_seat_ptr,
         lock_mgr_ptr->server_ptr->root_ptr,
         lock_mgr_ptr->server_ptr->env_ptr,
         wlr_session_lock_surface_v1_configure,
@@ -298,6 +302,7 @@ void _wlmaker_lock_mgr_handle_destroy(
  *
  * @param wlr_session_lock_v1_ptr
  * @param wlr_output_layout_ptr
+ * @param wlr_seat_ptr
  * @param root_ptr
  * @param env_ptr
  * @param injected_surface_configure
@@ -308,6 +313,7 @@ void _wlmaker_lock_mgr_handle_destroy(
 wlmaker_lock_t *_wlmaker_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_root_t *root_ptr,
     wlmtk_env_t *env_ptr,
     _wlmaker_lock_surface_configure_t injected_surface_configure,
@@ -317,6 +323,7 @@ wlmaker_lock_t *_wlmaker_lock_create(
     if (NULL == lock_ptr) return NULL;
     lock_ptr->wlr_session_lock_v1_ptr = wlr_session_lock_v1_ptr;
     lock_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
+    lock_ptr->wlr_seat_ptr = wlr_seat_ptr;
     lock_ptr->root_ptr = root_ptr;
     lock_ptr->injected_surface_configure = injected_surface_configure;
     lock_ptr->injected_send_locked = injected_send_locked;
@@ -682,6 +689,7 @@ wlmaker_lock_surface_t *_wlmaker_lock_surface_create(
 
     lock_surface_ptr->wlmtk_surface_ptr = wlmtk_surface_create(
         wlr_session_lock_surface_v1_ptr->surface,
+        lock_ptr->wlr_seat_ptr,
         _wlmaker_lock_element(lock_ptr)->env_ptr);
     if (NULL == lock_surface_ptr->wlmtk_surface_ptr) {
         bs_log(BS_ERROR, "Failed wlmtk_surface_create(%p, %p)",
@@ -923,6 +931,7 @@ void test_lock_unlock(bs_test_t *test_ptr)
     wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
+        NULL,
         server.root_ptr,
         NULL,
         _mock_wlr_session_lock_surface_v1_configure,
@@ -1005,6 +1014,7 @@ void test_lock_crash(bs_test_t *test_ptr)
     wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
+        NULL,
         server.root_ptr,
         NULL,
         _mock_wlr_session_lock_surface_v1_configure,
@@ -1085,6 +1095,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
+        NULL,
         server.root_ptr,
         NULL,
         _mock_wlr_session_lock_surface_v1_configure,

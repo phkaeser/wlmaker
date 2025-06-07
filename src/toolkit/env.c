@@ -34,8 +34,6 @@ struct _wlmtk_env_t {
     struct wlr_cursor         *wlr_cursor_ptr;
     /** Points to a `wlr_xcursor_manager`. */
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
-    /** Points to a `wlr_seat`. */
-    struct wlr_seat           *wlr_seat_ptr;
 };
 
 /** Struct to identify a @ref wlmtk_env_cursor_t with the xcursor name. */
@@ -61,14 +59,13 @@ static const wlmtk_env_cursor_lookup_t _wlmtk_env_cursor_lookup[] = {
 wlmtk_env_t *wlmtk_env_create(
     struct wlr_cursor *wlr_cursor_ptr,
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr,
-    struct wlr_seat *wlr_seat_ptr)
+    __UNUSED__ struct wlr_seat *wlr_seat_ptr)
 {
     wlmtk_env_t *env_ptr = logged_calloc(1, sizeof(wlmtk_env_t));
     if (NULL == env_ptr) return NULL;
 
     env_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
     env_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
-    env_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     return env_ptr;
 }
@@ -99,12 +96,6 @@ void wlmtk_env_set_cursor(wlmtk_env_t *env_ptr, wlmtk_env_cursor_t cursor)
             env_ptr->wlr_xcursor_manager_ptr,
             lookup_ptr->xcursor_name_ptr);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-struct wlr_seat *wlmtk_env_wlr_seat(wlmtk_env_t *env_ptr)
-{
-    return env_ptr->wlr_seat_ptr;
 }
 
 /* == End of env.c ========================================================= */
