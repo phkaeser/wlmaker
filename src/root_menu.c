@@ -157,6 +157,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->content,
         window_style_ptr,
         menu_style_ptr,
+        server_ptr->wlr_seat_ptr,
         env_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);

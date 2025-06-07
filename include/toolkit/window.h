@@ -37,6 +37,7 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "workspace.h"  // IWYU pragma: keep
 
 struct wlr_output;
+struct wlr_seat;
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,10 +81,11 @@ typedef enum {
 /**
  * Creates a window for the given content.
  *
- * @param env_ptr
+ * @param content_ptr
  * @param style_ptr
  * @param menu_style_ptr
- * @param content_ptr
+ * @param wlr_seat_ptr
+ * @param env_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
@@ -92,6 +94,7 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
+    struct wlr_seat *wlr_seat_ptr,
     wlmtk_env_t *env_ptr);
 
 /**
