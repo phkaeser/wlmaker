@@ -142,8 +142,7 @@ static void _wlmtk_workspace_element_get_pointer_area(
     int *y2_ptr);
 static bool _wlmtk_workspace_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_workspace_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -876,23 +875,20 @@ void _wlmtk_workspace_element_get_pointer_area(
  * handler if the event isn't consumed yet.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param motion_event_ptr
  *
  * @return Always true.
  */
 bool _wlmtk_workspace_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_workspace_t, super_container.super_element);
 
     // Note: Workspace ignores the return value. All motion events are whitin.
     bool rv = workspace_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, motion_event_ptr);
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_MOTION, NULL);
 
     // Focus wasn't claimed, so we'll set the cursor here.
@@ -1028,9 +1024,9 @@ bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 
     workspace_ptr->grabbed_window_ptr = ud_ptr;
     workspace_ptr->motion_x =
-        workspace_ptr->super_container.super_element.last_pointer_x;
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.x;
     workspace_ptr->motion_y =
-        workspace_ptr->super_container.super_element.last_pointer_y;
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.y;
 
     wlmtk_element_get_position(
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
@@ -1049,9 +1045,11 @@ bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         fsm_ptr, wlmtk_workspace_t, fsm);
 
-    double rel_x = workspace_ptr->super_container.super_element.last_pointer_x -
+    double rel_x =
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.x -
         workspace_ptr->motion_x;
-    double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
+    double rel_y =
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.y -
         workspace_ptr->motion_y;
 
     wlmtk_window_set_position(
@@ -1071,9 +1069,9 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 
     workspace_ptr->grabbed_window_ptr = ud_ptr;
     workspace_ptr->motion_x =
-        workspace_ptr->super_container.super_element.last_pointer_x;
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.x;
     workspace_ptr->motion_y =
-        workspace_ptr->super_container.super_element.last_pointer_y;
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.y;
 
     wlmtk_element_get_position(
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
@@ -1095,9 +1093,11 @@ bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         fsm_ptr, wlmtk_workspace_t, fsm);
 
-    double rel_x = workspace_ptr->super_container.super_element.last_pointer_x -
+    double rel_x =
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.x -
         workspace_ptr->motion_x;
-    double rel_y = workspace_ptr->super_container.super_element.last_pointer_y -
+    double rel_y =
+        workspace_ptr->super_container.super_element.last_pointer_motion_event.y -
         workspace_ptr->motion_y;
 
     // Update new boundaries by the relative movement.
@@ -1316,8 +1316,8 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 0, 0, 42);
+    wlmtk_pointer_motion_event_t mev = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
 
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
@@ -1325,8 +1325,8 @@ void test_move(bs_test_t *test_ptr)
 
     // Starts a move for the window. Will move it...
     wlmtk_workspace_begin_window_move(ws_ptr, fw_ptr->window_ptr);
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 1, 2, 43);
+    mev = (wlmtk_pointer_motion_event_t){ .x = 1, .y = 2 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
@@ -1342,8 +1342,8 @@ void test_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, ws_ptr->grabbed_window_ptr);
 
     // More motion, no longer updates the position.
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 3, 4, 45);
+    mev = (wlmtk_pointer_motion_event_t){ .x = 3, .y = 4 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
@@ -1373,8 +1373,8 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fw_ptr = wlmtk_fake_window_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw_ptr);
 
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 0, 0, 42);
+    wlmtk_pointer_motion_event_t mev = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
 
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
@@ -1382,8 +1382,8 @@ void test_unmap_during_move(bs_test_t *test_ptr)
 
     // Starts a move for the window. Will move it...
     wlmtk_workspace_begin_window_move(ws_ptr, fw_ptr->window_ptr);
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 1, 2, 43);
+    mev = (wlmtk_pointer_motion_event_t){ .x = 1, .y = 2 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
@@ -1391,15 +1391,13 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, ws_ptr->grabbed_window_ptr);
 
     // More motion, no longer updates the position.
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 3, 4, 45);
+    mev = (wlmtk_pointer_motion_event_t){ .x = 3, .y = 4 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
-
     // More motion, no longer updates the position.
-    wlmtk_element_pointer_motion(
-        wlmtk_workspace_element(ws_ptr), 3, 4, 45);
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(fw_ptr->window_ptr)->y);
 
@@ -1430,7 +1428,8 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_window_request_position_and_size(fw_ptr->window_ptr, 0, 0, 40, 20);
     wlmtk_fake_window_commit_size(fw_ptr);
 
-    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr),  0, 0, 42);
+    wlmtk_pointer_motion_event_t mev = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr),  &mev);
 
     wlmtk_workspace_map_window(ws_ptr, fw_ptr->window_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
@@ -1444,7 +1443,8 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_begin_window_resize(
         ws_ptr, fw_ptr->window_ptr, WLR_EDGE_TOP | WLR_EDGE_LEFT);
     fw_ptr->fake_content_ptr->serial = 1;  // The serial.
-    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), 1, 2, 44);
+    mev = (wlmtk_pointer_motion_event_t){ .x = 1, .y = 2 };
+    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(fw_ptr->window_ptr)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 39, fw_ptr->fake_content_ptr->requested_width);
@@ -1593,10 +1593,10 @@ void test_activate(bs_test_t *test_ptr)
         wlmtk_window_is_activated(fw2_ptr->window_ptr));
 
     // Pointer move, over window 1. Nothing happens: We have click-to-focus.
+    wlmtk_pointer_motion_event_t mev = { .x = 50, .y = 50 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), 50, 50, 0));
+        wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev));
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_window_is_activated(fw1_ptr->window_ptr));

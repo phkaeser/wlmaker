@@ -86,25 +86,21 @@ struct _wlmtk_element_vmt_t {
      * Indicates pointer motion into or within the element area to (x,y).
      *
      * The default implementation at @ref _wlmtk_element_pointer_motion updates
-     * @ref wlmtk_element_t::last_pointer_x,
-     * @ref wlmtk_element_t::last_pointer_y
-     * and @ref wlmtk_element_t::last_pointer_time_msec.
+     * @ref wlmtk_element_t::last_pointer_motion_event.
      *
      * Derived classes that overwrite this method are advised to call the
      * initial implementation for keeping these internals updated.
      *
      * @param element_ptr
-     * @param x
-     * @param y
-     * @param time_msec
+     * @param motion_event_ptr Details on the pointer motion. The coordinates
+     *                        are relative to the element's coordinates.
      *
      * @return Whether the motion is considered within the element's pointer
      *     area. If it returns true, the caller should consider this element
      *     as having pointer focus.
      */
     bool (*pointer_motion)(wlmtk_element_t *element_ptr,
-                           double x, double y,
-                           uint32_t time_msec);
+                           wlmtk_pointer_motion_event_t *motion_event_ptr);
 
     /**
      * Indicates pointer button event.
@@ -240,24 +236,9 @@ struct _wlmtk_element_t {
     /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
     struct wl_listener        wlr_scene_node_destroy_listener;
 
-    /**
-     * Horizontal pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if the last motion call
-     * had NAN arguments.
-     *
-     * Does not imply that the element has pointer focus.
-     */
-    double                    last_pointer_x;
-    /**
-     * Vertical pointer position from last @ref wlmtk_element_pointer_motion
-     * call. NAN if there was no motion call yet, or if the last motion call
-     * had NAN arguments.
-     *
-     * Does not imply that the element has pointer focus.
-     */
-    double                    last_pointer_y;
-    /** Time of last @ref wlmtk_element_pointer_motion call, 0 otherwise. */
-    uint32_t                  last_pointer_time_msec;
+    /** Details of last @ref wlmtk_element_pointer_motion call. */
+    wlmtk_pointer_motion_event_t last_pointer_motion_event;
+
     /** Whether the pointer is currently within the element's bounds. */
     bool                      pointer_inside;
 };
@@ -439,15 +420,11 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
  * @ref wlmtk_element_vmt_t::pointer_leave calls.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param pointer_motion_ptr
  */
 bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *pointer_motion_ptr);
 
 /** Calls @ref wlmtk_element_vmt_t::pointer_button. */
 static inline bool wlmtk_element_pointer_button(

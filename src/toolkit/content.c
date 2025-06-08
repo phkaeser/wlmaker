@@ -26,6 +26,7 @@
 #include <wlr/types/wlr_compositor.h>
 #undef WLR_USE_UNSTABLE
 
+#include "input.h"
 #include "surface.h"
 #include "window.h"
 
@@ -443,9 +444,10 @@ void test_init_fini(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, box.height);
 
     // Pointer motion, should report to not be within the content.
+    wlmtk_pointer_motion_event_t e = { .x = 10, .y = 10 };
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
+        wlmtk_element_pointer_motion(element_ptr, &e));
 
     // Request & commit a sensible size, verifies the content reports it.
     wlmtk_content_request_size(&fake_content_ptr->content, 200, 100);
@@ -459,7 +461,7 @@ void test_init_fini(bs_test_t *test_ptr)
     // Pointer motion shouuld now report to be within the content.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 10, 10, 0));
+        wlmtk_element_pointer_motion(element_ptr, &e));
 
     wlmtk_fake_content_destroy(fake_content_ptr);
     wlmtk_fake_surface_destroy(fs_ptr);

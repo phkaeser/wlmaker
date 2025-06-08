@@ -56,8 +56,7 @@ static void _wlmtk_container_element_get_pointer_area(
     int *bottom_ptr);
 static bool _wlmtk_container_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_container_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -309,9 +308,9 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr)
     } else {
         update_pointer_focus_at(
             container_ptr,
-            container_ptr->super_element.last_pointer_x,
-            container_ptr->super_element.last_pointer_y,
-            container_ptr->super_element.last_pointer_time_msec);
+            container_ptr->super_element.last_pointer_motion_event.x,
+            container_ptr->super_element.last_pointer_motion_event.y,
+            container_ptr->super_element.last_pointer_motion_event.time_msec);
     }
 }
 
@@ -341,9 +340,9 @@ void wlmtk_container_pointer_grab(
 
     if (NULL != container_ptr->pointer_focus_element_ptr &&
         container_ptr->pointer_focus_element_ptr != element_ptr) {
+        wlmtk_pointer_motion_event_t e = { .x = NAN, .y = NAN };
         wlmtk_element_pointer_motion(
-            container_ptr->pointer_focus_element_ptr,
-            NAN, NAN, 0);
+            container_ptr->pointer_focus_element_ptr, &e);
     }
 }
 
@@ -561,24 +560,24 @@ void _wlmtk_container_element_get_pointer_area(
  * Implementation of the element's motion method: Handle pointer moves.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param motion_event_ptr
  *
  * @return Whether this container has an element that accepts the emotion.
  */
 bool _wlmtk_container_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
     container_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, motion_event_ptr);
 
-    return update_pointer_focus_at(container_ptr, x, y, time_msec);
+    return update_pointer_focus_at(
+        container_ptr,
+        motion_event_ptr->x,
+        motion_event_ptr->y,
+        motion_event_ptr->time_msec);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -818,13 +817,15 @@ bool update_pointer_focus_at(
     double y,
     uint32_t time_msec)
 {
+    wlmtk_pointer_motion_event_t e = { .time_msec = time_msec };
     if (NULL != container_ptr->pointer_grab_element_ptr) {
         int x_pos, y_pos;
         wlmtk_element_get_position(
             container_ptr->pointer_grab_element_ptr, &x_pos, &y_pos);
+        e.x = x - x_pos;
+        e.y = y - y_pos;
         wlmtk_element_pointer_motion(
-            container_ptr->pointer_grab_element_ptr,
-            x - x_pos, y - y_pos, time_msec);
+            container_ptr->pointer_grab_element_ptr, &e);
         return true;
     }
 
@@ -841,17 +842,19 @@ bool update_pointer_focus_at(
         wlmtk_element_get_pointer_area(element_ptr, &x1, &y1, &x2, &y2);
         if (x_pos + x1 <= x && x < x_pos + x2 &&
             y_pos + y1 <= y && y < y_pos + y2) {
-            if (!wlmtk_element_pointer_motion(
-                    element_ptr, x - x_pos, y - y_pos, time_msec)) {
+            e.x = x - x_pos;
+            e.y = y - y_pos;
+            if (!wlmtk_element_pointer_motion(element_ptr, &e)) {
                 continue;
             }
 
             // There is a focus change. Invalidate coordinates in old element.
             if (container_ptr->pointer_focus_element_ptr != element_ptr &&
                 NULL != container_ptr->pointer_focus_element_ptr) {
+                e.x = NAN;
+                e.y = NAN;
                 wlmtk_element_pointer_motion(
-                    container_ptr->pointer_focus_element_ptr,
-                    NAN, NAN, time_msec);
+                    container_ptr->pointer_focus_element_ptr, &e);
 
             }
             container_ptr->pointer_focus_element_ptr = element_ptr;
@@ -863,9 +866,10 @@ bool update_pointer_focus_at(
     // so it must have happened outside our araea. We also should reset
     // pointer focus element now.
     if (NULL != container_ptr->pointer_focus_element_ptr) {
+        e.x = NAN;
+        e.y = NAN;
         wlmtk_element_pointer_motion(
-            container_ptr->pointer_focus_element_ptr,
-            NAN, NAN, time_msec);
+            container_ptr->pointer_focus_element_ptr, &e);
         container_ptr->pointer_focus_element_ptr = NULL;
     }
     return false;
@@ -1170,7 +1174,8 @@ void test_add_with_raise(bs_test_t *test_ptr)
         c_ptr->wlr_scene_tree_ptr->children.prev,
         &fe1_ptr->element.wlr_scene_node_ptr->link);
 
-    wlmtk_element_pointer_motion(&c_ptr->super_element, 0, 0, 7);
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0, .time_msec = 7 };
+    wlmtk_element_pointer_motion(&c_ptr->super_element, &e);
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
     fe1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_EQ(
@@ -1298,44 +1303,46 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 209, b);
 
     // There's nothing at (0, 0).
-    wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7);
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(&container.super_element, &e);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
 
-    wlmtk_element_pointer_motion(&parent_container.super_element, 0, 0, 7);
+    wlmtk_element_pointer_motion(&parent_container.super_element, &e);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
 
     // elem1 is at (-20, -40).
+    e = (wlmtk_pointer_motion_event_t){ .x = -20, .y = -40 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, -20, -40, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_enter_called);
     elem1_ptr->pointer_enter_called = false;
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_motion_event.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_motion_event.y);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            &parent_container.super_element, -20, -40, 7));
+            &parent_container.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_enter_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_motion_event.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, elem1_ptr->element.last_pointer_motion_event.y);
 
     // elem2 is covering the area at (107, 302).
+    e = (wlmtk_pointer_motion_event_t){ .x = 107, .y = 203 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            &parent_container.super_element, 107, 203, 7));
+        wlmtk_element_pointer_motion(&parent_container.super_element, &e));
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem1_ptr->element.last_pointer_x));
+    BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem1_ptr->element.last_pointer_motion_event.x));
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_leave_called);
     elem1_ptr->pointer_leave_called = false;
@@ -1343,29 +1350,29 @@ void test_pointer_motion(bs_test_t *test_ptr)
     elem2_ptr->pointer_enter_called = false;
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->element.last_pointer_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->element.last_pointer_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->element.last_pointer_motion_event.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, elem2_ptr->element.last_pointer_motion_event.y);
 
     // The pointer area of elem2 is covering the area at (112, 208).
+    e = (wlmtk_pointer_motion_event_t){ .x = 112, .y = 208 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            &parent_container.super_element, 112, 208, 7));
+        wlmtk_element_pointer_motion(&parent_container.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_leave_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_EQ(test_ptr, 12, elem2_ptr->element.last_pointer_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 8, elem2_ptr->element.last_pointer_y);
+    BS_TEST_VERIFY_EQ(test_ptr, 12, elem2_ptr->element.last_pointer_motion_event.x);
+    BS_TEST_VERIFY_EQ(test_ptr, 8, elem2_ptr->element.last_pointer_motion_event.y);
 
     // The pointer area of elem2 does not include (113, 209).
+    e = (wlmtk_pointer_motion_event_t){ .x = 113, .y = 209 };
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            &parent_container.super_element, 113, 209, 7));
+        wlmtk_element_pointer_motion(&parent_container.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem2_ptr->element.last_pointer_x));
+    BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem2_ptr->element.last_pointer_motion_event.x));
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
     elem2_ptr->pointer_leave_called = false;
 
@@ -1404,9 +1411,10 @@ void test_pointer_focus(bs_test_t *test_ptr)
 
     // Case 3: Call motion() first, then add a visible element at (0, 0). Focus
     // should switch there.
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e));
     wlmtk_container_add_element(&container, &elem1_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -1490,7 +1498,8 @@ void test_pointer_focus_move(bs_test_t *test_ptr)
     wlmtk_container_add_element(&container, &elem2_ptr->element);
 
     // Need the container to pick up the cursor position.
-    wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7);
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(&container.super_element, &e);
 
     // Is off the cursor, will get focus.
     BS_TEST_VERIFY_EQ(
@@ -1530,7 +1539,8 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
     wlmtk_element_set_visible(&elem2_ptr->element, true);
 
     // Prepare: Motion was called, will not have any focus.
-    wlmtk_element_pointer_motion(&container1.super_element, 0, 0, 7);
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
+    wlmtk_element_pointer_motion(&container1.super_element, &e);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, container1.pointer_focus_element_ptr);
 
     // Case 1: Add element 2 to second container, then add this container.
@@ -1617,9 +1627,10 @@ void test_pointer_button(bs_test_t *test_ptr)
         wlmtk_element_pointer_button(&container.super_element, &button));
 
     // DOWN events go to the focussed element.
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(&container.super_element, &button));
@@ -1631,9 +1642,10 @@ void test_pointer_button(bs_test_t *test_ptr)
         test_ptr, elem1_ptr->pointer_button_called);
 
     // Moves, pointer focus is now on elem2.
+    e = (wlmtk_pointer_motion_event_t){ .x = 10, .y = 10 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, 10, 10, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e))
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &elem2_ptr->element,
@@ -1772,9 +1784,10 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     wlmtk_container_add_element(&c, &fe2_ptr->element);
 
     // Move pointer into first element: Must see 'enter' and 'motion'.
+    wlmtk_pointer_motion_event_t e = { .x = 5, .y = 5 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&c.super_element, 5, 5, 42));
+        wlmtk_element_pointer_motion(&c.super_element, &e));
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
     fe1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_enter_called);
@@ -1799,17 +1812,19 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
 
     // A motion within the 1st element: Trigger an out-of-area motion
     // event to 2nd element.
+    e = (wlmtk_pointer_motion_event_t){ .x = 8, .y = 5 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&c.super_element, 8, 5, 43));
+        wlmtk_element_pointer_motion(&c.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
     fe2_ptr->pointer_motion_called = false;
 
     // A motion into the 2nd element: Trigger motion and enter().
+    e = (wlmtk_pointer_motion_event_t){ .x = 13, .y = 5 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&c.super_element, 13, 5, 43));
+        wlmtk_element_pointer_motion(&c.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
     fe2_ptr->pointer_motion_called = false;
@@ -1817,9 +1832,10 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     fe2_ptr->pointer_enter_called = false;
 
     // A motion back into the 2nd element: Trigger motion and leave().
+    e = (wlmtk_pointer_motion_event_t){ .x = 8, .y = 5 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&c.super_element, 8, 5, 43));
+        wlmtk_element_pointer_motion(&c.super_element, &e));
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
     fe2_ptr->pointer_motion_called = false;
@@ -1854,9 +1870,10 @@ void test_pointer_axis(bs_test_t *test_ptr)
     wlmtk_container_add_element_atop(&container, NULL, &elem2_ptr->element);
 
     // Pointer on elem1, axis goes there.
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, 0, 0, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_axis(&container.super_element, &event));
@@ -1865,9 +1882,10 @@ void test_pointer_axis(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_axis_called);
 
     // Pointer on elem2, axis goes there.
+    e = (wlmtk_pointer_motion_event_t){ .x = 10, .y = 10 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(&container.super_element, 10, 10, 7));
+        wlmtk_element_pointer_motion(&container.super_element, &e));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_axis(&container.super_element, &event));

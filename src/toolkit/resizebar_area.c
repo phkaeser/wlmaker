@@ -67,8 +67,7 @@ static void _wlmtk_resizebar_area_element_destroy(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_resizebar_area_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_resizebar_area_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -198,14 +197,12 @@ void _wlmtk_resizebar_area_element_destroy(wlmtk_element_t *element_ptr)
 /** See @ref wlmtk_element_vmt_t::pointer_motion. */
 bool _wlmtk_resizebar_area_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
     resizebar_area_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, motion_event_ptr);
 
     wlmtk_env_set_cursor(element_ptr->env_ptr, resizebar_area_ptr->cursor);
     return true;
@@ -338,9 +335,10 @@ void test_area(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_resize_called);
 
     // Pointer must be inside the button for accepting DOWN.
+    wlmtk_pointer_motion_event_t mev = { .x = 1, .y = 1 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 1, 1, 0));
+        wlmtk_element_pointer_motion(element_ptr, &mev));
     // Button down: pressed.
     wlmtk_button_event_t button = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN

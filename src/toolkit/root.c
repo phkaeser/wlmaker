@@ -88,8 +88,7 @@ static void _wlmtk_root_destroy_workspace(
 
 static bool _wlmtk_root_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_root_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -207,9 +206,11 @@ bool wlmtk_root_pointer_motion(
     double y,
     uint32_t time_msec)
 {
+    wlmtk_pointer_motion_event_t mev = {
+        .x = x, .y = y, .time_msec = time_msec
+    };
     return wlmtk_element_pointer_motion(
-        &root_ptr->container.super_element, x, y, time_msec);
-
+        &root_ptr->container.super_element, &mev);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -524,16 +525,13 @@ void _wlmtk_root_enumerate_workspaces(
  * the lock container.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param motion_event_ptr
  *
  * @return Whether the move was accepted.
  */
 bool _wlmtk_root_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_root_t, container.super_element);
@@ -542,11 +540,11 @@ bool _wlmtk_root_element_pointer_motion(
         // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
         // elements only.
         return root_ptr->orig_super_element_vmt.pointer_motion(
-            element_ptr, x, y, time_msec);
+            element_ptr, motion_event_ptr);
     } else if (NULL != root_ptr->lock_element_ptr) {
         return wlmtk_element_pointer_motion(
             root_ptr->lock_element_ptr,
-            x, y, time_msec);
+            motion_event_ptr);
     }
 
     // Fall-through.
@@ -813,7 +811,7 @@ void test_pointer_button(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_root_pointer_motion(root_ptr, 0, 0, 1234));
+        wlmtk_root_pointer_motion(root_ptr, 0, 0, 0));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         fake_element_ptr->pointer_motion_called);
