@@ -92,8 +92,7 @@ static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 
 static bool _wlmtk_menu_item_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -512,13 +511,12 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 /** Requests this item to be highlighted if there's motion. */
 bool _wlmtk_menu_item_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
     bool rv = menu_item_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, motion_event_ptr);
 
     if (rv && menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
         wlmtk_menu_request_item_highlight(
@@ -751,7 +749,8 @@ void test_pointer(bs_test_t *test_ptr)
         item_ptr->disabled_wlr_buffer_ptr);
 
     // Pointer enters the item, but remains disabled.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLMTK_MENU_ITEM_DISABLED,
@@ -775,7 +774,8 @@ void test_pointer(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &lbtn_ev));
 
     // Pointer moves outside: disabled.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 2));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 90, .y = 10 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLMTK_MENU_ITEM_ENABLED,
@@ -807,18 +807,21 @@ void test_triggered(bs_test_t *test_ptr)
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
     // Pointer enters to highlight, the click triggers the handler.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
     wlmtk_util_clear_test_listener(&tl);
 
     // Pointer enters outside, click does not trigger.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 90, .y = 10 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
     // Pointer enters again. Element disabled, will not trigger.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     wlmtk_menu_item_set_enabled(item_ptr, false);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
@@ -872,7 +875,8 @@ void test_right_click(bs_test_t *test_ptr)
         wlmtk_menu_item_get_mode(item_ptr));
 
     // Pointer enters to highlight, click triggers.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 1, tl.calls);
     wlmtk_util_clear_test_listener(&tl);
@@ -889,7 +893,8 @@ void test_right_click(bs_test_t *test_ptr)
         wlmtk_menu_item_get_mode(item_ptr));
 
     // Pointer remains inside, click is ignored.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, 20, 10, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
@@ -899,7 +904,8 @@ void test_right_click(bs_test_t *test_ptr)
     wlmtk_util_clear_test_listener(&tl);
 
     // Pointer leaves, button-up does not trigger.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, 90, 10, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 90, .y = 10 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_button(e, &b));
     BS_TEST_VERIFY_EQ(test_ptr, 0, tl.calls);
 
@@ -946,28 +952,32 @@ void test_submenu_highlight(bs_test_t *test_ptr)
         wlmtk_menu_get_mode(submenu_ptr));
 
     // Begin: Move pointer so that i1 is highlighted.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 12, 1));
+    wlmtk_pointer_motion_event_t mev = { .x = 9, .y = 12 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_NEQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
 
     // Then: move pointer into i2. Must highlight and open submenu.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 36 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_NEQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
 
     // Then: Move pointer into i2 and submenu. Must highlight the submenu item.
+    mev = (wlmtk_pointer_motion_event_t){ .x = 209, .y = 36 };
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 
     // Then: Move pointer a bit, within i1. Highlight that, close submenu.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 13, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 13 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
@@ -975,7 +985,8 @@ void test_submenu_highlight(bs_test_t *test_ptr)
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 
     // Then: Move pointer into i2. Must highlight and (re)open submenu.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 36, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 36 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(submenu_ptr));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i2));
@@ -983,7 +994,8 @@ void test_submenu_highlight(bs_test_t *test_ptr)
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 
     // Then: Move pointer into submenu again. Release button. Must trigger.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 209, 36, 1));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 209, .y = 36 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &mev));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(s1));
 

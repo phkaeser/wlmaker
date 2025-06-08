@@ -48,6 +48,16 @@ struct _wlmtk_button_event_t {
     uint32_t                  time_msec;
 };
 
+/** Motion event. */
+typedef struct {
+    /** X position. */
+    double                    x;
+    /** Y position. */
+    double                    y;
+    /** Time of the motion event, in milliseconds. */
+    uint32_t                  time_msec;
+} wlmtk_pointer_motion_event_t;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

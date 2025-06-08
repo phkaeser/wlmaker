@@ -642,7 +642,8 @@ void wlmtk_window_menu_set_enabled(
         if (wlmtk_window_element(window_ptr)->pointer_inside) {
             wlmtk_element_set_position(
                 menu_element_ptr,
-                wlmtk_window_element(window_ptr)->last_pointer_x, 0);
+                wlmtk_window_element(window_ptr)->last_pointer_motion_event.x,
+                0);
         } else {
             wlmtk_element_set_position(menu_element_ptr, 0, 0);
         }

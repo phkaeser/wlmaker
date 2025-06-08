@@ -319,9 +319,10 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_focussed_released.png");
 
     // Pointer must be inside the button for accepting DOWN.
+    wlmtk_pointer_motion_event_t mev = { .x = 11, .y = 11 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 11, 11, 0));
+        wlmtk_element_pointer_motion(element_ptr, &mev));
 
     // Button down: pressed.
     wlmtk_button_event_t button = {
