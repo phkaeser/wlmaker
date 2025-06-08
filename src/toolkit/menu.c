@@ -332,13 +332,15 @@ void test_pointer_highlight(bs_test_t *test_ptr)
     wlmtk_menu_add_item(menu_ptr, i2);
 
     // Motion into first element: highlight it.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 5, 1));
+    wlmtk_pointer_motion_event_t e = { .x = 9, .y = 5 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_HIGHLIGHTED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(test_ptr, i1, menu_ptr->highlighted_menu_item_ptr);
 
     // Motion into second element: highlight that, un-highlight the other.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 15, 1));
+    e = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 15 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(
@@ -346,7 +348,8 @@ void test_pointer_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, i2, menu_ptr->highlighted_menu_item_ptr);
 
     // Move into the margin area: Both are un-highlighted.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 10, 1));
+    e = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(
@@ -354,7 +357,8 @@ void test_pointer_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, menu_ptr->highlighted_menu_item_ptr);
 
     // Move entirely outside: Both remain just enabled.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(me, 9, 55, 1));
+    e = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 55 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(
@@ -362,7 +366,8 @@ void test_pointer_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, menu_ptr->highlighted_menu_item_ptr);
 
     // Back into second element: highlight that.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, 9, 15, 1));
+    e = (wlmtk_pointer_motion_event_t){ .x = 9, .y = 15 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_EQ(
         test_ptr, WLMTK_MENU_ITEM_ENABLED, wlmtk_menu_item_get_state(i1));
     BS_TEST_VERIFY_EQ(

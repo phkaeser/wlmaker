@@ -279,9 +279,10 @@ void test_press_release(bs_test_t *test_ptr)
 
     // Initial state: released.
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0, .time_msec = 41 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Button down: pressed.
@@ -292,13 +293,15 @@ void test_press_release(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
 
     // Pointer leaves the area: released.
-    wlmtk_element_pointer_motion(element_ptr, NAN, NAN, 41);
+    e = (wlmtk_pointer_motion_event_t){ .x = NAN, .y = NAN, .time_msec = 41 };
+    wlmtk_element_pointer_motion(element_ptr, &e);
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Pointer re-enters the area: pressed.
+    e = (wlmtk_pointer_motion_event_t){ .x = 0, .y = 0, .time_msec = 41 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
 
     // Button up: released.
@@ -335,9 +338,10 @@ void test_press_release_outside(bs_test_t *test_ptr)
     wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
 
     // Enter the ara. Released.
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0, .time_msec = 41 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Button down: pressed.
@@ -348,7 +352,10 @@ void test_press_release_outside(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, p_ptr);
 
     // Pointer leaves the area: released.
-    wlmtk_element_pointer_motion(element_ptr, NAN, NAN, 41);
+    e = (wlmtk_pointer_motion_event_t){ .x = NAN, .y = NAN, .time_msec = 41 };
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Button up, outside the area. Then, re-enter: Still released.
@@ -357,9 +364,10 @@ void test_press_release_outside(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_button(element_ptr, &event));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
+    e = (wlmtk_pointer_motion_event_t){ .x = 0, .y = 0, .time_msec = 41 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     wlr_buffer_drop(r_ptr);
@@ -384,9 +392,10 @@ void test_press_right(bs_test_t *test_ptr)
     wlmtk_element_t *element_ptr = &button.super_buffer.super_element;
 
     // Enter the ara. Released.
+    wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0, .time_msec = 41 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(element_ptr, 0, 0, 41));
+        wlmtk_element_pointer_motion(element_ptr, &e));
     BS_TEST_VERIFY_EQ(test_ptr, button.super_buffer.wlr_buffer_ptr, r_ptr);
 
     // Right button down: Remains released, reports claimed.

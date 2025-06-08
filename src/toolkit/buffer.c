@@ -21,7 +21,6 @@
 #include "buffer.h"
 
 #include <math.h>
-#include <stdint.h>
 #include <string.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -29,6 +28,7 @@
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
+#include "input.h"
 #include "libbase/libbase.h"
 #include "util.h"
 
@@ -45,9 +45,7 @@ static void _wlmtk_buffer_element_get_dimensions(
     int *bottom_ptr);
 static bool _wlmtk_buffer_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static void handle_wlr_scene_buffer_node_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -196,29 +194,28 @@ void _wlmtk_buffer_element_get_dimensions(
  * within the buffer.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param motion_event_ptr
  *
  * @return true if (x, y) is within the buffer's dimensions.
  */
 bool _wlmtk_buffer_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
 
-    if (x < 0 || x >= buffer_ptr->wlr_buffer_ptr->width ||
-        y < 0 || y >= buffer_ptr->wlr_buffer_ptr->height) {
-        x = NAN;
-        y = NAN;
+    wlmtk_pointer_motion_event_t event_copy = *motion_event_ptr;
+    if (motion_event_ptr->x < 0 ||
+        motion_event_ptr->x >= buffer_ptr->wlr_buffer_ptr->width ||
+        motion_event_ptr->y < 0 ||
+        motion_event_ptr->y >= buffer_ptr->wlr_buffer_ptr->height) {
+        event_copy.x = NAN;
+        event_copy.y = NAN;
     }
 
     return buffer_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, &event_copy);
 }
 
 /* ------------------------------------------------------------------------- */

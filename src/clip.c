@@ -26,7 +26,6 @@
 #include <limits.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
@@ -97,8 +96,7 @@ static bool _wlmaker_clip_pointer_button(
     const wlmtk_button_event_t *button_event_ptr);
 static bool _wlmaker_clip_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static void _wlmaker_clip_pointer_leave(
     wlmtk_element_t *element_ptr);
 
@@ -457,16 +455,13 @@ bool _wlmaker_clip_pointer_button(
  * areas, and triggers an update to the tile's texture.
  *
  * @param element_ptr
- * @param x
- * @param y
- * @param time_msec
+ * @param motion_event_ptr
  *
  * @return See @ref wlmtk_element_vmt_t::pointer_motion.
  */
 bool _wlmaker_clip_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
         element_ptr, wlmaker_clip_t,
@@ -477,19 +472,23 @@ bool _wlmaker_clip_pointer_motion(
 
     double tile_size = clip_ptr->super_tile.style.size;
     double button_size = (22.0 / 64.0) * tile_size;
-    if (x >= tile_size - button_size && x < tile_size &&
-        y >= 0 && y < button_size) {
+    if (motion_event_ptr->x >= tile_size - button_size &&
+        motion_event_ptr->x < tile_size &&
+        motion_event_ptr->y >= 0 &&
+        motion_event_ptr->y < button_size) {
         // Next button.
         clip_ptr->pointer_inside_next_button = true;
-    } else if (x >= 0 && x < button_size &&
-               y >= tile_size - button_size && y < tile_size) {
+    } else if (motion_event_ptr->x >= 0 &&
+               motion_event_ptr->x < button_size &&
+               motion_event_ptr->y >= tile_size - button_size &&
+               motion_event_ptr->y < tile_size) {
         // Prev button.
         clip_ptr->pointer_inside_prev_button = true;
     }
 
     _wlmaker_clip_update_buttons(clip_ptr);
     return clip_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, x, y, time_msec);
+        element_ptr, motion_event_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

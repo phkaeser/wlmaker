@@ -45,9 +45,7 @@ static void _wlmtk_element_get_pointer_area(
     int *y2_ptr);
 static bool _wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -96,9 +94,8 @@ bool wlmtk_element_init(
     element_ptr->vmt = element_vmt;
     element_ptr->env_ptr = env_ptr;
 
-    element_ptr->last_pointer_x = NAN;
-    element_ptr->last_pointer_y = NAN;
-    element_ptr->last_pointer_time_msec = 0;
+    element_ptr->last_pointer_motion_event = (wlmtk_pointer_motion_event_t){
+        .x = NAN, .y = NAN, .time_msec = 0 };
     return true;
 }
 
@@ -286,11 +283,10 @@ void wlmtk_element_set_position(
 /* ------------------------------------------------------------------------- */
 bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
-    bool within = element_ptr->vmt.pointer_motion(element_ptr, x, y, time_msec);
+    bool within = element_ptr->vmt.pointer_motion(
+        element_ptr, motion_event_ptr);
     if (within == element_ptr->pointer_inside) return within;
 
     if (within) {
@@ -322,20 +318,16 @@ void _wlmtk_element_get_pointer_area(
 /** Stores pointer coordinates and timestamp. Returns true is x,y not NAN. */
 bool _wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
-    if (isnan(x) || isnan(y)) {
-        x = NAN;
-        y = NAN;
+    element_ptr->last_pointer_motion_event = *motion_event_ptr;
+    if (isnan(motion_event_ptr->x) || isnan(motion_event_ptr->y)) {
+        element_ptr->last_pointer_motion_event.x = NAN;
+        element_ptr->last_pointer_motion_event.y = NAN;
     }
 
-    element_ptr->last_pointer_x = x;
-    element_ptr->last_pointer_y = y;
-    element_ptr->last_pointer_time_msec = time_msec;
-
-    return !isnan(x) && !isnan(y);
+    return !isnan(element_ptr->last_pointer_motion_event.x) &&
+        !isnan(element_ptr->last_pointer_motion_event.y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -430,8 +422,7 @@ static void fake_get_pointer_area(
     int *bottom_ptr);
 static bool fake_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x, double y,
-    uint32_t time_msec);
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool fake_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -561,16 +552,16 @@ void fake_get_pointer_area(
 /** Handles 'motion' events for the fake element, updates last position. */
 bool fake_pointer_motion(
     wlmtk_element_t *element_ptr,
-    double x,
-    double y,
-    uint32_t time_msec)
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_fake_element_t, element);
-    fake_element_ptr->orig_vmt.pointer_motion(element_ptr, x, y, time_msec);
+    fake_element_ptr->orig_vmt.pointer_motion(element_ptr, motion_event_ptr);
     fake_element_ptr->pointer_motion_called = true;
-    return (-1 <= x && x < fake_element_ptr->dimensions.width + 3 &&
-            -2 < y && y < fake_element_ptr->dimensions.height + 4);
+    return (-1 <= motion_event_ptr->x &&
+            motion_event_ptr->x < fake_element_ptr->dimensions.width + 3 &&
+            -2 < motion_event_ptr->y &&
+            motion_event_ptr->y < fake_element_ptr->dimensions.height + 4);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -857,32 +848,40 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        isnan(fake_element_ptr->element.last_pointer_x));
+        isnan(fake_element_ptr->element.last_pointer_motion_event.x));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        isnan(fake_element_ptr->element.last_pointer_y));
+        isnan(fake_element_ptr->element.last_pointer_motion_event.y));
 
-    wlmtk_element_pointer_motion(&fake_element_ptr->element, 1.0, 2.0, 1234);
+    wlmtk_pointer_motion_event_t e = { .x = 1.0, .y = 2.0, .time_msec = 3 };
+    wlmtk_element_pointer_motion(&fake_element_ptr->element, &e);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_enter_called);
-    BS_TEST_VERIFY_EQ(test_ptr, 1.0, fake_element_ptr->element.last_pointer_x);
-    BS_TEST_VERIFY_EQ(test_ptr, 2.0, fake_element_ptr->element.last_pointer_y);
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        1234,
-        fake_element_ptr->element.last_pointer_time_msec);
+        1.0,
+        fake_element_ptr->element.last_pointer_motion_event.x);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        2.0,
+        fake_element_ptr->element.last_pointer_motion_event.y);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        3,
+        fake_element_ptr->element.last_pointer_motion_event.time_msec);
 
-    wlmtk_element_pointer_motion(&fake_element_ptr->element, NAN, NAN, 1235);
+    e = (wlmtk_pointer_motion_event_t){ .x = NAN, .y = NAN, .time_msec = 4 };
+    wlmtk_element_pointer_motion(&fake_element_ptr->element, &e);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_leave_called);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        isnan(fake_element_ptr->element.last_pointer_x));
+        isnan(fake_element_ptr->element.last_pointer_motion_event.x));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        isnan(fake_element_ptr->element.last_pointer_y));
+        isnan(fake_element_ptr->element.last_pointer_motion_event.y));
     BS_TEST_VERIFY_EQ(
         test_ptr,
-        1235,
-        fake_element_ptr->element.last_pointer_time_msec);
+        4,
+        fake_element_ptr->element.last_pointer_motion_event.time_msec);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
 }
