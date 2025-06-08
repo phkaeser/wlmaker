@@ -123,12 +123,12 @@ wlmtk_surface_t *wlmtk_surface_create(
 {
     wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
     if (NULL == surface_ptr) return NULL;
-    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr, env_ptr)) {
         wlmtk_surface_destroy(surface_ptr);
         return NULL;
     }
+    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     return surface_ptr;
 }
@@ -595,30 +595,11 @@ bool _wlmtk_surface_element_keyboard_event(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
-<<<<<<< HEAD
     if (!surface_ptr->activated) return false;
 
-    struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(element_ptr->env_ptr);
-=======
->>>>>>> 4a47863 (toolkit: Makes wlr_seat_ptr an explicit arg to wlmtk_surface, and eliminate it in wlmtk_env_t.)
-    struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-        surface_ptr->wlr_seat_ptr);
+    // Guard clauses.
+    if (NULL == surface_ptr->wlr_seat_ptr) return false;
 
-    if (NULL == wlr_keyboard_ptr) return false;
-
-<<<<<<< HEAD
-=======
-    wlr_seat_keyboard_notify_enter(
-        surface_ptr->wlr_seat_ptr,
-        surface_ptr->wlr_surface_ptr,
-        wlr_keyboard_ptr->keycodes,
-        wlr_keyboard_ptr->num_keycodes,
-        &wlr_keyboard_ptr->modifiers);
-
-    wlr_seat_set_keyboard(
-        surface_ptr->wlr_seat_ptr,
-        wlr_keyboard_ptr);
->>>>>>> 4a47863 (toolkit: Makes wlr_seat_ptr an explicit arg to wlmtk_surface, and eliminate it in wlmtk_env_t.)
     wlr_seat_keyboard_notify_key(
         surface_ptr->wlr_seat_ptr,
         wlr_keyboard_key_event_ptr->time_msec,
