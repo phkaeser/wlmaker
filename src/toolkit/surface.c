@@ -127,12 +127,12 @@ wlmtk_surface_t *wlmtk_surface_create(
 {
     wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
     if (NULL == surface_ptr) return NULL;
-    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr, env_ptr)) {
         wlmtk_surface_destroy(surface_ptr);
         return NULL;
     }
+    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
 
     return surface_ptr;
 }
@@ -608,9 +608,10 @@ bool _wlmtk_surface_element_keyboard_event(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
+    // Guard clauses.
+    if (NULL == surface_ptr->wlr_seat_ptr) return false;
     struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
         surface_ptr->wlr_seat_ptr);
-
     if (NULL == wlr_keyboard_ptr) return false;
 
     wlr_seat_keyboard_notify_enter(
