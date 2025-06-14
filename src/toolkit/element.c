@@ -25,7 +25,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <string.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
@@ -588,10 +587,7 @@ bool fake_pointer_button(
         element_ptr, wlmtk_fake_element_t, element);
 
     fake_element_ptr->pointer_button_called = true;
-    memcpy(
-        &fake_element_ptr->pointer_button_event,
-        button_event_ptr,
-        sizeof(wlmtk_button_event_t));
+    fake_element_ptr->pointer_button_event = *button_event_ptr;
     return true;
 }
 
@@ -605,10 +601,7 @@ bool fake_pointer_axis(
         element_ptr, wlmtk_fake_element_t, element);
 
     fake_element_ptr->pointer_axis_called = true;
-    memcpy(
-        &fake_element_ptr->wlr_pointer_axis_event,
-        wlr_pointer_axis_event_ptr,
-        sizeof(struct wlr_pointer_axis_event));
+    fake_element_ptr->wlr_pointer_axis_event = *wlr_pointer_axis_event_ptr;
     return true;
 }
 
