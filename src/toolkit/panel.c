@@ -36,7 +36,7 @@ bool wlmtk_panel_init(
     wlmtk_panel_t *panel_ptr,
     const wlmtk_panel_positioning_t *positioning_ptr)
 {
-    memset(panel_ptr, 0, sizeof(wlmtk_panel_t));
+    *panel_ptr = (wlmtk_panel_t){};
     if (!wlmtk_container_init(&panel_ptr->super_container)) {
         wlmtk_panel_fini(panel_ptr);
         return false;

@@ -24,7 +24,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <toolkit/util.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -112,8 +111,7 @@ static const wlmtk_container_vmt_t container_vmt = {
 bool wlmtk_container_init(wlmtk_container_t *container_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
-    memset(container_ptr, 0, sizeof(wlmtk_container_t));
-    container_ptr->vmt = container_vmt;
+    *container_ptr = (wlmtk_container_t){ .vmt = container_vmt };
 
     if (!wlmtk_element_init(&container_ptr->super_element)) {
         return false;
@@ -174,7 +172,7 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
     }
 
     wlmtk_element_fini(&container_ptr->super_element);
-    memset(container_ptr, 0, sizeof(wlmtk_container_t));
+    *container_ptr = (wlmtk_container_t){};
 }
 
 /* ------------------------------------------------------------------------- */

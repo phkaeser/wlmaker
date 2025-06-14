@@ -32,7 +32,7 @@ bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
     wlmtk_element_t *element_ptr)
 {
-    memset(popup_ptr, 0, sizeof(wlmtk_popup_t));
+    *popup_ptr = (wlmtk_popup_t){};
     if (!wlmtk_container_init(&popup_ptr->super_container)) {
         return false;
     }

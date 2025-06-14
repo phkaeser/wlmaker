@@ -23,7 +23,6 @@
 #include <libbase/libbase.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -235,7 +234,7 @@ bool _wlmtk_surface_init(
     struct wlr_surface *wlr_surface_ptr)
 {
     BS_ASSERT(NULL != surface_ptr);
-    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
+    *surface_ptr = (wlmtk_surface_t){};
 
     if (!wlmtk_element_init(&surface_ptr->super_element)) {
         _wlmtk_surface_fini(surface_ptr);
@@ -284,7 +283,7 @@ void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
     }
 
     wlmtk_element_fini(&surface_ptr->super_element);
-    memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
+    *surface_ptr = (wlmtk_surface_t){};
 }
 
 /* ------------------------------------------------------------------------- */

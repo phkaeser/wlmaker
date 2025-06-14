@@ -49,8 +49,7 @@ bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
     const wlmtk_tile_style_t *style_ptr)
 {
-    memset(tile_ptr, 0, sizeof(wlmtk_tile_t));
-    memcpy(&tile_ptr->style, style_ptr, sizeof(wlmtk_tile_style_t));
+    *tile_ptr = (wlmtk_tile_t){ .style = *style_ptr };
 
     if (!wlmtk_container_init(&tile_ptr->super_container)) {
         wlmtk_tile_fini(tile_ptr);

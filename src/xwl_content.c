@@ -26,7 +26,6 @@
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <xcb/xproto.h>
@@ -734,8 +733,7 @@ const bs_test_case_t wlmaker_xwl_content_test_cases[] = {
 /** Tests setup and teardown. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmaker_server_t server;
-    memset(&server, 0, sizeof(wlmaker_server_t));
+    wlmaker_server_t server = {};
     struct wlr_xwayland_surface wlr_xwayland_surface;
     fake_init_wlr_xwayland_surface(&wlr_xwayland_surface);
 
@@ -750,8 +748,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 /** Tests nesting of XWayland contents, ie. parenting. */
 void test_nested(bs_test_t *test_ptr)
 {
-    wlmaker_server_t server;
-    memset(&server, 0, sizeof(wlmaker_server_t));
+    wlmaker_server_t server = {};
 
     struct wlr_xwayland_surface surface0;
     fake_init_wlr_xwayland_surface(&surface0);
@@ -816,7 +813,7 @@ void test_nested(bs_test_t *test_ptr)
 void fake_init_wlr_xwayland_surface(
     struct wlr_xwayland_surface* wlr_xwayland_surface_ptr)
 {
-    memset(wlr_xwayland_surface_ptr, 0, sizeof(struct wlr_xwayland_surface));
+    *wlr_xwayland_surface_ptr = (struct wlr_xwayland_surface){};
     wl_signal_init(&wlr_xwayland_surface_ptr->events.destroy);
     wl_signal_init(&wlr_xwayland_surface_ptr->events.request_configure);
     wl_signal_init(&wlr_xwayland_surface_ptr->events.associate);
