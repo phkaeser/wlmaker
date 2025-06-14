@@ -51,13 +51,12 @@ bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
                          const wlmtk_margin_style_t *style_ptr)
 {
     BS_ASSERT(NULL != bordered_ptr);
-    *bordered_ptr = (wlmtk_bordered_t){};
+    *bordered_ptr = (wlmtk_bordered_t){ .style = *style_ptr };
     if (!wlmtk_container_init(&bordered_ptr->super_container)) {
         return false;
     }
     bordered_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &bordered_ptr->super_container, &bordered_container_vmt);
-    memcpy(&bordered_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
 
     bordered_ptr->element_ptr = element_ptr;
     wlmtk_container_add_element(&bordered_ptr->super_container,
@@ -105,7 +104,7 @@ void wlmtk_bordered_fini(wlmtk_bordered_t *bordered_ptr)
 void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
                               const wlmtk_margin_style_t *style_ptr)
 {
-    memcpy(&bordered_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
+    bordered_ptr->style = *style_ptr;
 
     _wlmtk_bordered_container_update_layout(&bordered_ptr->super_container);
 

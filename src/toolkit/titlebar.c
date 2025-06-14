@@ -23,7 +23,6 @@
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <stdlib.h>
-#include <string.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
 #undef WLR_USE_UNSTABLE
@@ -104,7 +103,7 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
-    memcpy(&titlebar_ptr->style, style_ptr, sizeof(wlmtk_titlebar_style_t));
+    titlebar_ptr->style = *style_ptr;
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,

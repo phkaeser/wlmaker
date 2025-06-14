@@ -47,13 +47,12 @@ bool wlmtk_box_init(
     const wlmtk_margin_style_t *style_ptr)
 {
     BS_ASSERT(NULL != box_ptr);
-    *box_ptr = (wlmtk_box_t){};
+    *box_ptr = (wlmtk_box_t){ .style = *style_ptr };
     if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &box_ptr->super_container, &box_container_vmt);
-    memcpy(&box_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
 
     if (!wlmtk_container_init(&box_ptr->element_container)) {
         wlmtk_box_fini(box_ptr);
