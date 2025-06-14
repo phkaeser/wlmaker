@@ -28,7 +28,6 @@
 typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 
 #include "element.h"
-#include "env.h"
 #include "style.h"
 #include "window.h"  // IWYU pragma: keep
 
@@ -47,7 +46,6 @@ extern "C" {
 /**
  * Creates a title bar, suitable as a window title.
  *
- * @param env_ptr
  * @param window_ptr
  * @param style_ptr
  *
@@ -55,7 +53,6 @@ extern "C" {
  *     by calling @ref wlmtk_titlebar_destroy.
  */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
-    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 

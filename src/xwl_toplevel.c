@@ -60,8 +60,7 @@ static void _xwl_toplevel_handle_surface_unmap(
 /* ------------------------------------------------------------------------- */
 wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
     wlmaker_xwl_content_t *content_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmaker_server_t *server_ptr)
 {
     wlmaker_xwl_toplevel_t *xwl_toplevel_ptr = logged_calloc(
         1, sizeof(wlmaker_xwl_toplevel_t));
@@ -72,8 +71,7 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         wlmtk_content_from_xwl_content(content_ptr),
         &server_ptr->style.window,
         &server_ptr->style.menu,
-        server_ptr->wlr_seat_ptr,
-        env_ptr);
+        server_ptr->wlr_seat_ptr);
     if (NULL == xwl_toplevel_ptr->window_ptr) {
         wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
         return NULL;

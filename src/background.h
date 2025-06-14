@@ -39,15 +39,13 @@ typedef struct _wlmaker_background_t wlmaker_background_t;
  * @param workspace_ptr
  * @param wlr_output_layout_ptr
  * @param color
- * @param env_ptr
  *
  * @return A handle for the background, or NULL on error.
  */
 wlmaker_background_t *wlmaker_background_create(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
-    uint32_t color,
-    wlmtk_env_t *env_ptr);
+    uint32_t color);
 
 /**
  * Destroys the background.

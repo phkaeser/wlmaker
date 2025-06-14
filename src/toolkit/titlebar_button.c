@@ -85,7 +85,6 @@ static const wlmtk_button_vmt_t titlebar_button_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
-    wlmtk_env_t *env_ptr,
     void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
@@ -100,7 +99,7 @@ wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
-    if (!wlmtk_button_init(&titlebar_button_ptr->super_button, env_ptr)) {
+    if (!wlmtk_button_init(&titlebar_button_ptr->super_button)) {
         wlmtk_titlebar_button_destroy(titlebar_button_ptr);
         return NULL;
     }
@@ -286,7 +285,6 @@ void test_button(bs_test_t *test_ptr)
 {
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
-        NULL,
         wlmtk_window_request_close,
         fake_window_ptr->window_ptr,
         wlmaker_primitives_draw_close_icon);

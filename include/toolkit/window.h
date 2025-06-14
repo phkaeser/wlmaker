@@ -30,7 +30,6 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 
 #include "content.h"  // IWYU pragma: keep
 #include "element.h"
-#include "env.h"
 #include "menu.h"
 #include "style.h"
 #include "util.h"
@@ -85,7 +84,6 @@ typedef enum {
  * @param style_ptr
  * @param menu_style_ptr
  * @param wlr_seat_ptr
- * @param env_ptr
  *
  * @return Pointer to the window state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_window_destroy.
@@ -94,8 +92,7 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_content_t *content_ptr,
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Gets the set of events available to a window, for binding listeners.

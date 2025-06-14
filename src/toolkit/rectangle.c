@@ -86,7 +86,6 @@ static const wlmtk_element_vmt_t _wlmtk_rectangle_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_rectangle_t *wlmtk_rectangle_create(
-    wlmtk_env_t *env_ptr,
     int width,
     int height,
     uint32_t color)
@@ -98,7 +97,7 @@ wlmtk_rectangle_t *wlmtk_rectangle_create(
     rectangle_ptr->height = height;
     wlmtk_rectangle_set_color(rectangle_ptr, color);
 
-    if (!wlmtk_element_init(&rectangle_ptr->super_element, env_ptr)) {
+    if (!wlmtk_element_init(&rectangle_ptr->super_element)) {
         wlmtk_rectangle_destroy(rectangle_ptr);
         return NULL;
     }
@@ -293,7 +292,7 @@ const bs_test_case_t wlmtk_rectangle_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_rectangle_t *rectangle_ptr = wlmtk_rectangle_create(
-        NULL, 10, 20, 0x01020304);
+        10, 20, 0x01020304);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, rectangle_ptr);
 
     int x1, y1, x2, y2;
@@ -322,7 +321,7 @@ void test_create_destroy_scene(bs_test_t *test_ptr)
 {
     wlmtk_container_t *c_ptr = wlmtk_container_create_fake_parent();
     wlmtk_rectangle_t *rectangle_ptr = wlmtk_rectangle_create(
-        NULL, 10, 20, 0x01020304);
+        10, 20, 0x01020304);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, rectangle_ptr);
     wlmtk_element_t *element_ptr = wlmtk_rectangle_element(rectangle_ptr);
 

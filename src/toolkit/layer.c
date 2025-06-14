@@ -109,14 +109,13 @@ static void _wlmtk_layer_handle_output_layout_change(
 
 /* ------------------------------------------------------------------------- */
 wlmtk_layer_t *wlmtk_layer_create(
-    struct wlr_output_layout *wlr_output_layout_ptr,
-    wlmtk_env_t *env_ptr)
+    struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmtk_layer_t *layer_ptr = logged_calloc(1, sizeof(wlmtk_layer_t));
     if (NULL == layer_ptr) return NULL;
     layer_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
-    if (!wlmtk_container_init(&layer_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&layer_ptr->super_container)) {
         wlmtk_layer_destroy(layer_ptr);
         return NULL;
     }
@@ -427,7 +426,7 @@ void test_multi_output(bs_test_t *test_ptr)
         wlr_output_layout_create(display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
 
-    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr, NULL);
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
 
     // First output. Add to the layout + update the layer right away.
@@ -516,10 +515,10 @@ void test_layout(bs_test_t *test_ptr)
 
     static const wlmtk_tile_style_t ts = { .size = 64 };
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "test", &ts, NULL);
+        wlr_output_layout_ptr, "test", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
 
-    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr, NULL);
+    wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
     wlmtk_layer_set_workspace(layer_ptr, ws_ptr);
 

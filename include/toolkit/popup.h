@@ -28,7 +28,6 @@ typedef struct _wlmtk_popup_t wlmtk_popup_t;
 
 #include "container.h"  // IWYU pragma: keep
 #include "element.h"
-#include "env.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,14 +55,12 @@ struct _wlmtk_popup_t {
  * Initializes the popup.
  *
  * @param popup_ptr
- * @param env_ptr
  * @param element_ptr
  *
  * @return true on success.
  */
 bool wlmtk_popup_init(
     wlmtk_popup_t *popup_ptr,
-    wlmtk_env_t *env_ptr,
     wlmtk_element_t *element_ptr);
 
 /**

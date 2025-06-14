@@ -54,8 +54,6 @@ struct _wlmaker_xwl_content_t {
     wlmaker_server_t          *server_ptr;
     /** Back-link to the XWayland server. */
     wlmaker_xwl_t             *xwl_ptr;
-    /** wlmtk environment. */
-    wlmtk_env_t               *env_ptr;
 
     /** A fake configure serial, tracked here. */
     uint32_t                  serial;
@@ -168,12 +166,9 @@ wlmaker_xwl_content_t *wlmaker_xwl_content_create(
     xwl_content_ptr->wlr_xwayland_surface_ptr = wlr_xwayland_surface_ptr;
     wlr_xwayland_surface_ptr->data = xwl_content_ptr;
     xwl_content_ptr->xwl_ptr = xwl_ptr;
-    xwl_content_ptr->env_ptr = server_ptr->env_ptr;
     xwl_content_ptr->server_ptr = server_ptr;
 
-    if (!wlmtk_content_init(&xwl_content_ptr->content,
-                            NULL,
-                            xwl_content_ptr->env_ptr)) {
+    if (!wlmtk_content_init(&xwl_content_ptr->content, NULL)) {
         wlmaker_xwl_content_destroy(xwl_content_ptr);
         return NULL;
     }
@@ -371,8 +366,7 @@ void _xwl_content_handle_associate(
 
     xwl_content_ptr->surface_ptr = wlmtk_surface_create(
         xwl_content_ptr->wlr_xwayland_surface_ptr->surface,
-        xwl_content_ptr->server_ptr->wlr_seat_ptr,
-        xwl_content_ptr->env_ptr);
+        xwl_content_ptr->server_ptr->wlr_seat_ptr);
     if (NULL == xwl_content_ptr->surface_ptr) {
         // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
         bs_log(BS_FATAL, "Failed wlmtk_surface_create.");
@@ -394,8 +388,7 @@ void _xwl_content_handle_associate(
         BS_ASSERT(NULL == xwl_content_ptr->xwl_toplevel_ptr);
         xwl_content_ptr->xwl_toplevel_ptr = wlmaker_xwl_toplevel_create(
             xwl_content_ptr,
-            xwl_content_ptr->server_ptr,
-            xwl_content_ptr->env_ptr);
+            xwl_content_ptr->server_ptr);
         if (NULL == xwl_content_ptr->xwl_toplevel_ptr) {
             // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
             bs_log(BS_FATAL, "Failed wlmaker_xwl_toplevel_create.");

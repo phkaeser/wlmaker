@@ -43,28 +43,26 @@ static const wlmtk_container_vmt_t box_container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    wlmtk_env_t *env_ptr,
     wlmtk_box_orientation_t orientation,
     const wlmtk_margin_style_t *style_ptr)
 {
     BS_ASSERT(NULL != box_ptr);
     memset(box_ptr, 0, sizeof(wlmtk_box_t));
-    if (!wlmtk_container_init(&box_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
     box_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &box_ptr->super_container, &box_container_vmt);
-    box_ptr->env_ptr = env_ptr;
     memcpy(&box_ptr->style, style_ptr, sizeof(wlmtk_margin_style_t));
 
-    if (!wlmtk_container_init(&box_ptr->element_container, env_ptr)) {
+    if (!wlmtk_container_init(&box_ptr->element_container)) {
         wlmtk_box_fini(box_ptr);
         return false;
     }
     wlmtk_element_set_visible(&box_ptr->element_container.super_element, true);
     wlmtk_container_add_element(&box_ptr->super_container,
                                 &box_ptr->element_container.super_element);
-    if (!wlmtk_container_init(&box_ptr->margin_container, env_ptr)) {
+    if (!wlmtk_container_init(&box_ptr->margin_container)) {
         wlmtk_box_fini(box_ptr);
         return false;
     }
@@ -234,7 +232,7 @@ void _wlmtk_box_container_update_layout(
 bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr)
 {
     wlmtk_rectangle_t *rect_ptr = wlmtk_rectangle_create(
-        box_ptr->env_ptr, 0, 0, box_ptr->style.color);
+        0, 0, box_ptr->style.color);
     BS_ASSERT(NULL != rect_ptr);
 
     wlmtk_container_add_element_atop(
@@ -272,7 +270,7 @@ void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_box_init(
-                            &box, NULL, WLMTK_BOX_HORIZONTAL, &test_style));
+                            &box, WLMTK_BOX_HORIZONTAL, &test_style));
 
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -287,7 +285,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_layout_horizontal(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, NULL, WLMTK_BOX_HORIZONTAL, &test_style);
+    wlmtk_box_init(&box, WLMTK_BOX_HORIZONTAL, &test_style);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);
@@ -350,7 +348,7 @@ void test_layout_horizontal(bs_test_t *test_ptr)
 void test_layout_vertical(bs_test_t *test_ptr)
 {
     wlmtk_box_t box;
-    wlmtk_box_init(&box, NULL, WLMTK_BOX_VERTICAL, &test_style);
+    wlmtk_box_init(&box, WLMTK_BOX_VERTICAL, &test_style);
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&e1_ptr->element, true);

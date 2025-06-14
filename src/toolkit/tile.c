@@ -47,20 +47,19 @@ static const wlmtk_container_vmt_t _wlmtk_tile_container_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
-    const wlmtk_tile_style_t *style_ptr,
-    wlmtk_env_t *env_ptr)
+    const wlmtk_tile_style_t *style_ptr)
 {
     memset(tile_ptr, 0, sizeof(wlmtk_tile_t));
     memcpy(&tile_ptr->style, style_ptr, sizeof(wlmtk_tile_style_t));
 
-    if (!wlmtk_container_init(&tile_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&tile_ptr->super_container)) {
         wlmtk_tile_fini(tile_ptr);
         return false;
     }
     tile_ptr->orig_super_container_vmt = wlmtk_container_extend(
         &tile_ptr->super_container, &_wlmtk_tile_container_vmt);
 
-    if (!wlmtk_buffer_init(&tile_ptr->buffer, NULL)) {
+    if (!wlmtk_buffer_init(&tile_ptr->buffer)) {
         wlmtk_tile_fini(tile_ptr);
         return false;
     }
@@ -232,7 +231,7 @@ static void test_init_fini(bs_test_t *test_ptr)
     wlmtk_tile_t tile;
     wlmtk_tile_style_t style = { .size = 64 };
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, &style, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, &style));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &tile.super_container.super_element,

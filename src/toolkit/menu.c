@@ -89,9 +89,7 @@ static const wlmtk_element_vmt_t _wlmtk_menu_box_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_t *wlmtk_menu_create(
-    const wlmtk_menu_style_t *style_ptr,
-    wlmtk_env_t *env_ptr)
+wlmtk_menu_t *wlmtk_menu_create(const wlmtk_menu_style_t *style_ptr)
 {
     wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
     if (NULL == menu_ptr) return NULL;
@@ -99,7 +97,6 @@ wlmtk_menu_t *wlmtk_menu_create(
 
     if (!wlmtk_box_init(
             &menu_ptr->box,
-            env_ptr,
             WLMTK_BOX_VERTICAL,
             &menu_ptr->style.margin)) {
         wlmtk_menu_destroy(menu_ptr);
@@ -108,8 +105,7 @@ wlmtk_menu_t *wlmtk_menu_create(
 
     if (!wlmtk_pane_init(
             &menu_ptr->super_pane,
-            wlmtk_box_element(&menu_ptr->box),
-            env_ptr)) {
+            wlmtk_box_element(&menu_ptr->box))) {
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
@@ -358,14 +354,14 @@ static const wlmtk_menu_style_t _test_style = {
 /** Tests that pointer moves highlight the items. */
 void test_pointer_highlight(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
 
-    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style.item, NULL);
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
     wlmtk_menu_add_item(menu_ptr, i1);
-    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_test_style.item, NULL);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
     wlmtk_menu_add_item(menu_ptr, i2);
 
@@ -421,11 +417,11 @@ void test_pointer_highlight(bs_test_t *test_ptr)
 /** Tests setting the menu's mode. */
 void test_set_mode(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(
-        &_test_style.item, NULL);
+        &_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item1_ptr);
     wlmtk_menu_add_item(menu_ptr, item1_ptr);
 
@@ -442,7 +438,7 @@ void test_set_mode(bs_test_t *test_ptr)
 
     // A new item must get the mode applied.
     wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(
-        &_test_style.item, NULL);
+        &_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
