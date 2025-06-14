@@ -31,6 +31,7 @@ typedef struct _wlmtk_root_t wlmtk_root_t;
 
 #include "element.h"
 #include "env.h"
+#include "input.h"
 #include "surface.h"  // IWYU pragma: keep
 #include "workspace.h"  // IWYU pragma: keep
 
@@ -98,6 +99,7 @@ wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
  * @param x
  * @param y
  * @param time_msec
+ * @param pointer_ptr
  *
  * @return Whether there was an element under the pointer.
  */
@@ -105,7 +107,8 @@ bool wlmtk_root_pointer_motion(
     wlmtk_root_t *root_ptr,
     double x,
     double y,
-    uint32_t time_msec);
+    uint32_t time_msec,
+    wlmtk_pointer_t *pointer_ptr);
 
 /**
  * Handles a button event: Translates to button down/up/click/dblclick events.

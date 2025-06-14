@@ -73,8 +73,9 @@ void wlmtk_pointer_set_cursor(
     wlmtk_pointer_t *pointer_ptr,
     wlmtk_pointer_cursor_t cursor)
 {
-    if (NULL == pointer_ptr &&
-        NULL == pointer_ptr->wlr_cursor_ptr &&
+    // TODO(kaeser@gubbe.ch): There should be ASSERT for this to NOT be NULL.
+    if (NULL == pointer_ptr ||
+        NULL == pointer_ptr->wlr_cursor_ptr ||
         NULL == pointer_ptr->wlr_xcursor_manager_ptr) return;
     if (cursor < 0 || cursor >= WLMTK_POINTER_CURSOR_MAX) return;
 

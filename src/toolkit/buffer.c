@@ -214,8 +214,14 @@ bool _wlmtk_buffer_element_pointer_motion(
         event_copy.y = NAN;
     }
 
-    return buffer_ptr->orig_super_element_vmt.pointer_motion(
+    bool rv = buffer_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, &event_copy);
+    if (rv) {
+        wlmtk_pointer_set_cursor(
+            motion_event_ptr->pointer_ptr,
+            buffer_ptr->pointer_cursor);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */

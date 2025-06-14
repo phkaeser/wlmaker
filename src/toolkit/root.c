@@ -208,10 +208,11 @@ bool wlmtk_root_pointer_motion(
     wlmtk_root_t *root_ptr,
     double x,
     double y,
-    uint32_t time_msec)
+    uint32_t time_msec,
+    wlmtk_pointer_t *pointer_ptr)
 {
     wlmtk_pointer_motion_event_t mev = {
-        .x = x, .y = y, .time_msec = time_msec
+        .x = x, .y = y, .time_msec = time_msec, .pointer_ptr = pointer_ptr
     };
     return wlmtk_element_pointer_motion(
         &root_ptr->container.super_element, &mev);
@@ -823,7 +824,7 @@ void test_pointer_button(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_root_pointer_motion(root_ptr, 0, 0, 0));
+        wlmtk_root_pointer_motion(root_ptr, 0, 0, 0, NULL));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         fake_element_ptr->pointer_motion_called);
