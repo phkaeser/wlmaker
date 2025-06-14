@@ -83,7 +83,8 @@ static bool update_pointer_focus_at(
     wlmtk_container_t *container_ptr,
     double x,
     double y,
-    uint32_t time_msec);
+    uint32_t time_msec,
+    wlmtk_pointer_t *pointer_ptr);
 static void _wlmtk_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
@@ -306,7 +307,8 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr)
             container_ptr,
             container_ptr->super_element.last_pointer_motion_event.x,
             container_ptr->super_element.last_pointer_motion_event.y,
-            container_ptr->super_element.last_pointer_motion_event.time_msec);
+            container_ptr->super_element.last_pointer_motion_event.time_msec,
+            container_ptr->super_element.last_pointer_motion_event.pointer_ptr);
     }
 }
 
@@ -565,7 +567,8 @@ bool _wlmtk_container_element_pointer_motion(
         container_ptr,
         motion_event_ptr->x,
         motion_event_ptr->y,
-        motion_event_ptr->time_msec);
+        motion_event_ptr->time_msec,
+        motion_event_ptr->pointer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -784,6 +787,7 @@ void handle_wlr_scene_tree_node_destroy(
  * @param x
  * @param y
  * @param time_msec
+ * @param pointer_ptr
  *
  * @return Whether there was an element acception the motion at (x, y).
  */
@@ -791,9 +795,13 @@ bool update_pointer_focus_at(
     wlmtk_container_t *container_ptr,
     double x,
     double y,
-    uint32_t time_msec)
+    uint32_t time_msec,
+    wlmtk_pointer_t *pointer_ptr)
 {
-    wlmtk_pointer_motion_event_t e = { .time_msec = time_msec };
+    wlmtk_pointer_motion_event_t e = {
+        .time_msec = time_msec,
+        .pointer_ptr = pointer_ptr
+    };
     if (NULL != container_ptr->pointer_grab_element_ptr) {
         int x_pos, y_pos;
         wlmtk_element_get_position(

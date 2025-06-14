@@ -34,6 +34,8 @@
 struct _wlmtk_image_t {
     /** The image's superclass: A buffer. */
     wlmtk_buffer_t            super_buffer;
+    /** The superclass' virtual method table. */
+    wlmtk_element_vmt_t       orig_element_vmt;
 };
 
 struct wlr_buffer *_wlmtk_image_create_wlr_buffer_from_image(
@@ -74,7 +76,7 @@ wlmtk_image_t *wlmtk_image_create_scaled(
         wlmtk_image_destroy(image_ptr);
         return NULL;
     }
-    wlmtk_element_extend(
+    image_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_image_element(image_ptr),
         &_wlmtk_image_element_vmt);
 

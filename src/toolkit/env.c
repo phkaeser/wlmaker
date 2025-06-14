@@ -36,23 +36,6 @@ struct _wlmtk_env_t {
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
 };
 
-/** Struct to identify a @ref wlmtk_env_cursor_t with the xcursor name. */
-typedef struct {
-    /** The cursor. */
-    wlmtk_env_cursor_t        cursor;
-    /** And the xcursor name. */
-    const char                *xcursor_name_ptr;
-} wlmtk_env_cursor_lookup_t;
-
-/** Lookup table for xcursor names. */
-static const wlmtk_env_cursor_lookup_t _wlmtk_env_cursor_lookup[] = {
-    { WLMTK_CURSOR_DEFAULT, "default" },
-    { WLMTK_CURSOR_RESIZE_S, "s-resize" },
-    { WLMTK_CURSOR_RESIZE_SE, "se-resize" },
-    { WLMTK_CURSOR_RESIZE_SW, "sw-resize" },
-    { 0, NULL },
-};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -73,28 +56,6 @@ wlmtk_env_t *wlmtk_env_create(
 void wlmtk_env_destroy(wlmtk_env_t *env_ptr)
 {
     free(env_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_env_set_cursor(wlmtk_env_t *env_ptr, wlmtk_env_cursor_t cursor)
-{
-    const wlmtk_env_cursor_lookup_t *lookup_ptr = &_wlmtk_env_cursor_lookup[0];
-    for (;
-         NULL != lookup_ptr->xcursor_name_ptr && cursor != lookup_ptr->cursor;
-         ++lookup_ptr) ;
-    if (NULL == lookup_ptr->xcursor_name_ptr) {
-        bs_log(BS_FATAL, "No name for cursor %d", cursor);
-        return;
-    }
-
-    if (NULL != env_ptr &&
-        NULL != env_ptr->wlr_cursor_ptr &&
-        NULL != env_ptr->wlr_xcursor_manager_ptr) {
-        wlr_cursor_set_xcursor(
-            env_ptr->wlr_cursor_ptr,
-            env_ptr->wlr_xcursor_manager_ptr,
-            lookup_ptr->xcursor_name_ptr);
-    }
 }
 
 /* == End of env.c ========================================================= */

@@ -22,6 +22,8 @@
 
 #include <wayland-server-core.h>
 
+#include "toolkit/toolkit.h"
+
 struct _wlmaker_cursor_t;
 /** Forward declaration of wlmaker cursor state. */
 typedef struct _wlmaker_cursor_t wlmaker_cursor_t;
@@ -44,6 +46,9 @@ struct _wlmaker_cursor_t {
     struct wlr_cursor         *wlr_cursor_ptr;
     /** Points to a `wlr_xcursor_manager`. */
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
+
+    /** The toolkit wrapper for above. */
+    wlmtk_pointer_t           *pointer_ptr;
 
     /** Listener for the `motion` event of `wlr_cursor`. */
     struct wl_listener        motion_listener;

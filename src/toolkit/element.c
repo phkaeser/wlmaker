@@ -350,12 +350,13 @@ bool _wlmtk_element_pointer_axis(
 
 /* ------------------------------------------------------------------------- */
 /** Handler for when the pointer enters the area. Sets default cursor. */
-void _wlmtk_element_pointer_enter(wlmtk_element_t *element_ptr)
+void _wlmtk_element_pointer_enter(__UNUSED__ wlmtk_element_t *element_ptr)
 {
     // TODO(kaeser@gubbe.ch): Consider forking this out into a 'leaf element'
     // class. 'enter' and 'leave' don't make that much sense for eg. a
     // container.
-    wlmtk_env_set_cursor(element_ptr->env_ptr, WLMTK_CURSOR_DEFAULT);
+
+    // Nothing.
 }
 
 /* ------------------------------------------------------------------------- */

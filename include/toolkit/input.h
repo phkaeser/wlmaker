@@ -47,7 +47,7 @@ typedef enum {
 /** Cursor types. */
 typedef enum {
     /** Default. */
-    WLMTK_POINTER_CURSOR_DEFAULT,
+    WLMTK_POINTER_CURSOR_DEFAULT = 0,
     /** Resizing, southern border. */
     WLMTK_POINTER_CURSOR_RESIZE_S,
     /** Resizing, south-eastern corner. */
@@ -77,6 +77,8 @@ typedef struct {
     double                    y;
     /** Time of the motion event, in milliseconds. */
     uint32_t                  time_msec;
+    /** Pointer that's associated with this motion event. */
+    wlmtk_pointer_t           *pointer_ptr;
 } wlmtk_pointer_motion_event_t;
 
 /**
