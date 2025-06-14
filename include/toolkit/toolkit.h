@@ -31,7 +31,6 @@
 #include "content.h"
 #include "dock.h"
 #include "element.h"
-#include "env.h"
 #include "fsm.h"
 #include "gfxbuf.h"
 #include "image.h"

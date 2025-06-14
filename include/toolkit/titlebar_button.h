@@ -26,7 +26,6 @@
 #include <stdint.h>
 
 #include "element.h"
-#include "env.h"
 #include "style.h"
 #include "window.h"
 
@@ -44,7 +43,6 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
 /**
  * Creates a button for the titlebar.
  *
- * @param env_ptr
  * @param click_handler
  * @param window_ptr
  * @param draw
@@ -52,7 +50,6 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
  * @return Pointer to the titlebar button, or NULL on error.
  */
 wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
-    wlmtk_env_t *env_ptr,
     void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw);

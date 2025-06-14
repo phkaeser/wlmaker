@@ -135,7 +135,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
 
     dock_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
-        &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
+        &args.positioning, &style_ptr->dock);
     if (NULL == dock_ptr->wlmtk_dock_ptr) {
         wlmaker_dock_destroy(dock_ptr);
         return NULL;
@@ -175,7 +175,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         }
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
             &style_ptr->tile, dict_ptr,
-            server_ptr->monitor_ptr, server_ptr->env_ptr);
+            server_ptr->monitor_ptr);
         if (NULL == launcher_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
@@ -335,13 +335,12 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     server.root_ptr = wlmtk_root_create(
         server.wlr_scene_ptr,
-        server.wlr_output_layout_ptr,
-        NULL);
+        server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
     wlmtk_tile_style_t ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
-        server.wlr_output_layout_ptr, "1", &ts, 0);
+        server.wlr_output_layout_ptr, "1", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
 

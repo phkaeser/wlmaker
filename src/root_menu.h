@@ -37,15 +37,13 @@ extern "C" {
  * @param server_ptr
  * @param window_style_ptr
  * @param menu_style_ptr
- * @param env_ptr
  *
  * @return Handle of the root menu, or NULL on error.
  */
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const wlmtk_window_style_t *window_style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_menu_style_t *menu_style_ptr);
 
 /**
  * Destroys the root menu.

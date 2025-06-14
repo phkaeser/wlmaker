@@ -39,12 +39,10 @@ typedef struct _wlmaker_xwl_toplevel_t wlmaker_xwl_toplevel_t;
  *
  * @param content_ptr
  * @param server_ptr
- * @param env_ptr
  */
 wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
     wlmaker_xwl_content_t *content_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the toplevel XWayland window.

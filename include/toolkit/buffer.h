@@ -24,7 +24,6 @@
 #include <wayland-server-core.h>
 
 #include "element.h"
-#include "env.h"
 #include "input.h"
 
 struct _wlmtk_buffer_t;
@@ -61,12 +60,10 @@ struct _wlmtk_buffer_t {
  * Initializes the buffer.
  *
  * @param buffer_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
-bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr,
-                       wlmtk_env_t *env_ptr);
+bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr);
 
 /**
  * Cleans up the buffer.

@@ -45,8 +45,7 @@
 
 static bool _wlmtk_surface_init(
     wlmtk_surface_t *surface_ptr,
-    struct wlr_surface *wlr_surface_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_surface *wlr_surface_ptr);
 static void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
 
 static void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr);
@@ -120,13 +119,12 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_surface_t *wlmtk_surface_create(
     struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr)
+    struct wlr_seat *wlr_seat_ptr)
 {
     wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
     if (NULL == surface_ptr) return NULL;
 
-    if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr, env_ptr)) {
+    if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr)) {
         wlmtk_surface_destroy(surface_ptr);
         return NULL;
     }
@@ -229,25 +227,22 @@ void wlmtk_surface_connect_unmap_listener_signal(
  *
  * @param surface_ptr
  * @param wlr_surface_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
 bool _wlmtk_surface_init(
     wlmtk_surface_t *surface_ptr,
-    struct wlr_surface *wlr_surface_ptr,
-    wlmtk_env_t *env_ptr)
+    struct wlr_surface *wlr_surface_ptr)
 {
     BS_ASSERT(NULL != surface_ptr);
     memset(surface_ptr, 0, sizeof(wlmtk_surface_t));
 
-    if (!wlmtk_element_init(&surface_ptr->super_element, env_ptr)) {
+    if (!wlmtk_element_init(&surface_ptr->super_element)) {
         _wlmtk_surface_fini(surface_ptr);
         return false;
     }
     surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &surface_ptr->super_element, &surface_element_vmt);
-    surface_ptr->env_ptr = env_ptr;
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
     if (NULL != surface_ptr->wlr_surface_ptr) {
@@ -751,7 +746,7 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
         1, sizeof(wlmtk_fake_surface_t));
     if (NULL == fake_surface_ptr) return NULL;
 
-    _wlmtk_surface_init(&fake_surface_ptr->surface, NULL, NULL);
+    _wlmtk_surface_init(&fake_surface_ptr->surface, NULL);
     wlmtk_element_extend(
         &fake_surface_ptr->surface.super_element,
         &_wlmtk_fake_surface_element_vmt);
@@ -761,8 +756,7 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
 /* ------------------------------------------------------------------------- */
 wlmtk_surface_t *wlmtk_fake_surface_create_inject(
     __UNUSED__ struct wlr_surface *wlr_surface_ptr,
-    __UNUSED__ struct wlr_seat *wlr_seat_ptr,
-    __UNUSED__ wlmtk_env_t *env_ptr)
+    __UNUSED__ struct wlr_seat *wlr_seat_ptr)
 {
     wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
     if (NULL == fake_surface_ptr) return NULL;
@@ -862,7 +856,7 @@ const bs_test_case_t wlmtk_surface_test_cases[] = {
 /** Tests ctor and dtor. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL, NULL);
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, surface_ptr);
 
     BS_TEST_VERIFY_EQ(

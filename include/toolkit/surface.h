@@ -34,7 +34,6 @@ struct _wlmtk_fake_surface_t;
 typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 
 #include "element.h"
-#include "env.h"
 
 /** Forward declaration. */
 struct wlr_seat;
@@ -52,8 +51,6 @@ struct _wlmtk_surface_t {
     wlmtk_element_vmt_t       orig_super_element_vmt;
     /** Seat. */
     struct wlr_seat           *wlr_seat_ptr;
-    /** Toolkit environment. See @ref wlmtk_surface_create. */
-    wlmtk_env_t               *env_ptr;
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
@@ -82,23 +79,20 @@ struct _wlmtk_surface_t {
 /** Type of the surface ctor, for injection. @see wlmtk_surface_create. */
 typedef wlmtk_surface_t *(*wlmtk_surface_create_t)(
     struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Creates a toolkit surface from the `wlr_surface_ptr`.
  *
  * @param wlr_surface_ptr
  * @param wlr_seat_ptr
- * @param env_ptr
  *
  * @return A pointer to the @ref wlmtk_surface_t. Must be destroyed by calling
  *     @ref wlmtk_surface_destroy.
  */
 wlmtk_surface_t *wlmtk_surface_create(
     struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Destroys the toolkit surface.
@@ -165,8 +159,7 @@ wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
 /** Injectable ctor for the fake surface. */
 wlmtk_surface_t *wlmtk_fake_surface_create_inject(
     struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_seat *wlr_seat_ptr);
 
 /** Fakes a wlr_surface commit event. */
 void wlmtk_fake_surface_commit_size(

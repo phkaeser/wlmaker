@@ -26,7 +26,6 @@
 #undef WLR_USE_UNSTABLE
 
 #include "element.h"
-#include "env.h"
 #include "panel.h"
 #include "style.h"
 #include "tile.h"
@@ -53,15 +52,13 @@ typedef struct {
  *
  * @param dock_positioning_ptr
  * @param style_ptr
- * @param env_ptr
  *
  * @return The dock handle, or NULL on error. Must be destroyed calling
  *     @ref wlmtk_dock_destroy.
  */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
-    const wlmtk_dock_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_dock_style_t *style_ptr);
 
 /**
  * Destroys the dock.

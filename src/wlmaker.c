@@ -262,11 +262,9 @@ bool create_workspaces(
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
             server_ptr->wlr_output_layout_ptr,
             s.name,
-            &server_ptr->style.tile,
-            server_ptr->env_ptr);
+            &server_ptr->style.tile);
         if (NULL == workspace_ptr) {
-            bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\", %p)",
-                   s.name, server_ptr->env_ptr);
+            bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\")", s.name);
             rv = false;
             break;
         }
@@ -277,11 +275,9 @@ bool create_workspaces(
         wlmaker_background_t *background_ptr = wlmaker_background_create(
             workspace_ptr,
             server_ptr->wlr_output_layout_ptr,
-            s.color,
-            server_ptr->env_ptr);
+            s.color);
         if (NULL == background_ptr) {
-            bs_log(BS_ERROR, "Failed wlmaker_background(%p)",
-                   server_ptr->env_ptr);
+            bs_log(BS_ERROR, "Failed wlmaker_background()");
             rv = false;
             break;
         }
@@ -386,8 +382,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
         server_ptr,
         &server_ptr->style.window,
-        &server_ptr->style.menu,
-        server_ptr->env_ptr);
+        &server_ptr->style.menu);
     if (NULL == server_ptr->root_menu_ptr) {
         return EXIT_FAILURE;
     }

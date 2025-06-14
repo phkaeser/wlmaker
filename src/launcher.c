@@ -130,15 +130,14 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const wlmtk_tile_style_t *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmaker_subprocess_monitor_t *monitor_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = logged_calloc(
         1, sizeof(wlmaker_launcher_t));
     if (NULL == launcher_ptr) return NULL;
     launcher_ptr->monitor_ptr = monitor_ptr;
 
-     if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr, env_ptr)) {
+     if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr)) {
          return NULL;
     }
     launcher_ptr->orig_element_vmt = wlmtk_element_extend(
@@ -163,7 +162,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         return NULL;
     }
 
-    if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer, env_ptr)) {
+    if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer)) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
@@ -196,8 +195,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     launcher_ptr->image_ptr = wlmtk_image_create_scaled(
         path_ptr,
         launcher_ptr->super_tile.style.content_size,
-        launcher_ptr->super_tile.style.content_size,
-        env_ptr);
+        launcher_ptr->super_tile.style.content_size);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -569,7 +567,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
         bspl_create_object_from_plist_string(plist_ptr));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
     wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
-        &style, dict_ptr, NULL, NULL);
+        &style, dict_ptr, NULL);
     bspl_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
 

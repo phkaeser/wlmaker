@@ -25,7 +25,6 @@
 #include <wayland-server-core.h>
 
 #include "element.h"
-#include "env.h"
 #include "style.h"
 
 /** Forward declaration: State of the menu item. */
@@ -63,13 +62,11 @@ extern "C" {
  * Note: Menu items are created as 'visible' elements.
  *
  * @param style_ptr
- * @param env_ptr
  *
  * @return Pointer to the menu item state, or NULL on failure.
  */
 wlmtk_menu_item_t *wlmtk_menu_item_create(
-    const wlmtk_menu_item_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_menu_item_style_t *style_ptr);
 
 /**
  * Destroys the menu item.

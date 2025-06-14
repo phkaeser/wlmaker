@@ -25,7 +25,6 @@
 #include "libbase/libbase.h"
 
 #include "element.h"
-#include "env.h"
 #include "container.h"
 #include "rectangle.h"
 #include "style.h"
@@ -67,14 +66,12 @@ struct _wlmtk_bordered_t {
  * corner is at (0, 0).
  *
  * @param bordered_ptr
- * @param env_ptr
  * @param element_ptr
  * @param style_ptr
  *
  * @return true on success.
  */
 bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
-                         wlmtk_env_t *env_ptr,
                          wlmtk_element_t *element_ptr,
                          const wlmtk_margin_style_t *style_ptr);
 

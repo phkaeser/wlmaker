@@ -29,7 +29,6 @@
 typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 #include "element.h"
-#include "env.h"
 #include "layer.h"  // IWYU pragma: keep
 #include "root.h"  // IWYU pragma: keep
 #include "tile.h"
@@ -62,7 +61,6 @@ typedef enum {
  * @param wlr_output_layout_ptr Output layout. Must outlive the workspace.
  * @param name_ptr
  * @param tile_style_ptr
- * @param env_ptr
  *
  * @return Pointer to the workspace state, or NULL on error. Must be free'd
  *     via @ref wlmtk_workspace_destroy.
@@ -70,8 +68,7 @@ typedef enum {
 wlmtk_workspace_t *wlmtk_workspace_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     const char *name_ptr,
-    const wlmtk_tile_style_t *tile_style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_tile_style_t *tile_style_ptr);
 
 /**
  * Destroys the workspace. Will destroy any stil-contained element.

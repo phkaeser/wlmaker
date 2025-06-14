@@ -55,24 +55,21 @@ static const wlmtk_element_vmt_t _wlmtk_image_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_image_t *wlmtk_image_create(
-    const char *image_path_ptr,
-    wlmtk_env_t *env_ptr)
+wlmtk_image_t *wlmtk_image_create(const char *image_path_ptr)
 {
-    return wlmtk_image_create_scaled(image_path_ptr, 0, 0, env_ptr);
+    return wlmtk_image_create_scaled(image_path_ptr, 0, 0);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_image_t *wlmtk_image_create_scaled(
     const char *image_path_ptr,
     int width,
-    int height,
-    wlmtk_env_t *env_ptr)
+    int height)
 {
     wlmtk_image_t *image_ptr = logged_calloc(1, sizeof(wlmtk_image_t));
     if (NULL == image_ptr) return NULL;
 
-    if (!wlmtk_buffer_init(&image_ptr->super_buffer, env_ptr)) {
+    if (!wlmtk_buffer_init(&image_ptr->super_buffer)) {
         wlmtk_image_destroy(image_ptr);
         return NULL;
     }
@@ -200,7 +197,7 @@ const bs_test_case_t wlmtk_image_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_image_t *image_ptr = wlmtk_image_create(
-        bs_test_resolve_path("toolkit/test_icon.png"), NULL);
+        bs_test_resolve_path("toolkit/test_icon.png"));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, image_ptr);
 
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(

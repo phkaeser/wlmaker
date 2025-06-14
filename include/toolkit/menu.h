@@ -29,7 +29,6 @@ typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
 #include "box.h"  // IWYU pragma: keep
 #include "element.h"
-#include "env.h"
 #include "menu_item.h"  // IWYU pragma: keep
 #include "pane.h"
 #include "style.h"
@@ -74,13 +73,11 @@ typedef struct {
  * Creates a menu.
  *
  * @param style_ptr
- * @param env_ptr
  *
  * @return Pointer to the menu state or NULL on error.
  */
 wlmtk_menu_t *wlmtk_menu_create(
-    const wlmtk_menu_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_menu_style_t *style_ptr);
 
 /**
  * Destroys the menu.

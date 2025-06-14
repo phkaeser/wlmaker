@@ -27,7 +27,6 @@ typedef struct _wlmtk_titlebar_title_t wlmtk_titlebar_title_t;
 #include <libbase/libbase.h>
 
 #include "element.h"
-#include "env.h"
 #include "style.h"
 #include "window.h"
 
@@ -38,13 +37,11 @@ extern "C" {
 /**
  * Creates a title bar title.
  *
- * @param env_ptr
  * @param window_ptr
  *
  * @return Title handle.
  */
 wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
-    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr);
 
 /**

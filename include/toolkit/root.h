@@ -30,7 +30,6 @@ typedef struct _wlmtk_root_t wlmtk_root_t;
 #include <wayland-server-core.h>
 
 #include "element.h"
-#include "env.h"
 #include "input.h"
 #include "surface.h"  // IWYU pragma: keep
 #include "workspace.h"  // IWYU pragma: keep
@@ -67,14 +66,12 @@ typedef struct {
  *
  * @param wlr_scene_ptr
  * @param wlr_output_layout_ptr
- * @param env_ptr
  *
  * @return Handle of the root element or NULL on error.
  */
 wlmtk_root_t *wlmtk_root_create(
     struct wlr_scene *wlr_scene_ptr,
-    struct wlr_output_layout *wlr_output_layout_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Destroys the root element.

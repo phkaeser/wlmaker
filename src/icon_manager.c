@@ -369,8 +369,7 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 
     if (!wlmtk_tile_init(
             &toplevel_icon_ptr->super_tile,
-            &icon_manager_ptr->server_ptr->style.tile,
-            icon_manager_ptr->server_ptr->env_ptr)) {
+            &icon_manager_ptr->server_ptr->style.tile)) {
         wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
         return NULL;
     }
@@ -386,8 +385,7 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 
     toplevel_icon_ptr->content_surface_ptr = wlmtk_surface_create(
         wlr_surface_ptr,
-        icon_manager_ptr->server_ptr->wlr_seat_ptr,
-        icon_manager_ptr->server_ptr->env_ptr);
+        icon_manager_ptr->server_ptr->wlr_seat_ptr);
     if (NULL == toplevel_icon_ptr->content_surface_ptr) {
         wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
         return NULL;

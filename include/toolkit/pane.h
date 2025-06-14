@@ -29,7 +29,6 @@ typedef struct _wlmtk_pane_t wlmtk_pane_t;
 
 #include "container.h"  // IWYU pragma: keep
 #include "element.h"
-#include "env.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,14 +52,12 @@ struct _wlmtk_pane_t {
  * @param element_ptr         is added to @ref wlmtk_pane_t::super_container
  *                            until @ref wlmtk_pane_fini is called. Will *NOT*
  *                            take ownership.
- * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_pane_init(
     wlmtk_pane_t *pane_ptr,
-    wlmtk_element_t *element_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Un-initializes the pane.

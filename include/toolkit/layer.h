@@ -29,7 +29,6 @@ typedef struct _wlmtk_layer_t wlmtk_layer_t;
 typedef struct _wlmtk_layer_output_t wlmtk_layer_output_t;
 
 #include "element.h"
-#include "env.h"
 #include "panel.h"  // IWYU pragma: keep
 #include "workspace.h"  // IWYU pragma: keep
 
@@ -47,13 +46,11 @@ extern "C" {
  * Creates a layer. Layers contain panels, such as layer shells.
  *
  * @param wlr_output_layout_ptr The output layout.
- * @param env_ptr
  *
  * @return Pointer to the layer handle or NULL on error.
  */
 wlmtk_layer_t *wlmtk_layer_create(
-    struct wlr_output_layout *wlr_output_layout_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
  * Destroys the layer.

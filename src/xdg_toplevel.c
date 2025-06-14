@@ -182,8 +182,7 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         &surface_ptr->super_content,
         &server_ptr->style.window,
         &server_ptr->style.menu,
-        server_ptr->wlr_seat_ptr,
-        server_ptr->env_ptr);
+        server_ptr->wlr_seat_ptr);
     if (NULL == wlmtk_window_ptr) {
         xdg_toplevel_surface_destroy(surface_ptr);
         return NULL;
@@ -224,8 +223,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 
     xdg_tl_surface_ptr->surface_ptr = wlmtk_surface_create(
         wlr_xdg_toplevel_ptr->base->surface,
-        server_ptr->wlr_seat_ptr,
-        server_ptr->env_ptr);
+        server_ptr->wlr_seat_ptr);
     if (NULL == xdg_tl_surface_ptr->surface_ptr) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
@@ -235,8 +233,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
 
     if (!wlmtk_content_init(
             &xdg_tl_surface_ptr->super_content,
-            wlmtk_surface_element(xdg_tl_surface_ptr->surface_ptr),
-            server_ptr->env_ptr)) {
+            wlmtk_surface_element(xdg_tl_surface_ptr->surface_ptr))) {
         xdg_toplevel_surface_destroy(xdg_tl_surface_ptr);
         return NULL;
     }
@@ -477,8 +474,7 @@ void handle_new_popup(
 
     wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
         wlr_xdg_popup_ptr,
-        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr,
-        xdg_tl_surface_ptr->server_ptr->env_ptr);
+        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr);
     if (NULL == xdg_popup_ptr) {
         wl_resource_post_error(
             wlr_xdg_popup_ptr->resource,
