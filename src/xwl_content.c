@@ -375,7 +375,7 @@ void _xwl_content_handle_associate(
     wlmtk_content_set_element(
         &xwl_content_ptr->content,
         wlmtk_surface_element(xwl_content_ptr->surface_ptr));
-    memset(&xwl_content_ptr->content, 0, sizeof(wlmtk_util_client_t));
+    xwl_content_ptr->content.client = (wlmtk_util_client_t){};
     xwl_content_ptr->content.client.pid =
         xwl_content_ptr->wlr_xwayland_surface_ptr->pid;
 
@@ -416,7 +416,6 @@ void _xwl_content_handle_associate(
                 &xwl_content_ptr->content)->parent_container_ptr,
             wlmtk_content_element(&xwl_content_ptr->content));
     }
-
 }
 
 /* ------------------------------------------------------------------------- */
