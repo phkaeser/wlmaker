@@ -58,16 +58,10 @@ struct _wlmtk_resizebar_area_t {
     wlmtk_window_t            *window_ptr;
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
-
-    /** The cursor to use when having pointer focus. */
-    wlmtk_env_cursor_t         cursor;
 };
 
 static void _wlmtk_resizebar_area_element_destroy(
     wlmtk_element_t *element_ptr);
-static bool _wlmtk_resizebar_area_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_resizebar_area_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -85,7 +79,6 @@ static struct wlr_buffer *create_buffer(
 /** Buffer implementation for title of the title bar. */
 static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
     .destroy = _wlmtk_resizebar_area_element_destroy,
-    .pointer_motion = _wlmtk_resizebar_area_element_pointer_motion,
     .pointer_button = _wlmtk_resizebar_area_element_pointer_button,
 };
 
@@ -104,16 +97,16 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
-    resizebar_area_ptr->cursor = WLMTK_CURSOR_DEFAULT;
+    wlmtk_pointer_cursor_t cursor = WLMTK_POINTER_CURSOR_DEFAULT;
     switch (resizebar_area_ptr->edges) {
     case WLR_EDGE_BOTTOM:
-        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_S;
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_S;
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
-        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SW;
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_SW;
         break;
     case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
-        resizebar_area_ptr->cursor = WLMTK_CURSOR_RESIZE_SE;
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_SE;
         break;
     default:
         bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
@@ -126,6 +119,7 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     resizebar_area_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &resizebar_area_ptr->super_buffer.super_element,
         &resizebar_area_element_vmt);
+    resizebar_area_ptr->super_buffer.pointer_cursor = cursor;
 
     draw_state(resizebar_area_ptr);
     return resizebar_area_ptr;
@@ -191,21 +185,6 @@ void _wlmtk_resizebar_area_element_destroy(wlmtk_element_t *element_ptr)
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
     wlmtk_resizebar_area_destroy(resizebar_area_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** See @ref wlmtk_element_vmt_t::pointer_motion. */
-bool _wlmtk_resizebar_area_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
-{
-    wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
-    resizebar_area_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, motion_event_ptr);
-
-    wlmtk_env_set_cursor(element_ptr->env_ptr, resizebar_area_ptr->cursor);
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */

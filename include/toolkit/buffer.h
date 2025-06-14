@@ -25,6 +25,7 @@
 
 #include "element.h"
 #include "env.h"
+#include "input.h"
 
 struct _wlmtk_buffer_t;
 /** Forward declaration: Buffer state. */
@@ -43,6 +44,8 @@ struct _wlmtk_buffer_t {
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
+    /** Cursor to set when we have pointer focus. */
+    wlmtk_pointer_cursor_t    pointer_cursor;
 
     /** WLR buffer holding the contents. */
     struct wlr_buffer        *wlr_buffer_ptr;
@@ -51,6 +54,7 @@ struct _wlmtk_buffer_t {
 
     /** Listener for the `destroy` signal of `wlr_scene_buffer_ptr->node`. */
     struct wl_listener        wlr_scene_buffer_node_destroy_listener;
+
 };
 
 /**

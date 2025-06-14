@@ -99,6 +99,14 @@ wlmaker_cursor_t *wlmaker_cursor_create(
         return NULL;
     }
 
+    cursor_ptr->pointer_ptr = wlmtk_pointer_create(
+        cursor_ptr->wlr_cursor_ptr,
+        cursor_ptr->wlr_xcursor_manager_ptr);
+    if (NULL == cursor_ptr->pointer_ptr) {
+        wlmaker_cursor_destroy(cursor_ptr);
+        return NULL;
+    }
+
     wl_signal_init(&cursor_ptr->position_updated);
 
     // tinywl: wlr_cursor *only* displays an image on screen. It does not move
@@ -142,6 +150,11 @@ wlmaker_cursor_t *wlmaker_cursor_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_cursor_destroy(wlmaker_cursor_t *cursor_ptr)
 {
+    if (NULL != cursor_ptr->pointer_ptr) {
+        wlmtk_pointer_destroy(cursor_ptr->pointer_ptr);
+        cursor_ptr->pointer_ptr = NULL;
+    }
+
     if (NULL != cursor_ptr->wlr_xcursor_manager_ptr) {
         wlr_xcursor_manager_destroy(cursor_ptr->wlr_xcursor_manager_ptr);
         cursor_ptr->wlr_xcursor_manager_ptr = NULL;
@@ -345,7 +358,8 @@ void process_motion(wlmaker_cursor_t *cursor_ptr, uint32_t time_msec)
         cursor_ptr->server_ptr->root_ptr,
         cursor_ptr->wlr_cursor_ptr->x,
         cursor_ptr->wlr_cursor_ptr->y,
-        time_msec);
+        time_msec,
+        cursor_ptr->pointer_ptr);
 }
 
 /* == End of cursor.c ====================================================== */

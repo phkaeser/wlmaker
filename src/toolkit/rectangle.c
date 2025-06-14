@@ -21,6 +21,7 @@
 #include "rectangle.h"
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
@@ -29,6 +30,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "container.h"
+#include "input.h"
 #include "util.h"
 
 /* == Declarations ========================================================= */
@@ -57,6 +59,9 @@ static void _wlmtk_rectangle_element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *_wlmtk_rectangle_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
+static bool _wlmtk_rectangle_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static void _wlmtk_rectangle_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *x1_ptr,
@@ -73,6 +78,7 @@ static void handle_wlr_scene_rect_node_destroy(
 static const wlmtk_element_vmt_t _wlmtk_rectangle_element_vmt = {
     .destroy = _wlmtk_rectangle_element_destroy,
     .create_scene_node = _wlmtk_rectangle_element_create_scene_node,
+    .pointer_motion = _wlmtk_rectangle_element_pointer_motion,
     .get_dimensions = _wlmtk_rectangle_get_dimensions,
 };
 
@@ -205,6 +211,24 @@ struct wlr_scene_node *_wlmtk_rectangle_element_create_scene_node(
         &rectangle_ptr->wlr_scene_rect_node_destroy_listener,
         handle_wlr_scene_rect_node_destroy);
     return &rectangle_ptr->wlr_scene_rect_ptr->node;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_element_vmt_t::pointer_motion. Sets cursor. */
+bool _wlmtk_rectangle_element_pointer_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
+{
+    wlmtk_rectangle_t *rectangle_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_rectangle_t, super_element);
+    bool rv = rectangle_ptr->orig_super_element_vmt.pointer_motion(
+        element_ptr, motion_event_ptr);
+    if (rv) {
+        wlmtk_pointer_set_cursor(
+            motion_event_ptr->pointer_ptr,
+            WLMTK_POINTER_CURSOR_DEFAULT);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */

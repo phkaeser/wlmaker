@@ -893,9 +893,9 @@ bool _wlmtk_workspace_element_pointer_motion(
 
     // Focus wasn't claimed, so we'll set the cursor here.
     if (!rv) {
-        wlmtk_env_set_cursor(
-            workspace_ptr->super_container.super_element.env_ptr,
-            WLMTK_CURSOR_DEFAULT);
+        wlmtk_pointer_set_cursor(
+            motion_event_ptr->pointer_ptr,
+            WLMTK_POINTER_CURSOR_DEFAULT);
     }
 
     return true;

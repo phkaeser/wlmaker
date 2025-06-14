@@ -63,14 +63,6 @@ wlmtk_env_t *wlmtk_env_create(
  */
 void wlmtk_env_destroy(wlmtk_env_t *env_ptr);
 
-/**
- * Sets a cursor.
- *
- * @param env_ptr
- * @param cursor
- */
-void wlmtk_env_set_cursor(wlmtk_env_t *env_ptr, wlmtk_env_cursor_t cursor);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
