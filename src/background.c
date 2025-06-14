@@ -42,8 +42,6 @@ struct _wlmaker_background_t {
     /** color of the background. */
     uint32_t                   color;
 
-    /** Environment. */
-    wlmtk_env_t                *env_ptr;
     /** The output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
     /** Holds outputs and respective panels. */
@@ -88,8 +86,7 @@ static bool _wlmaker_background_update_output(
 static wlmaker_background_panel_t *_wlmaker_background_panel_create(
     wlmtk_layer_t *layer_ptr,
     struct wlr_output *wlr_output_ptr,
-    uint32_t color,
-    wlmtk_env_t *env_ptr);
+    uint32_t color);
 static void _wlmaker_background_panel_destroy(
     wlmaker_background_panel_t *background_panel_ptr);
 static int _wlmaker_background_panel_node_cmp(
@@ -129,8 +126,7 @@ static const wlmtk_panel_positioning_t _wlmaker_background_panel_position = {
 wlmaker_background_t *wlmaker_background_create(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
-    uint32_t color,
-    wlmtk_env_t *env_ptr)
+    uint32_t color)
 {
     wlmaker_background_t *background_ptr = logged_calloc(
         1, sizeof(wlmaker_background_t));
@@ -140,7 +136,6 @@ wlmaker_background_t *wlmaker_background_create(
 
     background_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
     background_ptr->color = color;
-    background_ptr->env_ptr = env_ptr;
 
     background_ptr->output_tree_ptr = bs_avltree_create(
         _wlmaker_background_panel_node_cmp,
@@ -238,8 +233,7 @@ bool _wlmaker_background_update_output(
         background_panel_ptr = _wlmaker_background_panel_create(
             arg_ptr->background_ptr->layer_ptr,
             wlr_output_ptr,
-            arg_ptr->background_ptr->color,
-            arg_ptr->background_ptr->env_ptr);
+            arg_ptr->background_ptr->color);
         if (NULL == background_panel_ptr) return false;
         background_panel_ptr->background_ptr = arg_ptr->background_ptr;
     }
@@ -256,8 +250,7 @@ bool _wlmaker_background_update_output(
 wlmaker_background_panel_t *_wlmaker_background_panel_create(
     wlmtk_layer_t *layer_ptr,
     struct wlr_output *wlr_output_ptr,
-    uint32_t color,
-    wlmtk_env_t *env_ptr)
+    uint32_t color)
 {
     wlmaker_background_panel_t *background_panel_ptr = logged_calloc(
         1, sizeof(wlmaker_background_panel_t));
@@ -265,8 +258,7 @@ wlmaker_background_panel_t *_wlmaker_background_panel_create(
     background_panel_ptr->wlr_output_ptr = wlr_output_ptr;
 
     if (!wlmtk_panel_init(&background_panel_ptr->super_panel,
-                          &_wlmaker_background_panel_position,
-                          env_ptr)) {
+                          &_wlmaker_background_panel_position)) {
         _wlmaker_background_panel_node_destroy(
             &background_panel_ptr->avlnode);
         return NULL;
@@ -277,8 +269,7 @@ wlmaker_background_panel_t *_wlmaker_background_panel_create(
     wlmtk_panel_extend(&background_panel_ptr->super_panel,
                        &_wlmaker_background_panel_vmt);
 
-    background_panel_ptr->rectangle_ptr = wlmtk_rectangle_create(
-        env_ptr, 0, 0, color);
+    background_panel_ptr->rectangle_ptr = wlmtk_rectangle_create(0, 0, color);
     if (NULL == background_panel_ptr->rectangle_ptr) {
         _wlmaker_background_panel_node_destroy(
             &background_panel_ptr->avlnode);

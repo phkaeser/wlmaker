@@ -75,8 +75,7 @@ static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const wlmtk_window_style_t *window_style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
-    wlmtk_env_t *env_ptr)
+    const wlmtk_menu_style_t *menu_style_ptr)
 {
     if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 1) {
         bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
@@ -116,8 +115,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         pane_ptr->element_ptr);
     if (!wlmtk_content_init(
             &root_menu_ptr->content,
-            pane_ptr->element_ptr,
-            env_ptr)) {
+            pane_ptr->element_ptr)) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
     }
@@ -143,8 +141,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->content,
         window_style_ptr,
         menu_style_ptr,
-        server_ptr->wlr_seat_ptr,
-        env_ptr);
+        server_ptr->wlr_seat_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         return NULL;
@@ -337,8 +334,7 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
         &menu_style_ptr->item,
         action,
         action_arg_ptr,
-        server_ptr,
-        server_ptr->env_ptr);
+        server_ptr);
     if (NULL == action_item_ptr) {
         if (NULL == submenu_ptr) wlmtk_menu_destroy(submenu_ptr);
         return NULL;
@@ -375,9 +371,7 @@ wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
         return NULL;
     }
 
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(
-        menu_style_ptr,
-        server_ptr->env_ptr);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(menu_style_ptr);
     if (NULL == menu_ptr) return NULL;
 
     for (size_t i = 1; i < bspl_array_size(array_ptr); ++i) {

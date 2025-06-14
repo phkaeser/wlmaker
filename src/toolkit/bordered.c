@@ -30,8 +30,7 @@ static void _wlmtk_bordered_container_update_layout(
     wlmtk_container_t *container_ptr);
 
 static wlmtk_rectangle_t * _wlmtk_bordered_create_border_rectangle(
-    wlmtk_bordered_t *bordered_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmtk_bordered_t *bordered_ptr);
 static void _wlmtk_bordered_destroy_border_rectangle(
     wlmtk_bordered_t *bordered_ptr,
     wlmtk_rectangle_t **rectangle_ptr_ptr);
@@ -48,13 +47,12 @@ static const wlmtk_container_vmt_t bordered_container_vmt = {
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
-                         wlmtk_env_t *env_ptr,
                          wlmtk_element_t *element_ptr,
                          const wlmtk_margin_style_t *style_ptr)
 {
     BS_ASSERT(NULL != bordered_ptr);
     memset(bordered_ptr, 0, sizeof(wlmtk_bordered_t));
-    if (!wlmtk_container_init(&bordered_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&bordered_ptr->super_container)) {
         return false;
     }
     bordered_ptr->orig_super_container_vmt = wlmtk_container_extend(
@@ -66,13 +64,13 @@ bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
                                 bordered_ptr->element_ptr);
 
     bordered_ptr->northern_border_rectangle_ptr =
-        _wlmtk_bordered_create_border_rectangle(bordered_ptr, env_ptr);
+        _wlmtk_bordered_create_border_rectangle(bordered_ptr);
     bordered_ptr->eastern_border_rectangle_ptr =
-        _wlmtk_bordered_create_border_rectangle(bordered_ptr, env_ptr);
+        _wlmtk_bordered_create_border_rectangle(bordered_ptr);
     bordered_ptr->southern_border_rectangle_ptr =
-        _wlmtk_bordered_create_border_rectangle(bordered_ptr, env_ptr);
+        _wlmtk_bordered_create_border_rectangle(bordered_ptr);
     bordered_ptr->western_border_rectangle_ptr =
-        _wlmtk_bordered_create_border_rectangle(bordered_ptr, env_ptr);
+        _wlmtk_bordered_create_border_rectangle(bordered_ptr);
     if (NULL == bordered_ptr->northern_border_rectangle_ptr ||
         NULL == bordered_ptr->eastern_border_rectangle_ptr ||
         NULL == bordered_ptr->southern_border_rectangle_ptr ||
@@ -152,11 +150,10 @@ void _wlmtk_bordered_container_update_layout(
 /* ------------------------------------------------------------------------- */
 /** Creates a border rectangle and adds it to `bordered_ptr`. */
 wlmtk_rectangle_t * _wlmtk_bordered_create_border_rectangle(
-    wlmtk_bordered_t *bordered_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmtk_bordered_t *bordered_ptr)
 {
     wlmtk_rectangle_t *rectangle_ptr = wlmtk_rectangle_create(
-        env_ptr, 0, 0, bordered_ptr->style.color);
+        0, 0, bordered_ptr->style.color);
     if (NULL == rectangle_ptr) return NULL;
 
     wlmtk_element_set_visible(wlmtk_rectangle_element(rectangle_ptr), true);
@@ -280,7 +277,7 @@ void test_init_fini(bs_test_t *test_ptr)
 
     wlmtk_bordered_t bordered;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_bordered_init(
-                            &bordered, NULL, &fe_ptr->element, &test_style));
+                            &bordered, &fe_ptr->element, &test_style));
 
     // Positions of border elements.
     test_rectangle_pos(

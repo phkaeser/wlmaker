@@ -45,7 +45,6 @@ typedef struct _wlmtk_container_t wlmtk_container_t;
 /** Forward declaration: Wlroots keyboard event. */
 struct wlr_keyboard_key_event;
 
-#include "env.h"
 #include "input.h"
 
 #define WLR_USE_UNSTABLE
@@ -207,9 +206,6 @@ struct _wlmtk_element_t {
     /** Virtual method table for the element. */
     wlmtk_element_vmt_t       vmt;
 
-    /** Toolkit environment. */
-    wlmtk_env_t               *env_ptr;
-
     /** Points to the wlroots scene graph API node, if attached. */
     struct wlr_scene_node     *wlr_scene_node_ptr;
 
@@ -230,12 +226,10 @@ struct _wlmtk_element_t {
  * Initializes the element.
  *
  * @param element_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
-bool wlmtk_element_init(wlmtk_element_t *element_ptr,
-                        wlmtk_env_t *env_ptr);
+bool wlmtk_element_init(wlmtk_element_t *element_ptr);
 
 /**
  * Extends the element's virtual methods.

@@ -134,8 +134,7 @@ wlmaker_task_list_t *wlmaker_task_list_create(
     task_list_ptr->style = style_ptr->task_list;
 
     if (!wlmtk_panel_init(&task_list_ptr->super_panel,
-                          &_wlmaker_task_list_positioning,
-                          server_ptr->env_ptr)) {
+                          &_wlmaker_task_list_positioning)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }
@@ -144,7 +143,7 @@ wlmaker_task_list_t *wlmaker_task_list_create(
     wlmtk_element_set_visible(
         wlmtk_panel_element(&task_list_ptr->super_panel), true);
 
-    if (!wlmtk_buffer_init(&task_list_ptr->buffer, server_ptr->env_ptr)) {
+    if (!wlmtk_buffer_init(&task_list_ptr->buffer)) {
         wlmaker_task_list_destroy(task_list_ptr);
         return NULL;
     }

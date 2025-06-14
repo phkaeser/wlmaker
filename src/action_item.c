@@ -63,8 +63,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
     const char *action_arg_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmaker_server_t *server_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = logged_calloc(
         1, sizeof(wlmaker_action_item_t));
@@ -79,7 +78,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     }
     action_item_ptr->server_ptr = server_ptr;
 
-    action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr, env_ptr);
+    action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr);
     if (NULL == action_item_ptr->menu_item_ptr) {
         wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
@@ -106,16 +105,14 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
     const wlmaker_action_item_desc_t *desc_ptr,
     void *dest_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmaker_server_t *server_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
         desc_ptr->text_ptr,
         style_ptr,
         desc_ptr->action,
         NULL,
-        server_ptr,
-        env_ptr);
+        server_ptr);
     if (NULL == action_item_ptr) return NULL;
 
     *(wlmaker_action_item_t**)(
@@ -218,8 +215,7 @@ void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
         wlmaker_action_item_create_from_desc(
             &_wlmaker_action_item_desc,
             &ai_ptr,
-            &_wlmaker_action_item_menu_style.item, &server,
-            NULL));
+            &_wlmaker_action_item_menu_style.item, &server));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
     wlmaker_action_item_destroy(ai_ptr);
 }
@@ -232,14 +228,13 @@ void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
     wlmaker_action_item_t *ai_ptr;
     wlmaker_server_t server = {};
 
-    menu_ptr = wlmtk_menu_create(&_wlmaker_action_item_menu_style, NULL);
+    menu_ptr = wlmtk_menu_create(&_wlmaker_action_item_menu_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     ai_ptr = wlmaker_action_item_create_from_desc(
         &_wlmaker_action_item_desc,
         &ai_ptr,
-        &_wlmaker_action_item_menu_style.item, &server,
-        NULL);
+        &_wlmaker_action_item_menu_style.item, &server);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ai_ptr);
     wlmtk_menu_add_item(menu_ptr, wlmaker_action_item_menu_item(ai_ptr));
 

@@ -27,7 +27,6 @@ typedef struct _wlmtk_resizebar_t wlmtk_resizebar_t;
 #include <stdbool.h>
 
 #include "element.h"
-#include "env.h"
 #include "style.h"
 
 #include "window.h"  // IWYU pragma: keep
@@ -39,14 +38,12 @@ extern "C" {
 /**
  * Creates the resize bar.
  *
- * @param env_ptr
  * @param window_ptr
  * @param style_ptr
  *
  * @return Pointer to the resizebar state, or NULL on error.
  */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
-    wlmtk_env_t *env_ptr,
     wlmtk_window_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr);
 

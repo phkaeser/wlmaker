@@ -69,9 +69,7 @@ static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
-    const wlmtk_dock_style_t *style_ptr,
-
-    wlmtk_env_t *env_ptr)
+    const wlmtk_dock_style_t *style_ptr)
 {
     wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
     if (NULL == dock_ptr) return NULL;
@@ -80,7 +78,6 @@ wlmtk_dock_t *wlmtk_dock_create(
 
     if (!wlmtk_box_init(
             &dock_ptr->tile_box,
-            env_ptr,
             _wlmtk_dock_orientation(dock_ptr),
             &dock_ptr->dock_style.margin)) {
         wlmtk_dock_destroy(dock_ptr);
@@ -97,8 +94,7 @@ wlmtk_dock_t *wlmtk_dock_create(
 
     if (!wlmtk_panel_init(
             &dock_ptr->super_panel,
-            &dock_ptr->panel_positioning,
-            env_ptr)) {
+            &dock_ptr->panel_positioning)) {
         bs_log(BS_ERROR, "Failed wlmtk_panel_init.");
         wlmtk_dock_destroy(dock_ptr);
         return NULL;
@@ -309,7 +305,7 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
     };
     wlmtk_dock_style_t style = {};
 
-    wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, &style, NULL);
+    wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, &style);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_LEFT | WLR_EDGE_BOTTOM,

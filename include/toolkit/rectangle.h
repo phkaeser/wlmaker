@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 #include "element.h"
-#include "env.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +35,6 @@ typedef struct _wlmtk_rectangle_t wlmtk_rectangle_t;
 /**
  * Creates a rectangle. Useful for margins and borders.
  *
- * @param env_ptr
  * @param width
  * @param height
  * @param color
@@ -44,7 +42,6 @@ typedef struct _wlmtk_rectangle_t wlmtk_rectangle_t;
  * @return Pointer to the rectangle state or NULL on error.
  */
 wlmtk_rectangle_t *wlmtk_rectangle_create(
-    wlmtk_env_t *env_ptr,
     int width,
     int height,
     uint32_t color);

@@ -26,7 +26,7 @@
 
 #include "container.h"
 #include "element.h"
-#include "env.h"
+
 struct _wlmtk_fake_panel_t;
 struct _wlmtk_panel_positioning_t;
 struct _wlmtk_panel_t;
@@ -117,14 +117,12 @@ struct _wlmtk_panel_t {
  *
  * @param panel_ptr
  * @param positioning_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_panel_init(
     wlmtk_panel_t *panel_ptr,
-    const wlmtk_panel_positioning_t *positioning_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_panel_positioning_t *positioning_ptr);
 
 /**
  * Un-initializes the panel.

@@ -188,19 +188,10 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->env_ptr = wlmtk_env_create(
-        server_ptr->cursor_ptr->wlr_cursor_ptr,
-        server_ptr->cursor_ptr->wlr_xcursor_manager_ptr);
-    if (NULL == server_ptr->env_ptr) {
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
-
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
         server_ptr->wlr_scene_ptr,
-        server_ptr->wlr_output_layout_ptr,
-        server_ptr->env_ptr);
+        server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -380,11 +371,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
             &server_ptr->unclaimed_button_event_listener);
         wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->env_ptr) {
-        wlmtk_env_destroy(server_ptr->env_ptr);
-        server_ptr->env_ptr = NULL;
     }
 
     if (NULL != server_ptr->cursor_ptr) {

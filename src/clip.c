@@ -207,15 +207,14 @@ wlmaker_clip_t *wlmaker_clip_create(
     }
 
     clip_ptr->wlmtk_dock_ptr = wlmtk_dock_create(
-        &args.positioning, &style_ptr->dock, server_ptr->env_ptr);
+        &args.positioning, &style_ptr->dock);
     wlmtk_element_set_visible(
         wlmtk_dock_element(clip_ptr->wlmtk_dock_ptr),
         true);
 
     if (!wlmtk_tile_init(
             &clip_ptr->super_tile,
-            &style_ptr->tile,
-            server_ptr->env_ptr)) {
+            &style_ptr->tile)) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
@@ -228,8 +227,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         &clip_ptr->super_tile, clip_ptr->tile_buffer_ptr);
     wlmtk_dock_add_tile(clip_ptr->wlmtk_dock_ptr, &clip_ptr->super_tile);
 
-    if (!wlmtk_buffer_init(
-            &clip_ptr->overlay_buffer, server_ptr->env_ptr)) {
+    if (!wlmtk_buffer_init(&clip_ptr->overlay_buffer)) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
@@ -267,8 +265,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->image_ptr = wlmtk_image_create_scaled(
         path_ptr,
         clip_ptr->super_tile.style.content_size,
-        clip_ptr->super_tile.style.content_size,
-        server_ptr->env_ptr);
+        clip_ptr->super_tile.style.content_size);
     if (NULL == clip_ptr->image_ptr) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;

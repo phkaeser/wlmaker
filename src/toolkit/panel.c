@@ -34,17 +34,16 @@
 /* ------------------------------------------------------------------------- */
 bool wlmtk_panel_init(
     wlmtk_panel_t *panel_ptr,
-    const wlmtk_panel_positioning_t *positioning_ptr,
-    wlmtk_env_t *env_ptr)
+    const wlmtk_panel_positioning_t *positioning_ptr)
 {
     memset(panel_ptr, 0, sizeof(wlmtk_panel_t));
-    if (!wlmtk_container_init(&panel_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&panel_ptr->super_container)) {
         wlmtk_panel_fini(panel_ptr);
         return false;
     }
     panel_ptr->positioning = *positioning_ptr;
 
-    if (!wlmtk_container_init(&panel_ptr->popup_container, env_ptr)) {
+    if (!wlmtk_container_init(&panel_ptr->popup_container)) {
         wlmtk_panel_fini(panel_ptr);
         return false;
     }
@@ -265,7 +264,7 @@ wlmtk_fake_panel_t *wlmtk_fake_panel_create(
         1, sizeof(wlmtk_fake_panel_t));
     if (NULL == fake_panel_ptr) return NULL;
 
-    if (!wlmtk_panel_init(&fake_panel_ptr->panel, positioning_ptr, NULL)) {
+    if (!wlmtk_panel_init(&fake_panel_ptr->panel, positioning_ptr)) {
         wlmtk_fake_panel_destroy(fake_panel_ptr);
         return NULL;
     }
@@ -327,7 +326,7 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_panel_t p;
     wlmtk_panel_positioning_t pos = {};
 
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_panel_init(&p, &pos, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_panel_init(&p, &pos));
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_panel(&p);
     BS_TEST_VERIFY_EQ(test_ptr, &p.dlnode, dlnode_ptr);

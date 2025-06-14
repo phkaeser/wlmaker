@@ -134,9 +134,6 @@ struct _wlmaker_server_t {
     /** The list of input devices. */
     bs_dllist_t               input_devices;
 
-    /** Toolkit environment. */
-    wlmtk_env_t               *env_ptr;
-
     /** The root element. */
     wlmtk_root_t              *root_ptr;
     /** Whether the task list is currently shown. */

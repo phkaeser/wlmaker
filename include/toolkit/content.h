@@ -33,7 +33,6 @@ typedef struct _wlmtk_fake_content_t wlmtk_fake_content_t;
 
 #include "container.h"  // IWYU pragma: keep
 #include "element.h"
-#include "env.h"
 #include "libbase/libbase.h"
 #include "popup.h"
 #include "surface.h"
@@ -170,14 +169,12 @@ struct _wlmtk_content_t {
  *
  * @param content_ptr
  * @param element_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_element_t *element_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmtk_element_t *element_ptr);
 
 /**
  * Un-initializes the content.

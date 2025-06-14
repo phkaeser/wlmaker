@@ -57,7 +57,6 @@ typedef struct {
  * @param action
  * @param action_arg_ptr      Extra argument. Will be duplicated.
  * @param server_ptr
- * @param env_ptr
  *
  * @return Poitner to the menu item's handle or NULL on error.
  */
@@ -66,8 +65,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_action_t action,
     const char *action_arg_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Creates a menu item triggering an action item from a descriptor.
@@ -76,7 +74,6 @@ wlmaker_action_item_t *wlmaker_action_item_create(
  * @param dest_ptr
  * @param style_ptr
  * @param server_ptr
- * @param env_ptr
  *
  * @return Pointer to the item's handle or NULL on error.
  */
@@ -84,8 +81,7 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
     const wlmaker_action_item_desc_t *desc_ptr,
     void *dest_ptr,
     const wlmtk_menu_item_style_t *style_ptr,
-    wlmaker_server_t *server_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmaker_server_t *server_ptr);
 
 /**
  * Destroys the action-triggering menu item.

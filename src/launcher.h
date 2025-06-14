@@ -39,15 +39,13 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
  * @param style_ptr
  * @param dict_ptr
  * @param monitor_ptr
- * @param env_ptr
  *
  * @return Pointer to the launcher handle or NULL on error.
  */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const wlmtk_tile_style_t *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmtk_env_t *env_ptr);
+    wlmaker_subprocess_monitor_t *monitor_ptr);
 
 /**
  * Destroys the application launcher.

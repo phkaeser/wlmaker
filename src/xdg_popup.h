@@ -68,8 +68,7 @@ struct _wlmaker_xdg_popup_t {
  */
 wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     struct wlr_xdg_popup *wlr_xdg_popup_ptr,
-    struct wlr_seat *wlr_seat_ptr,
-    wlmtk_env_t *env_ptr);
+    struct wlr_seat *wlr_seat_ptr);
 
 /**
  * Destroys the popup.

@@ -56,20 +56,19 @@ static const wlmtk_element_vmt_t _wlmtk_content_element_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_content_init(
     wlmtk_content_t *content_ptr,
-    wlmtk_element_t *element_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
     memset(content_ptr, 0, sizeof(wlmtk_content_t));
 
-    if (!wlmtk_container_init(&content_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&content_ptr->super_container)) {
         return false;
     }
     content_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &content_ptr->super_container.super_element,
         &_wlmtk_content_element_vmt);
 
-    if (!wlmtk_container_init(&content_ptr->popup_container, env_ptr)) {
+    if (!wlmtk_container_init(&content_ptr->popup_container)) {
         wlmtk_content_fini(content_ptr);
         return false;
     }
@@ -344,9 +343,9 @@ wlmtk_fake_content_t *wlmtk_fake_content_create(
     if (NULL == fake_content_ptr) return NULL;
     fake_content_ptr->fake_surface_ptr = fake_surface_ptr;
 
-    if (!wlmtk_content_init(&fake_content_ptr->content,
-                            wlmtk_surface_element(&fake_surface_ptr->surface),
-                            NULL)) {
+    if (!wlmtk_content_init(
+            &fake_content_ptr->content,
+            wlmtk_surface_element(&fake_surface_ptr->surface))) {
         wlmtk_fake_content_destroy(fake_content_ptr);
         return NULL;
     }
@@ -475,7 +474,7 @@ void test_set_clear_element(bs_test_t *test_ptr)
     BS_ASSERT(NULL != fs_ptr);
 
     wlmtk_content_t content;
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&content, NULL, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&content, NULL));
     BS_TEST_VERIFY_EQ(test_ptr, NULL, content.element_ptr);
 
     wlmtk_content_set_element(
@@ -507,15 +506,11 @@ void test_add_remove_popup(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_content_init(
-            &parent,
-            wlmtk_surface_element(&fs0_ptr->surface),
-            NULL));
+            &parent, wlmtk_surface_element(&fs0_ptr->surface)));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_content_init(
-            &popup,
-            wlmtk_surface_element(&fs1_ptr->surface),
-            NULL));
+            &popup, wlmtk_surface_element(&fs1_ptr->surface)));
 
     wlmtk_element_set_visible(wlmtk_content_element(&parent), true);
     wlmtk_element_set_visible(wlmtk_content_element(&popup), true);
@@ -571,14 +566,11 @@ void test_add_remove_wlmtk_popup(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_content_init(
-            &content,
-            wlmtk_surface_element(&fs0_ptr->surface),
-            NULL));
+            &content, wlmtk_surface_element(&fs0_ptr->surface)));
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_popup_init(&popup, NULL,
-                         wlmtk_surface_element(&fs1_ptr->surface)));
+        wlmtk_popup_init(&popup, wlmtk_surface_element(&fs1_ptr->surface)));
 
     wlmtk_element_set_visible(wlmtk_content_element(&content), true);
     wlmtk_element_set_visible(wlmtk_popup_element(&popup), true);

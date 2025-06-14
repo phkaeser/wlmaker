@@ -23,7 +23,6 @@ SET(PUBLIC_HEADER_FILES
   content.h
   dock.h
   element.h
-  env.h
   fsm.h
   gfxbuf.h
   image.h
@@ -62,7 +61,6 @@ TARGET_SOURCES(toolkit PRIVATE
   content.c
   dock.c
   element.c
-  env.c
   fsm.c
   gfxbuf.c
   image.c

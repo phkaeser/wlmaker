@@ -28,18 +28,17 @@
 /* ------------------------------------------------------------------------- */
 bool wlmtk_pane_init(
     wlmtk_pane_t *pane_ptr,
-    wlmtk_element_t *element_ptr,
-    wlmtk_env_t *env_ptr)
+    wlmtk_element_t *element_ptr)
 {
     memset(pane_ptr, 0, sizeof(wlmtk_pane_t));
     BS_ASSERT(NULL != element_ptr);
 
-    if (!wlmtk_container_init(&pane_ptr->super_container, env_ptr)) {
+    if (!wlmtk_container_init(&pane_ptr->super_container)) {
         wlmtk_pane_fini(pane_ptr);
         return false;
     }
 
-    if (!wlmtk_container_init(&pane_ptr->popup_container, env_ptr)) {
+    if (!wlmtk_container_init(&pane_ptr->popup_container)) {
         wlmtk_pane_fini(pane_ptr);
         return false;
     }
@@ -113,7 +112,7 @@ void test_init_fini(bs_test_t *test_ptr)
 
     fe = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_pane_init(&pane, &fe->element, NULL));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_pane_init(&pane, &fe->element));
 
     BS_TEST_VERIFY_EQ(
         test_ptr,

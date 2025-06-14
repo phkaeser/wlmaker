@@ -87,7 +87,6 @@ static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     wlmtk_window_t *window_ptr,
-    wlmtk_env_t *env_ptr,
     uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
@@ -112,7 +111,7 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
         bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
     }
 
-    if (!wlmtk_buffer_init(&resizebar_area_ptr->super_buffer, env_ptr)) {
+    if (!wlmtk_buffer_init(&resizebar_area_ptr->super_buffer)) {
         wlmtk_resizebar_area_destroy(resizebar_area_ptr);
         return NULL;
     }
@@ -295,7 +294,7 @@ void test_area(bs_test_t *test_ptr)
     wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
 
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        fake_window_ptr->window_ptr, NULL, WLR_EDGE_BOTTOM);
+        fake_window_ptr->window_ptr, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
 

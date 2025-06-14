@@ -23,7 +23,6 @@
 #include <libbase/libbase.h>
 
 #include "element.h"
-#include "env.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,13 +35,11 @@ typedef struct _wlmtk_image_t wlmtk_image_t;
  * Creates a toolkit image: An element showing the image.
  *
  * @param image_path_ptr
- * @param env_ptr
  *
  * @return Pointer to the toolkit image, or NULL on error.
  */
 wlmtk_image_t *wlmtk_image_create(
-    const char *image_path_ptr,
-    wlmtk_env_t *env_ptr);
+    const char *image_path_ptr);
 
 /**
  * Creates a toolkit image, scaled while preserving aspect ratio.
@@ -50,15 +47,13 @@ wlmtk_image_t *wlmtk_image_create(
  * @param image_path_ptr
  * @param width
  * @param height
- * @param env_ptr
  *
  * @return Pointer to the toolkit image or NULL on error.
  */
 wlmtk_image_t *wlmtk_image_create_scaled(
     const char *image_path_ptr,
     int width,
-    int height,
-    wlmtk_env_t *env_ptr);
+    int height);
 
 /**
  * Destroys the toolkit image.

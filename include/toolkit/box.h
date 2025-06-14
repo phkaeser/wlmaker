@@ -26,7 +26,6 @@
 
 #include "container.h"
 #include "element.h"
-#include "env.h"
 #include "style.h"
 
 struct _wlmtk_box_t;
@@ -54,9 +53,6 @@ struct _wlmtk_box_t {
     /** Orientation of the box. */
     wlmtk_box_orientation_t   orientation;
 
-    /** Environment. */
-    wlmtk_env_t               *env_ptr;
-
     /** Container for the box's elements. */
     wlmtk_container_t         element_container;
     /** Container for margin elements. */
@@ -71,14 +67,12 @@ struct _wlmtk_box_t {
  *
  * @param box_ptr
  * @param orientation
- * @param env_ptr
  * @param style_ptr
  *
  * @return true on success.
  */
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
-    wlmtk_env_t *env_ptr,
     wlmtk_box_orientation_t orientation,
     const wlmtk_margin_style_t *style_ptr);
 

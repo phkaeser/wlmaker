@@ -141,8 +141,7 @@ static const wlmtk_menu_item_style_t _item_test_style = {
 
 /* -------------------------------------------------------------------------*/
 wlmtk_menu_item_t *wlmtk_menu_item_create(
-    const wlmtk_menu_item_style_t *style_ptr,
-    wlmtk_env_t *env_ptr)
+    const wlmtk_menu_item_style_t *style_ptr)
 {
     wlmtk_menu_item_t *menu_item_ptr = logged_calloc(
         1, sizeof(wlmtk_menu_item_t));
@@ -150,7 +149,7 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
     wl_signal_init(&menu_item_ptr->events.triggered);
     wl_signal_init(&menu_item_ptr->events.destroy);
 
-    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer, env_ptr)) {
+    if (!wlmtk_buffer_init(&menu_item_ptr->super_buffer)) {
         wlmtk_menu_item_destroy(menu_item_ptr);
         return NULL;
     }
@@ -655,7 +654,7 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_item_test_style, NULL);
+        &_item_test_style);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(item_ptr);
@@ -680,7 +679,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_buffers(bs_test_t *test_ptr)
 {
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_item_test_style, NULL);
+        &_item_test_style);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
     item_ptr->width = 80;
@@ -708,10 +707,9 @@ void test_buffers(bs_test_t *test_ptr)
 void test_pointer(bs_test_t *test_ptr)
 {
     wlmtk_menu_style_t s = {};
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
-    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_item_test_style, NULL);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
     wlmtk_menu_add_item(menu_ptr, item_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, menu_ptr, item_ptr->menu_ptr);
@@ -795,8 +793,7 @@ void test_pointer(bs_test_t *test_ptr)
 /** Verifies desired clicks are passed to the handler. */
 void test_triggered(bs_test_t *test_ptr)
 {
-    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_item_test_style, NULL);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
@@ -857,8 +854,7 @@ void test_triggered(bs_test_t *test_ptr)
 /** Tests button events in right-click mode. */
 void test_right_click(bs_test_t *test_ptr)
 {
-    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
-        &_item_test_style, NULL);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
@@ -928,21 +924,21 @@ void test_submenu_highlight(bs_test_t *test_ptr)
 {
     wlmtk_menu_style_t s = { .item = _item_test_style };
 
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s, NULL);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&s);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
 
-    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
     wlmtk_menu_add_item(menu_ptr, i1);
-    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
     wlmtk_menu_add_item(menu_ptr, i2);
 
-    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(&s, NULL);
+    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(&s);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, submenu_ptr);
-    wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style, NULL);
+    wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
     wlmtk_menu_add_item(submenu_ptr, s1);
     wlmtk_menu_item_set_submenu(i2, submenu_ptr);

@@ -31,7 +31,6 @@ typedef struct _wlmtk_tile_t wlmtk_tile_t;
 #include "buffer.h"
 #include "container.h"
 #include "element.h"
-#include "env.h"
 #include "style.h"
 
 #ifdef __cplusplus
@@ -77,14 +76,12 @@ struct _wlmtk_tile_t {
  *
  * @param tile_ptr
  * @param style_ptr
- * @param env_ptr
  *
  * @return true on success.
  */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
-    const wlmtk_tile_style_t *style_ptr,
-    wlmtk_env_t *env_ptr);
+    const wlmtk_tile_style_t *style_ptr);
 
 /**
  * Un-initializes the tile.
