@@ -23,7 +23,6 @@
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <stdlib.h>
-#include <string.h>
 #include <toolkit/box.h>
 #include <toolkit/primitives.h>
 #include <toolkit/resizebar_area.h>
@@ -78,7 +77,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_t));
     if (NULL == resizebar_ptr) return NULL;
-    memcpy(&resizebar_ptr->style, style_ptr, sizeof(wlmtk_resizebar_style_t));
+    resizebar_ptr->style = *style_ptr;
 
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,

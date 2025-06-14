@@ -799,7 +799,7 @@ bool _wlmtk_window_init(
     wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL != window_ptr);
-    memcpy(&window_ptr->vmt, &_wlmtk_window_vmt, sizeof(wlmtk_window_vmt_t));
+    window_ptr->vmt = _wlmtk_window_vmt;
 
     for (size_t i = 0; i < WLMTK_WINDOW_MAX_PENDING; ++i) {
         bs_dllist_push_back(&window_ptr->available_updates,
