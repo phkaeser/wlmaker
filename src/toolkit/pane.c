@@ -30,7 +30,7 @@ bool wlmtk_pane_init(
     wlmtk_pane_t *pane_ptr,
     wlmtk_element_t *element_ptr)
 {
-    memset(pane_ptr, 0, sizeof(wlmtk_pane_t));
+    *pane_ptr = (wlmtk_pane_t){};
     BS_ASSERT(NULL != element_ptr);
 
     if (!wlmtk_container_init(&pane_ptr->super_container)) {

@@ -20,8 +20,7 @@
 
 #include "content.h"
 
-#include <stdlib.h>           // for free
-#include <string.h>           // for memset
+#include <stdlib.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #undef WLR_USE_UNSTABLE
@@ -59,7 +58,7 @@ bool wlmtk_content_init(
     wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL != content_ptr);
-    memset(content_ptr, 0, sizeof(wlmtk_content_t));
+    *content_ptr = (wlmtk_content_t){};
 
     if (!wlmtk_container_init(&content_ptr->super_container)) {
         return false;
@@ -107,7 +106,7 @@ void wlmtk_content_fini(
             &content_ptr->super_container, content_ptr->element_ptr);
         content_ptr->element_ptr = NULL;
     }
-    memset(content_ptr, 0, sizeof(wlmtk_content_t));
+    *content_ptr = (wlmtk_content_t){};
 }
 
 /* ------------------------------------------------------------------------- */

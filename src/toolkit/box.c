@@ -47,7 +47,7 @@ bool wlmtk_box_init(
     const wlmtk_margin_style_t *style_ptr)
 {
     BS_ASSERT(NULL != box_ptr);
-    memset(box_ptr, 0, sizeof(wlmtk_box_t));
+    *box_ptr = (wlmtk_box_t){};
     if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
@@ -94,7 +94,7 @@ void wlmtk_box_fini(wlmtk_box_t *box_ptr)
     }
 
     wlmtk_container_fini(&box_ptr->super_container);
-    memset(box_ptr, 0, sizeof(wlmtk_box_t));
+    *box_ptr = (wlmtk_box_t){};
 }
 
 /* ------------------------------------------------------------------------- */

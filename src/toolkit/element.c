@@ -84,12 +84,10 @@ static const wlmtk_element_vmt_t element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_element_init(
-    wlmtk_element_t *element_ptr)
+bool wlmtk_element_init(wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(NULL != element_ptr);
-    memset(element_ptr, 0, sizeof(wlmtk_element_t));
-    element_ptr->vmt = element_vmt;
+    *element_ptr = (wlmtk_element_t){ .vmt = element_vmt };
 
     element_ptr->last_pointer_motion_event = (wlmtk_pointer_motion_event_t){
         .x = NAN, .y = NAN, .time_msec = 0 };
@@ -153,7 +151,7 @@ void wlmtk_element_fini(
     BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
     BS_ASSERT(NULL == element_ptr->parent_container_ptr);
 
-    memset(element_ptr, 0, sizeof(wlmtk_element_t));
+    *element_ptr = (wlmtk_element_t){};
 }
 
 /* ------------------------------------------------------------------------- */

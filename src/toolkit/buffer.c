@@ -65,7 +65,7 @@ static const wlmtk_element_vmt_t buffer_element_vmt = {
 bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr)
 {
     BS_ASSERT(NULL != buffer_ptr);
-    memset(buffer_ptr, 0, sizeof(wlmtk_buffer_t));
+    *buffer_ptr = (wlmtk_buffer_t){};
 
     if (!wlmtk_element_init(&buffer_ptr->super_element)) {
         return false;
