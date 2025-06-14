@@ -20,8 +20,11 @@
 #ifndef __WLMTK_INPUT_H__
 #define __WLMTK_INPUT_H__
 
-// BTN_LEFT, BTN_RIGHT, ...
-#include <linux/input-event-codes.h>
+#include <stdint.h>
+
+struct _wlmtk_button_event_t;
+struct wlr_cursor;
+struct wlr_xcursor_manager;
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +33,9 @@ extern "C" {
 /** Forward declaration: Button event. */
 typedef struct _wlmtk_button_event_t wlmtk_button_event_t;
 
+/** Forward declaration: Pointer. */
+typedef struct _wlmtk_pointer_t wlmtk_pointer_t;
+
 /** Button state. */
 typedef enum {
     WLMTK_BUTTON_DOWN,
@@ -37,6 +43,21 @@ typedef enum {
     WLMTK_BUTTON_CLICK,
     WLMTK_BUTTON_DOUBLE_CLICK,
 } wlmtk_button_event_type_t;
+
+/** Cursor types. */
+typedef enum {
+    /** Default. */
+    WLMTK_POINTER_CURSOR_DEFAULT,
+    /** Resizing, southern border. */
+    WLMTK_POINTER_CURSOR_RESIZE_S,
+    /** Resizing, south-eastern corner. */
+    WLMTK_POINTER_CURSOR_RESIZE_SE,
+    /** Resizing, south-western corner. */
+    WLMTK_POINTER_CURSOR_RESIZE_SW,
+
+    /** Sentinel: Maximum value. */
+    WLMTK_POINTER_CURSOR_MAX,
+} wlmtk_pointer_cursor_t;
 
 /** Button events. */
 struct _wlmtk_button_event_t {
@@ -57,6 +78,32 @@ typedef struct {
     /** Time of the motion event, in milliseconds. */
     uint32_t                  time_msec;
 } wlmtk_pointer_motion_event_t;
+
+/**
+ * Creates the pointer handler.
+ *
+ * @param wlr_cursor_ptr
+ * @param wlr_xcursor_manager_ptr
+ *
+ * @return A @ref wlmtk_pointer_t or NULL on error.
+ */
+wlmtk_pointer_t *wlmtk_pointer_create(
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr);
+
+/**
+ * Destroys the pointer handler.
+ *
+ * @param pointer_ptr
+ */
+void wlmtk_pointer_destroy(wlmtk_pointer_t *pointer_ptr);
+
+/**
+ * Sets the cursor for the pointer.
+ */
+void wlmtk_pointer_set_cursor(
+    wlmtk_pointer_t *pointer_ptr,
+    wlmtk_pointer_cursor_t cursor);
 
 #ifdef __cplusplus
 }  // extern "C"

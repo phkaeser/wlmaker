@@ -66,6 +66,7 @@ TARGET_SOURCES(toolkit PRIVATE
   fsm.c
   gfxbuf.c
   image.c
+  input.c
   layer.c
   menu.c
   menu_item.c
