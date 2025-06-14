@@ -28,7 +28,7 @@
 #include <xkbcommon/xkbcommon.h>
 
 #define WLR_USE_UNSTABLE
-#include "wlr/util/box.h"
+#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
 struct _wlmtk_element_t;
