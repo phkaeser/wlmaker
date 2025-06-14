@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #include <wayland-server.h>
@@ -241,8 +240,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
             &xdg_tl_surface_ptr->super_content,
             &_xdg_toplevel_content_vmt);
 
-    memset(&xdg_tl_surface_ptr->super_content.client, 0,
-           sizeof(wlmtk_util_client_t));
+    xdg_tl_surface_ptr->super_content.client = (wlmtk_util_client_t){};
     wl_client_get_credentials(
         xdg_tl_surface_ptr->surface_ptr->wlr_surface_ptr->resource->client,
         &xdg_tl_surface_ptr->super_content.client.pid,

@@ -65,8 +65,7 @@ static const wlmtk_button_vmt_t button_vmt = {
 bool wlmtk_button_init(wlmtk_button_t *button_ptr)
 {
     BS_ASSERT(NULL != button_ptr);
-    memset(button_ptr, 0, sizeof(wlmtk_button_t));
-    button_ptr->vmt = button_vmt;
+    *button_ptr = (wlmtk_button_t){ .vmt = button_vmt };
 
     if (!wlmtk_buffer_init(&button_ptr->super_buffer)) {
         wlmtk_button_fini(button_ptr);
