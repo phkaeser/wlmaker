@@ -20,11 +20,12 @@
 #ifndef __WLMTK_BUTTON_H__
 #define __WLMTK_BUTTON_H__
 
+#include <libbase/libbase.h>
 #include <stdbool.h>
+#include <wayland-server-core.h>
 
 #include "buffer.h"
 #include "element.h"
-#include "libbase/libbase.h"
 
 struct _wlmtk_button_t;
 
@@ -54,6 +55,11 @@ struct _wlmtk_button_t {
     struct wlr_buffer         *released_wlr_buffer_ptr;
     /** WLR buffer holding the button in pressed state. */
     struct wlr_buffer         *pressed_wlr_buffer_ptr;
+
+    /** Listens to when we obtain pointer focus. */
+    struct wl_listener        pointer_enter_listener;
+    /** Listens to when we lose pointer focus. */
+    struct wl_listener        pointer_leave_listener;
 
     /** Whether the button is currently pressed. */
     bool                      pressed;
