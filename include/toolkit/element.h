@@ -57,10 +57,12 @@ extern "C" {
 
 /** Events of the element. */
 typedef struct {
-    /** The pointer just entered this element. Pointer focus gained. */
+    /** Pointer entered the element: Focus gained. @ref wlmtk_pointer_motion_event_t. */
     struct wl_signal          pointer_enter;
-    /** Pointer exited this element (or is obstructed). Pointer focus lost. */
+    /** Pointer left the element: Focus lost. @ref wlmtk_pointer_motion_event_t. */
     struct wl_signal          pointer_leave;
+    /** Pointer motion within the element. @ref wlmtk_pointer_motion_event_t. */
+    struct wl_signal          pointer_motion;
 } wlmtk_element_events_t;
 
 /** Virtual method table for the element. */
@@ -88,6 +90,23 @@ struct _wlmtk_element_vmt_t {
         int *top_ptr,
         int *right_ptr,
         int *bottom_ptr);
+
+    /**
+     * Sets pointer position to the position (x, y) relative to the element.
+     *
+     * @pure This method is called from @ref wlmtk_element_pointer_motion_new.
+     *
+     * @param element_ptr
+     * @param motion_event_ptr
+     *
+     * @return Whether the coordinates are within the element's pointer focus
+     * area. The caller should accept this element as having pointer focus,
+     * in that case.
+     *
+     * TODO(kaeser@gubbe.ch): Replace @ref wlmtk_element_vmt_t::pointer_motion.
+     */
+    bool (*pointer_move)(wlmtk_element_t *element_ptr,
+                         wlmtk_pointer_motion_event_t *motion_event_ptr);
 
     /**
      * Indicates pointer motion into or within the element area to (x,y).
@@ -382,6 +401,17 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
 }
 
 /**
+ * Moves the pointer to the new position.
+ *
+ * Calls @ref wlmtk_element_vmt_t::pointer_move. Depending on outcome of
+ * that, may trigger @ref wlmtk_element_events_t::pointer_enter or
+ * @ref wlmtk_element_events_t::pointer_leave.
+ */
+bool wlmtk_element_pointer_motion_new(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *pointer_motion_ptr);
+
+/**
  * Passes a pointer motion event on to the element.
  *
  * Will forward to @ref wlmtk_element_vmt_t::pointer_motion, and (depending on
@@ -465,6 +495,8 @@ typedef struct {
     /** Dimensions of the fake element, in pixels. */
     struct wlr_box            dimensions;
 
+    /** Indicates @ref wlmtk_element_vmt_t::pointer_move() was called. */
+    bool                      pointer_move_called;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_motion() was called. */
     bool                      pointer_motion_called;
 
