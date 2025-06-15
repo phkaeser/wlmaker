@@ -187,10 +187,9 @@ void _wlmtk_buffer_element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of the element's motion method: Calls the parent's
- * implementation, and tiggers @ref wlmtk_element_vmt_t::pointer_enter, or
- * @ref wlmtk_element_vmt_t::pointer_leave, depending on whether (x, y) is
- * within the buffer.
+ * Implementation of the element's motion method:  Calls the parent's
+ * implementation. If the motion happen outside the buffer's dimensions, the
+ * coordinates provided to the parent will be NAN.
  *
  * @param element_ptr
  * @param motion_event_ptr

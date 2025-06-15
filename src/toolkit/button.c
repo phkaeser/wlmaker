@@ -29,6 +29,7 @@
 
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
+#include "util.h"
 #include "libbase/libbase.h"
 
 /* == Declarations ========================================================= */
@@ -38,10 +39,13 @@ static void _wlmtk_button_clicked(wlmtk_button_t *button_ptr);
 static bool _wlmtk_button_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_button_element_pointer_enter(
-    wlmtk_element_t *element_ptr);
-static void _wlmtk_button_element_pointer_leave(
-    wlmtk_element_t *element_ptr);
+
+static void _wlmtk_button_handle_pointer_enter(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_button_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void apply_state(wlmtk_button_t *button_ptr);
 
@@ -50,8 +54,6 @@ static void apply_state(wlmtk_button_t *button_ptr);
 /** Virtual method table for the button's element super class. */
 static const wlmtk_element_vmt_t button_element_vmt = {
     .pointer_button = _wlmtk_button_element_pointer_button,
-    .pointer_enter = _wlmtk_button_element_pointer_enter,
-    .pointer_leave = _wlmtk_button_element_pointer_leave,
 };
 
 /** Virtual method table for the button. */
@@ -75,6 +77,15 @@ bool wlmtk_button_init(wlmtk_button_t *button_ptr)
         &button_ptr->super_buffer.super_element,
         &button_element_vmt);
 
+    wlmtk_util_connect_listener_signal(
+        &button_ptr->super_buffer.super_element.events.pointer_enter,
+        &button_ptr->pointer_enter_listener,
+        _wlmtk_button_handle_pointer_enter);
+    wlmtk_util_connect_listener_signal(
+        &button_ptr->super_buffer.super_element.events.pointer_leave,
+        &button_ptr->pointer_leave_listener,
+        _wlmtk_button_handle_pointer_leave);
+
     return true;
 }
 
@@ -95,6 +106,9 @@ wlmtk_button_vmt_t wlmtk_button_extend(
 /* ------------------------------------------------------------------------- */
 void wlmtk_button_fini(wlmtk_button_t *button_ptr)
 {
+    wlmtk_util_disconnect_listener(&button_ptr->pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&button_ptr->pointer_enter_listener);
+
     if (NULL != button_ptr->pressed_wlr_buffer_ptr) {
         wlr_buffer_unlock(button_ptr->pressed_wlr_buffer_ptr);
         button_ptr->pressed_wlr_buffer_ptr = NULL;
@@ -181,27 +195,27 @@ bool _wlmtk_button_element_pointer_button(
 
 /* ------------------------------------------------------------------------- */
 /** Pointer enters the area: We may need to update visualization. */
-void _wlmtk_button_element_pointer_enter(
-    wlmtk_element_t *element_ptr)
+void _wlmtk_button_handle_pointer_enter(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_button_t, super_buffer.super_element);
-    button_ptr->orig_super_element_vmt.pointer_enter(element_ptr);
-
+        listener_ptr, wlmtk_button_t, pointer_enter_listener);
     apply_state(button_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Pointer leaves the area: We may need to update visualization. */
-void _wlmtk_button_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
+void _wlmtk_button_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmtk_button_t *button_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_button_t, super_buffer.super_element);
-
-    button_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
+        listener_ptr, wlmtk_button_t, pointer_leave_listener);
     apply_state(button_ptr);
 }
+
+
 
 /* ------------------------------------------------------------------------- */
 /** Sets the appropriate texture for the button. */
