@@ -62,8 +62,6 @@ static bool _wlmtk_container_element_pointer_button(
 static bool _wlmtk_container_element_pointer_axis(
     wlmtk_element_t *element_ptr,
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
-static void _wlmtk_container_element_pointer_enter(
-    wlmtk_element_t *element_ptr);
 static void _wlmtk_container_element_pointer_grab_cancel(
     wlmtk_element_t *element_ptr);
 static void _wlmtk_container_element_keyboard_blur(
@@ -96,7 +94,6 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .pointer_motion = _wlmtk_container_element_pointer_motion,
     .pointer_button = _wlmtk_container_element_pointer_button,
     .pointer_axis = _wlmtk_container_element_pointer_axis,
-    .pointer_enter = _wlmtk_container_element_pointer_enter,
     .pointer_grab_cancel = _wlmtk_container_element_pointer_grab_cancel,
     .keyboard_blur = _wlmtk_container_element_keyboard_blur,
     .keyboard_event = _wlmtk_container_element_keyboard_event,
@@ -691,14 +688,6 @@ bool _wlmtk_container_element_pointer_axis(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handler for when the pointer enters the area. Nothing for container. */
-void _wlmtk_container_element_pointer_enter(
-    __UNUSED__ wlmtk_element_t *element_ptr)
-{
-    // Nothing. Do not call parent.
-}
-
-/* ------------------------------------------------------------------------- */
 /**
  * Implements @ref wlmtk_element_vmt_t::pointer_grab_cancel.
  *
@@ -1237,6 +1226,9 @@ void test_add_with_raise(bs_test_t *test_ptr)
 /** Tests the 'motion' method for container. */
 void test_pointer_motion(bs_test_t *test_ptr)
 {
+    wlmtk_util_test_listener_t enter1 = {}, enter2 = {};
+    wlmtk_util_test_listener_t leave1 = {}, leave2 = {};
+
     wlmtk_container_t container;
     BS_ASSERT(wlmtk_container_init(&container));
     wlmtk_element_set_visible(&container.super_element, true);
@@ -1248,12 +1240,16 @@ void test_pointer_motion(bs_test_t *test_ptr)
     elem1_ptr->dimensions.height = 5;
     wlmtk_element_set_visible(&elem1_ptr->element, false);
     wlmtk_container_add_element(&container, &elem1_ptr->element);
+    wlmtk_util_connect_test_listener(&elem1_ptr->element.events.pointer_enter, &enter1);
+    wlmtk_util_connect_test_listener(&elem1_ptr->element.events.pointer_leave, &leave1);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_position(&elem2_ptr->element, 100, 200);
     elem2_ptr->dimensions.width = 10;
     elem2_ptr->dimensions.height = 5;
     wlmtk_element_set_visible(&elem2_ptr->element, true);
     wlmtk_container_add_element(&container, &elem2_ptr->element);
+    wlmtk_util_connect_test_listener(&elem2_ptr->element.events.pointer_enter, &enter2);
+    wlmtk_util_connect_test_listener(&elem2_ptr->element.events.pointer_leave, &leave2);
 
     // Verify 'dimensions' and 'pointer_area', derived from children.
     int l, t, r, b;
@@ -1319,8 +1315,8 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(&container.super_element, &e));
-    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_enter_called);
-    elem1_ptr->pointer_enter_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter1.calls);
+    wlmtk_util_clear_test_listener(&enter1);
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
@@ -1331,7 +1327,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_element_pointer_motion(
             &parent_container.super_element, &e));
-    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_enter_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, enter1.calls);
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     elem1_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_FALSE(test_ptr, elem2_ptr->pointer_motion_called);
@@ -1346,10 +1342,8 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem1_ptr->element.last_pointer_motion_event.x));
     elem1_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_leave_called);
-    elem1_ptr->pointer_leave_called = false;
-    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_enter_called);
-    elem2_ptr->pointer_enter_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter2.calls);
+    wlmtk_util_clear_test_listener(&enter2);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
     BS_TEST_VERIFY_EQ(test_ptr, 7, elem2_ptr->element.last_pointer_motion_event.x);
@@ -1360,7 +1354,6 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(&parent_container.super_element, &e));
-    BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_leave_called);
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     elem2_ptr->pointer_motion_called = false;
@@ -1375,12 +1368,14 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, elem1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, isnan(elem2_ptr->element.last_pointer_motion_event.x));
-    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
-    elem2_ptr->pointer_leave_called = false;
 
     // All set. clean it up.
+    wlmtk_util_disconnect_test_listener(&leave1);
+    wlmtk_util_disconnect_test_listener(&enter1);
     wlmtk_container_remove_element(&container, &elem1_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
+    wlmtk_util_disconnect_test_listener(&leave2);
+    wlmtk_util_disconnect_test_listener(&enter2);
     wlmtk_container_remove_element(&container, &elem2_ptr->element);
     wlmtk_element_destroy(&elem2_ptr->element);
 
@@ -1394,6 +1389,7 @@ void test_pointer_motion(bs_test_t *test_ptr)
 /** Tests that pointer focus is updated when elements are updated. */
 void test_pointer_focus(bs_test_t *test_ptr)
 {
+    wlmtk_util_test_listener_t leave2 = {};
     wlmtk_container_t container;
     BS_ASSERT(wlmtk_container_init(&container));
 
@@ -1401,6 +1397,7 @@ void test_pointer_focus(bs_test_t *test_ptr)
     wlmtk_element_set_visible(&elem1_ptr->element, true);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem2_ptr->element, true);
+    wlmtk_util_connect_test_listener(&elem2_ptr->element.events.pointer_leave, &leave2);
 
     // Case 1: An empty container, will not have a pointer-focussed element.
     BS_TEST_VERIFY_EQ(test_ptr, NULL, container.pointer_focus_element_ptr);
@@ -1467,16 +1464,15 @@ void test_pointer_focus(bs_test_t *test_ptr)
 
     // Case 10: Elem2 is removed. Focus is now NULL, and leave() is called for
     // the element that was removed.
-    elem2_ptr->pointer_leave_called = false;
+    wlmtk_util_clear_test_listener(&leave2);
     wlmtk_container_remove_element(&container, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         NULL,
         container.pointer_focus_element_ptr);
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        elem2_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave2.calls);
 
+    wlmtk_util_disconnect_test_listener(&leave2);
     wlmtk_element_destroy(&elem2_ptr->element);
     wlmtk_element_destroy(&elem1_ptr->element);
     wlmtk_container_fini(&container);
@@ -1529,6 +1525,7 @@ void test_pointer_focus_move(bs_test_t *test_ptr)
 /** Tests that pointer focus is updated across layers of containers. */
 void test_pointer_focus_layered(bs_test_t *test_ptr)
 {
+    wlmtk_util_test_listener_t leave1 = {}, leave2 = {};
     wlmtk_container_t container1;
     BS_ASSERT(wlmtk_container_init(&container1));
     wlmtk_container_t container2;
@@ -1537,8 +1534,10 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *elem1_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem1_ptr->element, true);
+    wlmtk_util_connect_test_listener(&elem1_ptr->element.events.pointer_leave, &leave1);
     wlmtk_fake_element_t *elem2_ptr = wlmtk_fake_element_create();
     wlmtk_element_set_visible(&elem2_ptr->element, true);
+    wlmtk_util_connect_test_listener(&elem2_ptr->element.events.pointer_leave, &leave2);
 
     // Prepare: Motion was called, will not have any focus.
     wlmtk_pointer_motion_event_t e = { .x = 0, .y = 0 };
@@ -1563,16 +1562,16 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
 
     // Case 2: Add elem1 to container1. Must change focus there, and call
     // leave for container2 and elem2.
-    elem2_ptr->pointer_leave_called = false;
+    wlmtk_util_clear_test_listener(&leave2);
     wlmtk_container_add_element(&container1, &elem1_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &elem1_ptr->element,
         container1.pointer_focus_element_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave2.calls);
 
     // Case 3: Bring container2 to top. Now elem2 has focus.
-    elem1_ptr->pointer_leave_called = false;
+    wlmtk_util_clear_test_listener(&leave1);
     wlmtk_container_remove_element(&container1, &container2.super_element);
     wlmtk_container_add_element(&container1, &container2.super_element);
     BS_TEST_VERIFY_EQ(
@@ -1583,19 +1582,21 @@ void test_pointer_focus_layered(bs_test_t *test_ptr)
         test_ptr,
         &elem2_ptr->element,
         container2.pointer_focus_element_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, elem1_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave1.calls);
 
     // Case 4: Remove elem2, drop focus back to elem1.
-    elem2_ptr->pointer_leave_called = false;
+    wlmtk_util_clear_test_listener(&leave2);
     wlmtk_container_remove_element(&container2, &elem2_ptr->element);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &elem1_ptr->element,
         container1.pointer_focus_element_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, elem2_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave2.calls);
 
     wlmtk_container_remove_element(&container1, &elem1_ptr->element);
+    wlmtk_util_disconnect_test_listener(&leave2);
     wlmtk_element_destroy(&elem2_ptr->element);
+    wlmtk_util_disconnect_test_listener(&leave1);
     wlmtk_element_destroy(&elem1_ptr->element);
 
     wlmtk_container_remove_element(&container1, &container2.super_element);
@@ -1767,6 +1768,8 @@ void test_pointer_grab(bs_test_t *test_ptr)
 /** Tests that element with the pointer grab receives pointer events. */
 void test_pointer_grab_events(bs_test_t *test_ptr)
 {
+    wlmtk_util_test_listener_t enter1 = {}, enter2 = {};
+    wlmtk_util_test_listener_t leave1 = {}, leave2 = {};
     wlmtk_container_t c;
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_container_init(&c));
 
@@ -1776,6 +1779,8 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     fe1_ptr->dimensions.width = 10;
     fe1_ptr->dimensions.height = 10;
     wlmtk_container_add_element(&c, &fe1_ptr->element);
+    wlmtk_util_connect_test_listener(&fe1_ptr->element.events.pointer_enter, &enter1);
+    wlmtk_util_connect_test_listener(&fe1_ptr->element.events.pointer_leave, &leave1);
 
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
@@ -1784,6 +1789,8 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     fe2_ptr->dimensions.width = 10;
     fe2_ptr->dimensions.height = 10;
     wlmtk_container_add_element(&c, &fe2_ptr->element);
+    wlmtk_util_connect_test_listener(&fe2_ptr->element.events.pointer_enter, &enter2);
+    wlmtk_util_connect_test_listener(&fe2_ptr->element.events.pointer_leave, &leave2);
 
     // Move pointer into first element: Must see 'enter' and 'motion'.
     wlmtk_pointer_motion_event_t e = { .x = 5, .y = 5 };
@@ -1792,15 +1799,15 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
         wlmtk_element_pointer_motion(&c.super_element, &e));
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
     fe1_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_enter_called);
-    fe1_ptr->pointer_enter_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter1.calls);
+    wlmtk_util_clear_test_listener(&enter1);
 
     // 2nd element grabs pointer. Axis and button events must go there.
     wlmtk_container_pointer_grab(&c, &fe2_ptr->element);
     // 1st element must get notified to no longer have pointer focus.
-    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave1.calls);
+    wlmtk_util_clear_test_listener(&leave1);
     fe1_ptr->pointer_motion_called = false;
-    fe1_ptr->pointer_leave_called = false;
     wlmtk_button_event_t button_event = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_DOWN
     };
@@ -1830,8 +1837,8 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
     fe2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_enter_called);
-    fe2_ptr->pointer_enter_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter2.calls);
+    wlmtk_util_clear_test_listener(&enter2);
 
     // A motion back into the 2nd element: Trigger motion and leave().
     e = (wlmtk_pointer_motion_event_t){ .x = 8, .y = 5 };
@@ -1841,13 +1848,13 @@ void test_pointer_grab_events(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, fe1_ptr->pointer_motion_called);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_motion_called);
     fe2_ptr->pointer_motion_called = false;
-    BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_leave_called);
-    fe2_ptr->pointer_leave_called = false;
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave2.calls);
+    wlmtk_util_clear_test_listener(&leave2);
 
     // Second element releases the grab. 1st element must receive enter().
     wlmtk_container_pointer_grab_release(&c, &fe2_ptr->element);
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_motion_called);
-    BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_enter_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter1.calls);
 
     wlmtk_container_fini(&c);
 }

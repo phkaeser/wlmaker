@@ -83,6 +83,8 @@ struct _wlmaker_clip_t {
     struct wl_listener        workspace_changed_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
+    /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
+    struct wl_listener        pointer_leave_listener;
 
     /** The clip's style. */
     wlmaker_config_clip_style_t style;
@@ -97,8 +99,6 @@ static bool _wlmaker_clip_pointer_button(
 static bool _wlmaker_clip_pointer_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
-static void _wlmaker_clip_pointer_leave(
-    wlmtk_element_t *element_ptr);
 
 static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr);
 static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
@@ -113,6 +113,9 @@ static void _wlmaker_clip_handle_workspace_changed(
 static void _wlmaker_clip_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmaker_clip_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
@@ -121,7 +124,6 @@ static const wlmtk_element_vmt_t _wlmaker_clip_element_vmt = {
     .pointer_axis = _wlmaker_clip_pointer_axis,
     .pointer_button = _wlmaker_clip_pointer_button,
     .pointer_motion = _wlmaker_clip_pointer_motion,
-    .pointer_leave = _wlmaker_clip_pointer_leave,
 };
 
 /** TODO: Replace this. */
@@ -221,6 +223,11 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->orig_super_element_vmt = wlmtk_element_extend(
         wlmtk_tile_element(&clip_ptr->super_tile),
         &_wlmaker_clip_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_tile_element(&clip_ptr->super_tile)->events.pointer_leave,
+        &clip_ptr->pointer_leave_listener,
+        _wlmaker_clip_handle_pointer_leave);
+
     wlmtk_element_set_visible(
         wlmtk_tile_element(&clip_ptr->super_tile), true);
     wlmtk_tile_set_background_buffer(
@@ -317,6 +324,7 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
             clip_ptr->wlmtk_dock_ptr,
             &clip_ptr->super_tile);
     }
+    wlmtk_util_disconnect_listener(&clip_ptr->pointer_leave_listener);
     wlmtk_tile_fini(&clip_ptr->super_tile);
     wlmtk_buffer_fini(&clip_ptr->overlay_buffer);
 
@@ -487,22 +495,6 @@ bool _wlmaker_clip_pointer_motion(
     return clip_ptr->orig_super_element_vmt.pointer_motion(
         element_ptr, motion_event_ptr);
 }
-
-/* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::pointer_leave. Updates texture. */
-void _wlmaker_clip_pointer_leave(
-    wlmtk_element_t *element_ptr)
-{
-    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_clip_t,
-        super_tile.super_container.super_element);
-
-    clip_ptr->pointer_inside_prev_button = false;
-    clip_ptr->pointer_inside_next_button = false;
-    _wlmaker_clip_update_buttons(clip_ptr);
-    clip_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
-}
-
 
 /* ------------------------------------------------------------------------- */
 /** Updates the button textures, based on current state what's pressed. */
@@ -815,6 +807,20 @@ void _wlmaker_clip_handle_output_layout_change(
                       wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
                       wlr_output_ptr));
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_element_events_t::pointer_leave. Resets buttons. */
+void _wlmaker_clip_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_clip_t, pointer_leave_listener);
+
+    clip_ptr->pointer_inside_prev_button = false;
+    clip_ptr->pointer_inside_next_button = false;
+    _wlmaker_clip_update_buttons(clip_ptr);
 }
 
 /* == Unit tests =========================================================== */
