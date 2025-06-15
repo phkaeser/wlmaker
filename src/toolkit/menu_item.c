@@ -53,6 +53,11 @@ struct _wlmtk_menu_item_t {
     /** Listens to @ref wlmtk_menu_events_t::open_changed. */
     struct wl_listener        submenu_open_changed_listener;
 
+    /** Listens to when we obtain pointer focus. */
+    struct wl_listener        pointer_enter_listener;
+    /** Listens to when we lose pointer focus. */
+    struct wl_listener        pointer_leave_listener;
+
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
 
@@ -96,12 +101,15 @@ static bool _wlmtk_menu_item_element_pointer_motion(
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_menu_item_element_pointer_enter(
-    wlmtk_element_t *element_ptr);
-static void _wlmtk_menu_item_element_pointer_leave(
-    wlmtk_element_t *element_ptr);
 static void _wlmtk_menu_item_element_destroy(
     wlmtk_element_t *element_ptr);
+
+static void _wlmtk_menu_item_handle_pointer_enter(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_menu_item_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmtk_menu_item_handle_open_changed(
     struct wl_listener *listener_ptr,
@@ -113,8 +121,6 @@ static void _wlmtk_menu_item_handle_open_changed(
 static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
     .pointer_motion = _wlmtk_menu_item_element_pointer_motion,
     .pointer_button = _wlmtk_menu_item_element_pointer_button,
-    .pointer_enter = _wlmtk_menu_item_element_pointer_enter,
-    .pointer_leave = _wlmtk_menu_item_element_pointer_leave,
     .destroy = _wlmtk_menu_item_element_destroy,
 };
 
@@ -157,6 +163,15 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
         &menu_item_ptr->super_buffer.super_element,
         &_wlmtk_menu_item_element_vmt);
 
+    wlmtk_util_connect_listener_signal(
+        &menu_item_ptr->super_buffer.super_element.events.pointer_enter,
+        &menu_item_ptr->pointer_enter_listener,
+        _wlmtk_menu_item_handle_pointer_enter);
+    wlmtk_util_connect_listener_signal(
+        &menu_item_ptr->super_buffer.super_element.events.pointer_leave,
+        &menu_item_ptr->pointer_leave_listener,
+        _wlmtk_menu_item_handle_pointer_leave);
+
     menu_item_ptr->style = *style_ptr;
     // TODO(kaeser@gubbe.ch): Should not be required!
     menu_item_ptr->width = style_ptr->width;
@@ -173,6 +188,9 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
 void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
     wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
+
+    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_enter_listener);
 
     if (NULL != menu_item_ptr->submenu_ptr) {
         wlmtk_util_disconnect_listener(
@@ -560,13 +578,24 @@ bool _wlmtk_menu_item_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles when the pointer enters the element: Highlights, if enabled. */
-void _wlmtk_menu_item_element_pointer_enter(
+/** Implements @ref wlmtk_element_vmt_t::destroy. Dtor for the menu item. */
+void _wlmtk_menu_item_element_destroy(
     wlmtk_element_t *element_ptr)
 {
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
-    menu_item_ptr->orig_super_element_vmt.pointer_enter(element_ptr);
+
+    wlmtk_menu_item_destroy(menu_item_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles when the pointer enters the element: Highlights, if enabled. */
+void _wlmtk_menu_item_handle_pointer_enter(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_menu_item_t, pointer_enter_listener);
 
     if (menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
         wlmtk_menu_request_item_highlight(
@@ -580,14 +609,15 @@ void _wlmtk_menu_item_element_pointer_enter(
  * Handles when the pointer leaves the element: Ends highlight, in case there
  * is no submenu currently visible.
  *
- * @param element_ptr
+ * @param listener_ptr
+ * @param data_ptr
  */
-void _wlmtk_menu_item_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
+void _wlmtk_menu_item_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
-    menu_item_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
+        listener_ptr, wlmtk_menu_item_t, pointer_leave_listener);
 
     if (menu_item_ptr->enabled &&
         WLMTK_MENU_ITEM_HIGHLIGHTED == menu_item_ptr->state &&
@@ -596,17 +626,6 @@ void _wlmtk_menu_item_element_pointer_leave(
          !wlmtk_menu_is_open(menu_item_ptr->submenu_ptr))) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::destroy. Dtor for the menu item. */
-void _wlmtk_menu_item_element_destroy(
-    wlmtk_element_t *element_ptr)
-{
-    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
-
-    wlmtk_menu_item_destroy(menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
