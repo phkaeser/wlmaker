@@ -88,6 +88,9 @@ bool wlmtk_element_init(wlmtk_element_t *element_ptr)
     BS_ASSERT(NULL != element_ptr);
     *element_ptr = (wlmtk_element_t){ .vmt = element_vmt };
 
+    wl_signal_init(&element_ptr->events.pointer_enter);
+    wl_signal_init(&element_ptr->events.pointer_leave);
+
     element_ptr->last_pointer_motion_event = (wlmtk_pointer_motion_event_t){
         .x = NAN, .y = NAN, .time_msec = 0 };
     return true;
@@ -285,9 +288,11 @@ bool wlmtk_element_pointer_motion(
 
     if (within) {
         element_ptr->pointer_inside = true;
+        wl_signal_emit(&element_ptr->events.pointer_enter, motion_event_ptr);
         element_ptr->vmt.pointer_enter(element_ptr);
     } else {
         element_ptr->pointer_inside = false;
+        wl_signal_emit(&element_ptr->events.pointer_leave, motion_event_ptr);
         element_ptr->vmt.pointer_leave(element_ptr);
     }
 
@@ -835,6 +840,13 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
 
+    wlmtk_util_test_listener_t          enter = {}, leave = {};
+    wlmtk_util_connect_test_listener(
+        &fake_element_ptr->element.events.pointer_enter, &enter);
+    wlmtk_util_connect_test_listener(
+        &fake_element_ptr->element.events.pointer_leave, &leave);
+
+
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         isnan(fake_element_ptr->element.last_pointer_motion_event.x));
@@ -845,6 +857,8 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
     wlmtk_pointer_motion_event_t e = { .x = 1.0, .y = 2.0, .time_msec = 3 };
     wlmtk_element_pointer_motion(&fake_element_ptr->element, &e);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_enter_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, leave.calls);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         1.0,
@@ -861,6 +875,8 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
     e = (wlmtk_pointer_motion_event_t){ .x = NAN, .y = NAN, .time_msec = 4 };
     wlmtk_element_pointer_motion(&fake_element_ptr->element, &e);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->pointer_leave_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, enter.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, leave.calls);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         isnan(fake_element_ptr->element.last_pointer_motion_event.x));
@@ -872,6 +888,8 @@ void test_pointer_motion_leave(bs_test_t *test_ptr)
         4,
         fake_element_ptr->element.last_pointer_motion_event.time_msec);
 
+    wlmtk_util_disconnect_test_listener(&leave);
+    wlmtk_util_disconnect_test_listener(&enter);
     wlmtk_element_destroy(&fake_element_ptr->element);
 }
 
