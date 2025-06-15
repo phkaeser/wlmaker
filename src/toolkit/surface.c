@@ -63,7 +63,6 @@ static void _wlmtk_surface_element_get_pointer_area(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static void _wlmtk_surface_element_pointer_leave(wlmtk_element_t *element_ptr);
 static bool _wlmtk_surface_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
@@ -92,6 +91,9 @@ static void _wlmtk_surface_handle_surface_map(
 static void _wlmtk_surface_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmtk_surface_handle_element_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmtk_surface_commit_size(
     wlmtk_surface_t *surface_ptr,
@@ -106,7 +108,6 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
     .create_scene_node = _wlmtk_surface_element_create_scene_node,
     .get_dimensions = _wlmtk_surface_element_get_dimensions,
     .get_pointer_area = _wlmtk_surface_element_get_pointer_area,
-    .pointer_leave = _wlmtk_surface_element_pointer_leave,
     .pointer_motion = _wlmtk_surface_element_pointer_motion,
     .pointer_button = _wlmtk_surface_element_pointer_button,
     .pointer_axis = _wlmtk_surface_element_pointer_axis,
@@ -242,6 +243,10 @@ bool _wlmtk_surface_init(
     }
     surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &surface_ptr->super_element, &surface_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->super_element.events.pointer_leave,
+        &surface_ptr->element_pointer_leave_listener,
+        _wlmtk_surface_handle_element_pointer_leave);
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
     if (NULL != surface_ptr->wlr_surface_ptr) {
@@ -282,6 +287,7 @@ void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
         wlmtk_util_disconnect_listener(&surface_ptr->surface_unmap_listener);
     }
 
+    wlmtk_util_disconnect_listener(&surface_ptr->element_pointer_leave_listener);
     wlmtk_element_fini(&surface_ptr->super_element);
     *surface_ptr = (wlmtk_surface_t){};
 }
@@ -385,31 +391,6 @@ void _wlmtk_surface_element_get_pointer_area(
     if (NULL != top_ptr) *top_ptr = box.y;
     if (NULL != right_ptr) *right_ptr = box.width - box.x;
     if (NULL != bottom_ptr) *bottom_ptr = box.height - box.y;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements the element's leave method: If there's a WLR (sub)surface
- * currently holding focus, that will be cleared.
- *
- * @param element_ptr
- */
-void _wlmtk_surface_element_pointer_leave(wlmtk_element_t *element_ptr)
-{
-    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_surface_t, super_element);
-
-    // Guard clause.
-    if (NULL == surface_ptr->wlr_seat_ptr) return;
-
-    // If the current surface's parent is our surface: clear it.
-    struct wlr_surface *focused_wlr_surface_ptr =
-        surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
-    if (NULL != focused_wlr_surface_ptr &&
-        wlr_surface_get_root_surface(focused_wlr_surface_ptr) ==
-        surface_ptr->wlr_surface_ptr) {
-        wlr_seat_pointer_clear_focus(surface_ptr->wlr_seat_ptr);
-    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -689,6 +670,34 @@ void _wlmtk_surface_handle_surface_unmap(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Handles pointer leave: If there's a WLR (sub)surface currently holding
+ * focus, that will be cleared.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_surface_handle_element_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, element_pointer_leave_listener);
+
+    // Guard clause.
+    if (NULL == surface_ptr->wlr_seat_ptr) return;
+
+    // If the current surface's parent is our surface: clear it.
+    struct wlr_surface *focused_wlr_surface_ptr =
+        surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
+    if (NULL != focused_wlr_surface_ptr &&
+        wlr_surface_get_root_surface(focused_wlr_surface_ptr) ==
+        surface_ptr->wlr_surface_ptr) {
+        wlr_seat_pointer_clear_focus(surface_ptr->wlr_seat_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Surface commits a new size: Store the size, and update the parent's layout.
  *
  * @param surface_ptr
@@ -726,8 +735,6 @@ static bool _wlmtk_fake_surface_element_pointer_motion(
 static bool _wlmtk_fake_surface_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_fake_surface_element_pointer_leave(
-    wlmtk_element_t *element_ptr);
 
 /** Extensions to the surface's super elements virtual methods. */
 static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
@@ -735,7 +742,6 @@ static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
     .create_scene_node = _wlmtk_fake_surface_element_create_scene_node,
     .pointer_motion = _wlmtk_fake_surface_element_pointer_motion,
     .pointer_button = _wlmtk_fake_surface_element_pointer_button,
-    .pointer_leave = _wlmtk_fake_surface_element_pointer_leave,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -830,14 +836,6 @@ bool _wlmtk_fake_surface_element_pointer_button(
     __UNUSED__ const wlmtk_button_event_t *button_event_ptr)
 {
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake for @ref wlmtk_element_vmt_t::pointer_leave. Does nothing. */
-void _wlmtk_fake_surface_element_pointer_leave(
-    __UNUSED__ wlmtk_element_t *element_ptr)
-{
-    // Nothing to do.
 }
 
 /* == Unit tests =========================================================== */

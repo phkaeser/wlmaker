@@ -72,6 +72,9 @@ struct _wlmtk_surface_t {
     /** Listener for the `map` signal of `wlr_surface`. */
     struct wl_listener        surface_unmap_listener;
 
+    /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
+    struct wl_listener        element_pointer_leave_listener;
+
     /** Whether this surface is activated, ie. has keyboard focus. */
     bool                      activated;
 };

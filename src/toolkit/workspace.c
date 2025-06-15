@@ -121,6 +121,8 @@ struct _wlmtk_workspace_t {
 
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
+    /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
+    struct wl_listener        element_pointer_leave_listener;
 
     // Elements below not owned by wlmtk_workspace_t.
     /** Output layout. */
@@ -146,10 +148,11 @@ static bool _wlmtk_workspace_element_pointer_motion(
 static bool _wlmtk_workspace_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_workspace_element_pointer_leave(
-    wlmtk_element_t *element_ptr);
 
 static void _wlmtk_workspace_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_workspace_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmtk_window_reposition_window(
@@ -187,7 +190,6 @@ const wlmtk_element_vmt_t     workspace_element_vmt = {
     .get_pointer_area = _wlmtk_workspace_element_get_pointer_area,
     .pointer_motion = _wlmtk_workspace_element_pointer_motion,
     .pointer_button = _wlmtk_workspace_element_pointer_button,
-    .pointer_leave = _wlmtk_workspace_element_pointer_leave,
 };
 
 /** Finite state machine definition for pointer events. */
@@ -229,6 +231,10 @@ wlmtk_workspace_t *wlmtk_workspace_create(
     workspace_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &workspace_ptr->super_container.super_element,
         &workspace_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &workspace_ptr->super_container.super_element.events.pointer_leave,
+        &workspace_ptr->element_pointer_leave_listener,
+        _wlmtk_workspace_handle_element_pointer_leave);
 
     if (!wlmtk_container_init(&workspace_ptr->window_container)) {
         wlmtk_workspace_destroy(workspace_ptr);
@@ -371,6 +377,8 @@ void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
             &workspace_ptr->super_container,
             &workspace_ptr->fullscreen_container.super_element);
     }
+    wlmtk_util_disconnect_listener(
+        &workspace_ptr->element_pointer_leave_listener);
     wlmtk_container_fini(&workspace_ptr->fullscreen_container);
 
     if (NULL != workspace_ptr->window_container.super_element.parent_container_ptr) {
@@ -930,21 +938,6 @@ bool _wlmtk_workspace_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Extends wlmtk_container_t::leave.
- *
- * @param element_ptr
- */
-void _wlmtk_workspace_element_pointer_leave(
-    wlmtk_element_t *element_ptr)
-{
-    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_workspace_t, super_container.super_element);
-    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
-    workspace_ptr->orig_super_element_vmt.pointer_leave(element_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Handles output changes: Updates own extents, updates layers. */
 void _wlmtk_workspace_handle_output_layout_change(
     struct wl_listener *listener_ptr,
@@ -965,6 +958,17 @@ void _wlmtk_workspace_handle_output_layout_change(
         &workspace_ptr->windows,
         _wlmtk_window_reposition_window,
         workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_element_events_t::pointer_leave. Reset state machine. */
+void _wlmtk_workspace_handle_element_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_workspace_t, element_pointer_leave_listener);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

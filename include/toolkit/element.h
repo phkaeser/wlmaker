@@ -133,24 +133,6 @@ struct _wlmtk_element_vmt_t {
         struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
     /**
-     * Indicates the pointer has entered the element's area.
-     *
-     * TODO(kaeser@gubbe.ch): pointer_enter and pointer_leave would better be
-     * handled as events, where clients subscribe via listeners. Consider
-     * changing that.
-     *
-     * @param element_ptr
-     */
-    void (*pointer_enter)(wlmtk_element_t *element_ptr);
-
-    /**
-     * Indicates the pointer has left the element's area.
-     *
-     * @param element_ptr
-     */
-    void (*pointer_leave)(wlmtk_element_t *element_ptr);
-
-    /**
      * Cancels a held pointer grab.
      *
      * Required to have an implementation by any element that requests a
@@ -403,8 +385,8 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
  * Passes a pointer motion event on to the element.
  *
  * Will forward to @ref wlmtk_element_vmt_t::pointer_motion, and (depending on
- * that return value) trigger @ref wlmtk_element_vmt_t::pointer_enter of
- * @ref wlmtk_element_vmt_t::pointer_leave calls.
+ * that return value) trigger @ref wlmtk_element_events_t::pointer_enter or
+ * @ref wlmtk_element_events_t::pointer_leave.
  *
  * @param element_ptr
  * @param pointer_motion_ptr
@@ -486,10 +468,6 @@ typedef struct {
     /** Indicates @ref wlmtk_element_vmt_t::pointer_motion() was called. */
     bool                      pointer_motion_called;
 
-    /** Indicates @ref wlmtk_element_vmt_t::pointer_enter() was called. */
-    bool                      pointer_enter_called;
-    /** Indicates @ref wlmtk_element_vmt_t::pointer_leave() was called. */
-    bool                      pointer_leave_called;
     /** Indicates @ref wlmtk_element_vmt_t::pointer_button() was called. */
     bool                      pointer_button_called;
     /** Last button event received. */
