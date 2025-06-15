@@ -57,10 +57,12 @@ extern "C" {
 
 /** Events of the element. */
 typedef struct {
-    /** The pointer just entered this element. Pointer focus gained. */
+    /** Pointer entered the element. Arg: @ref wlmtk_pointer_t. */
     struct wl_signal          pointer_enter;
-    /** Pointer exited this element (or is obstructed). Pointer focus lost. */
+    /** Pointer left the element: Pointer focus lost. */
     struct wl_signal          pointer_leave;
+    /** Pointer motion within element. @ref wlmtk_pointer_motion_event_t. */
+    struct wl_signal          pointer_motion;
 } wlmtk_element_events_t;
 
 /** Virtual method table for the element. */
@@ -81,33 +83,28 @@ struct _wlmtk_element_vmt_t {
         int *x2_ptr,
         int *y2_ptr);
 
-    /** Gets element area to accept pointer activity, relative to position. */
-    void (*get_pointer_area)(
-        wlmtk_element_t *element_ptr,
-        int *left_ptr,
-        int *top_ptr,
-        int *right_ptr,
-        int *bottom_ptr);
-
     /**
-     * Indicates pointer motion into or within the element area to (x,y).
+     * Offers the pointer motion to this element.
      *
-     * The default implementation at @ref _wlmtk_element_pointer_motion updates
-     * @ref wlmtk_element_t::last_pointer_motion_event.
-     *
-     * Derived classes that overwrite this method are advised to call the
-     * initial implementation for keeping these internals updated.
+     * @pure This method is called from @ref wlmtk_element_pointer_motion.
      *
      * @param element_ptr
-     * @param motion_event_ptr Details on the pointer motion. The coordinates
-     *                        are relative to the element's coordinates.
+     * @param motion_event_ptr
      *
-     * @return Whether the motion is considered within the element's pointer
-     *     area. If it returns true, the caller should consider this element
-     *     as having pointer focus.
+     * @return Whether the motion is accepted by this element (or any of it's
+     * cohildren). In that case, the caller should accept this element as having
+     * pointer focus.
      */
-    bool (*pointer_motion)(wlmtk_element_t *element_ptr,
-                           wlmtk_pointer_motion_event_t *motion_event_ptr);
+    bool (*pointer_accepts_motion)(
+        wlmtk_element_t *element_ptr,
+        wlmtk_pointer_motion_event_t *motion_event_ptr);
+
+    /**
+     * Informs the element it has no longer pointer focus.
+     *
+     * @param element_ptr
+     */
+    void (*pointer_blur)(wlmtk_element_t *element_ptr);
 
     /**
      * Indicates pointer button event.
@@ -117,8 +114,9 @@ struct _wlmtk_element_vmt_t {
      *
      * @return true If the button event was consumed.
      */
-    bool (*pointer_button)(wlmtk_element_t *element_ptr,
-                           const wlmtk_button_event_t *button_event_ptr);
+    bool (*pointer_button)(
+        wlmtk_element_t *element_ptr,
+        const wlmtk_button_event_t *button_event_ptr);
 
     /**
      * Indicates a pointer axis event.
@@ -173,6 +171,26 @@ struct _wlmtk_element_vmt_t {
 
 /** State of an element. */
 struct _wlmtk_element_t {
+    /** The node of elements. */
+    bs_dllist_node_t          dlnode;
+
+    /** Virtual method table for the element. */
+    wlmtk_element_vmt_t       vmt;
+    /** Events available from the element. */
+    wlmtk_element_events_t    events;
+
+    /** The container this element belongs to, if any. */
+    wlmtk_container_t         *parent_container_ptr;
+
+    /** Points to the wlroots scene graph API node, if attached. */
+    struct wlr_scene_node     *wlr_scene_node_ptr;
+
+    /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
+    struct wl_listener        wlr_scene_node_destroy_listener;
+
+    /** Details of last @ref wlmtk_element_pointer_motion call. */
+    wlmtk_pointer_motion_event_t last_pointer_motion_event;
+
     /**
      * X position of the element in pixels, relative to parent container.
      *
@@ -188,30 +206,14 @@ struct _wlmtk_element_t {
      */
     int y;
 
-    /** The container this element belongs to, if any. */
-    wlmtk_container_t         *parent_container_ptr;
-    /** The node of elements. */
-    bs_dllist_node_t          dlnode;
-
-    /** Virtual method table for the element. */
-    wlmtk_element_vmt_t       vmt;
-    /** Events available from the element. */
-    wlmtk_element_events_t    events;
-
-    /** Points to the wlroots scene graph API node, if attached. */
-    struct wlr_scene_node     *wlr_scene_node_ptr;
-
     /** Whether the element is visible (drawn, when part of a scene graph). */
     bool                      visible;
 
-    /** Listener for the `destroy` signal of `wlr_scene_node_ptr`. */
-    struct wl_listener        wlr_scene_node_destroy_listener;
-
-    /** Details of last @ref wlmtk_element_pointer_motion call. */
-    wlmtk_pointer_motion_event_t last_pointer_motion_event;
-
     /** Whether the pointer is currently within the element's bounds. */
     bool                      pointer_inside;
+
+    /** Whether to inhibit blurring in @ref wlmtk_element_pointer_blur. */
+    bool                      inhibit_pointer_blur;
 };
 
 /**
@@ -319,30 +321,6 @@ void wlmtk_element_set_position(
     int y);
 
 /**
- * Gets the area that the element on which the element accepts pointer events.
- *
- * The area extents are relative to the element's position. By default, this
- * overlaps with the element dimensions. Some elements (eg. a surface with
- * further-extending sub-surfaces) may differ.
- *
- * @param element_ptr
- * @param x1_ptr              Leftmost position of pointer area. May be NULL.
- * @param y1_ptr              Topmost position of pointer area. May be NULL.
- * @param x2_ptr              Rightmost position of pointer area. May be NULL.
- * @param y2_ptr              Bottommost position of pointer area. May be NULL.
- */
-static inline void wlmtk_element_get_pointer_area(
-    wlmtk_element_t *element_ptr,
-    int *x1_ptr,
-    int *y1_ptr,
-    int *x2_ptr,
-    int *y2_ptr)
-{
-    element_ptr->vmt.get_pointer_area(
-        element_ptr, x1_ptr, y1_ptr, x2_ptr, y2_ptr);
-}
-
-/**
  * Gets the dimensions of the element in pixels, relative to the position.
  *
  * @param element_ptr
@@ -382,14 +360,14 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
 }
 
 /**
- * Passes a pointer motion event on to the element.
+ * Moves the pointer to the new position.
  *
- * Will forward to @ref wlmtk_element_vmt_t::pointer_motion, and (depending on
- * that return value) trigger @ref wlmtk_element_events_t::pointer_enter or
- * @ref wlmtk_element_events_t::pointer_leave.
+ * calls @ref wlmtk_element_vmt_t::pointer_accepts_motion, if the element is
+ * visible. Triggers @ref wlmtk_element_events_t::pointer_enter or
+ * @ref wlmtk_element_events_t::pointer_leave if the motion is accepted.
  *
- * @param element_ptr
- * @param pointer_motion_ptr
+ * @return true if the element is visible and the motion is within the
+ * element's "pointer focus area", ie. in the area it accepts pointer events.
  */
 bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
@@ -412,7 +390,37 @@ static inline bool wlmtk_element_pointer_axis(
         element_ptr, wlr_pointer_axis_event_ptr);
 }
 
+/**
+ * Informs the element that it does not (or no longer) have pointer focus.
+ *
+ * Raises @ref wlmtk_element_events_t::pointer_leave, if it had pointer focus,
+ * and calls @ref wlmtk_element_pointer_blur on the parent (if available).
+ *
+ * @param element_ptr
+ */
+static inline void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr)
+{
+    element_ptr->vmt.pointer_blur(element_ptr);
+}
+
+/**
+ * Sets pointer focus for the element.
+ *
+ * If not focussed already: Request pointer focus from the parent through
+ * @ref wlmtk_container_request_pointer_focus. If that succeeds, will
+ * raise @ref wlmtk_element_events_t::pointer_enter.
+ *
+ * @param element_ptr
+ * @param motion_event_ptr
+ *
+ * @return true if the element obtained focus.
+ */
+bool wlmtk_element_pointer_focus(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
+
 /** Calls optional @ref wlmtk_element_vmt_t::pointer_grab_cancel. */
+// TODO(kaeser@gubbe.ch): Mrege with wlmtk_element_release_pointer_focus.
 static inline void wlmtk_element_pointer_grab_cancel(
     wlmtk_element_t *element_ptr)
 {
@@ -465,8 +473,8 @@ typedef struct {
     /** Dimensions of the fake element, in pixels. */
     struct wlr_box            dimensions;
 
-    /** Indicates @ref wlmtk_element_vmt_t::pointer_motion() was called. */
-    bool                      pointer_motion_called;
+    /** @ref wlmtk_element_vmt_t::pointer_accepts_motion() was called. */
+    bool                      pointer_accepts_motion_called;
 
     /** Indicates @ref wlmtk_element_vmt_t::pointer_button() was called. */
     bool                      pointer_button_called;

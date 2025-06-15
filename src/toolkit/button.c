@@ -108,6 +108,8 @@ void wlmtk_button_fini(wlmtk_button_t *button_ptr)
 {
     wlmtk_util_disconnect_listener(&button_ptr->pointer_leave_listener);
     wlmtk_util_disconnect_listener(&button_ptr->pointer_enter_listener);
+    wlmtk_util_disconnect_listener(&button_ptr->pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&button_ptr->pointer_enter_listener);
 
     if (NULL != button_ptr->pressed_wlr_buffer_ptr) {
         wlr_buffer_unlock(button_ptr->pressed_wlr_buffer_ptr);
@@ -215,8 +217,6 @@ void _wlmtk_button_handle_pointer_leave(
     apply_state(button_ptr);
 }
 
-
-
 /* ------------------------------------------------------------------------- */
 /** Sets the appropriate texture for the button. */
 void apply_state(wlmtk_button_t *button_ptr)
@@ -277,8 +277,9 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_press_release(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_button_init(&button));
     wlmtk_button_extend(&button, &fake_button_vmt);
+    wlmtk_element_set_visible(&button.super_buffer.super_element, true);
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -339,7 +340,8 @@ void test_press_release(bs_test_t *test_ptr)
 void test_press_release_outside(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_button_init(&button));
+    wlmtk_element_set_visible(&button.super_buffer.super_element, true);
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
@@ -391,7 +393,8 @@ void test_press_release_outside(bs_test_t *test_ptr)
 void test_press_right(bs_test_t *test_ptr)
 {
     wlmtk_button_t button;
-    BS_ASSERT(wlmtk_button_init(&button));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_button_init(&button));
+    wlmtk_element_set_visible(&button.super_buffer.super_element, true);
 
     struct wlr_buffer *p_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);
     struct wlr_buffer *r_ptr = bs_gfxbuf_create_wlr_buffer(1, 1);

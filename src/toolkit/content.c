@@ -427,12 +427,13 @@ void test_init_fini(bs_test_t *test_ptr)
     struct wlr_box box;
 
     wlmtk_fake_surface_t *fs_ptr = wlmtk_fake_surface_create();
-    BS_ASSERT(NULL != fs_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs_ptr);
     wlmtk_fake_content_t *fake_content_ptr = wlmtk_fake_content_create(fs_ptr);
-    BS_ASSERT(NULL != fake_content_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_content_ptr);
 
     wlmtk_element_t *element_ptr = wlmtk_content_element(
         &fake_content_ptr->content);
+    wlmtk_element_set_visible(element_ptr, true);
 
     // Initial size is zero.
     box = wlmtk_element_get_dimensions_box(element_ptr);
@@ -470,7 +471,7 @@ void test_init_fini(bs_test_t *test_ptr)
 void test_set_clear_element(bs_test_t *test_ptr)
 {
     wlmtk_fake_surface_t *fs_ptr = wlmtk_fake_surface_create();
-    BS_ASSERT(NULL != fs_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs_ptr);
 
     wlmtk_content_t content;
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_content_init(&content, NULL));
@@ -498,8 +499,10 @@ void test_add_remove_popup(bs_test_t *test_ptr)
     wlmtk_content_t parent, popup;
 
     wlmtk_fake_surface_t *fs0_ptr = wlmtk_fake_surface_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs0_ptr);
     wlmtk_fake_surface_commit_size(fs0_ptr, 100, 10);
     wlmtk_fake_surface_t *fs1_ptr = wlmtk_fake_surface_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs1_ptr);
     wlmtk_fake_surface_commit_size(fs1_ptr, 200, 20);
 
     BS_TEST_VERIFY_TRUE(
@@ -558,8 +561,10 @@ void test_add_remove_wlmtk_popup(bs_test_t *test_ptr)
     wlmtk_popup_t popup;
 
     wlmtk_fake_surface_t *fs0_ptr = wlmtk_fake_surface_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs0_ptr);
     wlmtk_fake_surface_commit_size(fs0_ptr, 100, 10);
     wlmtk_fake_surface_t *fs1_ptr = wlmtk_fake_surface_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fs1_ptr);
     wlmtk_fake_surface_commit_size(fs1_ptr, 200, 20);
 
     BS_TEST_VERIFY_TRUE(

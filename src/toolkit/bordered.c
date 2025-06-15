@@ -26,7 +26,7 @@
 
 /* == Declarations ========================================================= */
 
-static void _wlmtk_bordered_container_update_layout(
+static bool _wlmtk_bordered_container_update_layout(
     wlmtk_container_t *container_ptr);
 
 static wlmtk_rectangle_t * _wlmtk_bordered_create_border_rectangle(
@@ -135,15 +135,14 @@ wlmtk_element_t *wlmtk_bordered_element(wlmtk_bordered_t *bordered_ptr)
  *
  * @param container_ptr
  */
-void _wlmtk_bordered_container_update_layout(
+bool _wlmtk_bordered_container_update_layout(
     wlmtk_container_t *container_ptr)
 {
     wlmtk_bordered_t *bordered_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_bordered_t, super_container);
 
     _wlmtk_bordered_set_positions(bordered_ptr);
-
-    bordered_ptr->orig_super_container_vmt.update_layout(container_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -295,7 +294,7 @@ void test_init_fini(bs_test_t *test_ptr)
     // Update layout, test updated positions.
     fe_ptr->dimensions.width = 200;
     fe_ptr->dimensions.height = 120;
-    wlmtk_container_update_layout(&bordered.super_container);
+    wlmtk_container_update_layout_and_pointer_focus(&bordered.super_container);
     test_rectangle_pos(
         test_ptr, bordered.northern_border_rectangle_ptr,
         0, 0, 204, 2);
