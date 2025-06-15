@@ -57,13 +57,7 @@ static void _wlmtk_surface_element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static void _wlmtk_surface_element_get_pointer_area(
-    wlmtk_element_t *element_ptr,
-    int *left_ptr,
-    int *top_ptr,
-    int *right_ptr,
-    int *bottom_ptr);
-static bool _wlmtk_surface_element_pointer_motion(
+static bool _wlmtk_surface_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_surface_element_pointer_button(
@@ -94,6 +88,9 @@ static void _wlmtk_surface_handle_surface_unmap(
 static void _wlmtk_surface_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmtk_surface_handle_element_pointer_motion(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmtk_surface_commit_size(
     wlmtk_surface_t *surface_ptr,
@@ -107,8 +104,7 @@ static const wlmtk_element_vmt_t surface_element_vmt = {
     .destroy = _wlmtk_surface_element_destroy,
     .create_scene_node = _wlmtk_surface_element_create_scene_node,
     .get_dimensions = _wlmtk_surface_element_get_dimensions,
-    .get_pointer_area = _wlmtk_surface_element_get_pointer_area,
-    .pointer_motion = _wlmtk_surface_element_pointer_motion,
+    .pointer_accepts_motion = _wlmtk_surface_element_pointer_accepts_motion,
     .pointer_button = _wlmtk_surface_element_pointer_button,
     .pointer_axis = _wlmtk_surface_element_pointer_axis,
     .keyboard_event = _wlmtk_surface_element_keyboard_event,
@@ -247,6 +243,10 @@ bool _wlmtk_surface_init(
         &surface_ptr->super_element.events.pointer_leave,
         &surface_ptr->element_pointer_leave_listener,
         _wlmtk_surface_handle_element_pointer_leave);
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->super_element.events.pointer_motion,
+        &surface_ptr->element_pointer_motion_listener,
+        _wlmtk_surface_handle_element_pointer_motion);
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
     if (NULL != surface_ptr->wlr_surface_ptr) {
@@ -287,7 +287,10 @@ void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
         wlmtk_util_disconnect_listener(&surface_ptr->surface_unmap_listener);
     }
 
-    wlmtk_util_disconnect_listener(&surface_ptr->element_pointer_leave_listener);
+    wlmtk_util_disconnect_listener(
+        &surface_ptr->element_pointer_motion_listener);
+    wlmtk_util_disconnect_listener(
+        &surface_ptr->element_pointer_leave_listener);
     wlmtk_element_fini(&surface_ptr->super_element);
     *surface_ptr = (wlmtk_surface_t){};
 }
@@ -358,64 +361,20 @@ void _wlmtk_surface_element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Overwrites the element's get_pointer_area method: Returns the extents of
- * the surface and all subsurfaces.
+ * Implements @ref wlmtk_element_vmt_t::pointer_accepts_motion.
  *
  * @param element_ptr
- * @param left_ptr            Leftmost position. May be NULL.
- * @param top_ptr             Topmost position. May be NULL.
- * @param right_ptr           Rightmost position. Ma be NULL.
- * @param bottom_ptr          Bottommost position. May be NULL.
+ * @param motion_event_ptr
+ *
+ * @return true if there is a surface (or sub-surface) at the given coordinates
+ * that will accept the pointer's movement.
  */
-void _wlmtk_surface_element_get_pointer_area(
-    wlmtk_element_t *element_ptr,
-    int *left_ptr,
-    int *top_ptr,
-    int *right_ptr,
-    int *bottom_ptr)
-{
-    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_surface_t, super_element);
-
-    struct wlr_box box;
-    if (NULL == surface_ptr->wlr_surface_ptr) {
-        box.x = 0;
-        box.y = 0;
-        box.width = surface_ptr->committed_width;
-        box.height = surface_ptr->committed_height;
-    } else {
-        wlr_surface_get_extends(surface_ptr->wlr_surface_ptr, &box);
-    }
-
-    if (NULL != left_ptr) *left_ptr = box.x;
-    if (NULL != top_ptr) *top_ptr = box.y;
-    if (NULL != right_ptr) *right_ptr = box.width - box.x;
-    if (NULL != bottom_ptr) *bottom_ptr = box.height - box.y;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Pass pointer motion events to client's surface.
- *
- * Identifies the surface (or sub-surface) at the given coordinates, and pass
- * on the motion event to that surface. If needed, will update the seat's
- * pointer focus.
- *
- * @param element_ptr
- * @param motion_event_ptr    Pointer motion event, with position relative to
- *                            this element's node.
- *
- * @return Whether if the motion is within the area.
- */
-bool _wlmtk_surface_element_pointer_motion(
+bool _wlmtk_surface_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
-
-    surface_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, motion_event_ptr);
 
     if (NULL == surface_ptr->super_element.wlr_scene_node_ptr) return false;
 
@@ -435,32 +394,8 @@ bool _wlmtk_surface_element_pointer_motion(
         &node_x,
         &node_y);
 
-    if (NULL == wlr_scene_node_ptr ||
-        WLR_SCENE_NODE_BUFFER != wlr_scene_node_ptr->type) {
-        return false;
-    }
-
-    struct wlr_scene_buffer *wlr_scene_buffer_ptr =
-        wlr_scene_buffer_from_node(wlr_scene_node_ptr);
-    struct wlr_scene_surface *wlr_scene_surface_ptr =
-        wlr_scene_surface_try_from_buffer(wlr_scene_buffer_ptr);
-    if (NULL == wlr_scene_surface_ptr) {
-        return true;
-    }
-
-    BS_ASSERT(surface_ptr->wlr_surface_ptr ==
-              wlr_surface_get_root_surface(wlr_scene_surface_ptr->surface));
-    if (NULL != surface_ptr->wlr_seat_ptr) {
-        wlr_seat_pointer_notify_enter(
-            surface_ptr->wlr_seat_ptr,
-            wlr_scene_surface_ptr->surface,
-            node_x, node_y);
-        wlr_seat_pointer_notify_motion(
-            surface_ptr->wlr_seat_ptr,
-            motion_event_ptr->time_msec,
-            node_x, node_y);
-    }
-    return true;
+    return (NULL != wlr_scene_node_ptr &&
+            WLR_SCENE_NODE_BUFFER == wlr_scene_node_ptr->type);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -698,6 +633,68 @@ void _wlmtk_surface_handle_element_pointer_leave(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Handles pointer motion: Passes the motion events to client's surface(s).
+ *
+ * Identifies the surface (or sub-surface) at the given coordinates, and pass
+ * on the motion event to that surface. If needed, will update the seat's
+ * pointer focus.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to a @ref wlmtk_pointer_motion_event_t.
+ */
+void _wlmtk_surface_handle_element_pointer_motion(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, element_pointer_motion_listener);
+    wlmtk_pointer_motion_event_t *motion_event_ptr = data_ptr;
+
+    if (NULL == surface_ptr->super_element.wlr_scene_node_ptr) return;
+
+    // Get the layout local coordinates of the node, so we can adjust the
+    // node-local (x, y) for the `wlr_scene_node_at` call.
+    int lx, ly;
+    if (!wlr_scene_node_coords(
+            surface_ptr->super_element.wlr_scene_node_ptr, &lx, &ly)) {
+        return;
+    }
+    // Get the node below the cursor. Return if there's no buffer node.
+    double node_x, node_y;
+    struct wlr_scene_node *wlr_scene_node_ptr = wlr_scene_node_at(
+        surface_ptr->super_element.wlr_scene_node_ptr,
+        motion_event_ptr->x + lx,
+        motion_event_ptr->y + ly,
+        &node_x,
+        &node_y);
+
+    if (NULL == wlr_scene_node_ptr ||
+        WLR_SCENE_NODE_BUFFER != wlr_scene_node_ptr->type) {
+        return;
+    }
+
+    struct wlr_scene_buffer *wlr_scene_buffer_ptr =
+        wlr_scene_buffer_from_node(wlr_scene_node_ptr);
+    struct wlr_scene_surface *wlr_scene_surface_ptr =
+        wlr_scene_surface_try_from_buffer(wlr_scene_buffer_ptr);
+    if (NULL == wlr_scene_surface_ptr) return;
+
+    BS_ASSERT(surface_ptr->wlr_surface_ptr ==
+              wlr_surface_get_root_surface(wlr_scene_surface_ptr->surface));
+    if (NULL != surface_ptr->wlr_seat_ptr) {
+        wlr_seat_pointer_notify_enter(
+            surface_ptr->wlr_seat_ptr,
+            wlr_scene_surface_ptr->surface,
+            node_x, node_y);
+        wlr_seat_pointer_notify_motion(
+            surface_ptr->wlr_seat_ptr,
+            motion_event_ptr->time_msec,
+            node_x, node_y);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Surface commits a new size: Store the size, and update the parent's layout.
  *
  * @param surface_ptr
@@ -716,7 +713,7 @@ void _wlmtk_surface_commit_size(
     }
 
     if (NULL != surface_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
+        wlmtk_container_update_layout_and_pointer_focus(
             surface_ptr->super_element.parent_container_ptr);
     }
 }
@@ -729,7 +726,7 @@ static void _wlmtk_fake_surface_element_destroy(
 static struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static bool _wlmtk_fake_surface_element_pointer_motion(
+static bool _wlmtk_fake_surface_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_fake_surface_element_pointer_button(
@@ -740,7 +737,7 @@ static bool _wlmtk_fake_surface_element_pointer_button(
 static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
     .destroy = _wlmtk_fake_surface_element_destroy,
     .create_scene_node = _wlmtk_fake_surface_element_create_scene_node,
-    .pointer_motion = _wlmtk_fake_surface_element_pointer_motion,
+    .pointer_accepts_motion = _wlmtk_fake_surface_element_pointer_accepts_motion,
     .pointer_button = _wlmtk_fake_surface_element_pointer_button,
 };
 
@@ -815,8 +812,8 @@ struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Fake for @ref wlmtk_element_vmt_t::pointer_motion. True if in committed. */
-bool _wlmtk_fake_surface_element_pointer_motion(
+/** Fake for @ref wlmtk_element_vmt_t::pointer_accepts_motion. True if in. */
+bool _wlmtk_fake_surface_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr)
 {

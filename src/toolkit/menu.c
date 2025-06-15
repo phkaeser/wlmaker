@@ -319,6 +319,7 @@ void test_pointer_highlight(bs_test_t *test_ptr)
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
+    wlmtk_element_set_visible(me, true);
 
     wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);

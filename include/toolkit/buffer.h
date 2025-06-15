@@ -20,18 +20,17 @@
 #ifndef __WLMTK_BUFFER_H__
 #define __WLMTK_BUFFER_H__
 
+#include <libbase/libbase.h>
 #include <stdbool.h>
 #include <wayland-server-core.h>
 
 #include "element.h"
 #include "input.h"
 
+
 struct _wlmtk_buffer_t;
 /** Forward declaration: Buffer state. */
 typedef struct _wlmtk_buffer_t wlmtk_buffer_t;
-
-/** Forward declaration. */
-struct wlr_buffer;
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +52,8 @@ struct _wlmtk_buffer_t {
 
     /** Listener for the `destroy` signal of `wlr_scene_buffer_ptr->node`. */
     struct wl_listener        wlr_scene_buffer_node_destroy_listener;
-
+    /** Listener for @ref wlmtk_element_events_t::pointer_enter. */
+    struct wl_listener        element_pointer_enter_listener;
 };
 
 /**
@@ -86,6 +86,9 @@ void wlmtk_buffer_set(
 
 /** @return the superclass' @ref wlmtk_element_t of `buffer_ptr`. */
 wlmtk_element_t *wlmtk_buffer_element(wlmtk_buffer_t *buffer_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_buffer_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

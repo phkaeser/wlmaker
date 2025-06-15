@@ -207,7 +207,8 @@ bool wlmtk_resizebar_set_width(
         return false;
     }
 
-    wlmtk_container_update_layout(&resizebar_ptr->super_box.super_container);
+    wlmtk_container_update_layout_and_pointer_focus(
+        &resizebar_ptr->super_box.super_container);
     return true;
 }
 

@@ -294,6 +294,7 @@ void test_button(bs_test_t *test_ptr)
     // For improved readability.
     wlmtk_buffer_t *super_buffer_ptr = &button_ptr->super_button.super_buffer;
     wlmtk_element_t *element_ptr = wlmtk_titlebar_button_element(button_ptr);
+    wlmtk_element_set_visible(element_ptr, true);
 
     // Draw contents.
     wlmtk_titlebar_style_t style = {

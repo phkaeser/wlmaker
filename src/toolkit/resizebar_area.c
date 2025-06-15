@@ -297,6 +297,7 @@ void test_area(bs_test_t *test_ptr)
         fake_window_ptr->window_ptr, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
+    wlmtk_element_set_visible(element_ptr, true);
 
     // Draw and verify release state.
     wlmtk_resizebar_style_t style = { .height = 7, .bezel_width = 1.0 };

@@ -20,7 +20,6 @@
 
 #include "buffer.h"
 
-#include <math.h>
 #include <string.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -28,6 +27,7 @@
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
+#include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "libbase/libbase.h"
 #include "util.h"
@@ -43,10 +43,13 @@ static void _wlmtk_buffer_element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static bool _wlmtk_buffer_element_pointer_motion(
+static bool _wlmtk_buffer_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
-static void handle_wlr_scene_buffer_node_destroy(
+static void _wlmtk_buffer_handle_wlr_scene_buffer_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_buffer_handle_element_pointer_enter(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -56,7 +59,7 @@ static void handle_wlr_scene_buffer_node_destroy(
 static const wlmtk_element_vmt_t buffer_element_vmt = {
     .create_scene_node = _wlmtk_buffer_element_create_scene_node,
     .get_dimensions = _wlmtk_buffer_element_get_dimensions,
-    .pointer_motion = _wlmtk_buffer_element_pointer_motion,
+    .pointer_accepts_motion = _wlmtk_buffer_element_pointer_accepts_motion,
 };
 
 /* == Exported methods ===================================================== */
@@ -72,6 +75,10 @@ bool wlmtk_buffer_init(wlmtk_buffer_t *buffer_ptr)
     }
     buffer_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &buffer_ptr->super_element, &buffer_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &buffer_ptr->super_element.events.pointer_enter,
+        &buffer_ptr->element_pointer_enter_listener,
+        &_wlmtk_buffer_handle_element_pointer_enter);
     return true;
 }
 
@@ -88,6 +95,8 @@ void wlmtk_buffer_fini(wlmtk_buffer_t *buffer_ptr)
         buffer_ptr->wlr_scene_buffer_ptr = NULL;
     }
 
+    wlmtk_util_disconnect_listener(
+        &buffer_ptr->element_pointer_enter_listener);
     wlmtk_element_fini(&buffer_ptr->super_element);
 }
 
@@ -148,7 +157,7 @@ struct wlr_scene_node *_wlmtk_buffer_element_create_scene_node(
     wlmtk_util_connect_listener_signal(
         &buffer_ptr->wlr_scene_buffer_ptr->node.events.destroy,
         &buffer_ptr->wlr_scene_buffer_node_destroy_listener,
-        handle_wlr_scene_buffer_node_destroy);
+        _wlmtk_buffer_handle_wlr_scene_buffer_node_destroy);
     return &buffer_ptr->wlr_scene_buffer_ptr->node;
 }
 
@@ -187,39 +196,26 @@ void _wlmtk_buffer_element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of the element's motion method:  Calls the parent's
- * implementation. If the motion happen outside the buffer's dimensions, the
- * coordinates provided to the parent will be NAN.
+ * Returns true if a buffer is provided, and the motion happens within the
+ * buffer's dimensions.
  *
  * @param element_ptr
  * @param motion_event_ptr
  *
  * @return true if (x, y) is within the buffer's dimensions.
  */
-bool _wlmtk_buffer_element_pointer_motion(
+bool _wlmtk_buffer_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr)
 {
     wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_buffer_t, super_element);
 
-    wlmtk_pointer_motion_event_t event_copy = *motion_event_ptr;
-    if (motion_event_ptr->x < 0 ||
-        motion_event_ptr->x >= buffer_ptr->wlr_buffer_ptr->width ||
-        motion_event_ptr->y < 0 ||
-        motion_event_ptr->y >= buffer_ptr->wlr_buffer_ptr->height) {
-        event_copy.x = NAN;
-        event_copy.y = NAN;
-    }
-
-    bool rv = buffer_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, &event_copy);
-    if (rv) {
-        wlmtk_pointer_set_cursor(
-            motion_event_ptr->pointer_ptr,
-            buffer_ptr->pointer_cursor);
-    }
-    return rv;
+    return (NULL != buffer_ptr->wlr_buffer_ptr &&
+            0 <= motion_event_ptr->x &&
+            motion_event_ptr->x < buffer_ptr->wlr_buffer_ptr->width &&
+            0 <= motion_event_ptr->y &&
+            motion_event_ptr->y < buffer_ptr->wlr_buffer_ptr->height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -232,7 +228,7 @@ bool _wlmtk_buffer_element_pointer_motion(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_wlr_scene_buffer_node_destroy(
+void _wlmtk_buffer_handle_wlr_scene_buffer_node_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -241,6 +237,52 @@ void handle_wlr_scene_buffer_node_destroy(
 
     buffer_ptr->wlr_scene_buffer_ptr = NULL;
     wl_list_remove(&buffer_ptr->wlr_scene_buffer_node_destroy_listener.link);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles when pointer enters the area: Sets the configured cursor. */
+void _wlmtk_buffer_handle_element_pointer_enter(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_buffer_t *buffer_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_buffer_t, element_pointer_enter_listener);
+    wlmtk_pointer_set_cursor(data_ptr, buffer_ptr->pointer_cursor);
+}
+
+/* == Unit Tests =========================================================== */
+
+static void test_pointer_motion(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmtk_buffer_test_cases[] = {
+    { 1, "pointer_motion", test_pointer_motion },
+    { 0, NULL, NULL },
+};
+
+/* ------------------------------------------------------------------------- */
+/** Tests behaviour of @ref _wlmtk_buffer_element_pointer_accepts_motion. */
+void test_pointer_motion(bs_test_t *test_ptr)
+{
+    wlmtk_buffer_t buffer;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_buffer_init(&buffer));
+    wlmtk_element_t *e = wlmtk_buffer_element(&buffer);
+    wlmtk_element_set_visible(e, true);
+
+    wlmtk_pointer_motion_event_t mev = { .x = 5, .y = 10 };
+    // Must not crash before a wlr_buffer is provided.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
+
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(10, 20);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_buffer_ptr);
+    wlmtk_buffer_set(&buffer, wlr_buffer_ptr);
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
+
+    mev = (wlmtk_pointer_motion_event_t){ .x = 10, .y = 20 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
+
+    wlr_buffer_drop(wlr_buffer_ptr);
+    wlmtk_buffer_fini(&buffer);
 }
 
 /* == End of buffer.c ====================================================== */

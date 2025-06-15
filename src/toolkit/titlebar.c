@@ -209,7 +209,8 @@ bool wlmtk_titlebar_set_width(
     if (!redraw(titlebar_ptr)) return false;
 
     // Don't forget to re-position the elements.
-    wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
+    wlmtk_container_update_layout_and_pointer_focus(
+        &titlebar_ptr->super_box.super_container);
     return true;
 }
 
@@ -225,7 +226,8 @@ void wlmtk_titlebar_set_properties(
     if (!redraw(titlebar_ptr)) return;
 
     // Don't forget to re-position the elements.
-    wlmtk_container_update_layout(&titlebar_ptr->super_box.super_container);
+    wlmtk_container_update_layout_and_pointer_focus(
+        &titlebar_ptr->super_box.super_container);
 }
 
 /* ------------------------------------------------------------------------- */

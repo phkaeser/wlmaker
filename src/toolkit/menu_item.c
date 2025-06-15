@@ -95,9 +95,6 @@ static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
 
-static bool _wlmtk_menu_item_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -119,7 +116,6 @@ static void _wlmtk_menu_item_handle_open_changed(
 
 /** Virtual method table for the menu item's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_menu_item_element_vmt = {
-    .pointer_motion = _wlmtk_menu_item_element_pointer_motion,
     .pointer_button = _wlmtk_menu_item_element_pointer_button,
     .destroy = _wlmtk_menu_item_element_destroy,
 };
@@ -189,6 +185,8 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
     wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
 
+    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_enter_listener);
     wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_leave_listener);
     wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_enter_listener);
 
@@ -522,26 +520,6 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Requests this item to be highlighted if there's motion. */
-bool _wlmtk_menu_item_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
-{
-    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_item_t, super_buffer.super_element);
-    bool rv = menu_item_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, motion_event_ptr);
-
-    if (rv && menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
-        wlmtk_menu_request_item_highlight(
-            menu_item_ptr->menu_ptr,
-            menu_item_ptr);
-    }
-
-    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -947,6 +925,7 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_RIGHTCLICK);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
+    wlmtk_element_set_visible(me, true);
 
     wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);

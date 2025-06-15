@@ -34,6 +34,7 @@ typedef struct _wlmtk_container_t wlmtk_container_t;
 typedef struct _wlmtk_container_vmt_t wlmtk_container_vmt_t;
 
 #include "element.h"
+#include "input.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,16 +45,12 @@ struct _wlmtk_container_vmt_t {
     /**
      * Updates the layout of the container elements.
      *
-     * Will be called by this, when an element is added or removed.
-     * Additionally, this should be invoked by contained elements when
-     * the visibility or dimensions change.
+     * @param container_ptr
      *
-     * Each container will propagate a
-     * @ref wlmtk_container_vmt_t::update_layout call
-     * upwards to it's parent container. The root container will then trigger
-     * an update to pointer focus (since by then, the layout is updated).
-      */
-    void (*update_layout)(wlmtk_container_t *container_ptr);
+     * @return true if there was a change to the layout, eg. if elements got
+     * re-positioned.
+     */
+    bool (*update_layout)(wlmtk_container_t *container_ptr);
 };
 
 /** State of the container. */
@@ -87,6 +84,9 @@ struct _wlmtk_container_t {
     wlmtk_element_t           *left_button_element_ptr;
     /** Stores the element with current keyboard focus. May be NULL. */
     wlmtk_element_t           *keyboard_focus_element_ptr;
+
+    /** @private inhibitor, to prevent recursive layout updates. */
+    bool                      inhibit_layout_update;
 };
 
 /**
@@ -186,11 +186,21 @@ void wlmtk_container_raise_element_to_top(
     wlmtk_element_t *element_ptr);
 
 /**
- * Updates pointer focus of the container.
+ * Requests that `element_ptr` be given pointer focus from `container_ptr`.
  *
  * @param container_ptr
+ * @param element_ptr         Must be in @ref wlmtk_container_t::elements.
+ * @param motion_event_ptr    The motion event (in particular: pointer) that
+ *                            led to request pointer focus.
+ *                            FIXME -> Must change to pointer!
+ *
+ * @return false if the request fails.
  */
-void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
+// TODO(kaeser@gubbe.ch): Unify handling with pointer grab.
+bool wlmtk_container_request_pointer_focus(
+    wlmtk_container_t *container_ptr,
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 
 /**
  * Requests a pointer grab from `container_ptr` for `element_ptr`.
@@ -202,7 +212,9 @@ void wlmtk_container_update_pointer_focus(wlmtk_container_t *container_ptr);
  *
  * @param container_ptr
  * @param element_ptr         Must be a child of this container.
+ *
  */
+// TODO(kaeser@gubbe.ch): Merge with @ref wlmtk_container_request_pointer_focus.
 void wlmtk_container_pointer_grab(
     wlmtk_container_t *container_ptr,
     wlmtk_element_t *element_ptr);
@@ -235,15 +247,18 @@ void wlmtk_container_set_keyboard_focus_element(
     wlmtk_element_t *element_ptr);
 
 /**
- * Updates the layout of the container.
+ * Updates the layout of the container, and recomputes pointer focus as needed.
  *
- * @param container_ptr       Container to update. NULL implies a no-op.
+ * Must be called if an element is added or removed, or if any of the child
+ * elements changes visibility or dimensions. Propagates to the parent
+ * container(s).
+ *
+ * If needed: Trigger a poitner focus computation.
+ *
+ * @param container_ptr
  */
-static inline void wlmtk_container_update_layout(
-    wlmtk_container_t *container_ptr)
-{
-    container_ptr->vmt.update_layout(container_ptr);
-}
+void wlmtk_container_update_layout_and_pointer_focus(
+    wlmtk_container_t *container_ptr);
 
 /**
  * Returns the wlroots scene graph tree for this node.
