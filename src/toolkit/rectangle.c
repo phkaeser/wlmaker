@@ -53,13 +53,15 @@ struct _wlmtk_rectangle_t {
     struct wlr_scene_rect     *wlr_scene_rect_ptr;
     /** Listener for the `destroy` signal of `wlr_rect_buffer_ptr->node`. */
     struct wl_listener        wlr_scene_rect_node_destroy_listener;
+    /** Listener for @ref wlmtk_element_events_t::pointer_enter. */
+    struct wl_listener        element_pointer_enter_listener;
 };
 
 static void _wlmtk_rectangle_element_destroy(wlmtk_element_t *element_ptr);
 static struct wlr_scene_node *_wlmtk_rectangle_element_create_scene_node(
     wlmtk_element_t *element_ptr,
     struct wlr_scene_tree *wlr_scene_tree_ptr);
-static bool _wlmtk_rectangle_element_pointer_motion(
+static bool _wlmtk_rectangle_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
 static void _wlmtk_rectangle_get_dimensions(
@@ -68,7 +70,10 @@ static void _wlmtk_rectangle_get_dimensions(
     int *y1_ptr,
     int *x2_ptr,
     int *y2_ptr);
-static void handle_wlr_scene_rect_node_destroy(
+static void _wlmtk_rectangle_handle_wlr_scene_rect_node_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_rectangle_handle_element_pointer_enter(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -78,7 +83,7 @@ static void handle_wlr_scene_rect_node_destroy(
 static const wlmtk_element_vmt_t _wlmtk_rectangle_element_vmt = {
     .destroy = _wlmtk_rectangle_element_destroy,
     .create_scene_node = _wlmtk_rectangle_element_create_scene_node,
-    .pointer_motion = _wlmtk_rectangle_element_pointer_motion,
+    .pointer_accepts_motion = _wlmtk_rectangle_element_pointer_accepts_motion,
     .get_dimensions = _wlmtk_rectangle_get_dimensions,
 };
 
@@ -104,6 +109,10 @@ wlmtk_rectangle_t *wlmtk_rectangle_create(
     rectangle_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &rectangle_ptr->super_element,
         &_wlmtk_rectangle_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &rectangle_ptr->super_element.events.pointer_enter,
+        &rectangle_ptr->element_pointer_enter_listener,
+        &_wlmtk_rectangle_handle_element_pointer_enter);
 
     return rectangle_ptr;
 }
@@ -116,6 +125,8 @@ void wlmtk_rectangle_destroy(wlmtk_rectangle_t *rectangle_ptr)
         rectangle_ptr->wlr_scene_rect_ptr = NULL;
     }
 
+    wlmtk_util_disconnect_listener(
+        &rectangle_ptr->element_pointer_enter_listener);
     wlmtk_element_fini(&rectangle_ptr->super_element);
     free(rectangle_ptr);
 }
@@ -208,26 +219,20 @@ struct wlr_scene_node *_wlmtk_rectangle_element_create_scene_node(
     wlmtk_util_connect_listener_signal(
         &rectangle_ptr->wlr_scene_rect_ptr->node.events.destroy,
         &rectangle_ptr->wlr_scene_rect_node_destroy_listener,
-        handle_wlr_scene_rect_node_destroy);
+        _wlmtk_rectangle_handle_wlr_scene_rect_node_destroy);
     return &rectangle_ptr->wlr_scene_rect_ptr->node;
 }
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_element_vmt_t::pointer_motion. Sets cursor. */
-bool _wlmtk_rectangle_element_pointer_motion(
+/** See @ref wlmtk_element_vmt_t::pointer_accepts_motion. true if in area. */
+bool _wlmtk_rectangle_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
+    wlmtk_pointer_motion_event_t *mev_ptr)
 {
     wlmtk_rectangle_t *rectangle_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_rectangle_t, super_element);
-    bool rv = rectangle_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, motion_event_ptr);
-    if (rv) {
-        wlmtk_pointer_set_cursor(
-            motion_event_ptr->pointer_ptr,
-            WLMTK_POINTER_CURSOR_DEFAULT);
-    }
-    return rv;
+    return  (0 <= mev_ptr->x && mev_ptr->x < rectangle_ptr->width &&
+             0 <= mev_ptr->y && mev_ptr->y < rectangle_ptr->height);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -265,7 +270,7 @@ void _wlmtk_rectangle_get_dimensions(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_wlr_scene_rect_node_destroy(
+void _wlmtk_rectangle_handle_wlr_scene_rect_node_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -276,14 +281,25 @@ void handle_wlr_scene_rect_node_destroy(
     wl_list_remove(&rectangle_ptr->wlr_scene_rect_node_destroy_listener.link);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles when we get pointer focus: Set the default cursor. */
+void _wlmtk_rectangle_handle_element_pointer_enter(
+    __UNUSED__ struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_pointer_set_cursor(data_ptr, WLMTK_POINTER_CURSOR_DEFAULT);
+}
+
 /* == Unit Tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_create_destroy_scene(bs_test_t *test_ptr);
+static void test_pointer_motion(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_rectangle_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "create_destroy_scene", test_create_destroy_scene },
+    { 1, "pointer_motion", test_pointer_motion },
     { 0, NULL, NULL }
 };
 
@@ -320,9 +336,10 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_create_destroy_scene(bs_test_t *test_ptr)
 {
     wlmtk_container_t *c_ptr = wlmtk_container_create_fake_parent();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c_ptr);
     wlmtk_rectangle_t *rectangle_ptr = wlmtk_rectangle_create(
         10, 20, 0x01020304);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, rectangle_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rectangle_ptr);
     wlmtk_element_t *element_ptr = wlmtk_rectangle_element(rectangle_ptr);
 
     wlmtk_container_add_element(c_ptr, element_ptr);
@@ -340,6 +357,23 @@ void test_create_destroy_scene(bs_test_t *test_ptr)
 
     wlmtk_element_destroy(element_ptr);
     wlmtk_container_destroy_fake_parent(c_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that pointer_motion returns true if pointer is within bounds. */
+void test_pointer_motion(bs_test_t *test_ptr)
+{
+    wlmtk_rectangle_t *rectangle_ptr = wlmtk_rectangle_create(10, 20, 0x1234);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rectangle_ptr);
+    wlmtk_element_t *e = wlmtk_rectangle_element(rectangle_ptr);
+    wlmtk_element_set_visible(e, true);
+
+    wlmtk_pointer_motion_event_t mev = { .x = 5, .y = 10 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 10, .y = 20 };
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_element_pointer_motion(e, &mev));
+
+    wlmtk_rectangle_destroy(rectangle_ptr);
 }
 
 /* == End of rectangle.c =================================================== */

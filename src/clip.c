@@ -83,6 +83,8 @@ struct _wlmaker_clip_t {
     struct wl_listener        workspace_changed_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
+    /** Listener for @ref wlmtk_element_events_t::pointer_motion. */
+    struct wl_listener        pointer_motion_listener;
     /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
     struct wl_listener        pointer_leave_listener;
 
@@ -96,9 +98,6 @@ static bool _wlmaker_clip_pointer_axis(
 static bool _wlmaker_clip_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static bool _wlmaker_clip_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr);
 
 static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr);
 static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
@@ -113,6 +112,9 @@ static void _wlmaker_clip_handle_workspace_changed(
 static void _wlmaker_clip_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmaker_clip_handle_pointer_motion(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmaker_clip_handle_pointer_leave(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -123,7 +125,6 @@ static void _wlmaker_clip_handle_pointer_leave(
 static const wlmtk_element_vmt_t _wlmaker_clip_element_vmt = {
     .pointer_axis = _wlmaker_clip_pointer_axis,
     .pointer_button = _wlmaker_clip_pointer_button,
-    .pointer_motion = _wlmaker_clip_pointer_motion,
 };
 
 /** TODO: Replace this. */
@@ -223,6 +224,10 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->orig_super_element_vmt = wlmtk_element_extend(
         wlmtk_tile_element(&clip_ptr->super_tile),
         &_wlmaker_clip_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_tile_element(&clip_ptr->super_tile)->events.pointer_motion,
+        &clip_ptr->pointer_motion_listener,
+        _wlmaker_clip_handle_pointer_motion);
     wlmtk_util_connect_listener_signal(
         &wlmtk_tile_element(&clip_ptr->super_tile)->events.pointer_leave,
         &clip_ptr->pointer_leave_listener,
@@ -325,6 +330,7 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
             &clip_ptr->super_tile);
     }
     wlmtk_util_disconnect_listener(&clip_ptr->pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&clip_ptr->pointer_motion_listener);
     wlmtk_tile_fini(&clip_ptr->super_tile);
     wlmtk_buffer_fini(&clip_ptr->overlay_buffer);
 
@@ -418,10 +424,12 @@ bool _wlmaker_clip_pointer_button(
     switch (button_event_ptr->type) {
     case WLMTK_BUTTON_DOWN:
         // Pointer button tressed. Translate to button press if in area.
-        if (clip_ptr->pointer_inside_next_button) {
+        if (clip_ptr->pointer_inside_next_button ||
+            clip_ptr->pointer_inside_next_button) {
             clip_ptr->next_button_pressed = true;
             clip_ptr->prev_button_pressed = false;
-        } else if (clip_ptr->pointer_inside_prev_button) {
+        } else if (clip_ptr->pointer_inside_prev_button ||
+                   clip_ptr->pointer_inside_prev_button) {
             clip_ptr->next_button_pressed = false;
             clip_ptr->prev_button_pressed = true;
         }
@@ -430,12 +438,14 @@ bool _wlmaker_clip_pointer_button(
     case WLMTK_BUTTON_UP:
         // Button is released (closed the click). If we're within the area of
         // the pressed button: Trigger the action.
-        if (clip_ptr->pointer_inside_next_button &&
+        if ((clip_ptr->pointer_inside_next_button ||
+             clip_ptr->pointer_inside_next_button) &&
             clip_ptr->next_button_pressed) {
             clip_ptr->next_button_pressed = false;
             wlmtk_root_switch_to_next_workspace(
                 clip_ptr->server_ptr->root_ptr);
-        } else if (clip_ptr->pointer_inside_prev_button &&
+        } else if ((clip_ptr->pointer_inside_prev_button ||
+                    clip_ptr->pointer_inside_prev_button) &&
                    clip_ptr->prev_button_pressed) {
             clip_ptr->prev_button_pressed = false;
             wlmtk_root_switch_to_previous_workspace(
@@ -453,58 +463,16 @@ bool _wlmaker_clip_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_motion.
- *
- * Tracks whether the pointer is within any of the 'Next' or 'Previous' button
- * areas, and triggers an update to the tile's texture.
- *
- * @param element_ptr
- * @param motion_event_ptr
- *
- * @return See @ref wlmtk_element_vmt_t::pointer_motion.
- */
-bool _wlmaker_clip_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
-{
-    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_clip_t,
-        super_tile.super_container.super_element);
-
-    clip_ptr->pointer_inside_prev_button = false;
-    clip_ptr->pointer_inside_next_button = false;
-
-    double tile_size = clip_ptr->super_tile.style.size;
-    double button_size = (22.0 / 64.0) * tile_size;
-    if (motion_event_ptr->x >= tile_size - button_size &&
-        motion_event_ptr->x < tile_size &&
-        motion_event_ptr->y >= 0 &&
-        motion_event_ptr->y < button_size) {
-        // Next button.
-        clip_ptr->pointer_inside_next_button = true;
-    } else if (motion_event_ptr->x >= 0 &&
-               motion_event_ptr->x < button_size &&
-               motion_event_ptr->y >= tile_size - button_size &&
-               motion_event_ptr->y < tile_size) {
-        // Prev button.
-        clip_ptr->pointer_inside_prev_button = true;
-    }
-
-    _wlmaker_clip_update_buttons(clip_ptr);
-    return clip_ptr->orig_super_element_vmt.pointer_motion(
-        element_ptr, motion_event_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Updates the button textures, based on current state what's pressed. */
 static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = clip_ptr->tile_buffer_ptr;
-    if (clip_ptr->pointer_inside_next_button &&
+    if ((clip_ptr->pointer_inside_next_button ||
+         clip_ptr->pointer_inside_next_button)&&
         clip_ptr->next_button_pressed) {
         wlr_buffer_ptr = clip_ptr->next_pressed_tile_buffer_ptr;
-    } else if (clip_ptr->pointer_inside_prev_button &&
+    } else if ((clip_ptr->pointer_inside_prev_button ||
+                clip_ptr->pointer_inside_prev_button) &&
                clip_ptr->prev_button_pressed) {
         wlr_buffer_ptr = clip_ptr->prev_pressed_tile_buffer_ptr;
     }
@@ -820,6 +788,38 @@ void _wlmaker_clip_handle_pointer_leave(
 
     clip_ptr->pointer_inside_prev_button = false;
     clip_ptr->pointer_inside_next_button = false;
+    _wlmaker_clip_update_buttons(clip_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_element_events_t::pointer_motion. */
+void _wlmaker_clip_handle_pointer_motion(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_clip_t, pointer_motion_listener);
+    wlmtk_pointer_motion_event_t *motion_event_ptr = data_ptr;
+
+    clip_ptr->pointer_inside_prev_button = false;
+    clip_ptr->pointer_inside_next_button = false;
+
+    double tile_size = clip_ptr->super_tile.style.size;
+    double button_size = (22.0 / 64.0) * tile_size;
+    if (motion_event_ptr->x >= tile_size - button_size &&
+        motion_event_ptr->x < tile_size &&
+        motion_event_ptr->y >= 0 &&
+        motion_event_ptr->y < button_size) {
+        // Next button.
+        clip_ptr->pointer_inside_next_button = true;
+    } else if (motion_event_ptr->x >= 0 &&
+               motion_event_ptr->x < button_size &&
+               motion_event_ptr->y >= tile_size - button_size &&
+               motion_event_ptr->y < tile_size) {
+        // Prev button.
+        clip_ptr->pointer_inside_prev_button = true;
+    }
+
     _wlmaker_clip_update_buttons(clip_ptr);
 }
 

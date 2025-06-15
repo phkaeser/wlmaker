@@ -185,7 +185,7 @@ static wlmtk_window_vmt_t _wlmtk_window_extend(
 static bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_window_container_update_layout(
+static bool _wlmtk_window_container_update_layout(
     wlmtk_container_t *container_ptr);
 
 static void _wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
@@ -973,16 +973,18 @@ bool _wlmtk_window_element_pointer_button(
  *
  * @param container_ptr
  */
-void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
+bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         container_ptr, wlmtk_window_t, super_bordered.super_container);
 
+    // Must update the layout of wlmtk_bordered_t.
     window_ptr->orig_super_container_vmt.update_layout(container_ptr);
 
     if (NULL != window_ptr->content_ptr) {
         int width;
         wlmtk_content_get_size(window_ptr->content_ptr, &width, NULL);
+
         if (NULL != window_ptr->titlebar_ptr) {
             wlmtk_titlebar_set_width(window_ptr->titlebar_ptr, width);
         }
@@ -990,6 +992,7 @@ void _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
             wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, width);
         }
     }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */

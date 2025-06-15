@@ -30,17 +30,10 @@
 
 /* == Declarations ========================================================= */
 
-static void _wlmtk_tile_update_layout(wlmtk_container_t *container_ptr);
-
 static struct wlr_buffer *_wlmtk_tile_create_buffer(
     const wlmtk_tile_style_t *style_ptr);
 
 /* == Data ================================================================= */
-
-/** Virtual methods implemented by @ref wlmtk_tile_t. */
-static const wlmtk_container_vmt_t _wlmtk_tile_container_vmt = {
-    .update_layout = _wlmtk_tile_update_layout
-};
 
 /* == Exported methods ===================================================== */
 
@@ -55,8 +48,6 @@ bool wlmtk_tile_init(
         wlmtk_tile_fini(tile_ptr);
         return false;
     }
-    tile_ptr->orig_super_container_vmt = wlmtk_container_extend(
-        &tile_ptr->super_container, &_wlmtk_tile_container_vmt);
 
     if (!wlmtk_buffer_init(&tile_ptr->buffer)) {
         wlmtk_tile_fini(tile_ptr);
@@ -185,12 +176,6 @@ wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/** Handles requests to update layout. Called when elements are added. */
-void _wlmtk_tile_update_layout(__UNUSED__ wlmtk_container_t *container_ptr)
-{
-}
 
 /* ------------------------------------------------------------------------- */
 /** Crates a wlr_buffer with background, as described in `style_ptr`. */

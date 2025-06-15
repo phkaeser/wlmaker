@@ -27,7 +27,7 @@
 
 /* == Declarations ========================================================= */
 
-static void _wlmtk_box_container_update_layout(
+static bool _wlmtk_box_container_update_layout(
     wlmtk_container_t *container_ptr);
 static bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr);
 
@@ -136,7 +136,7 @@ wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr)
  *
  * @param container_ptr
  */
-void _wlmtk_box_container_update_layout(
+bool _wlmtk_box_container_update_layout(
     wlmtk_container_t *container_ptr)
 {
     wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
@@ -215,15 +215,7 @@ void _wlmtk_box_container_update_layout(
         wlmtk_element_destroy(margin_element_ptr);
     }
 
-    // Run the base class' update layout; may update pointer focus.
-    // We do this only after having updated the position of the elements.
-    box_ptr->orig_super_container_vmt.update_layout(container_ptr);
-
-    // configure parent container.
-    if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout(
-            container_ptr->super_element.parent_container_ptr);
-    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -238,8 +230,7 @@ bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr)
         &box_ptr->margin_container,
         NULL,
         wlmtk_rectangle_element(rect_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_rectangle_element(rect_ptr), true);
+    wlmtk_element_set_visible(wlmtk_rectangle_element(rect_ptr), true);
 
     return wlmtk_dlnode_from_element(wlmtk_rectangle_element(rect_ptr));
 }

@@ -53,8 +53,6 @@ typedef struct {
 struct _wlmtk_tile_t {
     /** A tile is a container. Holds a background and contents. */
     wlmtk_container_t         super_container;
-    /** Virtual method table of the superclass' container. */
-    wlmtk_container_vmt_t     orig_super_container_vmt;
 
     /** The tile background is modelled as @ref wlmtk_buffer_t. */
     wlmtk_buffer_t            buffer;

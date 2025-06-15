@@ -593,3 +593,45 @@ For Pointer or Touch:
    (this would prevent cursor updates? That's actually how X11 chrome
     popups/menus are working currently)
    so... that's probably good/desired.
+
+
+
+
+### Pointer events
+
+element: motion(_new)
+calls virtual method: offer_move().
+- if true: update focus (enter/leave), request focus from parent if needed.
+  (can this be denied? YES, in that case, we return false)
+
+
+request_move() // offer_move // offer_motion:
+Evaluate whether to accept the move (are the coordinates within the
+element's active region?). Return true if the move is accepted.
+
+
+-> leaf (buffer, rectangle, surface):
+offer_move return true if within
+
+
+
+
+
+-> container.offer_move()
+   * for each element: element.motion()
+   * return true if yes (this *HAS* to reach a leaf
+
+
+container: offer the request to any sub-elemnts. The first one that
+accepts the move will request focus (bubbling upwards).
+
+
+
+container: request_pointer_focus(container, element)
+-> checks that element is in container, etc
+-> calls the parent, if available. if false => return false
+-> if there's a pointer focus element: "blur" it
+-> set pointer focus element to element.
+
+
+(should triger element::enter. how?)

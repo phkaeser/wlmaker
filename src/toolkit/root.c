@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/version.h>
@@ -32,8 +33,10 @@
 #include "container.h"
 #include "input.h"
 #include "rectangle.h"
+#include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "util.h"
+#include "window.h"
 #include "workspace.h"
 
 struct wlr_keyboard_key_event;
@@ -86,9 +89,6 @@ static void _wlmtk_root_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
-static bool _wlmtk_root_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_root_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -105,7 +105,6 @@ static void _wlmtk_root_handle_output_layout_change(
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
-    .pointer_motion = _wlmtk_root_element_pointer_motion,
     .pointer_button = _wlmtk_root_element_pointer_button,
     .pointer_axis = _wlmtk_root_element_pointer_axis,
     .keyboard_event = _wlmtk_root_element_keyboard_event,
@@ -477,6 +476,8 @@ void _wlmtk_root_switch_to_workspace(
     } else {
         BS_ASSERT(root_ptr = wlmtk_workspace_get_root(workspace_ptr));
 
+        wlmtk_element_set_visible(
+            wlmtk_workspace_element(workspace_ptr), true);
         if (NULL != root_ptr->current_workspace_ptr) {
             wlmtk_element_set_visible(
                 wlmtk_workspace_element(root_ptr->current_workspace_ptr),
@@ -484,8 +485,6 @@ void _wlmtk_root_switch_to_workspace(
             wlmtk_workspace_enable(root_ptr->current_workspace_ptr, false);
         }
         root_ptr->current_workspace_ptr = workspace_ptr;
-        wlmtk_element_set_visible(
-            wlmtk_workspace_element(root_ptr->current_workspace_ptr), true);
         wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
     }
 
@@ -514,40 +513,6 @@ void _wlmtk_root_enumerate_workspaces(
         wlmtk_workspace_from_dlnode(dlnode_ptr),
         *index_ptr);
     *index_ptr += 1;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_motion. Handle pointer moves.
- *
- * When locked, the root container will forward the events strictly only to
- * the lock container.
- *
- * @param element_ptr
- * @param motion_event_ptr
- *
- * @return Whether the move was accepted.
- */
-bool _wlmtk_root_element_pointer_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
-{
-    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_root_t, container.super_element);
-
-    if (!root_ptr->locked) {
-        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
-        // elements only.
-        return root_ptr->orig_super_element_vmt.pointer_motion(
-            element_ptr, motion_event_ptr);
-    } else if (NULL != root_ptr->lock_element_ptr) {
-        return wlmtk_element_pointer_motion(
-            root_ptr->lock_element_ptr,
-            motion_event_ptr);
-    }
-
-    // Fall-through.
-    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -687,11 +652,13 @@ void _wlmtk_root_handle_output_layout_change(
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
+static void test_pointer_move(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_root_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "pointer_button", test_pointer_button },
+    { 1, "pointer_move", test_pointer_move },
     { 0, NULL, NULL }
 };
 
@@ -813,7 +780,7 @@ void test_pointer_button(bs_test_t *test_ptr)
         wlmtk_root_pointer_motion(root_ptr, 0, 0, 0, NULL));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        fake_element_ptr->pointer_motion_called);
+        fake_element_ptr->pointer_accepts_motion_called);
 
     // Verify that a button down event is passed.
     struct wlr_pointer_button_event wlr_pointer_button_event = {
@@ -858,6 +825,69 @@ void test_pointer_button(bs_test_t *test_ptr)
     wlmtk_container_remove_element(
         &root_ptr->container, &fake_element_ptr->element);
     wlmtk_element_destroy(&fake_element_ptr->element);
+
+    wlmtk_root_destroy(root_ptr);
+    wl_display_destroy(wl_display_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests pointer moves. Finicky, because ws switch renders them invisible. */
+void test_pointer_move(bs_test_t *test_ptr)
+{
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
+        wl_display_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add_auto(wlr_output_layout_ptr, &output);
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlr_scene_ptr, wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+
+    static const wlmtk_tile_style_t tstyle = {};
+    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "1", &tstyle);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
+    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "2", &tstyle);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
+    wlmtk_root_add_workspace(root_ptr, ws2_ptr);
+
+    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw1_ptr);
+    wlmtk_workspace_map_window(ws1_ptr, fw1_ptr->window_ptr);
+    wlmtk_window_request_position_and_size(fw1_ptr->window_ptr, 0, 0, 40, 20);
+    wlmtk_fake_window_commit_size(fw1_ptr);
+
+    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw2_ptr);
+    wlmtk_workspace_map_window(ws2_ptr, fw2_ptr->window_ptr);
+    wlmtk_window_request_position_and_size(fw2_ptr->window_ptr, 0, 0, 40, 20);
+    wlmtk_fake_window_commit_size(fw2_ptr);
+
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_root_pointer_motion(root_ptr, 5, 10, 42, NULL));
+    wlmtk_root_switch_to_next_workspace(root_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_root_pointer_motion(root_ptr, 6, 11, 42, NULL));
+
+    wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
+    wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
+
+    wlmtk_workspace_unmap_window(ws2_ptr, fw2_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw2_ptr);
+    wlmtk_workspace_unmap_window(ws1_ptr, fw1_ptr->window_ptr);
+    wlmtk_fake_window_destroy(fw1_ptr);
+
+    wlmtk_workspace_destroy(ws2_ptr);
+    wlmtk_workspace_destroy(ws1_ptr);
 
     wlmtk_root_destroy(root_ptr);
     wl_display_destroy(wl_display_ptr);
