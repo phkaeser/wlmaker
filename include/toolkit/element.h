@@ -55,6 +55,14 @@ struct wlr_keyboard_key_event;
 extern "C" {
 #endif  // __cplusplus
 
+/** Events of the element. */
+typedef struct {
+    /** The pointer just entered this element. Pointer focus gained. */
+    struct wl_signal          pointer_enter;
+    /** Pointer exited this element (or is obstructed). Pointer focus lost. */
+    struct wl_signal          pointer_leave;
+} wlmtk_element_events_t;
+
 /** Virtual method table for the element. */
 struct _wlmtk_element_vmt_t {
     /** Abstract: Destroys the implementation of the element. */
@@ -205,6 +213,8 @@ struct _wlmtk_element_t {
 
     /** Virtual method table for the element. */
     wlmtk_element_vmt_t       vmt;
+    /** Events available from the element. */
+    wlmtk_element_events_t    events;
 
     /** Points to the wlroots scene graph API node, if attached. */
     struct wlr_scene_node     *wlr_scene_node_ptr;
