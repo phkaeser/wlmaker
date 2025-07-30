@@ -294,7 +294,7 @@ TBD.
 
 ### Menu
 
-* [ ] Permit navigation by keys
+* [ ] :construction: Permit navigation by keys
 * [ ] Position all menus to remain within output.
 * [ ] Re-position to remain within output when submenu opens.
 * [ ] Handle case of too manu menu items that exceed output space.
