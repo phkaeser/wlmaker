@@ -228,7 +228,7 @@ TBD: Raise/Lower.
 
 ### `xdg-decoration`
 
-* [x] Implemented.
+* [x] :white_check_mark: Implemented.
 
 ### `xdg-shell`
 
