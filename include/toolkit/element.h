@@ -146,19 +146,36 @@ struct _wlmtk_element_vmt_t {
     /**
      * Handler for keyboard events.
      *
+     * This handler is suitable for passing keyboard events on to Wayland
+     * clients, which may have their own keymap and state tracking.
+     *
      * @param element_ptr
      * @param wlr_keyboard_key_event_ptr
-     * @param key_syms
-     * @param key_syms_count
-     * @param modifiers
      *
      * @return true if the key was handled.
      */
     bool (*keyboard_event)(
         wlmtk_element_t *element_ptr,
-        struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-        const xkb_keysym_t *key_syms,
-        size_t key_syms_count,
+        struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+
+    /**
+     * Handler for already-translated keys.
+     *
+     * This handler is intended for toolkit elements reacting on key strokes,
+     * and expects the parent to have translated the key event into (a series
+     * of) keysym events.
+     *
+     * @param element_ptr
+     * @param keysym
+     * @param direction
+     * @param modifiers
+     *
+     * @return true if the key was processed.
+     */
+    bool (*keyboard_sym)(
+        wlmtk_element_t *element_ptr,
+        xkb_keysym_t keysym,
+        enum xkb_key_direction direction,
         uint32_t modifiers);
 };
 
@@ -426,21 +443,30 @@ void wlmtk_element_pointer_grab_cancel(wlmtk_element_t *element_ptr);
 /** Calls @ref wlmtk_element_vmt_t::keyboard_event. */
 static inline bool wlmtk_element_keyboard_event(
     wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr,
-    const xkb_keysym_t *key_syms,
-    size_t key_syms_count,
-    uint32_t modifiers)
+    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
 {
     return element_ptr->vmt.keyboard_event(
-        element_ptr, wlr_keyboard_key_event_ptr,
-        key_syms, key_syms_count, modifiers);
+        element_ptr, wlr_keyboard_key_event_ptr);
+}
+
+/** Calls @ref wlmtk_element_vmt_t::keyboard_sym. */
+static inline bool wlmtk_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    uint32_t modifiers)
+{
+    return element_ptr->vmt.keyboard_sym(
+        element_ptr, keysym, direction, modifiers);
 }
 
 /** Calls @ref wlmtk_element_vmt_t::keyboard_blur. */
 static inline void wlmtk_element_keyboard_blur(
     wlmtk_element_t *element_ptr)
 {
-    element_ptr->vmt.keyboard_blur(element_ptr);
+    if (NULL != element_ptr->vmt.keyboard_blur) {
+        element_ptr->vmt.keyboard_blur(element_ptr);
+    }
 }
 
 /**
@@ -482,6 +508,8 @@ typedef struct {
     bool                      has_keyboard_focus;
     /** Indicates that @ref wlmtk_element_vmt_t::keyboard_event() was called. */
     bool                      keyboard_event_called;
+    /** Indicates that @ref wlmtk_element_vmt_t::keyboard_sym() was called. */
+    bool                      keyboard_sym_called;
 
     /** Last axis event received. */
     struct wlr_pointer_axis_event wlr_pointer_axis_event;
