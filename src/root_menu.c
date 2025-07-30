@@ -43,6 +43,8 @@ struct _wlmaker_root_menu_t {
     wlmtk_menu_t              *menu_ptr;
     /** Listener for @ref wlmtk_menu_events_t::open_changed. */
     struct wl_listener        menu_open_changed_listener;
+    /** Listener for @ref wlmtk_menu_events_t::request_close. */
+    struct wl_listener        menu_request_close_listener;
 
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
@@ -50,7 +52,14 @@ struct _wlmaker_root_menu_t {
 
 static void _wlmaker_root_menu_content_request_close(
     wlmtk_content_t *content_ptr);
+static void _wlmaker_root_menu_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated);
+
 static void _wlmaker_root_menu_handle_menu_open_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_root_menu_handle_request_close(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
@@ -66,7 +75,8 @@ static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
 
 /** Virtual method of the root menu's window content. */
 static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
-    .request_close = _wlmaker_root_menu_content_request_close
+    .request_close = _wlmaker_root_menu_content_request_close,
+    .set_activated = _wlmaker_root_menu_content_set_activated,
 };
 
 /* == Exported methods ===================================================== */
@@ -105,6 +115,10 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &wlmtk_menu_events(root_menu_ptr->menu_ptr)->open_changed,
         &root_menu_ptr->menu_open_changed_listener,
         _wlmaker_root_menu_handle_menu_open_changed);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_events(root_menu_ptr->menu_ptr)->request_close,
+        &root_menu_ptr->menu_request_close_listener,
+        _wlmaker_root_menu_handle_request_close);
 
     // FIXME - really terrible hack.
     wlmtk_pane_t *pane_ptr = wlmtk_menu_pane(root_menu_ptr->menu_ptr);
@@ -194,6 +208,8 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
     wlmtk_content_fini(&root_menu_ptr->content);
     if (NULL != root_menu_ptr->menu_ptr) {
         wlmtk_util_disconnect_listener(
+            &root_menu_ptr->menu_request_close_listener);
+        wlmtk_util_disconnect_listener(
             &root_menu_ptr->menu_open_changed_listener);
         wlmtk_menu_destroy(root_menu_ptr->menu_ptr);
         root_menu_ptr->menu_ptr = NULL;
@@ -227,6 +243,22 @@ void _wlmaker_root_menu_content_request_close(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Imlements @ref wlmtk_content_vmt_t::set_activated. Gets keyboard focus. */
+void _wlmaker_root_menu_content_set_activated(
+    wlmtk_content_t *content_ptr,
+    bool activated)
+{
+    wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
+        content_ptr, wlmaker_root_menu_t, content);
+
+    wlmtk_element_t *e = wlmtk_menu_pane(root_menu_ptr->menu_ptr)->element_ptr;
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_set_keyboard_focus_element(
+            e->parent_container_ptr, e, activated);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_events_t::open_changed. Unmaps window on close. */
 void _wlmaker_root_menu_handle_menu_open_changed(
     struct wl_listener *listener_ptr,
@@ -257,6 +289,18 @@ void _wlmaker_root_menu_handle_menu_open_changed(
         wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
 
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Listens to @ref wlmtk_menu_events_t::request_close. Closes the menu. */
+void _wlmaker_root_menu_handle_request_close(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_root_menu_t, menu_request_close_listener);
+
+    wlmtk_menu_set_open(root_menu_ptr->menu_ptr, false);
 }
 
 /* ------------------------------------------------------------------------- */
