@@ -92,19 +92,12 @@ struct _wlmtk_element_vmt_t {
      * @param motion_event_ptr
      *
      * @return Whether the motion is accepted by this element (or any of it's
-     * cohildren). In that case, the caller should accept this element as having
-     * pointer focus.
+     * cohildren). In that case, the caller should accept this element as
+     * having pointer focus.
      */
     bool (*pointer_accepts_motion)(
         wlmtk_element_t *element_ptr,
         wlmtk_pointer_motion_event_t *motion_event_ptr);
-
-    /**
-     * Informs the element it has no longer pointer focus.
-     *
-     * @param element_ptr
-     */
-    void (*pointer_blur)(wlmtk_element_t *element_ptr);
 
     /**
      * Cancels a held pointer grab.

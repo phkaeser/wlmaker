@@ -50,8 +50,6 @@ static void _wlmtk_container_element_get_dimensions(
 static bool _wlmtk_container_element_pointer_accepts_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
-static void _wlmtk_container_element_pointer_blur(
-    wlmtk_element_t *element_ptr);
 static bool _wlmtk_container_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -71,7 +69,10 @@ static bool _wlmtk_container_element_keyboard_sym(
     enum xkb_key_direction direction,
     uint32_t modifiers);
 
-static void handle_wlr_scene_tree_node_destroy(
+static void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr);
+static void _wlmtk_container_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr);
 static bool _wlmtk_container_update_layout(wlmtk_container_t *container_ptr);
@@ -81,7 +82,6 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .create_scene_node = _wlmtk_container_element_create_scene_node,
     .get_dimensions = _wlmtk_container_element_get_dimensions,
     .pointer_accepts_motion = _wlmtk_container_element_pointer_accepts_motion,
-    .pointer_blur = _wlmtk_container_element_pointer_blur,
     .pointer_button = _wlmtk_container_element_pointer_button,
     .pointer_axis = _wlmtk_container_element_pointer_axis,
     .pointer_grab_cancel = _wlmtk_container_element_pointer_grab_cancel,
@@ -108,7 +108,10 @@ bool wlmtk_container_init(wlmtk_container_t *container_ptr)
     }
     container_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &container_ptr->super_element, &container_element_vmt);
-
+    wlmtk_util_connect_listener_signal(
+        &container_ptr->super_element.events.pointer_leave,
+        &container_ptr->element_pointer_leave_listener,
+        _wlmtk_container_handle_element_pointer_leave);
     return true;
 }
 
@@ -161,6 +164,9 @@ void wlmtk_container_fini(wlmtk_container_t *container_ptr)
         container_ptr->wlr_scene_tree_ptr = NULL;
         container_ptr->super_element.wlr_scene_node_ptr = NULL;
     }
+
+    wlmtk_util_disconnect_listener(
+        &container_ptr->element_pointer_leave_listener);
 
     wlmtk_element_fini(&container_ptr->super_element);
     *container_ptr = (wlmtk_container_t){};
@@ -484,7 +490,7 @@ struct wlr_scene_node *_wlmtk_container_element_create_scene_node(
     wlmtk_util_connect_listener_signal(
         &container_ptr->wlr_scene_tree_ptr->node.events.destroy,
         &container_ptr->wlr_scene_tree_node_destroy_listener,
-        handle_wlr_scene_tree_node_destroy);
+        _wlmtk_container_handle_wlr_scene_tree_node_destroy);
     return &container_ptr->wlr_scene_tree_ptr->node;
 }
 
@@ -588,26 +594,6 @@ bool _wlmtk_container_element_pointer_accepts_motion(
     container_ptr->pointer_focus_element_ptr = NULL;
     wlmtk_element_pointer_blur(element_ptr);
     return false;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_blur. Blurs the element
- * currently having focus, then invokes the superclass' original method.
- *
- * @param element_ptr
- */
-void _wlmtk_container_element_pointer_blur(wlmtk_element_t *element_ptr)
-{
-    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_container_t, super_element);
-
-    if (NULL != container_ptr->pointer_focus_element_ptr) {
-        wlmtk_element_pointer_blur(
-            container_ptr->pointer_focus_element_ptr);
-        container_ptr->pointer_focus_element_ptr = NULL;
-    }
-    container_ptr->orig_super_element_vmt.pointer_blur(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -801,7 +787,7 @@ bool _wlmtk_container_element_keyboard_sym(
  * @param listener_ptr
  * @param data_ptr
  */
-void handle_wlr_scene_tree_node_destroy(
+void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
@@ -820,6 +806,22 @@ void handle_wlr_scene_tree_node_destroy(
     // Since this is a callback from the tree node dtor, the tree is going to
     // be destroyed. We are using this to reset the container's reference.
     wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles 'pointer_leave' events: Blurs element currently having focus. */
+void _wlmtk_container_handle_element_pointer_leave(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_container_t, element_pointer_leave_listener);
+
+    if (NULL != container_ptr->pointer_focus_element_ptr) {
+        wlmtk_element_pointer_blur(
+            container_ptr->pointer_focus_element_ptr);
+        container_ptr->pointer_focus_element_ptr = NULL;
+    }
 }
 
 /* ------------------------------------------------------------------------- */

@@ -35,8 +35,6 @@
 
 /* == Declarations ========================================================= */
 
-static void _wlmtk_element_pointer_blur(
-    wlmtk_element_t *element_ptr);
 static bool _wlmtk_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -61,7 +59,6 @@ static void handle_wlr_scene_node_destroy(
 
 /** Default virtual method table. Initializes the non-abstract methods. */
 static const wlmtk_element_vmt_t element_vmt = {
-    .pointer_blur = _wlmtk_element_pointer_blur,
     .pointer_button = _wlmtk_element_pointer_button,
     .pointer_axis = _wlmtk_element_pointer_axis,
     .keyboard_blur = _wlmtk_element_keyboard_blur,
@@ -106,9 +103,6 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     if (NULL != element_vmt_ptr->pointer_accepts_motion) {
         element_ptr->vmt.pointer_accepts_motion =
             element_vmt_ptr->pointer_accepts_motion;
-    }
-    if (NULL != element_vmt_ptr->pointer_blur) {
-        element_ptr->vmt.pointer_blur = element_vmt_ptr->pointer_blur;
     }
     if (NULL != element_vmt_ptr->pointer_button) {
         element_ptr->vmt.pointer_button = element_vmt_ptr->pointer_button;
@@ -338,7 +332,16 @@ bool wlmtk_element_pointer_focus(
 /* ------------------------------------------------------------------------- */
 void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr)
 {
-    element_ptr->vmt.pointer_blur(element_ptr);
+    if (!element_ptr->pointer_inside ||
+        element_ptr->inhibit_pointer_blur) return;
+
+    element_ptr->pointer_inside = false;
+    wl_signal_emit(&element_ptr->events.pointer_leave, NULL);
+
+    if (NULL != element_ptr->parent_container_ptr) {
+        wlmtk_element_pointer_blur(
+            &element_ptr->parent_container_ptr->super_element);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -351,27 +354,6 @@ void wlmtk_element_pointer_grab_cancel(
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_blur. If the element has
- * pointer focus, will remove it. Propagates to parent.
- *
- * @param element_ptr
- */
-void _wlmtk_element_pointer_blur(
-    wlmtk_element_t *element_ptr)
-{
-    if (!element_ptr->pointer_inside ||
-        element_ptr->inhibit_pointer_blur) return;
-    element_ptr->pointer_inside = false;
-    wl_signal_emit(&element_ptr->events.pointer_leave, NULL);
-
-    if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_element_pointer_blur(
-            &element_ptr->parent_container_ptr->super_element);
-    }
-}
 
 /* ------------------------------------------------------------------------- */
 /** Does nothing, returns false. */
