@@ -55,13 +55,13 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
 
 * Bug fixes
-  * Fix keyboard input not working for Firefox.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
-  * When switching workspace, pointer state appears to be reset.
-  * Test handling of mouse position when changing element visibility. Making
+  * [done] Fix keyboard input not working for Firefox.
+  * [done] When switching workspace, pointer state appears to be reset.
+  * [done] Test handling of mouse position when changing element visibility. Making
     an element visible should re-trigger focus computation.
-  * Verify handling of element motion() and button() return values.
+  * [done] Verify handling of element motion() and button() return values.
   * [done] Fix non-updating wlmclock observed on non-accelerated graphics stack.
 
 ## [0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5)
