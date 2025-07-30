@@ -21,7 +21,6 @@
 #include "surface.h"
 
 #include <libbase/libbase.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
