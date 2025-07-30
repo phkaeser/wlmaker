@@ -289,6 +289,24 @@ bool wlmtk_element_pointer_motion(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmtk_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    return element_ptr->vmt.pointer_button(element_ptr, button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
+{
+    return element_ptr->vmt.pointer_axis(
+        element_ptr,
+        wlr_pointer_axis_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmtk_element_pointer_focus(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr)
@@ -309,6 +327,21 @@ bool wlmtk_element_pointer_focus(
         &element_ptr->events.pointer_enter,
         motion_event_ptr->pointer_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr)
+{
+    element_ptr->vmt.pointer_blur(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr)
+{
+    if (NULL != element_ptr->vmt.pointer_grab_cancel) {
+        element_ptr->vmt.pointer_grab_cancel(element_ptr);
+    }
 }
 
 /* == Local (static) methods =============================================== */

@@ -107,6 +107,18 @@ struct _wlmtk_element_vmt_t {
     void (*pointer_blur)(wlmtk_element_t *element_ptr);
 
     /**
+     * Cancels a held pointer grab.
+     *
+     * Required to have an implementation by any element that requests a
+     * pointer grab through @ref wlmtk_container_pointer_grab.
+     *
+     * Private: Must only to be called by the parent container.
+     *
+     * @param element_ptr
+     */
+    void (*pointer_grab_cancel)(wlmtk_element_t *element_ptr);
+
+    /**
      * Indicates pointer button event.
      *
      * @param element_ptr
@@ -129,18 +141,6 @@ struct _wlmtk_element_vmt_t {
     bool (*pointer_axis)(
         wlmtk_element_t *element_ptr,
         struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
-
-    /**
-     * Cancels a held pointer grab.
-     *
-     * Required to have an implementation by any element that requests a
-     * pointer grab through @ref wlmtk_container_pointer_grab.
-     *
-     * Private: Must only to be called by the parent container.
-     *
-     * @param element_ptr
-     */
-    void (*pointer_grab_cancel)(wlmtk_element_t *element_ptr);
 
     /**
      * Blurs (de-activates) keyboard focus for the element. Propagates to child
@@ -362,7 +362,7 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
 /**
  * Moves the pointer to the new position.
  *
- * calls @ref wlmtk_element_vmt_t::pointer_accepts_motion, if the element is
+ * Calls @ref wlmtk_element_vmt_t::pointer_accepts_motion, if the element is
  * visible. Triggers @ref wlmtk_element_events_t::pointer_enter or
  * @ref wlmtk_element_events_t::pointer_leave if the motion is accepted.
  *
@@ -373,35 +373,29 @@ bool wlmtk_element_pointer_motion(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *pointer_motion_ptr);
 
-/** Calls @ref wlmtk_element_vmt_t::pointer_button. */
-static inline bool wlmtk_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr)
-{
-    return element_ptr->vmt.pointer_button(element_ptr, button_event_ptr);
-}
-
-/** Calls @ref wlmtk_element_vmt_t::pointer_axis. */
-static inline bool wlmtk_element_pointer_axis(
-    wlmtk_element_t *element_ptr,
-    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
-{
-    return element_ptr->vmt.pointer_axis(
-        element_ptr, wlr_pointer_axis_event_ptr);
-}
-
 /**
- * Informs the element that it does not (or no longer) have pointer focus.
- *
- * Raises @ref wlmtk_element_events_t::pointer_leave, if it had pointer focus,
- * and calls @ref wlmtk_element_pointer_blur on the parent (if available).
+ * Processes the button event. Calls @ref wlmtk_element_vmt_t::pointer_button.
  *
  * @param element_ptr
+ * @param button_event_ptr
+ *
+ * @return true if the button event was consumed.
  */
-static inline void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr)
-{
-    element_ptr->vmt.pointer_blur(element_ptr);
-}
+bool wlmtk_element_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+
+/**
+ * Processes the axis event. Calls @ref wlmtk_element_vmt_t::pointer_axis.
+ *
+ * @param element_ptr
+ * @param wlr_pointer_axis_event_ptr
+ *
+ * @return true if the axis event was consumed.
+ */
+bool wlmtk_element_pointer_axis(
+    wlmtk_element_t *element_ptr,
+    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
 
 /**
  * Sets pointer focus for the element.
@@ -419,15 +413,22 @@ bool wlmtk_element_pointer_focus(
     wlmtk_element_t *element_ptr,
     wlmtk_pointer_motion_event_t *motion_event_ptr);
 
-/** Calls optional @ref wlmtk_element_vmt_t::pointer_grab_cancel. */
-// TODO(kaeser@gubbe.ch): Mrege with wlmtk_element_release_pointer_focus.
-static inline void wlmtk_element_pointer_grab_cancel(
-    wlmtk_element_t *element_ptr)
-{
-    if (NULL != element_ptr->vmt.pointer_grab_cancel) {
-        element_ptr->vmt.pointer_grab_cancel(element_ptr);
-    }
-}
+/**
+ * Informs the element that it does not (or no longer) have pointer focus.
+ *
+ * Raises @ref wlmtk_element_events_t::pointer_leave, if it had pointer focus,
+ * and calls @ref wlmtk_element_pointer_blur on the parent (if available).
+ *
+ * @param element_ptr
+ */
+void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr);
+
+/**
+ * Cancels pointer grab. Calls @ref wlmtk_element_vmt_t::pointer_grab_cancel.
+ *
+ * @param element_ptr
+ */
+void wlmtk_element_pointer_grab_cancel(wlmtk_element_t *element_ptr);
 
 /** Calls @ref wlmtk_element_vmt_t::keyboard_event. */
 static inline bool wlmtk_element_keyboard_event(
