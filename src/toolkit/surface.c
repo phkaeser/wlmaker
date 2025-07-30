@@ -161,40 +161,30 @@ void wlmtk_surface_set_activated(
 {
     if (surface_ptr->activated == activated) return;
 
-    // Guard clause, for tests.
-    if (NULL == surface_ptr->env_ptr) return;
-
-    struct wlr_seat *wlr_seat_ptr = wlmtk_env_wlr_seat(surface_ptr->env_ptr);
-    struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(wlr_seat_ptr);
-    if (activated) {
-        if (NULL != wlr_keyboard_ptr) {
-            wlr_seat_keyboard_notify_enter(
-                wlr_seat_ptr,
-                surface_ptr->wlr_surface_ptr,
-                wlr_keyboard_ptr->keycodes,
-                wlr_keyboard_ptr->num_keycodes,
-                &wlr_keyboard_ptr->modifiers);
-
-        }
-        if (NULL != surface_ptr->super_element.parent_container_ptr) {
-            wlmtk_container_set_keyboard_focus_element(
-                surface_ptr->super_element.parent_container_ptr,
-                &surface_ptr->super_element,
-                true);
-        }
-    } else {
-        if (wlr_seat_ptr->keyboard_state.focused_surface ==
-            surface_ptr->wlr_surface_ptr) {
-            wlr_seat_keyboard_clear_focus(wlr_seat_ptr);
-        }
-        if (NULL != surface_ptr->super_element.parent_container_ptr) {
-            wlmtk_container_set_keyboard_focus_element(
-                surface_ptr->super_element.parent_container_ptr,
-                &surface_ptr->super_element,
-                false);
+    if (NULL != surface_ptr->wlr_seat_ptr) {
+        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+            surface_ptr->wlr_seat_ptr);
+        if (activated) {
+            if (NULL != wlr_keyboard_ptr) {
+                wlr_seat_keyboard_notify_enter(
+                    surface_ptr->wlr_seat_ptr,
+                    surface_ptr->wlr_surface_ptr,
+                    wlr_keyboard_ptr->keycodes,
+                    wlr_keyboard_ptr->num_keycodes,
+                    &wlr_keyboard_ptr->modifiers);
+            }
+        } else if (surface_ptr->wlr_seat_ptr->keyboard_state.focused_surface ==
+                   surface_ptr->wlr_surface_ptr) {
+            wlr_seat_keyboard_clear_focus(surface_ptr->wlr_seat_ptr);
         }
     }
 
+    if (NULL != surface_ptr->super_element.parent_container_ptr) {
+        wlmtk_container_set_keyboard_focus_element(
+            surface_ptr->super_element.parent_container_ptr,
+            &surface_ptr->super_element,
+            activated);
+    }
     surface_ptr->activated = activated;
 }
 
@@ -254,6 +244,7 @@ bool _wlmtk_surface_init(
 
     surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
     if (NULL != surface_ptr->wlr_surface_ptr) {
+        surface_ptr->wlr_surface_ptr->data = surface_ptr;
         wlmtk_util_connect_listener_signal(
             &wlr_surface_ptr->events.commit,
             &surface_ptr->surface_commit_listener,
