@@ -75,6 +75,8 @@ struct _wlmtk_container_t {
 
     /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
     struct wl_listener        wlr_scene_tree_node_destroy_listener;
+    /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
+    struct wl_listener        element_pointer_leave_listener;
 
     /** Stores the element with current pointer focus. May be NULL. */
     wlmtk_element_t           *pointer_focus_element_ptr;
