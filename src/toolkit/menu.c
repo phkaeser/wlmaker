@@ -72,7 +72,7 @@ static bool _wlmtk_menu_element_keyboard_sym(
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
     uint32_t modifiers);
-static wlmtk_menu_item_t *_wlmtk_menu_this_or_next_non_disabled_item(
+static bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
     bs_dllist_node_t *dlnode_ptr,
     bs_dllist_node_iterator_t iterator);
 
@@ -328,7 +328,8 @@ bool _wlmtk_menu_element_keyboard_sym(
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_t, box.super_container.super_element);
-    bs_dllist_node_t *dlnode_ptr;
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(
+        menu_ptr->highlighted_menu_item_ptr);
     bs_dllist_node_iterator_t node_iterator;
 
     if (direction != XKB_KEY_DOWN) return false;
@@ -357,22 +358,16 @@ bool _wlmtk_menu_element_keyboard_sym(
 
     case XKB_KEY_Down:
         node_iterator = bs_dllist_node_iterator_forward;
-        if (menu_ptr->highlighted_menu_item_ptr) {
-            dlnode_ptr = wlmtk_dlnode_from_menu_item(
-                menu_ptr->highlighted_menu_item_ptr)->next_ptr;
-        } else {
-            dlnode_ptr = menu_ptr->items.head_ptr;
-        }
+        dlnode_ptr = _wlmtk_menu_this_or_next_non_disabled_dlnode(
+            node_iterator(dlnode_ptr), node_iterator);
+        if (NULL == dlnode_ptr) dlnode_ptr = menu_ptr->items.head_ptr;
         break;
 
     case XKB_KEY_Up:
         node_iterator = bs_dllist_node_iterator_backward;
-        if (menu_ptr->highlighted_menu_item_ptr) {
-            dlnode_ptr = wlmtk_dlnode_from_menu_item(
-                menu_ptr->highlighted_menu_item_ptr)->prev_ptr;
-        } else {
-            dlnode_ptr = menu_ptr->items.tail_ptr;
-        }
+        dlnode_ptr = _wlmtk_menu_this_or_next_non_disabled_dlnode(
+            node_iterator(dlnode_ptr), node_iterator);
+        if (NULL == dlnode_ptr) dlnode_ptr = menu_ptr->items.tail_ptr;
         break;
 
     default:
@@ -380,8 +375,9 @@ bool _wlmtk_menu_element_keyboard_sym(
     }
 
     wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_KEYBOARD);
-    wlmtk_menu_item_t *item_ptr = _wlmtk_menu_this_or_next_non_disabled_item(
-        dlnode_ptr, node_iterator);
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_from_dlnode(
+        _wlmtk_menu_this_or_next_non_disabled_dlnode(
+            dlnode_ptr, node_iterator));
     if (NULL != item_ptr) {
         wlmtk_menu_request_item_highlight(menu_ptr, item_ptr);
     }
@@ -395,10 +391,10 @@ bool _wlmtk_menu_element_keyboard_sym(
  * @param dlnode_ptr
  * @param iterator            Iterator to reach the "next" item.
  *
- * @return A pointer to the non-disabled @ref wlmtk_menu_item_t, or NULL if
- *     there are none.
+ * @return A pointer to @ref wlmtk_menu_item_t::dlnode of `dlnode_ptr` (or the
+ *     the next non-disabled item), or NULL.
  */
-wlmtk_menu_item_t *_wlmtk_menu_this_or_next_non_disabled_item(
+bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
     bs_dllist_node_t *dlnode_ptr,
     bs_dllist_node_iterator_t iterator)
 {
@@ -408,12 +404,12 @@ wlmtk_menu_item_t *_wlmtk_menu_this_or_next_non_disabled_item(
     switch (wlmtk_menu_item_get_state(menu_item_ptr)) {
     case WLMTK_MENU_ITEM_ENABLED:
     case WLMTK_MENU_ITEM_HIGHLIGHTED:
-        return menu_item_ptr;
+        return dlnode_ptr;
 
     case WLMTK_MENU_ITEM_DISABLED:
         break;
     }
-    return _wlmtk_menu_this_or_next_non_disabled_item(
+    return _wlmtk_menu_this_or_next_non_disabled_dlnode(
         iterator(dlnode_ptr), iterator);
 }
 
@@ -614,16 +610,25 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         WLMTK_MENU_MODE_KEYBOARD,
         wlmtk_menu_get_mode(menu_ptr));
 
-    // Down key once more: No further enabled items, stays at items[4].
+    // Down key once more: Wrap around, land at items[1].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[1].item_ptr));
+
+    // Up key: Wraps around, land at items[4].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
         wlmtk_menu_item_get_state(items[4].item_ptr));
 
-    // Up key: Moves up, lands back at items[2]
+    // Up key: Moves up once more, at items[2].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
@@ -631,24 +636,6 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         test_ptr,
         WLMTK_MENU_ITEM_HIGHLIGHTED,
         wlmtk_menu_item_get_state(items[2].item_ptr));
-
-    // Up key: Moves up once more, at items[1].
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[1].item_ptr));
-
-    // Up key once more: No further elemnts, stays at items[1].
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[1].item_ptr));
 
     // End key: Jump to items[4].
     BS_TEST_VERIFY_TRUE(
