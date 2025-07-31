@@ -155,6 +155,13 @@ bool wlmtk_menu_item_set_highlighted(
     wlmtk_menu_item_t *menu_item_ptr,
     bool highlighted);
 
+/**
+ * Triggers the menu item's action.
+ *
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_item_trigger(wlmtk_menu_item_t *menu_item_ptr);
+
 /** Returns pointer to @ref wlmtk_menu_item_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr);
