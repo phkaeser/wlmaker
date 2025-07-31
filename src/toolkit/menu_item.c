@@ -363,15 +363,38 @@ bool wlmtk_menu_item_set_highlighted(
 }
 
 /* -------------------------------------------------------------------------*/
+void wlmtk_menu_item_trigger(wlmtk_menu_item_t *menu_item_ptr)
+{
+    switch (menu_item_ptr->state) {
+    case WLMTK_MENU_ITEM_ENABLED:
+    case WLMTK_MENU_ITEM_HIGHLIGHTED:
+
+        wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
+        break;
+
+    case WLMTK_MENU_ITEM_DISABLED:
+    default:
+        bs_log(BS_WARNING, "Ignoring trigger for item %p (\"%s\"), state %d",
+               menu_item_ptr,
+               menu_item_ptr->text_ptr ? menu_item_ptr->text_ptr : "",
+               menu_item_ptr->state);
+    }
+}
+
+/* -------------------------------------------------------------------------*/
 bs_dllist_node_t *wlmtk_dlnode_from_menu_item(
     wlmtk_menu_item_t *menu_item_ptr)
 {
+    // Guard clause.
+    if (NULL == menu_item_ptr) return NULL;
     return &menu_item_ptr->dlnode;
 }
 
 /* -------------------------------------------------------------------------*/
 wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr)
 {
+    // Guard clause.
+    if (NULL == dlnode_ptr) return NULL;
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_menu_item_t, dlnode);
 }
 
@@ -537,7 +560,7 @@ bool _wlmtk_menu_item_element_pointer_button(
         WLMTK_BUTTON_CLICK == button_event_ptr->type &&
         WLMTK_MENU_ITEM_DISABLED != menu_item_ptr->state &&
         wlmtk_menu_item_element(menu_item_ptr)->pointer_inside) {
-        wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
+        wlmtk_menu_item_trigger(menu_item_ptr);
         return true;
     }
 
@@ -547,7 +570,7 @@ bool _wlmtk_menu_item_element_pointer_button(
         WLMTK_BUTTON_UP == button_event_ptr->type &&
         WLMTK_MENU_ITEM_DISABLED != menu_item_ptr->state &&
         wlmtk_menu_item_element(menu_item_ptr)->pointer_inside) {
-        wl_signal_emit(&menu_item_ptr->events.triggered, NULL);
+        wlmtk_menu_item_trigger(menu_item_ptr);
         return true;
     }
 
@@ -667,6 +690,9 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_menu_item_element(item_ptr));
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_item_set_text(item_ptr, "Text"));
+
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_menu_item_from_dlnode(NULL));
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_dlnode_from_menu_item(NULL));
 
     wlmtk_menu_item_destroy(item_ptr);
 }

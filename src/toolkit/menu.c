@@ -28,6 +28,7 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 #include "input.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 
@@ -71,6 +72,9 @@ static bool _wlmtk_menu_element_keyboard_sym(
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
     uint32_t modifiers);
+static wlmtk_menu_item_t *_wlmtk_menu_this_or_next_non_disabled_item(
+    bs_dllist_node_t *dlnode_ptr,
+    bs_dllist_node_iterator_t iterator);
 
 /* == Data ================================================================= */
 
@@ -324,22 +328,105 @@ bool _wlmtk_menu_element_keyboard_sym(
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_t, box.super_container.super_element);
+    bs_dllist_node_t *dlnode_ptr;
+    bs_dllist_node_iterator_t node_iterator;
 
-    if (XKB_KEY_Escape == keysym && XKB_KEY_DOWN == direction) {
+    if (direction != XKB_KEY_DOWN) return false;
+
+    switch (keysym) {
+    case XKB_KEY_Escape:
         wl_signal_emit(&menu_ptr->events.request_close, NULL);
         return true;
+
+    case XKB_KEY_Return:
+        wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_KEYBOARD);
+        if (NULL != menu_ptr->highlighted_menu_item_ptr) {
+            wlmtk_menu_item_trigger(menu_ptr->highlighted_menu_item_ptr);
+        }
+        return true;
+
+    case XKB_KEY_Home:
+        node_iterator = bs_dllist_node_iterator_forward;
+        dlnode_ptr = menu_ptr->items.head_ptr;
+        break;
+
+    case XKB_KEY_End:
+        node_iterator = bs_dllist_node_iterator_backward;
+        dlnode_ptr = menu_ptr->items.tail_ptr;
+        break;
+
+    case XKB_KEY_Down:
+        node_iterator = bs_dllist_node_iterator_forward;
+        if (menu_ptr->highlighted_menu_item_ptr) {
+            dlnode_ptr = wlmtk_dlnode_from_menu_item(
+                menu_ptr->highlighted_menu_item_ptr)->next_ptr;
+        } else {
+            dlnode_ptr = menu_ptr->items.head_ptr;
+        }
+        break;
+
+    case XKB_KEY_Up:
+        node_iterator = bs_dllist_node_iterator_backward;
+        if (menu_ptr->highlighted_menu_item_ptr) {
+            dlnode_ptr = wlmtk_dlnode_from_menu_item(
+                menu_ptr->highlighted_menu_item_ptr)->prev_ptr;
+        } else {
+            dlnode_ptr = menu_ptr->items.tail_ptr;
+        }
+        break;
+
+    default:
+        return false;
     }
-    return false;
+
+    wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_KEYBOARD);
+    wlmtk_menu_item_t *item_ptr = _wlmtk_menu_this_or_next_non_disabled_item(
+        dlnode_ptr, node_iterator);
+    if (NULL != item_ptr) {
+        wlmtk_menu_request_item_highlight(menu_ptr, item_ptr);
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns the given-or-next non-disabled menu item, from `dlnode_ptr`.
+ *
+ * @param dlnode_ptr
+ * @param iterator            Iterator to reach the "next" item.
+ *
+ * @return A pointer to the non-disabled @ref wlmtk_menu_item_t, or NULL if
+ *     there are none.
+ */
+wlmtk_menu_item_t *_wlmtk_menu_this_or_next_non_disabled_item(
+    bs_dllist_node_t *dlnode_ptr,
+    bs_dllist_node_iterator_t iterator)
+{
+    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_from_dlnode(dlnode_ptr);
+    if (NULL == menu_item_ptr) return NULL;
+
+    switch (wlmtk_menu_item_get_state(menu_item_ptr)) {
+    case WLMTK_MENU_ITEM_ENABLED:
+    case WLMTK_MENU_ITEM_HIGHLIGHTED:
+        return menu_item_ptr;
+
+    case WLMTK_MENU_ITEM_DISABLED:
+        break;
+    }
+    return _wlmtk_menu_this_or_next_non_disabled_item(
+        iterator(dlnode_ptr), iterator);
 }
 
 /* == Unit tests =========================================================== */
 
 static void test_pointer_highlight(bs_test_t *test_ptr);
 static void test_set_mode(bs_test_t *test_ptr);
+static void test_keyboard_navigation(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_test_cases[] = {
     { 1, "pointer_highlight", test_pointer_highlight },
     { 1, "set_mode", test_set_mode },
+    { 1, "keyboard_navigation", test_keyboard_navigation },
     { 0, NULL, NULL }
 };
 
@@ -461,6 +548,145 @@ void test_set_mode(bs_test_t *test_ptr)
         test_ptr,
         WLMTK_MENU_MODE_NORMAL,
         wlmtk_menu_item_get_mode(item2_ptr));
+
+    wlmtk_menu_destroy(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests keyboard navigation within the menu. */
+void test_keyboard_navigation(bs_test_t *test_ptr)
+{
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
+    wlmtk_element_set_visible(me, true);
+    // TODO(kaeser@gubbe.ch): Replace with me, once not relying on overriding
+    // the wlmtk_box_t element.
+    wlmtk_element_t *ke = wlmtk_box_element(&menu_ptr->box);
+
+    wlmtk_util_test_listener_t request_close_test_listener;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_events(menu_ptr)->request_close,
+        &request_close_test_listener);
+
+    // Test items: disabled, enabled, enabled, disabled, enabled.
+    struct {
+        wlmtk_menu_item_t *item_ptr;
+        bool enabled;
+        wlmtk_util_test_listener_t triggered_test_listener;
+    } items[6] = {
+        [1] = { .enabled = true },
+        [2] = { .enabled = true },
+        [4] = { .enabled = true },
+    };
+    for (int i = 0; i < 5; ++i) {
+        items[i].item_ptr = wlmtk_menu_item_create(&_test_style.item);
+        BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, items[i].item_ptr);
+        wlmtk_util_connect_test_listener(
+            &wlmtk_menu_item_events(items[i].item_ptr)->triggered,
+            &items[i].triggered_test_listener);
+        wlmtk_menu_add_item(menu_ptr, items[i].item_ptr);
+        wlmtk_menu_item_set_enabled(items[i].item_ptr, items[i].enabled);
+    }
+
+    // Move pointer over items[2].
+    wlmtk_pointer_motion_event_t e = { .x = 9, .y = 25 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[2].item_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_NORMAL,
+        wlmtk_menu_get_mode(menu_ptr));
+
+    // Down key: Moves down, items[3] is disabled => land at items[4].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[4].item_ptr));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_MODE_KEYBOARD,
+        wlmtk_menu_get_mode(menu_ptr));
+
+    // Down key once more: No further enabled items, stays at items[4].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[4].item_ptr));
+
+    // Up key: Moves up, lands back at items[2]
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[2].item_ptr));
+
+    // Up key: Moves up once more, at items[1].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[1].item_ptr));
+
+    // Up key once more: No further elemnts, stays at items[1].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[1].item_ptr));
+
+    // End key: Jump to items[4].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_End, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[4].item_ptr));
+
+    // Home key: Jump to items[1].
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[1].item_ptr));
+
+    // Return key: Trigger items[1].
+    wlmtk_util_clear_test_listener(&items[1].triggered_test_listener);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Return, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, items[1].triggered_test_listener.calls);
+
+    // Escape key: Request to close the menu.
+    wlmtk_util_clear_test_listener(&request_close_test_listener);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
+
+    // Keys that were released: No trigger.
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_UP, 0));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
 
     wlmtk_menu_destroy(menu_ptr);
 }
