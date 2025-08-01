@@ -51,6 +51,8 @@ struct _wlmtk_menu_t {
     bs_dllist_t               items;
     /** The currently-highlighted menu item, or NULL if none. */
     wlmtk_menu_item_t         *highlighted_menu_item_ptr;
+    /** If this is a submenu, this points to the parent menu item. */
+    wlmtk_menu_item_t         *parent_menu_item_ptr;
     /** Current mode of the menu. */
     enum wlmtk_menu_mode      mode;
 };
@@ -181,7 +183,6 @@ bool wlmtk_menu_is_open(wlmtk_menu_t *menu_ptr)
     return wlmtk_menu_element(menu_ptr)->visible;
 }
 
-
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_set_mode(wlmtk_menu_t *menu_ptr,
                          enum wlmtk_menu_mode mode)
@@ -228,6 +229,19 @@ void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
     bs_dllist_remove(
         &menu_ptr->items,
         wlmtk_dlnode_from_menu_item(menu_item_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_set_parent_item(wlmtk_menu_t *menu_ptr,
+                                wlmtk_menu_item_t *menu_item_ptr)
+{
+    menu_ptr->parent_menu_item_ptr = menu_item_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_item_t *wlmtk_menu_get_parent_item(wlmtk_menu_t *menu_ptr)
+{
+    return menu_ptr->parent_menu_item_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -324,7 +338,7 @@ bool _wlmtk_menu_element_keyboard_sym(
     wlmtk_element_t *element_ptr,
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
-    __UNUSED__ uint32_t modifiers)
+    uint32_t modifiers)
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_menu_t, box.super_container.super_element);
@@ -332,11 +346,31 @@ bool _wlmtk_menu_element_keyboard_sym(
         menu_ptr->highlighted_menu_item_ptr);
     bs_dllist_node_iterator_t node_iterator;
 
+    // If there is a submenu with an already highlighted item: Forward key.
+    wlmtk_menu_t *submenu_ptr = NULL;
+    if (NULL != menu_ptr->highlighted_menu_item_ptr) {
+        submenu_ptr = wlmtk_menu_item_get_submenu(
+            menu_ptr->highlighted_menu_item_ptr);
+        if (NULL != submenu_ptr &&
+            NULL != submenu_ptr->highlighted_menu_item_ptr) {
+            return _wlmtk_menu_element_keyboard_sym(
+                &submenu_ptr->box.super_container.super_element,
+                keysym,
+                direction,
+                modifiers);
+        }
+    }
+
+    // Otherwise: Only interested in key press events, not release.
     if (direction != XKB_KEY_DOWN) return false;
 
     switch (keysym) {
     case XKB_KEY_Escape:
-        wl_signal_emit(&menu_ptr->events.request_close, NULL);
+        if (NULL != wlmtk_menu_get_parent_item(menu_ptr)) {
+            wlmtk_menu_request_item_highlight(menu_ptr, NULL);
+        } else {
+            wl_signal_emit(&menu_ptr->events.request_close, NULL);
+        }
         return true;
 
     case XKB_KEY_Return:
@@ -345,6 +379,25 @@ bool _wlmtk_menu_element_keyboard_sym(
             wlmtk_menu_item_trigger(menu_ptr->highlighted_menu_item_ptr);
         }
         return true;
+
+    case XKB_KEY_Left:
+        if (NULL == wlmtk_menu_get_parent_item(menu_ptr)) return false;
+        wlmtk_menu_request_item_highlight(menu_ptr, NULL);
+        return true;
+
+    case XKB_KEY_Right:
+        if (NULL != submenu_ptr &&
+            NULL == submenu_ptr->highlighted_menu_item_ptr) {
+            wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_from_dlnode(
+                _wlmtk_menu_this_or_next_non_disabled_dlnode(
+                    submenu_ptr->items.head_ptr,
+                    bs_dllist_node_iterator_forward));
+            if (NULL != item_ptr) {
+                wlmtk_menu_request_item_highlight(submenu_ptr, item_ptr);
+                return true;
+            }
+        }
+        return false;
 
     case XKB_KEY_Home:
         node_iterator = bs_dllist_node_iterator_forward;
@@ -418,11 +471,13 @@ bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
 static void test_pointer_highlight(bs_test_t *test_ptr);
 static void test_set_mode(bs_test_t *test_ptr);
 static void test_keyboard_navigation(bs_test_t *test_ptr);
+static void test_keyboard_navigation_nested(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_menu_test_cases[] = {
     { 1, "pointer_highlight", test_pointer_highlight },
     { 1, "set_mode", test_set_mode },
     { 1, "keyboard_navigation", test_keyboard_navigation },
+    { 1, "keyboard_navigation_nested", test_keyboard_navigation_nested },
     { 0, NULL, NULL }
 };
 
@@ -676,6 +731,159 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
 
     wlmtk_menu_destroy(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests keyboard navigation with nested menus. */
+void test_keyboard_navigation_nested(bs_test_t *test_ptr)
+{
+    // Menu m0 with two items (i00, i01).
+    wlmtk_menu_t *m0 = wlmtk_menu_create(&_test_style);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, m0);
+    wlmtk_menu_item_t *i00 = wlmtk_menu_item_create(&_test_style.item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i00);
+    wlmtk_menu_add_item(m0, i00);
+    wlmtk_menu_item_t *i01 = wlmtk_menu_item_create(&_test_style.item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i01);
+    wlmtk_menu_add_item(m0, i01);
+
+    wlmtk_util_test_listener_t request_close_test_listener;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_events(m0)->request_close,
+        &request_close_test_listener);
+
+    // i01 has submenu m1 with two items (i10, i11).
+    wlmtk_menu_t *m1 = wlmtk_menu_create(&_test_style);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, m1);
+    wlmtk_menu_item_set_submenu(i01, m1);
+    wlmtk_menu_item_t *i10 = wlmtk_menu_item_create(&_test_style.item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i10);
+    wlmtk_menu_add_item(m1, i10);
+    wlmtk_menu_item_t *i11 = wlmtk_menu_item_create(&_test_style.item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i11);
+    wlmtk_menu_add_item(m1, i11);
+    wlmtk_element_t *me = wlmtk_menu_element(m0);
+    wlmtk_element_set_visible(me, true);
+
+    // TODO(kaeser@gubbe.ch): Replace with me, once not relying on overriding
+    // the wlmtk_box_t element.
+    wlmtk_element_t *ke = wlmtk_box_element(&m0->box);
+
+    // Home key, highlights i00.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i00));
+
+    // Right key. Does not do anything.
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i00));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(m1));
+
+    // Down key. Highlights i01, opens m1, but no highlight there.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i10));
+
+    // Right key. Now highlights i10. i01 remains highlighted.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i10));
+
+    // Down key. Now highlights i11. i01 remains highlighted.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i11));
+
+    // Left key. Moves highlight back, but keeps submenu open.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Left, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i11));
+
+    // Right key. Highlights the submenu with i10 again.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i10));
+
+    // Esc key, while submenu has highlight. Same action as left key.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_NEQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(i11));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, request_close_test_listener.calls);
+
+    // Esc key, once more. Must close.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
+
+    wlmtk_menu_destroy(m0);
 }
 
 /* == End of menu.c ======================================================== */

@@ -146,6 +146,20 @@ void wlmtk_menu_remove_item(wlmtk_menu_t *menu_ptr,
                             wlmtk_menu_item_t *menu_item_ptr);
 
 /**
+ * Registers `menu_item_ptr` as this submenu's parent item.
+ *
+ * @protected Must be called only from @ref wlmtk_menu_item_set_submenu.
+ *
+ * @param menu_ptr
+ * @param menu_item_ptr
+ */
+void wlmtk_menu_set_parent_item(wlmtk_menu_t *menu_ptr,
+                                wlmtk_menu_item_t *menu_item_ptr);
+
+/** @return the parent menu item, if this is a submenu. NULL otherwise. */
+wlmtk_menu_item_t *wlmtk_menu_get_parent_item(wlmtk_menu_t *menu_ptr);
+
+/**
  * Requests that menu_item_ptr be highlighted.
  *
  * @param menu_ptr
