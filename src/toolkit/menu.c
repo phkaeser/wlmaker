@@ -605,6 +605,8 @@ void test_set_mode(bs_test_t *test_ptr)
 /** Tests keyboard navigation within the menu. */
 void test_keyboard_navigation(bs_test_t *test_ptr)
 {
+    static const wlmtk_menu_item_state_t HL = WLMTK_MENU_ITEM_HIGHLIGHTED;
+
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
@@ -620,7 +622,7 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
 
     // Test items: disabled, enabled, enabled, disabled, enabled.
     struct {
-        wlmtk_menu_item_t *item_ptr;
+        wlmtk_menu_item_t *item;
         bool enabled;
         wlmtk_util_test_listener_t triggered_test_listener;
     } items[6] = {
@@ -629,85 +631,61 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         [4] = { .enabled = true },
     };
     for (int i = 0; i < 5; ++i) {
-        items[i].item_ptr = wlmtk_menu_item_create(&_test_style.item);
-        BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, items[i].item_ptr);
+        items[i].item = wlmtk_menu_item_create(&_test_style.item);
+        BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, items[i].item);
         wlmtk_util_connect_test_listener(
-            &wlmtk_menu_item_events(items[i].item_ptr)->triggered,
+            &wlmtk_menu_item_events(items[i].item)->triggered,
             &items[i].triggered_test_listener);
-        wlmtk_menu_add_item(menu_ptr, items[i].item_ptr);
-        wlmtk_menu_item_set_enabled(items[i].item_ptr, items[i].enabled);
+        wlmtk_menu_add_item(menu_ptr, items[i].item);
+        wlmtk_menu_item_set_enabled(items[i].item, items[i].enabled);
     }
 
     // Move pointer over items[2].
     wlmtk_pointer_motion_event_t e = { .x = 9, .y = 25 };
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[2].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[2].item));
 
     // Down key: Moves down, items[3] is disabled => land at items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[4].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // Down key once more: Wrap around, land at items[1].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[1].item_ptr));
+    BS_TEST_VERIFY_EQ( test_ptr, HL, wlmtk_menu_item_get_state(items[1].item));
 
     // Up key: Wraps around, land at items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[4].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // Up key: Moves up once more, at items[2].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[2].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[2].item));
 
     // End key: Jump to items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_End, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[4].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // A motion, within items[2]. Re-gain focus there.
     e = (wlmtk_pointer_motion_event_t){ .x = 8, .y = 25 };
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[2].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[2].item));
 
     // Home key: Jump to items[1].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(items[1].item_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[1].item));
 
     // Return key: Trigger items[1].
     wlmtk_util_clear_test_listener(&items[1].triggered_test_listener);
@@ -736,6 +714,8 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
 /** Tests keyboard navigation with nested menus. */
 void test_keyboard_navigation_nested(bs_test_t *test_ptr)
 {
+    static const wlmtk_menu_item_state_t HL = WLMTK_MENU_ITEM_HIGHLIGHTED;
+
     // Menu m0 with two items (i00, i01).
     wlmtk_menu_t *m0 = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, m0);
@@ -772,108 +752,61 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i00));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i00));
 
     // Right key. Does not do anything.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i00));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i00));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(m1));
 
     // Down key. Highlights i01, opens m1, but no highlight there.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
-    BS_TEST_VERIFY_NEQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
 
     // Right key. Now highlights i10. i01 remains highlighted.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
 
     // Down key. Now highlights i11. i01 remains highlighted.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i11));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i11));
 
     // Left key. Moves highlight back, but keeps submenu open.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Left, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
-    BS_TEST_VERIFY_NEQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i10));
-    BS_TEST_VERIFY_NEQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i11));
+    BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i11));
 
     // Right key. Highlights the submenu with i10 again.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
-    BS_TEST_VERIFY_EQ(test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
 
     // Esc key, while submenu has highlight. Same action as left key.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i01));
+    BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
-    BS_TEST_VERIFY_NEQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i10));
-    BS_TEST_VERIFY_NEQ(
-        test_ptr,
-        WLMTK_MENU_ITEM_HIGHLIGHTED,
-        wlmtk_menu_item_get_state(i11));
+    BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
+    BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i11));
     BS_TEST_VERIFY_EQ(test_ptr, 0, request_close_test_listener.calls);
 
     // Esc key, once more. Must close.
