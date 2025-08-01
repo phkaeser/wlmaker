@@ -374,7 +374,6 @@ bool _wlmtk_menu_element_keyboard_sym(
         return true;
 
     case XKB_KEY_Return:
-        wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_KEYBOARD);
         if (NULL != menu_ptr->highlighted_menu_item_ptr) {
             wlmtk_menu_item_trigger(menu_ptr->highlighted_menu_item_ptr);
         }
@@ -427,7 +426,6 @@ bool _wlmtk_menu_element_keyboard_sym(
         return false;
     }
 
-    wlmtk_menu_set_mode(menu_ptr, WLMTK_MENU_MODE_KEYBOARD);
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_from_dlnode(
         _wlmtk_menu_this_or_next_non_disabled_dlnode(
             dlnode_ptr, node_iterator));
@@ -647,10 +645,6 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         test_ptr,
         WLMTK_MENU_ITEM_HIGHLIGHTED,
         wlmtk_menu_item_get_state(items[2].item_ptr));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_MODE_NORMAL,
-        wlmtk_menu_get_mode(menu_ptr));
 
     // Down key: Moves down, items[3] is disabled => land at items[4].
     BS_TEST_VERIFY_TRUE(
@@ -660,10 +654,6 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         test_ptr,
         WLMTK_MENU_ITEM_HIGHLIGHTED,
         wlmtk_menu_item_get_state(items[4].item_ptr));
-    BS_TEST_VERIFY_EQ(
-        test_ptr,
-        WLMTK_MENU_MODE_KEYBOARD,
-        wlmtk_menu_get_mode(menu_ptr));
 
     // Down key once more: Wrap around, land at items[1].
     BS_TEST_VERIFY_TRUE(
@@ -700,6 +690,15 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         test_ptr,
         WLMTK_MENU_ITEM_HIGHLIGHTED,
         wlmtk_menu_item_get_state(items[4].item_ptr));
+
+    // A motion, within items[2]. Re-gain focus there.
+    e = (wlmtk_pointer_motion_event_t){ .x = 8, .y = 25 };
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_element_pointer_motion(me, &e));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_HIGHLIGHTED,
+        wlmtk_menu_item_get_state(items[2].item_ptr));
 
     // Home key: Jump to items[1].
     BS_TEST_VERIFY_TRUE(

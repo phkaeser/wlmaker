@@ -55,15 +55,7 @@ enum wlmtk_menu_mode {
      * Right-click mode of menu: Menu is invoked while right button is pressed.
      * Releasing the right button triggers items.
      */
-    WLMTK_MENU_MODE_RIGHTCLICK,
-    /**
-     * Keyboard control.
-     *
-     * A recognized key press in @ref WLMTK_MENU_MODE_NORMAL switches to this
-     * mode. Permits menu navigation by keys. A mouse motion within the menu
-     * bounds will flip it back to @ref WLMTK_MENU_MODE_NORMAL.
-     */
-    WLMTK_MENU_MODE_KEYBOARD
+    WLMTK_MENU_MODE_RIGHTCLICK
 };
 
 /** Events of the popup menu. */

@@ -57,6 +57,8 @@ struct _wlmtk_menu_item_t {
     struct wl_listener        pointer_enter_listener;
     /** Listens to when we lose pointer focus. */
     struct wl_listener        pointer_leave_listener;
+    /** Listens to when we get pointer motion. To re-gain mouse mode. */
+    struct wl_listener        pointer_motion_listener;
 
     /** List node, within @ref wlmtk_menu_t::items. */
     bs_dllist_node_t          dlnode;
@@ -105,6 +107,9 @@ static void _wlmtk_menu_item_handle_pointer_enter(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmtk_menu_item_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_menu_item_handle_pointer_motion(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -167,6 +172,10 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
         &menu_item_ptr->super_buffer.super_element.events.pointer_leave,
         &menu_item_ptr->pointer_leave_listener,
         _wlmtk_menu_item_handle_pointer_leave);
+    wlmtk_util_connect_listener_signal(
+        &menu_item_ptr->super_buffer.super_element.events.pointer_motion,
+        &menu_item_ptr->pointer_motion_listener,
+        _wlmtk_menu_item_handle_pointer_motion);
 
     menu_item_ptr->style = *style_ptr;
     // TODO(kaeser@gubbe.ch): Should not be required!
@@ -185,8 +194,7 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
 {
     wl_signal_emit(&menu_item_ptr->events.destroy, NULL);
 
-    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_leave_listener);
-    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_enter_listener);
+    wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_motion_listener);
     wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_leave_listener);
     wlmtk_util_disconnect_listener(&menu_item_ptr->pointer_enter_listener);
 
@@ -635,6 +643,27 @@ void _wlmtk_menu_item_handle_pointer_leave(
         (NULL == menu_item_ptr->submenu_ptr ||
          !wlmtk_menu_is_open(menu_item_ptr->submenu_ptr))) {
         wlmtk_menu_request_item_highlight(menu_item_ptr->menu_ptr, NULL);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles when there is pointer motion within the element. (Re)gain highlight.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_menu_item_handle_pointer_motion(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_menu_item_t, pointer_motion_listener);
+
+    if (menu_item_ptr->enabled && NULL != menu_item_ptr->menu_ptr) {
+        wlmtk_menu_request_item_highlight(
+            menu_item_ptr->menu_ptr,
+            menu_item_ptr);
     }
 }
 

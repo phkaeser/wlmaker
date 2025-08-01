@@ -51,7 +51,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
 * Menu
-  * Permit navigation by keys
+  * [done] Permit navigation by keys
   * Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
 
 * Bug fixes
