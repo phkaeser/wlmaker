@@ -332,9 +332,6 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
     int action = WLMAKER_ACTION_NONE;
     bspl_object_t *obj_ptr = bspl_array_at(array_ptr, 1);
     if (BSPL_ARRAY == bspl_object_type(obj_ptr)) {
-
-#if 1
-        // TODO(kaeser@gubbe.ch): Re-enable, once submenu hierarchy fixed.
         submenu_ptr = _wlmaker_root_menu_create_menu_from_array(
             array_ptr,
             menu_style_ptr,
@@ -344,11 +341,6 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
                    name_ptr);
             return NULL;
         }
-#else
-        bs_log(BS_ERROR, "Submenu definition from plist yet unsupported.");
-        return NULL;
-#endif
-
     } else {
         const char *action_name_ptr = bspl_string_value(
             bspl_string_from_object(obj_ptr));
