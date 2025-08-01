@@ -262,6 +262,7 @@ void wlmtk_menu_item_set_submenu(
                 wlmtk_menu_pane(menu_item_ptr->menu_ptr),
                 wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
         }
+        wlmtk_menu_set_parent_item(submenu_ptr, NULL);
     }
 
     menu_item_ptr->submenu_ptr = submenu_ptr;
@@ -278,7 +279,15 @@ void wlmtk_menu_item_set_submenu(
         }
 
         wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
+        wlmtk_menu_set_parent_item(submenu_ptr, menu_item_ptr);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *wlmtk_menu_item_get_submenu(
+    wlmtk_menu_item_t *menu_item_ptr)
+{
+    return menu_item_ptr->submenu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -965,11 +974,13 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
     wlmtk_menu_add_item(submenu_ptr, s1);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_menu_get_parent_item(submenu_ptr));
     wlmtk_menu_item_set_submenu(i2, submenu_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLMTK_MENU_MODE_RIGHTCLICK,
         wlmtk_menu_get_mode(submenu_ptr));
+    BS_TEST_VERIFY_EQ(test_ptr, i2, wlmtk_menu_get_parent_item(submenu_ptr));
 
     // Begin: Move pointer so that i1 is highlighted.
     wlmtk_pointer_motion_event_t mev = { .x = 9, .y = 12 };

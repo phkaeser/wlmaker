@@ -106,6 +106,16 @@ void wlmtk_menu_item_set_submenu(
     wlmtk_menu_t *submenu_ptr);
 
 /**
+ * Returns the submenu for this menu item.
+ *
+ * @param menu_item_ptr
+ *
+ * @return the submenu of the item, or NULL.
+ */
+wlmtk_menu_t *wlmtk_menu_item_get_submenu(
+    wlmtk_menu_item_t *menu_item_ptr);
+
+/**
  * Sets the menu's mode for this item.
  *
  * @param menu_item_ptr
