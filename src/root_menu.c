@@ -25,10 +25,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 
+#include "../etc/root_menu.h"
 #include "action.h"
 #include "action_item.h"
+#include "config.h"
 
 /* == Declarations ========================================================= */
 
@@ -70,6 +73,10 @@ static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
     bspl_array_t *array_ptr,
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr);
+static wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_file(
+    const char *filename_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr);
 
 /* == Data ================================================================= */
 
@@ -79,20 +86,40 @@ static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
     .set_activated = _wlmaker_root_menu_content_set_activated,
 };
 
+/** Lookup paths for the root menu config file. */
+static const char *_wlmaker_root_menu_fname_ptrs[] = {
+    "~/.wlmaker-root-menu.plist",
+    "/usr/share/wlmaker/root-menu.plist",
+    NULL  // Sentinel.
+};
+
+/** Indicates to load the file specified in following argument. */
+static const char *_action_include_file = "IncludePlistMenuFile";
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
+    const char *arg_root_menu_file_ptr,
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr)
 {
-    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+    bspl_array_t *root_menu_array_ptr = bspl_array_from_object(
+        wlmaker_plist_load(
+            "root menu",
+            arg_root_menu_file_ptr,
+            _wlmaker_root_menu_fname_ptrs,
+            embedded_binary_root_menu_data,
+            embedded_binary_root_menu_size));
+    if (NULL == root_menu_array_ptr) return NULL;
+
+    if (bspl_array_size(root_menu_array_ptr) <= 1) {
         bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
         return NULL;
     }
     if (BSPL_STRING != bspl_object_type(
-            bspl_array_at(server_ptr->root_menu_array_ptr, 0))) {
+            bspl_array_at(root_menu_array_ptr, 0))) {
         bs_log(BS_ERROR, "Array element [0] must be a string.");
         return NULL;
     }
@@ -104,11 +131,12 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     root_menu_ptr->server_ptr->root_menu_ptr = root_menu_ptr;
 
     root_menu_ptr->menu_ptr = _wlmaker_root_menu_create_menu_from_array(
-        server_ptr->root_menu_array_ptr,
+        root_menu_array_ptr,
         menu_style_ptr,
         server_ptr);
     if (NULL == root_menu_ptr->menu_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
+        bspl_array_unref(root_menu_array_ptr);
         return NULL;
     }
     wlmtk_util_connect_listener_signal(
@@ -131,6 +159,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
             &root_menu_ptr->content,
             pane_ptr->element_ptr)) {
         wlmaker_root_menu_destroy(root_menu_ptr);
+        bspl_array_unref(root_menu_array_ptr);
         return NULL;
     }
     wlmtk_container_remove_element(
@@ -158,13 +187,15 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         server_ptr->wlr_seat_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
+        bspl_array_unref(root_menu_array_ptr);
         return NULL;
     }
     wlmtk_window_set_title(
         root_menu_ptr->window_ptr,
-        bspl_array_string_value_at(server_ptr->root_menu_array_ptr, 0));
+        bspl_array_string_value_at(root_menu_array_ptr, 0));
     wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
 
+    bspl_array_unref(root_menu_array_ptr);
     return root_menu_ptr;
 }
 
@@ -318,7 +349,7 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr)
 {
-    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 2) {
+    if (bspl_array_size(array_ptr) < 2) {
         bs_log(BS_ERROR, "Needs >= 2 array elements for item definition.");
         return NULL;
     }
@@ -350,7 +381,19 @@ wlmaker_action_item_t *_wlmaker_root_menu_create_action_item_from_array(
             return NULL;
         }
 
-        if (!bspl_enum_name_to_value(
+        if (0 == strcmp(action_name_ptr, _action_include_file)) {
+            const char *fname_ptr = bspl_array_string_value_at(array_ptr, 2);
+            if (NULL == fname_ptr) {
+                bs_log(BS_ERROR, "Missing filename for %s", action_name_ptr);
+                return NULL;
+            }
+            submenu_ptr = _wlmaker_root_menu_create_menu_from_file(
+                fname_ptr,
+                menu_style_ptr,
+                server_ptr);
+            if (NULL == submenu_ptr) return NULL;
+
+        } else if (!bspl_enum_name_to_value(
                 wlmaker_action_desc,
                 action_name_ptr,
                 &action)) {
@@ -397,7 +440,7 @@ wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
     const wlmtk_menu_style_t *menu_style_ptr,
     wlmaker_server_t *server_ptr)
 {
-    if (bspl_array_size(server_ptr->root_menu_array_ptr) <= 1) {
+    if (bspl_array_size(array_ptr) <= 1) {
         bs_log(BS_ERROR, "Needs > 1 array element for menu definition.");
         return NULL;
     }
@@ -437,6 +480,65 @@ wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_array(
     }
 
     return menu_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *_wlmaker_root_menu_create_menu_from_file(
+    const char *filename_ptr,
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    char *path_ptr = bs_file_resolve_path(filename_ptr, NULL);
+    if (NULL == path_ptr) {
+        bs_log(BS_ERROR, "Failed bs_file_resolve_path(\"%s\", NULL)",
+               filename_ptr);
+        return NULL;
+    }
+
+    bspl_object_t *object_ptr = bspl_create_object_from_plist_file(path_ptr);
+    free(path_ptr);
+    if (NULL == object_ptr || BSPL_ARRAY != bspl_object_type(object_ptr)) {
+        bs_log(BS_ERROR, "Failed to load Plist ARRAY from \"%s\"",
+               filename_ptr);
+        if (NULL != object_ptr) bspl_object_unref(object_ptr);
+        return NULL;
+    }
+
+    wlmtk_menu_t *menu_ptr = _wlmaker_root_menu_create_menu_from_array(
+        bspl_array_from_object(object_ptr),
+        menu_style_ptr,
+        server_ptr);
+    if (NULL == menu_ptr) {
+        bs_log(BS_ERROR, "Failed to generate menu from Plist file \"%s\"",
+               filename_ptr);
+    }
+    bspl_object_unref(object_ptr);
+    return menu_ptr;
+}
+
+
+/* == Unit tests =========================================================== */
+
+static void test_parse_default_menu(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_root_menu_test_cases[] = {
+    { 1, "parse_default_menu", test_parse_default_menu },
+    { 0, NULL, NULL }
+};
+
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that the compiled-in configuration translates into a menu. */
+void test_parse_default_menu(bs_test_t *test_ptr)
+{
+    wlmtk_window_style_t window_style = {};
+    wlmtk_menu_style_t menu_style = {};
+    wlmaker_server_t server = {};
+
+    wlmaker_root_menu_t *root_menu_ptr = wlmaker_root_menu_create(
+        &server, NULL, &window_style, &menu_style);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, root_menu_ptr);
+    wlmaker_root_menu_destroy(root_menu_ptr);
 }
 
 /* == End of root_menu.c =================================================== */

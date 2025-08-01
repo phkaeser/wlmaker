@@ -35,7 +35,6 @@
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
 
-#include "../etc/root_menu.h"
 #include "../etc/style.h"  // IWYU pragma: keep
 #include "action.h"
 #include "backend/backend.h"
@@ -290,13 +289,6 @@ bool create_workspaces(
     return rv;
 }
 
-/** Lookup paths for the root menu config file. */
-static const char *_wlmaker_root_menu_fname_ptrs[] = {
-    "~/.wlmaker-root-menu.plist",
-    "/usr/share/wlmaker/root-menu.plist",
-    NULL  // Sentinel.
-};
-
 /** Lookup paths for the style config file. */
 static const char *_wlmaker_style_fname_ptrs[] = {
     "~/.wlmaker-style.plist",
@@ -370,17 +362,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             &server_ptr->style)) return EXIT_FAILURE;
     bspl_dict_unref(style_dict_ptr);
 
-    server_ptr->root_menu_array_ptr = bspl_array_from_object(
-        wlmaker_plist_load(
-            "root menu",
-            wlmaker_arg_root_menu_file_ptr,
-            _wlmaker_root_menu_fname_ptrs,
-            embedded_binary_root_menu_data,
-            embedded_binary_root_menu_size));
-    if (NULL == server_ptr->root_menu_array_ptr) return EXIT_FAILURE;
     // TODO(kaeser@gubbe.ch): Uh, that's ugly...
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
         server_ptr,
+        wlmaker_arg_root_menu_file_ptr,
         &server_ptr->style.window,
         &server_ptr->style.menu);
     if (NULL == server_ptr->root_menu_ptr) {

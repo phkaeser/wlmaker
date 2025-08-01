@@ -20,6 +20,8 @@
 #ifndef __WLMAKER_ROOT_MENU_H__
 #define __WLMAKER_ROOT_MENU_H__
 
+#include <libbase/libbase.h>
+
 #include "toolkit/toolkit.h"
 
 /** Forward declaration: State of root menu. */
@@ -35,6 +37,7 @@ extern "C" {
  * Creates a root menu.
  *
  * @param server_ptr
+ * @param arg_root_menu_file_ptr
  * @param window_style_ptr
  * @param menu_style_ptr
  *
@@ -42,6 +45,7 @@ extern "C" {
  */
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
+    const char *arg_root_menu_file_ptr,
     const wlmtk_window_style_t *window_style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr);
 
@@ -57,6 +61,9 @@ wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr);
 
 /** @return Pointer to @ref wlmtk_menu_t of the root menu. */
 wlmtk_menu_t *wlmaker_root_menu_menu(wlmaker_root_menu_t *root_menu_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_root_menu_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
