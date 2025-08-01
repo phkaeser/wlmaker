@@ -1831,7 +1831,6 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
 
     // 2. Add second element, atop: Receives focus, no 'leave' for container.
-    BS_TEST_VERIFY_EQ(test_ptr, 0, e2_enter.calls);
     wlmtk_fake_element_t *e2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, e2_ptr);
     wlmtk_util_connect_test_listener(
