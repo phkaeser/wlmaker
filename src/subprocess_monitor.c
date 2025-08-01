@@ -25,7 +25,6 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 
@@ -81,6 +80,9 @@ struct _wlmaker_subprocess_handle_t {
     /** Subprocess's windows. @ref wlmaker_subprocess_window_t::dlnode. */
     bs_dllist_t               windows;
 
+    /** Dynamic buffer holding the process' stdout, or NULL if not set. */
+    bs_dynbuf_t               *stdout_dynbuf_ptr;
+
     /** Callback: A window was created from this subprocess. */
     wlmaker_subprocess_window_callback_t window_created_callback;
     /** Callback: Window was mapped from this subprocess. */
@@ -122,7 +124,8 @@ static int _wlmaker_subprocess_monitor_process_fd(
     struct wl_event_source **wl_event_source_ptr_ptr,
     int fd,
     uint32_t mask,
-    const char *fd_name_ptr);
+    const char *fd_name_ptr,
+    bs_dynbuf_t *dynbuf_ptr);
 
 static int _wlmaker_subprocess_monitor_handle_sigchld(int signum, void *data_ptr);
 
@@ -195,18 +198,20 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
         &monitor_ptr->window_created_listener,
         _wlmaker_subprocess_monitor_handle_window_created);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
-        &monitor_ptr->window_mapped_listener,
-        _wlmaker_subprocess_monitor_handle_window_mapped);
-    wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
-        &monitor_ptr->window_unmapped_listener,
-        _wlmaker_subprocess_monitor_handle_window_unmapped);
-    wlmtk_util_connect_listener_signal(
         &server_ptr->window_destroyed_event,
         &monitor_ptr->window_destroyed_listener,
         _wlmaker_subprocess_monitor_handle_window_destroyed);
 
+    if (NULL != server_ptr->root_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
+            &monitor_ptr->window_mapped_listener,
+            _wlmaker_subprocess_monitor_handle_window_mapped);
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
+            &monitor_ptr->window_unmapped_listener,
+            _wlmaker_subprocess_monitor_handle_window_unmapped);
+    }
     return monitor_ptr;
 }
 
@@ -215,9 +220,9 @@ void wlmaker_subprocess_monitor_destroy(
     wlmaker_subprocess_monitor_t *monitor_ptr)
 {
     wl_list_remove(&monitor_ptr->window_destroyed_listener.link);
+    wl_list_remove(&monitor_ptr->window_created_listener.link);
     wl_list_remove(&monitor_ptr->window_unmapped_listener.link);
     wl_list_remove(&monitor_ptr->window_mapped_listener.link);
-    wl_list_remove(&monitor_ptr->window_created_listener.link);
 
     if (NULL != monitor_ptr->sigchld_event_source_ptr) {
         wl_event_source_remove(monitor_ptr->sigchld_event_source_ptr);
@@ -242,7 +247,8 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     wlmaker_subprocess_window_callback_t window_created_callback,
     wlmaker_subprocess_window_callback_t window_mapped_callback,
     wlmaker_subprocess_window_callback_t window_unmapped_callback,
-    wlmaker_subprocess_window_callback_t window_destroyed_callback)
+    wlmaker_subprocess_window_callback_t window_destroyed_callback,
+    bs_dynbuf_t *stdout_dynbuf_ptr)
 {
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
         wlmaker_subprocess_handle_create(
@@ -258,6 +264,7 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     subprocess_handle_ptr->window_unmapped_callback = window_unmapped_callback;
     subprocess_handle_ptr->window_destroyed_callback =
         window_destroyed_callback;
+    subprocess_handle_ptr->stdout_dynbuf_ptr = stdout_dynbuf_ptr;
 
     return subprocess_handle_ptr;
 }
@@ -367,6 +374,16 @@ void wlmaker_subprocess_handle_destroy(
            sp_handle_ptr->subprocess_ptr, exit_status, signal_number);
 
     if (NULL != sp_handle_ptr->terminated_callback) {
+        // Attempt to drain stdout & stderr before closing the pipes.
+        _wlmaker_subprocess_monitor_handle_read_stdout(
+            sp_handle_ptr->stdout_read_fd,
+            WL_EVENT_READABLE,
+            sp_handle_ptr);
+        _wlmaker_subprocess_monitor_handle_read_stderr(
+            sp_handle_ptr->stderr_read_fd,
+            WL_EVENT_READABLE,
+            sp_handle_ptr);
+
         sp_handle_ptr->terminated_callback(
             sp_handle_ptr->userdata_ptr,
             sp_handle_ptr,
@@ -388,6 +405,7 @@ void wlmaker_subprocess_handle_destroy(
         wl_event_source_remove(sp_handle_ptr->stderr_wl_event_source_ptr);
         sp_handle_ptr->stderr_wl_event_source_ptr = NULL;
     }
+
     free(sp_handle_ptr);
 }
 
@@ -406,14 +424,34 @@ void wlmaker_subprocess_handle_destroy(
 int _wlmaker_subprocess_monitor_handle_read_stdout(
     int fd, uint32_t mask, void *data_ptr)
 {
+    char buf[1024];
+    bs_dynbuf_t dynbuf, *dynbuf_ptr;
+
     wlmaker_subprocess_handle_t *subprocess_handle_ptr = data_ptr;
     BS_ASSERT(fd == subprocess_handle_ptr->stdout_read_fd);
-    return _wlmaker_subprocess_monitor_process_fd(
+
+    dynbuf_ptr = subprocess_handle_ptr->stdout_dynbuf_ptr;
+    if (NULL == dynbuf_ptr) {
+        bs_dynbuf_init_unmanaged(&dynbuf, buf, sizeof(buf) - 1);
+        dynbuf_ptr = &dynbuf;
+    }
+
+    int rv = _wlmaker_subprocess_monitor_process_fd(
         subprocess_handle_ptr,
         &subprocess_handle_ptr->stdout_wl_event_source_ptr,
         subprocess_handle_ptr->stdout_read_fd,
         mask,
-        "stdout");
+        "stdout",
+        dynbuf_ptr);
+    // Log subprocess stdout, but only if not using an explicit stdout dynbuf.
+    if (dynbuf_ptr != subprocess_handle_ptr->stdout_dynbuf_ptr &&
+        0 < dynbuf_ptr->length) {
+        buf[BS_MIN(sizeof(buf) - 1, dynbuf.length)] = '\0';
+        bs_log(BS_INFO, "subprocess %"PRIdMAX" stdout: %s",
+               (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
+               buf);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -431,14 +469,27 @@ int _wlmaker_subprocess_monitor_handle_read_stdout(
 int _wlmaker_subprocess_monitor_handle_read_stderr(
     int fd, uint32_t mask, void *data_ptr)
 {
+    char buf[1024];
+    bs_dynbuf_t dynbuf;
+
     wlmaker_subprocess_handle_t *subprocess_handle_ptr = data_ptr;
     BS_ASSERT(fd == subprocess_handle_ptr->stderr_read_fd);
-    return _wlmaker_subprocess_monitor_process_fd(
+
+    bs_dynbuf_init_unmanaged(&dynbuf, buf, sizeof(buf));
+    int rv = _wlmaker_subprocess_monitor_process_fd(
         subprocess_handle_ptr,
-        &subprocess_handle_ptr->stderr_wl_event_source_ptr,
-        subprocess_handle_ptr->stderr_read_fd,
+        &subprocess_handle_ptr->stdout_wl_event_source_ptr,
+        subprocess_handle_ptr->stdout_read_fd,
         mask,
-        "stderr");
+        "stdout",
+        &dynbuf);
+    if (0 < dynbuf.length) {
+        buf[BS_MIN(sizeof(buf) - 1, dynbuf.length)] = '\0';
+        bs_log(BS_WARNING, "subprocess %"PRIdMAX" stderr: %s",
+               (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
+               buf);
+    }
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -450,6 +501,7 @@ int _wlmaker_subprocess_monitor_handle_read_stderr(
  * @param fd
  * @param mask
  * @param fd_name_ptr
+ * @param dynbuf_ptr
  *
  * @return 0.
  */
@@ -458,26 +510,14 @@ int _wlmaker_subprocess_monitor_process_fd(
     struct wl_event_source **wl_event_source_ptr_ptr,
     int fd,
     uint32_t mask,
-    const char *fd_name_ptr)
+    const char *fd_name_ptr,
+    bs_dynbuf_t *dynbuf_ptr)
 {
     // Convenience copy.
     intmax_t pid = bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr);
 
     if (mask & WL_EVENT_READABLE) {
-        ssize_t read_bytes;
-        char buf[1024];
-        read_bytes = read(fd, buf, sizeof(buf));
-        buf[BS_MIN(read_bytes, 1023)] = '\0';
-        if (0 < read_bytes) {
-            // TODO(kaeser@gubbe.ch): Find a way to log this appropriately.
-            // We'd want to have STDERR logged as WARN, and STDOUT in INFO.
-            bs_log(BS_DEBUG, "subprocess %"PRIdMAX" %s: %s",
-                   pid, fd_name_ptr, buf);
-        } else if (0 > read_bytes) {
-            bs_log(BS_WARNING | BS_ERRNO,
-                   "subprocess %"PRIdMAX" %s: Failed raad(%d, ...)",
-                   pid, fd_name_ptr, fd);
-        }
+        bs_dynbuf_read(dynbuf_ptr, fd);
         return 0;
     }
 

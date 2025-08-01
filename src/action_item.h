@@ -20,8 +20,9 @@
 #ifndef __WLMAKER_ACTION_ITEM_H__
 #define __WLMAKER_ACTION_ITEM_H__
 
-#include <stddef.h>
 #include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stddef.h>
 
 /** Forward declaration: An action-triggering menu item. */
 typedef struct _wlmaker_action_item_t wlmaker_action_item_t;
@@ -58,7 +59,7 @@ typedef struct {
  * @param action_arg_ptr      Extra argument. Will be duplicated.
  * @param server_ptr
  *
- * @return Poitner to the menu item's handle or NULL on error.
+ * @return Pointer to the menu item's handle or NULL on error.
  */
 wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
@@ -83,16 +84,25 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
     const wlmtk_menu_item_style_t *style_ptr,
     wlmaker_server_t *server_ptr);
 
-/**
- * Destroys the action-triggering menu item.
- *
- * @param action_item_ptr
- */
-void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr);
-
 /** @returns pointer to the superclass @ref wlmtk_menu_item_t. */
 wlmtk_menu_item_t *wlmaker_action_item_menu_item(
     wlmaker_action_item_t *action_item_ptr);
+
+/**
+ * Binds an action to a menu item.
+ *
+ * @param menu_item_ptr
+ * @param action
+ * @param action_arg_ptr
+ * @param server_ptr
+ *
+ * @return true on success.
+ */
+bool wlmaker_menu_item_bind_action(
+    wlmtk_menu_item_t* menu_item_ptr,
+    wlmaker_action_t action,
+    const char *action_arg_ptr,
+    wlmaker_server_t *server_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t   wlmaker_action_item_test_cases[];

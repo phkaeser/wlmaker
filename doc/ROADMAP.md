@@ -52,7 +52,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Menu
   * [done] Permit navigation by keys
-  * Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
+  * [done] Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
+  * Documentation for menu configuration.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
@@ -359,6 +360,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Reduce Technical Debt
   * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
     creation, just after fork. These should not impact the parent process.
+  * Don't execl in action.c, use subprocess.
+  * subprocess_monitor: Use listeners, not callback.
 
 * Exploratory ideas
   * Stretch: Consider supporting XScreenSaver (or visualization modules).

@@ -93,6 +93,7 @@ void wlmaker_subprocess_monitor_destroy(
  * @param window_mapped_callback
  * @param window_unmapped_callback
  * @param window_destroyed_callback
+ * @param stdout_dynbuf_ptr
  *
  * @return A pointer to the created subprocess handle or NULL on error.
  */
@@ -104,7 +105,8 @@ wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     wlmaker_subprocess_window_callback_t window_created_callback,
     wlmaker_subprocess_window_callback_t window_mapped_callback,
     wlmaker_subprocess_window_callback_t window_unmapped_callback,
-    wlmaker_subprocess_window_callback_t window_destroyed_callback);
+    wlmaker_subprocess_window_callback_t window_destroyed_callback,
+    bs_dynbuf_t *stdout_dynbuf_ptr);
 
 /**
  * Releases the reference held on `subprocess_handle_ptr`. Once the subprocess

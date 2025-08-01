@@ -25,6 +25,7 @@ typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <wayland-server-core.h>
 
 #include "box.h"  // IWYU pragma: keep
@@ -67,6 +68,8 @@ typedef struct {
     struct wl_signal          open_changed;
     /** Popup menu requests to be closed. */
     struct wl_signal          request_close;
+    /** The dtor has been called. */
+    struct wl_signal          destroy;
 } wlmtk_menu_events_t;
 
 /**
@@ -160,6 +163,13 @@ wlmtk_menu_item_t *wlmtk_menu_get_parent_item(wlmtk_menu_t *menu_ptr);
 void wlmtk_menu_request_item_highlight(
     wlmtk_menu_t *menu_ptr,
     wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * @param menu_ptr
+ *
+ * @return the size of @ref wlmtk_menu_t::items.
+ */
+size_t wlmtk_menu_items_size(wlmtk_menu_t *menu_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_test_cases[];

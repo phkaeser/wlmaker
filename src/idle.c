@@ -234,6 +234,7 @@ bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr)
             NULL,
             NULL,
             NULL,
+            NULL,
             NULL);
     if (NULL != handle_ptr) {
         wlmaker_subprocess_monitor_cede(
