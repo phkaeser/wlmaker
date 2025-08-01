@@ -48,6 +48,9 @@ struct _wlmaker_action_item_t {
     struct wl_listener        destroy_listener;
 };
 
+static void _wlmaker_action_item_destroy(
+    wlmaker_action_item_t *action_item_ptr);
+
 static void _wlmaker_action_item_handle_triggered(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -72,7 +75,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     if (NULL != action_arg_ptr) {
         action_item_ptr->action_arg_ptr = logged_strdup(action_arg_ptr);
         if (NULL == action_item_ptr->action_arg_ptr) {
-            wlmaker_action_item_destroy(action_item_ptr);
+            _wlmaker_action_item_destroy(action_item_ptr);
             return NULL;
         }
     }
@@ -80,7 +83,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
 
     action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr);
     if (NULL == action_item_ptr->menu_item_ptr) {
-        wlmaker_action_item_destroy(action_item_ptr);
+        _wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
     }
     wlmtk_util_connect_listener_signal(
@@ -93,7 +96,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
         _wlmaker_action_item_handle_destroy);
 
     if (!wlmtk_menu_item_set_text(action_item_ptr->menu_item_ptr, text_ptr)) {
-        wlmaker_action_item_destroy(action_item_ptr);
+        _wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
     }
 
@@ -121,7 +124,51 @@ wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
+wlmtk_menu_item_t *wlmaker_action_item_menu_item(
+    wlmaker_action_item_t *action_item_ptr)
+{
+    return action_item_ptr->menu_item_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmaker_menu_item_bind_action(
+    wlmtk_menu_item_t* menu_item_ptr,
+    wlmaker_action_t action,
+    const char *action_arg_ptr,
+    wlmaker_server_t *server_ptr)
+{
+    wlmaker_action_item_t *action_item_ptr = logged_calloc(
+        1, sizeof(wlmaker_action_item_t));
+    if (NULL == action_item_ptr) return false;
+
+    action_item_ptr->action = action;
+    if (NULL != action_arg_ptr) {
+        action_item_ptr->action_arg_ptr = logged_strdup(action_arg_ptr);
+        if (NULL == action_item_ptr->action_arg_ptr) {
+            _wlmaker_action_item_destroy(action_item_ptr);
+            return false;
+        }
+    }
+    action_item_ptr->server_ptr = server_ptr;
+
+    action_item_ptr->menu_item_ptr = BS_ASSERT_NOTNULL(menu_item_ptr);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(menu_item_ptr)->triggered,
+        &action_item_ptr->triggered_listener,
+        _wlmaker_action_item_handle_triggered);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_item_events(menu_item_ptr)->destroy,
+        &action_item_ptr->destroy_listener,
+        _wlmaker_action_item_handle_destroy);
+
+    return true;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** dtor for @ref wlmaker_action_item_t. */
+void _wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
 {
     if (NULL != action_item_ptr->menu_item_ptr) {
         wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
@@ -137,15 +184,6 @@ void wlmaker_action_item_destroy(wlmaker_action_item_t *action_item_ptr)
     }
     free(action_item_ptr);
 }
-
-/* ------------------------------------------------------------------------- */
-wlmtk_menu_item_t *wlmaker_action_item_menu_item(
-    wlmaker_action_item_t *action_item_ptr)
-{
-    return action_item_ptr->menu_item_ptr;
-}
-
-/* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_item_events_t::triggered. Triggers the action */
@@ -181,18 +219,20 @@ void _wlmaker_action_item_handle_destroy(
     wlmtk_util_disconnect_listener(&action_item_ptr->destroy_listener);
     wlmtk_util_disconnect_listener(&action_item_ptr->triggered_listener);
     action_item_ptr->menu_item_ptr = NULL;
-    wlmaker_action_item_destroy(action_item_ptr);
+    _wlmaker_action_item_destroy(action_item_ptr);
 }
 
 /* == Unit tests =========================================================== */
 
 static void _wlmaker_action_item_test_create(bs_test_t *test_ptr);
 static void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr);
+static void _wlmaker_action_item_test_bind(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 const bs_test_case_t          wlmaker_action_item_test_cases[] = {
     { 1, "create", _wlmaker_action_item_test_create },
     { 1, "menu_dtor", _wlmaker_action_item_test_menu_dtor },
+    { 1, "bind", _wlmaker_action_item_test_bind },
     { 0, NULL, NULL },
 };
 
@@ -217,7 +257,7 @@ void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
             &ai_ptr,
             &_wlmaker_action_item_menu_style.item, &server));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
-    wlmaker_action_item_destroy(ai_ptr);
+    _wlmaker_action_item_destroy(ai_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -239,6 +279,20 @@ void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
     wlmtk_menu_add_item(menu_ptr, wlmaker_action_item_menu_item(ai_ptr));
 
     wlmtk_menu_destroy(menu_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that binding works and cleanup leaves no leaks. */
+void _wlmaker_action_item_test_bind(bs_test_t *test_ptr)
+{
+    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(
+        &_wlmaker_action_item_menu_style.item);
+
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmaker_menu_item_bind_action(menu_item_ptr, 42, 0, NULL));
+    wlmtk_menu_item_destroy(menu_item_ptr);
 }
 
 /* == End of action_item.c ================================================= */

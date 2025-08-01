@@ -126,12 +126,15 @@ wlmtk_menu_t *wlmtk_menu_create(const wlmtk_menu_style_t *style_ptr)
 
     wl_signal_init(&menu_ptr->events.open_changed);
     wl_signal_init(&menu_ptr->events.request_close);
+    wl_signal_init(&menu_ptr->events.destroy);
     return menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 {
+    wl_signal_emit(&menu_ptr->events.destroy, NULL);
+
     // Must destroy the items before the pane and box.
     bs_dllist_for_each(
         &menu_ptr->items,
@@ -261,6 +264,12 @@ void wlmtk_menu_request_item_highlight(
         wlmtk_menu_item_set_highlighted(menu_item_ptr, true)) {
         menu_ptr->highlighted_menu_item_ptr = menu_item_ptr;
     }
+}
+
+/* ------------------------------------------------------------------------- */
+size_t wlmtk_menu_items_size(wlmtk_menu_t *menu_ptr)
+{
+    return bs_dllist_size(&menu_ptr->items);
 }
 
 /* == Local (static) methods =============================================== */
@@ -557,6 +566,11 @@ void test_set_mode(bs_test_t *test_ptr)
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
+    wlmtk_util_test_listener_t destroy_test_listener;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_menu_events(menu_ptr)->destroy,
+        &destroy_test_listener);
+
     wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(
         &_test_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item1_ptr);
@@ -598,7 +612,9 @@ void test_set_mode(bs_test_t *test_ptr)
         WLMTK_MENU_MODE_NORMAL,
         wlmtk_menu_item_get_mode(item2_ptr));
 
+    BS_TEST_VERIFY_EQ(test_ptr, 0, destroy_test_listener.calls);
     wlmtk_menu_destroy(menu_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, destroy_test_listener.calls);
 }
 
 /* ------------------------------------------------------------------------- */

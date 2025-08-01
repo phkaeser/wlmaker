@@ -141,6 +141,9 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
     BSPL_ENUM("SwitchToVT11", WLMAKER_ACTION_SWITCH_TO_VT11),
     BSPL_ENUM("SwitchToVT12", WLMAKER_ACTION_SWITCH_TO_VT12),
 
+    // A duplicate to ShellExecute, permits `wmmenugen` compatibility.
+    BSPL_ENUM("SHEXEC", WLMAKER_ACTION_SHELL_EXECUTE),
+
     BSPL_ENUM_SENTINEL(),
 };
 

@@ -394,7 +394,8 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
         _wlmaker_launcher_handle_window_created,
         _wlmaker_launcher_handle_window_mapped,
         _wlmaker_launcher_handle_window_unmapped,
-        _wlmaker_launcher_handle_window_destroyed);
+        _wlmaker_launcher_handle_window_destroyed,
+        NULL);
 
     if (!bs_ptr_set_insert(launcher_ptr->subprocesses_ptr,
                            subprocess_handle_ptr)) {

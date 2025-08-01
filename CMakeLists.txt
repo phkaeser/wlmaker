@@ -58,6 +58,12 @@ IF(iwyu_executable)
     -Xiwyu --error=1 -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
 ENDIF(iwyu_executable)
 
+FIND_PROGRAM(wmmenugen_executable NAMES wmmenugen OPTIONAL)
+IF(wmmenugen_executable)
+  MESSAGE(STATUS, "Found wmmenugen: ${wmmenugen_executable}")
+  SET(wmmenugen_path ${wmmenugen_executable})
+ENDIF(wmmenugen_executable)
+
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)

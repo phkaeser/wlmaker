@@ -570,6 +570,7 @@ void test_style_file(bs_test_t *test_ptr)
         bspl_decode_dict(
             dict_ptr, wlmaker_config_style_desc, &config_style));
     bspl_dict_unref(dict_ptr);
+    free(config_style.cursor.name_ptr);
 
     dict_ptr = _wlmaker_config_from_plist(
         WLMAKER_SOURCE_DIR "/etc/style-debian.plist");

@@ -98,5 +98,20 @@ IF(PLDES)
 ENDIF(PLDES)
 
 INSTALL(
-  FILES root-menu.plist style.plist wlmaker.plist wlmaker-state.plist
+  FILES
+  root-menu.plist
+  style.plist
+  wlmaker-state.plist
+  wlmaker.plist
   DESTINATION share/wlmaker)
+
+IF(wmmenugen_executable)
+  CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/root-menu-debian.plist.in
+    ${CMAKE_CURRENT_BINARY_DIR}/root-menu-debian.plist
+    @ONLY)
+  INSTALL(
+    FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/root-menu-debian.plist
+    DESTINATION share/wlmaker)
+ENDIF(wmmenugen_executable)
