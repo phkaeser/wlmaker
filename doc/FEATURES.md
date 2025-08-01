@@ -180,7 +180,7 @@ TBD: Raise/Lower.
 ### Root menu
 
 * [*] :white_check_mark: Menu configurable as a plist.
-* [ ] Generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
+* [ ] :construction: Generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
 
 ### Window commands
 
