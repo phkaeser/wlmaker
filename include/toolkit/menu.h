@@ -67,6 +67,8 @@ typedef struct {
     struct wl_signal          open_changed;
     /** Popup menu requests to be closed. */
     struct wl_signal          request_close;
+    /** The dtor has been called. */
+    struct wl_signal          destroy;
 } wlmtk_menu_events_t;
 
 /**
