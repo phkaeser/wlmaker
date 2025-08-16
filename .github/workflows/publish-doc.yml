@@ -48,7 +48,8 @@ jobs:
             libncurses-dev \
             libwlroots-0.18-dev \
             pkg-config \
-            plantuml
+            plantuml \
+            wmaker
 
       - name: Checkout code, including git submodules.
         uses: actions/checkout@v3
