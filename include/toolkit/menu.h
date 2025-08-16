@@ -171,6 +171,15 @@ void wlmtk_menu_request_item_highlight(
  */
 size_t wlmtk_menu_items_size(wlmtk_menu_t *menu_ptr);
 
+/**
+ * @param menu_ptr
+ * @param i
+ *
+ * @return the i-th element of @ref wlmtk_menu_t::items, or NULL if i is out
+ *     of bounds.
+ */
+wlmtk_menu_item_t *wlmtk_menu_item_at(wlmtk_menu_t *menu_ptr, size_t i);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_test_cases[];
 

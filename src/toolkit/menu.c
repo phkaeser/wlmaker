@@ -272,6 +272,16 @@ size_t wlmtk_menu_items_size(wlmtk_menu_t *menu_ptr)
     return bs_dllist_size(&menu_ptr->items);
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_item_t *wlmtk_menu_item_at(wlmtk_menu_t *menu_ptr, size_t i)
+{
+    if (i >= bs_dllist_size(&menu_ptr->items)) return NULL;
+
+    bs_dllist_node_t *dlnode_ptr = menu_ptr->items.head_ptr;
+    while (i--) dlnode_ptr = bs_dllist_node_iterator_forward(dlnode_ptr);
+    return wlmtk_menu_item_from_dlnode(dlnode_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

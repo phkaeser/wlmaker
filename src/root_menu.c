@@ -973,6 +973,17 @@ void test_generated_menu(bs_test_t *test_ptr)
     _wlmaker_root_menu_test_wl_display_ptr = server.wl_display_ptr;
     wl_display_run(server.wl_display_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
+
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_at(menu_ptr, 0);
+    menu_ptr = wlmtk_menu_item_get_submenu(item_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
+    item_ptr = wlmtk_menu_item_at(menu_ptr, 0);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLMTK_MENU_ITEM_ENABLED,
+        wlmtk_menu_item_get_state(item_ptr));
+
     wlmaker_root_menu_destroy(root_menu_ptr);
 #endif
 
