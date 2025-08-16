@@ -53,7 +53,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Menu
   * [done] Permit navigation by keys
   * [done] Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
-  * Documentation for menu configuration.
+  * [done] Documentation for menu configuration.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.

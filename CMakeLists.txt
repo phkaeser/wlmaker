@@ -96,7 +96,6 @@ SET(CMAKE_C_STANDARD 11)
 LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 ADD_SUBDIRECTORY(apps)
-ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(etc)
 ADD_SUBDIRECTORY(icons)
 ADD_SUBDIRECTORY(protocols)
@@ -104,6 +103,8 @@ ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(share)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(tests)
+
+ADD_SUBDIRECTORY(doc)
 
 # Adds submodules last, to permit checking on already-existing targets.
 ADD_SUBDIRECTORY(submodules/libbase)
