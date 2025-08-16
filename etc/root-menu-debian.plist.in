@@ -1,6 +1,6 @@
 // Definition of root menu, for Debian with wmmenugen(1).
 ("Root Menu",
- ("Applications...", GeneratePlistMenu, "@wmmenugen_path@ -parser:xdg /usr/share/applications/"),
+ ("Applications...", GeneratePlistMenu, "@wmmenugen_executable@ -parser:xdg /usr/share/applications/"),
  ("Previous Workspace", WorkspacePrevious),
  ("Next Workspace", WorkspaceNext),
  ("Lock", LockScreen),

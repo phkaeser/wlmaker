@@ -61,7 +61,6 @@ ENDIF(iwyu_executable)
 FIND_PROGRAM(wmmenugen_executable NAMES wmmenugen OPTIONAL)
 IF(wmmenugen_executable)
   MESSAGE(STATUS, "Found wmmenugen: ${wmmenugen_executable}")
-  SET(wmmenugen_path ${wmmenugen_executable})
 ENDIF(wmmenugen_executable)
 
 # Configuration. Remove CMakeCache.txt to rerun...
