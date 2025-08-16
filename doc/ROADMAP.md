@@ -9,13 +9,20 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 ## Plan for 0.7
 
-* Cleanups:
-  * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
+**Focus**: Smooth resizing for surfaces and clean implementation.
 
 * Clip & Dock handling
   * Add option to save state (Dock, Clip, Output).
-  * Permit dragging clip & dock, updating anchor and relative position.
-    * Including dragging to different output.
+  * Toplevel windows show an icon, unless started from dock.
+  * There is a means to attach an icon to Dock or Clip (eg. via menu action).
+
+* Cleanups:
+  * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
+  * Recompute pointer focus max once per frame.
+
+* Bug fixes
+  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * Particularly when using large decorations, there is resize jitter.
 
 ## Plan for 0.6
 
@@ -56,8 +63,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Documentation for menu configuration.
 
 * Bug fixes
-  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
-  * Particularly when using large decorations, there is resize jitter.
   * [done] Fix keyboard input not working for Firefox.
   * [done] When switching workspace, pointer state appears to be reset.
   * [done] Test handling of mouse position when changing element visibility. Making
