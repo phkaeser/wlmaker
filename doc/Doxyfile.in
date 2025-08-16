@@ -863,7 +863,10 @@ INPUT                  = \
                          @PROJECT_SOURCE_DIR@/doc/config.md \
                          @PROJECT_SOURCE_DIR@/doc/manual.md \
                          @PROJECT_SOURCE_DIR@/doc/protocols.md \
+                         @PROJECT_SOURCE_DIR@/doc/root_menu.md \
                          @PROJECT_SOURCE_DIR@/etc/wlmaker.plist \
+                         @PROJECT_SOURCE_DIR@/etc/root-menu.plist \
+                         @PROJECT_BINARY_DIR@/etc/root-menu-debian.plist \
                          @PROJECT_SOURCE_DIR@/include/backend \
                          @PROJECT_SOURCE_DIR@/include/toolkit \
                          @PROJECT_SOURCE_DIR@/src \
@@ -989,7 +992,9 @@ EXCLUDE_SYMBOLS        =
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           = @PROJECT_SOURCE_DIR@
+EXAMPLE_PATH           = \
+                       @PROJECT_BINARY_DIR@ \
+                       @PROJECT_SOURCE_DIR@
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and

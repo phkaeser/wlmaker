@@ -19,6 +19,7 @@ interface.
 
 * @ref commandline
 * @ref config
+* @ref root_menu
 * @ref protocols
 
 ## Download
