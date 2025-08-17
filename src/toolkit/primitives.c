@@ -229,7 +229,6 @@ void wlmaker_primitives_draw_close_icon(
 
     cairo_stroke(cairo_ptr);
     cairo_restore(cairo_ptr);
-
 }
 
 /* ------------------------------------------------------------------------- */
