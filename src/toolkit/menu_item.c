@@ -96,6 +96,11 @@ static void _wlmtk_menu_item_draw_state(wlmtk_menu_item_t *menu_item_ptr);
 static struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmtk_menu_item_t *menu_item_ptr,
     wlmtk_menu_item_state_t state);
+static void _wlmtk_menu_item_draw_submenu_hint(
+    cairo_t *cairo_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    double x,
+    double y);
 
 static bool _wlmtk_menu_item_element_pointer_button(
     wlmtk_element_t *element_ptr,
@@ -289,6 +294,8 @@ void wlmtk_menu_item_set_submenu(
         wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
         wlmtk_menu_set_parent_item(submenu_ptr, menu_item_ptr);
     }
+
+    _wlmtk_menu_item_redraw(menu_item_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -551,6 +558,15 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     wlmaker_primitives_cairo_fill(cairo_ptr, fill_ptr);
     wlmaker_primitives_draw_bezel(
         cairo_ptr, menu_item_ptr->style.bezel_width, true);
+
+    if (NULL != menu_item_ptr->submenu_ptr) {
+        _wlmtk_menu_item_draw_submenu_hint(
+            cairo_ptr,
+            &menu_item_ptr->style,
+            menu_item_ptr->width - menu_item_ptr->style.height * 0.6,
+            menu_item_ptr->style.height * 0.3);
+    }
+
     wlmaker_primitives_draw_text(
         cairo_ptr,
         6, 2 + menu_item_ptr->style.font.size,
@@ -560,6 +576,44 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Draws the hint for submenu (triangle) into the cairo at (x, y).
+ *
+ * @param cairo_ptr
+ * @param style_ptr
+ * @param x
+ * @param y
+ */
+void _wlmtk_menu_item_draw_submenu_hint(
+    cairo_t *cairo_ptr,
+    const wlmtk_menu_item_style_t *style_ptr,
+    double x,
+    double y)
+{
+    double h = style_ptr->height;
+    cairo_save(cairo_ptr);
+    cairo_set_line_cap(cairo_ptr, CAIRO_LINE_CAP_BUTT);
+    cairo_set_line_width(cairo_ptr, style_ptr->bezel_width);
+    cairo_move_to(cairo_ptr, x, y);
+
+    cairo_set_source_rgba(cairo_ptr, 0.0, 0.0, 0.0, 0.4);
+    cairo_line_to(cairo_ptr, x, h * 0.7);
+    cairo_stroke(cairo_ptr);
+
+    cairo_set_source_rgba(cairo_ptr, 1.0, 1.0, 1.0, 0.8);
+    cairo_move_to(cairo_ptr, x, h * 0.7);
+    cairo_line_to(cairo_ptr, x + h * 0.4, h * 0.5);
+    cairo_stroke(cairo_ptr);
+
+    cairo_set_source_rgba(cairo_ptr, 0.5, 0.5, 0.5, 0.7);
+    cairo_move_to(cairo_ptr, x + h * 0.4, h * 0.5);
+    cairo_line_to(cairo_ptr, x, y);
+    cairo_stroke(cairo_ptr);
+
+    cairo_restore(cairo_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -759,6 +813,23 @@ void test_buffers(bs_test_t *test_ptr)
     g = bs_gfxbuf_from_wlr_buffer(item_ptr->disabled_wlr_buffer_ptr);
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
         test_ptr, g, "toolkit/menu_item_disabled.png");
+
+    wlmtk_menu_style_t s = {};
+    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(&s);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, submenu_ptr);
+    wlmtk_menu_item_set_submenu(item_ptr, submenu_ptr);
+
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->enabled_wlr_buffer_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, g, "toolkit/menu_item_submenu_enabled.png");
+
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->highlighted_wlr_buffer_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, g, "toolkit/menu_item_submenu_highlighted.png");
+
+    g = bs_gfxbuf_from_wlr_buffer(item_ptr->disabled_wlr_buffer_ptr);
+    BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
+        test_ptr, g, "toolkit/menu_item_submenu_disabled.png");
 
     wlmtk_menu_item_destroy(item_ptr);
 }

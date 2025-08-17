@@ -61,6 +61,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Permit navigation by keys
   * [done] Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
   * [done] Documentation for menu configuration.
+  * [done] Draw a submenu hint (small triangle) on items expanding into a submenu.
 
 * Bug fixes
   * [done] Fix keyboard input not working for Firefox.
