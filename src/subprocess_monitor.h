@@ -21,6 +21,7 @@
 #define __SUBPROCESS_MONITOR_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 
 /** Forward definition for the subprocess monitor. */
 typedef struct _wlmaker_subprocess_monitor_t wlmaker_subprocess_monitor_t;
@@ -77,6 +78,18 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
  */
 void wlmaker_subprocess_monitor_destroy(
     wlmaker_subprocess_monitor_t *monitor_ptr);
+
+/**
+ * Starts, entrust and cedes a subprocess to the monitor.
+ *
+ * @param monitor_ptr
+ * @param subprocess_ptr      Subprocess. Ignored, if NULL. Takes ownership.
+ *
+ * @return true on success.
+ */
+bool wlmaker_subprocess_monitor_run(
+    wlmaker_subprocess_monitor_t *monitor_ptr,
+    bs_subprocess_t *subprocess_ptr);
 
 /**
  * Passes ownership of the started `subprocess_ptr` to `monitor_ptr`.
