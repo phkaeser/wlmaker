@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
@@ -42,6 +41,7 @@
 #include "keyboard.h"
 #include "root_menu.h"
 #include "server.h"
+#include "subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -108,6 +108,7 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
     BSPL_ENUM("InhibitLockEnd", WLMAKER_ACTION_LOCK_INHIBIT_END),
     BSPL_ENUM("LaunchTerminal", WLMAKER_ACTION_LAUNCH_TERMINAL),
     BSPL_ENUM("ShellExecute", WLMAKER_ACTION_SHELL_EXECUTE),
+    BSPL_ENUM("Execute", WLMAKER_ACTION_EXECUTE),
 
     BSPL_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     BSPL_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
@@ -143,6 +144,8 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
 
     // A duplicate to ShellExecute, permits `wmmenugen` compatibility.
     BSPL_ENUM("SHEXEC", WLMAKER_ACTION_SHELL_EXECUTE),
+    // A duplicate to Execute, permits compatibility with Window Maker.
+    BSPL_ENUM("EXEC", WLMAKER_ACTION_EXECUTE),
 
     BSPL_ENUM_SENTINEL(),
 };
@@ -218,17 +221,23 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_LAUNCH_TERMINAL:
-        if (0 == fork()) {
-            execl("/bin/sh", "/bin/sh", "-c", "/usr/bin/foot", (void *)NULL);
-        }
+        const char *term_argv[] = { "/bin/sh", "-c", "/usr/bin/foot", NULL };
+        wlmaker_subprocess_monitor_run(
+            server_ptr->monitor_ptr,
+            bs_subprocess_create(term_argv[0], term_argv, NULL));
         break;
 
     case WLMAKER_ACTION_SHELL_EXECUTE:
-        if (NULL == arg_ptr) {
-            bs_log(BS_ERROR, "Invalid argument NULL for 'Execute'.");
-        } else if (0 == fork()) {
-            execl("/bin/sh", "/bin/sh", "-c", arg_ptr, (void *)NULL);
-        }
+        const char *argv[] = { "/bin/sh", "-c", arg_ptr, NULL };
+        wlmaker_subprocess_monitor_run(
+            server_ptr->monitor_ptr,
+            bs_subprocess_create(argv[0], argv, NULL));
+        break;
+
+    case WLMAKER_ACTION_EXECUTE:
+        wlmaker_subprocess_monitor_run(
+            server_ptr->monitor_ptr,
+            bs_subprocess_create_cmdline(arg_ptr));
         break;
 
     case WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS:

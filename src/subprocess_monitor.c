@@ -239,6 +239,35 @@ void wlmaker_subprocess_monitor_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmaker_subprocess_monitor_run(
+    wlmaker_subprocess_monitor_t *monitor_ptr,
+    bs_subprocess_t *subprocess_ptr)
+{
+    if (NULL == subprocess_ptr) return false;
+    if (!bs_subprocess_start(subprocess_ptr)) goto error;
+
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr =
+        wlmaker_subprocess_monitor_entrust(
+            monitor_ptr,
+            subprocess_ptr,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
+    if (NULL == subprocess_handle_ptr) goto error;
+
+    wlmaker_subprocess_monitor_cede(monitor_ptr, subprocess_handle_ptr);
+    return true;
+
+error:
+    if (NULL != subprocess_ptr) bs_subprocess_destroy(subprocess_ptr);
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 wlmaker_subprocess_handle_t *wlmaker_subprocess_monitor_entrust(
     wlmaker_subprocess_monitor_t *monitor_ptr,
     bs_subprocess_t *subprocess_ptr,

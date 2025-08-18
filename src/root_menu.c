@@ -637,8 +637,8 @@ bool _wlmaker_root_menu_populate_menu_items_from_generator(
         &generator_ptr->menu_destroy_listener,
         _wlmaker_root_menu_generator_handle_menu_destroy);
 
-    const char *args[] = { "-c", command_ptr, NULL };
-    subprocess_ptr =  bs_subprocess_create("/bin/sh", args, NULL);
+    const char *args[] = { "/bin/sh", "-c", command_ptr, NULL };
+    subprocess_ptr =  bs_subprocess_create(args[0], args, NULL);
     if (NULL == subprocess_ptr) goto error;
 
     if (!bs_subprocess_start(subprocess_ptr)) goto error;
