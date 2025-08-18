@@ -319,7 +319,7 @@ TBD.
 
 * [ ] Change KeyBindings format to be similar to menu actions: Lists, where item 1+
   holds the action and optional parameters.
-* [ ] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
+* [x] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
 
 ### System integration
 

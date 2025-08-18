@@ -64,6 +64,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Draw a submenu hint (small triangle) on items expanding into a submenu.
 
 * Bug fixes
+  * Verify subprocess from action have stdout & stderr captured and logged.
   * [done] Fix keyboard input not working for Firefox.
   * [done] When switching workspace, pointer state appears to be reset.
   * [done] Test handling of mouse position when changing element visibility. Making
@@ -366,7 +367,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Reduce Technical Debt
   * Move the setenv calls for DISPLAY and WAYLAND_DISPLAY into subprocess
     creation, just after fork. These should not impact the parent process.
-  * Don't execl in action.c, use subprocess.
   * subprocess_monitor: Use listeners, not callback.
 
 * Exploratory ideas
