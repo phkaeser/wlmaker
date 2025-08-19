@@ -197,6 +197,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 {
     wlmtk_workspace_t *workspace_ptr, *next_workspace_ptr;
     wlmtk_window_t *window_ptr;
+    const char **argv;
 
     switch (action) {
     case WLMAKER_ACTION_NONE:
@@ -221,14 +222,14 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_LAUNCH_TERMINAL:
-        const char *term_argv[] = { "/bin/sh", "-c", "/usr/bin/foot", NULL };
+        argv = (const char*[]){ "/bin/sh", "-c", "/usr/bin/foot", NULL };
         wlmaker_subprocess_monitor_run(
             server_ptr->monitor_ptr,
-            bs_subprocess_create(term_argv[0], term_argv, NULL));
+            bs_subprocess_create(argv[0], argv, NULL));
         break;
 
     case WLMAKER_ACTION_SHELL_EXECUTE:
-        const char *argv[] = { "/bin/sh", "-c", arg_ptr, NULL };
+        argv = (const char*[]){ "/bin/sh", "-c", arg_ptr, NULL };
         wlmaker_subprocess_monitor_run(
             server_ptr->monitor_ptr,
             bs_subprocess_create(argv[0], argv, NULL));
