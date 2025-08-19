@@ -64,7 +64,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Draw a submenu hint (small triangle) on items expanding into a submenu.
 
 * Bug fixes
-  * Verify subprocess from action have stdout & stderr captured and logged.
+  * [done] Verify subprocess from action have stdout & stderr captured and logged.
   * [done] Fix keyboard input not working for Firefox.
   * [done] When switching workspace, pointer state appears to be reset.
   * [done] Test handling of mouse position when changing element visibility. Making

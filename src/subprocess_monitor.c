@@ -507,8 +507,8 @@ int _wlmaker_subprocess_monitor_handle_read_stderr(
     bs_dynbuf_init_unmanaged(&dynbuf, buf, sizeof(buf));
     int rv = _wlmaker_subprocess_monitor_process_fd(
         subprocess_handle_ptr,
-        &subprocess_handle_ptr->stdout_wl_event_source_ptr,
-        subprocess_handle_ptr->stdout_read_fd,
+        &subprocess_handle_ptr->stderr_wl_event_source_ptr,
+        subprocess_handle_ptr->stderr_read_fd,
         mask,
         "stdout",
         &dynbuf);
