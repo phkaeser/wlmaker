@@ -475,10 +475,18 @@ int _wlmaker_subprocess_monitor_handle_read_stdout(
     // Log subprocess stdout, but only if not using an explicit stdout dynbuf.
     if (dynbuf_ptr != subprocess_handle_ptr->stdout_dynbuf_ptr &&
         0 < dynbuf_ptr->length) {
-        buf[BS_MIN(sizeof(buf) - 1, dynbuf.length)] = '\0';
-        bs_log(BS_INFO, "subprocess %"PRIdMAX" stdout: %s",
-               (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
-               buf);
+        size_t len = BS_MIN(sizeof(buf) - 1, dynbuf.length);
+        if (0 < len && buf[len - 1] == '\n') {
+            buf[--len] = '\0';
+        } else {
+            buf[len] = '\0';
+        }
+        if (0 < len) {
+            bs_log_write(
+                BS_DEBUG, "subprocess.stdout",
+                (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
+                "%s", buf);
+        }
     }
     return rv;
 }
@@ -513,10 +521,18 @@ int _wlmaker_subprocess_monitor_handle_read_stderr(
         "stdout",
         &dynbuf);
     if (0 < dynbuf.length) {
-        buf[BS_MIN(sizeof(buf) - 1, dynbuf.length)] = '\0';
-        bs_log(BS_WARNING, "subprocess %"PRIdMAX" stderr: %s",
-               (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
-               buf);
+        size_t len = BS_MIN(sizeof(buf) - 1, dynbuf.length);
+        if (0 < len && buf[len - 1] == '\n') {
+            buf[--len] = '\0';
+        } else {
+            buf[len] = '\0';
+        }
+        if (0 < len) {
+            bs_log_write(
+                BS_INFO, "subprocess.stderr",
+                (intmax_t)bs_subprocess_pid(subprocess_handle_ptr->subprocess_ptr),
+                "%s", buf);
+        }
     }
     return rv;
 }
