@@ -4,12 +4,13 @@
 //! @include etc/root-menu.plist
 // Definition of root menu. Follows Window Maker plist order.
 ("Root Menu",
- ("Applications...",
+ ("Applications",
   ("Terminal", Execute, "/usr/bin/foot"),
   ("Chrome", ShellExecute, "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland --user-data-dir=/tmp/chrome-wayland")),
  ("Outputs...",
   ("Magnify", OutputMagnify),
-  ("Reduce", OutputReduce)),
+  ("Reduce", OutputReduce),
+  ("Configure", Execute, "wdisplays")),
  ("Previous Workspace", WorkspacePrevious),
  ("Next Workspace", WorkspaceNext),
  ("Lock", LockScreen),
