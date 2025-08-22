@@ -54,7 +54,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] When an output is removed: Re-position toplevels into visible area.
   * [done] Fix screen lock behaviour: Ensure the unlock surface is shown on all outputs.
   * [done] Permit specifying output for dock, clip and icon area (similar `KeepDockOnPrimaryHead`)
-  * Add "scaling" actions, configurable as hotkey and in root menu.
+  * [done] Add "scaling" actions, configurable as hotkey and in root menu.
   * Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
 * Menu

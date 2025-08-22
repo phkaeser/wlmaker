@@ -83,6 +83,9 @@ typedef struct {
 static bool _wlmbe_output_manager_update_output_configuration(
     struct wl_list *link_ptr,
     void *ud_ptr);
+static bool _wlmaker_output_manager_config_head_scale(
+    struct wl_list *link_ptr,
+    void *ud_ptr);
 static bool _wlmaker_output_manager_config_head_apply(
     struct wl_list *link_ptr,
     void *ud_ptr);
@@ -189,6 +192,39 @@ void wlmbe_output_manager_destroy(
     free(output_manager_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_manager_scale(
+    wlmbe_output_manager_t *output_manager_ptr,
+    double scale)
+{
+    struct wlr_output_configuration_v1 *wlr_output_configuration_v1_ptr =
+        wlr_output_configuration_v1_create();
+    if (NULL == wlr_output_configuration_v1_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_output_configuration_v1_create()");
+        return;
+    }
+
+    // First: retrieve each head's status, then scale them. Then, apply.
+    if (wlmtk_util_wl_list_for_each(
+            &output_manager_ptr->wlr_output_layout_ptr->outputs,
+            _wlmbe_output_manager_update_output_configuration,
+            wlr_output_configuration_v1_ptr)) {
+        wlmtk_util_wl_list_for_each(
+            &wlr_output_configuration_v1_ptr->heads,
+            _wlmaker_output_manager_config_head_scale,
+            &scale);
+        _wlmbe_output_manager_apply(
+            output_manager_ptr,
+            wlr_output_configuration_v1_ptr,
+            true);
+    }
+    wlr_output_configuration_v1_destroy(wlr_output_configuration_v1_ptr);
+
+    // Not to forget: Propagate to potential layout manager clients.
+    _wlmbe_output_manager_handle_output_layout_change(
+        &output_manager_ptr->output_layout_change_listener, NULL);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -233,6 +269,27 @@ bool _wlmbe_output_manager_update_output_configuration(
         &box);
     head_v1_ptr->state.x = box.x;
     head_v1_ptr->state.y = box.y;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Applies the scale factor at `ud_ptr` to the head.
+ *
+ * Callback for @ref wlmtk_util_wl_list_for_each.
+ *
+ * @param link_ptr
+ * @param ud_ptr
+ *
+ * @return true.
+ */
+bool _wlmaker_output_manager_config_head_scale(
+    struct wl_list *link_ptr,
+    void *ud_ptr)
+{
+    struct wlr_output_configuration_head_v1 *head_v1_ptr  = BS_CONTAINER_OF(
+        link_ptr, struct wlr_output_configuration_head_v1, link);
+    head_v1_ptr->state. scale *= *(double*)ud_ptr;
     return true;
 }
 

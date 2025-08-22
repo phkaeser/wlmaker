@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -143,6 +144,9 @@ static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
                     _wlmbe_backend_decode_fini),
     BSPL_DESC_SENTINEL(),
 };
+
+/** Logarithmic magnification factor: Roughly 10% per step, doubles exactly. */
+static const double _wlmbke_backend_magnification = sqrt(sqrt(sqrt(2)));
 
 /* == Exported methods ===================================================== */
 
@@ -331,6 +335,22 @@ struct wlr_output *wlmbe_primary_output(
 size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr)
 {
     return wl_list_length(&wlr_output_layout_ptr->outputs);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_backend_magnify(wlmbe_backend_t *backend_ptr)
+{
+    wlmbe_output_manager_scale(
+        backend_ptr->output_manager_ptr,
+        _wlmbke_backend_magnification);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr)
+{
+    wlmbe_output_manager_scale(
+        backend_ptr->output_manager_ptr,
+        1.0 / _wlmbke_backend_magnification);
 }
 
 /* == Local (static) methods =============================================== */

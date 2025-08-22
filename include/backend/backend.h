@@ -98,6 +98,11 @@ struct wlr_output *wlmbe_primary_output(
  */
 size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr);
 
+/** Magnifies all backend outputs by @ref _wlmbke_backend_magnification. */
+void wlmbe_backend_magnify(wlmbe_backend_t *backend_ptr);
+/** Reduces all backend outputs by @ref _wlmbke_backend_magnification. */
+void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr);
+
 /** Unit test cases. */
 extern const bs_test_case_t wlmbe_backend_test_cases[];
 

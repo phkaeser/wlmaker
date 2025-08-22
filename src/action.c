@@ -129,6 +129,9 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
 
     BSPL_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
 
+    BSPL_ENUM("OutputMagnify", WLMAKER_ACTION_OUTPUT_MAGNIFY),
+    BSPL_ENUM("OutputReduce", WLMAKER_ACTION_OUTPUT_REDUCE),
+
     BSPL_ENUM("SwitchToVT1", WLMAKER_ACTION_SWITCH_TO_VT1),
     BSPL_ENUM("SwitchToVT2", WLMAKER_ACTION_SWITCH_TO_VT2),
     BSPL_ENUM("SwitchToVT3", WLMAKER_ACTION_SWITCH_TO_VT3),
@@ -393,6 +396,13 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                 wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
                 true);
         }
+        break;
+
+    case WLMAKER_ACTION_OUTPUT_MAGNIFY:
+        wlmbe_backend_magnify(server_ptr->backend_ptr);
+        break;
+    case WLMAKER_ACTION_OUTPUT_REDUCE:
+        wlmbe_backend_reduce(server_ptr->backend_ptr);
         break;
 
     case WLMAKER_ACTION_SWITCH_TO_VT1:
