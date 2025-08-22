@@ -22,7 +22,6 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -145,8 +144,8 @@ static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
     BSPL_DESC_SENTINEL(),
 };
 
-/** Logarithmic magnification factor: Roughly 10% per step, doubles exactly. */
-static const double _wlmbke_backend_magnification = sqrt(sqrt(sqrt(2)));
+/** Magnification factor: 3rd square root of 2.0. ~10, doubles exactly. */
+static const double _wlmbke_backend_magnification = 1.0905077326652577;
 
 /* == Exported methods ===================================================== */
 
