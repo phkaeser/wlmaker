@@ -63,6 +63,9 @@ typedef enum {
 
     WLMAKER_ACTION_ROOT_MENU,
 
+    WLMAKER_ACTION_OUTPUT_MAGNIFY,
+    WLMAKER_ACTION_OUTPUT_REDUCE,
+
     // Note: Keep these numbered consecutively.
     WLMAKER_ACTION_SWITCH_TO_VT1,
     WLMAKER_ACTION_SWITCH_TO_VT2,

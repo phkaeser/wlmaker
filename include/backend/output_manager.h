@@ -60,6 +60,16 @@ wlmbe_output_manager_t *wlmbe_output_manager_create(
 void wlmbe_output_manager_destroy(
     wlmbe_output_manager_t *output_manager_ptr);
 
+/**
+ * Scales all outputs by the provided scale factor.
+ *
+ * @param output_manager_ptr
+ * @param scale
+ */
+void wlmbe_output_manager_scale(
+    wlmbe_output_manager_t *output_manager_ptr,
+    double scale);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
