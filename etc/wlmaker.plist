@@ -41,6 +41,9 @@
         // TODO(kaeser@gubbe.ch): Swap with F12, to match Window Maker's behaviour.
         "Ctrl+Alt+Logo+R" = RootMenu;
 
+        "Ctrl+Alt+Logo+Page_Up" = OutputMagnify;
+        "Ctrl+Alt+Logo+Page_Down" = OutputReduce;
+
         // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
         // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
         // listed. Should determine how to handle that w/o modifiers.
