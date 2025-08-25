@@ -585,6 +585,11 @@ bool _wlmtk_container_element_pointer_accepts_motion(
         bool rv = wlmtk_element_pointer_motion(child_element_ptr, &child_motion);
         container_ptr->super_element.inhibit_pointer_blur = false;
         if (rv) {
+            if (NULL == container_ptr->pointer_focus_element_ptr) {
+                // TODO(kaeser@gubbe.ch): This should no longer be needed when
+                // pointer grab and pointer_focus are unified.
+                return false;
+            }
             BS_ASSERT(NULL != container_ptr->pointer_focus_element_ptr);
             BS_ASSERT(container_ptr->super_element.pointer_inside);
             return true;
