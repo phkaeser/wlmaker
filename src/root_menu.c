@@ -383,11 +383,13 @@ void _wlmaker_root_menu_handle_menu_open_changed(
             wlmtk_menu_get_mode(root_menu_ptr->menu_ptr)) {
             properties |= WLMTK_WINDOW_PROPERTY_RIGHTCLICK;
 
+            // TODO(kaeser@gubbe.ch): Also undo, with that really terrible
+            // hack of hacking the pane into the content.
+            wlmtk_element_t *content_element_ptr =
+                wlmtk_content_element(&root_menu_ptr->content);
             wlmtk_container_pointer_grab(
-                wlmtk_window_element(
-                    root_menu_ptr->window_ptr)->parent_container_ptr,
-                wlmtk_window_element(root_menu_ptr->window_ptr));
-
+                content_element_ptr->parent_container_ptr,
+                content_element_ptr);
         } else {
             properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
         }
