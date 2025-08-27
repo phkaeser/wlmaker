@@ -23,12 +23,12 @@ See [here](doc/FEATURES.md) for a detailed list of implemented or planned
 features, or the [roadmap](doc/ROADMAP.md) for what's planned for the upcoming
 versions.
 
-Highlights for current version ([0.5](https://github.com/phkaeser/wlmaker/releases/tag/v0.5)):
+Highlights for current version ([0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)):
 
-* *new:* Window menu and [configurable](https://github.com/phkaeser/wlmaker/blob/main/etc/root-menu.plist) root menu.
-* *new:* Fixes to `wlr-layer-shell-unstable-v1` implementation, early support for keyboard interactivity.
+* *new* Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
+* *new* [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wmmenugen`), and can be navigated by keyboard.
+* *new* User manual at https://phkaeser.github.io/wlmaker/.
 * Builds with [wlroots 0.18](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
-* Configurable layout and scaling for the output.
 * Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
 * Screen saver support, through `ext-session-lock-v1` and `idle-inhibit-unstable-v1` protocols.
 * Configurable through plist text files: [base configuration](etc/wlmaker.plist),
