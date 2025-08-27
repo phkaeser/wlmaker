@@ -24,11 +24,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
 
-## Plan for 0.6
+## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
 **Focus**: Multiple outputs.
 
-* Support for dynamic output configurations.
+* [done] Support for dynamic output configurations.
   * [done] Support `wlr-output-management-unstable-v1` protocol.
     * [done] Verify that `wlr-randr` works, for `test` and `apply`.
     * [done] Fix: Report output position correctly.
@@ -57,13 +57,13 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add "scaling" actions, configurable as hotkey and in root menu.
   * [done] Add "output configuration" item to the root menu. (eg. XF86Display key?)
 
-* Menu
+* [done] Menu
   * [done] Permit navigation by keys
   * [done] Generate from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90)).
   * [done] Documentation for menu configuration.
   * [done] Draw a submenu hint (small triangle) on items expanding into a submenu.
 
-* Bug fixes
+* [done] Bug fixes
   * [done] Verify subprocess from action have stdout & stderr captured and logged.
   * [done] Fix keyboard input not working for Firefox.
   * [done] When switching workspace, pointer state appears to be reset.
