@@ -24,6 +24,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
 
+* Infrastructure
+  * Make it compile for wlroots 0.19, and update tests accordingly.
+  * Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
+  * Add `pointer-position` experimental protocol, and a `wlmeyes` app.
+
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
 **Focus**: Multiple outputs.
