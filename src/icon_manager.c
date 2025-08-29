@@ -502,6 +502,8 @@ void into_shm(
         icon_manager_from_resource(
             wl_icon_manager_resource_ptr);
 
+#if 0
+    // FIXME: This might be a means of rendering into a buffer.
     uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
     struct wlr_drm_format format = {
         .format = DRM_FORMAT_ARGB8888,
@@ -522,13 +524,22 @@ void into_shm(
         bs_log(BS_ERROR, "Failed wlr_renderer_begin_buffer_pass");
         return;
     }
+
+    struct wlr_render_texture_options to = {
+        .texture = wlr_client_buffer_ptr->texture,
+        .transform = WL_OUTPUT_TRANSFORM_NORMAL,
+        .filter_mode = WLR_SCALE_FILTER_BILINEAR,
+        .blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
+    };
+    wlr_render_pass_add_texture(pass_ptr, &to);
     wlr_render_pass_submit(pass_ptr);
 
     struct wlr_dmabuf_attributes dmabuf_attribs;
     if (!wlr_buffer_get_dmabuf(wlr_buffer_ptr, &dmabuf_attribs)) {
-        bs_log(BS_ERROR, "Not shared memory.");
+        bs_log(BS_ERROR, "Not dmabuf.");
         return;
     }
+#endif
 
 
     int fd = shm_open("wlmFIXME", O_RDWR|O_CREAT|O_EXCL, 0600);
@@ -555,6 +566,7 @@ void into_shm(
 
     if (false) {
 
+        // Read from the input's wlr_buffer data_ptr_access.
         void *d_ptr;
         uint32_t format;
         size_t stride;
@@ -563,10 +575,10 @@ void into_shm(
                 WLR_BUFFER_DATA_PTR_ACCESS_READ,
                 &d_ptr, &format, &stride)) {
             bs_log(BS_ERROR, "Failed wlr_buffer_begin_data_ptr_access()");
+            return;
         }
 
-        memcpy(data_ptr, d_ptr,
-            wlr_client_buffer_ptr->source->height * stride);
+        memcpy(data_ptr, d_ptr, wlr_client_buffer_ptr->source->height * stride);
 
         static uint8_t x = 0;
         x += 0x10;
@@ -576,10 +588,10 @@ void into_shm(
 
     } else {
 
-        // wlr_texture.h
+        // Reads from the texture. Slow, but should also work with GL.
         struct wlr_texture_read_pixels_options options = {
             .data = data_ptr,
-            .format = DRM_FORMAT_ARGB8888,
+            .format = DRM_FORMAT_XRGB8888,
             .stride = 4 * 64,
             .dst_x = 0,
             .dst_y = 0

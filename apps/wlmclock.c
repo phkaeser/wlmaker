@@ -218,11 +218,14 @@ static bool _toplevel_callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
 static void _buffer_callback(bs_gfxbuf_t *gfxbuf_ptr)
 {
     bs_gfxbuf_copy_area(
-        tl_gfxbuf_ptr, 0, 0,
-        gfxbuf_ptr, 0, 0, 64, 64);
+        tl_gfxbuf_ptr,
+        BS_MAX((int)0, (int)(tl_gfxbuf_ptr->width - gfxbuf_ptr->width) / 2),
+        BS_MAX((int)0, (int)(tl_gfxbuf_ptr->height - gfxbuf_ptr->height) / 2),
+        gfxbuf_ptr, 0, 0, gfxbuf_ptr->width, gfxbuf_ptr->height);
 }
 
 /* == Main program ========================================================= */
@@ -238,9 +241,9 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     tl_gfxbuf_ptr = bs_gfxbuf_create(256, 256);
     bs_gfxbuf_clear(tl_gfxbuf_ptr, 0xff203040);
-
-    wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
-        wlclient_ptr, "wlmaker Toplevel Example", 256, 256);
+   wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
+        wlclient_ptr, "wlmaker Toplevel Example",
+        tl_gfxbuf_ptr->width, tl_gfxbuf_ptr->height);
     wlclient_xdg_toplevel_register_ready_callback(
         toplevel_ptr, _toplevel_callback, toplevel_ptr);
 

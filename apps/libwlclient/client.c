@@ -753,7 +753,7 @@ void handle_get_buffer(
         return;
     }
 
-    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create_unmanaged(64, 64, 4, data_ptr);
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create_unmanaged(64, 64, 64, data_ptr);
     if (NULL == gfxbuf_ptr) return;
 
     if (NULL != wlclient_ptr->callback_fn) {
