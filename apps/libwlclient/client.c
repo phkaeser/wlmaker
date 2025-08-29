@@ -48,6 +48,7 @@ struct wl_pointer;
 struct wl_registry;
 struct wl_seat;
 struct wl_surface;
+struct zwlmaker_icon_manager_v1;
 
 /* == Declarations ========================================================= */
 
@@ -81,6 +82,9 @@ struct _wlclient_t {
 
     /** Whether to keep the client running. */
     volatile bool             keep_running;
+
+    void (*callback_fn)(bs_gfxbuf_t *gfxbuf_ptr);
+
 };
 
 /** State of a registered timer. */
@@ -129,6 +133,12 @@ static wlclient_timer_t *wlc_timer_create(
     void *callback_ud_ptr);
 static void wlc_timer_destroy(
     wlclient_timer_t *timer_ptr);
+
+static void wlc_icon_manager_setup(wlclient_t *wlclient_ptr);
+static void handle_get_buffer(
+    void *data,
+    struct zwlmaker_icon_manager_v1 *zwlmaker_icon_manager_v1,
+    int32_t fd);
 
 static void wlc_seat_setup(wlclient_t *client_ptr);
 static void wlc_seat_handle_capabilities(
@@ -235,6 +245,10 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = handle_global_remove,
 };
 
+const struct zwlmaker_icon_manager_v1_listener icon_manager_v1_listener = {
+    .get_buffer = handle_get_buffer,
+};
+
 /** Listeners for the seat. */
 static const struct wl_seat_listener wlc_seat_listener = {
     .capabilities = wlc_seat_handle_capabilities,
@@ -275,7 +289,8 @@ static const object_t objects[] = {
     { &wl_seat_interface, 5,
       offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
-      offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
+      offsetof(wlclient_attributes_t, icon_manager_ptr),
+      wlc_icon_manager_setup },
     { &zxdg_decoration_manager_v1_interface, 1,
       offsetof(wlclient_attributes_t, xdg_decoration_manager_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
@@ -550,6 +565,14 @@ void wlclient_request_terminate(wlclient_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlclient_register_buffer_cb(
+    wlclient_t *wlclient_ptr,
+    void (*callback_fn)(bs_gfxbuf_t *gfxbuf_ptr))
+{
+    wlclient_ptr->callback_fn = callback_fn;
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlclient_register_timer(
     wlclient_t *wlclient_ptr,
     uint64_t target_usec,
@@ -700,6 +723,45 @@ wlclient_timer_t *wlc_timer_create(
 void wlc_timer_destroy(wlclient_timer_t *timer_ptr)
 {
     free(timer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlc_icon_manager_setup(wlclient_t *wlclient_ptr)
+{
+    zwlmaker_icon_manager_v1_add_listener(
+        wlclient_ptr->attributes.icon_manager_ptr,
+        &icon_manager_v1_listener,
+        wlclient_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void handle_get_buffer(
+    void *data,
+    struct zwlmaker_icon_manager_v1 *zwlmaker_icon_manager_v1,
+    int32_t fd)
+{
+    wlclient_t *wlclient_ptr = data;
+
+    bs_log(BS_ERROR, "FIXME: get_buffer -- client %p, icon mgr %p, fd %d",
+           wlclient_ptr, zwlmaker_icon_manager_v1, fd);
+
+    void *data_ptr = mmap(NULL, 16384, PROT_READ, MAP_SHARED, fd, 0);
+    close(fd);
+    if (MAP_FAILED == data_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO,
+               "Failed mmap(NULL, 16384, PROT_READ, MAP_SHARED, %d, 0)", fd);
+        return;
+    }
+
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create_unmanaged(64, 64, 4, data_ptr);
+    if (NULL == gfxbuf_ptr) return;
+
+    if (NULL != wlclient_ptr->callback_fn) {
+        wlclient_ptr->callback_fn(gfxbuf_ptr);
+    }
+    bs_gfxbuf_destroy(gfxbuf_ptr);
+
+    munmap(data_ptr, 16384);
 }
 
 /* ------------------------------------------------------------------------- */

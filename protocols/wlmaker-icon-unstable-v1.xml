@@ -38,6 +38,11 @@
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
 
+    <event name="get_buffer">
+      <description summary="FIXME">FIXME</description>
+      <arg name="fd" type="fd" summary="fd" />
+    </event>
+
   </interface>
 
   <interface name="zwlmaker_toplevel_icon_v1" version="1">

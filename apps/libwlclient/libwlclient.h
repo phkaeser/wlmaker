@@ -127,6 +127,10 @@ void wlclient_run(wlclient_t *wlclient_ptr);
  */
 void wlclient_request_terminate(wlclient_t *wlclient_ptr);
 
+void wlclient_register_buffer_cb(
+    wlclient_t *wlclient_ptr,
+    void (*callback_fn)(bs_gfxbuf_t *gfxbuf_ptr));
+
 /**
  * Registers a timer with the client.
  *

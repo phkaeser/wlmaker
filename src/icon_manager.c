@@ -20,12 +20,20 @@
 
 #include "icon_manager.h"
 
+#include <fcntl.h>
+#include <drm_fourcc.h>
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/render/drm_format_set.h>
+#include <wlr/render/wlr_renderer.h>
+#include <wlr/render/allocator.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
@@ -34,6 +42,7 @@
 #include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
 #include "xdg_shell.h"
+#include "backend/backend.h"
 
 struct wl_client;
 struct wl_resource;
@@ -49,6 +58,9 @@ struct _wlmaker_icon_manager_t {
 
     /** The global holding the icon manager's interface. */
     struct wl_global          *wl_global_ptr;
+
+    struct wlr_renderer       *wlr_renderer_ptr;
+    struct wlr_allocator      *wlr_allocator_ptr;
 };
 
 /** State of a toplevel icon. */
@@ -62,6 +74,7 @@ struct _wlmaker_toplevel_icon_t {
     struct wl_client          *wl_client_ptr;
     /** Back-link to the icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
+    struct wl_resource        *icon_manager_wl_resource_ptr;
     /** The provided ID. */
     uint32_t                  id;
     /** The XDG toplevel for which the icon is specified. */
@@ -107,7 +120,7 @@ static void handle_get_toplevel_icon(
 
 static wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     struct wl_client *wl_client_ptr,
-    wlmaker_icon_manager_t *icon_manager_ptr,
+    struct wl_resource *wl_icon_manager_resource_ptr,
     uint32_t id,
     int version,
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
@@ -176,6 +189,13 @@ wlmaker_icon_manager_t *wlmaker_icon_manager_create(
         wlmaker_icon_manager_destroy(icon_manager_ptr);
         return NULL;
     }
+
+    icon_manager_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(
+        wlmbe_backend_wlr(server_ptr->backend_ptr));
+    icon_manager_ptr->wlr_allocator_ptr = wlr_allocator_autocreate(
+        wlmbe_backend_wlr(server_ptr->backend_ptr),
+        icon_manager_ptr->wlr_renderer_ptr);
+
 
     return icon_manager_ptr;
 }
@@ -293,9 +313,6 @@ void handle_get_toplevel_icon(
     struct wl_resource *wl_toplevel_resource_ptr,
     struct wl_resource *wl_surface_resource_ptr)
 {
-    wlmaker_icon_manager_t *icon_manager_ptr =
-        icon_manager_from_resource(
-            wl_icon_manager_resource_ptr);
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = NULL;
     if (NULL != wl_toplevel_resource_ptr) {
         wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_from_resource(
@@ -306,7 +323,7 @@ void handle_get_toplevel_icon(
 
     wlmaker_toplevel_icon_t *toplevel_icon_ptr = wlmaker_toplevel_icon_create(
         wl_client_ptr,
-        icon_manager_ptr,
+        wl_icon_manager_resource_ptr,
         id,
         wl_resource_get_version(wl_icon_manager_resource_ptr),
         wlr_xdg_toplevel_ptr,
@@ -333,12 +350,16 @@ void handle_get_toplevel_icon(
  */
 wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     struct wl_client *wl_client_ptr,
-    wlmaker_icon_manager_t *icon_manager_ptr,
+    struct wl_resource *wl_icon_manager_resource_ptr,
     uint32_t id,
     int version,
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     struct wlr_surface *wlr_surface_ptr)
 {
+    wlmaker_icon_manager_t *icon_manager_ptr =
+        icon_manager_from_resource(
+            wl_icon_manager_resource_ptr);
+
     wlmaker_toplevel_icon_t *toplevel_icon_ptr = logged_calloc(
         1, sizeof(wlmaker_toplevel_icon_t));
     if (NULL == toplevel_icon_ptr) return NULL;
@@ -348,6 +369,8 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     toplevel_icon_ptr->id = id;
     toplevel_icon_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     toplevel_icon_ptr->wlr_surface_ptr = wlr_surface_ptr;
+    toplevel_icon_ptr->icon_manager_wl_resource_ptr =
+        wl_icon_manager_resource_ptr;
 
     toplevel_icon_ptr->wl_resource_ptr = wl_resource_create(
         wl_client_ptr,
@@ -471,6 +494,112 @@ void handle_icon_ack_configure(
 }
 
 /* ------------------------------------------------------------------------- */
+void into_shm(
+    struct wlr_client_buffer *wlr_client_buffer_ptr,
+    struct wl_resource *wl_icon_manager_resource_ptr)
+{
+    __UNUSED__ wlmaker_icon_manager_t *icon_manager_ptr =
+        icon_manager_from_resource(
+            wl_icon_manager_resource_ptr);
+
+    uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
+    struct wlr_drm_format format = {
+        .format = DRM_FORMAT_ARGB8888,
+        .len = 1, // Number of modifiers
+        .modifiers = &modifier
+    };
+    struct wlr_buffer *wlr_buffer_ptr = wlr_allocator_create_buffer(
+        icon_manager_ptr->wlr_allocator_ptr,
+        64, 64, &format);
+    if (NULL == wlr_buffer_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_allocator_create_buffer(...)");
+        return;
+    }
+
+    struct wlr_render_pass *pass_ptr = wlr_renderer_begin_buffer_pass(
+        icon_manager_ptr->wlr_renderer_ptr, wlr_buffer_ptr, NULL);
+    if (NULL == pass_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_renderer_begin_buffer_pass");
+        return;
+    }
+    wlr_render_pass_submit(pass_ptr);
+
+    struct wlr_dmabuf_attributes dmabuf_attribs;
+    if (!wlr_buffer_get_dmabuf(wlr_buffer_ptr, &dmabuf_attribs)) {
+        bs_log(BS_ERROR, "Not shared memory.");
+        return;
+    }
+
+
+    int fd = shm_open("wlmFIXME", O_RDWR|O_CREAT|O_EXCL, 0600);
+    if (0 >= fd) {
+        bs_log(BS_ERROR, "Failed shm_open(...)");
+        return;
+    }
+    shm_unlink("wlmFIXME");
+
+    if (0 != ftruncate(fd, 16384)) {
+        bs_log(BS_ERROR, "Failed ftruncate(%d, 16384)", fd);
+        close(fd);
+        return;
+    }
+
+    void *data_ptr = mmap(NULL, 16384, PROT_READ|PROT_WRITE,
+                          MAP_SHARED, fd, 0);
+    if (MAP_FAILED == data_ptr) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed mmap()");
+        data_ptr = NULL;
+        close(fd);
+        return;
+    }
+
+    if (false) {
+
+        void *d_ptr;
+        uint32_t format;
+        size_t stride;
+        if (!wlr_buffer_begin_data_ptr_access(
+                wlr_client_buffer_ptr->source,
+                WLR_BUFFER_DATA_PTR_ACCESS_READ,
+                &d_ptr, &format, &stride)) {
+            bs_log(BS_ERROR, "Failed wlr_buffer_begin_data_ptr_access()");
+        }
+
+        memcpy(data_ptr, d_ptr,
+            wlr_client_buffer_ptr->source->height * stride);
+
+        static uint8_t x = 0;
+        x += 0x10;
+        //memset(data_ptr, x, 16384);
+        bs_log(BS_ERROR, "FIXME: x = %d", x);
+        wlr_buffer_end_data_ptr_access(wlr_client_buffer_ptr->source);
+
+    } else {
+
+        // wlr_texture.h
+        struct wlr_texture_read_pixels_options options = {
+            .data = data_ptr,
+            .format = DRM_FORMAT_ARGB8888,
+            .stride = 4 * 64,
+            .dst_x = 0,
+            .dst_y = 0
+        };
+
+        if (!wlr_texture_read_pixels(wlr_client_buffer_ptr->texture, &options)) {
+            bs_log(BS_ERROR, "Failed wlr_texture_read_pixels(%p, %p)",
+                   wlr_client_buffer_ptr->texture, &options);
+            return;
+        }
+    }
+
+    bs_log(BS_ERROR, "FIXME: Texture stored.");
+    zwlmaker_icon_manager_v1_send_get_buffer(
+        wl_icon_manager_resource_ptr,
+        fd);
+    close(fd);
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Event handler for the `commit` signal of the icon's surface.
  *
@@ -507,6 +636,10 @@ void handle_surface_commit(
     }
     BS_ASSERT(NULL != wlr_surface_ptr->buffer);
 
+    into_shm(
+        wlr_surface_ptr->buffer,
+        toplevel_icon_ptr->icon_manager_wl_resource_ptr);
+
     if (!toplevel_icon_ptr->acknowledged) {
         wl_resource_post_error(
             toplevel_icon_ptr->wl_resource_ptr,
@@ -519,6 +652,7 @@ void handle_surface_commit(
         &toplevel_icon_ptr->super_tile,
         wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr));
 }
+
 
 /* ------------------------------------------------------------------------- */
 /** Handles when the surface is destroyed. */

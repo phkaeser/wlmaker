@@ -43,6 +43,8 @@ static const uint32_t color_off = 0xff114444;
 /** Background color in the VFD-style display. */
 static const uint32_t color_background = 0xff111111;
 
+bs_gfxbuf_t *tl_gfxbuf_ptr = NULL;
+
 /* ------------------------------------------------------------------------- */
 /** Returns the next full second for when to draw the clock. */
 uint64_t next_draw_time(void)
@@ -204,6 +206,25 @@ void timer_callback(wlclient_t *client_ptr, void *ud_ptr)
         client_ptr, next_draw_time(), timer_callback, icon_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+static bool _toplevel_callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
+{
+    __UNUSED__ wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
+
+    bs_gfxbuf_copy(gfxbuf_ptr, tl_gfxbuf_ptr);
+
+    wlclient_xdg_toplevel_register_ready_callback(
+        toplevel_ptr, _toplevel_callback, toplevel_ptr);
+    return true;
+}
+
+static void _buffer_callback(bs_gfxbuf_t *gfxbuf_ptr)
+{
+    bs_gfxbuf_copy_area(
+        tl_gfxbuf_ptr, 0, 0,
+        gfxbuf_ptr, 0, 0, 64, 64);
+}
+
 /* == Main program ========================================================= */
 /** Main program. */
 int main(__UNUSED__ int argc, __UNUSED__ char **argv)
@@ -212,6 +233,16 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     wlclient_t *wlclient_ptr = wlclient_create("wlmclock");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
+
+    wlclient_register_buffer_cb(wlclient_ptr, _buffer_callback);
+
+    tl_gfxbuf_ptr = bs_gfxbuf_create(256, 256);
+    bs_gfxbuf_clear(tl_gfxbuf_ptr, 0xff203040);
+
+    wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
+        wlclient_ptr, "wlmaker Toplevel Example", 256, 256);
+    wlclient_xdg_toplevel_register_ready_callback(
+        toplevel_ptr, _toplevel_callback, toplevel_ptr);
 
     if (wlclient_icon_supported(wlclient_ptr)) {
         wlclient_icon_t *icon_ptr = wlclient_icon_create(wlclient_ptr);
