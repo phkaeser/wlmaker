@@ -20,15 +20,25 @@
 
 #include "input_observation.h"
 
+#include <libbase/libbase.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_buffer.h>
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_seat.h>
+#undef WLR_USE_UNSTABLE
+
+#include "server.h"
+#include "toolkit/toolkit.h"
 #include "ext-input-observation-v1-server-protocol.h"
 
-#define WLR_USE_UNSTABLE
-#include "wlr/types/wlr_buffer.h"
-#include "wlr/types/wlr_compositor.h"
-#include "wlr/types/wlr_cursor.h"
-#include "wlr/types/wlr_scene.h"
-#include "wlr/types/wlr_seat.h"
-#undef WLR_USE_UNSTABLE
+struct wl_client;
+struct wl_resource;
 
 /* == Declarations ========================================================= */
 
@@ -102,7 +112,7 @@ static void _wlmaker_input_position_observer_handle_cursor_frame(
 /* ========================================================================= */
 
 /** Implementation of the position tracking. */
-static const struct ext_input_observer_v1_interface
+static const struct ext_input_observation_manager_v1_interface
 input_observation_manager_v1_implementation = {
     .destroy = handle_resource_destroy,
     .create_pointer_observer = input_observation_manager_handle_create_pointer_observer,
@@ -130,7 +140,7 @@ wlmaker_input_observation_manager_t *wlmaker_input_observation_manager_create(
 
     manager_ptr->wl_global_ptr = wl_global_create(
         wl_display_ptr,
-        &ext_input_observer_v1_interface,
+        &ext_input_observation_manager_v1_interface,
         1,
         manager_ptr,
         bind_input_observation);
@@ -170,7 +180,7 @@ wlmaker_input_observation_manager_t *input_observation_manager_from_resource(
 {
     BS_ASSERT(wl_resource_instance_of(
                   wl_resource_ptr,
-                  &ext_input_observer_v1_interface,
+                  &ext_input_observation_manager_v1_interface,
                   &input_observation_manager_v1_implementation));
     return wl_resource_get_user_data(wl_resource_ptr);
 }

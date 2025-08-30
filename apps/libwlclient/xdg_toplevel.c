@@ -20,8 +20,8 @@
 
 #include "xdg_toplevel.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
 
@@ -30,7 +30,9 @@
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 
+struct ext_input_position_observer_v1;
 struct wl_array;
+struct wl_surface;
 struct xdg_surface;
 struct xdg_toplevel;
 struct zxdg_toplevel_decoration_v1;
