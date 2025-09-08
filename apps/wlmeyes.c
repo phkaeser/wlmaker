@@ -22,6 +22,8 @@
 #include <libbase/libbase.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
@@ -41,6 +43,30 @@ static struct wl_listener     _key_listener;
 double                        pointer_x;
 /** Most recent Y position of the pointer. */
 double                        pointer_y;
+
+/** Desired width of the toplevel, in pixels. */
+uint32_t                      toplevel_width;
+/** Desired height of the toplevel, in pixels. */
+uint32_t                      toplevel_height;
+
+/** Commandline arguments. */
+static const bs_arg_t _wlmeyes_args[] = {
+    BS_ARG_UINT32(
+        "width",
+        "Desired width of the XDG toplevel window, in pixels.",
+        512,
+        1,
+        INT32_MAX,
+        &toplevel_width),
+    BS_ARG_UINT32(
+        "height",
+        "Desired height of the XDG toplevel window, in pixels.",
+        384,
+        1,
+        INT32_MAX,
+        &toplevel_height),
+    BS_ARG_SENTINEL(),
+};
 
 /* == Local (static) methods =============================================== */
 
@@ -71,6 +97,8 @@ static inline double sqr(double x)
     return x * x;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Draws the white + border of the eye. */
 void _draw_around(cairo_t *cairo_ptr,
                   double x,
                   double y,
@@ -173,9 +201,14 @@ static void _position_callback(double x, double y, void *ud_ptr)
 
 /* == Main program ========================================================= */
 /** Main program. */
-int main(__UNUSED__ int argc, __UNUSED__ char **argv)
+int main(int argc, const char **argv)
 {
     bs_log_severity = BS_INFO;
+
+    if (!bs_arg_parse(_wlmeyes_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
+        bs_arg_print_usage(stderr, _wlmeyes_args);
+        return EXIT_FAILURE;
+    }
 
     wlclient_ptr = wlclient_create("wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
@@ -185,10 +218,16 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     if (wlclient_xdg_supported(wlclient_ptr)) {
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
-            wlclient_ptr, "wlmaker Toplevel Example", 512, 384);
+            wlclient_ptr,
+            "wlmaker Toplevel Example",
+            toplevel_width,
+            toplevel_height);
+        if (NULL == toplevel_ptr) {
+            bs_log(BS_ERROR, "Failed wlclient_xdg_toplevel_create(%p)",
+                   wlclient_ptr);
+        } else {
 
-        if (NULL != toplevel_ptr) {
-
+            wlclient_xdg_decoration_set_server_side(toplevel_ptr, false);
             wlclient_xdg_toplevel_register_ready_callback(
                 toplevel_ptr, _callback, toplevel_ptr);
             wlclient_xdg_toplevel_register_position_callback(
@@ -196,9 +235,6 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
             wlclient_run(wlclient_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
-        } else {
-            bs_log(BS_ERROR, "Failed wlclient_xdg_toplevel_create(%p)",
-                   wlclient_ptr);
         }
     } else {
         bs_log(BS_ERROR, "XDG shell is not supported.");

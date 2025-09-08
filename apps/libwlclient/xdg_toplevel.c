@@ -56,6 +56,8 @@ struct _wlclient_xdg_toplevel_t {
 
     /** The XDG toplevel'ss decoration handle. */
     struct zxdg_toplevel_decoration_v1 *xdg_toplevel_decoration_v1_ptr;
+    /** Whether to request decoration on the server side. */
+    bool                      decorate_server_side;
 
     /** The double-buffer wrapper for the surface. */
     wlcl_dblbuf_t             *dblbuf_ptr;
@@ -66,13 +68,26 @@ struct _wlclient_xdg_toplevel_t {
     bool                      decoration_configured;
     /** Callback for when the buffer is ready to draw into. */
     wlcl_dblbuf_ready_callback_t callback;
-    /** Client-provied argument to @ref wlclient_xdg_toplevel_t::callback. */
+    /** Client-provided argument to @ref wlclient_xdg_toplevel_t::callback. */
     void                      *callback_ud_ptr;
+
+    /** Callback for input position observation. */
+    void (*position_callback)(double x, double y, void *ud_ptr);
+    /** Client-provided argument to @ref wlclient_xdg_toplevel_t::position_callback. */
+    void                      *position_callback_ud_ptr;
+    /** Whether any position update had been received already. */
+    bool                      position_received;
+    /** Last known reported input X position. */
+    int32_t                   last_position_x;
+    /** Last known reported input Y position. */
+    int32_t                   last_position_y;
 
     /** Input observer. */
     struct ext_input_position_observer_v1 *input_position_observer_ptr;
 };
 
+static void _wlclient_xdg_configure_decoration(
+    wlclient_xdg_toplevel_t *toplevel_ptr);
 static void _wlclient_xdg_surface_configure(
     void *data,
     struct xdg_surface *xdg_surface,
@@ -316,6 +331,23 @@ bool wlclient_xdg_supported(wlclient_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlclient_xdg_decoration_set_server_side(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    bool enabled)
+{
+    // Guard clause.
+    if (NULL == toplevel_ptr->xdg_toplevel_decoration_v1_ptr) return false;
+
+    // Nothing to do.
+    if (toplevel_ptr->decorate_server_side == enabled) return true;
+
+    toplevel_ptr->decoration_configured = false;
+    toplevel_ptr->decorate_server_side = enabled;
+    _wlclient_xdg_configure_decoration(toplevel_ptr);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlclient_xdg_toplevel_register_ready_callback(
     wlclient_xdg_toplevel_t *toplevel_ptr,
     bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
@@ -333,7 +365,40 @@ void wlclient_xdg_toplevel_register_ready_callback(
     toplevel_ptr->callback_ud_ptr = callback_ud_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+void wlclient_xdg_toplevel_register_position_callback(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    void (*callback)(double x, double y, void *ud_ptr),
+    void *callback_ud_ptr)
+{
+    if (toplevel_ptr->position_received) {
+        callback(
+            toplevel_ptr->last_position_x / 256.0,
+            toplevel_ptr->last_position_y / 256.0,
+            callback_ud_ptr);
+    }
+
+    toplevel_ptr->position_callback = callback;
+    toplevel_ptr->position_callback_ud_ptr = callback_ud_ptr;
+}
+
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Updates the server-side decoration mode. */
+void _wlclient_xdg_configure_decoration(wlclient_xdg_toplevel_t *toplevel_ptr)
+{
+    // Guard clauses.
+    if (NULL == toplevel_ptr->xdg_toplevel_decoration_v1_ptr) return;
+    if (toplevel_ptr->decoration_configured) return;
+
+    zxdg_toplevel_decoration_v1_set_mode(
+        toplevel_ptr->xdg_toplevel_decoration_v1_ptr,
+        (toplevel_ptr->decorate_server_side ?
+         ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE :
+         ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE));
+    toplevel_ptr->decoration_configured = true;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
@@ -351,14 +416,7 @@ void _wlclient_xdg_surface_configure(
     wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
     xdg_surface_ack_configure(xdg_surface_ptr, serial);
 
-    if (!toplevel_ptr->decoration_configured &&
-        NULL != toplevel_ptr->xdg_toplevel_decoration_v1_ptr) {
-        zxdg_toplevel_decoration_v1_set_mode(
-            toplevel_ptr->xdg_toplevel_decoration_v1_ptr,
-            ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-        toplevel_ptr->decoration_configured = true;
-        return;
-    }
+    _wlclient_xdg_configure_decoration(toplevel_ptr);
 
     toplevel_ptr->configured = true;
     if (NULL != toplevel_ptr->callback) {
@@ -392,6 +450,9 @@ void _wlc_xdg_toplevel_decoration_v1_configure(
     bs_log(BS_INFO, "XDG toplevel %p configured decoration mode %s",
            toplevel_ptr->xdg_toplevel_ptr,
            decoration_modes[mode]);
+
+    toplevel_ptr->decoration_configured = false;
+    _wlclient_xdg_configure_decoration(toplevel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -441,18 +502,29 @@ void _xdg_toplevel_handle_wm_capabilities(
 /** Callback for when a `position` event is received. */
 void _wlclient_input_position_observer_position(
     void *data_ptr,
-    struct ext_input_position_observer_v1 *input_position_observer_ptr,
-    struct wl_surface *wl_surface_ptr,
-    uint32_t instance,
+    __UNUSED__ struct ext_input_position_observer_v1 *input_position_observer_ptr,
+    __UNUSED__ struct wl_surface *wl_surface_ptr,
+    __UNUSED__ uint32_t instance,
     int32_t relative_x,
     int32_t relative_y)
 {
     wlclient_xdg_toplevel_t *toplevel_ptr = data_ptr;
 
-    bs_log(BS_INFO, "_wlclient_input_position_observer_position"
-           "(%p, %p, %p,%"PRId32", %"PRIx32", %"PRIx32")",
-           toplevel_ptr, input_position_observer_ptr, wl_surface_ptr,
-           instance, relative_x, relative_y);
+    if (!toplevel_ptr->position_received ||
+        toplevel_ptr->last_position_x != relative_x ||
+        toplevel_ptr->last_position_y != relative_y) {
+
+        toplevel_ptr->position_received = true;
+        toplevel_ptr->last_position_x = relative_x;
+        toplevel_ptr->last_position_y = relative_y;
+
+        if (NULL != toplevel_ptr->position_callback) {
+            toplevel_ptr->position_callback(
+                toplevel_ptr->last_position_x / 256.0,
+                toplevel_ptr->last_position_y / 256.0,
+                toplevel_ptr->position_callback_ud_ptr);
+        }
+    }
 }
 
 /* == End of xdg_toplevel.c ================================================== */
