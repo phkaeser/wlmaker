@@ -145,7 +145,7 @@ _wlc_xdg_toplevel_decoration_v1_listener = {
     .configure = _wlc_xdg_toplevel_decoration_v1_configure,
 };
 
-/** Listeners for the Pointer positioon Tracker. */
+/** Listeners for the Pointer position Tracker. */
 static const struct ext_input_position_observer_v1_listener
 _wlclient_tracker_listener = {
     .position = _wlclient_input_position_observer_position,

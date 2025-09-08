@@ -72,6 +72,19 @@ void wlclient_icon_register_ready_callback(
     bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
     void *ud_ptr);
 
+/**
+ * Registers the callback to notify the pointer position relative to the
+ * icon's surface.
+ *
+ * @param icon_ptr
+ * @param callback
+ * @param callback_ud_ptr
+ */
+void wlclient_icon_register_position_callback(
+    wlclient_icon_t *icon_ptr,
+    void (*callback)(double x, double y, void *ud_ptr),
+    void *callback_ud_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
