@@ -32,6 +32,7 @@
 
 #include "libwlclient/xdg_toplevel.h"
 #include "libwlclient/libwlclient.h"
+#include "libwlclient/icon.h"
 
 /* == Data ================================================================= */
 
@@ -43,6 +44,10 @@ static struct wl_listener     _key_listener;
 double                        pointer_x;
 /** Most recent Y position of the pointer. */
 double                        pointer_y;
+/** Most recent X position of the pointer relative to the ivon. */
+double                        icon_pointer_x;
+/** Most recent Y position of the pointer relative to the ivon. */
+double                        icon_pointer_y;
 
 /** Desired width of the toplevel, in pixels. */
 uint32_t                      toplevel_width;
@@ -134,6 +139,8 @@ void _draw_around(cairo_t *cairo_ptr,
 /* ------------------------------------------------------------------------- */
 /** Draws the eyes' pupil, in relative coordinates. */
 void _draw_pupil(cairo_t *cairo_ptr,
+                 double pointer_x,
+                 double pointer_y,
                  double px,
                  double py,
                  double w,
@@ -180,9 +187,13 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, __UNUSED__ void *ud_ptr)
     _draw_around(cairo_ptr, 0.75, 0.5,
                  gfxbuf_ptr->width, gfxbuf_ptr->height);
 
-    _draw_pupil(cairo_ptr, 0.25, 0.5, 0.13, 0.3,
+    _draw_pupil(cairo_ptr,
+                pointer_x, pointer_y,
+                0.25, 0.5, 0.13, 0.3,
                 gfxbuf_ptr->width, gfxbuf_ptr->height);
-    _draw_pupil(cairo_ptr, 0.75, 0.5, 0.13, 0.3,
+    _draw_pupil(cairo_ptr,
+                pointer_x, pointer_y,
+                0.75, 0.5, 0.13, 0.3,
                 gfxbuf_ptr->width, gfxbuf_ptr->height);
     return true;
 }
@@ -197,6 +208,43 @@ static void _position_callback(double x, double y, void *ud_ptr)
     pointer_y = y;
     wlclient_xdg_toplevel_register_ready_callback(
         toplevel_ptr, _callback, toplevel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Called when the icon is ready to refresh. */
+static bool _icon_callback(bs_gfxbuf_t *gfxbuf_ptr, __UNUSED__ void *ud_ptr)
+{
+    bs_gfxbuf_clear(gfxbuf_ptr, 0);
+
+    cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
+    if (NULL == cairo_ptr) return false;
+
+    _draw_around(cairo_ptr, 0.25, 0.5,
+                 gfxbuf_ptr->width, gfxbuf_ptr->height);
+    _draw_around(cairo_ptr, 0.75, 0.5,
+                 gfxbuf_ptr->width, gfxbuf_ptr->height);
+
+    _draw_pupil(cairo_ptr,
+                icon_pointer_x, icon_pointer_y,
+                0.25, 0.5, 0.13, 0.3,
+                gfxbuf_ptr->width, gfxbuf_ptr->height);
+    _draw_pupil(cairo_ptr,
+                icon_pointer_x, icon_pointer_y,
+                0.75, 0.5, 0.13, 0.3,
+                gfxbuf_ptr->width, gfxbuf_ptr->height);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Updates pointer position for the icon. */
+static void _icon_position_callback(double x, double y, void *ud_ptr)
+{
+    wlclient_icon_t *icon_ptr = ud_ptr;
+
+    icon_pointer_x = x;
+    icon_pointer_y = y;
+    wlclient_icon_register_ready_callback(
+        icon_ptr, _icon_callback, icon_ptr);
 }
 
 /* == Main program ========================================================= */
@@ -232,6 +280,14 @@ int main(int argc, const char **argv)
                 toplevel_ptr, _callback, toplevel_ptr);
             wlclient_xdg_toplevel_register_position_callback(
                 toplevel_ptr, _position_callback, toplevel_ptr);
+
+            wlclient_icon_t *icon_ptr = wlclient_icon_create(wlclient_ptr);
+            if (NULL != icon_ptr) {
+                wlclient_icon_register_ready_callback(
+                    icon_ptr, _icon_callback, icon_ptr);
+                wlclient_icon_register_position_callback(
+                    icon_ptr, _icon_position_callback, icon_ptr);
+            }
 
             wlclient_run(wlclient_ptr);
             wlclient_xdg_toplevel_destroy(toplevel_ptr);
