@@ -140,11 +140,10 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     _key_listener.notify = _handle_key;
     wl_signal_add(&wlclient_events(wlclient_ptr)->key, &_key_listener);
 
-
-
     if (wlclient_xdg_supported(wlclient_ptr)) {
         wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
             wlclient_ptr, "wlmaker Toplevel Example", 640, 400);
+        wlclient_xdg_decoration_set_server_side(toplevel_ptr, true);
 
         wlclient_xdg_toplevel_register_ready_callback(
             toplevel_ptr, _callback, toplevel_ptr);
@@ -164,4 +163,4 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
-/* == End of wlmclock.c ==================================================== */
+/* == End of example_toplevel.c ============================================ */

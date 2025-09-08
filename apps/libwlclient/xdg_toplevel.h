@@ -63,6 +63,19 @@ void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr);
 bool wlclient_xdg_supported(wlclient_t *wlclient_ptr);
 
 /**
+ * Sets XDG decoration mode to "server side".
+ *
+ * @param toplevel_ptr
+ * @param enabled             Whether to enable server-side decoration. If
+ *                            false, will set client-side decoration.
+ *
+ * @return true if the XDG decoration protocol is supported.
+ */
+bool wlclient_xdg_decoration_set_server_side(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    bool enabled);
+
+/**
  * Registers the callback to notify when the buffer is ready to draw into.
  *
  * @param toplevel_ptr
@@ -72,6 +85,19 @@ bool wlclient_xdg_supported(wlclient_t *wlclient_ptr);
 void wlclient_xdg_toplevel_register_ready_callback(
     wlclient_xdg_toplevel_t *toplevel_ptr,
     bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
+    void *callback_ud_ptr);
+
+/**
+ * Registers the callback to notify the pointer position relative to the
+ * toplevel's surface.
+ *
+ * @param toplevel_ptr
+ * @param callback
+ * @param callback_ud_ptr
+ */
+void wlclient_xdg_toplevel_register_position_callback(
+    wlclient_xdg_toplevel_t *toplevel_ptr,
+    void (*callback)(double x, double y, void *ud_ptr),
     void *callback_ud_ptr);
 
 #ifdef __cplusplus
