@@ -1,4 +1,4 @@
-name: Build for Debian Trixie, with libwlroots-0.18-dev.
+name: Build for Debian Trixie, with libwlroots-0.18-dev package
 
 on:
   push:

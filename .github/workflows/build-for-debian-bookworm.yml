@@ -1,4 +1,4 @@
-name: Build for Debian Bookworm (libwlroots-0.18)
+name: Build for Debian Bookworm, with wlroots 0.18 submodule
 
 on:
   push:
