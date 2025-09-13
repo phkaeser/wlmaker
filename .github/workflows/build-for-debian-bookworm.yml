@@ -1,4 +1,4 @@
-name: Build for Linux (Bookworm, libwlroots-0.18)
+name: Build for Debian Bookworm (libwlroots-0.18)
 
 on:
   push:
