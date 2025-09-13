@@ -1,0 +1,56 @@
+name: Build for Debian Forky, with libwlroots-0.18-dev.
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_matrix:
+    strategy:
+      matrix:
+        compiler: [ "gcc", "clang" ]
+    runs-on: ubuntu-latest
+    container:
+      image: debian:forky
+
+    steps:
+    - name: Install package dependencies.
+      run: |
+        apt-get update
+        apt-get install -y \
+          bison \
+          clang \
+          cmake \
+          flex \
+          gcc \
+          git \
+          libbacktrace-dev \
+          libcairo2-dev \
+          libncurses-dev \
+          libwlroots-0.18-dev \
+          pkg-config \
+          plantuml \
+          xwayland
+
+    - name: Checkout code, including git submodules.
+      uses: actions/checkout@v3
+      with:
+        # Not using 'recursive' prevents fetching extra submodules below
+        # dependencies/. These are only needed to build wlroots from source.
+        submodules: true
+
+    - name: Configure wlmaker through CMake.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake -B build/ -Dconfig_WERROR=ON
+
+    - name: Build wlmaker.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        cmake --build build/
+
+    - name: Run all tests.
+      run: |
+        ctest --test-dir build/ --build-run-dir build/ -V
