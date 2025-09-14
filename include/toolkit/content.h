@@ -227,6 +227,7 @@ static inline uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height) {
+    if (NULL == content_ptr->vmt.request_size) return 0;
     return content_ptr->vmt.request_size(content_ptr, width, height);
 }
 
