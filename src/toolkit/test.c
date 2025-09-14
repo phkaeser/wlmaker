@@ -25,6 +25,7 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #include <wlr/util/addon.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Exported methods ===================================================== */
@@ -34,7 +35,11 @@ void wlmtk_test_wlr_output_init(struct wlr_output *wlr_output_ptr)
 {
     wlr_addon_set_init(&wlr_output_ptr->addons);
     wlr_addon_set_init(&wlr_output_ptr->addons);
+#if WLR_VERSION_NUM >= (19 << 8)
+    wl_list_init(&wlr_output_ptr->WLR_PRIVATE.display_destroy.link);
+#else  // WLR_VERSION_NUM >= (19 << 8)
     wl_list_init(&wlr_output_ptr->display_destroy.link);
+#endif  // WLR_VERSION_NUM >= (19 << 8)
     wl_list_init(&wlr_output_ptr->modes);
     wl_list_init(&wlr_output_ptr->resources);
     wl_signal_init(&wlr_output_ptr->events.commit);
