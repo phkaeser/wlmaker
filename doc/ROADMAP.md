@@ -23,10 +23,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
+  * Propagate decoration mode and toplevel configure() only after first surface commit.
 
 * Infrastructure
-  * Make it compile for wlroots 0.19, and update tests accordingly.
-  * Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
+  * [done] Make it compile for wlroots 0.19, and update tests accordingly.
+  * [done] Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
