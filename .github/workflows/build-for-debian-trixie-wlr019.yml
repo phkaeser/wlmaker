@@ -1,4 +1,4 @@
-name: Build for Debian Bookworm, with wlroots 0.18 submodule
+name: Build for Debian Trixie, with wlroots 0.19 submodule
 
 on:
   push:
@@ -15,10 +15,10 @@ jobs:
   build_matrix:
     strategy:
       matrix:
-        compiler: [ "gcc" ]
+        compiler: [ "gcc" ]  # FIXME , "clang" ]
     runs-on: ubuntu-latest
     container:
-      image: debian:bookworm
+      image: debian:trixie
 
     steps:
     - name: Install package dependencies.
@@ -29,19 +29,17 @@ jobs:
           clang \
           cmake \
           flex \
-          foot \
+          gcc \
           git \
-          glslang-dev \
-          glslang-tools \
-          gnustep-base-runtime \
-          graphviz \
+          hwdata \
+          libbacktrace-dev \
           libcairo2-dev \
-          libgbm-dev \
+          libdisplay-info-dev \
+          libdrm-dev \
           libinput-dev \
-          libncurses-dev \
+          libpixman-1-dev \
           libseat-dev \
           libudev-dev \
-          libvulkan-dev \
           libwayland-dev \
           libxcb-composite0-dev \
           libxcb-dri3-dev \
@@ -50,15 +48,15 @@ jobs:
           libxcb-present-dev \
           libxcb-render-util0-dev \
           libxcb-res0-dev \
+          libxcb-shm0-dev \
           libxcb-xinput-dev \
+          libxcb1-dev \
           libxkbcommon-dev \
-          libxml2-dev \
           meson \
+          pkgconf \
           plantuml \
           seatd \
           wayland-protocols \
-          xmlto \
-          xsltproc \
           xwayland
 
     - name: Checkout code, including git submodules.
