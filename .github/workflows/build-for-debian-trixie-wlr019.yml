@@ -15,7 +15,7 @@ jobs:
   build_matrix:
     strategy:
       matrix:
-        compiler: [ "gcc" ]  # FIXME , "clang" ]
+        compiler: [ "gcc", "clang" ]
     runs-on: ubuntu-latest
     container:
       image: debian:trixie
