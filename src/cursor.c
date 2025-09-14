@@ -150,6 +150,16 @@ wlmaker_cursor_t *wlmaker_cursor_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_cursor_destroy(wlmaker_cursor_t *cursor_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &cursor_ptr->seat_request_set_cursor_listener);
+    if (NULL != cursor_ptr->wlr_cursor_ptr) {
+        wlmtk_util_disconnect_listener(&cursor_ptr->frame_listener);
+        wlmtk_util_disconnect_listener(&cursor_ptr->axis_listener);
+        wlmtk_util_disconnect_listener(&cursor_ptr->button_listener);
+        wlmtk_util_disconnect_listener(&cursor_ptr->motion_absolute_listener);
+        wlmtk_util_disconnect_listener(&cursor_ptr->motion_listener);
+    }
+
     if (NULL != cursor_ptr->pointer_ptr) {
         wlmtk_pointer_destroy(cursor_ptr->pointer_ptr);
         cursor_ptr->pointer_ptr = NULL;

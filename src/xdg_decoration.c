@@ -308,8 +308,13 @@ void handle_decoration_request_mode(
         BS_ABORT();
     }
 
-    wlr_xdg_toplevel_decoration_v1_set_mode(
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
+    // TODO(kaeser@gubbe.ch): Setting the mode expects the surface to have been
+    // committed already. Need to implement server-side state tracking and
+    // applying these modes downstream after first commit.
+    if (decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->initialized) {
+        wlr_xdg_toplevel_decoration_v1_set_mode(
+            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
+    }
 
     if (NULL != content_ptr) {
         bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "

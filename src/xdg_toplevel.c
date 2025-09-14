@@ -248,11 +248,7 @@ xdg_toplevel_surface_t *xdg_toplevel_surface_create(
         &xdg_tl_surface_ptr->super_content.client.gid);
 
     wlmtk_util_connect_listener_signal(
-#if WLR_VERSION_NUM >= (18 << 8)
         &wlr_xdg_toplevel_ptr->events.destroy,
-#else // WLR_VERSION_NUM >= (18 << 8)
-        &wlr_xdg_toplevel_ptr->base->events.destroy,
-#endif // WLR_VERSION_NUM >= (18 << 8)
         &xdg_tl_surface_ptr->destroy_listener,
         handle_destroy);
     wlmtk_util_connect_listener_signal(
@@ -598,8 +594,13 @@ void handle_toplevel_request_maximize(
     // Protocol expects an `ack_configure`. Depending on current state, that
     // may not have been sent throught @ref wlmtk_window_request_maximized,
     // hence adding an explicit `ack_configure` here.
-    wlr_xdg_surface_schedule_configure(
-        xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
+    // TODO(kaeser@gubbe.ch): Setting the mode expects the surface to have been
+    // committed already. Need to implement server-side state tracking and
+    // applying these modes downstream after first commit.
+    if (xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
+        wlr_xdg_surface_schedule_configure(
+            xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
