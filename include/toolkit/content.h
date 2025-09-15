@@ -62,6 +62,8 @@ struct _wlmtk_content_vmt_t {
      * asynchronous operation), @ref wlmtk_window_commit_maximized ought to be
      * called, if the content belongs to a window.
      *
+     * This method is optional to implement.
+     *
      * @param content_ptr
      * @param maximized
      *
@@ -77,6 +79,8 @@ struct _wlmtk_content_vmt_t {
      * changed to fullscreen mode (potentially an asynchronous operation),
      * @ref wlmtk_window_commit_fullscreen ought to be called, if the content
      * belongs to a window.
+     *
+     * This method is optional to implement.
      *
      * @param content_ptr
      * @param fullscreen
@@ -97,6 +101,8 @@ struct _wlmtk_content_vmt_t {
      * @param width
      * @param height
      *
+     * This method is optional to implement.
+     *
      * @return XDG toplevel configuration serial.
      */
     uint32_t (*request_size)(wlmtk_content_t *content_ptr,
@@ -105,6 +111,8 @@ struct _wlmtk_content_vmt_t {
 
     /**
      * Requests the content to close.
+     *
+     * This method is optional to implement.
      *
      * @param content_ptr
      */
@@ -116,6 +124,8 @@ struct _wlmtk_content_vmt_t {
      * The implementation must (for the effective contained element) issue a
      * call to  @ref wlmtk_container_set_keyboard_focus_element to claim or
      * release keyboard focus.
+     *
+     * This method is optional to implement.
      *
      * @param content_ptr
      * @param activated
@@ -210,6 +220,7 @@ wlmtk_content_vmt_t wlmtk_content_extend(
 static inline uint32_t wlmtk_content_request_maximized(
     wlmtk_content_t *content_ptr,
     bool maximized) {
+    // Guard clause, if method isn't implemented.
     if (NULL == content_ptr->vmt.request_maximized) return 0;
     return content_ptr->vmt.request_maximized(content_ptr, maximized);
 }
@@ -218,6 +229,7 @@ static inline uint32_t wlmtk_content_request_maximized(
 static inline uint32_t wlmtk_content_request_fullscreen(
     wlmtk_content_t *content_ptr,
     bool fullscreen) {
+    // Guard clause, if method isn't implemented.
     if (NULL == content_ptr->vmt.request_fullscreen) return 0;
     return content_ptr->vmt.request_fullscreen(content_ptr, fullscreen);
 }
@@ -227,12 +239,14 @@ static inline uint32_t wlmtk_content_request_size(
     wlmtk_content_t *content_ptr,
     int width,
     int height) {
+    // Guard clause, if method isn't implemented.
     if (NULL == content_ptr->vmt.request_size) return 0;
     return content_ptr->vmt.request_size(content_ptr, width, height);
 }
 
 /** Requests close. See @ref wlmtk_content_vmt_t::request_close. */
 static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
+    // Guard clause, if method isn't implemented.
     if (NULL == content_ptr->vmt.request_close) return;
     return content_ptr->vmt.request_close(content_ptr);
 }
@@ -241,6 +255,7 @@ static inline void wlmtk_content_request_close(wlmtk_content_t *content_ptr) {
 static inline void wlmtk_content_set_activated(
     wlmtk_content_t *content_ptr,
     bool activated) {
+    // Guard clause, if method isn't implemented.
     if (NULL == content_ptr->vmt.set_activated) return;
     content_ptr->vmt.set_activated(content_ptr, activated);
 }
