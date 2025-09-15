@@ -298,6 +298,8 @@ TBD.
 * [ ] Position all menus to remain within output.
 * [ ] Re-position to remain within output when submenu opens.
 * [ ] Handle case of too manu menu items that exceed output space.
+* [ ] Dynamically set item width to hold longer item strings. Apply ellipsis on overflow.
+* [ ] Show keyboard shortcut to corresponding action, if available.
 
 ## Devices
 
