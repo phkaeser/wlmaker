@@ -408,12 +408,14 @@ void _wlmtk_fake_content_set_activated(
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
+static void test_optional_methods(bs_test_t *test_ptr);
 static void test_set_clear_element(bs_test_t *test_ptr);
 static void test_add_remove_popup(bs_test_t *test_ptr);
 static void test_add_remove_wlmtk_popup(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_content_test_cases[] = {
     { 1, "init_fini", test_init_fini },
+    { 1, "optional_methods", test_optional_methods },
     { 1, "set_clear_element", test_set_clear_element },
     { 1, "add_remove_popup", test_add_remove_popup },
     { 1, "add_remove_wlmtk_popup", test_add_remove_wlmtk_popup },
@@ -464,6 +466,28 @@ void test_init_fini(bs_test_t *test_ptr)
 
     wlmtk_fake_content_destroy(fake_content_ptr);
     wlmtk_fake_surface_destroy(fs_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises optional methods on a @ref wlmtk_content_t without them set. */
+void test_optional_methods(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    wlmtk_content_t c;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        wlmtk_content_init(&c, &fe_ptr->element));
+
+    // Return default value, don't crash.
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_content_request_maximized(&c, true));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_content_request_fullscreen(&c, true));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_content_request_size(&c, 10, 20));
+
+    // Simply: don't crash.
+    wlmtk_content_request_close(&c);
+    wlmtk_content_set_activated(&c, true);
+
+    wlmtk_content_fini(&c);
 }
 
 /* ------------------------------------------------------------------------- */
