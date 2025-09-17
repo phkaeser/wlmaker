@@ -24,6 +24,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * Particularly when using large decorations, there is resize jitter.
   * Propagate decoration mode and toplevel configure() only after first surface commit.
+  * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
+  * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
+  * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.
