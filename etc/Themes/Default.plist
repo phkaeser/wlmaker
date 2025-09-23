@@ -1,6 +1,6 @@
 // Style oriented on Window Maker's default.
 {
-  BackgroundColor = "argb32:ff505080";
+  BackgroundColor = "argb32:ff777777";
   Cursor = {
     Name = default;
     Size = 24;
@@ -32,9 +32,8 @@
   Window = {
     TitleBar = {
       FocussedFill = {
-        From = "argb32:ff000010";
-        To = "argb32:ff202070";
-        Type = DGRADIENT;
+        Color = "argb32:ff000000";
+        Type = SOLID;
       };
       FocussedTextColor = "argb32:ffffffff";
       BlurredFill = {
@@ -56,7 +55,7 @@
     };
     ResizeBar = {
       Fill = {
-        Color = "argb32:ffc2c0c5";
+        Color = "argb32:ffaaaaaa";
         Type = SOLID;
       };
       Height = 7;
@@ -83,9 +82,8 @@
     };
     Item = {
       Fill = {
-        From = "argb32:ffa6a6b6";
-        To = "argb32:ff515561";
-        Type = DGRADIENT;
+        Color = "argb32:ffaaaaaa";
+        Type = SOLID;
       };
       HighlightedFill = {
         Color = "argb32:ffffffff";
@@ -98,7 +96,7 @@
       };
       EnabledTextColor = "argb32:ff000000";
       HighlightedTextColor = "argb32:ff000000";
-      DisabledTextColor = "argb32:ff808080";
+      DisabledTextColor = "argb32:ff666666";
       Height = 22;
       BezelWidth = 1;
       Width = 150;
