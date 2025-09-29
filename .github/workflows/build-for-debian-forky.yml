@@ -1,4 +1,4 @@
-name: Build for Debian Forky, with libwlroots-0.18-dev package
+name: Build for Debian Forky, with libwlroots-0.19-dev package
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
           libbacktrace-dev \
           libcairo2-dev \
           libncurses-dev \
-          libwlroots-0.18-dev \
+          libwlroots-0.19-dev \
           pkg-config \
           plantuml \
           xwayland
