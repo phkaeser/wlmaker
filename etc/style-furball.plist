@@ -1,0 +1,119 @@
+// Style oriented on Debian's "Default" Theme.
+{
+  BackgroundColor = "argb32:ff505080";
+  Cursor = {
+    Name = default;
+    Size = 24;
+  };
+  Dock = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+  };
+  Tile = {
+    Size = 64;
+    ContentSize = 48;
+    BezelWidth = 2;
+    Fill = {
+      From = "argb32:ffa6a6b6";
+      To = "argb32:ff515561";
+      Type = DGRADIENT;
+    };
+  };
+  Clip = {
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 12;
+    };
+    TextColor = "argb32:ff000000";
+  };
+  Window = {
+    TitleBar = {
+      FocussedFill = {
+        From = "argb32:ff000010";
+        To = "argb32:ff202070";
+        Type = DGRADIENT;
+      };
+      FocussedTextColor = "argb32:ffffffff";
+      BlurredFill = {
+        Color = "argb32:ff666666";
+        Type = SOLID;
+      };
+      BlurredTextColor = "argb32:ff000000";
+      Height = 22;
+      BezelWidth = 1;
+      Margin = {
+        Width = 1;
+        Color = "argb32:ff000000";
+      };
+      Font = {
+        Face = Helvetica;
+        Weight = Bold;
+        Size = 15;
+      };
+    };
+    ResizeBar = {
+      Fill = {
+        Color = "argb32:ffc2c0c5";
+        Type = SOLID;
+      };
+      Height = 7;
+      CornerWidth = 29;
+      BezelWidth = 1;
+    };
+    Border = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+  };
+  Menu = {
+    Margin = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+    Border = {
+      Width = 1;
+      Color = "argb32:ff000000";
+    };
+    Item = {
+      Fill = {
+        From = "argb32:ffa6a6b6";
+        To = "argb32:ff515561";
+        Type = DGRADIENT;
+      };
+      HighlightedFill = {
+        Color = "argb32:ffffffff";
+        Type = SOLID;
+      };
+      Font = {
+        Face = Helvetica;
+        Weight = Normal;
+        Size = 14;
+      };
+      EnabledTextColor = "argb32:ff000000";
+      HighlightedTextColor = "argb32:ff000000";
+      DisabledTextColor = "argb32:ff808080";
+      Height = 22;
+      BezelWidth = 1;
+      Width = 150;
+    };
+  };
+  TaskList = {
+    Fill = {
+      Color = "argb32:c0202020";
+      Type = SOLID;
+    };
+    Font = {
+      Face = Helvetica;
+      Weight = Bold;
+      Size = 18;
+    };
+    TextColor = "argb32:ffffffff";
+  };
+}
