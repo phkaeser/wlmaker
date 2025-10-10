@@ -129,7 +129,8 @@ static const bspl_desc_t _wlmbe_output_configs_desc[] = {
     BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, output_configs,
                     output_configs,
                     _wlmbe_backend_decode_item,
-                    NULL,
+                    NULL,  // encode.
+                    NULL,  // init.
                     _wlmbe_backend_decode_fini),
     BSPL_DESC_SENTINEL(),
 };
@@ -139,6 +140,7 @@ static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
     BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, ephemeral_output_configs,
                     ephemeral_output_configs,
                     _wlmbe_backend_decode_item,
+                    NULL,
                     NULL,
                     _wlmbe_backend_decode_fini),
     BSPL_DESC_SENTINEL(),
