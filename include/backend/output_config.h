@@ -152,6 +152,16 @@ bool wlmbe_output_config_fnmatches(
 wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
     bspl_dict_t *dict_ptr);
 
+/**
+ * Creates a plist dict from the output config.
+ *
+ * @param config_ptr
+ *
+ * @return A plist dict or NULL on error.
+ */
+bspl_dict_t *wlmbe_output_config_create_into_plist(
+    const wlmbe_output_config_t *config_ptr);
+
 /** Destroys the output configuration. */
 void wlmbe_output_config_destroy(wlmbe_output_config_t *config_ptr);
 
