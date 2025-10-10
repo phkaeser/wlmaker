@@ -117,6 +117,9 @@ static bool _wlmbe_backend_decode_item(
     bspl_object_t *obj_ptr,
     size_t i,
     void *dest_ptr);
+static bspl_object_t *_wlmbe_backend_encode_all(
+    const union bspl_desc_value *desc_value_ptr,
+    const void *value_ptr);
 static void _wlmbe_backend_decode_fini(void *dest_ptr);
 static void _wlmbe_backend_config_dlnode_destroy(
     bs_dllist_node_t *dlnode_ptr,
@@ -129,7 +132,7 @@ static const bspl_desc_t _wlmbe_output_configs_desc[] = {
     BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, output_configs,
                     output_configs,
                     _wlmbe_backend_decode_item,
-                    NULL,  // encode.
+                    _wlmbe_backend_encode_all,
                     NULL,  // init.
                     _wlmbe_backend_decode_fini),
     BSPL_DESC_SENTINEL(),
@@ -140,7 +143,7 @@ static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
     BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, ephemeral_output_configs,
                     ephemeral_output_configs,
                     _wlmbe_backend_decode_item,
-                    NULL,
+                    _wlmbe_backend_encode_all,
                     NULL,
                     _wlmbe_backend_decode_fini),
     BSPL_DESC_SENTINEL(),
@@ -502,6 +505,45 @@ bool _wlmbe_backend_decode_item(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Encodes the dllist item and stores it into the array at `ud_ptr`. */
+bool _wlmbe_backend_encode_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    bspl_array_t *array_ptr = ud_ptr;
+
+    wlmbe_output_config_t *c = wlmbe_output_config_from_dlnode(dlnode_ptr);
+
+    bspl_dict_t *dict_ptr = wlmbe_output_config_create_into_plist(c);
+    if (NULL == dict_ptr) return false;
+
+    bool rv = bspl_array_push_back(array_ptr, bspl_object_from_dict(dict_ptr));
+    bspl_dict_unref(dict_ptr);
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Encodes all array (items) into a plist array. */
+bspl_object_t *_wlmbe_backend_encode_all(
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
+    const void *value_ptr)
+{
+    const bs_dllist_t *output_configs_ptr = value_ptr;
+
+    bspl_array_t *array_ptr = bspl_array_create();
+    if (NULL != array_ptr &&
+        bs_dllist_all(
+            output_configs_ptr,
+            _wlmbe_backend_encode_item,
+            array_ptr)) {
+        return bspl_object_from_array(array_ptr);
+    }
+
+    bspl_array_unref(array_ptr);
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Frees all resources of the @ref wlmbe_output_config_t in the list. */
 void _wlmbe_backend_decode_fini(void *dest_ptr)
 {
@@ -529,9 +571,11 @@ void _wlmbe_backend_config_dlnode_destroy(
 /* == Unit tests =========================================================== */
 
 static void _wlmbe_backend_test_find(bs_test_t *test_ptr);
+static void _wlmbe_backend_test_encode_state(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_backend_test_cases[] = {
     { 1, "find", _wlmbe_backend_test_find },
+    { 1, "encode_state", _wlmbe_backend_test_encode_state },
     { 0, NULL, NULL }
 };
 
@@ -600,6 +644,77 @@ void _wlmbe_backend_test_find(bs_test_t *test_ptr)
     bspl_decoded_destroy(_wlmbe_output_configs_desc, &be);
     bspl_dict_unref(state_dict_ptr);
     bspl_dict_unref(config_dict_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests encoding of the output state */
+void _wlmbe_backend_test_encode_state(bs_test_t *test_ptr)
+{
+    wlmbe_backend_t backend = {};
+
+    struct wlr_output w = {
+        .name = "Name0",
+        .width = 1024,
+        .height = 768,
+        .scale = 2.0,
+        .refresh = 60000,
+    };
+
+    wlmbe_output_config_t *c1 = wlmbe_output_config_create_from_wlr(&w);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c1);
+    bs_dllist_push_back(
+        &backend.ephemeral_output_configs,
+        wlmbe_dlnode_from_output_config(c1));
+
+    w = (struct wlr_output){
+        .enabled = true,
+        .name = "Name1",
+        .width = 640,
+        .height = 480,
+        .scale = 1.0,
+        .refresh = 80000
+    };
+    wlmbe_output_config_t *c2 = wlmbe_output_config_create_from_wlr(&w);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, c2);
+    bs_dllist_push_back(
+        &backend.ephemeral_output_configs,
+        wlmbe_dlnode_from_output_config(c2));
+
+
+    bspl_dict_t *dict_ptr = bspl_encode_dict(
+        _wlmbe_outputs_state_desc,
+        &backend);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    bs_dynbuf_t dynbuf = {};
+    BS_TEST_VERIFY_TRUE(test_ptr, bs_dynbuf_init(&dynbuf, 1024, SIZE_MAX));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bspl_object_write(bspl_object_from_dict(dict_ptr), &dynbuf));
+
+    static const char *expected =
+        "{\n"
+        "  Outputs = (\n"
+        "    {\n"
+        "      Enabled = False;\n"
+        "      Mode = \"1024x768@60.0\";\n"
+        "      Scale = \"2.000000e+00\";\n"
+        "      Transformation = Normal;\n"
+        "    },\n"
+        "    {\n"
+        "      Enabled = True;\n"
+        "      Mode = \"640x480@80.0\";\n"
+        "      Scale = \"1.000000e+00\";\n"
+        "      Transformation = Normal;\n"
+        "    }\n"
+        "  );\n"
+        "}";
+    BS_TEST_VERIFY_MEMEQ(test_ptr, expected, dynbuf.data_ptr, dynbuf.length);
+
+    bs_dynbuf_fini(&dynbuf);
+    bspl_dict_unref(dict_ptr);
+    wlmbe_output_config_destroy(c2);
+    wlmbe_output_config_destroy(c1);
 }
 
 /* == End of backend.c ===================================================== */

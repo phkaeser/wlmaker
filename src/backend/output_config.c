@@ -9,6 +9,7 @@
 #include <fnmatch.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
@@ -205,6 +206,13 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
         free(config_ptr);
     }
     return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+bspl_dict_t *wlmbe_output_config_create_into_plist(
+    const wlmbe_output_config_t *config_ptr)
+{
+    return bspl_encode_dict(_wlmbe_output_config_desc, config_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
