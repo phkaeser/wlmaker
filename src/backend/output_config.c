@@ -211,7 +211,7 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
 bspl_dict_t *wlmbe_output_config_create_into_plist(
     const wlmbe_output_config_t *config_ptr)
 {
-    return bspl_encode_dict(_wlmbe_output_config_desc, (void*)config_ptr);
+    return bspl_encode_dict(_wlmbe_output_config_desc, config_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
