@@ -50,7 +50,7 @@ typedef struct {
     int32_t                   width;
     /** Height, in pixels. */
     int32_t                   height;
-    /** Refresh rate, in mHz. Seet 0, to let backend pick a preferred value. */
+    /** Refresh rate, in mHz. Set 0, to let backend pick a preferred value. */
     int32_t                   refresh;
 } wlmbe_output_config_mode_t;
 
