@@ -61,7 +61,8 @@ struct _wlmaker_dock_t {
 
 static bool _wlmaker_dock_decode_launchers(
     bspl_object_t *object_ptr,
-    void *dest_ptr);
+    const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr);
 
 static void _wlmaker_dock_handle_workspace_changed(
     struct wl_listener *listener_ptr,
@@ -100,6 +101,7 @@ const bspl_desc_t _wlmaker_dock_desc[] = {
     BSPL_DESC_CUSTOM("Launchers", true, parse_args, launchers_array_ptr,
                      launchers_array_ptr,
                      _wlmaker_dock_decode_launchers,
+                     NULL,
                      NULL,
                      NULL),
     BSPL_DESC_SENTINEL(),
@@ -236,9 +238,10 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
 /** Decoder for the "Launchers" array. Currently just stores a reference. */
 bool _wlmaker_dock_decode_launchers(
     bspl_object_t *object_ptr,
-    void *dest_ptr)
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr)
 {
-    bspl_array_t **array_ptr_ptr = dest_ptr;
+    bspl_array_t **array_ptr_ptr = value_ptr;
 
     *array_ptr_ptr = bspl_array_from_object(object_ptr);
     if (NULL == *array_ptr_ptr) return false;
