@@ -258,11 +258,65 @@ Panel *-- LayerShell
 
 ### Thoughts on windows, popups and menus
 
-* Window: is a toplevel element (parent: workspace), may have decorations,
-  and toplevel interactions (eg. close, maximize, ...).
-  -> it's "body element" can be a surface, a menu (others? a legal info box?).
-  => XDG and XWM toplevels correspond to a window.
-     a "body element" may want to add a popup to the "parent"
+
+```plantuml
+object Window
+
+Window <-- Window
+
+object Pane
+Pane <-- Window
+
+object Popup
+Popup <-- Pane
+
+
+```
+
+* Pane
+  * A Menu is an implementation of `Pane`
+  * An XDG or XWL toplevel window is an implementation of `Pane`
+    (FIXME: Really? Or should that just be the surface?)
+  * The pane has attributes (can resize, can close, ...)  (really? Menus can't)
+
+* Window
+  * may have another Window as child.
+  * may have multiple popups.
+  * The window menu is also a popup. Is it a special popup?
+  * it may have decorations
+  * has attributes such as "can resize, can close", defining decoration.
+  * Methods are...
+    * commit_size
+    * commit_maximized
+    * commit_fullscreen
+    * shade
+    * ...
+  * Contains "content". That content may be ...
+    * resizable, ie. "request_size" (?)  (virtual?)
+    * request_maximize (virtual?)
+    * request_fullscreen
+    * request_close
+    * set_activated
+    (or is the "resize" something of the parent, that the window does through "commit"?)
+    (but why not the content element directly? none of these applies to "Pane")
+  * Windows have a "client" (or may be NULL?)
+  * FIXME: Are toplevel windows (parent: workspace) different from child
+    windows (parent: window?)
+        * difference: workspace map_window() only works for toplevels.
+          (but, "map" for child window still makes it "visible", ie. map for parent?)
+        * also, map_window() makes it **VISIBLE** on the workspace. Would we want it
+          to be added before? (meh? no use-case?)
+
+* Popup
+  * Holds a surface or a menu (element)
+  * May hold further popup(s) as child
+  * => there is common functionality of Window and Popup: contain popups.
+
+
+* Menu
+  * is the content of a popup or a window.
+
+
 
 
 
