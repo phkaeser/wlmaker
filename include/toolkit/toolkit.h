@@ -55,6 +55,7 @@
 #include "titlebar_title.h"
 #include "util.h"
 #include "window.h"
+#include "window2.h"
 #include "workspace.h"
 // IWYU pragma: end_exports
 
