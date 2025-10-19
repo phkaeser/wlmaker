@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __(>>>FILE_UPCASE<<<)_H__
-#define __(>>>FILE_UPCASE<<<)_H__
+#ifndef __WLMAKER_(>>>FILE_UPCASE<<<)_H__
+#define __WLMAKER_(>>>FILE_UPCASE<<<)_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,5 +30,5 @@ extern "C" {
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __(>>>FILE_UPCASE<<<)_H__ */
+#endif /* __WLMAKER_(>>>FILE_UPCASE<<<)_H__ */
 /* == End of (>>>FILE<<<) ================================================== */
