@@ -23,6 +23,7 @@
 #include "element.h"
 #include "menu.h"
 #include "style.h"
+#include "workspace.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +31,24 @@ extern "C" {
 
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window2_t wlmtk_window2_t;
+
+/** Signals available for the @ref wlmtk_window2_t class. */
+typedef struct {
+    /**
+     * Signals that the window state (maximize, iconify, ...) changed.
+     *
+     * Window state can be retrieved from:
+     * - @ref wlmtk_window_is_maximized
+     * - @ref wlmtk_window_is_fullscreen
+     * - @ref wlmtk_window_is_shaded
+     *
+     * The signal is also raised when the window's workspace is changed.
+     * Retrieve through @ref wlmtk_window_get_workspace.
+     *
+     * data_ptr points to the window state (@ref wlmtk_window2_t).
+     */
+    struct wl_signal          state_changed;
+} wlmtk_window2_events_t;
 
 /**
  * Creates a window.
@@ -51,6 +70,48 @@ wlmtk_window2_t *wlmtk_window2_create(
  * @param window_ptr
  */
 void wlmtk_window2_destroy(wlmtk_window2_t *window_ptr);
+
+/**
+ * Gets the set of events available to a window, for binding listeners.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to this window's @ref wlmtk_window2_t::events.
+ */
+wlmtk_window2_events_t *wlmtk_window2_events(wlmtk_window2_t *window_ptr);
+
+/**
+ * Returns the element for adding the window into a container.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to the super element of @ref wlmtk_window2_t::container.
+ */
+wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr);
+
+/**
+ * Returns the window, where `element_ptr` is @ref wlmtk_window2_element.
+ *
+ * @param element_ptr
+ *
+ * @return the @ref wlmtk_window2_t from the element pointer.
+ */
+wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr);
+
+/**
+ * Sets @ref wlmtk_window2_t::workspace_ptr.
+ *
+ * Protected method, to be called only from @ref wlmtk_workspace_t.
+ *
+ * @param window_ptr
+ * @param workspace_ptr
+ */
+void wlmtk_window2_set_workspace(
+    wlmtk_window2_t *window_ptr,
+    wlmtk_workspace_t *workspace_ptr);
+
+/** @return The value of @ref wlmtk_window_t::workspace_ptr. */
+wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr);
 
 /** Window unit test cases. */
 extern const bs_test_case_t wlmtk_window2_test_cases[];
