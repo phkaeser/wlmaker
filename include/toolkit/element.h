@@ -364,8 +364,8 @@ static inline struct wlr_box wlmtk_element_get_dimensions_box(
     struct wlr_box box;
     element_ptr->vmt.get_dimensions(
         element_ptr, &box.x, &box.y, &box.width, &box.height);
-    box.width += box.x;
-    box.height += box.y;
+    box.width -= box.x;
+    box.height -= box.y;
     return box;
 }
 

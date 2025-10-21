@@ -531,9 +531,9 @@ void fake_get_dimensions(
     if (NULL != left_ptr) *left_ptr = fake_element_ptr->dimensions.x;
     if (NULL != top_ptr) *top_ptr = fake_element_ptr->dimensions.y;
     if (NULL != right_ptr) *right_ptr = (
-        fake_element_ptr->dimensions.width - fake_element_ptr->dimensions.x);
+        fake_element_ptr->dimensions.width + fake_element_ptr->dimensions.x);
     if (NULL != bottom_ptr) *bottom_ptr = (
-        fake_element_ptr->dimensions.height - fake_element_ptr->dimensions.y);
+        fake_element_ptr->dimensions.height + fake_element_ptr->dimensions.y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -772,8 +772,8 @@ void test_get_dimensions(bs_test_t *test_ptr)
         &fake_element_ptr->element, &top, &left, &right, &bottom);
     BS_TEST_VERIFY_EQ(test_ptr, -10, top);
     BS_TEST_VERIFY_EQ(test_ptr, -20, left);
-    BS_TEST_VERIFY_EQ(test_ptr, 52, right);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, bottom);
+    BS_TEST_VERIFY_EQ(test_ptr, 32, right);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bottom);
 
     struct wlr_box box = wlmtk_element_get_dimensions_box(
         &fake_element_ptr->element);
