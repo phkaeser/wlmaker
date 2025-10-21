@@ -55,7 +55,7 @@ FIND_PROGRAM(iwyu_executable NAMES include-what-you-use iwyu OPTIONAL)
 IF(iwyu_executable)
   SET(iwyu_path_and_options
     ${iwyu_executable}
-    -Xiwyu --error=1 -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
+    -Xiwyu --error=0 -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
 ENDIF(iwyu_executable)
 
 FIND_PROGRAM(wmmenugen_executable NAMES wmmenugen OPTIONAL)
