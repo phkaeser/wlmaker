@@ -30,6 +30,7 @@ typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
 #include "element.h"
 #include "style.h"
 #include "window.h"  // IWYU pragma: keep
+#include "window2.h"  // IWYU pragma: keep
 
 /** Properties of the titlebar: Which buttons to show. */
 typedef enum {
@@ -54,6 +55,10 @@ extern "C" {
  */
 wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_window_t *window_ptr,
+    const wlmtk_titlebar_style_t *style_ptr);
+/** TODO(kaeser@gubbe.ch): Same as above, replace when done. */
+wlmtk_titlebar_t *wlmtk_titlebar2_create(
+    wlmtk_window2_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr);
 
 /**

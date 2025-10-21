@@ -434,7 +434,7 @@ void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr)
 
     wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(server_ptr->root_ptr);
-    wlmtk_window_t *window_ptr =
+    wlmtk_window2_t *window_ptr =
         wlmtk_workspace_get_activated_window(workspace_ptr);
     if (NULL != window_ptr) {
         wlmtk_workspace_raise_window(workspace_ptr, window_ptr);

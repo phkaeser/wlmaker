@@ -30,6 +30,7 @@ typedef struct _wlmtk_resizebar_t wlmtk_resizebar_t;
 #include "style.h"
 
 #include "window.h"  // IWYU pragma: keep
+#include "window2.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,10 @@ extern "C" {
  */
 wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_window_t *window_ptr,
+    const wlmtk_resizebar_style_t *style_ptr);
+/** TODO(kaeser@gubbe.ch): Same as above, replace when done. */
+wlmtk_resizebar_t *wlmtk_resizebar2_create(
+    wlmtk_window2_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr);
 
 /**

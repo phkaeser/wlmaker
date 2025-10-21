@@ -46,6 +46,8 @@ struct _wlmtk_titlebar_title_t {
     wlmtk_buffer_t            super_buffer;
     /** Pointer to the window the title element belongs to. */
     wlmtk_window_t            *window_ptr;
+    /** Pointer to the window the title element belongs to. */
+    wlmtk_window2_t           *window2_ptr;
 
     /** The drawn title, when focussed. */
     struct wlr_buffer         *focussed_wlr_buffer_ptr;
@@ -91,6 +93,25 @@ wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(wlmtk_window_t *window_ptr)
         1, sizeof(wlmtk_titlebar_title_t));
     if (NULL == titlebar_title_ptr) return NULL;
     titlebar_title_ptr->window_ptr = window_ptr;
+
+    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
+        wlmtk_titlebar_title_destroy(titlebar_title_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        &titlebar_title_ptr->super_buffer.super_element,
+        &titlebar_title_element_vmt);
+
+    return titlebar_title_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(wlmtk_window2_t *window_ptr)
+{
+    wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
+        1, sizeof(wlmtk_titlebar_title_t));
+    if (NULL == titlebar_title_ptr) return NULL;
+    titlebar_title_ptr->window2_ptr = window_ptr;
 
     if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
@@ -192,13 +213,20 @@ bool _wlmtk_titlebar_title_element_pointer_button(
 
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
-        wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
+        if (NULL != titlebar_title_ptr->window2_ptr) {
+            wlmtk_window2_request_move(titlebar_title_ptr->window2_ptr);
+        } else {
+            wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
+        }
         return true;
     }
 
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
-        wlmtk_window_menu_set_enabled(titlebar_title_ptr->window_ptr, true);
+        if (NULL != titlebar_title_ptr->window2_ptr) {
+        } else {
+            wlmtk_window_menu_set_enabled(titlebar_title_ptr->window_ptr, true);
+        }
         return true;
     }
 
@@ -239,9 +267,17 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
     }
 
     if (wlr_pointer_axis_event_ptr->delta > 0) {
-        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, false);
+        if (NULL != titlebar_title_ptr->window2_ptr) {
+            wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, false);
+        } else {
+            wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, false);
+        }
     } else if (wlr_pointer_axis_event_ptr->delta < 0) {
-        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, true);
+        if (NULL != titlebar_title_ptr->window2_ptr) {
+            wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, true);
+        } else {
+            wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, true);
+        }
     }
     return true;
 }
