@@ -47,6 +47,10 @@ struct _wlmtk_titlebar_button_t {
     void                      (*click_handler)(wlmtk_window_t *window_ptr);
     /** Points to the @ref wlmtk_window_t that carries this titlebar. */
     wlmtk_window_t            *window_ptr;
+    /** Callback for when the button is clicked. */
+    void                      (*click_handler2)(wlmtk_window2_t *window_ptr);
+    /** Points to the @ref wlmtk_window_t that carries this titlebar. */
+    wlmtk_window2_t           *window2_ptr;
     /** For drawing the button contents. */
     wlmtk_titlebar_button_draw_t draw;
 
@@ -97,6 +101,36 @@ wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     if (NULL == titlebar_button_ptr) return NULL;
     titlebar_button_ptr->click_handler = click_handler;
     titlebar_button_ptr->window_ptr = window_ptr;
+    titlebar_button_ptr->draw = draw;
+
+    if (!wlmtk_button_init(&titlebar_button_ptr->super_button)) {
+        wlmtk_titlebar_button_destroy(titlebar_button_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        &titlebar_button_ptr->super_button.super_buffer.super_element,
+        &titlebar_button_element_vmt);
+    wlmtk_button_extend(
+        &titlebar_button_ptr->super_button,
+        &titlebar_button_vmt);
+
+    return titlebar_button_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
+    void (*click_handler)(wlmtk_window2_t *window_ptr),
+    wlmtk_window2_t *window_ptr,
+    wlmtk_titlebar_button_draw_t draw)
+{
+    BS_ASSERT(NULL != window_ptr);
+    BS_ASSERT(NULL != click_handler);
+    BS_ASSERT(NULL != draw);
+    wlmtk_titlebar_button_t *titlebar_button_ptr = logged_calloc(
+        1, sizeof(wlmtk_titlebar_button_t));
+    if (NULL == titlebar_button_ptr) return NULL;
+    titlebar_button_ptr->click_handler2 = click_handler;
+    titlebar_button_ptr->window2_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
     if (!wlmtk_button_init(&titlebar_button_ptr->super_button)) {
@@ -212,7 +246,11 @@ void titlebar_button_clicked(wlmtk_button_t *button_ptr)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
         button_ptr, wlmtk_titlebar_button_t, super_button);
-    titlebar_button_ptr->click_handler(titlebar_button_ptr->window_ptr);
+    if (NULL != titlebar_button_ptr->window2_ptr) {
+        titlebar_button_ptr->click_handler2(titlebar_button_ptr->window2_ptr);
+    } else {
+        titlebar_button_ptr->click_handler(titlebar_button_ptr->window_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

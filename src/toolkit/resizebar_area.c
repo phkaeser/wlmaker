@@ -56,6 +56,8 @@ struct _wlmtk_resizebar_area_t {
 
     /** Window to which the resize bar area belongs. To initiate resizing. */
     wlmtk_window_t            *window_ptr;
+    /** Window to which the resize bar area belongs. To initiate resizing. */
+    wlmtk_window2_t           *window2_ptr;
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
 };
@@ -94,6 +96,46 @@ wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     if (NULL == resizebar_area_ptr) return NULL;
     BS_ASSERT(NULL != window_ptr);
     resizebar_area_ptr->window_ptr = window_ptr;
+    resizebar_area_ptr->edges = edges;
+
+    wlmtk_pointer_cursor_t cursor = WLMTK_POINTER_CURSOR_DEFAULT;
+    switch (resizebar_area_ptr->edges) {
+    case WLR_EDGE_BOTTOM:
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_S;
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_LEFT:
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_SW;
+        break;
+    case WLR_EDGE_BOTTOM | WLR_EDGE_RIGHT:
+        cursor = WLMTK_POINTER_CURSOR_RESIZE_SE;
+        break;
+    default:
+        bs_log(BS_ERROR, "Unsupported edge %"PRIx32, edges);
+    }
+
+    if (!wlmtk_buffer_init(&resizebar_area_ptr->super_buffer)) {
+        wlmtk_resizebar_area_destroy(resizebar_area_ptr);
+        return NULL;
+    }
+    resizebar_area_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &resizebar_area_ptr->super_buffer.super_element,
+        &resizebar_area_element_vmt);
+    resizebar_area_ptr->super_buffer.pointer_cursor = cursor;
+
+    draw_state(resizebar_area_ptr);
+    return resizebar_area_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_resizebar_area_t *wlmtk_resizebar2_area_create(
+    wlmtk_window2_t *window_ptr,
+    uint32_t edges)
+{
+    wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
+        1, sizeof(wlmtk_resizebar_area_t));
+    if (NULL == resizebar_area_ptr) return NULL;
+    BS_ASSERT(NULL != window_ptr);
+    resizebar_area_ptr->window2_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
     wlmtk_pointer_cursor_t cursor = WLMTK_POINTER_CURSOR_DEFAULT;
@@ -201,9 +243,15 @@ bool _wlmtk_resizebar_area_element_pointer_button(
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
 
-        wlmtk_window_request_resize(
-            resizebar_area_ptr->window_ptr,
-            resizebar_area_ptr->edges);
+        if (NULL != resizebar_area_ptr->window_ptr) {
+            wlmtk_window_request_resize(
+                resizebar_area_ptr->window_ptr,
+                resizebar_area_ptr->edges);
+        } else {
+            wlmtk_window2_request_resize(
+                resizebar_area_ptr->window2_ptr,
+                resizebar_area_ptr->edges);
+        }
         draw_state(resizebar_area_ptr);
         break;
 

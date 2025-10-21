@@ -123,6 +123,60 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_resizebar_t *wlmtk_resizebar2_create(
+    wlmtk_window2_t *window_ptr,
+    const wlmtk_resizebar_style_t *style_ptr)
+{
+    static const wlmtk_margin_style_t empty_margin_style = {};
+    wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
+        1, sizeof(wlmtk_resizebar_t));
+    if (NULL == resizebar_ptr) return NULL;
+    resizebar_ptr->style = *style_ptr;
+
+    if (!wlmtk_box_init(&resizebar_ptr->super_box,
+                        WLMTK_BOX_HORIZONTAL,
+                        &empty_margin_style)) {
+        wlmtk_resizebar_destroy(resizebar_ptr);
+        return NULL;
+    }
+    wlmtk_element_extend(
+        &resizebar_ptr->super_box.super_container.super_element,
+        &resizebar_element_vmt);
+
+    resizebar_ptr->left_area_ptr = wlmtk_resizebar2_area_create(
+        window_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
+    if (NULL == resizebar_ptr->left_area_ptr) {
+        wlmtk_resizebar_destroy(resizebar_ptr);
+        return NULL;
+    }
+    wlmtk_box_add_element_front(
+        &resizebar_ptr->super_box,
+        wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
+
+    resizebar_ptr->center_area_ptr = wlmtk_resizebar2_area_create(
+        window_ptr, WLR_EDGE_BOTTOM);
+    if (NULL == resizebar_ptr->center_area_ptr) {
+        wlmtk_resizebar_destroy(resizebar_ptr);
+        return NULL;
+    }
+    wlmtk_box_add_element_back(
+        &resizebar_ptr->super_box,
+        wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
+
+    resizebar_ptr->right_area_ptr = wlmtk_resizebar2_area_create(
+        window_ptr, WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM);
+    if (NULL == resizebar_ptr->right_area_ptr) {
+        wlmtk_resizebar_destroy(resizebar_ptr);
+        return NULL;
+    }
+    wlmtk_box_add_element_back(
+        &resizebar_ptr->super_box,
+        wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr));
+
+    return resizebar_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr)
 {
     if (NULL != resizebar_ptr->right_area_ptr) {
