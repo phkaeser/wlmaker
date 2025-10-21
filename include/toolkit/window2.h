@@ -20,6 +20,9 @@
 #ifndef __WLMTK_WINDOW2_H__
 #define __WLMTK_WINDOW2_H__
 
+/** Forward declaration: Window. */
+typedef struct _wlmtk_window2_t wlmtk_window2_t;
+
 #include "element.h"
 #include "menu.h"
 #include "style.h"
@@ -28,9 +31,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/** Forward declaration: Window. */
-typedef struct _wlmtk_window2_t wlmtk_window2_t;
 
 /** Signals available for the @ref wlmtk_window2_t class. */
 typedef struct {
@@ -48,6 +48,17 @@ typedef struct {
      * data_ptr points to the window state (@ref wlmtk_window2_t).
      */
     struct wl_signal          state_changed;
+
+    /**
+     * Signals that the window was requested to be closed.
+     *
+     * Applies only to windows with @ref WLMTK_WINDOW_PROPERTY_CLOSABLE.
+     */
+    struct wl_signal          request_close;
+
+
+    /** Signals that @ref wlmtk_window2_t::activated changed. */
+    struct wl_signal          set_activated;
 } wlmtk_window2_events_t;
 
 /**
@@ -99,6 +110,144 @@ wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr);
 wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr);
 
 /**
+ * Sets properties for the window.
+ *
+ * @param window_ptr
+ * @param properties          @see wlmtk_window_property_t.
+ */
+void wlmtk_window2_set_properties(
+    wlmtk_window2_t *window_ptr,
+    uint32_t properties);
+
+/** @return Pointer to @ref wlmtk_content_t::client for the window's element. */
+const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
+    wlmtk_window2_t *window_ptr);
+
+/**
+ * Sets the title for the window.
+ *
+ * If `title_ptr` is NULL, a generic name is set.
+ *
+ * @param window_ptr
+ * @param title_ptr           May be NULL.
+ *
+ * @return true on success.
+ */
+bool wlmtk_window2_set_title(
+    wlmtk_window2_t *window_ptr,
+    const char *title_ptr);
+
+/**
+ * Returns the title of the window.
+ *
+ * @param window_ptr
+ *
+ * @returns Pointer to the window title. Will remain valid until the next call
+ *     to @ref wlmtk_window2_set_title, or until the window is destroyed. Will
+ *     never be NULL.
+ */
+const char *wlmtk_window2_get_title(wlmtk_window2_t *window_ptr);
+
+/**
+ * Sets the window as activated, depending on the argument's value.
+ *
+ * An activated window will have keyboard focus and would have distinct
+ * decorations to indicate state.
+ *
+ * @param window_ptr
+ * @param activated
+ */
+void wlmtk_window2_set_activated(
+    wlmtk_window2_t *window_ptr,
+    bool activated);
+
+/** @return whether the window is currently activated. */
+bool wlmtk_window2_is_activated(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests to close the window.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window2_request_close(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests to minimize (iconify) the window.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window2_request_minimize(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests the window to be resized.
+ *
+ * Requires the window to be mapped (to a workspace), and forwards the call to
+ * @ref wlmtk_workspace_begin_window_resize.
+ *
+ * @param window_ptr
+ * @param edges
+ */
+void wlmtk_window2_request_resize(wlmtk_window2_t *window_ptr, uint32_t edges);
+
+/**
+ * Requests the window to be moved.
+ *
+ * @param window_ptr
+ */
+void wlmtk_window2_request_move(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests the window to be fullscreen (or end fullscreen).
+ *
+ * @param window_ptr
+ * @param fullscreen
+ */
+void wlmtk_window2_request_fullscreen(wlmtk_window2_t *window_ptr, bool fullscreen);
+
+/** @return whether the window currently is in fullscreen mode. */
+bool wlmtk_window2_is_fullscreen(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests the window to be maximized (or end maximized).
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window2_request_maximized(wlmtk_window2_t *window_ptr, bool maximized);
+
+/** @return whether the window currently is in maximized mode. */
+bool wlmtk_window2_is_maximized(wlmtk_window2_t *window_ptr);
+
+/**
+ * Requests the window to be shaded (rolled up) or not.
+ *
+ * @param window_ptr
+ * @param shaded
+ */
+void wlmtk_window2_request_shaded(wlmtk_window2_t *window_ptr, bool shaded);
+
+/** @return whether the window currently is shaded. */
+bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr);
+
+/**
+ * En-/Disables the window menu.
+ *
+ * @param window_ptr
+ * @param enabled
+ */
+void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled);
+
+/**
+ * Sets whether to have server-side decorations for this window.
+ *
+ * @param window_ptr
+ * @param decorated
+ */
+void wlmtk_window2_set_server_side_decorated(
+    wlmtk_window2_t *window_ptr,
+    bool decorated);
+
+/**
  * Sets @ref wlmtk_window2_t::workspace_ptr.
  *
  * Protected method, to be called only from @ref wlmtk_workspace_t.
@@ -112,6 +261,11 @@ void wlmtk_window2_set_workspace(
 
 /** @return The value of @ref wlmtk_window_t::workspace_ptr. */
 wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr);
+
+/** @return pointer to @ref wlmtk_window_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_window2(wlmtk_window2_t *window_ptr);
+/** @return the @ref wltmk_window_t for @ref wlmtk_window_t::dlnode. */
+wlmtk_window2_t *wlmtk_window2_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Window unit test cases. */
 extern const bs_test_case_t wlmtk_window2_test_cases[];

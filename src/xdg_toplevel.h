@@ -20,10 +20,13 @@
 #ifndef __XDG_TOPLEVEL_H__
 #define __XDG_TOPLEVEL_H__
 
+#include <stdbool.h>
+
 #include "server.h"
 #include "toolkit/toolkit.h"
 
 struct wlr_xdg_toplevel;
+struct wlmaker_xdg_toplevel;
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +43,27 @@ extern "C" {
 wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr);
+
+/**
+ * Creates an XDG toplevel.
+ *
+ * @param wlr_xdg_toplevel_ptr
+ * @param server_ptr
+ *
+ * @return wlmaker's toplevel handle or NULL on error.
+ */
+struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    wlmaker_server_t *server_ptr);
+
+/** Dtor for the XDG toplevel. */
+void wlmaker_xdg_toplevel_destroy(
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr);
+
+/** En-/Disables server-side decoration for the XDG toplevel. */
+void wlmaker_xdg_toplevel_set_server_side_decorated(
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr,
+    bool server_side_decorated);
 
 #ifdef __cplusplus
 }  // extern "C"

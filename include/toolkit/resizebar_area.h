@@ -30,6 +30,7 @@ typedef struct _wlmtk_resizebar_area_t wlmtk_resizebar_area_t ;
 #include "element.h"
 #include "style.h"
 #include "window.h"
+#include "window2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,10 @@ extern "C" {
  */
 wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     wlmtk_window_t *window_ptr,
+    uint32_t edges);
+/** TODO(kaeser@gubbe.ch): Same as above, replace when done. */
+wlmtk_resizebar_area_t *wlmtk_resizebar2_area_create(
+    wlmtk_window2_t *window_ptr,
     uint32_t edges);
 
 /**

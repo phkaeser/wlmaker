@@ -34,6 +34,7 @@
 #include "server.h"
 #include "toolkit/toolkit.h"
 #include "xdg_shell.h"
+#include "xdg_toplevel.h"
 
 /* == Declarations ========================================================= */
 
@@ -276,9 +277,6 @@ void handle_decoration_request_mode(
     wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
         listener_ptr, decoration_ptr, request_mode_listener);
 
-    wlmtk_content_t *content_ptr = (wlmtk_content_t*)
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
-
     enum wlr_xdg_toplevel_decoration_v1_mode mode =
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode;
     switch (decoration_ptr->decoration_manager_ptr->mode) {
@@ -316,20 +314,51 @@ void handle_decoration_request_mode(
             decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
     }
 
-    if (NULL != content_ptr) {
+    // TODO(kaeser@gubbe.ch): Remove the branch, after window2 transition.
+    if (false) {
+        wlmtk_content_t *content_ptr = (wlmtk_content_t*)
+            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
+        if (NULL != content_ptr) {
+            bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "
+                   "content %p: Current %d, pending %d, scheduled %d, "
+                   "requested %d. Set: %d",
+                   decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->surface,
+                   content_ptr,
+                   decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->current.mode,
+                   decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->pending.mode,
+                   decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->scheduled_mode,
+                   decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode,
+                   mode);
+
+            wlmtk_window_set_server_side_decorated(
+                content_ptr->window_ptr,
+                mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE);
+        }
+    } else {
+        struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
+            decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
+        struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr =
+            wlr_xdg_toplevel_ptr->base->data;
+        if (NULL == wlmaker_xdg_toplevel_ptr) {
+            bs_log(BS_WARNING,
+                   "Decoration request for XDG toplevel %p w/o handle?",
+                   wlr_xdg_toplevel_ptr);
+            return;
+        }
+
         bs_log(BS_INFO, "XDG decoration request_mode for XDG surface %p, "
-               "content %p: Current %d, pending %d, scheduled %d, "
+               "XDG toplevel handle %p: Current %d, pending %d, scheduled %d, "
                "requested %d. Set: %d",
-               decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->surface,
-               content_ptr,
+               wlr_xdg_toplevel_ptr->base->surface,
+               wlmaker_xdg_toplevel_ptr,
                decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->current.mode,
                decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->pending.mode,
                decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->scheduled_mode,
                decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode,
                mode);
 
-        wlmtk_window_set_server_side_decorated(
-            content_ptr->window_ptr,
+        wlmaker_xdg_toplevel_set_server_side_decorated(
+            wlmaker_xdg_toplevel_ptr,
             mode != WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE);
     }
 }

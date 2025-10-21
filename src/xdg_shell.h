@@ -25,7 +25,6 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
-struct _wlmaker_xdg_shell_t;
 /** Handle for XDG Shell server handler. */
 typedef struct _wlmaker_xdg_shell_t wlmaker_xdg_shell_t;
 
