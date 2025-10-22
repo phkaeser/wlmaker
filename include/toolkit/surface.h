@@ -38,6 +38,7 @@ typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 /** Forward declaration. */
 struct wlr_seat;
 struct wlr_surface;
+struct wlr_xdg_surface;
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,6 +55,8 @@ struct _wlmtk_surface_t {
 
     /** The `struct wlr_surface` wrapped. */
     struct wlr_surface        *wlr_surface_ptr;
+    /** The `struct wlr_xdg_surface` wrapped. */
+    struct wlr_xdg_surface        *wlr_xdg_surface_ptr;
 
     /** The scene API node displaying a surface and all it's sub-surfaces. */
     struct wlr_scene_tree     *wlr_scene_tree_ptr;
@@ -97,6 +100,21 @@ typedef wlmtk_surface_t *(*wlmtk_surface_create_t)(
  */
 wlmtk_surface_t *wlmtk_surface_create(
     struct wlr_surface *wlr_surface_ptr,
+    struct wlr_seat *wlr_seat_ptr);
+
+/**
+ * Creates a toolkit surface from the XDG surface `wlr_xdg_surface_ptr`.
+ *
+ * TODO(kaeser@gubbe.ch): Merge with @ref wlmtk_surface_create.
+ *
+ * @param wlr_xdg_surface_ptr
+ * @param wlr_seat_ptr
+ *
+ * @return A pointer to the @ref wlmtk_surface_t. Must be destroyed by calling
+ *     @ref wlmtk_surface_destroy.
+ */
+wlmtk_surface_t *wlmtk_xdg_surface_create(
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
     struct wlr_seat *wlr_seat_ptr);
 
 /**
