@@ -485,6 +485,19 @@ wlmtk_fake_element_t *wlmtk_fake_element_create(void)
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_fake_element_set_dimensions(
+    wlmtk_fake_element_t *fake_element_ptr,
+    int width, int height)
+{
+    fake_element_ptr->dimensions.width = width;
+    fake_element_ptr->dimensions.height = height;
+    if (NULL != fake_element_ptr->element.parent_container_ptr) {
+        wlmtk_container_update_layout_and_pointer_focus(
+            fake_element_ptr->element.parent_container_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
 {
     fake_element_ptr->has_keyboard_focus = true;
