@@ -29,6 +29,7 @@
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
@@ -43,6 +44,9 @@
 static bool _wlmtk_surface_init(
     wlmtk_surface_t *surface_ptr,
     struct wlr_surface *wlr_surface_ptr);
+static bool _wlmtk_xdg_surface_init(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr);
 static void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr);
 
 static void _wlmtk_surface_element_destroy(wlmtk_element_t *element_ptr);
@@ -116,6 +120,23 @@ wlmtk_surface_t *wlmtk_surface_create(
     if (NULL == surface_ptr) return NULL;
 
     if (!_wlmtk_surface_init(surface_ptr, wlr_surface_ptr)) {
+        wlmtk_surface_destroy(surface_ptr);
+        return NULL;
+    }
+    surface_ptr->wlr_seat_ptr = wlr_seat_ptr;
+
+    return surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_surface_t *wlmtk_xdg_surface_create(
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr,
+    struct wlr_seat *wlr_seat_ptr)
+{
+    wlmtk_surface_t *surface_ptr = logged_calloc(1, sizeof(wlmtk_surface_t));
+    if (NULL == surface_ptr) return NULL;
+
+    if (!_wlmtk_xdg_surface_init(surface_ptr, wlr_xdg_surface_ptr)) {
         wlmtk_surface_destroy(surface_ptr);
         return NULL;
     }
@@ -263,6 +284,62 @@ bool _wlmtk_surface_init(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Initializes the surface, based off an XDG surface.
+ *
+ * TODO(kaeser@gubbe.ch): Merge with _wlmtk_surface_init.
+ *
+ * @param surface_ptr
+ * @param wlr_xdg_surface_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmtk_xdg_surface_init(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr)
+{
+    BS_ASSERT(NULL != surface_ptr);
+    *surface_ptr = (wlmtk_surface_t){};
+
+    if (!wlmtk_element_init(&surface_ptr->super_element)) {
+        _wlmtk_surface_fini(surface_ptr);
+        return false;
+    }
+    surface_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        &surface_ptr->super_element, &surface_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->super_element.events.pointer_leave,
+        &surface_ptr->element_pointer_leave_listener,
+        _wlmtk_surface_handle_element_pointer_leave);
+    wlmtk_util_connect_listener_signal(
+        &surface_ptr->super_element.events.pointer_motion,
+        &surface_ptr->element_pointer_motion_listener,
+        _wlmtk_surface_handle_element_pointer_motion);
+
+    surface_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
+    surface_ptr->wlr_surface_ptr = wlr_xdg_surface_ptr->surface;
+    struct wlr_surface *wlr_surface_ptr = wlr_xdg_surface_ptr->surface;
+    if (NULL != surface_ptr->wlr_surface_ptr) {
+        surface_ptr->wlr_surface_ptr->data = surface_ptr;
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.commit,
+            &surface_ptr->surface_commit_listener,
+            _wlmtk_surface_handle_surface_commit);
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.map,
+            &surface_ptr->surface_map_listener,
+            _wlmtk_surface_handle_surface_map);
+        wlmtk_util_connect_listener_signal(
+            &wlr_surface_ptr->events.unmap,
+            &surface_ptr->surface_unmap_listener,
+            _wlmtk_surface_handle_surface_unmap);
+        surface_ptr->wlr_surface_ptr->data = surface_ptr;
+    }
+
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Un-initializes the surface.
  *
  * @param surface_ptr
@@ -317,8 +394,13 @@ struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
         element_ptr, wlmtk_surface_t, super_element);
     BS_ASSERT(NULL == surface_ptr->wlr_scene_tree_ptr);
 
-    surface_ptr->wlr_scene_tree_ptr = wlr_scene_subsurface_tree_create(
-        wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
+    if (NULL != surface_ptr->wlr_xdg_surface_ptr) {
+        surface_ptr->wlr_scene_tree_ptr = wlr_scene_xdg_surface_create(
+            wlr_scene_tree_ptr, surface_ptr->wlr_xdg_surface_ptr);
+    } else {
+        surface_ptr->wlr_scene_tree_ptr = wlr_scene_subsurface_tree_create(
+            wlr_scene_tree_ptr, surface_ptr->wlr_surface_ptr);
+    }
     if (NULL == surface_ptr->wlr_scene_tree_ptr) return NULL;
 
     wlmtk_util_connect_listener_signal(
@@ -348,10 +430,21 @@ void _wlmtk_surface_element_get_dimensions(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
-    if (NULL != left_ptr) *left_ptr = 0;
-    if (NULL != top_ptr) *top_ptr = 0;
-    if (NULL != right_ptr) *right_ptr = surface_ptr->committed_width;
-    if (NULL != bottom_ptr) *bottom_ptr = surface_ptr->committed_height;
+    if (NULL != surface_ptr->wlr_xdg_surface_ptr) {
+        if (NULL != left_ptr)
+            *left_ptr = surface_ptr->wlr_xdg_surface_ptr->current.geometry.x;
+        if (NULL != top_ptr)
+            *top_ptr = surface_ptr->wlr_xdg_surface_ptr->current.geometry.y;
+        if (NULL != right_ptr)
+            *right_ptr = surface_ptr->wlr_xdg_surface_ptr->current.geometry.width;
+        if (NULL != bottom_ptr)
+            *bottom_ptr  =surface_ptr->wlr_xdg_surface_ptr->current.geometry.height;
+    } else {
+        if (NULL != left_ptr) *left_ptr = 0;
+        if (NULL != top_ptr) *top_ptr = 0;
+        if (NULL != right_ptr) *right_ptr = surface_ptr->committed_width;
+        if (NULL != bottom_ptr) *bottom_ptr = surface_ptr->committed_height;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -543,10 +636,17 @@ void _wlmtk_surface_handle_surface_commit(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, surface_commit_listener);
 
-    _wlmtk_surface_commit_size(
+    if (NULL != surface_ptr->wlr_xdg_surface_ptr) {
+        _wlmtk_surface_commit_size(
         surface_ptr,
-        surface_ptr->wlr_surface_ptr->current.width,
-        surface_ptr->wlr_surface_ptr->current.height);
+        surface_ptr->wlr_xdg_surface_ptr->current.geometry.width,
+        surface_ptr->wlr_xdg_surface_ptr->current.geometry.height);
+    } else {
+        _wlmtk_surface_commit_size(
+            surface_ptr,
+            surface_ptr->wlr_surface_ptr->current.width,
+            surface_ptr->wlr_surface_ptr->current.height);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
