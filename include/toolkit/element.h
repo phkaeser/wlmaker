@@ -525,6 +525,18 @@ typedef struct {
 wlmtk_fake_element_t *wlmtk_fake_element_create(void);
 
 /**
+ * Updates @ref wlmtk_fake_element_t::dimensions and propagates the layout
+ * changes to the parent (if set).
+ *
+ * @param fake_element_ptr
+ * @param width
+ * @param height
+ */
+void wlmtk_fake_element_set_dimensions(
+    wlmtk_fake_element_t *fake_element_ptr,
+    int width, int height);
+
+/**
  * Sets @ref wlmtk_fake_element_t::has_keyboard_focus and calls @ref
  * wlmtk_container_set_keyboard_focus_element for the parent (if set).
  *
