@@ -24,9 +24,14 @@
 #include <stddef.h>
 #include <wayland-util.h>
 
+#include "test.h"
+
 /* == Declarations ========================================================= */
 
 static void _wlmtk_util_test_listener_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_util_test_wlr_box_listener_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -84,6 +89,14 @@ void wlmtk_util_connect_test_listener(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_util_clear_test_listener(
+    wlmtk_util_test_listener_t *test_listener_ptr)
+{
+    test_listener_ptr->calls = 0;
+    test_listener_ptr->last_data_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_util_disconnect_test_listener(
     wlmtk_util_test_listener_t *test_listener_ptr)
 {
@@ -91,11 +104,22 @@ void wlmtk_util_disconnect_test_listener(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_util_clear_test_listener(
-    wlmtk_util_test_listener_t *test_listener_ptr)
+void wlmtk_util_connect_test_wlr_box_listener(
+    struct wl_signal *signal_ptr,
+    wlmtk_util_test_wlr_box_listener_t *test_wlr_box_listener_ptr)
 {
-    test_listener_ptr->calls = 0;
-    test_listener_ptr->last_data_ptr = NULL;
+    wlmtk_util_connect_listener_signal(
+        signal_ptr,
+        &test_wlr_box_listener_ptr->listener,
+        _wlmtk_util_test_wlr_box_listener_handler);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_clear_test_wlr_box_listener(
+    wlmtk_util_test_wlr_box_listener_t *test_wlr_box_listener_ptr)
+{
+    test_wlr_box_listener_ptr->calls = 0;
+    test_wlr_box_listener_ptr->box = (struct wlr_box){};
 }
 
 /* == Local (static) methods =============================================== */
@@ -115,6 +139,24 @@ void _wlmtk_util_test_listener_handler(
         listener_ptr, wlmtk_util_test_listener_t, listener);
     ++test_listener_ptr->calls;
     test_listener_ptr->last_data_ptr = data_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler to record calls into @ref wlmtk_util_test_wlr_box_listener_t.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmtk_util_test_wlr_box_listener_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmtk_util_test_wlr_box_listener_t *l = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_util_test_wlr_box_listener_t, listener);
+
+    ++l->calls;
+    l->box = *((struct wlr_box*)data_ptr);
 }
 
 /* == Unit tests =========================================================== */
@@ -226,6 +268,15 @@ static void test_listener(bs_test_t *test_ptr)
     // Cleanup.
     wlmtk_util_disconnect_test_listener(&l2);
     wlmtk_util_disconnect_test_listener(&l1);
+
+    // Exercise the wlr_box listener.
+    wlmtk_util_test_wlr_box_listener_t bl = {};
+    wlmtk_util_connect_test_wlr_box_listener(&signal, &bl);
+    struct wlr_box box = { .x = 1, .y = 2, .width = 3, .height = 4 };
+    wl_signal_emit(&signal, &box);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bl.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 3, 4, bl.box);
+    wlmtk_util_disconnect_listener(&bl.listener);
 }
 
 /* == End of util.c ======================================================== */
