@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <wayland-server-core.h>
+#include <wlr/util/box.h>
 
 struct wl_list;
 
@@ -50,6 +51,16 @@ typedef struct {
     /** The |data_ptr| argument of the most recent call. */
     void                      *last_data_ptr;
 } wlmtk_util_test_listener_t;
+
+/** For recording a signal taking a struct wlr_box arg. For unit testing. */
+typedef struct {
+    /** Listener that will get connected to the signal. */
+    struct wl_listener        listener;
+    /** Counts number of calls since connect or last clear. */
+    size_t                    calls;
+    /** Value of the last call. */
+    struct wlr_box            box;
+} wlmtk_util_test_wlr_box_listener_t;
 
 /**
  * Iterates over `list_ptr` and calls func() for each element.
@@ -104,6 +115,15 @@ void wlmtk_util_connect_test_listener(
     wlmtk_util_test_listener_t *test_listener_ptr);
 
 /**
+ * Clears @ref wlmtk_util_test_listener_t::calls and
+ * @ref wlmtk_util_test_listener_t::last_data_ptr.
+ *
+ * @param test_listener_ptr
+ */
+void wlmtk_util_clear_test_listener(
+    wlmtk_util_test_listener_t *test_listener_ptr);
+
+/**
  * Disconnects a test listener.
  *
  * @param test_listener_ptr
@@ -112,13 +132,22 @@ void wlmtk_util_disconnect_test_listener(
     wlmtk_util_test_listener_t *test_listener_ptr);
 
 /**
- * Clears @ref wlmtk_util_test_listener_t::calls and
- * @ref wlmtk_util_test_listener_t::last_data_ptr.
+ * Connects the wlr_box test listener to signal.
  *
- * @param test_listener_ptr
+ * @param signal_ptr
+ * @param test_wlr_box_listener_ptr
  */
-void wlmtk_util_clear_test_listener(
-    wlmtk_util_test_listener_t *test_listener_ptr);
+void wlmtk_util_connect_test_wlr_box_listener(
+    struct wl_signal *signal_ptr,
+    wlmtk_util_test_wlr_box_listener_t *test_wlr_box_listener_ptr);
+
+/**
+ * Clears @ref wlmtk_util_test_wlr_box_listener_t::calls and box.
+ *
+ * @param test_wlr_box_listener_ptr
+ */
+void wlmtk_util_clear_test_wlr_box_listener(
+    wlmtk_util_test_wlr_box_listener_t *test_wlr_box_listener_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_util_test_cases[];
