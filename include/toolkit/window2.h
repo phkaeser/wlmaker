@@ -72,6 +72,13 @@ typedef struct {
      * Takes a `bool` as argument, specifying whether to enable fullscreen.
      */
     struct wl_signal          request_fullscreen;
+
+    /**
+     * Signals that the window is desiring to switch to maximized.
+     *
+     * Takes a `bool` as argument, specifying whether to enable maximized.
+     */
+    struct wl_signal          request_maximized;
 } wlmtk_window2_events_t;
 
 /**
@@ -277,6 +284,19 @@ void wlmtk_window2_request_maximized(wlmtk_window2_t *window_ptr, bool maximized
 
 /** @return whether the window currently is in maximized mode. */
 bool wlmtk_window2_is_maximized(wlmtk_window2_t *window_ptr);
+
+/**
+ * Commits the `maximized` mode for the window.
+ *
+ * The call is idempotent: Once the window is committed, further calls with
+ * the same `maximized` value will return straight away.
+ *
+ * @param window_ptr
+ * @param maximized
+ */
+void wlmtk_window2_commit_maximized(
+    wlmtk_window2_t *window_ptr,
+    bool maximized);
 
 /**
  * Requests the window to be shaded (rolled up) or not.
