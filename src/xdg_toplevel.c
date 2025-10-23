@@ -139,6 +139,8 @@ struct wlmaker_xdg_toplevel {
     struct wl_listener        window_request_size_listener;
     /** Listener for @ref wlmtk_window2_events_t::request_fullscreen. */
     struct wl_listener        window_request_fullscreen_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_maximized. */
+    struct wl_listener        window_request_maximized_listener;
 
     /** Whether this toplevel is configured to be server-side decorated. */
     bool                      server_side_decorated;
@@ -248,6 +250,9 @@ static void _wlmaker_xdg_toplevel_handle_window_request_size(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_xdg_toplevel_handle_window_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xdg_toplevel_handle_window_request_maximized(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -422,6 +427,10 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_fullscreen,
         &wlmaker_xdg_toplevel_ptr->window_request_fullscreen_listener,
         _wlmaker_xdg_toplevel_handle_window_request_fullscreen);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_maximized,
+        &wlmaker_xdg_toplevel_ptr->window_request_maximized_listener,
+        _wlmaker_xdg_toplevel_handle_window_request_maximized);
 
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->data =
         wlmaker_xdg_toplevel_ptr;
@@ -876,9 +885,9 @@ void handle_toplevel_request_maximize(
         xdg_tl_surface_ptr->super_content.window_ptr,
         xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
 
-    // Protocol expects an `ack_configure`. Depending on current state, that
+    // Protocol expects a `configure`. Depending on current state, that
     // may not have been sent throught @ref wlmtk_window_request_maximized,
-    // hence adding an explicit `ack_configure` here.
+    // hence adding an explicit `configure` here.
     // TODO(kaeser@gubbe.ch): Setting the mode expects the surface to have been
     // committed already. Need to implement server-side state tracking and
     // applying these modes downstream after first commit.
@@ -913,9 +922,9 @@ void handle_toplevel_request_fullscreen(
         xdg_tl_surface_ptr->super_content.window_ptr,
         xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
 
-    // Protocol expects an `ack_configure`. Depending on current state, that
+    // Protocol expects an `configure`. Depending on current state, that
     // may not have been sent throught @ref wlmtk_window_request_maximized,
-    // hence adding an explicit `ack_configure` here.
+    // hence adding an explicit `configure` here.
     wlr_xdg_surface_schedule_configure(
         xdg_tl_surface_ptr->wlr_xdg_toplevel_ptr->base);
 }
@@ -1084,10 +1093,19 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
-    bs_log(BS_ERROR, "TODO: Request maximize %p", wlmaker_xdg_toplevel_ptr);
+    if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized !=
+        wlmtk_window2_is_maximized(wxt_ptr->window_ptr)) {
+        wlmtk_window2_request_maximized(
+            wxt_ptr->window_ptr,
+            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
+    }
+
+    // Protocol expects an `configure`. Depending on current state, that may
+    // not have been sent yet, hence adding an explicit `configure` here.
+    wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1100,8 +1118,6 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
         listener_ptr,
         struct wlmaker_xdg_toplevel,
         request_fullscreen_listener);
-
-    bs_log(BS_ERROR, "TODO: Request fullscreen %p", wxt_ptr);
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen !=
         wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
@@ -1116,11 +1132,9 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
             wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
     }
 
-    // Protocol expects an `ack_configure`. Depending on current state, that
-    // may not have been sent throught @ref wlmtk_window_request_maximized,
-    // hence adding an explicit `ack_configure` here.
+    // Protocol expects an `configure`. Depending on current state, that may
+    // not have been sent yet, hence adding an explicit `configure` here.
     wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
-
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1275,24 +1289,27 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_commit_listener);
 
     struct wlr_xdg_surface *wlr_xdg_surface_ptr =
-        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base;
+        wxt_ptr->wlr_xdg_toplevel_ptr->base;
     if (wlr_xdg_surface_ptr->initial_commit) {
         // Initial commit: Ensure a configure is responded with.
         wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
     }
 
 
-    if (wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
-        wlmtk_window2_is_fullscreen(wlmaker_xdg_toplevel_ptr->window_ptr)) {
-
+    if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
+        wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
         wlmtk_window2_commit_fullscreen(
-            wlmaker_xdg_toplevel_ptr->window_ptr,
-            wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->current.fullscreen);
-
+            wxt_ptr->window_ptr,
+            wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen);
+    } else if (wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized !=
+               wlmtk_window2_is_maximized(wxt_ptr->window_ptr)) {
+        wlmtk_window2_commit_maximized(
+            wxt_ptr->window_ptr,
+            wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized);
     }
 }
 
@@ -1363,6 +1380,23 @@ void _wlmaker_xdg_toplevel_handle_window_request_fullscreen(
     wlr_xdg_toplevel_set_fullscreen(
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
         *fullscreen_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the window's request for going to maximized. */
+void _wlmaker_xdg_toplevel_handle_window_request_maximized(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        struct wlmaker_xdg_toplevel,
+        window_request_maximized_listener);
+    bool *maximized_ptr = data_ptr;
+
+    wlr_xdg_toplevel_set_maximized(
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
+        *maximized_ptr);
 }
 
 /* == End of xdg_toplevel.c ================================================ */
