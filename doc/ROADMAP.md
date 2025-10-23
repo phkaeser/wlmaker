@@ -18,6 +18,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Cleanups:
   * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
+    * [done] Add wlmtk_window2_t as the updated window version.
+    * Extend wlmtk_window2_t to support menu, popups, shade, maximize, minimize, client.
+    * Replace wlmtk_window_t with wlmtk_window2_t for XWL windows.
+    * Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
+    * Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
   * Recompute pointer focus max once per frame.
 
 * Bug fixes

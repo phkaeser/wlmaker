@@ -133,8 +133,12 @@ struct wlmaker_xdg_toplevel {
 
     /** Listener for @ref wlmtk_window2_events_t::request_close. */
     struct wl_listener        window_request_close_listener;
-    /** Listsener for @ref wlmtk_window2_events_t::set_activated. */
+    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
     struct wl_listener        window_set_activated_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_size. */
+    struct wl_listener        window_request_size_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_fullscreen. */
+    struct wl_listener        window_request_fullscreen_listener;
 
     /** Whether this toplevel is configured to be server-side decorated. */
     bool                      server_side_decorated;
@@ -240,6 +244,12 @@ static void _wlmaker_xdg_toplevel_handle_window_request_close(
 static void _wlmaker_xdg_toplevel_handle_window_set_activated(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmaker_xdg_toplevel_handle_window_request_size(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xdg_toplevel_handle_window_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static uint32_t content_request_maximized(
     wlmtk_content_t *content_ptr,
@@ -320,8 +330,8 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     wlmaker_xdg_toplevel_ptr->server_ptr = server_ptr;
 
-    wlmaker_xdg_toplevel_ptr->surface_ptr = wlmtk_surface_create(
-        wlr_xdg_toplevel_ptr->base->surface,
+    wlmaker_xdg_toplevel_ptr->surface_ptr = wlmtk_xdg_surface_create(
+        wlr_xdg_toplevel_ptr->base,
         server_ptr->wlr_seat_ptr);
     if (NULL == wlmaker_xdg_toplevel_ptr->surface_ptr) goto error;
 
@@ -404,6 +414,14 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->set_activated,
         &wlmaker_xdg_toplevel_ptr->window_set_activated_listener,
         _wlmaker_xdg_toplevel_handle_window_set_activated);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_size,
+        &wlmaker_xdg_toplevel_ptr->window_request_size_listener,
+        _wlmaker_xdg_toplevel_handle_window_request_size);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_fullscreen,
+        &wlmaker_xdg_toplevel_ptr->window_request_fullscreen_listener,
+        _wlmaker_xdg_toplevel_handle_window_request_fullscreen);
 
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->data =
         wlmaker_xdg_toplevel_ptr;
@@ -422,6 +440,8 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
     bs_log(BS_INFO, "Destroying XDG toplevel %p", wxt_ptr);
     wxt_ptr->wlr_xdg_toplevel_ptr->base->data = NULL;
 
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_fullscreen_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_size_listener);
     wlmtk_util_disconnect_listener(&wxt_ptr->window_set_activated_listener);
     wlmtk_util_disconnect_listener(&wxt_ptr->window_request_close_listener);
 
@@ -1071,17 +1091,36 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
 }
 
 /* ------------------------------------------------------------------------- */
-/** The XDG toplevel requests to be put in fullscreen. */
+/** The XDG toplevel (client) requests to be put in fullscreen. */
 void _wlmaker_xdg_toplevel_handle_request_fullscreen(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr,
         struct wlmaker_xdg_toplevel,
         request_fullscreen_listener);
 
-    bs_log(BS_ERROR, "TODO: Request fullscreen %p", wlmaker_xdg_toplevel_ptr);
+    bs_log(BS_ERROR, "TODO: Request fullscreen %p", wxt_ptr);
+
+    if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen !=
+        wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
+
+        // Sets the requested output. Or NULL, if no preference indicated.
+        wlmtk_window2_set_wlr_output(
+            wxt_ptr->window_ptr,
+            wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output);
+
+        wlmtk_window2_request_fullscreen(
+            wxt_ptr->window_ptr,
+            wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
+    }
+
+    // Protocol expects an `ack_configure`. Depending on current state, that
+    // may not have been sent throught @ref wlmtk_window_request_maximized,
+    // hence adding an explicit `ack_configure` here.
+    wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1105,19 +1144,33 @@ void _wlmaker_xdg_toplevel_handle_request_move(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_move_listener);
 
-    bs_log(BS_ERROR, "TODO: Request move %p", wlmaker_xdg_toplevel_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
+        wlmaker_xdg_toplevel_ptr->window_ptr);
+    if (NULL == workspace_ptr) return;
+
+    wlmtk_workspace_begin_window_move(
+        workspace_ptr,
+        wlmaker_xdg_toplevel_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** The XDG toplevel requests to be resized. */
 void _wlmaker_xdg_toplevel_handle_request_resize(
     struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
+    void *data_ptr)
 {
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_resize_listener);
+    struct wlr_xdg_toplevel_resize_event *resize_event_ptr = data_ptr;
 
-    bs_log(BS_ERROR, "TODO: Request resize %p", wlmaker_xdg_toplevel_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
+        wlmaker_xdg_toplevel_ptr->window_ptr);
+    if (NULL == workspace_ptr) return;
+
+    wlmtk_workspace_begin_window_resize(
+        workspace_ptr,
+        wlmaker_xdg_toplevel_ptr->window_ptr,
+        resize_event_ptr->edges);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1156,8 +1209,9 @@ void _wlmaker_xdg_toplevel_handle_set_title(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_title_listener);
 
-    // FIXME: If window: set title. Otherwise: Cache title!
-    bs_log(BS_ERROR, "TODO: set_title %p", wlmaker_xdg_toplevel_ptr);
+    wlmtk_window2_set_title(
+        wlmaker_xdg_toplevel_ptr->window_ptr,
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->title);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1193,14 +1247,6 @@ void _wlmaker_xdg_toplevel_handle_surface_map(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_map_listener);
 
-    bs_log(BS_ERROR, "FIXME: map %p "
-           "pend %"PRId32"x%"PRId32", curr %"PRId32"x%"PRId32,
-           wlmaker_xdg_toplevel_ptr,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->pending.geometry.width,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->pending.geometry.height,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.width,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.height);
-
     wlmtk_workspace_t *workspace_ptr = wlmtk_root_get_current_workspace(
         wlmaker_xdg_toplevel_ptr->server_ptr->root_ptr);
 
@@ -1218,8 +1264,6 @@ void _wlmaker_xdg_toplevel_handle_surface_unmap(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_unmap_listener);
 
-    bs_log(BS_ERROR, "FIXME: unmap");
-
     wlmtk_workspace_unmap_window2(
         wlmtk_window2_get_workspace(wlmaker_xdg_toplevel_ptr->window_ptr),
         wlmaker_xdg_toplevel_ptr->window_ptr);
@@ -1234,19 +1278,22 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_commit_listener);
 
-    if (wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->initial_commit) {
+    struct wlr_xdg_surface *wlr_xdg_surface_ptr =
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base;
+    if (wlr_xdg_surface_ptr->initial_commit) {
         // Initial commit: Ensure a configure is responded with.
-        wlr_xdg_surface_schedule_configure(
-            wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base);
+        wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
     }
 
-    bs_log(BS_ERROR, "FIXME: commit %p "
-           "pend %"PRId32"x%"PRId32", curr %"PRId32"x%"PRId32,
-           wlmaker_xdg_toplevel_ptr,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->pending.geometry.width,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->pending.geometry.height,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.width,
-           wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.height);
+
+    if (wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
+        wlmtk_window2_is_fullscreen(wlmaker_xdg_toplevel_ptr->window_ptr)) {
+
+        wlmtk_window2_commit_fullscreen(
+            wlmaker_xdg_toplevel_ptr->window_ptr,
+            wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->current.fullscreen);
+
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1281,6 +1328,41 @@ void _wlmaker_xdg_toplevel_handle_window_set_activated(
     wlmtk_surface_set_activated(
         wlmaker_xdg_toplevel_ptr->surface_ptr,
         wlmtk_window2_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the window's request for size. */
+void _wlmaker_xdg_toplevel_handle_window_request_size(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        struct wlmaker_xdg_toplevel,
+        window_request_size_listener);
+    const struct wlr_box *box_ptr = data_ptr;
+
+    wlr_xdg_toplevel_set_size(
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
+        box_ptr->width,
+        box_ptr->height);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the window's request for going to fullscreen. */
+void _wlmaker_xdg_toplevel_handle_window_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        struct wlmaker_xdg_toplevel,
+        window_request_fullscreen_listener);
+    bool *fullscreen_ptr = data_ptr;
+
+    wlr_xdg_toplevel_set_fullscreen(
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
+        *fullscreen_ptr);
 }
 
 /* == End of xdg_toplevel.c ================================================ */
