@@ -214,7 +214,9 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
         if (NULL != titlebar_title_ptr->window2_ptr) {
-            wlmtk_window2_request_move(titlebar_title_ptr->window2_ptr);
+            wlmtk_workspace_begin_window_move(
+                wlmtk_window2_get_workspace(titlebar_title_ptr->window2_ptr),
+                titlebar_title_ptr->window2_ptr);
         } else {
             wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
         }

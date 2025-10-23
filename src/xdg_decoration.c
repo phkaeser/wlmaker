@@ -310,6 +310,7 @@ void handle_decoration_request_mode(
     // committed already. Need to implement server-side state tracking and
     // applying these modes downstream after first commit.
     if (decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->initialized) {
+        bs_log(BS_ERROR, "Set mode %d", mode);
         wlr_xdg_toplevel_decoration_v1_set_mode(
             decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
     }

@@ -49,6 +49,9 @@ typedef struct {
      */
     struct wl_signal          state_changed;
 
+    /** Signals that @ref wlmtk_window2_t::activated changed. */
+    struct wl_signal          set_activated;
+
     /**
      * Signals that the window was requested to be closed.
      *
@@ -56,9 +59,19 @@ typedef struct {
      */
     struct wl_signal          request_close;
 
+    /**
+     * Signals that the window's size is requested to change.
+     *
+     * Takes a `struct wlr_box*` as argument.
+     */
+    struct wl_signal          request_size;
 
-    /** Signals that @ref wlmtk_window2_t::activated changed. */
-    struct wl_signal          set_activated;
+    /**
+     * Signals that the window is desiring to switch to fullscreen.
+     *
+     * Takes a `bool` as argument, specifying whether to enable fullscreen.
+     */
+    struct wl_signal          request_fullscreen;
 } wlmtk_window2_events_t;
 
 /**
@@ -96,7 +109,7 @@ wlmtk_window2_events_t *wlmtk_window2_events(wlmtk_window2_t *window_ptr);
  *
  * @param window_ptr
  *
- * @return Pointer to the super element of @ref wlmtk_window2_t::container.
+ * @return Pointer to the super element of @ref wlmtk_window2_t::bordered.
  */
 wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr);
 
@@ -110,6 +123,18 @@ wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr);
 wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr);
 
 /**
+ * Returns the bounding box for the window.
+ *
+ * @param window_ptr
+ *
+ * @return the box.
+ */
+struct wlr_box wlmtk_window2_get_bounding_box(wlmtk_window2_t *window_ptr);
+
+/** Helper: Indicates that the position has changed. */
+void wlmtk_window2_position_changed(wlmtk_window2_t *window_ptr);
+
+/**
  * Sets properties for the window.
  *
  * @param window_ptr
@@ -121,6 +146,28 @@ void wlmtk_window2_set_properties(
 
 /** @return Pointer to @ref wlmtk_content_t::client for the window's element. */
 const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
+    wlmtk_window2_t *window_ptr);
+
+/**
+ * Sets the WLR output for the window. Used for fullscreen requests.
+ *
+ * @param window_ptr
+ * @param wlr_output_ptr      Output to consider when requesting a window as
+ *                            fullscreen. Can be NULL to indicate no preference.
+ */
+void wlmtk_window2_set_wlr_output(
+    wlmtk_window2_t *window_ptr,
+    struct wlr_output *wlr_output_ptr);
+
+/**
+ * Gets the struct wlr_output that the window prefers, or is on.
+ *
+ * @param window_ptr
+ *
+ * @return Pointer to the struct wlr_output the center of the window is placed
+ *     on, or NULL if none is available or the window is not mapped.
+ */
+struct wlr_output *wlmtk_window2_get_wlr_output(
     wlmtk_window2_t *window_ptr);
 
 /**
@@ -165,6 +212,26 @@ void wlmtk_window2_set_activated(
 bool wlmtk_window2_is_activated(wlmtk_window2_t *window_ptr);
 
 /**
+ * Requests the window's size to be updated.
+ *
+ * @param window_ptr
+ * @param box_ptr             Only the `width` and `height` are considered.
+ */
+void wlmtk_window2_request_size(
+    wlmtk_window2_t *window_ptr,
+    const struct wlr_box *box_ptr);
+
+/**
+ * Sets the resizing edges. Keeps the opposite edges firm when resizing.
+ *
+ * @param window_ptr
+ * @param edges
+ */
+void wlmtk_window2_resize_edges(
+    wlmtk_window2_t *window_ptr,
+    uint32_t edges);
+
+/**
  * Requests to close the window.
  *
  * @param window_ptr
@@ -179,24 +246,6 @@ void wlmtk_window2_request_close(wlmtk_window2_t *window_ptr);
 void wlmtk_window2_request_minimize(wlmtk_window2_t *window_ptr);
 
 /**
- * Requests the window to be resized.
- *
- * Requires the window to be mapped (to a workspace), and forwards the call to
- * @ref wlmtk_workspace_begin_window_resize.
- *
- * @param window_ptr
- * @param edges
- */
-void wlmtk_window2_request_resize(wlmtk_window2_t *window_ptr, uint32_t edges);
-
-/**
- * Requests the window to be moved.
- *
- * @param window_ptr
- */
-void wlmtk_window2_request_move(wlmtk_window2_t *window_ptr);
-
-/**
  * Requests the window to be fullscreen (or end fullscreen).
  *
  * @param window_ptr
@@ -206,6 +255,17 @@ void wlmtk_window2_request_fullscreen(wlmtk_window2_t *window_ptr, bool fullscre
 
 /** @return whether the window currently is in fullscreen mode. */
 bool wlmtk_window2_is_fullscreen(wlmtk_window2_t *window_ptr);
+
+/**
+ * Commits the window as fullscreen: Client has comitted the surface in
+ * fullscreen state.
+ *
+ * @param window_ptr
+ * @param fullscreen
+ */
+void wlmtk_window2_commit_fullscreen(
+    wlmtk_window2_t *window_ptr,
+    bool fullscreen);
 
 /**
  * Requests the window to be maximized (or end maximized).
@@ -264,11 +324,21 @@ wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr);
 
 /** @return pointer to @ref wlmtk_window_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_window2(wlmtk_window2_t *window_ptr);
-/** @return the @ref wltmk_window_t for @ref wlmtk_window_t::dlnode. */
+/** @return the @ref wlmtk_window_t for @ref wlmtk_window_t::dlnode. */
 wlmtk_window2_t *wlmtk_window2_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Window unit test cases. */
 extern const bs_test_case_t wlmtk_window2_test_cases[];
+
+/**
+ * Creates a window, with default styles, for testing.
+ *
+ * @param content_element_ptr
+ *
+ * @return See @ref wlmtk_window2_create.
+ */
+wlmtk_window2_t *wlmtk_test_window2_create(
+    wlmtk_element_t *content_element_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

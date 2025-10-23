@@ -243,13 +243,14 @@ bool _wlmtk_resizebar_area_element_pointer_button(
     case WLMTK_BUTTON_DOWN:
         resizebar_area_ptr->pressed = true;
 
-        if (NULL != resizebar_area_ptr->window_ptr) {
-            wlmtk_window_request_resize(
-                resizebar_area_ptr->window_ptr,
+        if (NULL != resizebar_area_ptr->window2_ptr) {
+            wlmtk_workspace_begin_window_resize(
+                wlmtk_window2_get_workspace(resizebar_area_ptr->window2_ptr),
+                resizebar_area_ptr->window2_ptr,
                 resizebar_area_ptr->edges);
         } else {
-            wlmtk_window2_request_resize(
-                resizebar_area_ptr->window2_ptr,
+            wlmtk_window_request_resize(
+                resizebar_area_ptr->window_ptr,
                 resizebar_area_ptr->edges);
         }
         draw_state(resizebar_area_ptr);
