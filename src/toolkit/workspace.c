@@ -1021,6 +1021,17 @@ void _wlmtk_window_reposition_window(
         return;
     }
 
+    // Maximized window? Re-request maximized, will polll the size.
+    if (wlmtk_window2_is_maximized(window_ptr)) {
+        wlmtk_window2_request_maximized(window_ptr, true);
+        struct wlr_box box = wlmtk_workspace_get_maximize_extents(
+            workspace_ptr,
+            wlmtk_window2_get_wlr_output(window_ptr));
+        wlmtk_workspace_set_window_position(
+            workspace_ptr, window_ptr, box.x, box.y);
+        return;
+    }
+
     // Otherwise: See if the window dimensions (still) intersect. If yes: OK.
     struct wlr_box wbox = wlmtk_window2_get_bounding_box(window_ptr);
     if (wlr_output_layout_intersects(
@@ -1860,7 +1871,7 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&o2);
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 0);
 
-    // A fullscreen window, on o1.
+    // A fullscreen window w1, on o1.
     wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
     wlmtk_window2_t *w1 = wlmtk_test_window2_create(&fe1_ptr->element);
@@ -1876,7 +1887,7 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     wlmtk_util_connect_test_wlr_box_listener(
         &wlmtk_window2_events(w1)->request_size, &l1);
 
-    // A normal window, on o1.
+    // A normal window w2, on o1.
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
     wlmtk_fake_element_set_dimensions(fe2_ptr, 30, 40);
@@ -1888,14 +1899,35 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
         test_ptr, 10, 20, 30, 40,
         wlmtk_window2_get_bounding_box(w2));
 
+    // A maximized window w3, on o1.
+    wlmtk_fake_element_t *fe3_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
+    wlmtk_window2_t *w3 = wlmtk_test_window2_create(&fe3_ptr->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w3);
+    wlmtk_workspace_map_window2(ws_ptr, w3);
+    wlmtk_window2_commit_maximized(w3, true);
+    wlmtk_fake_element_set_dimensions(fe3_ptr, 100, 200);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(  // FIXME: but.. why?
+        test_ptr, -10, -20, 100, 200,
+        wlmtk_window2_get_bounding_box(w3));
+    wlmtk_util_test_wlr_box_listener_t l3 = {};
+    wlmtk_util_connect_test_wlr_box_listener(
+        &wlmtk_window2_events(w3)->request_size, &l3);
+
     // Remove o1.
     wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
 
-    // Must have received a `request_size` call. Verify, then let element
-    // take that dimension
+    // The fullscreen window must have received a `request_size` call. Verify,
+    // then let element take that dimension
     BS_TEST_VERIFY_EQ(test_ptr, 1, l1.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, l1.box);
     wlmtk_fake_element_set_dimensions(fe1_ptr, l1.box.width, l1.box.height);
+
+    // Also, the maximimzed window must have receied a request_size call; now
+    // suitable for o2. And be placed there.
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l3.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 236, 186, l3.box);
+    wlmtk_fake_element_set_dimensions(fe3_ptr, l3.box.width, l3.box.height);
 
     // Now both windows must be on o2. w1 must have a new size.
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
@@ -1904,7 +1936,13 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 400, 0, 30, 40,
         wlmtk_window2_get_bounding_box(w2));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 400, 0, 236, 186,
+        wlmtk_window2_get_bounding_box(w3));
 
+    wlmtk_workspace_unmap_window2(ws_ptr, w3);
+    wlmtk_window2_destroy(w3);
+    wlmtk_element_destroy(&fe3_ptr->element);
     wlmtk_workspace_unmap_window2(ws_ptr, w2);
     wlmtk_window2_destroy(w2);
     wlmtk_element_destroy(&fe2_ptr->element);

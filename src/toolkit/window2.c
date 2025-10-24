@@ -890,7 +890,6 @@ static void test_maximized(bs_test_t *test_ptr);
 
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * shade
-// * maximize on multiple outputs
 // * storing organic_bounding_box
 
 const bs_test_case_t wlmtk_window2_test_cases[] = {
