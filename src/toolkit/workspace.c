@@ -1012,12 +1012,10 @@ void _wlmtk_window_reposition_window(
     // Fullscreen window? Re-position it. We commit right away, to re-position
     // the element.
     if (wlmtk_window2_is_fullscreen(window_ptr)) {
-
+        wlmtk_window2_request_fullscreen(window_ptr, true);
         struct wlr_box fsbox = wlmtk_workspace_get_fullscreen_extents(
             workspace_ptr,
             wlmtk_window2_get_wlr_output(window_ptr));
-
-        wlmtk_window2_request_size(window_ptr, &fsbox);
         wlmtk_workspace_set_window_position(
             workspace_ptr, window_ptr, fsbox.x, fsbox.y);
         return;
@@ -1874,7 +1872,7 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
         test_ptr, -10, -20, 100, 200,
         wlmtk_window2_get_bounding_box(w1));
 
-    wlmtk_util_test_wlr_box_listener_t l1;
+    wlmtk_util_test_wlr_box_listener_t l1 = {};
     wlmtk_util_connect_test_wlr_box_listener(
         &wlmtk_window2_events(w1)->request_size, &l1);
 
