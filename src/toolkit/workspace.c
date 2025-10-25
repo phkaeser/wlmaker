@@ -454,10 +454,10 @@ struct wlr_box wlmtk_workspace_get_maximize_extents(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_confine_within(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_window2_t *window_ptr)
 {
     // Only act if the window belongs to this workspace.
-    if (workspace_ptr != wlmtk_window_get_workspace(window_ptr)) return;
+    if (workspace_ptr != wlmtk_window2_get_workspace(window_ptr)) return;
 
     struct wlr_box box = {
         .x = workspace_ptr->x1,
@@ -466,10 +466,9 @@ void wlmtk_workspace_confine_within(
         .height = workspace_ptr->y2 - workspace_ptr->y1 };
 
     struct wlr_box elem_box = wlmtk_element_get_dimensions_box(
-        wlmtk_window_element(window_ptr));
+        wlmtk_window2_element(window_ptr));
     int x, y;
-    wlmtk_element_get_position(wlmtk_window_element(window_ptr), &x, &y);
-
+    wlmtk_element_get_position(wlmtk_window2_element(window_ptr), &x, &y);
 
     int max_x = x - elem_box.x + elem_box.width;
     if (max_x > box.width) x -= max_x - box.width;
@@ -477,7 +476,7 @@ void wlmtk_workspace_confine_within(
     int max_y = y - elem_box.y + elem_box.height;
     if (max_y > box.height) y -= max_y - box.height;
 
-    // FIXME wlmtk_workspace_set_window_position(workspace_ptr, window_ptr, x, y);
+    wlmtk_workspace_set_window_position(workspace_ptr, window_ptr, x, y);
 }
 
 /* ------------------------------------------------------------------------- */

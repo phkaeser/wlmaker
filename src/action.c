@@ -387,12 +387,9 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr),
                 server_ptr->cursor_ptr->wlr_cursor_ptr->x,
                 server_ptr->cursor_ptr->wlr_cursor_ptr->y);
-#if 0
-            // FIXME: Port to wlmtk_window2_t.
             wlmtk_workspace_confine_within(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
-#endif
             wlmtk_menu_set_mode(
                 wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
                 WLMTK_MENU_MODE_NORMAL);
