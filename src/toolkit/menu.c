@@ -64,6 +64,12 @@ static void _wlmtk_menu_set_item_mode(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
+static void _wlmtk_menu_get_dimensions(
+        wlmtk_element_t *element_ptr,
+        int *x1_ptr,
+        int *y1_ptr,
+        int *x2_ptr,
+        int *y2_ptr);
 static void _wlmtk_menu_element_destroy(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_menu_element_pointer_button(
@@ -82,6 +88,7 @@ static bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
 
 /** The superclass' element virtual method table. */
 static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
+    .get_dimensions = _wlmtk_menu_get_dimensions,
     .destroy = _wlmtk_menu_element_destroy,
     .pointer_button = _wlmtk_menu_element_pointer_button,
 };
@@ -307,6 +314,23 @@ void _wlmtk_menu_set_item_mode(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
     wlmtk_menu_item_set_mode(
         wlmtk_menu_item_from_dlnode(dlnode_ptr),
         ((wlmtk_menu_t*)ud_ptr)->mode);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Overrides get_dimensions: Only return dimensions of the pane's element. */
+static void _wlmtk_menu_get_dimensions(
+        wlmtk_element_t *element_ptr,
+        int *x1_ptr,
+        int *y1_ptr,
+        int *x2_ptr,
+        int *y2_ptr)
+{
+    wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
+
+    wlmtk_element_get_dimensions(
+        menu_ptr->super_pane.element_ptr,
+        x1_ptr, y1_ptr, x2_ptr, y2_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
