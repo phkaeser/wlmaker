@@ -17,11 +17,12 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
 
 * Cleanups:
-  * Update wlmtk_window_t to use wlmtk_pane_t as principal container.
+  * Replace wlmtk_window_t, wlmtk_conent_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
     * [done] Add wlmtk_window2_t as the updated window version.
-    * Extend wlmtk_window2_t to support menu, popups, shade, maximize, minimize, client.
+    * [done] Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
+    * [done] Extend wlmtk_window2_t to support shade, maximize.
+    * Extend wlmtk_window2_t to support menu, popups, minimize, client.
     * Replace wlmtk_window_t with wlmtk_window2_t for XWL windows.
-    * Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
     * Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
   * Recompute pointer focus max once per frame.
 
