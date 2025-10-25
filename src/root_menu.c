@@ -49,16 +49,19 @@
 /** State of the root menu. */
 struct _wlmaker_root_menu_t {
     /** Window. */
-    wlmtk_window_t            *window_ptr;
+    wlmtk_window2_t           *window_ptr;
 
-    /** The root menu's window content base instance. */
-    wlmtk_content_t           content;
     /** The root menu base instance. */
     wlmtk_menu_t              *menu_ptr;
     /** Listener for @ref wlmtk_menu_events_t::open_changed. */
     struct wl_listener        menu_open_changed_listener;
     /** Listener for @ref wlmtk_menu_events_t::request_close. */
     struct wl_listener        menu_request_close_listener;
+
+    /** Listener for @ref wlmtk_window2_events_t::request_close. */
+    struct wl_listener        window_request_close_listener;
+    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
+    struct wl_listener        window_set_activated_listener;
 
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
@@ -80,11 +83,12 @@ typedef struct {
     struct wl_listener        menu_destroy_listener;
 } wlmaker_root_menu_generator_t;
 
-static void _wlmaker_root_menu_content_request_close(
-    wlmtk_content_t *content_ptr);
-static void _wlmaker_root_menu_content_set_activated(
-    wlmtk_content_t *content_ptr,
-    bool activated);
+static void _wlmaker_root_menu_handle_window_request_close(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_root_menu_handle_window_set_activated(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmaker_root_menu_handle_menu_open_changed(
     struct wl_listener *listener_ptr,
@@ -135,12 +139,6 @@ static wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
     ...) __ARG_PRINTF__(2, 3);
 
 /* == Data ================================================================= */
-
-/** Virtual method of the root menu's window content. */
-static const wlmtk_content_vmt_t _wlmaker_root_menu_content_vmt = {
-    .request_close = _wlmaker_root_menu_content_request_close,
-    .set_activated = _wlmaker_root_menu_content_set_activated,
-};
 
 /** Lookup paths for the root menu config file. */
 static const char *_wlmaker_root_menu_fname_ptrs[] = {
@@ -222,52 +220,28 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->menu_request_close_listener,
         _wlmaker_root_menu_handle_request_close);
 
-    // FIXME - really terrible hack.
-    wlmtk_pane_t *pane_ptr = wlmtk_menu_pane(root_menu_ptr->menu_ptr);
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_menu_element(root_menu_ptr->menu_ptr));
-    wlmtk_container_remove_element(
-        &pane_ptr->super_container,
-        pane_ptr->element_ptr);
-    if (!wlmtk_content_init(
-            &root_menu_ptr->content,
-            pane_ptr->element_ptr)) {
-        wlmaker_root_menu_destroy(root_menu_ptr);
-        bspl_array_unref(root_menu_array_ptr);
-        return NULL;
-    }
-    wlmtk_container_remove_element(
-        &pane_ptr->super_container,
-        &pane_ptr->popup_container.super_element);
-    wlmtk_container_add_element(
-        &root_menu_ptr->content.popup_container,
-        &pane_ptr->popup_container.super_element);
-
-    wlmtk_content_extend(
-        &root_menu_ptr->content,
-        &_wlmaker_root_menu_content_vmt);
-    // TODO(kaeser@gubbe.ch): Should not be required. Also, the sequence
-    // of set_server_side_decorated and set_attributes is brittle.
-    wlmtk_content_commit(
-        &root_menu_ptr->content,
-        box.width,
-        box.height,
-        0);
-
-    root_menu_ptr->window_ptr = wlmtk_window_create(
-        &root_menu_ptr->content,
+    root_menu_ptr->window_ptr = wlmtk_window2_create(
+        wlmtk_menu_element(root_menu_ptr->menu_ptr),
         window_style_ptr,
-        menu_style_ptr,
-        server_ptr->wlr_seat_ptr);
+        menu_style_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         bspl_array_unref(root_menu_array_ptr);
         return NULL;
     }
-    wlmtk_window_set_title(
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window2_events(root_menu_ptr->window_ptr)->request_close,
+        &root_menu_ptr->window_request_close_listener,
+        _wlmaker_root_menu_handle_window_request_close);
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_window2_events(root_menu_ptr->window_ptr)->set_activated,
+        &root_menu_ptr->window_set_activated_listener,
+        _wlmaker_root_menu_handle_window_set_activated);
+
+    wlmtk_window2_set_title(
         root_menu_ptr->window_ptr,
         bspl_array_string_value_at(root_menu_array_ptr, 0));
-    wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
+    wlmtk_window2_set_server_side_decorated(root_menu_ptr->window_ptr, true);
 
     bspl_array_unref(root_menu_array_ptr);
     return root_menu_ptr;
@@ -284,33 +258,22 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 
     if (NULL != root_menu_ptr->window_ptr) {
         // Unmap, in case it's not unmapped yet.
-        wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
+        wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
             root_menu_ptr->window_ptr);
         if (NULL != workspace_ptr) {
-            wlmtk_workspace_unmap_window(workspace_ptr,
-                                         root_menu_ptr->window_ptr);
+            wlmtk_workspace_unmap_window2(workspace_ptr,
+                                          root_menu_ptr->window_ptr);
         }
 
-        wlmtk_window_destroy(root_menu_ptr->window_ptr);
+        wlmtk_util_disconnect_listener(
+            &root_menu_ptr->window_request_close_listener);
+        wlmtk_util_disconnect_listener(
+            &root_menu_ptr->window_set_activated_listener);
+
+        wlmtk_window2_destroy(root_menu_ptr->window_ptr);
         root_menu_ptr->window_ptr = NULL;
     }
 
-    if (NULL != root_menu_ptr->menu_ptr) {
-        wlmtk_content_set_element(&root_menu_ptr->content, NULL);
-        wlmtk_pane_t *pane_ptr = wlmtk_menu_pane(root_menu_ptr->menu_ptr);
-        wlmtk_container_add_element(
-            &pane_ptr->super_container,
-            pane_ptr->element_ptr);
-
-        wlmtk_container_remove_element(
-            &root_menu_ptr->content.popup_container,
-            &pane_ptr->popup_container.super_element);
-        wlmtk_container_add_element(
-            &pane_ptr->super_container,
-            &pane_ptr->popup_container.super_element);
-    }
-
-    wlmtk_content_fini(&root_menu_ptr->content);
     if (NULL != root_menu_ptr->menu_ptr) {
         wlmtk_util_disconnect_listener(
             &root_menu_ptr->menu_request_close_listener);
@@ -323,7 +286,7 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
+wlmtk_window2_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
 {
     return root_menu_ptr->window_ptr;
 }
@@ -337,31 +300,35 @@ wlmtk_menu_t *wlmaker_root_menu_menu(wlmaker_root_menu_t *root_menu_ptr)
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtk_content_vmt_t::request_close. Closes root menu. */
-void _wlmaker_root_menu_content_request_close(
-    wlmtk_content_t *content_ptr)
+/** Handles when window close button is pressed: Hides the menu. */
+void _wlmaker_root_menu_handle_window_request_close(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmaker_root_menu_t, content);
-
+        listener_ptr, wlmaker_root_menu_t, window_request_close_listener);
     wlmtk_menu_set_open(root_menu_ptr->menu_ptr, false);
+
 }
 
 /* ------------------------------------------------------------------------- */
-/** Imlements @ref wlmtk_content_vmt_t::set_activated. Gets keyboard focus. */
-void _wlmaker_root_menu_content_set_activated(
-    wlmtk_content_t *content_ptr,
-    bool activated)
+/** Handles when the menu is activated: Get keyboard focus. */
+void _wlmaker_root_menu_handle_window_set_activated(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
-        content_ptr, wlmaker_root_menu_t, content);
+        listener_ptr, wlmaker_root_menu_t, window_set_activated_listener);
 
     wlmtk_element_t *e = wlmtk_menu_pane(root_menu_ptr->menu_ptr)->element_ptr;
     if (NULL != e->parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
-            e->parent_container_ptr, e, activated);
+            e->parent_container_ptr,
+            e,
+            wlmtk_window2_is_activated(root_menu_ptr->window_ptr));
     }
 }
+
 
 /* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_events_t::open_changed. Unmaps window on close. */
@@ -372,9 +339,9 @@ void _wlmaker_root_menu_handle_menu_open_changed(
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_root_menu_t, menu_open_changed_listener);
     if (!wlmtk_menu_is_open(root_menu_ptr->menu_ptr) &&
-        NULL != wlmtk_window_get_workspace(root_menu_ptr->window_ptr)) {
-        wlmtk_workspace_unmap_window(
-            wlmtk_window_get_workspace(root_menu_ptr->window_ptr),
+        NULL != wlmtk_window2_get_workspace(root_menu_ptr->window_ptr)) {
+        wlmtk_workspace_unmap_window2(
+            wlmtk_window2_get_workspace(root_menu_ptr->window_ptr),
             root_menu_ptr->window_ptr);
     } else {
 
@@ -382,18 +349,14 @@ void _wlmaker_root_menu_handle_menu_open_changed(
         if (WLMTK_MENU_MODE_RIGHTCLICK ==
             wlmtk_menu_get_mode(root_menu_ptr->menu_ptr)) {
             properties |= WLMTK_WINDOW_PROPERTY_RIGHTCLICK;
-
-            // TODO(kaeser@gubbe.ch): Also undo, with that really terrible
-            // hack of hacking the pane into the content.
-            wlmtk_element_t *content_element_ptr =
-                wlmtk_content_element(&root_menu_ptr->content);
             wlmtk_container_pointer_grab(
-                content_element_ptr->parent_container_ptr,
-                content_element_ptr);
+                wlmtk_menu_element(
+                    root_menu_ptr->menu_ptr)->parent_container_ptr,
+                wlmtk_menu_element(root_menu_ptr->menu_ptr));
         } else {
             properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
         }
-        wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
+        wlmtk_window2_set_properties(root_menu_ptr->window_ptr, properties);
 
     }
 }

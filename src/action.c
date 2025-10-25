@@ -377,18 +377,22 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
     case WLMAKER_ACTION_ROOT_MENU:
         // TODO(kaeser@gubbe.ch): Clean up.
         if (NULL != server_ptr->root_menu_ptr &&
-            NULL == wlmtk_window_get_workspace(
+            NULL == wlmtk_window2_get_workspace(
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr))) {
-            wlmtk_workspace_map_window(
+            wlmtk_workspace_map_window2(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
-            wlmtk_window_set_position(
+            wlmtk_workspace_set_window_position(
+                wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr),
                 server_ptr->cursor_ptr->wlr_cursor_ptr->x,
                 server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+#if 0
+            // FIXME: Port to wlmtk_window2_t.
             wlmtk_workspace_confine_within(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
+#endif
             wlmtk_menu_set_mode(
                 wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
                 WLMTK_MENU_MODE_NORMAL);
