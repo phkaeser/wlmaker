@@ -102,8 +102,10 @@ struct _wlmtk_window2_t {
     bool                      server_side_decorated;
     /** Whether this windows is currently in fullscreen mode. */
     bool                      fullscreen;
-    /** Whetehr this window is currently in maximized state. */
+    /** Whether this window is currently in maximized state. */
     bool                      maximized;
+    /** Whether this window is currently shaded. */
+    bool                      shaded;
     /** Whether this window is currently activated (has keyboard focus). */
     bool                      activated;
 };
@@ -539,15 +541,24 @@ void wlmtk_window2_commit_maximized(
 /* ------------------------------------------------------------------------- */
 void wlmtk_window2_request_shaded(wlmtk_window2_t *window_ptr, bool shaded)
 {
-    bs_log(BS_ERROR, "TODO: Request shaded for window %p: %d",
-           window_ptr, shaded);
+    if (window_ptr->fullscreen ||
+        !window_ptr->server_side_decorated ||
+        window_ptr->shaded == shaded) return;
+
+    wlmtk_element_set_visible(window_ptr->content_element_ptr, !shaded);
+    if (NULL != window_ptr->resizebar_ptr) {
+        wlmtk_element_set_visible(
+            wlmtk_resizebar_element(window_ptr->resizebar_ptr), !shaded);
+    }
+
+    window_ptr->shaded = shaded;
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr)
 {
-    bs_log(BS_ERROR, "TODO: is_shaded for window %p", window_ptr);
-    return false;
+    return window_ptr->shaded;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -887,9 +898,9 @@ static void test_resize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
 static void test_maximized(bs_test_t *test_ptr);
+static void test_shaded(bs_test_t *test_ptr);
 
 // TODO(kaeser@gubbe.ch): Add tests for ..
-// * shade
 // * storing organic_bounding_box
 
 const bs_test_case_t wlmtk_window2_test_cases[] = {
@@ -901,6 +912,7 @@ const bs_test_case_t wlmtk_window2_test_cases[] = {
     { 1, "fullscreen", test_fullscreen },
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
     { 1, "maxizimed", test_maximized },
+    { 1, "shaded", test_shaded },
     { 0, NULL, NULL }
 };
 
@@ -1460,6 +1472,59 @@ void test_maximized(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests shading of a window. */
+void test_shaded(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
+    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+
+    wlmtk_util_test_listener_t l;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_window2_events(w)->state_changed, &l);
+
+    // Not decorated: Will not be shaded.
+    wlmtk_window2_set_server_side_decorated(w, false);
+    wlmtk_window2_request_shaded(w, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    wlmtk_window2_set_server_side_decorated(w, true);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    // Fullscreen: Will not be shaded.
+    wlmtk_window2_commit_fullscreen(w, true);
+    wlmtk_util_clear_test_listener(&l);
+    wlmtk_window2_request_shaded(w, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+    wlmtk_window2_commit_fullscreen(w, false);
+
+    // Now a regular, decorated window: Will be shaded.
+    wlmtk_util_clear_test_listener(&l);
+    wlmtk_window2_request_shaded(w, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->element.visible);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_resizebar_element(w->resizebar_ptr)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+
+    // And verify that unshading works.
+    wlmtk_util_clear_test_listener(&l);
+    wlmtk_window2_request_shaded(w, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->element.visible);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_resizebar_element(w->resizebar_ptr)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+
+    wlmtk_window2_destroy(w);
+    wlmtk_element_destroy(&fe_ptr->element);
 }
 
 /* == End of window2.c ===================================================== */
