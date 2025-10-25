@@ -136,7 +136,7 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
  */
 void wlmtk_workspace_confine_within(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_window2_t *window_ptr);
 
 /** Returns @ref wlmtk_workspace_t::wlr_output_layout_ptr. */
 struct wlr_output_layout *wlmtk_workspace_get_wlr_output_layout(
