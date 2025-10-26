@@ -67,6 +67,8 @@ struct _wlmtk_button_event_t {
     wlmtk_button_event_type_t type;
     /** Time of the button event, in milliseconds. */
     uint32_t                  time_msec;
+    /** Modifiers that were active when the button event happened. */
+    uint32_t                  keyboard_modifiers;
 };
 
 /** Motion event. */
