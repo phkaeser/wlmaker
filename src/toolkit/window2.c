@@ -91,6 +91,11 @@ struct _wlmtk_window2_t {
     /** Current box size when resizing. */
     struct wlr_box            old_box;
 
+    /** The window menu. */
+    wlmtk_menu_t              *window_menu_ptr;
+    /** Listener for then the popup menu requests to be closed. */
+    struct wl_listener        menu_request_close_listener;
+
     /**
      * Whether an "inorganic" sizing operation is in progress, and thus size
      * changes should not be recorded in @ref wlmtk_window_t::organic_size.
@@ -126,6 +131,10 @@ static void _wlmtk_window2_set_decoration_width(wlmtk_window2_t *window_ptr);
 static void _wlmtk_window2_issue_request_size(
     wlmtk_window2_t *window_ptr,
     const struct wlr_box *box_ptr);
+
+static void _wlmtk_window2_menu_request_close_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 /* == Data ================================================================= */
 
@@ -195,6 +204,17 @@ wlmtk_window2_t *wlmtk_window2_create(
         &window_ptr->content_container.super_element);
     wlmtk_element_set_visible(wlmtk_box_element(&window_ptr->box), true);
 
+    // Create the window menu. It is kept hidden until invoked.
+    window_ptr->window_menu_ptr = wlmtk_menu_create(menu_style_ptr);
+    if (NULL == window_ptr->window_menu_ptr) goto error;
+    wlmtk_container_add_element(
+        &window_ptr->content_container,
+        wlmtk_menu_element(window_ptr->window_menu_ptr));
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_menu_events(window_ptr->window_menu_ptr)->request_close,
+        &window_ptr->menu_request_close_listener,
+        _wlmtk_window2_menu_request_close_handler);
+
     _wlmtk_window2_apply_decoration(window_ptr);
     return window_ptr;
 
@@ -207,6 +227,16 @@ error:
 void wlmtk_window2_destroy(wlmtk_window2_t *window_ptr)
 {
     wlmtk_window2_set_server_side_decorated(window_ptr, false);
+
+    if (NULL != window_ptr->window_menu_ptr) {
+        wlmtk_util_disconnect_listener(
+            &window_ptr->menu_request_close_listener);
+        wlmtk_container_remove_element(
+            &window_ptr->content_container,
+            wlmtk_menu_element(window_ptr->window_menu_ptr));
+        wlmtk_menu_destroy(window_ptr->window_menu_ptr);
+        window_ptr->window_menu_ptr = NULL;
+    }
 
     if (window_ptr->content_container.super_element.parent_container_ptr) {
         wlmtk_box_remove_element(
@@ -565,7 +595,46 @@ bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
 {
-    bs_log(BS_ERROR, "TODO: Set menu for window %p %d", window_ptr, enabled);
+    if (!window_ptr->activated) enabled = false;
+
+    // For convenience: Get the menu's element. Note: It must have a parent,
+    // since it's contained within the window.
+    wlmtk_element_t *menu_element_ptr = wlmtk_menu_element(
+        window_ptr->window_menu_ptr);
+    BS_ASSERT(NULL != menu_element_ptr->parent_container_ptr);
+
+    wlmtk_menu_set_open(window_ptr->window_menu_ptr, enabled);
+
+    if (enabled) {
+        wlmtk_menu_set_mode(
+            window_ptr->window_menu_ptr,
+            WLMTK_MENU_MODE_RIGHTCLICK);
+        wlmtk_container_raise_element_to_top(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+        wlmtk_container_pointer_grab(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+
+        if (wlmtk_window2_element(window_ptr)->pointer_inside) {
+            wlmtk_element_set_position(
+                menu_element_ptr,
+                wlmtk_window2_element(window_ptr)->last_pointer_motion_event.x,
+                0);
+        } else {
+            wlmtk_element_set_position(menu_element_ptr, 0, 0);
+        }
+    } else {
+        wlmtk_container_pointer_grab_release(
+            menu_element_ptr->parent_container_ptr,
+            menu_element_ptr);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_t *wlmtk_window2_menu(wlmtk_window2_t *window_ptr)
+{
+    return window_ptr->window_menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -884,6 +953,16 @@ void _wlmtk_window2_issue_request_size(
     wl_signal_emit(&window_ptr->events.request_size, &no_decorations_box);
 }
 
+/* ------------------------------------------------------------------------- */
+void _wlmtk_window2_menu_request_close_handler(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_window2_t, menu_request_close_listener);
+    wlmtk_window2_menu_set_enabled(window_ptr, false);
+}
+
 /* == Unit Tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -896,6 +975,7 @@ static void test_fullscreen_unmap(bs_test_t *test_ptr);
 static void test_maximized(bs_test_t *test_ptr);
 static void test_shaded(bs_test_t *test_ptr);
 static void test_modifier_move(bs_test_t *test_ptr);
+static void test_menu(bs_test_t *test_ptr);
 
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * storing organic_bounding_box
@@ -911,6 +991,7 @@ const bs_test_case_t wlmtk_window2_test_cases[] = {
     { 1, "maxizimed", test_maximized },
     { 1, "shaded", test_shaded },
     { 1, "modifier_move", test_modifier_move },
+    { 1, "menu", test_menu },
     { 0, NULL, NULL }
 };
 
@@ -1584,6 +1665,35 @@ void test_modifier_move(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void test_menu(bs_test_t *test_ptr)
+{
+    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+
+    // No menu shown when not activated.
+    wlmtk_window2_menu_set_enabled(w, true);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+
+    // Show when activated.
+    wlmtk_window2_set_activated(w, true);
+    wlmtk_window2_menu_set_enabled(w, true);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+
+    // Hide.
+    _wlmtk_window2_menu_request_close_handler(
+        &w->menu_request_close_listener, NULL);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+
+    wlmtk_window2_destroy(w);
 }
 
 /* == End of window2.c ===================================================== */

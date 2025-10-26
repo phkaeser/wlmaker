@@ -226,6 +226,8 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
         if (NULL != titlebar_title_ptr->window2_ptr) {
+            wlmtk_window2_menu_set_enabled(
+                titlebar_title_ptr->window2_ptr, true);
         } else {
             wlmtk_window_menu_set_enabled(titlebar_title_ptr->window_ptr, true);
         }

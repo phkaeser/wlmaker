@@ -318,6 +318,15 @@ bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr);
 void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled);
 
 /**
+ * Returns a pointer to the window menu's state.
+ *
+ * @param window_ptr
+ *
+ * @return A pointer to the @ref wlmtk_menu_t of the window menu.
+ */
+wlmtk_menu_t *wlmtk_window2_menu(wlmtk_window2_t *window_ptr);
+
+/**
  * Sets whether to have server-side decorations for this window.
  *
  * @param window_ptr
