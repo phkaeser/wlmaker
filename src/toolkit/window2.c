@@ -22,6 +22,7 @@
 
 #include <linux/input-event-codes.h>
 #define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
@@ -635,22 +636,17 @@ bool _wlmtk_window2_element_pointer_button(
         return rv;
     }
 
-#if 0
-    // Permit drag-move with the (hardcoded) modifier.
-    // TODO(kaeser@gubbe.ch): This should be changed to make use of "DRAG"
-    // events, with corresponding modifiers. Do so, once added to toolkit.
-    if (NULL != window_ptr->wlr_seat_ptr) {
-        struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
-            window_ptr->wlr_seat_ptr);
-        uint32_t modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
-        if (BTN_LEFT == button_event_ptr->button &&
-            WLMTK_BUTTON_DOWN == button_event_ptr->type &&
-            (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) == modifiers) {
-            wlmtk_window_request_move(window_ptr);
-            return true;
-        }
+    // Modifier-click initiates move.
+    if (BTN_LEFT == button_event_ptr->button &&
+        WLMTK_BUTTON_DOWN == button_event_ptr->type &&
+        (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) ==
+        button_event_ptr->keyboard_modifiers &&
+        NULL != wlmtk_window2_get_workspace(window_ptr)) {
+        wlmtk_workspace_begin_window_move(
+            wlmtk_window2_get_workspace(window_ptr),
+            window_ptr);
+        return true;
     }
-#endif
 
     // We shouldn't receive buttons when not mapped.
     wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(window_ptr);
@@ -899,6 +895,7 @@ static void test_fullscreen(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
 static void test_maximized(bs_test_t *test_ptr);
 static void test_shaded(bs_test_t *test_ptr);
+static void test_modifier_move(bs_test_t *test_ptr);
 
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * storing organic_bounding_box
@@ -913,6 +910,7 @@ const bs_test_case_t wlmtk_window2_test_cases[] = {
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
     { 1, "maxizimed", test_maximized },
     { 1, "shaded", test_shaded },
+    { 1, "modifier_move", test_modifier_move },
     { 0, NULL, NULL }
 };
 
@@ -1525,6 +1523,67 @@ void test_shaded(bs_test_t *test_ptr)
 
     wlmtk_window2_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that modifer-motion moves the window. */
+void test_modifier_move(bs_test_t *test_ptr)
+{
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &ts);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_workspace_enable(ws_ptr, true);
+
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 40, 20);
+    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_workspace_map_window2(ws_ptr, w);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window2_element(w)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window2_element(w)->y);
+
+    // Move pointer over the window.
+    wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(
+            wlmtk_workspace_element(ws_ptr), &mev));
+
+    // Drag: Button down, and have both modifiers pressed, then move.
+    wlmtk_button_event_t bev = {
+        .button = BTN_LEFT,
+        .type = WLMTK_BUTTON_DOWN,
+        .keyboard_modifiers = WLR_MODIFIER_LOGO | WLR_MODIFIER_ALT
+    };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev));
+    mev = (wlmtk_pointer_motion_event_t){ .x = 24, .y = 13 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(
+            wlmtk_workspace_element(ws_ptr), &mev));
+
+    // Now must be at a new position.
+    BS_TEST_VERIFY_EQ(test_ptr, 4, wlmtk_window2_element(w)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, wlmtk_window2_element(w)->y);
+
+    wlmtk_workspace_unmap_window2(ws_ptr, w);
+    wlmtk_window2_destroy(w);
+    wlmtk_element_destroy(&fe_ptr->element);
+    wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* == End of window2.c ===================================================== */
