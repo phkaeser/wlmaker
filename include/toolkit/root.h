@@ -121,12 +121,14 @@ bool wlmtk_root_pointer_motion(
  *
  * @param root_ptr
  * @param event_ptr
+ * @param modifiers
  *
  * @return Whether the button was consumed.
  */
 bool wlmtk_root_pointer_button(
     wlmtk_root_t *root_ptr,
-    const struct wlr_pointer_button_event *event_ptr);
+    const struct wlr_pointer_button_event *event_ptr,
+    uint32_t modifiers);
 
 /**
  * Handles a pointer axis event.

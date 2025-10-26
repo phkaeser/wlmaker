@@ -271,9 +271,17 @@ void handle_button(struct wl_listener *listener_ptr,
 
     wlmaker_idle_monitor_reset(cursor_ptr->server_ptr->idle_monitor_ptr);
 
+    struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
+        cursor_ptr->server_ptr->wlr_seat_ptr);
+    uint32_t modifiers = 0;
+    if (NULL != wlr_keyboard_ptr) {
+        modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
+    }
+
     wlmtk_root_pointer_button(
         cursor_ptr->server_ptr->root_ptr,
-        wlr_pointer_button_event_ptr);
+        wlr_pointer_button_event_ptr,
+        modifiers);
 }
 
 /* ------------------------------------------------------------------------- */

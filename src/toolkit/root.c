@@ -216,7 +216,8 @@ bool wlmtk_root_pointer_motion(
 // different buttons apart, and there's currently no test associated.
 bool wlmtk_root_pointer_button(
     wlmtk_root_t *root_ptr,
-    const struct wlr_pointer_button_event *event_ptr)
+    const struct wlr_pointer_button_event *event_ptr,
+    uint32_t modifiers)
 {
     wlmtk_button_event_t event;
     bool rv;
@@ -224,6 +225,7 @@ bool wlmtk_root_pointer_button(
     // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
     event.time_msec = event_ptr->time_msec;
+    event.keyboard_modifiers = modifiers;
     switch (event_ptr->state) {
 #if WLR_VERSION_NUM >= (18 << 8)
     case WL_POINTER_BUTTON_STATE_PRESSED:
@@ -794,7 +796,7 @@ void test_pointer_button(bs_test_t *test_ptr)
     };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));
+        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event, 0));
     wlmtk_button_event_t expected_event = {
         .button = 42,
         .type = WLMTK_BUTTON_DOWN,
@@ -814,7 +816,7 @@ void test_pointer_button(bs_test_t *test_ptr)
 #endif // WLR_VERSION_NUM >= (18 << 8)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event));
+        wlmtk_root_pointer_button(root_ptr, &wlr_pointer_button_event, 0));
     expected_event.type = WLMTK_BUTTON_CLICK;
     BS_TEST_VERIFY_MEMEQ(
         test_ptr,
