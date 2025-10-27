@@ -20,11 +20,12 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Replace wlmtk_window_t, wlmtk_conent_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
     * [done] Add wlmtk_window2_t as the updated window version.
     * [done] Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
-    * [done] Extend wlmtk_window2_t to support shade, maximize.
-    * Extend wlmtk_window2_t to support menu, popups, minimize, client.
+    * [done] Extend wlmtk_window2_t to support shade, maximize, menu.
+    * Extend wlmtk_window2_t to support popups, minimize, client.
     * Replace wlmtk_window_t with wlmtk_window2_t for XWL windows.
     * Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
   * Recompute pointer focus max once per frame.
+    * Verify that right-click on title after window menu re-raises window menu.
 
 * Bug fixes
   * Resize-from-left jitter observed on the raspi or with gnome-terminal.
