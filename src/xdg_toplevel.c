@@ -99,7 +99,8 @@ struct wlmaker_xdg_toplevel {
     wlmtk_surface_t           *surface_ptr;
     /** The toplevel's window, when mapped. */
     wlmtk_window2_t           *window_ptr;
-
+    /** The toplevel's window menu. */
+    wlmaker_tl_menu_t         *tl_menu_ptr;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_toplevel::events`. */
     struct wl_listener        destroy_listener;
@@ -304,12 +305,14 @@ wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
         return NULL;
     }
 
+#if 0
     surface_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmtk_window_ptr, server_ptr);
     if (NULL == surface_ptr->tl_menu_ptr) {
         xdg_toplevel_surface_destroy(surface_ptr);
         return NULL;
     }
+#endif
 
     wl_signal_emit(&server_ptr->window_created_event, wlmtk_window_ptr);
     bs_log(BS_INFO, "Created window %p for wlmtk XDG toplevel surface %p",
@@ -350,6 +353,10 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         WLMTK_WINDOW_PROPERTY_RESIZABLE |
         WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
         WLMTK_WINDOW_PROPERTY_CLOSABLE);
+
+    wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
+        wlmaker_xdg_toplevel_ptr->window_ptr, server_ptr);
+    if (NULL == wlmaker_xdg_toplevel_ptr->tl_menu_ptr) goto error;
 
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_toplevel_ptr->events.destroy,
@@ -469,6 +476,11 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
     wlmtk_util_disconnect_listener(&wxt_ptr->request_maximize_listener);
     wlmtk_util_disconnect_listener(&wxt_ptr->request_minimize_listener);
     wlmtk_util_disconnect_listener(&wxt_ptr->destroy_listener);
+
+    if (NULL != wxt_ptr->tl_menu_ptr) {
+        wlmaker_tl_menu_destroy(wxt_ptr->tl_menu_ptr);
+        wxt_ptr->tl_menu_ptr = NULL;
+    }
 
     if (NULL != wxt_ptr->window_ptr) {
         wlmtk_window2_destroy(wxt_ptr->window_ptr);

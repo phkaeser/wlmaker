@@ -44,7 +44,7 @@ struct _wlmaker_tl_menu_t {
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
     /** Back-link to the window. */
-    wlmtk_window_t            *window_ptr;
+    wlmtk_window2_t           *window_ptr;
 
     /** Listener for @ref wlmtk_window_events_t::state_changed. */
     struct wl_listener        window_state_changed_listener;
@@ -74,7 +74,7 @@ typedef struct {
     wlmtk_menu_item_t         *menu_item_ptr;
 
     /** Window to move. */
-    wlmtk_window_t            *window_ptr;
+    wlmtk_window2_t           *window_ptr;
     /** Workspace to move it to. */
     wlmtk_workspace_t         *workspace_ptr;
 
@@ -159,14 +159,14 @@ static const wlmaker_action_item_desc_t _tl_menu_items[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmaker_tl_menu_t *wlmaker_tl_menu_create(
-    wlmtk_window_t *window_ptr,
+    wlmtk_window2_t *window_ptr,
     wlmaker_server_t *server_ptr)
 {
     wlmaker_tl_menu_t *tl_menu_ptr = logged_calloc(
         1, sizeof(wlmaker_tl_menu_t));
     if (NULL == tl_menu_ptr) return NULL;
     tl_menu_ptr->server_ptr = server_ptr;
-    tl_menu_ptr->menu_ptr = wlmtk_window_menu(window_ptr);
+    tl_menu_ptr->menu_ptr = wlmtk_window2_menu(window_ptr);
     tl_menu_ptr->window_ptr = window_ptr;
 
     for (const wlmaker_action_item_desc_t *desc_ptr = &_tl_menu_items[0];
@@ -210,7 +210,7 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
 
     // Connect state listener and initialize state.
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window_events(window_ptr)->state_changed,
+        &wlmtk_window2_events(window_ptr)->state_changed,
         &tl_menu_ptr->window_state_changed_listener,
         _wlmaker_tl_menu_handle_window_state_changed);
     _wlmaker_tl_menu_handle_window_state_changed(
@@ -239,25 +239,25 @@ void _wlmaker_tl_menu_handle_window_state_changed(
 {
     wlmaker_tl_menu_t *tl_menu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_tl_menu_t, window_state_changed_listener);
-    wlmtk_window_t *window_ptr = data_ptr;
+    wlmtk_window2_t *window_ptr = data_ptr;
 
     wlmtk_menu_item_set_enabled(
         wlmaker_action_item_menu_item(tl_menu_ptr->shade_ai_ptr),
-        !wlmtk_window_is_shaded(window_ptr));
+        !wlmtk_window2_is_shaded(window_ptr));
     wlmtk_menu_item_set_enabled(
         wlmaker_action_item_menu_item(tl_menu_ptr->unshade_ai_ptr),
-        wlmtk_window_is_shaded(window_ptr));
+        wlmtk_window2_is_shaded(window_ptr));
 
     wlmtk_menu_item_set_enabled(
         wlmaker_action_item_menu_item(tl_menu_ptr->fullscreen_ai_ptr),
-        !wlmtk_window_is_fullscreen(window_ptr));
+        !wlmtk_window2_is_fullscreen(window_ptr));
 
     wlmtk_menu_item_set_enabled(
         wlmaker_action_item_menu_item(tl_menu_ptr->maximize_ai_ptr),
-        !wlmtk_window_is_maximized(window_ptr));
+        !wlmtk_window2_is_maximized(window_ptr));
     wlmtk_menu_item_set_enabled(
         wlmaker_action_item_menu_item(tl_menu_ptr->unmaximize_ai_ptr),
-        wlmtk_window_is_maximized(window_ptr));
+        wlmtk_window2_is_maximized(window_ptr));
 
     // Refresh the list of workspaces.
     bs_dllist_for_each(
@@ -332,7 +332,7 @@ void _wlmaker_tl_menu_ws_items_iterator_enable_workspace(
 
     wlmtk_menu_item_set_enabled(
         ws_item_ptr->menu_item_ptr,
-        (wlmtk_window_get_workspace(ws_item_ptr->window_ptr) !=
+        (wlmtk_window2_get_workspace(ws_item_ptr->window_ptr) !=
          ws_item_ptr->workspace_ptr));
 }
 
@@ -345,10 +345,10 @@ void _item_handle_triggered(
     wlmaker_tl_menu_ws_item_t *ws_item_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_tl_menu_ws_item_t, triggered_listener);
 
-    wlmtk_workspace_unmap_window(
-        wlmtk_window_get_workspace(ws_item_ptr->window_ptr),
+    wlmtk_workspace_unmap_window2(
+        wlmtk_window2_get_workspace(ws_item_ptr->window_ptr),
         ws_item_ptr->window_ptr);
-    wlmtk_workspace_map_window(
+    wlmtk_workspace_map_window2(
         ws_item_ptr->workspace_ptr,
         ws_item_ptr->window_ptr);
 }
