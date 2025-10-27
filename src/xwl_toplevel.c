@@ -77,6 +77,7 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         return NULL;
     }
 
+#if 0
     xwl_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         xwl_toplevel_ptr->window_ptr,
         server_ptr);
@@ -84,6 +85,7 @@ wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
         wlmaker_xwl_toplevel_destroy(xwl_toplevel_ptr);
         return NULL;
     }
+#endif
 
     wl_signal_emit(&server_ptr->window_created_event,
                    xwl_toplevel_ptr->window_ptr);

@@ -119,6 +119,12 @@ struct _wlmtk_window2_t {
 static bool _wlmtk_window2_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void _wlmtk_window2_container_element_get_dimensions(
+        wlmtk_element_t *element_ptr,
+        int *x1_ptr,
+        int *y1_ptr,
+        int *x2_ptr,
+        int *y2_ptr);
 static bool _wlmtk_window2_container_update_layout(
     wlmtk_container_t *container_ptr);
 
@@ -141,6 +147,11 @@ static void _wlmtk_window2_menu_request_close_handler(
 /** Virtual method table for the window's element superclass. */
 static const wlmtk_element_vmt_t window_element_vmt = {
     .pointer_button = _wlmtk_window2_element_pointer_button,
+};
+
+/** Virtual method table for the window's container superclass element. */
+static const wlmtk_element_vmt_t _wlmtk_window2_container_element_vmt = {
+    .get_dimensions = _wlmtk_window2_container_element_get_dimensions,
 };
 
 /** Virtual method table for the window's container superclass. */
@@ -186,6 +197,11 @@ wlmtk_window2_t *wlmtk_window2_create(
         &window_ptr->bordered.super_container.super_element,
         &window_element_vmt);
 
+    if (false) {
+        wlmtk_element_extend(
+            &window_ptr->content_container.super_element,
+            &_wlmtk_window2_container_element_vmt);
+    }
     window_ptr->orig_content_container_vmt = wlmtk_container_extend(
         &window_ptr->content_container,
         &_wlmtk_window2_container_vmt);
@@ -513,7 +529,7 @@ void wlmtk_window2_commit_fullscreen(
     }
 
     window_ptr->inorganic_sizing = false;
-    wl_signal_emit(&window_ptr->events.state_changed, NULL);
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -566,7 +582,7 @@ void wlmtk_window2_commit_maximized(
     }
 
     window_ptr->inorganic_sizing = false;
-    wl_signal_emit(&window_ptr->events.state_changed, NULL);
+    wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -606,6 +622,13 @@ void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
     wlmtk_menu_set_open(window_ptr->window_menu_ptr, enabled);
 
     if (enabled) {
+        int x_pos = 0;
+        // Grabbing the element will clear the focus.
+        if (wlmtk_window2_element(window_ptr)->pointer_inside) {
+            x_pos = wlmtk_window2_element(
+                window_ptr)->last_pointer_motion_event.x;
+        }
+
         wlmtk_menu_set_mode(
             window_ptr->window_menu_ptr,
             WLMTK_MENU_MODE_RIGHTCLICK);
@@ -616,14 +639,7 @@ void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
             menu_element_ptr->parent_container_ptr,
             menu_element_ptr);
 
-        if (wlmtk_window2_element(window_ptr)->pointer_inside) {
-            wlmtk_element_set_position(
-                menu_element_ptr,
-                wlmtk_window2_element(window_ptr)->last_pointer_motion_event.x,
-                0);
-        } else {
-            wlmtk_element_set_position(menu_element_ptr, 0, 0);
-        }
+            wlmtk_element_set_position(menu_element_ptr, x_pos, 0);
     } else {
         wlmtk_container_pointer_grab_release(
             menu_element_ptr->parent_container_ptr,
@@ -726,6 +742,29 @@ bool _wlmtk_window2_element_pointer_button(
 
     return window_ptr->orig_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Gets dimensions of the content container: Forward to only the content. */
+void _wlmtk_window2_container_element_get_dimensions(
+        wlmtk_element_t *element_ptr,
+        int *x1_ptr,
+        int *y1_ptr,
+        int *x2_ptr,
+        int *y2_ptr)
+{
+    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window2_t, content_container.super_element);
+
+    if (NULL == window_ptr->content_element_ptr) {
+        if (NULL != x1_ptr) *x1_ptr = 0;
+        if (NULL != y1_ptr) *y1_ptr = 0;
+        if (NULL != x2_ptr) *x2_ptr = 0;
+        if (NULL != y2_ptr) *y2_ptr = 0;
+    } else {
+        wlmtk_element_get_dimensions(
+            window_ptr->content_element_ptr, x1_ptr, y1_ptr, x2_ptr, y2_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -954,6 +993,7 @@ void _wlmtk_window2_issue_request_size(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles @ref wlmtk_menu_events_t::request_close. */
 void _wlmtk_window2_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -1005,6 +1045,10 @@ static const wlmtk_window_style_t _wlmtk_window2_test_style = {
 
 /** Menu style used as default for testing windows. */
 static const wlmtk_menu_style_t _wlmtk_window2_test_menu_style = {
+    .item = {
+        .height = 20,
+        .width = 100
+    }
 };
 
 /* ------------------------------------------------------------------------- */
@@ -1058,6 +1102,7 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     wlmtk_window2_set_workspace(w, workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         workspace_ptr,
@@ -1293,6 +1338,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_window2_set_server_side_decorated(w, true);
     wlmtk_workspace_map_window2(ws_ptr, w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
 
@@ -1319,6 +1365,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_fake_element_set_dimensions(fe_ptr, 1024, 768);
     wlmtk_window2_commit_fullscreen(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
@@ -1343,6 +1390,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
     wlmtk_window2_commit_fullscreen(w, false);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
@@ -1485,6 +1533,7 @@ void test_maximized(bs_test_t *test_ptr)
     wlmtk_window2_set_server_side_decorated(w, true);
     wlmtk_workspace_map_window2(ws_ptr, w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
 
@@ -1511,6 +1560,7 @@ void test_maximized(bs_test_t *test_ptr)
     wlmtk_fake_element_set_dimensions(fe_ptr, 1020, 747);
     wlmtk_window2_commit_maximized(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
@@ -1591,6 +1641,7 @@ void test_shaded(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_resizebar_element(w->resizebar_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
 
     // And verify that unshading works.
     wlmtk_util_clear_test_listener(&l);
@@ -1601,6 +1652,7 @@ void test_shaded(bs_test_t *test_ptr)
         test_ptr,
         wlmtk_resizebar_element(w->resizebar_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
 
     wlmtk_window2_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
@@ -1668,10 +1720,16 @@ void test_modifier_move(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests enabling and disabling the window menu. */
 void test_menu(bs_test_t *test_ptr)
 {
     wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+
+    wlmtk_menu_item_t *i = wlmtk_menu_item_create(
+        &_wlmtk_window2_test_menu_style.item);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i);
+    wlmtk_menu_add_item(wlmtk_window2_menu(w), i);
 
     // No menu shown when not activated.
     wlmtk_window2_menu_set_enabled(w, true);
@@ -1685,6 +1743,10 @@ void test_menu(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+    // Bounding box still none: The menu's dimensions not included.
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 0, 0,
+        wlmtk_window2_get_bounding_box(w));
 
     // Hide.
     _wlmtk_window2_menu_request_close_handler(
