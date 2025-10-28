@@ -76,7 +76,7 @@
 
 #include "backend/backend.h"
 #include "toolkit/toolkit.h"
-#include "xwl_content.h"
+#include "xwl_surface.h"
 
 #include "x11_cursor.xpm"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
@@ -307,12 +307,12 @@ void handle_new_surface(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_xwl_t, new_surface_listener);
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr = data_ptr;
 
-    wlmaker_xwl_content_t *xwl_content_ptr = wlmaker_xwl_content_create(
+    wlmaker_xwl_surface_t *xwl_surface_ptr = wlmaker_xwl_surface_create(
         wlr_xwayland_surface_ptr,
         xwl_ptr,
         xwl_ptr->server_ptr);
-    if (NULL == xwl_content_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_xwl_content_create(%p)",
+    if (NULL == xwl_surface_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_xwl_surface_create(%p)",
                wlr_xwayland_surface_ptr);
     }
 }

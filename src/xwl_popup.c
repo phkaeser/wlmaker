@@ -29,19 +29,19 @@
 /** State of an XWayland popup (child window). */
 struct _wlmaker_xwl_popup_t {
     /** Content that this popup embeds. */
-    wlmaker_xwl_content_t     *xwl_content_ptr;
+    wlmaker_xwl_surface_t     *xwl_surface_ptr;
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_xwl_popup_t *wlmaker_xwl_popup_create(
-    wlmaker_xwl_content_t *xwl_content_ptr)
+    wlmaker_xwl_surface_t *xwl_surface_ptr)
 {
     wlmaker_xwl_popup_t *xwl_popup_ptr = logged_calloc(
         1, sizeof(wlmaker_xwl_popup_t));
     if (NULL == xwl_popup_ptr) return NULL;
-    xwl_popup_ptr->xwl_content_ptr = xwl_content_ptr;
+    xwl_popup_ptr->xwl_surface_ptr = xwl_surface_ptr;
 
     return xwl_popup_ptr;
 }

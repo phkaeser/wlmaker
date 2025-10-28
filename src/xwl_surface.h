@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file xwl_toplevel.h
+ * @file xwl_surface.h
  *
  * @copyright
  * Copyright 2023 Google LLC
@@ -17,59 +17,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __XWL_TOPLEVEL_H__
-#define __XWL_TOPLEVEL_H__
+#ifndef __XWL_SURFACE_H__
+#define __XWL_SURFACE_H__
+
 #if defined(WLMAKER_HAVE_XWAYLAND)
 
-#include <stdbool.h>
+#include <libbase/libbase.h>
 
 #include "server.h"
 #include "toolkit/toolkit.h"
-#include "xwl_content.h"
+#include "xwl.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 /** Forward declaration. */
-typedef struct _wlmaker_xwl_toplevel_t wlmaker_xwl_toplevel_t;
+struct wlr_xwayland_surface;
+
+/** XWayland window (surface) state. */
+typedef struct _wlmaker_xwl_surface_t wlmaker_xwl_surface_t;
 
 /**
- * Creates a toplevel XWayland window.
+ * Creates an XWayland window. Technically, window surface.
  *
- * @param content_ptr
+ * @param wlr_xwayland_surface_ptr
+ * @param xwl_ptr
  * @param server_ptr
+ *
+ * @return Pointer to a @ref wlmaker_xwl_surface_t.
  */
-wlmaker_xwl_toplevel_t *wlmaker_xwl_toplevel_create(
-    wlmaker_xwl_content_t *content_ptr,
+wlmaker_xwl_surface_t *wlmaker_xwl_surface_create(
+    struct wlr_xwayland_surface *wlr_xwayland_surface_ptr,
+    wlmaker_xwl_t *xwl_ptr,
     wlmaker_server_t *server_ptr);
 
 /**
- * Destroys the toplevel XWayland window.
+ * Destroys the XWayland window (surface).
  *
- * @param xwl_toplevel_ptr
+ * @param xwl_surface_ptr
  */
-void wlmaker_xwl_toplevel_destroy(
-    wlmaker_xwl_toplevel_t *xwl_toplevel_ptr);
+void wlmaker_xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr);
 
-/**
- * Sets decoration for the toplevel window.
- *
- * @param xwl_toplevel_ptr
- * @param decorated
- */
-void wlmaker_xwl_toplevel_set_decorations(
-    wlmaker_xwl_toplevel_t *xwl_toplevel_ptr,
-    bool decorated);
-
-/** Accessor: Exposes @ref wlmtk_window_t. */
-wlmtk_window_t *wlmtk_window_from_xwl_toplevel(
-    wlmaker_xwl_toplevel_t *xwl_toplevel_ptr);
+/** Unit tests for XWL surface. */
+extern const bs_test_case_t wlmaker_xwl_surface_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
-#endif /* __XWL_TOPLEVEL_H__ */
-/* == End of xwl_toplevel.h ================================================== */
+#endif /* __XWL_SURFACE_H__ */
+/* == End of xwl_surface.h ================================================= */

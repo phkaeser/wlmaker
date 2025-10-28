@@ -64,9 +64,8 @@ SET(PUBLIC_HEADER_FILES
   xdg_shell.h
   xdg_toplevel.h
   xwl.h
-  xwl_content.h
-  xwl_popup.h
-  xwl_toplevel.h)
+  xwl_surface.h
+  xwl_popup.h)
 
 ADD_LIBRARY(wlmaker_lib STATIC)
 TARGET_SOURCES(wlmaker_lib PRIVATE
@@ -98,9 +97,8 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   xdg_shell.c
   xdg_toplevel.c
   xwl.c
-  xwl_content.c
+  xwl_surface.c
   xwl_popup.c
-  xwl_toplevel.c
 )
 SET_TARGET_PROPERTIES(
   wlmaker_lib PROPERTIES
