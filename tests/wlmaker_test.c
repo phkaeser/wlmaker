@@ -33,7 +33,7 @@
 #include "root_menu.h"
 #include "server.h"
 #if defined(WLMAKER_HAVE_XWAYLAND)
-#include "xwl_content.h"
+#include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
 /** WLMaker unit tests. */
@@ -51,7 +51,7 @@ const bs_test_set_t wlmaker_tests[] = {
     { 1, "server", wlmaker_server_test_cases },
     { 1, "xdg_decoration", wlmaker_xdg_decoration_test_cases },
 #if defined(WLMAKER_HAVE_XWAYLAND)
-    { 1, "xwl_content", wlmaker_xwl_content_test_cases },
+    { 1, "xwl_surface", wlmaker_xwl_surface_test_cases },
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
     { 0, NULL, NULL }
 };

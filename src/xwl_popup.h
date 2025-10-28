@@ -21,7 +21,7 @@
 #define __XWL_POPUP_H__
 #if defined(WLMAKER_HAVE_XWAYLAND)
 
-#include "xwl_content.h"
+#include "xwl_surface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,14 +31,14 @@ extern "C" {
 typedef struct _wlmaker_xwl_popup_t wlmaker_xwl_popup_t;
 
 /**
- * Creates a XWayland popup from `xwl_content_ptr`.
+ * Creates a XWayland popup from `xwl_surface_ptr`.
  *
- * @param xwl_content_ptr
+ * @param xwl_surface_ptr
  *
  * @return A pointer to the created @ref wlmaker_xwl_popup_t or NULL on error.
  */
 wlmaker_xwl_popup_t *wlmaker_xwl_popup_create(
-    wlmaker_xwl_content_t *xwl_content_ptr);
+    wlmaker_xwl_surface_t *xwl_surface_ptr);
 
 /**
  * Destroys the XWayland popup.
