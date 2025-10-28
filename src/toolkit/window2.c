@@ -197,11 +197,9 @@ wlmtk_window2_t *wlmtk_window2_create(
         &window_ptr->bordered.super_container.super_element,
         &window_element_vmt);
 
-    if (false) {
-        wlmtk_element_extend(
-            &window_ptr->content_container.super_element,
-            &_wlmtk_window2_container_element_vmt);
-    }
+    wlmtk_element_extend(
+        &window_ptr->content_container.super_element,
+        &_wlmtk_window2_container_element_vmt);
     window_ptr->orig_content_container_vmt = wlmtk_container_extend(
         &window_ptr->content_container,
         &_wlmtk_window2_container_vmt);
