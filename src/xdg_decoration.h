@@ -32,12 +32,14 @@ extern "C" {
 /**
  * Creates a new XDG decoration manager.
  *
- * @param server_ptr
+ * @param wl_display_ptr
+ * @param config_dict_ptr
  *
  * @return A decoration manager handle or NULL on error.
  */
 wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
-    wlmaker_server_t *server_ptr);
+    struct wl_display *wl_display_ptr,
+    bspl_dict_t *config_dict_ptr);
 
 /**
  * Destroys the XDG decoration manager.
@@ -46,6 +48,9 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
  */
 void wlmaker_xdg_decoration_manager_destroy(
     wlmaker_xdg_decoration_manager_t *decoration_manager_ptr);
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmaker_xdg_decoration_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

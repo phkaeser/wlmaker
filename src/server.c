@@ -235,9 +235,14 @@ wlmaker_server_t *wlmaker_server_create(
     }
 
     server_ptr->xdg_decoration_manager_ptr =
-        wlmaker_xdg_decoration_manager_create(server_ptr);
+        wlmaker_xdg_decoration_manager_create(
+            server_ptr->wl_display_ptr,
+            server_ptr->config_dict_ptr);
     if (NULL == server_ptr->xdg_decoration_manager_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_xdg_decoration_manager_create()");
+        bs_log(BS_ERROR,
+               "Failed wlmaker_xdg_decoration_manager_create(%p, %p)",
+               server_ptr->wl_display_ptr,
+               server_ptr->config_dict_ptr);
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
