@@ -39,10 +39,13 @@
 
 /** State of the XDG decoration manager. */
 struct _wlmaker_xdg_decoration_manager_t {
-    /** Back-link to the server. */
-    wlmaker_server_t          *server_ptr;
     /** The wlroots XDG decoration manager. */
     struct wlr_xdg_decoration_manager_v1* wlr_xdg_decoration_manager_v1_ptr;
+
+    /** Injectable, for tests: wlr_xdg_toplevel_decoration_v1_set_mode(). */
+    uint32_t (*set_mode)(
+        struct wlr_xdg_toplevel_decoration_v1 *decoration,
+        enum wlr_xdg_toplevel_decoration_v1_mode mode);
     /** Operation mode for the decoration manager. */
     wlmaker_config_decoration_t mode;
 
@@ -50,6 +53,7 @@ struct _wlmaker_xdg_decoration_manager_t {
     struct wl_listener        new_toplevel_decoration_listener;
     /** Listener for `destroy` of `wlr_xdg_decoration_manager_v1`. */
     struct wl_listener        destroy_listener;
+
 };
 
 /** A decoration handle. */
@@ -63,6 +67,10 @@ typedef struct {
     struct wl_listener        request_mode_listener;
     /** Listener for `destroy` of `wlr_xdg_toplevel_decoration_v1.` */
     struct wl_listener        destroy_listener;
+    /** Listener for `commit` of `wlr_surface::events`. */
+    struct wl_listener        surface_commit_listener;
+    /** Listener for `destroy` of `wlr_surface::events`. */
+    struct wl_listener        surface_destroy_listener;
 } wlmaker_xdg_decoration_t;
 
 static void handle_new_toplevel_decoration(
@@ -82,6 +90,12 @@ static void handle_decoration_request_mode(
     struct wl_listener *listener_ptr,
      void *data_ptr);
 static void handle_decoration_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _xdg_decoration_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _xdg_decoration_handle_surface_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -111,23 +125,24 @@ static const char *_wlmaker_xdg_decoration_dict_name = "Decoration";
 
 /* ------------------------------------------------------------------------- */
 wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
-    wlmaker_server_t *server_ptr)
+    struct wl_display *wl_display_ptr,
+    bspl_dict_t *config_dict_ptr)
 {
     wlmaker_xdg_decoration_manager_t *decoration_manager_ptr = logged_calloc(
         1, sizeof(wlmaker_xdg_decoration_manager_t));
     if (NULL == decoration_manager_ptr) return NULL;
-    decoration_manager_ptr->server_ptr = server_ptr;
+    decoration_manager_ptr->set_mode = wlr_xdg_toplevel_decoration_v1_set_mode;
 
     decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr =
-        wlr_xdg_decoration_manager_v1_create(server_ptr->wl_display_ptr);
+        wlr_xdg_decoration_manager_v1_create(wl_display_ptr);
     if (NULL == decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr) {
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
         return NULL;
     }
 
     bspl_dict_t *decoration_dict_ptr = bspl_dict_ref(
-        bspl_dict_get_dict(server_ptr->config_dict_ptr,
-                             _wlmaker_xdg_decoration_dict_name));
+        bspl_dict_get_dict(config_dict_ptr,
+                           _wlmaker_xdg_decoration_dict_name));
     if (NULL == decoration_dict_ptr) {
         bs_log(BS_ERROR, "No '%s' dict.", _wlmaker_xdg_decoration_dict_name);
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
@@ -246,6 +261,17 @@ wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
         &decoration_ptr->request_mode_listener,
         handle_decoration_request_mode);
 
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_toplevel_ptr->base->surface->events.commit,
+        &decoration_ptr->surface_commit_listener,
+        _xdg_decoration_handle_surface_commit);
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_toplevel_ptr->base->surface->events.destroy,
+        &decoration_ptr->surface_destroy_listener,
+        _xdg_decoration_handle_surface_destroy);
+
     return decoration_ptr;
 }
 
@@ -257,6 +283,9 @@ wlmaker_xdg_decoration_t *wlmaker_xdg_decoration_create(
  */
 void wlmaker_xdg_decoration_destroy(wlmaker_xdg_decoration_t *decoration_ptr)
 {
+    _xdg_decoration_handle_surface_destroy(
+        &decoration_ptr->surface_destroy_listener, NULL);
+
     wl_list_remove(&decoration_ptr->destroy_listener.link);
     wl_list_remove(&decoration_ptr->request_mode_listener.link);
     free(decoration_ptr);
@@ -275,6 +304,10 @@ void handle_decoration_request_mode(
 {
     wlmaker_xdg_decoration_t *decoration_ptr = wl_container_of(
         listener_ptr, decoration_ptr, request_mode_listener);
+
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
+
 
     wlmtk_content_t *content_ptr = (wlmtk_content_t*)
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
@@ -308,11 +341,8 @@ void handle_decoration_request_mode(
         BS_ABORT();
     }
 
-    // TODO(kaeser@gubbe.ch): Setting the mode expects the surface to have been
-    // committed already. Need to implement server-side state tracking and
-    // applying these modes downstream after first commit.
-    if (decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->initialized) {
-        wlr_xdg_toplevel_decoration_v1_set_mode(
+    if (wlr_xdg_toplevel_ptr->base->initialized) {
+        decoration_ptr->decoration_manager_ptr->set_mode(
             decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
     }
 
@@ -348,6 +378,226 @@ void handle_decoration_destroy(
     wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xdg_decoration_t, destroy_listener);
     wlmaker_xdg_decoration_destroy(decoration_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles surface commit: If initialized, set_mode and unsubscribe.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _xdg_decoration_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_t, surface_commit_listener);
+
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
+        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
+    if (!wlr_xdg_toplevel_ptr->base->initialized) return;
+
+    // Initialized! Unsubscribe from surface, and trigger a request_mode.
+    _xdg_decoration_handle_surface_destroy(
+        &decoration_ptr->surface_destroy_listener, NULL);
+    handle_decoration_request_mode(
+        &decoration_ptr->request_mode_listener, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handles surface destroy: Unsubscribe surface listeners.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _xdg_decoration_handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xdg_decoration_t *decoration_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xdg_decoration_t, surface_destroy_listener);
+
+    wlmtk_util_disconnect_listener(&decoration_ptr->surface_commit_listener);
+    wlmtk_util_disconnect_listener(&decoration_ptr->surface_destroy_listener);
+}
+
+/* == Unit tests =========================================================== */
+
+static void test_manager(bs_test_t *test_ptr);
+static void test_decoration_initialized(bs_test_t *test_ptr);
+static void test_decoration_uninitialized(bs_test_t *test_ptr);
+
+const bs_test_case_t wlmaker_xdg_decoration_test_cases[] = {
+    { 1, "manager", test_manager },
+    { 1, "decoration_initialized", test_decoration_initialized },
+    { 1, "decoration_uninitialized", test_decoration_uninitialized },
+    { 0, NULL, NULL }
+};
+
+/** Argument to injected set_mode. */
+struct _xdg_decoration_test_arg {
+    /** The decoration handle. */
+    struct wlr_xdg_toplevel_decoration_v1 decoration;
+    /** Counter for calls to wlmaker_xdg_decoration_manager_t::set_mode. */
+    int set_mode_calls;
+    /** Last `mode` arg to wlmaker_xdg_decoration_manager_t::set_mode. */
+    enum wlr_xdg_toplevel_decoration_v1_mode set_mode_arg;
+};
+
+/** Injected method, for wlr_xdg_toplevel_decoration_v1_set_mode(). */
+static uint32_t _xdg_decoration_fake_set_mode(
+    __UNUSED__ struct wlr_xdg_toplevel_decoration_v1 *decoration_ptr,
+    enum wlr_xdg_toplevel_decoration_v1_mode mode)
+{
+    struct _xdg_decoration_test_arg *arg_ptr = BS_CONTAINER_OF(
+        decoration_ptr, struct _xdg_decoration_test_arg, decoration);
+    ++arg_ptr->set_mode_calls;
+    arg_ptr->set_mode_arg = mode;
+    return 0;
+}
+
+
+/* ------------------------------------------------------------------------- */
+/** Setup and teardown of XDG decoration manager. */
+void test_manager(bs_test_t *test_ptr)
+{
+    static const char *c = "{ Decoration = { Mode = SuggestClient }}";
+
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    bspl_object_t *o = bspl_create_object_from_plist_string(c);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+
+    wlmaker_xdg_decoration_manager_t *d =
+        wlmaker_xdg_decoration_manager_create(
+            wl_display_ptr, bspl_dict_from_object(o));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    wlmaker_xdg_decoration_manager_destroy(d);
+    bspl_object_unref(o);
+    wl_display_destroy(wl_display_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test decoration for an initialized surface. */
+void test_decoration_initialized(bs_test_t *test_ptr)
+{
+    wlmaker_xdg_decoration_manager_t m = {
+        .mode = WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT,
+        .set_mode = _xdg_decoration_fake_set_mode
+    };
+    struct wlr_surface ws = {};
+    wl_signal_init(&ws.events.commit);
+    wl_signal_init(&ws.events.destroy);
+    struct wlr_xdg_surface s = { .initialized = true, .surface = &ws };
+    struct wlr_xdg_toplevel tl = { .base = &s };
+    struct _xdg_decoration_test_arg t = { .decoration = { .toplevel = &tl } };
+    wl_signal_init(&t.decoration.events.destroy);
+    wl_signal_init(&t.decoration.events.request_mode);
+
+    // New decoration: Set_mode right away.
+    handle_new_toplevel_decoration(
+        &m.new_toplevel_decoration_listener,
+        &t.decoration);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, t.set_mode_calls);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE,
+        t.set_mode_arg);
+
+    // Upon request_mode: Respond with set_mode.
+    wl_signal_emit(&t.decoration.events.request_mode, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, t.set_mode_calls);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE,
+        t.set_mode_arg);
+
+    // Client-side mode is kept.
+    t.decoration.requested_mode =
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
+    wl_signal_emit(&t.decoration.events.request_mode, NULL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE,
+        t.set_mode_arg);
+
+    // Server-side mode is kept, too.
+    t.decoration.requested_mode =
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+    wl_signal_emit(&t.decoration.events.request_mode, NULL);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
+        t.set_mode_arg);
+
+    wl_signal_emit(&t.decoration.events.destroy, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Test decoration for an uninitialized surface. */
+void test_decoration_uninitialized(bs_test_t *test_ptr)
+{
+    wlmaker_xdg_decoration_manager_t m = {
+        .mode = WLMAKER_CONFIG_DECORATION_SUGGEST_CLIENT,
+        .set_mode = _xdg_decoration_fake_set_mode
+    };
+    struct wlr_surface ws = {};
+    wl_signal_init(&ws.events.commit);
+    wl_signal_init(&ws.events.destroy);
+    struct wlr_xdg_surface s = { .initialized = false, .surface = &ws };
+    struct wlr_xdg_toplevel tl = { .base = &s };
+    struct _xdg_decoration_test_arg t = { .decoration = { .toplevel = &tl } };
+    wl_signal_init(&t.decoration.events.destroy);
+    wl_signal_init(&t.decoration.events.request_mode);
+    t.decoration.requested_mode =
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+
+    // New decoration: Do not set_mode right away.
+    handle_new_toplevel_decoration(
+        &m.new_toplevel_decoration_listener,
+        &t.decoration);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, t.set_mode_calls);
+
+    // A surface commit, but still not initialized: Keep.
+    wl_signal_emit(&ws.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, t.set_mode_calls);
+
+    // Set to initialized. A surface commit triggers set_mode.
+    s.initialized = true;
+    wl_signal_emit(&ws.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, t.set_mode_calls);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
+        t.set_mode_arg);
+    wl_signal_emit(&t.decoration.events.destroy, NULL);
+
+    // Reset surface. Not initialized. A request_mode won't set_mode.
+    t.set_mode_calls = 0;
+    s.initialized = false;
+    handle_new_toplevel_decoration(
+        &m.new_toplevel_decoration_listener,
+        &t.decoration);
+    wl_signal_emit(&t.decoration.events.request_mode, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, t.set_mode_calls);
+
+    // A surface commit, but still not initialized: Keep.
+    wl_signal_emit(&ws.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, t.set_mode_calls);
+
+    // Set to initialized. A surface commit triggers set_mode.
+    s.initialized = true;
+    wl_signal_emit(&ws.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, t.set_mode_calls);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE,
+        t.set_mode_arg);
+
+    wl_signal_emit(&t.decoration.events.destroy, NULL);
 }
 
 /* == End of xdg_decoration.c ============================================== */
