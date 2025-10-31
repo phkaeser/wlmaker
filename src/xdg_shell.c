@@ -118,24 +118,14 @@ void handle_new_toplevel(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_xdg_shell_t, new_toplevel_listener);
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr = data_ptr;
 
-    // TODO(kaeser@gubbe.ch): Remove the branch, after window2 transition.
-    if (false) {
-        wlmtk_window_t *window_ptr = wlmtk_window_create_from_xdg_toplevel(
-            wlr_xdg_toplevel_ptr, xdg_shell_ptr->server_ptr);
-
-        // TODO(kaeser@gubbe.ch): Handle errors.
-        bs_log(BS_INFO, "XDG shell: Toolkit window %p for toplevel %p",
-               window_ptr, wlr_xdg_toplevel_ptr);
-    } else {
-        struct wlmaker_xdg_toplevel *wxt_ptr = wlmaker_xdg_toplevel_create(
-            wlr_xdg_toplevel_ptr,
-            xdg_shell_ptr->server_ptr);
-        if (NULL == wxt_ptr) {
-            wl_resource_post_error(
-                wlr_xdg_toplevel_ptr->resource,
-                WL_DISPLAY_ERROR_NO_MEMORY,
-                "Failed wlmaker_xdg_toplevel_create");
-        }
+    struct wlmaker_xdg_toplevel *wxt_ptr = wlmaker_xdg_toplevel_create(
+        wlr_xdg_toplevel_ptr,
+        xdg_shell_ptr->server_ptr);
+    if (NULL == wxt_ptr) {
+        wl_resource_post_error(
+            wlr_xdg_toplevel_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmaker_xdg_toplevel_create");
     }
 }
 
