@@ -34,6 +34,26 @@
 
 /* == Declarations ========================================================= */
 
+/** State of toolkit popup. */
+struct _wlmaker_xdg_popup_t {
+    /** Base element for the popup. Surface is the content. */
+    wlmtk_base_t              base;
+
+    /** Listener for the `reposition` signal of `wlr_xdg_popup::events` */
+    struct wl_listener        reposition_listener;
+    /** Listener for the `destroy` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        destroy_listener;
+    /** Listener for the `new_popup` signal of `wlr_xdg_surface::events`. */
+    struct wl_listener        new_popup_listener;
+    /** Listener for the `commit` signal of the `wlr_surface`. */
+    struct wl_listener        surface_commit_listener;
+
+    /** Seat. */
+    struct wlr_seat           *wlr_seat_ptr;
+    /** The WLR popup. */
+    struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
+};
+
 static void handle_reposition(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -71,32 +91,33 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
     wlmaker_xdg_popup_ptr->wlr_seat_ptr = wlr_seat_ptr;
     wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr = wlr_xdg_popup_ptr;
 
-    wlmaker_xdg_popup_ptr->surface_ptr = wlmtk_surface_create(
-        wlr_xdg_popup_ptr->base->surface,
-        wlr_seat_ptr);
-    if (NULL == wlmaker_xdg_popup_ptr->surface_ptr) {
-        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
-        return NULL;
-    }
-    wlmtk_util_connect_listener_signal(
-        &wlr_xdg_popup_ptr->base->surface->events.commit,
-        &wlmaker_xdg_popup_ptr->surface_commit_listener,
-        handle_surface_commit);
-
-    if (!wlmtk_popup_init(
-            &wlmaker_xdg_popup_ptr->super_popup,
-            wlmtk_surface_element(wlmaker_xdg_popup_ptr->surface_ptr))) {
+    if (!wlmtk_base_init(&wlmaker_xdg_popup_ptr->base, NULL)) {
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
     wlmtk_element_set_visible(
         wlmaker_xdg_popup_element(wlmaker_xdg_popup_ptr), true);
 
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(
+        wlr_xdg_popup_ptr->base->surface,
+        wlr_seat_ptr);
+    if (NULL == surface_ptr) {
+        wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
+        return NULL;
+    }
+    wlmtk_base_set_content_element(
+        &wlmaker_xdg_popup_ptr->base,
+        wlmtk_surface_element(surface_ptr));
+    wlmtk_util_connect_listener_signal(
+        &wlr_xdg_popup_ptr->base->surface->events.commit,
+        &wlmaker_xdg_popup_ptr->surface_commit_listener,
+        handle_surface_commit);
+
     wlmtk_element_extend(
-        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        wlmtk_base_element(&wlmaker_xdg_popup_ptr->base),
         &_wlmaker_xdg_popup_element_vmt);
     wlmtk_element_set_position(
-        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        wlmtk_base_element(&wlmaker_xdg_popup_ptr->base),
         wlr_xdg_popup_ptr->scheduled.geometry.x,
         wlr_xdg_popup_ptr->scheduled.geometry.y);
 
@@ -122,6 +143,13 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 {
     bs_log(BS_INFO, "Destroying XDG popup %p", wlmaker_xdg_popup_ptr);
 
+    // For XDG popups, we don't keep reference when adding to a container. So
+    // we need to remove from a potential parent container.
+    wlmtk_element_t *e = wlmtk_base_element(&wlmaker_xdg_popup_ptr->base);
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_remove_element(e->parent_container_ptr, e);
+    }
+
     wlmtk_util_disconnect_listener(
         &wlmaker_xdg_popup_ptr->new_popup_listener);
     wlmtk_util_disconnect_listener(
@@ -131,12 +159,7 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
     wlmtk_util_disconnect_listener(
         &wlmaker_xdg_popup_ptr->surface_commit_listener);
 
-    wlmtk_popup_fini(&wlmaker_xdg_popup_ptr->super_popup);
-
-    if (NULL != wlmaker_xdg_popup_ptr->surface_ptr) {
-        wlmtk_surface_destroy(wlmaker_xdg_popup_ptr->surface_ptr);
-        wlmaker_xdg_popup_ptr->surface_ptr = NULL;
-    }
+    wlmtk_base_fini(&wlmaker_xdg_popup_ptr->base);
     free(wlmaker_xdg_popup_ptr);
 }
 
@@ -144,7 +167,7 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 wlmtk_element_t *wlmaker_xdg_popup_element(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 {
-    return &wlmaker_xdg_popup_ptr->super_popup.super_container.super_element;
+    return wlmtk_base_element(&wlmaker_xdg_popup_ptr->base);
 }
 
 /* == Local (static) methods =============================================== */
@@ -159,7 +182,7 @@ void handle_reposition(
         listener_ptr, wlmaker_xdg_popup_t, reposition_listener);
 
     wlmtk_element_set_position(
-        wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
+        wlmtk_base_element(&wlmaker_xdg_popup_ptr->base),
         wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->scheduled.geometry.x,
         wlmaker_xdg_popup_ptr->wlr_xdg_popup_ptr->scheduled.geometry.y);
 }
@@ -197,11 +220,9 @@ void handle_new_popup(
         return;
     }
 
-    wlmtk_element_set_visible(
-        wlmtk_popup_element(&new_popup_ptr->super_popup), true);
-    wlmtk_popup_add_popup(
-        &wlmaker_xdg_popup_ptr->super_popup,
-        &new_popup_ptr->super_popup);
+    wlmtk_base_push_element(
+        &wlmaker_xdg_popup_ptr->base,
+        wlmaker_xdg_popup_element(new_popup_ptr));
 
     bs_log(BS_INFO, "XDG popup %p: New popup %p",
            wlmaker_xdg_popup_ptr, wlr_xdg_popup_ptr);
@@ -234,7 +255,7 @@ void _wlmaker_xdg_popup_element_destroy(
 {
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr = BS_CONTAINER_OF(
         element_ptr, wlmaker_xdg_popup_t,
-        super_popup.super_container.super_element);
+        base.super_container.super_element);
 
     wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
 }
