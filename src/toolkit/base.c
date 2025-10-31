@@ -65,6 +65,7 @@ void wlmtk_base_fini(wlmtk_base_t *base_ptr)
         wlmtk_container_remove_element(
             &base_ptr->super_container,
             base_ptr->content_element_ptr);
+        wlmtk_element_destroy(base_ptr->content_element_ptr);
         base_ptr->content_element_ptr = NULL;
     }
 
@@ -82,9 +83,16 @@ void wlmtk_base_set_content_element(
     wlmtk_base_t *base_ptr,
     wlmtk_element_t *content_element_ptr)
 {
-    wlmtk_container_add_element_atop(
-        &base_ptr->super_container, NULL, content_element_ptr);
-    base_ptr->content_element_ptr = content_element_ptr;
+    if (NULL != base_ptr->content_element_ptr) {
+        wlmtk_element_destroy(base_ptr->content_element_ptr);
+        base_ptr->content_element_ptr = NULL;
+    }
+
+    if (NULL != content_element_ptr) {
+        wlmtk_container_add_element_atop(
+            &base_ptr->super_container, NULL, content_element_ptr);
+        base_ptr->content_element_ptr = content_element_ptr;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -187,7 +195,6 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_element_destroy(&fe2->element);
 
     wlmtk_base_fini(&base);
-    wlmtk_element_destroy(&fe1->element);
 }
 
 /* == End of base.c ======================================================== */
