@@ -477,8 +477,9 @@ void _wlmaker_xdg_toplevel_handle_request_show_window_menu(
         struct wlmaker_xdg_toplevel,
         request_show_window_menu_listener);
 
-    bs_log(BS_ERROR, "TODO: Request show_window_menu %p",
-           wlmaker_xdg_toplevel_ptr);
+    wlmtk_window2_menu_set_enabled(
+        wlmaker_xdg_toplevel_ptr->window_ptr,
+        !wlmtk_menu_is_open(wlmtk_window2_menu(wlmaker_xdg_toplevel_ptr->window_ptr)));
 }
 
 /* ------------------------------------------------------------------------- */
