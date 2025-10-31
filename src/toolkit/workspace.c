@@ -729,6 +729,9 @@ void wlmtk_workspace_window_to_fullscreen(
         wlmtk_container_add_element(
             &workspace_ptr->fullscreen_container,
             wlmtk_window2_element(window_ptr));
+        // TODO(kaeser@gubbe.ch): Removing the element appears to not reset
+        // the keyboard focus, hence the unset/set combo. Debug & fix this.
+        wlmtk_workspace_activate_window(workspace_ptr, NULL);
         wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 
     } else {
@@ -743,6 +746,7 @@ void wlmtk_workspace_window_to_fullscreen(
         wlmtk_container_add_element(
             &workspace_ptr->window_container,
             wlmtk_window2_element(window_ptr));
+        wlmtk_workspace_activate_window(workspace_ptr, NULL);
         wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 
         // The un-fullscreened window will come on top of the container. Also
