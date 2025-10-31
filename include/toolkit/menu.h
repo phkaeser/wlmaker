@@ -28,10 +28,10 @@ typedef struct _wlmtk_menu_t wlmtk_menu_t;
 #include <stddef.h>
 #include <wayland-server-core.h>
 
+#include "base.h"
 #include "box.h"  // IWYU pragma: keep
 #include "element.h"
 #include "menu_item.h"  // IWYU pragma: keep
-#include "pane.h"
 #include "style.h"
 
 #ifdef __cplusplus
@@ -92,8 +92,8 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr);
 /** @return pointer to the menu's @ref wlmtk_element_t superclass. */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr);
 
-/** @return pointer to the menu's @ref wlmtk_pane_t superclass. */
-wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr);
+/** @return pointer to the menu's @ref wlmtk_base_t superclass. */
+wlmtk_base_t *wlmtk_menu_base(wlmtk_menu_t *menu_ptr);
 
 /** @return a pointer to @ref wlmtk_menu_t::events. */
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);

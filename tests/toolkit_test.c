@@ -39,7 +39,6 @@ const bs_test_set_t toolkit_tests[] = {
     { 1, "layer", wlmtk_layer_test_cases },
     { 1, "menu", wlmtk_menu_test_cases },
     { 1, "menu_item", wlmtk_menu_item_test_cases },
-    { 1, "pane", wlmtk_pane_test_cases },
     { 1, "panel", wlmtk_panel_test_cases },
     { 1, "surface", wlmtk_surface_test_cases },
     { 1, "rectangle", wlmtk_rectangle_test_cases },

@@ -320,7 +320,7 @@ void _wlmaker_root_menu_handle_window_set_activated(
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_root_menu_t, window_set_activated_listener);
 
-    wlmtk_element_t *e = wlmtk_menu_pane(root_menu_ptr->menu_ptr)->element_ptr;
+    wlmtk_element_t *e = wlmtk_menu_element(root_menu_ptr->menu_ptr);
     if (NULL != e->parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
             e->parent_container_ptr,
