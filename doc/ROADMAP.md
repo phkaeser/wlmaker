@@ -40,6 +40,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
   * Embed version and have a `--version` argument to print out.
+  * Be `iwyu`-clean on Trixie.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
