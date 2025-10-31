@@ -110,9 +110,6 @@ wlmtk_menu_t *wlmtk_menu_create(const wlmtk_menu_style_t *style_ptr)
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
-    // TODO(kaeser@gubbe.ch): That should work directly on the base. Update
-    // this, once having eliminated wlmtk_content_t and the ugly hack in
-    // @ref wlmaker_root_menu_create.
     wlmtk_element_extend(
         wlmtk_box_element(&menu_ptr->box),
         &_wlmtk_menu_box_element_vmt);
