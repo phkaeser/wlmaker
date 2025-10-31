@@ -27,6 +27,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
+#include "base.h"
 #include "input.h"
 #include "util.h"
 
@@ -34,18 +35,17 @@
 
 /** State of the menu. */
 struct _wlmtk_menu_t {
-    /** Instantiates a @ref wlmtk_pane_t. */
-    wlmtk_pane_t              super_pane;
-
-    /** Composed of a box, holding menu items. */
+    /** Composed of a base element. */
+    wlmtk_base_t              base;
+    /** And, of a box, holding menu items. */
     wlmtk_box_t               box;
     /** Style of the menu. */
     wlmtk_menu_style_t        style;
 
     /** Signals that can be raised by the menu. */
     wlmtk_menu_events_t       events;
-    /** Virtual method table of the parent, before extending. */
-    wlmtk_element_vmt_t       orig_element_vmt;
+    /** Virtual method table of @ref wlmtk_menu_t::base, before extending. */
+    wlmtk_element_vmt_t       orig_base_element_vmt;
 
     /** List of menu items, via @ref wlmtk_menu_item_t::dlnode. */
     bs_dllist_t               items;
@@ -64,12 +64,8 @@ static void _wlmtk_menu_set_item_mode(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
-static void _wlmtk_menu_get_dimensions(
-        wlmtk_element_t *element_ptr,
-        int *x1_ptr,
-        int *y1_ptr,
-        int *x2_ptr,
-        int *y2_ptr);
+static void _wlmtk_menu_box_element_destroy(wlmtk_element_t *element_ptr);
+
 static void _wlmtk_menu_element_destroy(
     wlmtk_element_t *element_ptr);
 static bool _wlmtk_menu_element_pointer_button(
@@ -88,15 +84,14 @@ static bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
 
 /** The superclass' element virtual method table. */
 static const wlmtk_element_vmt_t _wlmtk_menu_element_vmt = {
-    .get_dimensions = _wlmtk_menu_get_dimensions,
+    .keyboard_sym = _wlmtk_menu_element_keyboard_sym,
     .destroy = _wlmtk_menu_element_destroy,
     .pointer_button = _wlmtk_menu_element_pointer_button,
 };
 
-/** Extra override for the contained element. */
-// TODO(kaeser@gube.ch): Migrate into @ref _wlmtk_menu_element_vmt. */
+/** Extra override for the box element. Does not have a dtor by default. */
 static const wlmtk_element_vmt_t _wlmtk_menu_box_element_vmt = {
-    .keyboard_sym = _wlmtk_menu_element_keyboard_sym,
+    .destroy = _wlmtk_menu_box_element_destroy
 };
 
 /* == Exported methods ===================================================== */
@@ -115,21 +110,23 @@ wlmtk_menu_t *wlmtk_menu_create(const wlmtk_menu_style_t *style_ptr)
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
-
-    if (!wlmtk_pane_init(
-            &menu_ptr->super_pane,
-            wlmtk_box_element(&menu_ptr->box))) {
-        wlmtk_menu_destroy(menu_ptr);
-        return NULL;
-    }
-    menu_ptr->orig_element_vmt = wlmtk_element_extend(
-        wlmtk_menu_element(menu_ptr), &_wlmtk_menu_element_vmt);
-    // TODO(kaeser@gubbe.ch): That should work directly on the pane. Update
+    // TODO(kaeser@gubbe.ch): That should work directly on the base. Update
     // this, once having eliminated wlmtk_content_t and the ugly hack in
     // @ref wlmaker_root_menu_create.
     wlmtk_element_extend(
         wlmtk_box_element(&menu_ptr->box),
         &_wlmtk_menu_box_element_vmt);
+    wlmtk_element_set_visible(wlmtk_box_element(&menu_ptr->box), true);
+
+    if (!wlmtk_base_init(
+            &menu_ptr->base,
+            wlmtk_box_element(&menu_ptr->box))) {
+        wlmtk_menu_destroy(menu_ptr);
+        return NULL;
+    }
+    menu_ptr->orig_base_element_vmt = wlmtk_element_extend(
+        wlmtk_base_element(&menu_ptr->base), &_wlmtk_menu_element_vmt);
+    wlmtk_element_set_visible(wlmtk_base_element(&menu_ptr->base), false);
 
     wl_signal_init(&menu_ptr->events.open_changed);
     wl_signal_init(&menu_ptr->events.request_close);
@@ -142,27 +139,26 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
 {
     wl_signal_emit(&menu_ptr->events.destroy, NULL);
 
-    // Must destroy the items before the pane and box.
+    // Must destroy the items before the base.
     bs_dllist_for_each(
         &menu_ptr->items,
         _wlmtk_menu_eliminate_item,
         menu_ptr);
 
-    wlmtk_pane_fini(&menu_ptr->super_pane);
-    wlmtk_box_fini(&menu_ptr->box);
+    wlmtk_base_fini(&menu_ptr->base);
     free(menu_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmtk_menu_element(wlmtk_menu_t *menu_ptr)
 {
-    return wlmtk_pane_element(&menu_ptr->super_pane);
+    return wlmtk_base_element(&menu_ptr->base);
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_pane_t *wlmtk_menu_pane(wlmtk_menu_t *menu_ptr)
+wlmtk_base_t *wlmtk_menu_base(wlmtk_menu_t *menu_ptr)
 {
-    return &menu_ptr->super_pane;
+    return &menu_ptr->base;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -317,20 +313,12 @@ void _wlmtk_menu_set_item_mode(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Overrides get_dimensions: Only return dimensions of the pane's element. */
-static void _wlmtk_menu_get_dimensions(
-        wlmtk_element_t *element_ptr,
-        int *x1_ptr,
-        int *y1_ptr,
-        int *x2_ptr,
-        int *y2_ptr)
+/** Dtor for @ref wlmtk_menu_t::box. */
+void _wlmtk_menu_box_element_destroy(wlmtk_element_t *element_ptr)
 {
-    wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
-
-    wlmtk_element_get_dimensions(
-        menu_ptr->super_pane.element_ptr,
-        x1_ptr, y1_ptr, x2_ptr, y2_ptr);
+    wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_box_t, super_container.super_element);
+    wlmtk_box_fini(box_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -339,7 +327,7 @@ void _wlmtk_menu_element_destroy(
     wlmtk_element_t *element_ptr)
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
+        element_ptr, wlmtk_menu_t, base.super_container.super_element);
 
     wlmtk_menu_destroy(menu_ptr);
 }
@@ -361,9 +349,9 @@ bool _wlmtk_menu_element_pointer_button(
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_t, super_pane.super_container.super_element);
+        element_ptr, wlmtk_menu_t, base.super_container.super_element);
 
-    bool rv = menu_ptr->orig_element_vmt.pointer_button(
+    bool rv = menu_ptr->orig_base_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
 
     if (WLMTK_MENU_MODE_RIGHTCLICK == menu_ptr->mode &&
@@ -384,7 +372,7 @@ bool _wlmtk_menu_element_keyboard_sym(
     uint32_t modifiers)
 {
     wlmtk_menu_t *menu_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_menu_t, box.super_container.super_element);
+        element_ptr, wlmtk_menu_t, base.super_container.super_element);
     bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_menu_item(
         menu_ptr->highlighted_menu_item_ptr);
     bs_dllist_node_iterator_t node_iterator;
@@ -397,7 +385,7 @@ bool _wlmtk_menu_element_keyboard_sym(
         if (NULL != submenu_ptr &&
             NULL != submenu_ptr->highlighted_menu_item_ptr) {
             return _wlmtk_menu_element_keyboard_sym(
-                &submenu_ptr->box.super_container.super_element,
+                &submenu_ptr->base.super_container.super_element,
                 keysym,
                 direction,
                 modifiers);
@@ -661,9 +649,6 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
     wlmtk_element_set_visible(me, true);
-    // TODO(kaeser@gubbe.ch): Replace with me, once not relying on overriding
-    // the wlmtk_box_t element.
-    wlmtk_element_t *ke = wlmtk_box_element(&menu_ptr->box);
 
     wlmtk_util_test_listener_t request_close_test_listener;
     wlmtk_util_connect_test_listener(
@@ -698,31 +683,31 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
     // Down key: Moves down, items[3] is disabled => land at items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Down, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // Down key once more: Wrap around, land at items[1].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Down, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ( test_ptr, HL, wlmtk_menu_item_get_state(items[1].item));
 
     // Up key: Wraps around, land at items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Up, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // Up key: Moves up once more, at items[2].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Up, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Up, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[2].item));
 
     // End key: Jump to items[4].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_End, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_End, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[4].item));
 
     // A motion, within items[2]. Re-gain focus there.
@@ -734,27 +719,27 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
     // Home key: Jump to items[1].
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Home, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(items[1].item));
 
     // Return key: Trigger items[1].
     wlmtk_util_clear_test_listener(&items[1].triggered_test_listener);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Return, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Return, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, 1, items[1].triggered_test_listener.calls);
 
     // Escape key: Request to close the menu.
     wlmtk_util_clear_test_listener(&request_close_test_listener);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
 
     // Keys that were released: No trigger.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_UP, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Escape, XKB_KEY_UP, 0));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
 
     wlmtk_menu_destroy(menu_ptr);
@@ -794,27 +779,23 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     wlmtk_element_t *me = wlmtk_menu_element(m0);
     wlmtk_element_set_visible(me, true);
 
-    // TODO(kaeser@gubbe.ch): Replace with me, once not relying on overriding
-    // the wlmtk_box_t element.
-    wlmtk_element_t *ke = wlmtk_box_element(&m0->box);
-
     // Home key, highlights i00.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Home, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Home, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i00));
 
     // Right key. Does not do anything.
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Right, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i00));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_menu_is_open(m1));
 
     // Down key. Highlights i01, opens m1, but no highlight there.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Down, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
     BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
@@ -822,21 +803,21 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     // Right key. Now highlights i10. i01 remains highlighted.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Right, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
 
     // Down key. Now highlights i11. i01 remains highlighted.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Down, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Down, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i11));
 
     // Left key. Moves highlight back, but keeps submenu open.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Left, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Left, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
     BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
@@ -845,14 +826,14 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     // Right key. Highlights the submenu with i10 again.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Right, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Right, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
 
     // Esc key, while submenu has highlight. Same action as left key.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, HL, wlmtk_menu_item_get_state(i01));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_menu_is_open(m1));
     BS_TEST_VERIFY_NEQ(test_ptr, HL, wlmtk_menu_item_get_state(i10));
@@ -862,7 +843,7 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     // Esc key, once more. Must close.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_keyboard_sym(ke, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
+        wlmtk_element_keyboard_sym(me, XKB_KEY_Escape, XKB_KEY_DOWN, 0));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_close_test_listener.calls);
 
     wlmtk_menu_destroy(m0);

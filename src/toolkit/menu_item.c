@@ -29,7 +29,6 @@
 #include "buffer.h"
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
-#include "pane.h"
 #include "primitives.h"
 #include "util.h"
 
@@ -207,9 +206,9 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
         wlmtk_util_disconnect_listener(
             &menu_item_ptr->submenu_open_changed_listener);
         if (NULL != menu_item_ptr->menu_ptr) {
-            wlmtk_pane_remove_popup(
-                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
-                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+            wlmtk_base_push_element(
+                wlmtk_menu_base(menu_item_ptr->menu_ptr),
+                wlmtk_menu_element(menu_item_ptr->submenu_ptr));
         }
 
         wlmtk_menu_destroy(menu_item_ptr->submenu_ptr);
@@ -245,17 +244,17 @@ void wlmtk_menu_item_set_parent_menu(
 
     if (NULL != menu_item_ptr->menu_ptr &&
         NULL != menu_item_ptr->submenu_ptr) {
-        wlmtk_pane_remove_popup(
-            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
-            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        wlmtk_base_pop_element(
+            wlmtk_menu_base(menu_item_ptr->menu_ptr),
+            wlmtk_menu_element(menu_item_ptr->submenu_ptr));
     }
 
     menu_item_ptr->menu_ptr = menu_ptr;
     if (NULL != menu_item_ptr->menu_ptr &&
         NULL != menu_item_ptr->submenu_ptr) {
-        wlmtk_pane_add_popup(
-            wlmtk_menu_pane(menu_item_ptr->menu_ptr),
-            wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+        wlmtk_base_push_element(
+            wlmtk_menu_base(menu_item_ptr->menu_ptr),
+            wlmtk_menu_element(menu_item_ptr->submenu_ptr));
     }
 }
 
@@ -271,9 +270,9 @@ void wlmtk_menu_item_set_submenu(
             &menu_item_ptr->submenu_open_changed_listener);
 
         if (NULL != menu_item_ptr->menu_ptr) {
-            wlmtk_pane_remove_popup(
-                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
-                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+            wlmtk_base_pop_element(
+                wlmtk_menu_base(menu_item_ptr->menu_ptr),
+                wlmtk_menu_element(menu_item_ptr->submenu_ptr));
         }
         wlmtk_menu_set_parent_item(submenu_ptr, NULL);
     }
@@ -286,9 +285,9 @@ void wlmtk_menu_item_set_submenu(
             _wlmtk_menu_item_handle_open_changed);
 
         if (NULL != menu_item_ptr->menu_ptr) {
-            wlmtk_pane_add_popup(
-                wlmtk_menu_pane(menu_item_ptr->menu_ptr),
-                wlmtk_menu_pane(menu_item_ptr->submenu_ptr));
+            wlmtk_base_push_element(
+                wlmtk_menu_base(menu_item_ptr->menu_ptr),
+                wlmtk_menu_element(menu_item_ptr->submenu_ptr));
         }
 
         wlmtk_menu_set_mode(menu_item_ptr->submenu_ptr, menu_item_ptr->mode);
