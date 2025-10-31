@@ -78,7 +78,6 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
-
     wlmtk_util_connect_listener_signal(
         &wlr_xdg_popup_ptr->base->surface->events.commit,
         &wlmaker_xdg_popup_ptr->surface_commit_listener,
@@ -90,6 +89,9 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_ptr);
         return NULL;
     }
+    wlmtk_element_set_visible(
+        wlmaker_xdg_popup_element(wlmaker_xdg_popup_ptr), true);
+
     wlmtk_element_extend(
         wlmtk_popup_element(&wlmaker_xdg_popup_ptr->super_popup),
         &_wlmaker_xdg_popup_element_vmt);
@@ -111,12 +113,15 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
         &wlmaker_xdg_popup_ptr->new_popup_listener,
         handle_new_popup);
 
+    bs_log(BS_INFO, "Created XDG popup %p", wlmaker_xdg_popup_ptr);
     return wlmaker_xdg_popup_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
 {
+    bs_log(BS_INFO, "Destroying XDG popup %p", wlmaker_xdg_popup_ptr);
+
     wlmtk_util_disconnect_listener(
         &wlmaker_xdg_popup_ptr->new_popup_listener);
     wlmtk_util_disconnect_listener(
@@ -133,6 +138,13 @@ void wlmaker_xdg_popup_destroy(wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
         wlmaker_xdg_popup_ptr->surface_ptr = NULL;
     }
     free(wlmaker_xdg_popup_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmaker_xdg_popup_element(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr)
+{
+    return &wlmaker_xdg_popup_ptr->super_popup.super_container.super_element;
 }
 
 /* == Local (static) methods =============================================== */
