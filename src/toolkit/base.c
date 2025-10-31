@@ -52,9 +52,7 @@ bool wlmtk_base_init(
         &_wlmtk_base_element_vmt);
 
     if (NULL != element_ptr) {
-        wlmtk_container_add_element_atop(
-            &base_ptr->super_container, NULL, element_ptr);
-        base_ptr->content_element_ptr = element_ptr;
+        wlmtk_base_set_content_element(base_ptr, element_ptr);
     }
 
     return true;
@@ -77,6 +75,16 @@ void wlmtk_base_fini(wlmtk_base_t *base_ptr)
 wlmtk_element_t *wlmtk_base_element(wlmtk_base_t *base_ptr)
 {
     return &base_ptr->super_container.super_element;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_base_set_content_element(
+    wlmtk_base_t *base_ptr,
+    wlmtk_element_t *content_element_ptr)
+{
+    wlmtk_container_add_element_atop(
+        &base_ptr->super_container, NULL, content_element_ptr);
+    base_ptr->content_element_ptr = content_element_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -148,15 +156,19 @@ void test_init_fini(bs_test_t *test_ptr)
     wlmtk_base_t base;
     wlmtk_fake_element_t *fe1, *fe2;
 
-    fe1 = wlmtk_fake_element_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1);
-    wlmtk_fake_element_set_dimensions(fe1, 20, 10);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_base_init(&base, &fe1->element));
-
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_base_init(&base, NULL));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &base.super_container.super_element,
         wlmtk_base_element(&base));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 0, 0,
+        wlmtk_element_get_dimensions_box(wlmtk_base_element(&base)));
+
+    fe1 = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1);
+    wlmtk_fake_element_set_dimensions(fe1, 20, 10);
+    wlmtk_base_set_content_element(&base, &fe1->element);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 20, 10,
         wlmtk_element_get_dimensions_box(wlmtk_base_element(&base)));

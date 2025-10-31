@@ -43,7 +43,6 @@ struct _wlmtk_base_t {
 
     /** Points to the element contained at the base. */
     wlmtk_element_t           *content_element_ptr;
-
 };
 
 /**
@@ -69,6 +68,16 @@ void wlmtk_base_fini(wlmtk_base_t *base_ptr);
 
 /** @return Pointer to the superclass @ref wlmtk_element_t of the base. */
 wlmtk_element_t *wlmtk_base_element(wlmtk_base_t *base_ptr);
+
+/**
+ * Sets @ref wlmtk_base_t::content_element_ptr.
+ *
+ * @param base_ptr
+ * @param content_element_ptr
+ */
+void wlmtk_base_set_content_element(
+    wlmtk_base_t *base_ptr,
+    wlmtk_element_t *content_element_ptr);
 
 /** Adds a stacked element (eg. a popup) */
 void wlmtk_base_push_element(
