@@ -355,45 +355,6 @@ void wlmaker_xdg_toplevel_set_server_side_decorated(
 
 /* == Local (static) methods =============================================== */
 
-#if 0
-// FIXME
-/* ------------------------------------------------------------------------- */
-/**
- * Handler for the `new_popup` signal.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_new_popup(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    xdg_toplevel_surface_t *xdg_tl_surface_ptr = BS_CONTAINER_OF(
-        listener_ptr, xdg_toplevel_surface_t, new_popup_listener);
-    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
-
-    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
-        wlr_xdg_popup_ptr,
-        xdg_tl_surface_ptr->server_ptr->wlr_seat_ptr);
-    if (NULL == xdg_popup_ptr) {
-        wl_resource_post_error(
-            wlr_xdg_popup_ptr->resource,
-            WL_DISPLAY_ERROR_NO_MEMORY,
-            "Failed wlmtk_xdg_popup2_create");
-        return;
-    }
-
-    wlmtk_element_set_visible(
-        wlmtk_popup_element(&xdg_popup_ptr->super_popup), true);
-    wlmtk_content_add_wlmtk_popup(
-        &xdg_tl_surface_ptr->super_content,
-        &xdg_popup_ptr->super_popup);
-
-    bs_log(BS_INFO, "XDG toplevel %p: New popup %p",
-           xdg_tl_surface_ptr, xdg_popup_ptr);
-}
-#endif
-
 /* ------------------------------------------------------------------------- */
 /** The XDG toplevel is destroyed: Destry the wlmaker toplevel, too. */
 void _wlmaker_xdg_toplevel_handle_destroy(
@@ -402,8 +363,6 @@ void _wlmaker_xdg_toplevel_handle_destroy(
 {
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, destroy_listener);
-
-    bs_log(BS_INFO, "Destroying XDG toplevel %p", wlmaker_xdg_toplevel_ptr);
     wlmaker_xdg_toplevel_destroy(wlmaker_xdg_toplevel_ptr);
 }
 
@@ -564,12 +523,26 @@ void _wlmaker_xdg_toplevel_handle_set_app_id(
 /** The XDG toplevel adds a new popup. */
 void _wlmaker_xdg_toplevel_handle_new_popup(
     struct wl_listener *listener_ptr,
-    __UNUSED__ void *data_ptr)
+    void *data_ptr)
 {
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, new_popup_listener);
+    struct wlr_xdg_popup *wlr_xdg_popup_ptr = data_ptr;
 
-    bs_log(BS_ERROR, "TODO: new_popup %p", wlmaker_xdg_toplevel_ptr);
+    wlmaker_xdg_popup_t *xdg_popup_ptr = wlmaker_xdg_popup_create(
+        wlr_xdg_popup_ptr,
+        wlmaker_xdg_toplevel_ptr->server_ptr->wlr_seat_ptr);
+    if (NULL == xdg_popup_ptr) {
+        wl_resource_post_error(
+            wlr_xdg_popup_ptr->resource,
+            WL_DISPLAY_ERROR_NO_MEMORY,
+            "Failed wlmtk_xdg_popup2_create");
+        return;
+    }
+
+    wlmtk_base_push_element(
+        &wlmaker_xdg_toplevel_ptr->base,
+        wlmaker_xdg_popup_element(xdg_popup_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -618,7 +591,6 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
         // Initial commit: Ensure a configure is responded with.
         wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
     }
-
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
         wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
