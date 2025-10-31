@@ -42,6 +42,9 @@
 
 /** State of an XDG toplevel in wlmaker. */
 struct wlmaker_xdg_toplevel {
+    /** Holds surface as content, will be the window's content. */
+    wlmtk_base_t              base;
+
     /** Back-link to server. */
     wlmaker_server_t          *server_ptr;
     /** The corresponding wlroots XDG toplevel. */
@@ -180,13 +183,18 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     wlmaker_xdg_toplevel_ptr->server_ptr = server_ptr;
 
+    if (!wlmtk_base_init(&wlmaker_xdg_toplevel_ptr->base, NULL)) goto error;
+
     wlmaker_xdg_toplevel_ptr->surface_ptr = wlmtk_xdg_surface_create(
         wlr_xdg_toplevel_ptr->base,
         server_ptr->wlr_seat_ptr);
     if (NULL == wlmaker_xdg_toplevel_ptr->surface_ptr) goto error;
+    wlmtk_base_set_content_element(
+        &wlmaker_xdg_toplevel_ptr->base,
+        wlmtk_surface_element(wlmaker_xdg_toplevel_ptr->surface_ptr));
 
     wlmaker_xdg_toplevel_ptr->window_ptr = wlmtk_window2_create(
-        wlmtk_surface_element(wlmaker_xdg_toplevel_ptr->surface_ptr),
+        wlmtk_base_element(&wlmaker_xdg_toplevel_ptr->base),
         &wlmaker_xdg_toplevel_ptr->server_ptr->style.window,
         &wlmaker_xdg_toplevel_ptr->server_ptr->style.menu);
     if (NULL == wlmaker_xdg_toplevel_ptr->window_ptr) goto error;
@@ -329,10 +337,7 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
         wxt_ptr->window_ptr = NULL;
     }
 
-    if (NULL != wxt_ptr->surface_ptr) {
-        wlmtk_surface_destroy(wxt_ptr->surface_ptr);
-        wxt_ptr->surface_ptr = NULL;
-    }
+    wlmtk_base_fini(&wxt_ptr->base);
 
     free(wxt_ptr);
 }
