@@ -78,6 +78,10 @@ wlmaker_xdg_popup_t *wlmaker_xdg_popup_create(
 void wlmaker_xdg_popup_destroy(
     wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
 
+/** Returns the superclass element. */
+wlmtk_element_t *wlmaker_xdg_popup_element(
+    wlmaker_xdg_popup_t *wlmaker_xdg_popup_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
