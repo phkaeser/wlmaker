@@ -23,6 +23,7 @@
 #define __WLMTK_TOOLKIT_H__
 
 // IWYU pragma: begin_exports
+#include "base.h"
 #include "bordered.h"
 #include "box.h"
 #include "buffer.h"

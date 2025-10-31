@@ -15,6 +15,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 SET(PUBLIC_HEADER_FILES
+  base.h
   bordered.h
   box.h
   buffer.h
@@ -54,6 +55,7 @@ SET(PUBLIC_HEADER_FILES
 
 ADD_LIBRARY(toolkit STATIC)
 TARGET_SOURCES(toolkit PRIVATE
+  base.c
   bordered.c
   box.c
   buffer.c
