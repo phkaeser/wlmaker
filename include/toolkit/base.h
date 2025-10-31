@@ -51,7 +51,7 @@ struct _wlmtk_base_t {
  * @param base_ptr
  * @param element_ptr         is added to @ref wlmtk_base_t::super_container
  *                            until @ref wlmtk_base_fini is called. Will take
- *                            ownewrship. May be NULL.
+ *                            ownership. May be NULL.
  *
  * @return true on success.
  */
