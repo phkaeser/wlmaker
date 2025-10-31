@@ -309,9 +309,6 @@ void handle_decoration_request_mode(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
 
-    wlmtk_content_t *content_ptr = (wlmtk_content_t*)
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel->base->data;
-
     enum wlr_xdg_toplevel_decoration_v1_mode mode =
         decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->requested_mode;
     switch (decoration_ptr->decoration_manager_ptr->mode) {
