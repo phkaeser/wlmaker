@@ -33,18 +33,6 @@ extern "C" {
 #endif  // __cplusplus
 
 /**
- * Creates a toolkit window with the XDG surface as content.
- *
- * @param wlr_xdg_toplevel_ptr
- * @param server_ptr
- *
- * @return The window, or NULL on error.
- */
-wlmtk_window_t *wlmtk_window_create_from_xdg_toplevel(
-    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
-    wlmaker_server_t *server_ptr);
-
-/**
  * Creates an XDG toplevel.
  *
  * @param wlr_xdg_toplevel_ptr
