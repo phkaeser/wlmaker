@@ -68,9 +68,21 @@ struct _wlmaker_xwl_surface_t {
     struct wl_listener        set_decorations_listener;
     /** Listener for the `set_geometry` signal of `wlr_xwayland_surface`. */
     struct wl_listener        set_geometry_listener;
-
+    /** Listener for the `map` signal of `wlr_xwayland_surface`. */
     struct wl_listener        surface_map_listener;
+    /** Listener for the `unmap` signal of `wlr_xwayland_surface`. */
     struct wl_listener        surface_unmap_listener;
+
+    /** Listener for @ref wlmtk_window2_events_t::request_close. */
+    struct wl_listener        window_request_close_listener;
+    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
+    struct wl_listener        window_set_activated_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_size. */
+    struct wl_listener        window_request_size_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_fullscreen. */
+    struct wl_listener        window_request_fullscreen_listener;
+    /** Listener for @ref wlmtk_window2_events_t::request_maximized. */
+    struct wl_listener        window_request_maximized_listener;
 
     /** The toolkit surface. Only available once 'associated'. */
     wlmtk_surface_t           *surface_ptr;
@@ -112,6 +124,22 @@ static void _xwl_surface_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _xwl_surface_handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void _wlmaker_xwl_surface_handle_window_request_close(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xwl_surface_handle_window_set_activated(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xwl_surface_handle_window_request_size(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xwl_surface_handle_window_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_xwl_surface_handle_window_request_maximized(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -327,7 +355,32 @@ void _xwl_surface_handle_associate(
             return;
         }
         _xwl_surface_apply_decorations(xwl_surface_ptr);
-        // FIXME: Set properties.
+        wlmtk_window2_set_properties(
+            xwl_surface_ptr->window_ptr,
+            WLMTK_WINDOW_PROPERTY_RESIZABLE |
+            WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
+            WLMTK_WINDOW_PROPERTY_CLOSABLE);
+
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_close,
+            &xwl_surface_ptr->window_request_close_listener,
+            _wlmaker_xwl_surface_handle_window_request_close);
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->set_activated,
+            &xwl_surface_ptr->window_set_activated_listener,
+            _wlmaker_xwl_surface_handle_window_set_activated);
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_size,
+            &xwl_surface_ptr->window_request_size_listener,
+            _wlmaker_xwl_surface_handle_window_request_size);
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_fullscreen,
+            &xwl_surface_ptr->window_request_fullscreen_listener,
+            _wlmaker_xwl_surface_handle_window_request_fullscreen);
+        wlmtk_util_connect_listener_signal(
+            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_maximized,
+            &xwl_surface_ptr->window_request_maximized_listener,
+            _wlmaker_xwl_surface_handle_window_request_maximized);
 
     } else {
 
@@ -357,6 +410,17 @@ void _xwl_surface_handle_dissociate(
         listener_ptr, wlmaker_xwl_surface_t, dissociate_listener);
 
     if (NULL != xwl_surface_ptr->window_ptr) {
+        wlmtk_util_disconnect_listener(
+            &xwl_surface_ptr->window_request_close_listener);
+        wlmtk_util_disconnect_listener(
+            &xwl_surface_ptr->window_set_activated_listener);
+        wlmtk_util_disconnect_listener(
+            &xwl_surface_ptr->window_request_size_listener);
+        wlmtk_util_disconnect_listener(
+            &xwl_surface_ptr->window_request_fullscreen_listener);
+        wlmtk_util_disconnect_listener(
+            &xwl_surface_ptr->window_request_maximized_listener);
+
         wlmtk_window2_destroy(xwl_surface_ptr->window_ptr);
         xwl_surface_ptr->window_ptr = NULL;
     }
@@ -466,6 +530,7 @@ void _xwl_surface_handle_set_geometry(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles when the surface is mapped: Map it to the workspace. */
 void _xwl_surface_handle_surface_map(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -482,6 +547,7 @@ void _xwl_surface_handle_surface_map(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Unmaps the window */
 void _xwl_surface_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
@@ -494,6 +560,92 @@ void _xwl_surface_handle_surface_unmap(
     wlmtk_workspace_unmap_window2(
         wlmtk_window2_get_workspace(xwl_surface_ptr->window_ptr),
         xwl_surface_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Close button got clicked, forward to the XWL surface. */
+void _wlmaker_xwl_surface_handle_window_request_close(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, window_request_close_listener);
+
+    wlr_xwayland_surface_close(xwl_surface_ptr->wlr_xwayland_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Surface became activated. Do that. */
+void _wlmaker_xwl_surface_handle_window_set_activated(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, window_set_activated_listener);
+
+    wlr_xwayland_surface_activate(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+        wlmtk_window2_is_activated(xwl_surface_ptr->window_ptr));
+    wlmtk_surface_set_activated(
+        xwl_surface_ptr->surface_ptr,
+        wlmtk_window2_is_activated(xwl_surface_ptr->window_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** A new size was requested. Forward to the XWL surface. */
+void _wlmaker_xwl_surface_handle_window_request_size(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, window_request_size_listener);
+    const struct wlr_box *box_ptr = data_ptr;
+
+    wlr_xwayland_surface_configure(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+        0, 0, box_ptr->width, box_ptr->height);
+}
+
+/* ------------------------------------------------------------------------- */
+/** The window is requested to go fullscreen. Forward and commit that. */
+void _wlmaker_xwl_surface_handle_window_request_fullscreen(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmaker_xwl_surface_t,
+        window_request_fullscreen_listener);
+    bool *fullscreen_ptr = data_ptr;
+
+    wlr_xwayland_surface_set_fullscreen(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+         *fullscreen_ptr);
+    wlmtk_window2_commit_fullscreen(
+        xwl_surface_ptr->window_ptr,
+        *fullscreen_ptr);
+
+    // TODO(kaeser@gubbe.ch): In windowed mode, there appears something off
+    // with XWL drawing fullscreen surfaces. See to report to wlroots.
+}
+
+/* ------------------------------------------------------------------------- */
+/** The window is requested to go maximized. Forward and commit that. */
+void _wlmaker_xwl_surface_handle_window_request_maximized(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmaker_xwl_surface_t,
+        window_request_maximized_listener);
+    bool *maximized_ptr = data_ptr;
+
+    wlr_xwayland_surface_set_maximized(
+        xwl_surface_ptr->wlr_xwayland_surface_ptr,
+         *maximized_ptr);
+    wlmtk_window2_commit_maximized(
+        xwl_surface_ptr->window_ptr, *maximized_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
