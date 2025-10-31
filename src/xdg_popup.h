@@ -31,6 +31,7 @@ struct wlr_seat;
 struct wlr_xdg_popup;
 
 struct _wlmaker_xdg_popup_t;
+
 /** Forward declaration: State of the toolkit's XDG popup. */
 typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 
@@ -38,31 +39,11 @@ typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** State of toolkit popup. */
-struct _wlmaker_xdg_popup_t {
-    /** Super class: popup. */
-    wlmtk_popup_t             super_popup;
-
-    /** Seat. */
-    struct wlr_seat           *wlr_seat_ptr;
-
-    /** Surface of the popup. */
-    wlmtk_surface_t           *surface_ptr;
-    /** The WLR popup. */
-    struct wlr_xdg_popup      *wlr_xdg_popup_ptr;
-
-    /** Listener for the `reposition` signal of `wlr_xdg_popup::events` */
-    struct wl_listener        reposition_listener;
-    /** Listener for the `destroy` signal of `wlr_xdg_surface::events`. */
-    struct wl_listener        destroy_listener;
-    /** Listener for the `new_popup` signal of `wlr_xdg_surface::events`. */
-    struct wl_listener        new_popup_listener;
-    /** Listener for the `commit` signal of the `wlr_surface`. */
-    struct wl_listener        surface_commit_listener;
-};
-
 /**
  * Creates a popup.
+ *
+ * @param wlr_xdg_popup_ptr
+ * @param wlr_seat_ptr
  *
  * @return Popup handle or NULL on error.
  */
