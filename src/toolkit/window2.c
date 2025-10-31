@@ -480,6 +480,10 @@ void wlmtk_window2_request_fullscreen(
 {
     window_ptr->inorganic_sizing = fullscreen;
 
+    // TODO: Window should store the state, and then apply dimensions when
+    // mapped, belatedly.
+    if (NULL == window_ptr->workspace_ptr) return;
+
     struct wlr_box desired_size = window_ptr->organic_bounding_box;
     if (fullscreen) {
         desired_size = wlmtk_workspace_get_fullscreen_extents(
@@ -537,8 +541,11 @@ void wlmtk_window2_request_maximized(
 {
     // Guard clause: No action needed fullscreen. We might re-compute the
     // dimensions if already maximized, hence let that pass.
-    if (window_ptr->fullscreen) return;
+    // Also: No maximizing when not mapped. No idea how large that should be.
+    if (window_ptr->fullscreen ||
+        NULL == window_ptr->workspace_ptr) return;
     window_ptr->inorganic_sizing = maximized;
+
 
     if (maximized) {
         struct wlr_box desired_size = wlmtk_workspace_get_maximize_extents(
