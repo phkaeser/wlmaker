@@ -50,6 +50,7 @@ bool wlmtk_base_init(
     base_ptr->orig_super_element_vmt = wlmtk_element_extend(
         &base_ptr->super_container.super_element,
         &_wlmtk_base_element_vmt);
+    wlmtk_element_set_visible(wlmtk_base_element(base_ptr), true);
 
     if (NULL != element_ptr) {
         wlmtk_base_set_content_element(base_ptr, element_ptr);
