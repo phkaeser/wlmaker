@@ -311,38 +311,20 @@ bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width)
 
 /* == Unit tests =========================================================== */
 
-static void test_create_destroy(bs_test_t *test_ptr);
 static void test_variable_width(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_resizebar_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
     { 1, "variable_width", test_variable_width },
     { 0, NULL, NULL }
 };
 
 /* ------------------------------------------------------------------------- */
-/** Exercises @ref wlmtk_resizebar_create and @ref wlmtk_resizebar_destroy. */
-void test_create_destroy(bs_test_t *test_ptr)
-{
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
-    wlmtk_resizebar_style_t style = {};
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        fake_window_ptr->window_ptr, &style);
-
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
-
-    wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
-    wlmtk_fake_window_destroy(fake_window_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Performs resizing and verifies the elements are shown as expected. */
 void test_variable_width(bs_test_t *test_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
     wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(
-        fake_window_ptr->window_ptr, &style);
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar2_create(w, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(
@@ -383,7 +365,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, right_elem_ptr->x);
 
     wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
-    wlmtk_fake_window_destroy(fake_window_ptr);
+    wlmtk_window2_destroy(w);
 }
 
 /* == End of resizebar.c =================================================== */
