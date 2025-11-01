@@ -34,7 +34,6 @@
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
 
-#include "xwl_popup.h"
 #include "toolkit/toolkit.h"
 
 
@@ -42,6 +41,9 @@
 
 /** State of the XWayland window surface. */
 struct _wlmaker_xwl_surface_t {
+    /** Holds @ref wlmaker_xwl_surface_t::surface_ptr and child surfaces. */
+    wlmtk_base_t              base;
+
     /** Corresponding wlroots XWayland surface. */
     struct wlr_xwayland_surface *wlr_xwayland_surface_ptr;
 
@@ -89,8 +91,8 @@ struct _wlmaker_xwl_surface_t {
 
     /** The toolkit window, in case the surface does not have a parent. */
     wlmtk_window2_t           *window_ptr;
-    /** The XWayland popup, in case this surface has a parent. */
-    wlmaker_xwl_popup_t       *xwl_popup_ptr;
+    /** Or, the parent surface. In that case, window_ptr is NULL. */
+    wlmaker_xwl_surface_t     *parent_surface_ptr;
 };
 
 static void _xwl_surface_handle_destroy(
@@ -145,6 +147,10 @@ static void _wlmaker_xwl_surface_handle_window_request_maximized(
 
 static void _xwl_surface_apply_decorations(
     wlmaker_xwl_surface_t *xwl_surface_ptr);
+static void _xwl_surface_adjust_absolute_pos(
+    wlmaker_xwl_surface_t *surface_ptr,
+    int *x_ptr,
+    int *y_ptr);
 
 /* == Data ================================================================= */
 
@@ -163,6 +169,11 @@ wlmaker_xwl_surface_t *wlmaker_xwl_surface_create(
     wlr_xwayland_surface_ptr->data = xwl_surface_ptr;
     xwl_surface_ptr->xwl_ptr = xwl_ptr;
     xwl_surface_ptr->server_ptr = server_ptr;
+
+    if (!wlmtk_base_init(&xwl_surface_ptr->base, NULL)) {
+        wlmaker_xwl_surface_destroy(xwl_surface_ptr);
+        return NULL;
+    }
 
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
@@ -221,9 +232,8 @@ void wlmaker_xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr)
     wl_list_remove(&xwl_surface_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_surface_ptr->destroy_listener.link);
 
-    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr) {
-        xwl_surface_ptr->wlr_xwayland_surface_ptr->data = NULL;
-    }
+    wlmtk_base_fini(&xwl_surface_ptr->base);
+    xwl_surface_ptr->surface_ptr = NULL;
     free(xwl_surface_ptr);
 }
 
@@ -299,12 +309,6 @@ void _xwl_surface_handle_associate(
         parent_xwl_surface_ptr =
             xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
     }
-    bs_log(BS_INFO,
-           "Associate XWL surface %p with wlr_surface %p, parent %p at %d, %d",
-           xwl_surface_ptr, xwl_surface_ptr->wlr_xwayland_surface_ptr->surface,
-           parent_xwl_surface_ptr,
-           xwl_surface_ptr->wlr_xwayland_surface_ptr->x,
-           xwl_surface_ptr->wlr_xwayland_surface_ptr->y);
     for (size_t i = 0;
          i < xwl_surface_ptr->wlr_xwayland_surface_ptr->window_type_len;
          ++i) {
@@ -337,6 +341,10 @@ void _xwl_surface_handle_associate(
         &xwl_surface_ptr->surface_unmap_listener,
         _xwl_surface_handle_surface_unmap);
 
+    wlmtk_base_set_content_element(
+        &xwl_surface_ptr->base,
+        wlmtk_surface_element(xwl_surface_ptr->surface_ptr));
+
     // Currently we treat parent-less windows AND modal windows as toplevel.
     // Modal windows should actually be child wlmtk_window_t, but that isn't
     // supported yet.
@@ -346,7 +354,7 @@ void _xwl_surface_handle_associate(
         BS_ASSERT(NULL == xwl_surface_ptr->window_ptr);
 
         xwl_surface_ptr->window_ptr = wlmtk_window2_create(
-            wlmtk_surface_element(xwl_surface_ptr->surface_ptr),
+            wlmtk_base_element(&xwl_surface_ptr->base),
             &xwl_surface_ptr->server_ptr->style.window,
             &xwl_surface_ptr->server_ptr->style.menu);
         if (NULL == xwl_surface_ptr->window_ptr) {
@@ -382,17 +390,14 @@ void _xwl_surface_handle_associate(
             &xwl_surface_ptr->window_request_maximized_listener,
             _wlmaker_xwl_surface_handle_window_request_maximized);
 
-    } else {
-
-        BS_ASSERT(NULL == xwl_surface_ptr->xwl_popup_ptr);
-        xwl_surface_ptr->xwl_popup_ptr = wlmaker_xwl_popup_create(
-            xwl_surface_ptr);
-        if (NULL == xwl_surface_ptr->xwl_popup_ptr) {
-            // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
-            bs_log(BS_FATAL, "Failed wlmaker_xwl_popup_create.");
-            return;
-        }
     }
+
+    bs_log(BS_INFO,
+           "Associated XWL surface %p with wlr_surface %p, parent %p at %d, %d",
+           xwl_surface_ptr, xwl_surface_ptr->wlr_xwayland_surface_ptr->surface,
+           parent_xwl_surface_ptr,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->x,
+           xwl_surface_ptr->wlr_xwayland_surface_ptr->y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -409,6 +414,9 @@ void _xwl_surface_handle_dissociate(
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, dissociate_listener);
 
+    bs_log(BS_INFO, "Dissociate XWL surface %p from wlr_surface %p",
+           xwl_surface_ptr, xwl_surface_ptr->wlr_xwayland_surface_ptr->surface);
+
     if (NULL != xwl_surface_ptr->window_ptr) {
         wlmtk_util_disconnect_listener(
             &xwl_surface_ptr->window_request_close_listener);
@@ -424,20 +432,18 @@ void _xwl_surface_handle_dissociate(
         wlmtk_window2_destroy(xwl_surface_ptr->window_ptr);
         xwl_surface_ptr->window_ptr = NULL;
     }
-    if (NULL != xwl_surface_ptr->xwl_popup_ptr) {
-        wlmaker_xwl_popup_destroy(xwl_surface_ptr->xwl_popup_ptr);
-        xwl_surface_ptr->xwl_popup_ptr = NULL;
+
+    if (NULL != xwl_surface_ptr->parent_surface_ptr) {
+        wlmtk_base_pop_element(
+            &xwl_surface_ptr->parent_surface_ptr->base,
+            wlmtk_base_element(&xwl_surface_ptr->base));
+        xwl_surface_ptr->parent_surface_ptr = NULL;
     }
 
-    if (NULL != xwl_surface_ptr->surface_ptr) {
-        wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_map_listener);
-        wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_unmap_listener);
-        wlmtk_surface_destroy(xwl_surface_ptr->surface_ptr);
-        xwl_surface_ptr->surface_ptr = NULL;
-    }
-
-    bs_log(BS_INFO, "Dissociate XWL surface %p from wlr_surface %p",
-           xwl_surface_ptr, xwl_surface_ptr->wlr_xwayland_surface_ptr->surface);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_map_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_unmap_listener);
+    wlmtk_base_set_content_element(&xwl_surface_ptr->base, NULL);
+    xwl_surface_ptr->surface_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -479,8 +485,25 @@ void _xwl_surface_handle_set_parent(
     wlmaker_xwl_surface_t *parent_xwl_surface_ptr =
         xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
 
-    bs_log(BS_ERROR, "TODO: Set parent for XWL surface %p to XWL surface %p",
-           xwl_surface_ptr, parent_xwl_surface_ptr);
+    if (NULL == parent_xwl_surface_ptr) return;
+    if (xwl_surface_ptr->parent_surface_ptr == parent_xwl_surface_ptr) return;
+
+    if (NULL != xwl_surface_ptr->parent_surface_ptr) {
+        wlmtk_base_pop_element(
+            &xwl_surface_ptr->parent_surface_ptr->base,
+            wlmtk_base_element(&xwl_surface_ptr->base));
+        xwl_surface_ptr->parent_surface_ptr = NULL;
+    }
+
+    // TODO(kaeser@gubbe.ch): We're currently treating modal windows as
+    // toplevel windows. They're not popups, for sure. To support this,
+    // we'll need wlmtk_window_t to support child wlmtk_window_t.
+    if (xwl_surface_ptr->wlr_xwayland_surface_ptr->modal) return;
+
+    wlmtk_base_push_element(
+        &parent_xwl_surface_ptr->base,
+        wlmtk_base_element(&xwl_surface_ptr->base));
+    xwl_surface_ptr->parent_surface_ptr = parent_xwl_surface_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -520,13 +543,15 @@ void _xwl_surface_handle_set_geometry(
         listener_ptr, wlmaker_xwl_surface_t, set_geometry_listener);
 
     // For XWayland, the surface's position is given relative to the "root"
-    // of the specified windows. For @ref wlmtk_element_t, the position is
-    // just relative to the pareent @ref wlmtk_container_t. So we need to
-    // subtract each parent popup's position.
+    // of the specified surface. For @ref wlmtk_element_t, the position is
+    // just relative to the parent @ref wlmtk_container_t. So we need to
+    // subtract each parent surface's position.
     int x = xwl_surface_ptr->wlr_xwayland_surface_ptr->x;
     int y = xwl_surface_ptr->wlr_xwayland_surface_ptr->y;
+    _xwl_surface_adjust_absolute_pos(xwl_surface_ptr, &x, &y);
 
-    bs_log(BS_ERROR, "TODO: set_geometry %d,%d", x, y);
+    wlmtk_element_set_position(
+        wlmtk_base_element(&xwl_surface_ptr->base), x, y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -678,6 +703,28 @@ void _xwl_surface_apply_decorations(wlmaker_xwl_surface_t *xwl_surface_ptr)
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Adjusts the absolute position by subtracting each parent's position.
+ *
+ * @param surface_ptr
+ * @param x_ptr
+ * @param y_ptr
+ */
+void _xwl_surface_adjust_absolute_pos(
+    wlmaker_xwl_surface_t *surface_ptr,
+    int *x_ptr,
+    int *y_ptr)
+{
+    if (NULL == surface_ptr ||
+        NULL == surface_ptr->parent_surface_ptr) return;
+
+    wlmtk_element_t *element_ptr = wlmtk_base_element(&surface_ptr->base);
+    *x_ptr = *x_ptr - element_ptr->x;
+    *y_ptr = *y_ptr - element_ptr->y;
+    _xwl_surface_adjust_absolute_pos(
+        surface_ptr->parent_surface_ptr, x_ptr, y_ptr);
+}
 /* == Unit Tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
