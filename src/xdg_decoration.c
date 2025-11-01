@@ -343,8 +343,6 @@ void handle_decoration_request_mode(
             decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr, mode);
     }
 
-    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr =
-        decoration_ptr->wlr_xdg_toplevel_decoration_v1_ptr->toplevel;
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr =
         wlr_xdg_toplevel_ptr->base->data;
     if (NULL == wlmaker_xdg_toplevel_ptr) {
