@@ -35,6 +35,7 @@
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
+#include "test.h"
 #include "window.h"
 
 /* == Declarations ========================================================= */
@@ -337,13 +338,33 @@ const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
 };
 
 /* ------------------------------------------------------------------------- */
-/** Tests the area behaviour. */
+/** Tests the area behaviour: Must initiate resize, set the edges. */
 void test_area(bs_test_t *test_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
-        fake_window_ptr->window_ptr, WLR_EDGE_BOTTOM);
+    wlmtk_tile_style_t ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &ts);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
+
+    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_util_test_wlr_box_listener_t l = {};
+    wlmtk_util_connect_test_wlr_box_listener(
+        &wlmtk_window2_events(w)->request_size, &l);
+    wlmtk_workspace_map_window2(ws_ptr, w);
+
+    wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar2_area_create(
+        w, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
     wlmtk_element_set_visible(element_ptr, true);
@@ -360,7 +381,7 @@ void test_area(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/resizebar_area_released.png");
-    BS_TEST_VERIFY_FALSE(test_ptr, fake_window_ptr->request_resize_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     // Pointer must be inside the button for accepting DOWN.
     wlmtk_pointer_motion_event_t mev = { .x = 1, .y = 1 };
@@ -379,15 +400,17 @@ void test_area(bs_test_t *test_ptr)
         bs_gfxbuf_from_wlr_buffer(area_ptr->super_buffer.wlr_buffer_ptr),
         "toolkit/resizebar_area_pressed.png");
 
-    // TODO(kaeser@gubbe.ch): Should verify setting the cursor.
-    BS_TEST_VERIFY_TRUE(test_ptr, fake_window_ptr->request_resize_called);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_BOTTOM,
-        fake_window_ptr->request_resize_edges);
+        wlmtk_window2_get_resize_edges(w));
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_fake_window_destroy(fake_window_ptr);
+
+    wlmtk_workspace_unmap_window2(ws_ptr, w);
+    wlmtk_window2_destroy(w);
+    wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 }
 
 /* == End of resizebar_area.c ============================================== */
