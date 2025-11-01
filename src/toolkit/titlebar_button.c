@@ -321,12 +321,16 @@ const bs_test_case_t wlmtk_titlebar_button_test_cases[] = {
 /** Tests button visualization. */
 void test_button(bs_test_t *test_ptr)
 {
-    wlmtk_fake_window_t *fake_window_ptr = wlmtk_fake_window_create();
-    wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
-        wlmtk_window_request_close,
-        fake_window_ptr->window_ptr,
-        wlmaker_primitives_draw_close_icon);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, button_ptr);
+    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_CLOSABLE);
+    wlmtk_util_test_listener_t l;
+    wlmtk_util_connect_test_listener(
+        &wlmtk_window2_events(w)->request_close, &l);
+
+    wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar2_button_create(
+        wlmtk_window2_request_close, w, wlmaker_primitives_draw_close_icon);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, button_ptr);
     wlmtk_titlebar_button_set_activated(button_ptr, true);
 
     // For improved readability.
@@ -381,11 +385,9 @@ void test_button(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_button_focussed_released.png");
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     // Click: To be passed along, no change to visual.
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        fake_window_ptr->fake_content_ptr->request_close_called);
     button.type = WLMTK_BUTTON_CLICK;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -394,9 +396,7 @@ void test_button(bs_test_t *test_ptr)
         test_ptr,
         bs_gfxbuf_from_wlr_buffer(super_buffer_ptr->wlr_buffer_ptr),
         "toolkit/title_button_focussed_released.png");
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        fake_window_ptr->fake_content_ptr->request_close_called);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
     // De-activate: Show as blurred.
     wlmtk_titlebar_button_set_activated(button_ptr, false);
@@ -406,7 +406,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_blurred.png");
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_fake_window_destroy(fake_window_ptr);
+    wlmtk_window2_destroy(w);
 }
 
 /* == End of titlebar_button.c ============================================= */
