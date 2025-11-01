@@ -451,13 +451,19 @@ void wlmtk_window2_request_size(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_resize_edges(
+void wlmtk_window2_set_resize_edges(
     wlmtk_window2_t *window_ptr,
     uint32_t edges)
 {
     window_ptr->resize_edges = edges;
     window_ptr->old_box = wlmtk_element_get_dimensions_box(
         wlmtk_bordered_element(&window_ptr->bordered));
+}
+
+/* ------------------------------------------------------------------------- */
+uint32_t wlmtk_window2_get_resize_edges(wlmtk_window2_t *window_ptr)
+{
+    return window_ptr->resize_edges;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1184,7 +1190,7 @@ void test_decoration(bs_test_t *test_ptr)
         wlmtk_element_get_dimensions_box(re));
 
     // Update again, with top-left edges resizing.
-    wlmtk_window2_resize_edges(w, WLR_EDGE_TOP | WLR_EDGE_LEFT);
+    wlmtk_window2_set_resize_edges(w, WLR_EDGE_TOP | WLR_EDGE_LEFT);
     wlmtk_fake_element_set_dimensions(fe, 32, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 32, 10,
@@ -1195,6 +1201,10 @@ void test_decoration(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 36, 31,
         wlmtk_window2_get_bounding_box(w));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_EDGE_TOP | WLR_EDGE_LEFT,
+        wlmtk_window2_get_resize_edges(w));
 
     wlmtk_window2_destroy(w);
     wlmtk_element_destroy(&fe->element);

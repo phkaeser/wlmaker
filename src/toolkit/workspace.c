@@ -763,6 +763,7 @@ void wlmtk_workspace_begin_window_move(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window2_t *window_ptr)
 {
+    BS_ASSERT(NULL != workspace_ptr);
     BS_ASSERT(workspace_ptr == wlmtk_window2_get_workspace(window_ptr));
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_MOVE, window_ptr);
 }
@@ -773,6 +774,7 @@ void wlmtk_workspace_begin_window_resize(
     wlmtk_window2_t *window_ptr,
     uint32_t edges)
 {
+    BS_ASSERT(NULL != workspace_ptr);
     BS_ASSERT(workspace_ptr == wlmtk_window2_get_workspace(window_ptr));
     workspace_ptr->resize_edges = edges;
     wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_BEGIN_RESIZE, window_ptr);
@@ -1137,7 +1139,7 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
     workspace_ptr->initial_width = box.width;
     workspace_ptr->initial_height = box.height;
 
-    wlmtk_window2_resize_edges(
+    wlmtk_window2_set_resize_edges(
         workspace_ptr->grabbed_window_ptr,
         workspace_ptr->resize_edges);
 
@@ -1194,7 +1196,7 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
         fsm_ptr, wlmtk_workspace_t, fsm);
 
-    wlmtk_window2_resize_edges(workspace_ptr->grabbed_window_ptr, 0);
+    wlmtk_window2_set_resize_edges(workspace_ptr->grabbed_window_ptr, 0);
 
     workspace_ptr->grabbed_window_ptr = NULL;
     return true;
