@@ -234,9 +234,12 @@ void wlmtk_window2_request_size(
  * @param window_ptr
  * @param edges
  */
-void wlmtk_window2_resize_edges(
+void wlmtk_window2_set_resize_edges(
     wlmtk_window2_t *window_ptr,
     uint32_t edges);
+
+/** @return resizing edges. */
+uint32_t wlmtk_window2_get_resize_edges(wlmtk_window2_t *window_ptr);
 
 /**
  * Requests to close the window.
