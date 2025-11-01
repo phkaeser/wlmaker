@@ -62,14 +62,7 @@ bool wlmtk_base_init(
 /* ------------------------------------------------------------------------- */
 void wlmtk_base_fini(wlmtk_base_t *base_ptr)
 {
-    if (NULL != base_ptr->content_element_ptr) {
-        wlmtk_container_remove_element(
-            &base_ptr->super_container,
-            base_ptr->content_element_ptr);
-        wlmtk_element_destroy(base_ptr->content_element_ptr);
-        base_ptr->content_element_ptr = NULL;
-    }
-
+    wlmtk_base_set_content_element(base_ptr, NULL);
     wlmtk_container_fini(&base_ptr->super_container);
 }
 
@@ -85,6 +78,9 @@ void wlmtk_base_set_content_element(
     wlmtk_element_t *content_element_ptr)
 {
     if (NULL != base_ptr->content_element_ptr) {
+        wlmtk_container_remove_element(
+            &base_ptr->super_container,
+            base_ptr->content_element_ptr);
         wlmtk_element_destroy(base_ptr->content_element_ptr);
         base_ptr->content_element_ptr = NULL;
     }
