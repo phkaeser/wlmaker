@@ -1,3 +1,5 @@
+![wlmaker Header](doc/wlmaker-header.png)
+
 # wlmaker - Wayland Maker
 
 A [Wayland](https://wayland.freedesktop.org/) compositor inspired by

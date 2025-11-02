@@ -1,5 +1,7 @@
 # wlmaker Manual {#mainpage}
 
+![wlmaker Header](wlmaker-header.png)
+
 ## wlmaker
 
 wlmaker is a [Wayland Compositor](https://en.wikipedia.org/wiki/Wayland_(protocol)#Wayland_compositors),
