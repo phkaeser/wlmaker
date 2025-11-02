@@ -862,16 +862,16 @@ void test_pointer_move(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fe1 = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1);
     wlmtk_fake_element_set_dimensions(fe1, 40, 20);
-    wlmtk_window2_t *w1 = wlmtk_test_window2_create(&fe1->element);
+    wlmtk_window_t *w1 = wlmtk_test_window_create(&fe1->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w1);
-    wlmtk_workspace_map_window2(ws1_ptr, w1);
+    wlmtk_workspace_map_window(ws1_ptr, w1);
 
     wlmtk_fake_element_t *fe2 = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2);
     wlmtk_fake_element_set_dimensions(fe2, 40, 20);
-    wlmtk_window2_t *w2 = wlmtk_test_window2_create(&fe2->element);
+    wlmtk_window_t *w2 = wlmtk_test_window_create(&fe2->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w2);
-    wlmtk_workspace_map_window2(ws2_ptr, w2);
+    wlmtk_workspace_map_window(ws2_ptr, w2);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -884,11 +884,11 @@ void test_pointer_move(bs_test_t *test_ptr)
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
     wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
 
-    wlmtk_workspace_unmap_window2(ws2_ptr, w2);
-    wlmtk_window2_destroy(w2);
+    wlmtk_workspace_unmap_window(ws2_ptr, w2);
+    wlmtk_window_destroy(w2);
     wlmtk_element_destroy(&fe2->element);
-    wlmtk_workspace_unmap_window2(ws1_ptr, w1);
-    wlmtk_window2_destroy(w1);
+    wlmtk_workspace_unmap_window(ws1_ptr, w1);
+    wlmtk_window_destroy(w1);
     wlmtk_element_destroy(&fe1->element);
 
     wlmtk_workspace_destroy(ws2_ptr);

@@ -70,7 +70,7 @@ static const wlmtk_element_vmt_t resizebar_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_t *wlmtk_resizebar2_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     const wlmtk_resizebar_style_t *style_ptr)
 {
     static const wlmtk_margin_style_t empty_margin_style = {};
@@ -268,7 +268,7 @@ const bs_test_case_t wlmtk_resizebar_test_cases[] = {
 /** Performs resizing and verifies the elements are shown as expected. */
 void test_variable_width(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
     wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar2_create(w, &style);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
@@ -311,7 +311,7 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, right_elem_ptr->x);
 
     wlmtk_element_destroy(wlmtk_resizebar_element(resizebar_ptr));
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* == End of resizebar.c =================================================== */

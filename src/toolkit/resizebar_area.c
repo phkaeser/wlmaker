@@ -55,7 +55,7 @@ struct _wlmtk_resizebar_area_t {
     bool                      pressed;
 
     /** Window to which the resize bar area belongs. To initiate resizing. */
-    wlmtk_window2_t           *window2_ptr;
+    wlmtk_window_t           *window_ptr;
     /** Edges that the resizebar area controls. */
     uint32_t                  edges;
 };
@@ -86,14 +86,14 @@ static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_resizebar_area_t *wlmtk_resizebar2_area_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
     wlmtk_resizebar_area_t *resizebar_area_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_area_t));
     if (NULL == resizebar_area_ptr) return NULL;
     BS_ASSERT(NULL != window_ptr);
-    resizebar_area_ptr->window2_ptr = window_ptr;
+    resizebar_area_ptr->window_ptr = window_ptr;
     resizebar_area_ptr->edges = edges;
 
     wlmtk_pointer_cursor_t cursor = WLMTK_POINTER_CURSOR_DEFAULT;
@@ -202,8 +202,8 @@ bool _wlmtk_resizebar_area_element_pointer_button(
         resizebar_area_ptr->pressed = true;
 
         wlmtk_workspace_begin_window_resize(
-            wlmtk_window2_get_workspace(resizebar_area_ptr->window2_ptr),
-            resizebar_area_ptr->window2_ptr,
+            wlmtk_window_get_workspace(resizebar_area_ptr->window_ptr),
+            resizebar_area_ptr->window_ptr,
             resizebar_area_ptr->edges);
         draw_state(resizebar_area_ptr);
         break;
@@ -307,12 +307,12 @@ void test_area(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_workspace_enable(ws_ptr, true);
 
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
     wlmtk_util_test_wlr_box_listener_t l = {};
     wlmtk_util_connect_test_wlr_box_listener(
-        &wlmtk_window2_events(w)->request_size, &l);
-    wlmtk_workspace_map_window2(ws_ptr, w);
+        &wlmtk_window_events(w)->request_size, &l);
+    wlmtk_workspace_map_window(ws_ptr, w);
 
     wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar2_area_create(
         w, WLR_EDGE_BOTTOM);
@@ -354,12 +354,12 @@ void test_area(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_BOTTOM,
-        wlmtk_window2_get_resize_edges(w));
+        wlmtk_window_get_resize_edges(w));
 
     wlmtk_element_destroy(element_ptr);
 
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
-    wlmtk_window2_destroy(w);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
+    wlmtk_window_destroy(w);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
 }

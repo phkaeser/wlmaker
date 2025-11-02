@@ -27,7 +27,7 @@
 
 #include "element.h"
 #include "style.h"
-#include "window2.h"
+#include "window.h"
 
 /** Forward declaration. */
 typedef struct _wlmtk_titlebar_button_t wlmtk_titlebar_button_t;
@@ -50,8 +50,8 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
  * @return Pointer to the titlebar button, or NULL on error.
  */
 wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
-    void (*click_handler)(wlmtk_window2_t *window_ptr),
-    wlmtk_window2_t *window_ptr,
+    void (*click_handler)(wlmtk_window_t *window_ptr),
+    wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw);
 
 /**

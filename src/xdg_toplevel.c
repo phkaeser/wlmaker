@@ -53,7 +53,7 @@ struct wlmaker_xdg_toplevel {
     /** The toplevel's toolkit surface. */
     wlmtk_surface_t           *surface_ptr;
     /** The toplevel's window, when mapped. */
-    wlmtk_window2_t           *window_ptr;
+    wlmtk_window_t           *window_ptr;
     /** The toplevel's window menu. */
     wlmaker_tl_menu_t         *tl_menu_ptr;
 
@@ -87,15 +87,15 @@ struct wlmaker_xdg_toplevel {
     /** Listener for the `commit` signal of the `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
 
-    /** Listener for @ref wlmtk_window2_events_t::request_close. */
+    /** Listener for @ref wlmtk_window_events_t::request_close. */
     struct wl_listener        window_request_close_listener;
-    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
+    /** Listener for @ref wlmtk_window_events_t::set_activated. */
     struct wl_listener        window_set_activated_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_size. */
+    /** Listener for @ref wlmtk_window_events_t::request_size. */
     struct wl_listener        window_request_size_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_fullscreen. */
+    /** Listener for @ref wlmtk_window_events_t::request_fullscreen. */
     struct wl_listener        window_request_fullscreen_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_maximized. */
+    /** Listener for @ref wlmtk_window_events_t::request_maximized. */
     struct wl_listener        window_request_maximized_listener;
 
     /** Whether this toplevel is configured to be server-side decorated. */
@@ -193,12 +193,12 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         &wlmaker_xdg_toplevel_ptr->base,
         wlmtk_surface_element(wlmaker_xdg_toplevel_ptr->surface_ptr));
 
-    wlmaker_xdg_toplevel_ptr->window_ptr = wlmtk_window2_create(
+    wlmaker_xdg_toplevel_ptr->window_ptr = wlmtk_window_create(
         wlmtk_base_element(&wlmaker_xdg_toplevel_ptr->base),
         &wlmaker_xdg_toplevel_ptr->server_ptr->style.window,
         &wlmaker_xdg_toplevel_ptr->server_ptr->style.menu);
     if (NULL == wlmaker_xdg_toplevel_ptr->window_ptr) goto error;
-    wlmtk_window2_set_properties(
+    wlmtk_window_set_properties(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         WLMTK_WINDOW_PROPERTY_RESIZABLE |
         WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
@@ -207,7 +207,7 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     wl_client_get_credentials(
         wlr_xdg_toplevel_ptr->resource->client,
         &client.pid, &client.uid, &client.gid);
-    wlmtk_window2_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
+    wlmtk_window_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
 
     wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmaker_xdg_toplevel_ptr->window_ptr, server_ptr);
@@ -274,23 +274,23 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         _wlmaker_xdg_toplevel_handle_surface_commit);
 
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_close,
+        &wlmtk_window_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_close,
         &wlmaker_xdg_toplevel_ptr->window_request_close_listener,
         _wlmaker_xdg_toplevel_handle_window_request_close);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->set_activated,
+        &wlmtk_window_events(wlmaker_xdg_toplevel_ptr->window_ptr)->set_activated,
         &wlmaker_xdg_toplevel_ptr->window_set_activated_listener,
         _wlmaker_xdg_toplevel_handle_window_set_activated);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_size,
+        &wlmtk_window_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_size,
         &wlmaker_xdg_toplevel_ptr->window_request_size_listener,
         _wlmaker_xdg_toplevel_handle_window_request_size);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_fullscreen,
+        &wlmtk_window_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_fullscreen,
         &wlmaker_xdg_toplevel_ptr->window_request_fullscreen_listener,
         _wlmaker_xdg_toplevel_handle_window_request_fullscreen);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_maximized,
+        &wlmtk_window_events(wlmaker_xdg_toplevel_ptr->window_ptr)->request_maximized,
         &wlmaker_xdg_toplevel_ptr->window_request_maximized_listener,
         _wlmaker_xdg_toplevel_handle_window_request_maximized);
 
@@ -346,7 +346,7 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
             &wxt_ptr->server_ptr->window_destroyed_event,
             wxt_ptr->window_ptr);
 
-        wlmtk_window2_destroy(wxt_ptr->window_ptr);
+        wlmtk_window_destroy(wxt_ptr->window_ptr);
         wxt_ptr->window_ptr = NULL;
     }
 
@@ -361,7 +361,7 @@ void wlmaker_xdg_toplevel_set_server_side_decorated(
     bool server_side_decorated)
 {
     wlmaker_xdg_toplevel_ptr->server_side_decorated = server_side_decorated;
-    wlmtk_window2_set_server_side_decorated(
+    wlmtk_window_set_server_side_decorated(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         wlmaker_xdg_toplevel_ptr->server_side_decorated);
 }
@@ -389,8 +389,8 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized !=
-        wlmtk_window2_is_maximized(wxt_ptr->window_ptr)) {
-        wlmtk_window2_request_maximized(
+        wlmtk_window_is_maximized(wxt_ptr->window_ptr)) {
+        wlmtk_window_request_maximized(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
     }
@@ -412,14 +412,14 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
         request_fullscreen_listener);
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen !=
-        wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
+        wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
 
         // Sets the requested output. Or NULL, if no preference indicated.
-        wlmtk_window2_set_wlr_output(
+        wlmtk_window_set_wlr_output(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output);
 
-        wlmtk_window2_request_fullscreen(
+        wlmtk_window_request_fullscreen(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
     }
@@ -450,7 +450,7 @@ void _wlmaker_xdg_toplevel_handle_request_move(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_move_listener);
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
         wlmaker_xdg_toplevel_ptr->window_ptr);
     if (NULL == workspace_ptr) return;
 
@@ -469,7 +469,7 @@ void _wlmaker_xdg_toplevel_handle_request_resize(
         listener_ptr, struct wlmaker_xdg_toplevel, request_resize_listener);
     struct wlr_xdg_toplevel_resize_event *resize_event_ptr = data_ptr;
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
         wlmaker_xdg_toplevel_ptr->window_ptr);
     if (NULL == workspace_ptr) return;
 
@@ -490,9 +490,9 @@ void _wlmaker_xdg_toplevel_handle_request_show_window_menu(
         struct wlmaker_xdg_toplevel,
         request_show_window_menu_listener);
 
-    wlmtk_window2_menu_set_enabled(
+    wlmtk_window_menu_set_enabled(
         wlmaker_xdg_toplevel_ptr->window_ptr,
-        !wlmtk_menu_is_open(wlmtk_window2_menu(wlmaker_xdg_toplevel_ptr->window_ptr)));
+        !wlmtk_menu_is_open(wlmtk_window_menu(wlmaker_xdg_toplevel_ptr->window_ptr)));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -516,7 +516,7 @@ void _wlmaker_xdg_toplevel_handle_set_title(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_title_listener);
 
-    wlmtk_window2_set_title(
+    wlmtk_window_set_title(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->title);
 }
@@ -571,7 +571,7 @@ void _wlmaker_xdg_toplevel_handle_surface_map(
     wlmtk_workspace_t *workspace_ptr = wlmtk_root_get_current_workspace(
         wlmaker_xdg_toplevel_ptr->server_ptr->root_ptr);
 
-    wlmtk_workspace_map_window2(
+    wlmtk_workspace_map_window(
         workspace_ptr,
         wlmaker_xdg_toplevel_ptr->window_ptr);
 }
@@ -585,8 +585,8 @@ void _wlmaker_xdg_toplevel_handle_surface_unmap(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_unmap_listener);
 
-    wlmtk_workspace_unmap_window2(
-        wlmtk_window2_get_workspace(wlmaker_xdg_toplevel_ptr->window_ptr),
+    wlmtk_workspace_unmap_window(
+        wlmtk_window_get_workspace(wlmaker_xdg_toplevel_ptr->window_ptr),
         wlmaker_xdg_toplevel_ptr->window_ptr);
 }
 
@@ -607,13 +607,13 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     }
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
-        wlmtk_window2_is_fullscreen(wxt_ptr->window_ptr)) {
-        wlmtk_window2_commit_fullscreen(
+        wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
+        wlmtk_window_commit_fullscreen(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen);
     } else if (wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized !=
-               wlmtk_window2_is_maximized(wxt_ptr->window_ptr)) {
-        wlmtk_window2_commit_maximized(
+               wlmtk_window_is_maximized(wxt_ptr->window_ptr)) {
+        wlmtk_window_commit_maximized(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized);
     }
@@ -647,10 +647,10 @@ void _wlmaker_xdg_toplevel_handle_window_set_activated(
 
     wlr_xdg_toplevel_set_activated(
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
-        wlmtk_window2_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+        wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
     wlmtk_surface_set_activated(
         wlmaker_xdg_toplevel_ptr->surface_ptr,
-        wlmtk_window2_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+        wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

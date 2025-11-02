@@ -83,11 +83,11 @@ static void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
     wlmtk_style_font_t *font_style_ptr,
     uint32_t color,
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     bool active,
     int pos_y);
 static const char *_wlmaker_task_list_window_name(
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 static uint32_t _wlmaker_task_list_request_size(
     wlmtk_panel_t *panel_ptr,
@@ -260,7 +260,7 @@ void _wlmaker_task_list_draw_into_cairo(
     // Not tied to a workspace? We're done, all set.
     if (NULL == workspace_ptr) return;
 
-    const bs_dllist_t *windows_ptr = wlmtk_workspace_get_window2s_dllist(
+    const bs_dllist_t *windows_ptr = wlmtk_workspace_get_windows_dllist(
         workspace_ptr);
     // No windows at all? Done here.
     if (bs_dllist_empty(windows_ptr)) return;
@@ -270,7 +270,7 @@ void _wlmaker_task_list_draw_into_cairo(
     bs_dllist_node_t *active_dlnode_ptr = windows_ptr->head_ptr;
     while (NULL != active_dlnode_ptr &&
            wlmtk_workspace_get_activated_window(workspace_ptr) !=
-           wlmtk_window2_from_dlnode(active_dlnode_ptr)) {
+           wlmtk_window_from_dlnode(active_dlnode_ptr)) {
         active_dlnode_ptr = active_dlnode_ptr->next_ptr;
     }
     if (NULL != active_dlnode_ptr) centered_dlnode_ptr = active_dlnode_ptr;
@@ -280,7 +280,7 @@ void _wlmaker_task_list_draw_into_cairo(
         cairo_ptr,
         &style_ptr->font,
         style_ptr->text_color,
-        wlmtk_window2_from_dlnode(centered_dlnode_ptr),
+        wlmtk_window_from_dlnode(centered_dlnode_ptr),
         centered_dlnode_ptr == active_dlnode_ptr,
         pos_y);
 
@@ -292,7 +292,7 @@ void _wlmaker_task_list_draw_into_cairo(
             cairo_ptr,
             &style_ptr->font,
             style_ptr->text_color,
-            wlmtk_window2_from_dlnode(dlnode_ptr),
+            wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y - further_windows * 26);
     }
@@ -305,7 +305,7 @@ void _wlmaker_task_list_draw_into_cairo(
             cairo_ptr,
             &style_ptr->font,
             style_ptr->text_color,
-            wlmtk_window2_from_dlnode(dlnode_ptr),
+            wlmtk_window_from_dlnode(dlnode_ptr),
             false,
             pos_y + further_windows * 26);
     }
@@ -326,7 +326,7 @@ void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
     wlmtk_style_font_t *font_style_ptr,
     uint32_t color,
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     bool active,
     int pos_y)
 {
@@ -351,18 +351,18 @@ void _wlmaker_task_list_draw_window_into_cairo(
  *     not require to be free'd, but will be re-used upon next call to
  *     window_name.
  */
-const char *_wlmaker_task_list_window_name(wlmtk_window2_t *window_ptr)
+const char *_wlmaker_task_list_window_name(wlmtk_window_t *window_ptr)
 {
     static char               name[256];
 
     size_t pos = 0;
 
-    const char *title_ptr = wlmtk_window2_get_title(window_ptr);
+    const char *title_ptr = wlmtk_window_get_title(window_ptr);
     if (NULL != title_ptr) {
         pos = bs_strappendf(name, sizeof(name), pos, "%s", title_ptr);
     }
 
-    const wlmtk_util_client_t *client_ptr = wlmtk_window2_get_client_ptr(
+    const wlmtk_util_client_t *client_ptr = wlmtk_window_get_client_ptr(
         window_ptr);
     if (NULL != client_ptr && 0 != client_ptr->pid) {
         if (0 < pos) pos = bs_strappendf(name, sizeof(name), pos, " ");

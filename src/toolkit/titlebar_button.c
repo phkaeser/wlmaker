@@ -43,9 +43,9 @@ struct _wlmtk_titlebar_button_t {
     bool                      activated;
 
     /** Callback for when the button is clicked. */
-    void                      (*click_handler2)(wlmtk_window2_t *window_ptr);
-    /** Points to the @ref wlmtk_window2_t that carries this titlebar. */
-    wlmtk_window2_t           *window2_ptr;
+    void                      (*click_handler2)(wlmtk_window_t *window_ptr);
+    /** Points to the @ref wlmtk_window_t that carries this titlebar. */
+    wlmtk_window_t           *window_ptr;
     /** For drawing the button contents. */
     wlmtk_titlebar_button_draw_t draw;
 
@@ -84,8 +84,8 @@ static const wlmtk_button_vmt_t titlebar_button_vmt = {
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
-    void (*click_handler)(wlmtk_window2_t *window_ptr),
-    wlmtk_window2_t *window_ptr,
+    void (*click_handler)(wlmtk_window_t *window_ptr),
+    wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
 {
     BS_ASSERT(NULL != window_ptr);
@@ -95,7 +95,7 @@ wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
         1, sizeof(wlmtk_titlebar_button_t));
     if (NULL == titlebar_button_ptr) return NULL;
     titlebar_button_ptr->click_handler2 = click_handler;
-    titlebar_button_ptr->window2_ptr = window_ptr;
+    titlebar_button_ptr->window_ptr = window_ptr;
     titlebar_button_ptr->draw = draw;
 
     if (!wlmtk_button_init(&titlebar_button_ptr->super_button)) {
@@ -211,7 +211,7 @@ void titlebar_button_clicked(wlmtk_button_t *button_ptr)
 {
     wlmtk_titlebar_button_t *titlebar_button_ptr = BS_CONTAINER_OF(
         button_ptr, wlmtk_titlebar_button_t, super_button);
-    titlebar_button_ptr->click_handler2(titlebar_button_ptr->window2_ptr);
+    titlebar_button_ptr->click_handler2(titlebar_button_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -282,15 +282,15 @@ const bs_test_case_t wlmtk_titlebar_button_test_cases[] = {
 /** Tests button visualization. */
 void test_button(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_CLOSABLE);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_CLOSABLE);
     wlmtk_util_test_listener_t l;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_close, &l);
+        &wlmtk_window_events(w)->request_close, &l);
 
     wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar2_button_create(
-        wlmtk_window2_request_close, w, wlmaker_primitives_draw_close_icon);
+        wlmtk_window_request_close, w, wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, button_ptr);
     wlmtk_titlebar_button_set_activated(button_ptr, true);
 
@@ -367,7 +367,7 @@ void test_button(bs_test_t *test_ptr)
         "toolkit/title_button_blurred.png");
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* == End of titlebar_button.c ============================================= */

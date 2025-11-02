@@ -199,7 +199,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                             void *arg_ptr)
 {
     wlmtk_workspace_t *workspace_ptr, *next_workspace_ptr;
-    wlmtk_window2_t *window_ptr;
+    wlmtk_window_t *window_ptr;
     const char **argv;
 
     switch (action) {
@@ -279,8 +279,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_fullscreen(
-                window_ptr, !wlmtk_window2_is_fullscreen(window_ptr));
+            wlmtk_window_request_fullscreen(
+                window_ptr, !wlmtk_window_is_fullscreen(window_ptr));
         }
         break;
 
@@ -289,8 +289,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_maximized(
-                window_ptr, !wlmtk_window2_is_maximized(window_ptr));
+            wlmtk_window_request_maximized(
+                window_ptr, !wlmtk_window_is_maximized(window_ptr));
         }
         break;
 
@@ -299,7 +299,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_maximized(window_ptr, true);
+            wlmtk_window_request_maximized(window_ptr, true);
         }
         break;
 
@@ -308,7 +308,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_maximized(window_ptr, false);
+            wlmtk_window_request_maximized(window_ptr, false);
         }
         break;
 
@@ -317,7 +317,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_fullscreen(window_ptr, true);
+            wlmtk_window_request_fullscreen(window_ptr, true);
         }
         break;
 
@@ -326,7 +326,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_shaded(window_ptr, true);
+            wlmtk_window_request_shaded(window_ptr, true);
         }
         break;
 
@@ -335,7 +335,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_shaded(window_ptr, false);
+            wlmtk_window_request_shaded(window_ptr, false);
         }
         break;
 
@@ -347,8 +347,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             wlmtk_dlnode_from_workspace(workspace_ptr)->next_ptr);
         if (NULL != window_ptr &&
             NULL != next_workspace_ptr) {
-            wlmtk_workspace_unmap_window2(workspace_ptr, window_ptr);
-            wlmtk_workspace_map_window2(next_workspace_ptr, window_ptr);
+            wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+            wlmtk_workspace_map_window(next_workspace_ptr, window_ptr);
         }
         break;
 
@@ -360,8 +360,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             wlmtk_dlnode_from_workspace(workspace_ptr)->prev_ptr);
         if (NULL != window_ptr &&
             NULL != next_workspace_ptr) {
-            wlmtk_workspace_unmap_window2(workspace_ptr, window_ptr);
-            wlmtk_workspace_map_window2(next_workspace_ptr, window_ptr);
+            wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+            wlmtk_workspace_map_window(next_workspace_ptr, window_ptr);
         }
         break;
 
@@ -370,16 +370,16 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             server_ptr->root_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
-            wlmtk_window2_request_close(window_ptr);
+            wlmtk_window_request_close(window_ptr);
         }
         break;
 
     case WLMAKER_ACTION_ROOT_MENU:
         // TODO(kaeser@gubbe.ch): Clean up.
         if (NULL != server_ptr->root_menu_ptr &&
-            NULL == wlmtk_window2_get_workspace(
+            NULL == wlmtk_window_get_workspace(
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr))) {
-            wlmtk_workspace_map_window2(
+            wlmtk_workspace_map_window(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
             wlmtk_workspace_set_window_position(
