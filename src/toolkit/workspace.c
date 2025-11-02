@@ -1322,6 +1322,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_element(w)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(wdl_ptr));
     BS_TEST_VERIFY_EQ(test_ptr, 1, mapped.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, mapped.last_data_ptr);
 
     wlmtk_workspace_unmap_window2(workspace_ptr, w);
     BS_TEST_VERIFY_EQ(
@@ -1329,6 +1330,7 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_element(w)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
     BS_TEST_VERIFY_EQ(test_ptr, 1, unmapped.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, w, mapped.last_data_ptr);
 
     wlmtk_util_disconnect_test_listener(&mapped);
     wlmtk_util_disconnect_test_listener(&unmapped);
