@@ -860,17 +860,19 @@ void test_pointer_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_root_add_workspace(root_ptr, ws2_ptr);
 
-    wlmtk_fake_window_t *fw1_ptr = wlmtk_fake_window_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw1_ptr);
-    wlmtk_workspace_map_window(ws1_ptr, fw1_ptr->window_ptr);
-    wlmtk_window_request_position_and_size(fw1_ptr->window_ptr, 0, 0, 40, 20);
-    wlmtk_fake_window_commit_size(fw1_ptr);
+    wlmtk_fake_element_t *fe1 = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1);
+    wlmtk_fake_element_set_dimensions(fe1, 40, 20);
+    wlmtk_window2_t *w1 = wlmtk_test_window2_create(&fe1->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w1);
+    wlmtk_workspace_map_window2(ws1_ptr, w1);
 
-    wlmtk_fake_window_t *fw2_ptr = wlmtk_fake_window_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fw2_ptr);
-    wlmtk_workspace_map_window(ws2_ptr, fw2_ptr->window_ptr);
-    wlmtk_window_request_position_and_size(fw2_ptr->window_ptr, 0, 0, 40, 20);
-    wlmtk_fake_window_commit_size(fw2_ptr);
+    wlmtk_fake_element_t *fe2 = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2);
+    wlmtk_fake_element_set_dimensions(fe2, 40, 20);
+    wlmtk_window2_t *w2 = wlmtk_test_window2_create(&fe2->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w2);
+    wlmtk_workspace_map_window2(ws2_ptr, w2);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -883,10 +885,12 @@ void test_pointer_move(bs_test_t *test_ptr)
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
     wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
 
-    wlmtk_workspace_unmap_window(ws2_ptr, fw2_ptr->window_ptr);
-    wlmtk_fake_window_destroy(fw2_ptr);
-    wlmtk_workspace_unmap_window(ws1_ptr, fw1_ptr->window_ptr);
-    wlmtk_fake_window_destroy(fw1_ptr);
+    wlmtk_workspace_unmap_window2(ws2_ptr, w2);
+    wlmtk_window2_destroy(w2);
+    wlmtk_element_destroy(&fe2->element);
+    wlmtk_workspace_unmap_window2(ws1_ptr, w1);
+    wlmtk_window2_destroy(w1);
+    wlmtk_element_destroy(&fe1->element);
 
     wlmtk_workspace_destroy(ws2_ptr);
     wlmtk_workspace_destroy(ws1_ptr);
