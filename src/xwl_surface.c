@@ -93,6 +93,9 @@ struct _wlmaker_xwl_surface_t {
     wlmtk_window2_t           *window_ptr;
     /** Or, the parent surface. In that case, window_ptr is NULL. */
     wlmaker_xwl_surface_t     *parent_surface_ptr;
+
+    /** The XWL surface's title. May be set before window is created. */
+    char                      *title_ptr;
 };
 
 static void _xwl_surface_handle_destroy(
@@ -372,7 +375,8 @@ void _xwl_surface_handle_associate(
             .pid = xwl_surface_ptr->wlr_xwayland_surface_ptr->pid
         };
         wlmtk_window2_set_client(xwl_surface_ptr->window_ptr, &client);
-
+        wlmtk_window2_set_title(xwl_surface_ptr->window_ptr,
+                                xwl_surface_ptr->title_ptr);
 
         wlmtk_util_connect_listener_signal(
             &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_close,
@@ -469,13 +473,20 @@ void _xwl_surface_handle_set_title(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+    wlmaker_xwl_surface_t *xs_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, set_title_listener);
 
-    if (NULL != xwl_surface_ptr->window_ptr) {
-        wlmtk_window2_set_title(
-            xwl_surface_ptr->window_ptr,
-            xwl_surface_ptr->wlr_xwayland_surface_ptr->title);
+    if (NULL != xs_ptr->title_ptr) {
+        free(xs_ptr->title_ptr);
+        xs_ptr->title_ptr = NULL;
+    }
+    if (NULL != xs_ptr->wlr_xwayland_surface_ptr->title) {
+        xs_ptr->title_ptr = logged_strdup(xs_ptr->wlr_xwayland_surface_ptr->title);
+        if (NULL == xs_ptr->title_ptr) return;
+    }
+
+    if (NULL != xs_ptr->window_ptr) {
+        wlmtk_window2_set_title(xs_ptr->window_ptr, xs_ptr->title_ptr);
     }
 }
 
