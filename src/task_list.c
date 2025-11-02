@@ -59,9 +59,9 @@ struct _wlmaker_task_list_t {
     /** Listener for the `task_list_disabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_disabled_listener;
 
-    /** Listener for `window_mapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for @ref wlmtk_root_events_t::window_mapped. */
     struct wl_listener        window_mapped_listener;
-    /** Listener for `window_unmapped_event` signal by `wlmaker_server_t`. */
+    /** Listener for @ref wlmtk_root_events_t::window_unmapped. */
     struct wl_listener        window_unmapped_listener;
 
     /** Whether the task list is currently enabled (mapped). */

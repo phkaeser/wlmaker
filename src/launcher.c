@@ -102,19 +102,19 @@ static void _wlmaker_launcher_handle_terminated(
 static void _wlmaker_launcher_handle_window_created(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_window2_t *window_ptr);
 static void _wlmaker_launcher_handle_window_mapped(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_window2_t *window_ptr);
 static void _wlmaker_launcher_handle_window_unmapped(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_window2_t *window_ptr);
 static void _wlmaker_launcher_handle_window_destroyed(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
+    wlmtk_window2_t *window_ptr);
 
 /* == Data ================================================================= */
 
@@ -463,7 +463,7 @@ void _wlmaker_launcher_handle_terminated(
 void _wlmaker_launcher_handle_window_created(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_window2_t *window_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = userdata_ptr;
 
@@ -487,7 +487,7 @@ void _wlmaker_launcher_handle_window_created(
 void _wlmaker_launcher_handle_window_mapped(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_window2_t *window_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = userdata_ptr;
 
@@ -515,7 +515,7 @@ void _wlmaker_launcher_handle_window_mapped(
 void _wlmaker_launcher_handle_window_unmapped(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_window2_t *window_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = userdata_ptr;
 
@@ -538,7 +538,7 @@ void _wlmaker_launcher_handle_window_unmapped(
 void _wlmaker_launcher_handle_window_destroyed(
     void *userdata_ptr,
     __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
+    wlmtk_window2_t *window_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = userdata_ptr;
 
