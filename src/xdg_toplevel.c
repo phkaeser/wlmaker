@@ -397,7 +397,11 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
 
     // Protocol expects an `configure`. Depending on current state, that may
     // not have been sent yet, hence adding an explicit `configure` here.
-    wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
+    if (wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
+        // TODO(kaeser@gubbe.ch): Store state and then issue these pending
+        // configures once initialized.
+        wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -426,7 +430,11 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
 
     // Protocol expects an `configure`. Depending on current state, that may
     // not have been sent yet, hence adding an explicit `configure` here.
-    wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
+    if (wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
+        // TODO(kaeser@gubbe.ch): Store state and then issue these pending
+        // configures once initialized.
+        wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
