@@ -64,11 +64,12 @@ struct _wlmaker_layer_panel_t {
     struct wl_listener        new_popup_listener;
 };
 
-static wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
+wlmaker_layer_panel_t *_wlmaker_layer_panel_create_from_surface(
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr,
     wlmaker_server_t *server_ptr,
-    wlmtk_surface_create_t wlmtk_surface_create_fn);
-static void _wlmaker_layer_panel_destroy(
+    wlmtk_surface_t *wlmtk_surface_ptr);
+
+    static void _wlmaker_layer_panel_destroy(
     wlmaker_layer_panel_t *layer_panel_ptr);
 static void _wlmaker_layer_panel_element_destroy(
     wlmtk_element_t *element_ptr);
@@ -121,34 +122,47 @@ wlmaker_layer_panel_t *wlmaker_layer_panel_create(
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr,
     wlmaker_server_t *server_ptr)
 {
-    return _wlmaker_layer_panel_create_injected(
-        wlr_layer_surface_v1_ptr,
-        server_ptr,
-        wlmtk_surface_create);
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(
+        wlr_layer_surface_v1_ptr->surface,
+        server_ptr->wlr_seat_ptr);
+    if (NULL == surface_ptr) return NULL;
+
+    wlmaker_layer_panel_t *panel_ptr =
+        _wlmaker_layer_panel_create_from_surface(
+            wlr_layer_surface_v1_ptr,
+            server_ptr,
+            surface_ptr);
+    if (NULL == panel_ptr) {
+        wlmtk_surface_destroy(surface_ptr);
+        return NULL;
+    }
+
+    return panel_ptr;
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /**
- * Constructor for the layer panel, with injectable methods.
+ * Constructor for the layer panel, with already-created surface.
  *
  * @param wlr_layer_surface_v1_ptr
  * @param server_ptr
- * @param wlmtk_surface_create_fn
+ * @param wlmtk_surface_ptr
  *
  * @return The handler for the layer surface or NULL on error.
  */
-wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
+wlmaker_layer_panel_t *_wlmaker_layer_panel_create_from_surface(
     struct wlr_layer_surface_v1 *wlr_layer_surface_v1_ptr,
     wlmaker_server_t *server_ptr,
-    wlmtk_surface_create_t wlmtk_surface_create_fn)
+    wlmtk_surface_t *wlmtk_surface_ptr)
 {
     wlmaker_layer_panel_t *layer_panel_ptr = logged_calloc(
         1, sizeof(wlmaker_layer_panel_t));
     if (NULL == layer_panel_ptr) return NULL;
     layer_panel_ptr->wlr_layer_surface_v1_ptr = wlr_layer_surface_v1_ptr;
     layer_panel_ptr->server_ptr = server_ptr;
+    layer_panel_ptr->wlmtk_surface_ptr = wlmtk_surface_ptr;
 
     wlmtk_panel_positioning_t pos = {};
     if (!wlmtk_panel_init(&layer_panel_ptr->super_panel, &pos)) {
@@ -162,13 +176,6 @@ wlmaker_layer_panel_t *_wlmaker_layer_panel_create_injected(
         wlmtk_panel_element(&layer_panel_ptr->super_panel),
         &_wlmaker_layer_panel_element_vmt);
 
-    layer_panel_ptr->wlmtk_surface_ptr = wlmtk_surface_create_fn(
-        wlr_layer_surface_v1_ptr->surface,
-        server_ptr->wlr_seat_ptr);
-    if (NULL == layer_panel_ptr->wlmtk_surface_ptr) {
-        _wlmaker_layer_panel_destroy(layer_panel_ptr);
-        return NULL;
-    }
     wlmtk_container_add_element_atop(
         &layer_panel_ptr->super_panel.super_container,
         NULL,
@@ -565,17 +572,18 @@ void test_create_destroy(bs_test_t *test_ptr)
     struct wlr_layer_surface_v1 wlr_layer_surface_v1 = {};
     wlmaker_server_t server = {};
 
-    // Inject: wlmtk_surface_create - fake_surface_create.
+    wlmtk_surface_t *surface_ptr = wlmtk_surface_create(NULL, NULL);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, surface_ptr);
 
     wl_signal_init(&wlr_layer_surface_v1.events.destroy);
     wl_signal_init(&wlr_layer_surface_v1.events.new_popup);
 
     wlmaker_layer_panel_t *layer_panel_ptr =
-        _wlmaker_layer_panel_create_injected(
+        _wlmaker_layer_panel_create_from_surface(
             &wlr_layer_surface_v1,
             &server,
-            wlmtk_fake_surface_create_inject);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, layer_panel_ptr);
+            surface_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_panel_ptr);
 
     wl_signal_emit(&wlr_layer_surface_v1.events.destroy, NULL);
 }
