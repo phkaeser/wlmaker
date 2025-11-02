@@ -37,6 +37,7 @@
 #include "container.h"
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
+#include "test.h"
 #include "util.h"
 
 /* == Declarations ========================================================= */
@@ -781,9 +782,11 @@ void _wlmtk_surface_commit_size(
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
+static void test_dimensions(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_surface_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
+    { 1, "dimensions", test_dimensions },
     { 0, NULL, NULL }
 };
 
@@ -800,6 +803,35 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_surface_element(surface_ptr));
 
     wlmtk_surface_destroy(surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies that dimensions from the surface propagate thorugh. */
+void test_dimensions(bs_test_t *test_ptr)
+{
+    struct wlr_surface wlr_surface = {};
+    wl_list_init(&wlr_surface.current.subsurfaces_below);
+    wl_list_init(&wlr_surface.current.subsurfaces_above);
+    wl_signal_init(&wlr_surface.events.commit);
+    wl_signal_init(&wlr_surface.events.destroy);
+    wl_signal_init(&wlr_surface.events.map);
+    wl_signal_init(&wlr_surface.events.unmap);
+
+    wlmtk_surface_t *s = wlmtk_surface_create(&wlr_surface, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, s);
+
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 0, 0,
+        wlmtk_element_get_dimensions_box(wlmtk_surface_element(s)));
+
+    wlr_surface.current.width = 640;
+    wlr_surface.current.height = 480;
+    wl_signal_emit(&wlr_surface.events.commit, NULL);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 640, 480,
+        wlmtk_element_get_dimensions_box(wlmtk_surface_element(s)));
+
+    wlmtk_surface_destroy(s);
 }
 
 /* == End of surface.c ===================================================== */
