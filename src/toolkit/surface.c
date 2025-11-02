@@ -778,130 +778,12 @@ void _wlmtk_surface_commit_size(
 }
 
 
-/* == Fake surface methods ================================================= */
-
-static void _wlmtk_fake_surface_element_destroy(
-    wlmtk_element_t *element_ptr);
-static struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr);
-static bool _wlmtk_fake_surface_element_pointer_accepts_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr);
-static bool _wlmtk_fake_surface_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr);
-
-/** Extensions to the surface's super elements virtual methods. */
-static const wlmtk_element_vmt_t _wlmtk_fake_surface_element_vmt = {
-    .destroy = _wlmtk_fake_surface_element_destroy,
-    .create_scene_node = _wlmtk_fake_surface_element_create_scene_node,
-    .pointer_accepts_motion = _wlmtk_fake_surface_element_pointer_accepts_motion,
-    .pointer_button = _wlmtk_fake_surface_element_pointer_button,
-};
-
-/* ------------------------------------------------------------------------- */
-wlmtk_fake_surface_t *wlmtk_fake_surface_create(void)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = logged_calloc(
-        1, sizeof(wlmtk_fake_surface_t));
-    if (NULL == fake_surface_ptr) return NULL;
-
-    _wlmtk_surface_init(&fake_surface_ptr->surface, NULL);
-    wlmtk_element_extend(
-        &fake_surface_ptr->surface.super_element,
-        &_wlmtk_fake_surface_element_vmt);
-    return fake_surface_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_surface_t *wlmtk_fake_surface_create_inject(
-    __UNUSED__ struct wlr_surface *wlr_surface_ptr,
-    __UNUSED__ struct wlr_seat *wlr_seat_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    if (NULL == fake_surface_ptr) return NULL;
-    return &fake_surface_ptr->surface;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_fake_surface_commit_size(
-    wlmtk_fake_surface_t *fake_surface_ptr,
-    int width,
-    int height)
-{
-    _wlmtk_surface_commit_size(&fake_surface_ptr->surface, width, height);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr)
-{
-    _wlmtk_surface_fini(&fake_surface_ptr->surface);
-    free(fake_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of the dtor, @ref wlmtk_element_vmt_t::destroy. */
-void _wlmtk_fake_surface_element_destroy(
-    wlmtk_element_t *element_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_fake_surface_t, surface.super_element);
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake implementation of @ref wlmtk_element_vmt_t::create_scene_node. */
-struct wlr_scene_node *_wlmtk_fake_surface_element_create_scene_node(
-    wlmtk_element_t *element_ptr,
-    struct wlr_scene_tree *wlr_scene_tree_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_fake_surface_t, surface.super_element);
-
-    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        fake_surface_ptr->surface.committed_width,
-        fake_surface_ptr->surface.committed_height);
-    BS_ASSERT(NULL != wlr_buffer_ptr);
-
-    struct wlr_scene_buffer *wlr_scene_buffer_ptr = wlr_scene_buffer_create(
-        wlr_scene_tree_ptr, wlr_buffer_ptr);
-    wlr_buffer_drop(wlr_buffer_ptr);
-   return &wlr_scene_buffer_ptr->node;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake for @ref wlmtk_element_vmt_t::pointer_accepts_motion. True if in. */
-bool _wlmtk_fake_surface_element_pointer_accepts_motion(
-    wlmtk_element_t *element_ptr,
-    wlmtk_pointer_motion_event_t *motion_event_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_fake_surface_t, surface.super_element);
-
-    return (0 <= motion_event_ptr->x &&
-            motion_event_ptr->x < fake_surface_ptr->surface.committed_width &&
-            0 <= motion_event_ptr->y &&
-            motion_event_ptr->y < fake_surface_ptr->surface.committed_height);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Fake for @ref wlmtk_element_vmt_t::pointer_button. Returns true. */
-bool _wlmtk_fake_surface_element_pointer_button(
-    __UNUSED__ wlmtk_element_t *element_ptr,
-    __UNUSED__ const wlmtk_button_event_t *button_event_ptr)
-{
-    return true;
-}
-
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
-static void test_fake_commit(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_surface_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
-    { 1, "fake_commit", test_fake_commit },
     { 0, NULL, NULL }
 };
 
@@ -918,25 +800,6 @@ void test_create_destroy(bs_test_t *test_ptr)
         wlmtk_surface_element(surface_ptr));
 
     wlmtk_surface_destroy(surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Exercises the request_size / commit flow. */
-void test_fake_commit(bs_test_t *test_ptr)
-{
-    wlmtk_fake_surface_t *fake_surface_ptr = wlmtk_fake_surface_create();
-    int w, h;
-
-    wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, w);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, h);
-
-    wlmtk_fake_surface_commit_size(fake_surface_ptr, 200, 100);
-    wlmtk_surface_get_size(&fake_surface_ptr->surface, &w, &h);
-    BS_TEST_VERIFY_EQ(test_ptr, 200, w);
-    BS_TEST_VERIFY_EQ(test_ptr, 100, h);
-
-    wlmtk_fake_surface_destroy(fake_surface_ptr);
 }
 
 /* == End of surface.c ===================================================== */
