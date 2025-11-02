@@ -29,9 +29,6 @@ struct _wlmtk_surface_t;
 typedef struct _wlmtk_surface_t wlmtk_surface_t;
 /** Forward declaration: Virtual method table of the toolkit's WLR surface. */
 typedef struct _wlmtk_surface_vmt_t wlmtk_surface_vmt_t;
-struct _wlmtk_fake_surface_t;
-/** Forward declaration: State of fake surface, for tests. */
-typedef struct _wlmtk_fake_surface_t wlmtk_fake_surface_t;
 
 #include "element.h"
 
@@ -169,29 +166,6 @@ void wlmtk_surface_connect_unmap_listener_signal(
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_surface_test_cases[];
-
-/** Fake surface, useful for unit test. */
-struct _wlmtk_fake_surface_t {
-    /** Superclass: surface. */
-    wlmtk_surface_t           surface;
-};
-
-/** Ctor for the fake surface.*/
-wlmtk_fake_surface_t *wlmtk_fake_surface_create(void);
-
-/** Injectable ctor for the fake surface. */
-wlmtk_surface_t *wlmtk_fake_surface_create_inject(
-    struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr);
-
-/** Fakes a wlr_surface commit event. */
-void wlmtk_fake_surface_commit_size(
-    wlmtk_fake_surface_t *fake_surface_ptr,
-    int width,
-    int height);
-
-/** Dtor for the fake surface.*/
-void wlmtk_fake_surface_destroy(wlmtk_fake_surface_t *fake_surface_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
