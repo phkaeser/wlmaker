@@ -40,7 +40,7 @@ typedef struct _wlmaker_tl_menu_t wlmaker_tl_menu_t;
  * @return pointer to the toplevel's menu state or NULL on error.
  */
 wlmaker_tl_menu_t *wlmaker_tl_menu_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     wlmaker_server_t *server_ptr);
 
 /**

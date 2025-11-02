@@ -46,7 +46,7 @@ SET(PUBLIC_HEADER_FILES
   titlebar_title.h
   toolkit.h
   util.h
-  window2.h
+  window.h
   workspace.h
 )
 
@@ -82,7 +82,7 @@ TARGET_SOURCES(toolkit PRIVATE
   titlebar_button.c
   titlebar_title.c
   util.c
-  window2.c
+  window.c
   workspace.c
 )
 TARGET_INCLUDE_DIRECTORIES(

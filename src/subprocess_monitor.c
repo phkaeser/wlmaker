@@ -93,12 +93,12 @@ struct _wlmaker_subprocess_handle_t {
     wlmaker_subprocess_window_callback_t window_destroyed_callback;
 };
 
-/** Registry entry for @ref wlmtk_window2_t and subprocesses. */
+/** Registry entry for @ref wlmtk_window_t and subprocesses. */
 typedef struct {
     /** See @ref wlmaker_subprocess_monitor_t::window_tree_ptr. */
     bs_avltree_node_t         avlnode;
     /** The window registered here. Also the tree lookup key. */
-    wlmtk_window2_t           *window_ptr;
+    wlmtk_window_t           *window_ptr;
 
     /** See @ref wlmaker_subprocess_handle_t::windows. */
     bs_dllist_node_t          dlnode;
@@ -144,10 +144,10 @@ static void _wlmaker_subprocess_monitor_handle_window_destroyed(
 
 static wlmaker_subprocess_handle_t *subprocess_handle_from_window(
     wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 static wlmaker_subprocess_window_t *wlmaker_subprocess_window_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr);
 static void wlmaker_subprocess_window_destroy(
     wlmaker_subprocess_window_t *ws_window_ptr);
@@ -628,7 +628,7 @@ void _wlmaker_subprocess_monitor_handle_window_created(
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_subprocess_monitor_t, window_created_listener);
-    wlmtk_window2_t *window_ptr = data_ptr;
+    wlmtk_window_t *window_ptr = data_ptr;
 
     wlmaker_subprocess_handle_t *subprocess_handle_ptr =
         subprocess_handle_from_window(monitor_ptr, window_ptr);
@@ -659,7 +659,7 @@ void _wlmaker_subprocess_monitor_handle_window_mapped(
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_subprocess_monitor_t, window_mapped_listener);
-    wlmtk_window2_t *window_ptr = data_ptr;
+    wlmtk_window_t *window_ptr = data_ptr;
 
     bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
         monitor_ptr->window_tree_ptr, window_ptr);
@@ -694,7 +694,7 @@ void _wlmaker_subprocess_monitor_handle_window_unmapped(
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_subprocess_monitor_t, window_unmapped_listener);
-    wlmtk_window2_t *window_ptr = data_ptr;
+    wlmtk_window_t *window_ptr = data_ptr;
 
     bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
         monitor_ptr->window_tree_ptr, window_ptr);
@@ -730,7 +730,7 @@ void _wlmaker_subprocess_monitor_handle_window_destroyed(
 {
     wlmaker_subprocess_monitor_t *monitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_subprocess_monitor_t, window_destroyed_listener);
-    wlmtk_window2_t *window_ptr = data_ptr;
+    wlmtk_window_t *window_ptr = data_ptr;
 
     bs_avltree_node_t *avlnode_ptr = bs_avltree_delete(
         monitor_ptr->window_tree_ptr, window_ptr);
@@ -756,9 +756,9 @@ void _wlmaker_subprocess_monitor_handle_window_destroyed(
  */
 wlmaker_subprocess_handle_t *subprocess_handle_from_window(
     wlmaker_subprocess_monitor_t *monitor_ptr,
-    wlmtk_window2_t *window_ptr)
+    wlmtk_window_t *window_ptr)
 {
-    const wlmtk_util_client_t *client_ptr = wlmtk_window2_get_client_ptr(
+    const wlmtk_util_client_t *client_ptr = wlmtk_window_get_client_ptr(
         window_ptr);
     // TODO(kaeser@gubbe.ch): Should be a O(1) or O(log(n)) structure.
     for (bs_dllist_node_t *dlnode_ptr = monitor_ptr->subprocesses.head_ptr;
@@ -787,7 +787,7 @@ wlmaker_subprocess_handle_t *subprocess_handle_from_window(
  * @return A pointer to @ref wlmaker_subprocess_window_t or NULL on error.
  */
 wlmaker_subprocess_window_t *wlmaker_subprocess_window_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr)
 {
     // Guard clause: No need for window handle, if no window nor process.

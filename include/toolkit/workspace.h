@@ -32,7 +32,7 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 #include "layer.h"  // IWYU pragma: keep
 #include "root.h"  // IWYU pragma: keep
 #include "tile.h"
-#include "window2.h"  // IWYU pragma: keep
+#include "window.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
 struct wlr_output;
@@ -135,7 +135,7 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
  */
 void wlmtk_workspace_confine_within(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 /** Returns @ref wlmtk_workspace_t::wlr_output_layout_ptr. */
 struct wlr_output_layout *wlmtk_workspace_get_wlr_output_layout(
@@ -162,8 +162,8 @@ bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr);
  * @param workspace_ptr
  * @param window_ptr
  */
-void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
-                                 wlmtk_window2_t *window_ptr);
+void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
+                                 wlmtk_window_t *window_ptr);
 
 /**
  * Unmaps the window: Sets it as invisible and removes it from the container.
@@ -171,8 +171,8 @@ void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
  * @param workspace_ptr
  * @param window_ptr
  */
-void wlmtk_workspace_unmap_window2(wlmtk_workspace_t *workspace_ptr,
-                                   wlmtk_window2_t *window_ptr);
+void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
+                                   wlmtk_window_t *window_ptr);
 
 /**
  * Sets the window's position.
@@ -184,7 +184,7 @@ void wlmtk_workspace_unmap_window2(wlmtk_workspace_t *workspace_ptr,
  */
 void wlmtk_workspace_set_window_position(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     int x,
     int y);
 
@@ -207,16 +207,16 @@ wlmtk_layer_t *wlmtk_workspace_get_layer(
  * @param workspace_ptr
  *
  * @return A pointer to the list. Note that the list should not be manipulated
- *     directly. It's contents can change on @ref wlmtk_workspace_map_window2
- *     or @ref wlmtk_workspace_unmap_window2 calls.
+ *     directly. It's contents can change on @ref wlmtk_workspace_map_window
+ *     or @ref wlmtk_workspace_unmap_window calls.
  */
-bs_dllist_t *wlmtk_workspace_get_window2s_dllist(
+bs_dllist_t *wlmtk_workspace_get_windows_dllist(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
  * Promotes the window to the fullscreen layer (or back).
  *
- * To be called by @ref wlmtk_window2_commit_fullscreen.
+ * To be called by @ref wlmtk_window_commit_fullscreen.
  *
  * @param workspace_ptr
  * @param window_ptr
@@ -224,7 +224,7 @@ bs_dllist_t *wlmtk_workspace_get_window2s_dllist(
  */
 void wlmtk_workspace_window_to_fullscreen(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     bool fullscreen);
 
 /**
@@ -235,7 +235,7 @@ void wlmtk_workspace_window_to_fullscreen(
  */
 void wlmtk_workspace_begin_window_move(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 /**
  * Initiates a 'resize' for the window.
@@ -246,20 +246,20 @@ void wlmtk_workspace_begin_window_move(
  */
 void wlmtk_workspace_begin_window_resize(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     uint32_t edges);
 
 /** Acticates `window_ptr`. Will de-activate an earlier window. */
 void wlmtk_workspace_activate_window(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
-/** @return Pointer to the activated @ref wlmtk_window2_t, if any. */
-wlmtk_window2_t *wlmtk_workspace_get_activated_window(
+/** @return Pointer to the activated @ref wlmtk_window_t, if any. */
+wlmtk_window_t *wlmtk_workspace_get_activated_window(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Activates the @ref wlmtk_window2_t *before* the currently activated one.
+ * Activates the @ref wlmtk_window_t *before* the currently activated one.
  *
  * Intended to permit cycling through tasks. Will activate the window, but not
  * raise it. See @ref wlmtk_workspace_activate_next_window.
@@ -270,7 +270,7 @@ void wlmtk_workspace_activate_previous_window(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Activates the @ref wlmtk_window2_t *after* the currently activated one.
+ * Activates the @ref wlmtk_window_t *after* the currently activated one.
  *
  * Intended to permit cycling through tasks. Will activate the window, but not
  * raise it. See @ref wlmtk_workspace_activate_previous_window.
@@ -283,7 +283,7 @@ void wlmtk_workspace_activate_next_window(
 /** Raises `window_ptr`: Will show it atop all other windows. */
 void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 /** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
 wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);

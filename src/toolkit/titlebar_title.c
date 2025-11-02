@@ -46,7 +46,7 @@ struct _wlmtk_titlebar_title_t {
     /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
     /** Pointer to the window the title element belongs to. */
-    wlmtk_window2_t           *window2_ptr;
+    wlmtk_window_t           *window_ptr;
 
     /** The drawn title, when focussed. */
     struct wlr_buffer         *focussed_wlr_buffer_ptr;
@@ -86,12 +86,12 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(wlmtk_window2_t *window_ptr)
+wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(wlmtk_window_t *window_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_title_t));
     if (NULL == titlebar_title_ptr) return NULL;
-    titlebar_title_ptr->window2_ptr = window_ptr;
+    titlebar_title_ptr->window_ptr = window_ptr;
 
     if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
         wlmtk_titlebar_title_destroy(titlebar_title_ptr);
@@ -194,15 +194,15 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
         wlmtk_workspace_begin_window_move(
-            wlmtk_window2_get_workspace(titlebar_title_ptr->window2_ptr),
-            titlebar_title_ptr->window2_ptr);
+            wlmtk_window_get_workspace(titlebar_title_ptr->window_ptr),
+            titlebar_title_ptr->window_ptr);
         return true;
     }
 
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
-        wlmtk_window2_menu_set_enabled(
-            titlebar_title_ptr->window2_ptr, true);
+        wlmtk_window_menu_set_enabled(
+            titlebar_title_ptr->window_ptr, true);
         return true;
     }
 
@@ -243,9 +243,9 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
     }
 
     if (wlr_pointer_axis_event_ptr->delta > 0) {
-        wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, false);
+        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, false);
     } else if (wlr_pointer_axis_event_ptr->delta < 0) {
-        wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, true);
+        wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, true);
     }
     return true;
 }
@@ -365,9 +365,9 @@ void test_title(bs_test_t *test_ptr)
     bs_gfxbuf_clear(focussed_gfxbuf_ptr, 0xff2020c0);
     bs_gfxbuf_clear(blurred_gfxbuf_ptr, 0xff404040);
 
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_workspace_map_window2(ws_ptr, w);
+    wlmtk_workspace_map_window(ws_ptr, w);
 
     wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar2_title_create(w);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, title_ptr);
@@ -421,23 +421,23 @@ void test_title(bs_test_t *test_ptr)
         wlmtk_element_pointer_button(element_ptr,  &button));
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_menu_is_open(wlmtk_window2_menu(w)));
+        wlmtk_menu_is_open(wlmtk_window_menu(w)));
     // TODO(kaeser@gubbe.ch): We don't have a good way to test whether that
     // triggered the begin of a window move.
 
     // Pressing the right button should enable the window menu.
-    wlmtk_window2_set_activated(w, true);
+    wlmtk_window_set_activated(w, true);
     button.button = BTN_RIGHT;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_button(element_ptr,  &button));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_menu_is_open(wlmtk_window2_menu(w)));
+        wlmtk_menu_is_open(wlmtk_window_menu(w)));
 
     wlmtk_element_destroy(element_ptr);
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
-    wlmtk_window2_destroy(w);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
+    wlmtk_window_destroy(w);
     bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
     bs_gfxbuf_destroy(blurred_gfxbuf_ptr);
     wlmtk_workspace_destroy(ws_ptr);
@@ -449,14 +449,14 @@ void test_title(bs_test_t *test_ptr)
 void test_shade(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
     wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar2_title_create(w);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, title_ptr);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(title_ptr);
 
     // Initial state: Not shaded.
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
 
     struct wlr_pointer_axis_event axis_event = {
 #if WLR_VERSION_NUM >= (18 << 8)
@@ -471,17 +471,17 @@ void test_shade(bs_test_t *test_ptr)
 
     // Initial state: Not server-side-decorated, won't shade.
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
 
     // Decorate. Now it shall shade.
-    wlmtk_window2_set_server_side_decorated(w, true);
+    wlmtk_window_set_server_side_decorated(w, true);
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(w));
 
     // Scroll the other way: Unshade.
     axis_event.delta = 0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
 
     // Source 'finger from a touchpad' is accepted, too.
 #if WLR_VERSION_NUM >= (18 << 8)
@@ -491,11 +491,11 @@ void test_shade(bs_test_t *test_ptr)
 #endif // WLR_VERSION_NUM >= (18 << 8)
     axis_event.delta = -0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(w));
 
     axis_event.delta = 0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
 
     // Axis from another source: Ignored.
 #if WLR_VERSION_NUM >= (18 << 8)
@@ -505,10 +505,10 @@ void test_shade(bs_test_t *test_ptr)
 #endif // WLR_VERSION_NUM >= (18 << 8)
     axis_event.delta = -0.01;
     wlmtk_element_pointer_axis(element_ptr, &axis_event);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
 
     wlmtk_titlebar_title_destroy(title_ptr);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
 }
 

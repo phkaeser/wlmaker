@@ -28,7 +28,7 @@ typedef struct _wlmtk_titlebar_title_t wlmtk_titlebar_title_t;
 
 #include "element.h"
 #include "style.h"
-#include "window2.h"
+#include "window.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +42,7 @@ extern "C" {
  * @return Title handle.
  */
 wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the titlebar title.

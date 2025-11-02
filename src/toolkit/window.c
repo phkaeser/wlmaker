@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file window2.c
+ * @file window.c
  *
  * @copyright
  * Copyright 2025 Google LLC
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "window2.h"
+#include "window.h"
 
 #include <linux/input-event-codes.h>
 #define WLR_USE_UNSTABLE
@@ -36,7 +36,7 @@
 /* == Declarations ========================================================= */
 
 /** Window handle. */
-struct _wlmtk_window2_t {
+struct _wlmtk_window_t {
     /** Bordered, wraps around the box. */
     wlmtk_bordered_t          bordered;
     /** Original virtual method table of the window's element superclass. */
@@ -45,17 +45,17 @@ struct _wlmtk_window2_t {
     /** Composed of a box: Holds decoration, popup container and content. */
     wlmtk_box_t               box;
 
-    /** Element in @ref wlmtk_workspace_t::window2s, when mapped. */
+    /** Element in @ref wlmtk_workspace_t::windows, when mapped. */
     bs_dllist_node_t          dlnode;
 
     /** Events for this window. */
-    wlmtk_window2_events_t    events;
-    /** Client information. See @ref wlmtk_window2_set_client. */
+    wlmtk_window_events_t    events;
+    /** Client information. See @ref wlmtk_window_set_client. */
     wlmtk_util_client_t       client;
 
     /** Container for the content. */
     wlmtk_container_t         content_container;
-    /** Virtual method table of @ref wlmtk_window2_t::content_container. */
+    /** Virtual method table of @ref wlmtk_window_t::content_container. */
     wlmtk_container_vmt_t     orig_content_container_vmt;
     /** The content. */
     wlmtk_element_t           *content_element_ptr;
@@ -63,7 +63,7 @@ struct _wlmtk_window2_t {
     /** The workspace, when mapped to a workspace. NULL otherwise. */
     wlmtk_workspace_t         *workspace_ptr;
 
-    /** Preferred output. See @ref wlmtk_window2_set_wlr_output. */
+    /** Preferred output. See @ref wlmtk_window_set_wlr_output. */
     struct wlr_output         *wlr_output_ptr;
 
     /** Window style. */
@@ -100,10 +100,10 @@ struct _wlmtk_window2_t {
 
     /**
      * Whether an "inorganic" sizing operation is in progress, and thus size
-     * changes should not record to @ref wlmtk_window2_t::organic_bounding_box.
+     * changes should not record to @ref wlmtk_window_t::organic_bounding_box.
      *
-     * This is eg. between @ref wlmtk_window2_request_fullscreen and
-     * @ref wlmtk_window2_commit_fullscreen.
+     * This is eg. between @ref wlmtk_window_request_fullscreen and
+     * @ref wlmtk_window_commit_fullscreen.
      */
     bool                      inorganic_sizing;
     /** Whether this window has server-side decorations. */
@@ -118,29 +118,29 @@ struct _wlmtk_window2_t {
     bool                      activated;
 };
 
-static bool _wlmtk_window2_element_pointer_button(
+static bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
-static void _wlmtk_window2_container_element_get_dimensions(
+static void _wlmtk_window_container_element_get_dimensions(
         wlmtk_element_t *element_ptr,
         int *x1_ptr,
         int *y1_ptr,
         int *x2_ptr,
         int *y2_ptr);
-static bool _wlmtk_window2_container_update_layout(
+static bool _wlmtk_window_container_update_layout(
     wlmtk_container_t *container_ptr);
 
-static void _wlmtk_window2_apply_decoration(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_create_titlebar(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_create_resizebar(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_destroy_titlebar(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_destroy_resizebar(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_set_decoration_width(wlmtk_window2_t *window_ptr);
-static void _wlmtk_window2_issue_request_size(
-    wlmtk_window2_t *window_ptr,
+static void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_set_decoration_width(wlmtk_window_t *window_ptr);
+static void _wlmtk_window_issue_request_size(
+    wlmtk_window_t *window_ptr,
     const struct wlr_box *box_ptr);
 
-static void _wlmtk_window2_menu_request_close_handler(
+static void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -148,28 +148,28 @@ static void _wlmtk_window2_menu_request_close_handler(
 
 /** Virtual method table for the window's element superclass. */
 static const wlmtk_element_vmt_t window_element_vmt = {
-    .pointer_button = _wlmtk_window2_element_pointer_button,
+    .pointer_button = _wlmtk_window_element_pointer_button,
 };
 
 /** Virtual method table for the window's container superclass element. */
-static const wlmtk_element_vmt_t _wlmtk_window2_container_element_vmt = {
-    .get_dimensions = _wlmtk_window2_container_element_get_dimensions,
+static const wlmtk_element_vmt_t _wlmtk_window_container_element_vmt = {
+    .get_dimensions = _wlmtk_window_container_element_get_dimensions,
 };
 
 /** Virtual method table for the window's container superclass. */
-static const wlmtk_container_vmt_t _wlmtk_window2_container_vmt = {
-    .update_layout = _wlmtk_window2_container_update_layout,
+static const wlmtk_container_vmt_t _wlmtk_window_container_vmt = {
+    .update_layout = _wlmtk_window_container_update_layout,
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_t *wlmtk_window2_create(
+wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr)
 {
-    wlmtk_window2_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window2_t));
+    wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
     window_ptr->style = *style_ptr;
     window_ptr->menu_style = *menu_style_ptr;
@@ -180,7 +180,7 @@ wlmtk_window2_t *wlmtk_window2_create(
     wl_signal_init(&window_ptr->events.request_fullscreen);
     wl_signal_init(&window_ptr->events.request_maximized);
 
-    if (!wlmtk_window2_set_title(window_ptr, NULL)) goto error;
+    if (!wlmtk_window_set_title(window_ptr, NULL)) goto error;
 
     if (!wlmtk_container_init(&window_ptr->content_container)) goto error;
     if (!wlmtk_box_init(
@@ -201,10 +201,10 @@ wlmtk_window2_t *wlmtk_window2_create(
 
     wlmtk_element_extend(
         &window_ptr->content_container.super_element,
-        &_wlmtk_window2_container_element_vmt);
+        &_wlmtk_window_container_element_vmt);
     window_ptr->orig_content_container_vmt = wlmtk_container_extend(
         &window_ptr->content_container,
-        &_wlmtk_window2_container_vmt);
+        &_wlmtk_window_container_vmt);
     wlmtk_element_set_visible(
         &window_ptr->content_container.super_element, true);
     if (NULL != content_element_ptr) {
@@ -229,20 +229,20 @@ wlmtk_window2_t *wlmtk_window2_create(
     wlmtk_util_connect_listener_signal(
         &wlmtk_menu_events(window_ptr->window_menu_ptr)->request_close,
         &window_ptr->menu_request_close_listener,
-        _wlmtk_window2_menu_request_close_handler);
+        _wlmtk_window_menu_request_close_handler);
 
-    _wlmtk_window2_apply_decoration(window_ptr);
+    _wlmtk_window_apply_decoration(window_ptr);
     return window_ptr;
 
 error:
-    wlmtk_window2_destroy(window_ptr);
+    wlmtk_window_destroy(window_ptr);
     return NULL;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_destroy(wlmtk_window2_t *window_ptr)
+void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
-    wlmtk_window2_set_server_side_decorated(window_ptr, false);
+    wlmtk_window_set_server_side_decorated(window_ptr, false);
 
     if (NULL != window_ptr->window_menu_ptr) {
         wlmtk_util_disconnect_listener(
@@ -279,92 +279,92 @@ void wlmtk_window2_destroy(wlmtk_window2_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_events_t *wlmtk_window2_events(wlmtk_window2_t *window_ptr)
+wlmtk_window_events_t *wlmtk_window_events(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr)
+wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->bordered.super_container.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr)
+wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr)
 {
     return BS_CONTAINER_OF(
-        element_ptr, wlmtk_window2_t, bordered.super_container.super_element);
+        element_ptr, wlmtk_window_t, bordered.super_container.super_element);
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlr_box wlmtk_window2_get_bounding_box(wlmtk_window2_t *window_ptr)
+struct wlr_box wlmtk_window_get_bounding_box(wlmtk_window_t *window_ptr)
 {
     struct wlr_box wbox = wlmtk_element_get_dimensions_box(
-        wlmtk_window2_element(window_ptr));
+        wlmtk_window_element(window_ptr));
     int x, y;
-    wlmtk_element_get_position(wlmtk_window2_element(window_ptr), &x, &y);
+    wlmtk_element_get_position(wlmtk_window_element(window_ptr), &x, &y);
     wbox.x += x;
     wbox.y += y;
     return wbox;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_position_changed(wlmtk_window2_t *window_ptr)
+void wlmtk_window_position_changed(wlmtk_window_t *window_ptr)
 {
     if (window_ptr->inorganic_sizing) return;
     wlmtk_element_get_position(
-        wlmtk_window2_element(window_ptr),
+        wlmtk_window_element(window_ptr),
         &window_ptr->organic_bounding_box.x,
         &window_ptr->organic_bounding_box.y);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_properties(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_properties(
+    wlmtk_window_t *window_ptr,
     uint32_t properties)
 {
     if (window_ptr->properties == properties) return;
 
     window_ptr->properties = properties;
-    _wlmtk_window2_apply_decoration(window_ptr);
+    _wlmtk_window_apply_decoration(window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_client(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_client(
+    wlmtk_window_t *window_ptr,
     const wlmtk_util_client_t *client_ptr)
 {
     window_ptr->client = *client_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
-    __UNUSED__ wlmtk_window2_t *window_ptr)
+const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
+    __UNUSED__ wlmtk_window_t *window_ptr)
 {
     return &window_ptr->client;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_wlr_output(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_wlr_output(
+    wlmtk_window_t *window_ptr,
     struct wlr_output *wlr_output_ptr)
 {
     window_ptr->wlr_output_ptr = wlr_output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlr_output *wlmtk_window2_get_wlr_output(wlmtk_window2_t *window_ptr)
+struct wlr_output *wlmtk_window_get_wlr_output(wlmtk_window_t *window_ptr)
 {
     if (NULL != window_ptr->wlr_output_ptr) return window_ptr->wlr_output_ptr;
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(window_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
     if (NULL == workspace_ptr) return NULL;
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlmtk_workspace_get_wlr_output_layout(workspace_ptr);
     if (NULL == wlr_output_layout_ptr) return NULL;
 
-    struct wlr_box wbox = wlmtk_window2_get_bounding_box(window_ptr);
+    struct wlr_box wbox = wlmtk_window_get_bounding_box(window_ptr);
     double dest_x, dest_y;
     wlr_output_layout_closest_point(
         wlmtk_workspace_get_wlr_output_layout(workspace_ptr),
@@ -377,8 +377,8 @@ struct wlr_output *wlmtk_window2_get_wlr_output(wlmtk_window2_t *window_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window2_set_title(
-    wlmtk_window2_t *window_ptr,
+bool wlmtk_window_set_title(
+    wlmtk_window_t *window_ptr,
     const char *title_ptr)
 {
     char *new_title_ptr = NULL;
@@ -408,15 +408,15 @@ bool wlmtk_window2_set_title(
 }
 
 /* ------------------------------------------------------------------------- */
-const char *wlmtk_window2_get_title(wlmtk_window2_t *window_ptr)
+const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(NULL != window_ptr->title_ptr);
     return window_ptr->title_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_activated(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_activated(
+    wlmtk_window_t *window_ptr,
     bool activated)
 {
     if (window_ptr->activated == activated) return;
@@ -429,7 +429,7 @@ void wlmtk_window2_set_activated(
     }
 
     if (!activated) {
-        wlmtk_window2_menu_set_enabled(window_ptr, false);
+        wlmtk_window_menu_set_enabled(window_ptr, false);
 
         // TODO(kaeser@gubbe.ch): Should test this behaviour.
         if (NULL != window_ptr->workspace_ptr) {
@@ -439,14 +439,14 @@ void wlmtk_window2_set_activated(
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window2_is_activated(wlmtk_window2_t *window_ptr)
+bool wlmtk_window_is_activated(wlmtk_window_t *window_ptr)
 {
     return window_ptr->activated;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_size(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_request_size(
+    wlmtk_window_t *window_ptr,
     const struct wlr_box *box_ptr)
 {
     if (window_ptr->fullscreen) return;
@@ -455,12 +455,12 @@ void wlmtk_window2_request_size(
         static bool not_maximized = false;
         wl_signal_emit(&window_ptr->events.request_maximized, &not_maximized);
     }
-    _wlmtk_window2_issue_request_size(window_ptr, box_ptr);
+    _wlmtk_window_issue_request_size(window_ptr, box_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_resize_edges(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_resize_edges(
+    wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
     window_ptr->resize_edges = edges;
@@ -469,27 +469,27 @@ void wlmtk_window2_set_resize_edges(
 }
 
 /* ------------------------------------------------------------------------- */
-uint32_t wlmtk_window2_get_resize_edges(wlmtk_window2_t *window_ptr)
+uint32_t wlmtk_window_get_resize_edges(wlmtk_window_t *window_ptr)
 {
     return window_ptr->resize_edges;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_close(wlmtk_window2_t *window_ptr)
+void wlmtk_window_request_close(wlmtk_window_t *window_ptr)
 {
     if (!(window_ptr->properties & WLMTK_WINDOW_PROPERTY_CLOSABLE)) return;
     wl_signal_emit(&window_ptr->events.request_close, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_minimize(wlmtk_window2_t *window_ptr)
+void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr)
 {
     bs_log(BS_ERROR, "TODO: Request minimize for window %p", window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_fullscreen(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_request_fullscreen(
+    wlmtk_window_t *window_ptr,
     bool fullscreen)
 {
     window_ptr->inorganic_sizing = fullscreen;
@@ -502,33 +502,33 @@ void wlmtk_window2_request_fullscreen(
     if (fullscreen) {
         desired_size = wlmtk_workspace_get_fullscreen_extents(
             window_ptr->workspace_ptr,
-            wlmtk_window2_get_wlr_output(window_ptr));
+            wlmtk_window_get_wlr_output(window_ptr));
         wl_signal_emit(&window_ptr->events.request_size, &desired_size);
     } else {
         desired_size.x = 0;
         desired_size.y = 0;
-        _wlmtk_window2_issue_request_size(window_ptr, &desired_size);
+        _wlmtk_window_issue_request_size(window_ptr, &desired_size);
     }
 
     wl_signal_emit(&window_ptr->events.request_fullscreen, &fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window2_is_fullscreen(wlmtk_window2_t *window_ptr)
+bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr)
 {
     return window_ptr->fullscreen;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_commit_fullscreen(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_commit_fullscreen(
+    wlmtk_window_t *window_ptr,
     bool fullscreen)
 {
     // Guard clause: Nothing to do if already in expected state.
     if (window_ptr->fullscreen == fullscreen ) return;
 
     window_ptr->fullscreen = fullscreen;
-    _wlmtk_window2_apply_decoration(window_ptr);
+    _wlmtk_window_apply_decoration(window_ptr);
 
     if (NULL != window_ptr->workspace_ptr) {
         wlmtk_workspace_window_to_fullscreen(
@@ -536,7 +536,7 @@ void wlmtk_window2_commit_fullscreen(
 
         struct wlr_box fsbox = wlmtk_workspace_get_fullscreen_extents(
             window_ptr->workspace_ptr,
-            wlmtk_window2_get_wlr_output(window_ptr));
+            wlmtk_window_get_wlr_output(window_ptr));
         wlmtk_workspace_set_window_position(
             window_ptr->workspace_ptr,
             window_ptr,
@@ -549,8 +549,8 @@ void wlmtk_window2_commit_fullscreen(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_maximized(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_request_maximized(
+    wlmtk_window_t *window_ptr,
     bool maximized)
 {
     // Guard clause: No action needed fullscreen. We might re-compute the
@@ -564,8 +564,8 @@ void wlmtk_window2_request_maximized(
     if (maximized) {
         struct wlr_box desired_size = wlmtk_workspace_get_maximize_extents(
             window_ptr->workspace_ptr,
-            wlmtk_window2_get_wlr_output(window_ptr));
-        _wlmtk_window2_issue_request_size(window_ptr, &desired_size);
+            wlmtk_window_get_wlr_output(window_ptr));
+        _wlmtk_window_issue_request_size(window_ptr, &desired_size);
     } else {
         struct wlr_box desired_size = window_ptr->organic_bounding_box;
         desired_size.x = 0;
@@ -576,14 +576,14 @@ void wlmtk_window2_request_maximized(
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window2_is_maximized(wlmtk_window2_t *window_ptr)
+bool wlmtk_window_is_maximized(wlmtk_window_t *window_ptr)
 {
     return window_ptr->maximized;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_commit_maximized(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_commit_maximized(
+    wlmtk_window_t *window_ptr,
     bool maximized)
 {
     if (window_ptr->maximized == maximized) return;
@@ -592,7 +592,7 @@ void wlmtk_window2_commit_maximized(
     if (NULL != window_ptr->workspace_ptr) {
         struct wlr_box max_box = wlmtk_workspace_get_maximize_extents(
             window_ptr->workspace_ptr,
-            wlmtk_window2_get_wlr_output(window_ptr));
+            wlmtk_window_get_wlr_output(window_ptr));
         wlmtk_workspace_set_window_position(
             window_ptr->workspace_ptr,
             window_ptr,
@@ -605,7 +605,7 @@ void wlmtk_window2_commit_maximized(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_request_shaded(wlmtk_window2_t *window_ptr, bool shaded)
+void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
 {
     if (window_ptr->fullscreen ||
         !window_ptr->server_side_decorated ||
@@ -622,13 +622,13 @@ void wlmtk_window2_request_shaded(wlmtk_window2_t *window_ptr, bool shaded)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr)
+bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr)
 {
     return window_ptr->shaded;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
+void wlmtk_window_menu_set_enabled(wlmtk_window_t *window_ptr, bool enabled)
 {
     if (!window_ptr->activated) enabled = false;
 
@@ -643,8 +643,8 @@ void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
     if (enabled) {
         int x_pos = 0;
         // Grabbing the element will clear the focus.
-        if (wlmtk_window2_element(window_ptr)->pointer_inside) {
-            x_pos = wlmtk_window2_element(
+        if (wlmtk_window_element(window_ptr)->pointer_inside) {
+            x_pos = wlmtk_window_element(
                 window_ptr)->last_pointer_motion_event.x;
         }
 
@@ -667,25 +667,25 @@ void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_t *wlmtk_window2_menu(wlmtk_window2_t *window_ptr)
+wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr)
 {
     return window_ptr->window_menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_server_side_decorated(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
     bool decorated)
 {
     if (window_ptr->server_side_decorated == decorated) return;
 
     window_ptr->server_side_decorated = decorated;
-    _wlmtk_window2_apply_decoration(window_ptr);
+    _wlmtk_window_apply_decoration(window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window2_set_workspace(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_workspace(
+    wlmtk_window_t *window_ptr,
     wlmtk_workspace_t *workspace_ptr)
 {
     if (window_ptr->workspace_ptr == workspace_ptr) return;
@@ -695,33 +695,33 @@ void wlmtk_window2_set_workspace(
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr)
+wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr)
 {
     return window_ptr->workspace_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-bs_dllist_node_t *wlmtk_dlnode_from_window2(wlmtk_window2_t *window_ptr)
+bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr)
 {
     return &window_ptr->dlnode;
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_t *wlmtk_window2_from_dlnode(bs_dllist_node_t *dlnode_ptr)
+wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr)
 {
-    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_window2_t, dlnode);
+    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_window_t, dlnode);
 }
 
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Activates window on button press, and calls the parent's implementation. */
-bool _wlmtk_window2_element_pointer_button(
+bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
-    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window2_t, bordered.super_container.super_element);
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window_t, bordered.super_container.super_element);
 
     // In right-click mode: Any out-of-window action will close it.
     // TODO(kaeser@gubbe.ch): This should be a specific window mode, and should
@@ -734,7 +734,7 @@ bool _wlmtk_window2_element_pointer_button(
         if (BTN_RIGHT == button_event_ptr->button &&
             WLMTK_BUTTON_UP == button_event_ptr->type &&
             !rv) {
-            wlmtk_window2_request_close(window_ptr);
+            wlmtk_window_request_close(window_ptr);
             return true;
         }
         return rv;
@@ -745,15 +745,15 @@ bool _wlmtk_window2_element_pointer_button(
         WLMTK_BUTTON_DOWN == button_event_ptr->type &&
         (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) ==
         button_event_ptr->keyboard_modifiers &&
-        NULL != wlmtk_window2_get_workspace(window_ptr)) {
+        NULL != wlmtk_window_get_workspace(window_ptr)) {
         wlmtk_workspace_begin_window_move(
-            wlmtk_window2_get_workspace(window_ptr),
+            wlmtk_window_get_workspace(window_ptr),
             window_ptr);
         return true;
     }
 
     // We shouldn't receive buttons when not mapped.
-    wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(window_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
     if (!window_ptr->fullscreen) {
         wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
@@ -765,15 +765,15 @@ bool _wlmtk_window2_element_pointer_button(
 
 /* ------------------------------------------------------------------------- */
 /** Gets dimensions of the content container: Forward to only the content. */
-void _wlmtk_window2_container_element_get_dimensions(
+void _wlmtk_window_container_element_get_dimensions(
         wlmtk_element_t *element_ptr,
         int *x1_ptr,
         int *y1_ptr,
         int *x2_ptr,
         int *y2_ptr)
 {
-    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_window2_t, content_container.super_element);
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_window_t, content_container.super_element);
 
     if (NULL == window_ptr->content_element_ptr) {
         if (NULL != x1_ptr) *x1_ptr = 0;
@@ -796,12 +796,12 @@ void _wlmtk_window2_container_element_get_dimensions(
  *
  * @param container_ptr
  */
-bool _wlmtk_window2_container_update_layout(wlmtk_container_t *container_ptr)
+bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
 {
-    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_window2_t, content_container);
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        container_ptr, wlmtk_window_t, content_container);
 
-    _wlmtk_window2_set_decoration_width(window_ptr);
+    _wlmtk_window_set_decoration_width(window_ptr);
 
     // Update layout for the parent. This is... hacky.
     if (NULL != container_ptr->super_element.parent_container_ptr) {
@@ -856,15 +856,15 @@ bool _wlmtk_window2_container_update_layout(wlmtk_container_t *container_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Applies window decoration depending on current state. */
-void _wlmtk_window2_apply_decoration(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 {
     wlmtk_margin_style_t bstyle = window_ptr->style.border;
 
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
-        _wlmtk_window2_create_titlebar(window_ptr);
+        _wlmtk_window_create_titlebar(window_ptr);
     } else {
         bstyle.width = 0;
-        _wlmtk_window2_destroy_titlebar(window_ptr);
+        _wlmtk_window_destroy_titlebar(window_ptr);
     }
 
     if (NULL != window_ptr->titlebar_ptr) {
@@ -883,19 +883,19 @@ void _wlmtk_window2_apply_decoration(wlmtk_window2_t *window_ptr)
     if (window_ptr->server_side_decorated &&
         !window_ptr->fullscreen &&
         (window_ptr->properties & WLMTK_WINDOW_PROPERTY_RESIZABLE)) {
-        _wlmtk_window2_create_resizebar(window_ptr);
+        _wlmtk_window_create_resizebar(window_ptr);
     } else {
-        _wlmtk_window2_destroy_resizebar(window_ptr);
+        _wlmtk_window_destroy_resizebar(window_ptr);
     }
 
     wlmtk_bordered_set_style(&window_ptr->bordered, &bstyle);
 
-    _wlmtk_window2_set_decoration_width(window_ptr);
+    _wlmtk_window_set_decoration_width(window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Creates the titlebar. */
-void _wlmtk_window2_create_titlebar(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(window_ptr->server_side_decorated && !window_ptr->fullscreen);
 
@@ -923,7 +923,7 @@ void _wlmtk_window2_create_titlebar(wlmtk_window2_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Destroys the titlebar. */
-void _wlmtk_window2_destroy_titlebar(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(!window_ptr->server_side_decorated || window_ptr->fullscreen);
 
@@ -938,7 +938,7 @@ void _wlmtk_window2_destroy_titlebar(wlmtk_window2_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Creates the resizebar. */
-void _wlmtk_window2_create_resizebar(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(window_ptr->server_side_decorated && !window_ptr->fullscreen);
 
@@ -957,7 +957,7 @@ void _wlmtk_window2_create_resizebar(wlmtk_window2_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Destroys the resizebar. */
-void _wlmtk_window2_destroy_resizebar(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(!window_ptr->server_side_decorated ||
               window_ptr->fullscreen ||
@@ -974,7 +974,7 @@ void _wlmtk_window2_destroy_resizebar(wlmtk_window2_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Sets the decoration's width to match the content. */
-void _wlmtk_window2_set_decoration_width(wlmtk_window2_t *window_ptr)
+void _wlmtk_window_set_decoration_width(wlmtk_window_t *window_ptr)
 {
     if (NULL == window_ptr->content_element_ptr) return;
 
@@ -990,8 +990,8 @@ void _wlmtk_window2_set_decoration_width(wlmtk_window2_t *window_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Issues a `request_size` signal to the client. box_ptr includes deco.  */
-void _wlmtk_window2_issue_request_size(
-    wlmtk_window2_t *window_ptr,
+void _wlmtk_window_issue_request_size(
+    wlmtk_window_t *window_ptr,
     const struct wlr_box *box_ptr)
 {
     // The box includes current decoration around the content. Compute the
@@ -1013,13 +1013,13 @@ void _wlmtk_window2_issue_request_size(
 
 /* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_menu_events_t::request_close. */
-void _wlmtk_window2_menu_request_close_handler(
+void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    wlmtk_window2_t *window_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_window2_t, menu_request_close_listener);
-    wlmtk_window2_menu_set_enabled(window_ptr, false);
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_window_t, menu_request_close_listener);
+    wlmtk_window_menu_set_enabled(window_ptr, false);
 }
 
 /* == Unit Tests =========================================================== */
@@ -1039,7 +1039,7 @@ static void test_menu(bs_test_t *test_ptr);
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * storing organic_bounding_box
 
-const bs_test_case_t wlmtk_window2_test_cases[] = {
+const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "decoration", test_decoration },
     { 1, "events", test_events },
@@ -1055,7 +1055,7 @@ const bs_test_case_t wlmtk_window2_test_cases[] = {
 };
 
 /** Window style used as default for testing. */
-static const wlmtk_window_style_t _wlmtk_window2_test_style = {
+static const wlmtk_window_style_t _wlmtk_window_test_style = {
     .titlebar = { .height = 10 },
     .resizebar = { .height = 5 },
     .margin = { .width = 1 },
@@ -1063,7 +1063,7 @@ static const wlmtk_window_style_t _wlmtk_window2_test_style = {
 };
 
 /** Menu style used as default for testing windows. */
-static const wlmtk_menu_style_t _wlmtk_window2_test_menu_style = {
+static const wlmtk_menu_style_t _wlmtk_window_test_menu_style = {
     .item = {
         .height = 20,
         .width = 100
@@ -1071,13 +1071,13 @@ static const wlmtk_menu_style_t _wlmtk_window2_test_menu_style = {
 };
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_t *wlmtk_test_window2_create(
+wlmtk_window_t *wlmtk_test_window_create(
     wlmtk_element_t *content_element_ptr)
 {
-    return wlmtk_window2_create(
+    return wlmtk_window_create(
         content_element_ptr,
-        &_wlmtk_window2_test_style,
-        &_wlmtk_window2_test_menu_style);
+        &_wlmtk_window_test_style,
+        &_wlmtk_window_test_menu_style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1087,22 +1087,22 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fe = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe);
 
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe->element);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     // Title. Must be set when unnamed, and override otherwise.
     BS_TEST_VERIFY_STRMATCH(
         test_ptr,
-        wlmtk_window2_get_title(w),
+        wlmtk_window_get_title(w),
         "Unnamed window .*");
-    wlmtk_window2_set_title(w, "Title");
-    BS_TEST_VERIFY_STREQ(test_ptr, "Title", wlmtk_window2_get_title(w));
+    wlmtk_window_set_title(w, "Title");
+    BS_TEST_VERIFY_STREQ(test_ptr, "Title", wlmtk_window_get_title(w));
 
     // Transform to element and dlnode and back.
-    wlmtk_element_t *e = wlmtk_window2_element(w);
-    BS_TEST_VERIFY_EQ(test_ptr, w, wlmtk_window2_from_element(e));
-    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_window2(w);
-    BS_TEST_VERIFY_EQ(test_ptr, w, wlmtk_window2_from_dlnode(dlnode_ptr));
+    wlmtk_element_t *e = wlmtk_window_element(w);
+    BS_TEST_VERIFY_EQ(test_ptr, w, wlmtk_window_from_element(e));
+    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_window(w);
+    BS_TEST_VERIFY_EQ(test_ptr, w, wlmtk_window_from_dlnode(dlnode_ptr));
 
     // set_workspace and get_workspace.
     struct wl_display *display_ptr = wl_display_create();
@@ -1117,24 +1117,24 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     wlmtk_util_test_listener_t l;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->state_changed, &l);
+        &wlmtk_window_events(w)->state_changed, &l);
 
-    wlmtk_window2_set_workspace(w, workspace_ptr);
+    wlmtk_window_set_workspace(w, workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         workspace_ptr,
-        wlmtk_window2_get_workspace(w));
+        wlmtk_window_get_workspace(w));
 
     wlmtk_util_clear_test_listener(&l);
-    wlmtk_window2_set_workspace(w, workspace_ptr);
+    wlmtk_window_set_workspace(w, workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     wlmtk_workspace_destroy(workspace_ptr);
     wl_display_destroy(display_ptr);
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe->element);
 }
 
@@ -1146,7 +1146,7 @@ void test_decoration(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe);
     wlmtk_fake_element_set_dimensions(fe, 42, 20);
 
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe->element);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     // Initially: no decoration.
@@ -1154,24 +1154,24 @@ void test_decoration(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 42, 20,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Enable: Default property is not resizable, so we only get titlebar.
-    wlmtk_window2_set_server_side_decorated(w, true);
+    wlmtk_window_set_server_side_decorated(w, true);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
 
     // Set property. Now we must have resize bar.
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
     // Disable. Decoration vanishes.
-    wlmtk_window2_set_server_side_decorated(w, false);
+    wlmtk_window_set_server_side_decorated(w, false);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
 
     // Re-enable. Properties are sticky, so we want all.
-    wlmtk_window2_set_server_side_decorated(w, true);
+    wlmtk_window_set_server_side_decorated(w, true);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
@@ -1186,7 +1186,7 @@ void test_decoration(bs_test_t *test_ptr)
         wlmtk_element_get_dimensions_box(re));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 46, 41,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // An update in the element would call the paren's update_layout.
     wlmtk_fake_element_set_dimensions(fe, 52, 20);
@@ -1198,7 +1198,7 @@ void test_decoration(bs_test_t *test_ptr)
         wlmtk_element_get_dimensions_box(re));
 
     // Update again, with top-left edges resizing.
-    wlmtk_window2_set_resize_edges(w, WLR_EDGE_TOP | WLR_EDGE_LEFT);
+    wlmtk_window_set_resize_edges(w, WLR_EDGE_TOP | WLR_EDGE_LEFT);
     wlmtk_fake_element_set_dimensions(fe, 32, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 32, 10,
@@ -1208,13 +1208,13 @@ void test_decoration(bs_test_t *test_ptr)
         wlmtk_element_get_dimensions_box(re));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 36, 31,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLR_EDGE_TOP | WLR_EDGE_LEFT,
-        wlmtk_window2_get_resize_edges(w));
+        wlmtk_window_get_resize_edges(w));
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe->element);
 }
 
@@ -1222,54 +1222,54 @@ void test_decoration(bs_test_t *test_ptr)
 /** Tests that desired events are firing. */
 void test_events(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t l;
 
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_close, &l);
-    wlmtk_window2_request_close(w);
+        &wlmtk_window_events(w)->request_close, &l);
+    wlmtk_window_request_close(w);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_CLOSABLE);
-    wlmtk_window2_request_close(w);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_CLOSABLE);
+    wlmtk_window_request_close(w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests that activation updates decoration and callback. */
 void test_set_activated(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t l;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->set_activated, &l);
+        &wlmtk_window_events(w)->set_activated, &l);
 
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_activated(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_activated(w));
 
-    wlmtk_window2_set_activated(w, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
+    wlmtk_window_set_activated(w, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
 
-    wlmtk_window2_set_server_side_decorated(w, true);
+    wlmtk_window_set_server_side_decorated(w, true);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_titlebar_is_activated(w->titlebar_ptr));
 
     wlmtk_util_clear_test_listener(&l);
-    wlmtk_window2_set_activated(w, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_activated(w));
+    wlmtk_window_set_activated(w, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_activated(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_titlebar_is_activated(w->titlebar_ptr));
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1278,42 +1278,42 @@ void test_resize(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_wlr_box_listener_t l = {};
     wlmtk_util_connect_test_wlr_box_listener(
-        &wlmtk_window2_events(w)->request_size, &l);
+        &wlmtk_window_events(w)->request_size, &l);
     wlmtk_util_test_listener_t maxl = {};
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_maximized, &maxl);
+        &wlmtk_window_events(w)->request_maximized, &maxl);
 
 
     // Request a size change on normal window: Accepted, forward to listener.
     struct wlr_box size = { .width = 100, .height = 50 };
-    wlmtk_window2_request_size(w, &size);
+    wlmtk_window_request_size(w, &size);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 100, 50, l.box);
 
     // Request a size change on a fullscreen window: Not accepted.
     wlmtk_util_clear_test_wlr_box_listener(&l);
-    wlmtk_window2_commit_fullscreen(w, true);
-    wlmtk_window2_request_size(w, &size);
+    wlmtk_window_commit_fullscreen(w, true);
+    wlmtk_window_request_size(w, &size);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
-    wlmtk_window2_commit_fullscreen(w, false);
+    wlmtk_window_commit_fullscreen(w, false);
 
     // Request size change on maximized window: Accept, but request unmaximize.
     wlmtk_util_clear_test_wlr_box_listener(&l);
     wlmtk_util_clear_test_listener(&maxl);
-    wlmtk_window2_commit_maximized(w, true);
-    wlmtk_window2_request_size(w, &size);
+    wlmtk_window_commit_maximized(w, true);
+    wlmtk_window_request_size(w, &size);
     BS_TEST_VERIFY_EQ(test_ptr, 1, maxl.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 100, 50, l.box);
 
     wlmtk_util_disconnect_listener(&l.listener);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
 }
 
@@ -1338,45 +1338,45 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t state_changed_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->state_changed,
+        &wlmtk_window_events(w)->state_changed,
         &state_changed_listener);
 
     wlmtk_util_test_listener_t request_fullscreen_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_fullscreen,
+        &wlmtk_window_events(w)->request_fullscreen,
         &request_fullscreen_listener);
 
     wlmtk_util_test_wlr_box_listener_t request_size_listener;
     wlmtk_util_connect_test_wlr_box_listener(
-        &wlmtk_window2_events(w)->request_size,
+        &wlmtk_window_events(w)->request_size,
         &request_size_listener);
 
     // Map the window. Must be activated.
-    wlmtk_window2_set_server_side_decorated(w, true);
-    wlmtk_workspace_map_window2(ws_ptr, w);
+    wlmtk_window_set_server_side_decorated(w, true);
+    wlmtk_workspace_map_window(ws_ptr, w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w));
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Request fullscreen. Size yet unchanged, but requests issued.
-    wlmtk_window2_request_fullscreen(w, true);
+    wlmtk_window_request_fullscreen(w, true);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_fullscreen_listener.calls);
     wlmtk_util_clear_test_listener(&request_fullscreen_listener);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
@@ -1386,22 +1386,22 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     // Only after commit: Be fullscreen.
     wlmtk_fake_element_set_dimensions(fe_ptr, 1024, 768);
-    wlmtk_window2_commit_fullscreen(w, true);
+    wlmtk_window_commit_fullscreen(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
 
     // Request to end fullscreen. Also not taking immediate effect.
-    wlmtk_window2_request_fullscreen(w, false);
+    wlmtk_window_request_fullscreen(w, false);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_fullscreen_listener.calls);
     wlmtk_util_clear_test_listener(&request_fullscreen_listener);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
@@ -1411,22 +1411,22 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     // Only after commit: Be fullscreen.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
-    wlmtk_window2_commit_fullscreen(w, false);
+    wlmtk_window_commit_fullscreen(w, false);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
 
     wlmtk_util_disconnect_test_listener(&request_fullscreen_listener);
     wlmtk_util_disconnect_test_listener(&state_changed_listener);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
@@ -1453,60 +1453,60 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t state_changed_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->state_changed,
+        &wlmtk_window_events(w)->state_changed,
         &state_changed_listener);
 
     wlmtk_util_test_listener_t request_fullscreen_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_fullscreen,
+        &wlmtk_window_events(w)->request_fullscreen,
         &request_fullscreen_listener);
 
     // Map the window. Must be activated.
-    wlmtk_window2_set_server_side_decorated(w, true);
-    wlmtk_workspace_map_window2(ws_ptr, w);
+    wlmtk_window_set_server_side_decorated(w, true);
+    wlmtk_workspace_map_window(ws_ptr, w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     wlmtk_util_clear_test_listener(&state_changed_listener);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w));
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Request fullscreen. Verify the signals to request size and fullscreen.
-    wlmtk_window2_request_fullscreen(w, true);
+    wlmtk_window_request_fullscreen(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_fullscreen_listener.calls);
     wlmtk_util_clear_test_listener(&request_fullscreen_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Only after commit: Be back at organic size.
     wlmtk_fake_element_set_dimensions(fe_ptr, 1024, 768);
-    wlmtk_window2_commit_fullscreen(w, true);
+    wlmtk_window_commit_fullscreen(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_activated(w));
+    wlmtk_workspace_unmap_window(ws_ptr, w);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_activated(w));
 
     wlmtk_util_disconnect_test_listener(&request_fullscreen_listener);
     wlmtk_util_disconnect_test_listener(&state_changed_listener);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
@@ -1533,45 +1533,45 @@ void test_maximized(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t state_changed_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->state_changed,
+        &wlmtk_window_events(w)->state_changed,
         &state_changed_listener);
 
     wlmtk_util_test_listener_t request_maximized_listener;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->request_maximized,
+        &wlmtk_window_events(w)->request_maximized,
         &request_maximized_listener);
 
     wlmtk_util_test_wlr_box_listener_t request_size_listener;
     wlmtk_util_connect_test_wlr_box_listener(
-        &wlmtk_window2_events(w)->request_size,
+        &wlmtk_window_events(w)->request_size,
         &request_size_listener);
 
     // Map the window. Must be activated.
-    wlmtk_window2_set_server_side_decorated(w, true);
-    wlmtk_workspace_map_window2(ws_ptr, w);
+    wlmtk_window_set_server_side_decorated(w, true);
+    wlmtk_workspace_map_window(ws_ptr, w);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_activated(w));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w));
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Request maximized. Size yet unchanged, but requests issued.
-    wlmtk_window2_request_maximized(w, true);
+    wlmtk_window_request_maximized(w, true);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_maximized_listener.calls);
     wlmtk_util_clear_test_listener(&request_maximized_listener);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
@@ -1581,22 +1581,22 @@ void test_maximized(bs_test_t *test_ptr)
 
     // Only after commit: Be maximized.
     wlmtk_fake_element_set_dimensions(fe_ptr, 1020, 747);
-    wlmtk_window2_commit_maximized(w, true);
+    wlmtk_window_commit_maximized(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
     // Request to end maximized. Also not taking immediate effect.
-    wlmtk_window2_request_maximized(w, false);
+    wlmtk_window_request_maximized(w, false);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_maximized_listener.calls);
     wlmtk_util_clear_test_listener(&request_maximized_listener);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
@@ -1606,21 +1606,21 @@ void test_maximized(bs_test_t *test_ptr)
 
     // Only after commit: Be back at organic size.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
-    wlmtk_window2_commit_maximized(w, false);
+    wlmtk_window_commit_maximized(w, false);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
 
     wlmtk_util_disconnect_test_listener(&request_maximized_listener);
     wlmtk_util_disconnect_test_listener(&state_changed_listener);
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
@@ -1632,33 +1632,33 @@ void test_shaded(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
-    wlmtk_window2_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_util_test_listener_t l;
     wlmtk_util_connect_test_listener(
-        &wlmtk_window2_events(w)->state_changed, &l);
+        &wlmtk_window_events(w)->state_changed, &l);
 
     // Not decorated: Will not be shaded.
-    wlmtk_window2_set_server_side_decorated(w, false);
-    wlmtk_window2_request_shaded(w, true);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
-    wlmtk_window2_set_server_side_decorated(w, true);
+    wlmtk_window_set_server_side_decorated(w, false);
+    wlmtk_window_request_shaded(w, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
+    wlmtk_window_set_server_side_decorated(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     // Fullscreen: Will not be shaded.
-    wlmtk_window2_commit_fullscreen(w, true);
+    wlmtk_window_commit_fullscreen(w, true);
     wlmtk_util_clear_test_listener(&l);
-    wlmtk_window2_request_shaded(w, true);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    wlmtk_window_request_shaded(w, true);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
-    wlmtk_window2_commit_fullscreen(w, false);
+    wlmtk_window_commit_fullscreen(w, false);
 
     // Now a regular, decorated window: Will be shaded.
     wlmtk_util_clear_test_listener(&l);
-    wlmtk_window2_request_shaded(w, true);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window2_is_shaded(w));
+    wlmtk_window_request_shaded(w, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_shaded(w));
     BS_TEST_VERIFY_FALSE(test_ptr, fe_ptr->element.visible);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
@@ -1668,8 +1668,8 @@ void test_shaded(bs_test_t *test_ptr)
 
     // And verify that unshading works.
     wlmtk_util_clear_test_listener(&l);
-    wlmtk_window2_request_shaded(w, false);
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window2_is_shaded(w));
+    wlmtk_window_request_shaded(w, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
     BS_TEST_VERIFY_TRUE(test_ptr, fe_ptr->element.visible);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -1677,7 +1677,7 @@ void test_shaded(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
 }
 
@@ -1703,11 +1703,11 @@ void test_modifier_move(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
     wlmtk_fake_element_set_dimensions(fe_ptr, 40, 20);
-    wlmtk_window2_t *w = wlmtk_test_window2_create(&fe_ptr->element);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_workspace_map_window2(ws_ptr, w);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window2_element(w)->x);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window2_element(w)->y);
+    wlmtk_workspace_map_window(ws_ptr, w);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(w)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_window_element(w)->y);
 
     // Move pointer over the window.
     wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
@@ -1732,11 +1732,11 @@ void test_modifier_move(bs_test_t *test_ptr)
             wlmtk_workspace_element(ws_ptr), &mev));
 
     // Now must be at a new position.
-    BS_TEST_VERIFY_EQ(test_ptr, 4, wlmtk_window2_element(w)->x);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, wlmtk_window2_element(w)->y);
+    BS_TEST_VERIFY_EQ(test_ptr, 4, wlmtk_window_element(w)->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 3, wlmtk_window_element(w)->y);
 
-    wlmtk_workspace_unmap_window2(ws_ptr, w);
-    wlmtk_window2_destroy(w);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
+    wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
     wl_display_destroy(display_ptr);
@@ -1746,39 +1746,39 @@ void test_modifier_move(bs_test_t *test_ptr)
 /** Tests enabling and disabling the window menu. */
 void test_menu(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
     wlmtk_menu_item_t *i = wlmtk_menu_item_create(
-        &_wlmtk_window2_test_menu_style.item);
+        &_wlmtk_window_test_menu_style.item);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i);
-    wlmtk_menu_add_item(wlmtk_window2_menu(w), i);
+    wlmtk_menu_add_item(wlmtk_window_menu(w), i);
 
     // No menu shown when not activated.
-    wlmtk_window2_menu_set_enabled(w, true);
+    wlmtk_window_menu_set_enabled(w, true);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+        wlmtk_menu_element(wlmtk_window_menu(w))->visible);
 
     // Show when activated.
-    wlmtk_window2_set_activated(w, true);
-    wlmtk_window2_menu_set_enabled(w, true);
+    wlmtk_window_set_activated(w, true);
+    wlmtk_window_menu_set_enabled(w, true);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+        wlmtk_menu_element(wlmtk_window_menu(w))->visible);
     // Bounding box still none: The menu's dimensions not included.
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 0, 0,
-        wlmtk_window2_get_bounding_box(w));
+        wlmtk_window_get_bounding_box(w));
 
     // Hide.
-    _wlmtk_window2_menu_request_close_handler(
+    _wlmtk_window_menu_request_close_handler(
         &w->menu_request_close_listener, NULL);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_menu_element(wlmtk_window2_menu(w))->visible);
+        wlmtk_menu_element(wlmtk_window_menu(w))->visible);
 
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
-/* == End of window2.c ===================================================== */
+/* == End of window.c ===================================================== */

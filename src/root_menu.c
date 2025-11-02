@@ -49,7 +49,7 @@
 /** State of the root menu. */
 struct _wlmaker_root_menu_t {
     /** Window. */
-    wlmtk_window2_t           *window_ptr;
+    wlmtk_window_t           *window_ptr;
 
     /** The root menu base instance. */
     wlmtk_menu_t              *menu_ptr;
@@ -58,9 +58,9 @@ struct _wlmaker_root_menu_t {
     /** Listener for @ref wlmtk_menu_events_t::request_close. */
     struct wl_listener        menu_request_close_listener;
 
-    /** Listener for @ref wlmtk_window2_events_t::request_close. */
+    /** Listener for @ref wlmtk_window_events_t::request_close. */
     struct wl_listener        window_request_close_listener;
-    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
+    /** Listener for @ref wlmtk_window_events_t::set_activated. */
     struct wl_listener        window_set_activated_listener;
 
     /** Back-link to the server. */
@@ -220,7 +220,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         &root_menu_ptr->menu_request_close_listener,
         _wlmaker_root_menu_handle_request_close);
 
-    root_menu_ptr->window_ptr = wlmtk_window2_create(
+    root_menu_ptr->window_ptr = wlmtk_window_create(
         wlmtk_menu_element(root_menu_ptr->menu_ptr),
         window_style_ptr,
         menu_style_ptr);
@@ -230,18 +230,18 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
         return NULL;
     }
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(root_menu_ptr->window_ptr)->request_close,
+        &wlmtk_window_events(root_menu_ptr->window_ptr)->request_close,
         &root_menu_ptr->window_request_close_listener,
         _wlmaker_root_menu_handle_window_request_close);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_window2_events(root_menu_ptr->window_ptr)->set_activated,
+        &wlmtk_window_events(root_menu_ptr->window_ptr)->set_activated,
         &root_menu_ptr->window_set_activated_listener,
         _wlmaker_root_menu_handle_window_set_activated);
 
-    wlmtk_window2_set_title(
+    wlmtk_window_set_title(
         root_menu_ptr->window_ptr,
         bspl_array_string_value_at(root_menu_array_ptr, 0));
-    wlmtk_window2_set_server_side_decorated(root_menu_ptr->window_ptr, true);
+    wlmtk_window_set_server_side_decorated(root_menu_ptr->window_ptr, true);
 
     bspl_array_unref(root_menu_array_ptr);
     return root_menu_ptr;
@@ -258,10 +258,10 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 
     if (NULL != root_menu_ptr->window_ptr) {
         // Unmap, in case it's not unmapped yet.
-        wlmtk_workspace_t *workspace_ptr = wlmtk_window2_get_workspace(
+        wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(
             root_menu_ptr->window_ptr);
         if (NULL != workspace_ptr) {
-            wlmtk_workspace_unmap_window2(workspace_ptr,
+            wlmtk_workspace_unmap_window(workspace_ptr,
                                           root_menu_ptr->window_ptr);
         }
 
@@ -270,7 +270,7 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
         wlmtk_util_disconnect_listener(
             &root_menu_ptr->window_set_activated_listener);
 
-        wlmtk_window2_destroy(root_menu_ptr->window_ptr);
+        wlmtk_window_destroy(root_menu_ptr->window_ptr);
         root_menu_ptr->window_ptr = NULL;
     }
 
@@ -286,7 +286,7 @@ void wlmaker_root_menu_destroy(wlmaker_root_menu_t *root_menu_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_window2_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
+wlmtk_window_t *wlmaker_root_menu_window(wlmaker_root_menu_t *root_menu_ptr)
 {
     return root_menu_ptr->window_ptr;
 }
@@ -325,7 +325,7 @@ void _wlmaker_root_menu_handle_window_set_activated(
         wlmtk_container_set_keyboard_focus_element(
             e->parent_container_ptr,
             e,
-            wlmtk_window2_is_activated(root_menu_ptr->window_ptr));
+            wlmtk_window_is_activated(root_menu_ptr->window_ptr));
     }
 }
 
@@ -339,9 +339,9 @@ void _wlmaker_root_menu_handle_menu_open_changed(
     wlmaker_root_menu_t *root_menu_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_root_menu_t, menu_open_changed_listener);
     if (!wlmtk_menu_is_open(root_menu_ptr->menu_ptr) &&
-        NULL != wlmtk_window2_get_workspace(root_menu_ptr->window_ptr)) {
-        wlmtk_workspace_unmap_window2(
-            wlmtk_window2_get_workspace(root_menu_ptr->window_ptr),
+        NULL != wlmtk_window_get_workspace(root_menu_ptr->window_ptr)) {
+        wlmtk_workspace_unmap_window(
+            wlmtk_window_get_workspace(root_menu_ptr->window_ptr),
             root_menu_ptr->window_ptr);
     } else {
 
@@ -356,7 +356,7 @@ void _wlmaker_root_menu_handle_menu_open_changed(
         } else {
             properties |= WLMTK_WINDOW_PROPERTY_CLOSABLE;
         }
-        wlmtk_window2_set_properties(root_menu_ptr->window_ptr, properties);
+        wlmtk_window_set_properties(root_menu_ptr->window_ptr, properties);
 
     }
 }

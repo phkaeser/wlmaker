@@ -96,14 +96,14 @@ static const uint32_t _wlmtk_titlebar_default_properties =
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar2_create(
-    wlmtk_window2_t *window_ptr,
+    wlmtk_window_t *window_ptr,
     const wlmtk_titlebar_style_t *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
     titlebar_ptr->style = *style_ptr;
-    titlebar_ptr->title_ptr = wlmtk_window2_get_title(window_ptr);
+    titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
@@ -125,7 +125,7 @@ wlmtk_titlebar_t *wlmtk_titlebar2_create(
         wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
 
     titlebar_ptr->minimize_button_ptr = wlmtk_titlebar2_button_create(
-        wlmtk_window2_request_minimize,
+        wlmtk_window_request_minimize,
         window_ptr,
         wlmaker_primitives_draw_minimize_icon);
     if (NULL == titlebar_ptr->minimize_button_ptr) {
@@ -137,7 +137,7 @@ wlmtk_titlebar_t *wlmtk_titlebar2_create(
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
     titlebar_ptr->close_button_ptr = wlmtk_titlebar2_button_create(
-        wlmtk_window2_request_close,
+        wlmtk_window_request_close,
         window_ptr,
         wlmaker_primitives_draw_close_icon);
     if (NULL == titlebar_ptr->close_button_ptr) {
@@ -435,7 +435,7 @@ const bs_test_case_t wlmtk_titlebar_test_cases[] = {
 /** Tests titlebar with variable width. */
 void test_variable_width(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
     wlmtk_titlebar_style_t style = { .height = 22, .margin = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar2_create(w, &style);
@@ -484,14 +484,14 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 66, width);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests titlebar with configured properties. */
 void test_properties(bs_test_t *test_ptr)
 {
-    wlmtk_window2_t *w = wlmtk_test_window2_create(NULL);
+    wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
     wlmtk_titlebar_style_t style = { .height = 22, .margin = { .width = 2 } };
     wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar2_create(w, &style);
@@ -557,7 +557,7 @@ void test_properties(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
-    wlmtk_window2_destroy(w);
+    wlmtk_window_destroy(w);
 }
 
 /* == End of titlebar.c ==================================================== */

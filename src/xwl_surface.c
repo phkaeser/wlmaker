@@ -75,22 +75,22 @@ struct _wlmaker_xwl_surface_t {
     /** Listener for the `unmap` signal of `wlr_xwayland_surface`. */
     struct wl_listener        surface_unmap_listener;
 
-    /** Listener for @ref wlmtk_window2_events_t::request_close. */
+    /** Listener for @ref wlmtk_window_events_t::request_close. */
     struct wl_listener        window_request_close_listener;
-    /** Listener for @ref wlmtk_window2_events_t::set_activated. */
+    /** Listener for @ref wlmtk_window_events_t::set_activated. */
     struct wl_listener        window_set_activated_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_size. */
+    /** Listener for @ref wlmtk_window_events_t::request_size. */
     struct wl_listener        window_request_size_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_fullscreen. */
+    /** Listener for @ref wlmtk_window_events_t::request_fullscreen. */
     struct wl_listener        window_request_fullscreen_listener;
-    /** Listener for @ref wlmtk_window2_events_t::request_maximized. */
+    /** Listener for @ref wlmtk_window_events_t::request_maximized. */
     struct wl_listener        window_request_maximized_listener;
 
     /** The toolkit surface. Only available once 'associated'. */
     wlmtk_surface_t           *surface_ptr;
 
     /** The toolkit window, in case the surface does not have a parent. */
-    wlmtk_window2_t           *window_ptr;
+    wlmtk_window_t           *window_ptr;
     /** Or, the parent surface. In that case, window_ptr is NULL. */
     wlmaker_xwl_surface_t     *parent_surface_ptr;
 
@@ -349,24 +349,24 @@ void _xwl_surface_handle_associate(
         wlmtk_surface_element(xwl_surface_ptr->surface_ptr));
 
     // Currently we treat parent-less windows AND modal windows as toplevel.
-    // Modal windows should actually be child wlmtk_window2_t, but that isn't
+    // Modal windows should actually be child wlmtk_window_t, but that isn't
     // supported yet.
     if (NULL == xwl_surface_ptr->wlr_xwayland_surface_ptr->parent ||
         xwl_surface_ptr->wlr_xwayland_surface_ptr->modal) {
 
         BS_ASSERT(NULL == xwl_surface_ptr->window_ptr);
 
-        xwl_surface_ptr->window_ptr = wlmtk_window2_create(
+        xwl_surface_ptr->window_ptr = wlmtk_window_create(
             wlmtk_base_element(&xwl_surface_ptr->base),
             &xwl_surface_ptr->server_ptr->style.window,
             &xwl_surface_ptr->server_ptr->style.menu);
         if (NULL == xwl_surface_ptr->window_ptr) {
             // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
-            bs_log(BS_FATAL, "Failed wlmtk_window2_create.");
+            bs_log(BS_FATAL, "Failed wlmtk_window_create.");
             return;
         }
         _xwl_surface_apply_decorations(xwl_surface_ptr);
-        wlmtk_window2_set_properties(
+        wlmtk_window_set_properties(
             xwl_surface_ptr->window_ptr,
             WLMTK_WINDOW_PROPERTY_RESIZABLE |
             WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
@@ -374,28 +374,28 @@ void _xwl_surface_handle_associate(
         wlmtk_util_client_t client = {
             .pid = xwl_surface_ptr->wlr_xwayland_surface_ptr->pid
         };
-        wlmtk_window2_set_client(xwl_surface_ptr->window_ptr, &client);
-        wlmtk_window2_set_title(xwl_surface_ptr->window_ptr,
+        wlmtk_window_set_client(xwl_surface_ptr->window_ptr, &client);
+        wlmtk_window_set_title(xwl_surface_ptr->window_ptr,
                                 xwl_surface_ptr->title_ptr);
 
         wlmtk_util_connect_listener_signal(
-            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_close,
+            &wlmtk_window_events(xwl_surface_ptr->window_ptr)->request_close,
             &xwl_surface_ptr->window_request_close_listener,
             _wlmaker_xwl_surface_handle_window_request_close);
         wlmtk_util_connect_listener_signal(
-            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->set_activated,
+            &wlmtk_window_events(xwl_surface_ptr->window_ptr)->set_activated,
             &xwl_surface_ptr->window_set_activated_listener,
             _wlmaker_xwl_surface_handle_window_set_activated);
         wlmtk_util_connect_listener_signal(
-            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_size,
+            &wlmtk_window_events(xwl_surface_ptr->window_ptr)->request_size,
             &xwl_surface_ptr->window_request_size_listener,
             _wlmaker_xwl_surface_handle_window_request_size);
         wlmtk_util_connect_listener_signal(
-            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_fullscreen,
+            &wlmtk_window_events(xwl_surface_ptr->window_ptr)->request_fullscreen,
             &xwl_surface_ptr->window_request_fullscreen_listener,
             _wlmaker_xwl_surface_handle_window_request_fullscreen);
         wlmtk_util_connect_listener_signal(
-            &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_maximized,
+            &wlmtk_window_events(xwl_surface_ptr->window_ptr)->request_maximized,
             &xwl_surface_ptr->window_request_maximized_listener,
             _wlmaker_xwl_surface_handle_window_request_maximized);
 
@@ -445,7 +445,7 @@ void _xwl_surface_handle_dissociate(
             &xwl_surface_ptr->server_ptr->window_destroyed_event,
             xwl_surface_ptr->window_ptr);
 
-        wlmtk_window2_destroy(xwl_surface_ptr->window_ptr);
+        wlmtk_window_destroy(xwl_surface_ptr->window_ptr);
         xwl_surface_ptr->window_ptr = NULL;
     }
 
@@ -486,7 +486,7 @@ void _xwl_surface_handle_set_title(
     }
 
     if (NULL != xs_ptr->window_ptr) {
-        wlmtk_window2_set_title(xs_ptr->window_ptr, xs_ptr->title_ptr);
+        wlmtk_window_set_title(xs_ptr->window_ptr, xs_ptr->title_ptr);
     }
 }
 
@@ -520,7 +520,7 @@ void _xwl_surface_handle_set_parent(
 
     // TODO(kaeser@gubbe.ch): We're currently treating modal windows as
     // toplevel windows. They're not popups, for sure. To support this,
-    // we'll need wlmtk_window2_t to support child wlmtk_window2_t.
+    // we'll need wlmtk_window_t to support child wlmtk_window_t.
     if (xwl_surface_ptr->wlr_xwayland_surface_ptr->modal) return;
 
     wlmtk_base_push_element(
@@ -591,7 +591,7 @@ void _xwl_surface_handle_surface_map(
     wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(
             xwl_surface_ptr->server_ptr->root_ptr);
-    wlmtk_workspace_map_window2(workspace_ptr, xwl_surface_ptr->window_ptr);
+    wlmtk_workspace_map_window(workspace_ptr, xwl_surface_ptr->window_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -605,8 +605,8 @@ void _xwl_surface_handle_surface_unmap(
 
     if (NULL == xwl_surface_ptr->window_ptr) return;
 
-    wlmtk_workspace_unmap_window2(
-        wlmtk_window2_get_workspace(xwl_surface_ptr->window_ptr),
+    wlmtk_workspace_unmap_window(
+        wlmtk_window_get_workspace(xwl_surface_ptr->window_ptr),
         xwl_surface_ptr->window_ptr);
 }
 
@@ -633,10 +633,10 @@ void _wlmaker_xwl_surface_handle_window_set_activated(
 
     wlr_xwayland_surface_activate(
         xwl_surface_ptr->wlr_xwayland_surface_ptr,
-        wlmtk_window2_is_activated(xwl_surface_ptr->window_ptr));
+        wlmtk_window_is_activated(xwl_surface_ptr->window_ptr));
     wlmtk_surface_set_activated(
         xwl_surface_ptr->surface_ptr,
-        wlmtk_window2_is_activated(xwl_surface_ptr->window_ptr));
+        wlmtk_window_is_activated(xwl_surface_ptr->window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -669,7 +669,7 @@ void _wlmaker_xwl_surface_handle_window_request_fullscreen(
     wlr_xwayland_surface_set_fullscreen(
         xwl_surface_ptr->wlr_xwayland_surface_ptr,
          *fullscreen_ptr);
-    wlmtk_window2_commit_fullscreen(
+    wlmtk_window_commit_fullscreen(
         xwl_surface_ptr->window_ptr,
         *fullscreen_ptr);
 
@@ -692,7 +692,7 @@ void _wlmaker_xwl_surface_handle_window_request_maximized(
     wlr_xwayland_surface_set_maximized(
         xwl_surface_ptr->wlr_xwayland_surface_ptr,
          *maximized_ptr);
-    wlmtk_window2_commit_maximized(
+    wlmtk_window_commit_maximized(
         xwl_surface_ptr->window_ptr, *maximized_ptr);
 }
 
@@ -716,11 +716,11 @@ void _xwl_surface_apply_decorations(wlmaker_xwl_surface_t *xwl_surface_ptr)
             xwl_surface_ptr->xwl_ptr,
             xwl_surface_ptr->wlr_xwayland_surface_ptr,
             borderless_window_types)) {
-        wlmtk_window2_set_server_side_decorated(
+        wlmtk_window_set_server_side_decorated(
             xwl_surface_ptr->window_ptr,
             true);
     } else {
-        wlmtk_window2_set_server_side_decorated(
+        wlmtk_window_set_server_side_decorated(
             xwl_surface_ptr->window_ptr,
             false);
     }

@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file window2.h
+ * @file window.h
  *
  * @copyright
  * Copyright 2025 Google LLC
@@ -23,7 +23,7 @@
 struct wlr_output;
 
 /** Forward declaration: Window. */
-typedef struct _wlmtk_window2_t wlmtk_window2_t;
+typedef struct _wlmtk_window_t wlmtk_window_t;
 
 #include "element.h"
 #include "menu.h"
@@ -35,24 +35,24 @@ typedef struct _wlmtk_window2_t wlmtk_window2_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Signals available for the @ref wlmtk_window2_t class. */
+/** Signals available for the @ref wlmtk_window_t class. */
 typedef struct {
     /**
      * Signals that the window state (maximize, iconify, ...) changed.
      *
      * Window state can be retrieved from:
-     * - @ref wlmtk_window2_is_maximized
-     * - @ref wlmtk_window2_is_fullscreen
-     * - @ref wlmtk_window2_is_shaded
+     * - @ref wlmtk_window_is_maximized
+     * - @ref wlmtk_window_is_fullscreen
+     * - @ref wlmtk_window_is_shaded
      *
      * The signal is also raised when the window's workspace is changed.
-     * Retrieve through @ref wlmtk_window2_get_workspace.
+     * Retrieve through @ref wlmtk_window_get_workspace.
      *
-     * data_ptr points to the window state (@ref wlmtk_window2_t).
+     * data_ptr points to the window state (@ref wlmtk_window_t).
      */
     struct wl_signal          state_changed;
 
-    /** Signals that @ref wlmtk_window2_t::activated changed. */
+    /** Signals that @ref wlmtk_window_t::activated changed. */
     struct wl_signal          set_activated;
 
     /**
@@ -82,7 +82,7 @@ typedef struct {
      * Takes a `bool` as argument, specifying whether to enable maximized.
      */
     struct wl_signal          request_maximized;
-} wlmtk_window2_events_t;
+} wlmtk_window_events_t;
 
 /** Window properties. */
 typedef enum {
@@ -110,7 +110,7 @@ typedef enum {
  *
  * @return The window handle, or NULL on error.
  */
-wlmtk_window2_t *wlmtk_window2_create(
+wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
     const wlmtk_window_style_t *style_ptr,
     const wlmtk_menu_style_t *menu_style_ptr);
@@ -120,34 +120,34 @@ wlmtk_window2_t *wlmtk_window2_create(
  *
  * @param window_ptr
  */
-void wlmtk_window2_destroy(wlmtk_window2_t *window_ptr);
+void wlmtk_window_destroy(wlmtk_window_t *window_ptr);
 
 /**
  * Gets the set of events available to a window, for binding listeners.
  *
  * @param window_ptr
  *
- * @return Pointer to this window's @ref wlmtk_window2_t::events.
+ * @return Pointer to this window's @ref wlmtk_window_t::events.
  */
-wlmtk_window2_events_t *wlmtk_window2_events(wlmtk_window2_t *window_ptr);
+wlmtk_window_events_t *wlmtk_window_events(wlmtk_window_t *window_ptr);
 
 /**
  * Returns the element for adding the window into a container.
  *
  * @param window_ptr
  *
- * @return Pointer to the super element of @ref wlmtk_window2_t::bordered.
+ * @return Pointer to the super element of @ref wlmtk_window_t::bordered.
  */
-wlmtk_element_t *wlmtk_window2_element(wlmtk_window2_t *window_ptr);
+wlmtk_element_t *wlmtk_window_element(wlmtk_window_t *window_ptr);
 
 /**
- * Returns the window, where `element_ptr` is @ref wlmtk_window2_element.
+ * Returns the window, where `element_ptr` is @ref wlmtk_window_element.
  *
  * @param element_ptr
  *
- * @return the @ref wlmtk_window2_t from the element pointer.
+ * @return the @ref wlmtk_window_t from the element pointer.
  */
-wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr);
+wlmtk_window_t *wlmtk_window_from_element(wlmtk_element_t *element_ptr);
 
 /**
  * Returns the bounding box for the window.
@@ -156,10 +156,10 @@ wlmtk_window2_t *wlmtk_window2_from_element(wlmtk_element_t *element_ptr);
  *
  * @return the box.
  */
-struct wlr_box wlmtk_window2_get_bounding_box(wlmtk_window2_t *window_ptr);
+struct wlr_box wlmtk_window_get_bounding_box(wlmtk_window_t *window_ptr);
 
 /** Helper: Indicates that the position has changed. */
-void wlmtk_window2_position_changed(wlmtk_window2_t *window_ptr);
+void wlmtk_window_position_changed(wlmtk_window_t *window_ptr);
 
 /**
  * Sets properties for the window.
@@ -167,8 +167,8 @@ void wlmtk_window2_position_changed(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param properties          @see wlmtk_window_property_t.
  */
-void wlmtk_window2_set_properties(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_properties(
+    wlmtk_window_t *window_ptr,
     uint32_t properties);
 
 /**
@@ -176,22 +176,22 @@ void wlmtk_window2_set_properties(
  *
  * @param window_ptr
  * @param client_ptr          The client's information will be copied into
- *                            @ref wlmtk_window2_t::client, and does not need
+ *                            @ref wlmtk_window_t::client, and does not need
  *                            to outlive this call.
  */
-void wlmtk_window2_set_client(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_client(
+    wlmtk_window_t *window_ptr,
     const wlmtk_util_client_t *client_ptr);
 
 /**
- * Returns a pointer to @ref wlmtk_window2_t::client.
+ * Returns a pointer to @ref wlmtk_window_t::client.
  *
  * @param window_ptr
  *
  * @return Client information. Remains walid until `window_ptr` is destroyed.
  */
-const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
-    wlmtk_window2_t *window_ptr);
+const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Sets the WLR output for the window. Used for fullscreen requests.
@@ -200,8 +200,8 @@ const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
  * @param wlr_output_ptr      Output to consider when requesting a window as
  *                            fullscreen. Can be NULL to indicate no preference.
  */
-void wlmtk_window2_set_wlr_output(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_wlr_output(
+    wlmtk_window_t *window_ptr,
     struct wlr_output *wlr_output_ptr);
 
 /**
@@ -212,8 +212,8 @@ void wlmtk_window2_set_wlr_output(
  * @return Pointer to the struct wlr_output the center of the window is placed
  *     on, or NULL if none is available or the window is not mapped.
  */
-struct wlr_output *wlmtk_window2_get_wlr_output(
-    wlmtk_window2_t *window_ptr);
+struct wlr_output *wlmtk_window_get_wlr_output(
+    wlmtk_window_t *window_ptr);
 
 /**
  * Sets the title for the window.
@@ -225,8 +225,8 @@ struct wlr_output *wlmtk_window2_get_wlr_output(
  *
  * @return true on success.
  */
-bool wlmtk_window2_set_title(
-    wlmtk_window2_t *window_ptr,
+bool wlmtk_window_set_title(
+    wlmtk_window_t *window_ptr,
     const char *title_ptr);
 
 /**
@@ -235,10 +235,10 @@ bool wlmtk_window2_set_title(
  * @param window_ptr
  *
  * @returns Pointer to the window title. Will remain valid until the next call
- *     to @ref wlmtk_window2_set_title, or until the window is destroyed. Will
+ *     to @ref wlmtk_window_set_title, or until the window is destroyed. Will
  *     never be NULL.
  */
-const char *wlmtk_window2_get_title(wlmtk_window2_t *window_ptr);
+const char *wlmtk_window_get_title(wlmtk_window_t *window_ptr);
 
 /**
  * Sets the window as activated, depending on the argument's value.
@@ -249,12 +249,12 @@ const char *wlmtk_window2_get_title(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param activated
  */
-void wlmtk_window2_set_activated(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_activated(
+    wlmtk_window_t *window_ptr,
     bool activated);
 
 /** @return whether the window is currently activated. */
-bool wlmtk_window2_is_activated(wlmtk_window2_t *window_ptr);
+bool wlmtk_window_is_activated(wlmtk_window_t *window_ptr);
 
 /**
  * Requests the window's size to be updated.
@@ -262,8 +262,8 @@ bool wlmtk_window2_is_activated(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param box_ptr             Only the `width` and `height` are considered.
  */
-void wlmtk_window2_request_size(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_request_size(
+    wlmtk_window_t *window_ptr,
     const struct wlr_box *box_ptr);
 
 /**
@@ -272,26 +272,26 @@ void wlmtk_window2_request_size(
  * @param window_ptr
  * @param edges
  */
-void wlmtk_window2_set_resize_edges(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_resize_edges(
+    wlmtk_window_t *window_ptr,
     uint32_t edges);
 
 /** @return resizing edges. */
-uint32_t wlmtk_window2_get_resize_edges(wlmtk_window2_t *window_ptr);
+uint32_t wlmtk_window_get_resize_edges(wlmtk_window_t *window_ptr);
 
 /**
  * Requests to close the window.
  *
  * @param window_ptr
  */
-void wlmtk_window2_request_close(wlmtk_window2_t *window_ptr);
+void wlmtk_window_request_close(wlmtk_window_t *window_ptr);
 
 /**
  * Requests to minimize (iconify) the window.
  *
  * @param window_ptr
  */
-void wlmtk_window2_request_minimize(wlmtk_window2_t *window_ptr);
+void wlmtk_window_request_minimize(wlmtk_window_t *window_ptr);
 
 /**
  * Requests the window to be fullscreen (or end fullscreen).
@@ -299,10 +299,10 @@ void wlmtk_window2_request_minimize(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param fullscreen
  */
-void wlmtk_window2_request_fullscreen(wlmtk_window2_t *window_ptr, bool fullscreen);
+void wlmtk_window_request_fullscreen(wlmtk_window_t *window_ptr, bool fullscreen);
 
 /** @return whether the window currently is in fullscreen mode. */
-bool wlmtk_window2_is_fullscreen(wlmtk_window2_t *window_ptr);
+bool wlmtk_window_is_fullscreen(wlmtk_window_t *window_ptr);
 
 /**
  * Commits the window as fullscreen: Client has comitted the surface in
@@ -311,8 +311,8 @@ bool wlmtk_window2_is_fullscreen(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param fullscreen
  */
-void wlmtk_window2_commit_fullscreen(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_commit_fullscreen(
+    wlmtk_window_t *window_ptr,
     bool fullscreen);
 
 /**
@@ -321,10 +321,10 @@ void wlmtk_window2_commit_fullscreen(
  * @param window_ptr
  * @param maximized
  */
-void wlmtk_window2_request_maximized(wlmtk_window2_t *window_ptr, bool maximized);
+void wlmtk_window_request_maximized(wlmtk_window_t *window_ptr, bool maximized);
 
 /** @return whether the window currently is in maximized mode. */
-bool wlmtk_window2_is_maximized(wlmtk_window2_t *window_ptr);
+bool wlmtk_window_is_maximized(wlmtk_window_t *window_ptr);
 
 /**
  * Commits the `maximized` mode for the window.
@@ -335,8 +335,8 @@ bool wlmtk_window2_is_maximized(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param maximized
  */
-void wlmtk_window2_commit_maximized(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_commit_maximized(
+    wlmtk_window_t *window_ptr,
     bool maximized);
 
 /**
@@ -345,10 +345,10 @@ void wlmtk_window2_commit_maximized(
  * @param window_ptr
  * @param shaded
  */
-void wlmtk_window2_request_shaded(wlmtk_window2_t *window_ptr, bool shaded);
+void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded);
 
 /** @return whether the window currently is shaded. */
-bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr);
+bool wlmtk_window_is_shaded(wlmtk_window_t *window_ptr);
 
 /**
  * En-/Disables the window menu.
@@ -356,7 +356,7 @@ bool wlmtk_window2_is_shaded(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param enabled
  */
-void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled);
+void wlmtk_window_menu_set_enabled(wlmtk_window_t *window_ptr, bool enabled);
 
 /**
  * Returns a pointer to the window menu's state.
@@ -365,7 +365,7 @@ void wlmtk_window2_menu_set_enabled(wlmtk_window2_t *window_ptr, bool enabled);
  *
  * @return A pointer to the @ref wlmtk_menu_t of the window menu.
  */
-wlmtk_menu_t *wlmtk_window2_menu(wlmtk_window2_t *window_ptr);
+wlmtk_menu_t *wlmtk_window_menu(wlmtk_window_t *window_ptr);
 
 /**
  * Sets whether to have server-side decorations for this window.
@@ -373,46 +373,45 @@ wlmtk_menu_t *wlmtk_window2_menu(wlmtk_window2_t *window_ptr);
  * @param window_ptr
  * @param decorated
  */
-void wlmtk_window2_set_server_side_decorated(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_server_side_decorated(
+    wlmtk_window_t *window_ptr,
     bool decorated);
 
 /**
- * Sets @ref wlmtk_window2_t::workspace_ptr.
+ * Sets @ref wlmtk_window_t::workspace_ptr.
  *
  * Protected method, to be called only from @ref wlmtk_workspace_t.
  *
  * @param window_ptr
  * @param workspace_ptr
  */
-void wlmtk_window2_set_workspace(
-    wlmtk_window2_t *window_ptr,
+void wlmtk_window_set_workspace(
+    wlmtk_window_t *window_ptr,
     wlmtk_workspace_t *workspace_ptr);
 
-/** @return The value of @ref wlmtk_window2_t::workspace_ptr. */
-wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr);
+/** @return The value of @ref wlmtk_window_t::workspace_ptr. */
+wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr);
 
-/** @return pointer to @ref wlmtk_window2_t::dlnode. */
-bs_dllist_node_t *wlmtk_dlnode_from_window2(wlmtk_window2_t *window_ptr);
-/** @return the @ref wlmtk_window2_t for @ref wlmtk_window2_t::dlnode. */
-wlmtk_window2_t *wlmtk_window2_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+/** @return pointer to @ref wlmtk_window_t::dlnode. */
+bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr);
+/** @return the @ref wlmtk_window_t for @ref wlmtk_window_t::dlnode. */
+wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Window unit test cases. */
-extern const bs_test_case_t wlmtk_window2_test_cases[];
+extern const bs_test_case_t wlmtk_window_test_cases[];
 
 /**
  * Creates a window, with default styles, for testing.
  *
  * @param content_element_ptr
  *
- * @return See @ref wlmtk_window2_create.
+ * @return See @ref wlmtk_window_create.
  */
-wlmtk_window2_t *wlmtk_test_window2_create(
-    wlmtk_element_t *content_element_ptr);
+wlmtk_window_t *wlmtk_test_window_create(wlmtk_element_t *content_element_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
 #endif /* __WLMTK_WINDOW2_H__ */
-/* == End of window2.h ===================================================== */
+/* == End of window.h ===================================================== */

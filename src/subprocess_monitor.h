@@ -59,7 +59,7 @@ typedef void (*wlmaker_subprocess_terminated_callback_t)(
 typedef void (*wlmaker_subprocess_window_callback_t)(
     void *userdata_ptr,
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window2_t *window_ptr);
+    wlmtk_window_t *window_ptr);
 
 /**
  * Creates the subprocess monitor
