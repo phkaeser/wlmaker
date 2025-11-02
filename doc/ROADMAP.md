@@ -27,6 +27,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Extend wlmtk_window2_t to support minimize.
   * Recompute pointer focus max once per frame.
   * Verify that right-click on title after window menu re-raises window menu.
+  * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
 
 * Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
@@ -43,6 +44,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
   * Embed version and have a `--version` argument to print out.
   * Be `iwyu`-clean on Trixie.
+  * logo: Upsize header font, and show on div with white background.
+  * logo: propagate icon downstream to Debian's application definition, and in share/
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
