@@ -29,8 +29,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Verify that right-click on title after window menu re-raises window menu.
 
 * Bug fixes
-  * Resize-from-left jitter observed on the raspi or with gnome-terminal.
-  * Particularly when using large decorations, there is resize jitter.
+  * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
+  * [done] Particularly when using large decorations, there is resize jitter.
+  * Fix size increase on client-side decoration when resizing: Internal size mismatch?
   * Propagate decoration mode and toplevel configure() only after first surface commit.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.

@@ -842,15 +842,6 @@ bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
         wlmtk_bordered_element(&window_ptr->bordered), x, y);
     window_ptr->old_box = new_box;
 
-    // Hm. Something is broken -- there shouldn't be a delta other
-    // than the border width. For now: Report.
-    if (new_box.width - box.width !=
-        2 * (int)window_ptr->bordered.style.width) {
-        bs_log(BS_WARNING,
-               "Resize jitter: box.width - new_box.width %d - %d,%d",
-               box.width - new_box.width, box.x, new_box.x);
-    }
-
     return true;
 }
 
