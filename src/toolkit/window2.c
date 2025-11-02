@@ -45,11 +45,13 @@ struct _wlmtk_window2_t {
     /** Composed of a box: Holds decoration, popup container and content. */
     wlmtk_box_t               box;
 
-    /** Events for this window. */
-    wlmtk_window2_events_t    events;
-
     /** Element in @ref wlmtk_workspace_t::window2s, when mapped. */
     bs_dllist_node_t          dlnode;
+
+    /** Events for this window. */
+    wlmtk_window2_events_t    events;
+    /** Client information. See @ref wlmtk_window2_set_client. */
+    wlmtk_util_client_t       client;
 
     /** Container for the content. */
     wlmtk_container_t         content_container;
@@ -329,12 +331,18 @@ void wlmtk_window2_set_properties(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_window2_set_client(
+    wlmtk_window2_t *window_ptr,
+    const wlmtk_util_client_t *client_ptr)
+{
+    window_ptr->client = *client_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
 const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
     __UNUSED__ wlmtk_window2_t *window_ptr)
 {
-    // TODO(kaeser@gubbe.ch): Wire this up.
-    static wlmtk_util_client_t client = {};
-    return &client;
+    return &window_ptr->client;
 }
 
 /* ------------------------------------------------------------------------- */
