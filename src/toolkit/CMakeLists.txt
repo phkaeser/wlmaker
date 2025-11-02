@@ -21,7 +21,6 @@ SET(PUBLIC_HEADER_FILES
   buffer.h
   button.h
   container.h
-  content.h
   dock.h
   element.h
   fsm.h
@@ -47,7 +46,6 @@ SET(PUBLIC_HEADER_FILES
   titlebar_title.h
   toolkit.h
   util.h
-  window.h
   window2.h
   workspace.h
 )
@@ -60,7 +58,6 @@ TARGET_SOURCES(toolkit PRIVATE
   buffer.c
   button.c
   container.c
-  content.c
   dock.c
   element.c
   fsm.c
@@ -85,7 +82,6 @@ TARGET_SOURCES(toolkit PRIVATE
   titlebar_button.c
   titlebar_title.c
   util.c
-  window.c
   window2.c
   workspace.c
 )

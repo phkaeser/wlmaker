@@ -38,7 +38,6 @@
 #include "menu.h"
 #include "primitives.h"
 #include "test.h"
-#include "window.h"
 
 /* == Declarations ========================================================= */
 
@@ -46,8 +45,6 @@
 struct _wlmtk_titlebar_title_t {
     /** Superclass: Buffer. */
     wlmtk_buffer_t            super_buffer;
-    /** Pointer to the window the title element belongs to. */
-    wlmtk_window_t            *window_ptr;
     /** Pointer to the window the title element belongs to. */
     wlmtk_window2_t           *window2_ptr;
 
@@ -87,25 +84,6 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 };
 
 /* == Exported methods ===================================================== */
-
-/* ------------------------------------------------------------------------- */
-wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(wlmtk_window_t *window_ptr)
-{
-    wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
-        1, sizeof(wlmtk_titlebar_title_t));
-    if (NULL == titlebar_title_ptr) return NULL;
-    titlebar_title_ptr->window_ptr = window_ptr;
-
-    if (!wlmtk_buffer_init(&titlebar_title_ptr->super_buffer)) {
-        wlmtk_titlebar_title_destroy(titlebar_title_ptr);
-        return NULL;
-    }
-    wlmtk_element_extend(
-        &titlebar_title_ptr->super_buffer.super_element,
-        &titlebar_title_element_vmt);
-
-    return titlebar_title_ptr;
-}
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(wlmtk_window2_t *window_ptr)
@@ -215,24 +193,16 @@ bool _wlmtk_titlebar_title_element_pointer_button(
 
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
-        if (NULL != titlebar_title_ptr->window2_ptr) {
-            wlmtk_workspace_begin_window_move(
-                wlmtk_window2_get_workspace(titlebar_title_ptr->window2_ptr),
-                titlebar_title_ptr->window2_ptr);
-        } else {
-            wlmtk_window_request_move(titlebar_title_ptr->window_ptr);
-        }
+        wlmtk_workspace_begin_window_move(
+            wlmtk_window2_get_workspace(titlebar_title_ptr->window2_ptr),
+            titlebar_title_ptr->window2_ptr);
         return true;
     }
 
     if (BTN_RIGHT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
-        if (NULL != titlebar_title_ptr->window2_ptr) {
-            wlmtk_window2_menu_set_enabled(
-                titlebar_title_ptr->window2_ptr, true);
-        } else {
-            wlmtk_window_menu_set_enabled(titlebar_title_ptr->window_ptr, true);
-        }
+        wlmtk_window2_menu_set_enabled(
+            titlebar_title_ptr->window2_ptr, true);
         return true;
     }
 
@@ -273,17 +243,9 @@ bool _wlmtk_titlebar_title_element_pointer_axis(
     }
 
     if (wlr_pointer_axis_event_ptr->delta > 0) {
-        if (NULL != titlebar_title_ptr->window2_ptr) {
-            wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, false);
-        } else {
-            wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, false);
-        }
+        wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, false);
     } else if (wlr_pointer_axis_event_ptr->delta < 0) {
-        if (NULL != titlebar_title_ptr->window2_ptr) {
-            wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, true);
-        } else {
-            wlmtk_window_request_shaded(titlebar_title_ptr->window_ptr, true);
-        }
+        wlmtk_window2_request_shaded(titlebar_title_ptr->window2_ptr, true);
     }
     return true;
 }

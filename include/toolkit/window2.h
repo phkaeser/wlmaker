@@ -20,12 +20,15 @@
 #ifndef __WLMTK_WINDOW2_H__
 #define __WLMTK_WINDOW2_H__
 
+struct wlr_output;
+
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window2_t wlmtk_window2_t;
 
 #include "element.h"
 #include "menu.h"
 #include "style.h"
+#include "util.h"
 #include "workspace.h"
 
 #ifdef __cplusplus
@@ -38,12 +41,12 @@ typedef struct {
      * Signals that the window state (maximize, iconify, ...) changed.
      *
      * Window state can be retrieved from:
-     * - @ref wlmtk_window_is_maximized
-     * - @ref wlmtk_window_is_fullscreen
-     * - @ref wlmtk_window_is_shaded
+     * - @ref wlmtk_window2_is_maximized
+     * - @ref wlmtk_window2_is_fullscreen
+     * - @ref wlmtk_window2_is_shaded
      *
      * The signal is also raised when the window's workspace is changed.
-     * Retrieve through @ref wlmtk_window_get_workspace.
+     * Retrieve through @ref wlmtk_window2_get_workspace.
      *
      * data_ptr points to the window state (@ref wlmtk_window2_t).
      */
@@ -80,6 +83,23 @@ typedef struct {
      */
     struct wl_signal          request_maximized;
 } wlmtk_window2_events_t;
+
+/** Window properties. */
+typedef enum {
+    /** Can be resized. Server-side decorations will show resize-bar. */
+    WLMTK_WINDOW_PROPERTY_RESIZABLE = UINT32_C(1) << 0,
+    /** Can be iconified. Server-side decorations include icnonify button. */
+    WLMTK_WINDOW_PROPERTY_ICONIFIABLE = UINT32_C(1) << 1,
+    /** Can be closed. Server-side decorations include close button. */
+    WLMTK_WINDOW_PROPERTY_CLOSABLE = UINT32_C(1) << 2,
+
+    /**
+     * Kludge: a window that closes on right-click-release.
+     * The window's element must pointer_grab.
+     * TODO(kaeser@gubbe.ch): This should be... better.
+     */
+    WLMTK_WINDOW_PROPERTY_RIGHTCLICK = UINT32_C(1) << 3
+} wlmtk_window_property_t;
 
 /**
  * Creates a window.
@@ -369,12 +389,12 @@ void wlmtk_window2_set_workspace(
     wlmtk_window2_t *window_ptr,
     wlmtk_workspace_t *workspace_ptr);
 
-/** @return The value of @ref wlmtk_window_t::workspace_ptr. */
+/** @return The value of @ref wlmtk_window2_t::workspace_ptr. */
 wlmtk_workspace_t *wlmtk_window2_get_workspace(wlmtk_window2_t *window_ptr);
 
-/** @return pointer to @ref wlmtk_window_t::dlnode. */
+/** @return pointer to @ref wlmtk_window2_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_window2(wlmtk_window2_t *window_ptr);
-/** @return the @ref wlmtk_window_t for @ref wlmtk_window_t::dlnode. */
+/** @return the @ref wlmtk_window2_t for @ref wlmtk_window2_t::dlnode. */
 wlmtk_window2_t *wlmtk_window2_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Window unit test cases. */

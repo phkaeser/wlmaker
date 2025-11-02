@@ -46,7 +46,7 @@ struct _wlmaker_tl_menu_t {
     /** Back-link to the window. */
     wlmtk_window2_t           *window_ptr;
 
-    /** Listener for @ref wlmtk_window_events_t::state_changed. */
+    /** Listener for @ref wlmtk_window2_events_t::state_changed. */
     struct wl_listener        window_state_changed_listener;
 
     /** Action item for 'Maximize'. */

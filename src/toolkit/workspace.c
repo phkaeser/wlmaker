@@ -35,7 +35,6 @@
 #undef WLR_USE_UNSTABLE
 
 #include "container.h"
-#include "content.h"
 #include "fsm.h"
 #include "input.h"
 #include "layer.h"
@@ -73,8 +72,6 @@ struct _wlmtk_workspace_t {
     /** Container that holds the fullscreen elements. Should have only one. */
     wlmtk_container_t         fullscreen_container;
 
-    /** List of toplevel windows. Via @ref wlmtk_window_t::dlnode. */
-    bs_dllist_t               windows;
     /** List of toplevel windows. Via @ref wlmtk_window2_t::dlnode. */
     bs_dllist_t               window2s;
 
@@ -535,27 +532,6 @@ bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
-                                wlmtk_window_t *window_ptr)
-{
-    BS_ASSERT(NULL == wlmtk_window_get_workspace(window_ptr));
-
-    wlmtk_element_set_visible(wlmtk_window_element(window_ptr), true);
-    wlmtk_container_add_element(
-        &workspace_ptr->window_container,
-        wlmtk_window_element(window_ptr));
-    bs_dllist_push_front(&workspace_ptr->windows,
-                         wlmtk_dlnode_from_window(window_ptr));
-    wlmtk_window_set_workspace(window_ptr, workspace_ptr);
-
-    if (NULL != workspace_ptr->root_ptr) {
-        wl_signal_emit(
-            &wlmtk_root_events(workspace_ptr->root_ptr)->window_mapped,
-            window_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
                                  wlmtk_window2_t *window_ptr)
 {
@@ -576,34 +552,6 @@ void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
             &wlmtk_root_events(workspace_ptr->root_ptr)->window_mapped,
             window_ptr);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
-                                  wlmtk_window_t *window_ptr)
-{
-    BS_ASSERT(workspace_ptr == wlmtk_window_get_workspace(window_ptr));
-
-    wlmtk_element_set_visible(wlmtk_window_element(window_ptr), false);
-
-    if (wlmtk_window_is_fullscreen(window_ptr)) {
-        wlmtk_container_remove_element(
-            &workspace_ptr->fullscreen_container,
-            wlmtk_window_element(window_ptr));
-    } else {
-        wlmtk_container_remove_element(
-            &workspace_ptr->window_container,
-            wlmtk_window_element(window_ptr));
-    }
-    bs_dllist_remove(&workspace_ptr->windows,
-                     wlmtk_dlnode_from_window(window_ptr));
-    wlmtk_window_set_workspace(window_ptr, NULL);
-    if (NULL != workspace_ptr->root_ptr) {
-        wl_signal_emit(
-            &wlmtk_root_events(workspace_ptr->root_ptr)->window_unmapped,
-            window_ptr);
-    }
-
 }
 
 /* ------------------------------------------------------------------------- */

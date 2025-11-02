@@ -230,9 +230,9 @@ struct _wlmtk_fake_panel_t {
     wlmtk_panel_t             panel;
     /** Serial to return on next request_size call. */
     uint32_t                  serial;
-    /** `width` argument eof last @ref wlmtk_content_request_size call. */
+    /** `width` argument eof last @ref wlmtk_panel_vmt_t::request_size call. */
     int                       requested_width;
-    /** `height` argument of last @ref wlmtk_content_request_size call. */
+    /** `height` argument of last @ref wlmtk_panel_vmt_t::request_size call. */
     int                       requested_height;
 };
 /** Creates a fake panel, for tests. */

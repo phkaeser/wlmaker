@@ -36,7 +36,6 @@
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "util.h"
-#include "window.h"
 #include "workspace.h"
 
 struct wlr_keyboard_key_event;
