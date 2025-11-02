@@ -346,7 +346,7 @@ void _xwl_surface_handle_associate(
         wlmtk_surface_element(xwl_surface_ptr->surface_ptr));
 
     // Currently we treat parent-less windows AND modal windows as toplevel.
-    // Modal windows should actually be child wlmtk_window_t, but that isn't
+    // Modal windows should actually be child wlmtk_window2_t, but that isn't
     // supported yet.
     if (NULL == xwl_surface_ptr->wlr_xwayland_surface_ptr->parent ||
         xwl_surface_ptr->wlr_xwayland_surface_ptr->modal) {
@@ -368,6 +368,11 @@ void _xwl_surface_handle_associate(
             WLMTK_WINDOW_PROPERTY_RESIZABLE |
             WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
             WLMTK_WINDOW_PROPERTY_CLOSABLE);
+        wlmtk_util_client_t client = {
+            .pid = xwl_surface_ptr->wlr_xwayland_surface_ptr->pid
+        };
+        wlmtk_window2_set_client(xwl_surface_ptr->window_ptr, &client);
+
 
         wlmtk_util_connect_listener_signal(
             &wlmtk_window2_events(xwl_surface_ptr->window_ptr)->request_close,
@@ -390,6 +395,9 @@ void _xwl_surface_handle_associate(
             &xwl_surface_ptr->window_request_maximized_listener,
             _wlmaker_xwl_surface_handle_window_request_maximized);
 
+        wl_signal_emit(
+            &xwl_surface_ptr->server_ptr->window_created_event,
+            xwl_surface_ptr->window_ptr);
     }
 
     bs_log(BS_INFO,
@@ -428,6 +436,10 @@ void _xwl_surface_handle_dissociate(
             &xwl_surface_ptr->window_request_fullscreen_listener);
         wlmtk_util_disconnect_listener(
             &xwl_surface_ptr->window_request_maximized_listener);
+
+        wl_signal_emit(
+            &xwl_surface_ptr->server_ptr->window_destroyed_event,
+            xwl_surface_ptr->window_ptr);
 
         wlmtk_window2_destroy(xwl_surface_ptr->window_ptr);
         xwl_surface_ptr->window_ptr = NULL;
@@ -497,7 +509,7 @@ void _xwl_surface_handle_set_parent(
 
     // TODO(kaeser@gubbe.ch): We're currently treating modal windows as
     // toplevel windows. They're not popups, for sure. To support this,
-    // we'll need wlmtk_window_t to support child wlmtk_window_t.
+    // we'll need wlmtk_window2_t to support child wlmtk_window2_t.
     if (xwl_surface_ptr->wlr_xwayland_surface_ptr->modal) return;
 
     wlmtk_base_push_element(

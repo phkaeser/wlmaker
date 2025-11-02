@@ -203,6 +203,11 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         WLMTK_WINDOW_PROPERTY_RESIZABLE |
         WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
         WLMTK_WINDOW_PROPERTY_CLOSABLE);
+    wlmtk_util_client_t client;
+    wl_client_get_credentials(
+        wlr_xdg_toplevel_ptr->resource->client,
+        &client.pid, &client.uid, &client.gid);
+    wlmtk_window2_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
 
     wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmaker_xdg_toplevel_ptr->window_ptr, server_ptr);
@@ -292,6 +297,10 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->base->data =
         wlmaker_xdg_toplevel_ptr;
 
+    wl_signal_emit(
+        &server_ptr->window_created_event,
+        wlmaker_xdg_toplevel_ptr->window_ptr);
+
     bs_log(BS_INFO, "Created XDG toplevel %p", wlmaker_xdg_toplevel_ptr);
     return wlmaker_xdg_toplevel_ptr;
 
@@ -333,6 +342,10 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
     }
 
     if (NULL != wxt_ptr->window_ptr) {
+        wl_signal_emit(
+            &wxt_ptr->server_ptr->window_destroyed_event,
+            wxt_ptr->window_ptr);
+
         wlmtk_window2_destroy(wxt_ptr->window_ptr);
         wxt_ptr->window_ptr = NULL;
     }
