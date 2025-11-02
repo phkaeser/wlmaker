@@ -32,7 +32,6 @@
 #include "primitives.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
-#include "window.h"
 
 /* == Declarations ========================================================= */
 
@@ -94,66 +93,6 @@ static const uint32_t _wlmtk_titlebar_default_properties =
     WLMTK_TITLEBAR_PROPERTY_CLOSE;
 
 /* == Exported methods ===================================================== */
-
-/* ------------------------------------------------------------------------- */
-wlmtk_titlebar_t *wlmtk_titlebar_create(
-    wlmtk_window_t *window_ptr,
-    const wlmtk_titlebar_style_t *style_ptr)
-{
-    wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
-        1, sizeof(wlmtk_titlebar_t));
-    if (NULL == titlebar_ptr) return NULL;
-    titlebar_ptr->style = *style_ptr;
-    titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
-
-    if (!wlmtk_box_init(&titlebar_ptr->super_box,
-                        WLMTK_BOX_HORIZONTAL,
-                        &titlebar_ptr->style.margin)) {
-        wlmtk_titlebar_destroy(titlebar_ptr);
-        return NULL;
-    }
-    wlmtk_element_extend(
-        &titlebar_ptr->super_box.super_container.super_element,
-        &titlebar_element_vmt);
-
-    titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(window_ptr);
-    if (NULL == titlebar_ptr->titlebar_title_ptr) {
-        wlmtk_titlebar_destroy(titlebar_ptr);
-        return NULL;
-    }
-    wlmtk_box_add_element_front(
-        &titlebar_ptr->super_box,
-        wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
-
-    titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
-        wlmtk_window_request_minimize,
-        window_ptr,
-        wlmaker_primitives_draw_minimize_icon);
-    if (NULL == titlebar_ptr->minimize_button_ptr) {
-        wlmtk_titlebar_destroy(titlebar_ptr);
-        return NULL;
-    }
-    wlmtk_box_add_element_front(
-        &titlebar_ptr->super_box,
-        wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
-
-    titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
-        wlmtk_window_request_close,
-        window_ptr,
-        wlmaker_primitives_draw_close_icon);
-    if (NULL == titlebar_ptr->close_button_ptr) {
-        wlmtk_titlebar_destroy(titlebar_ptr);
-        return NULL;
-    }
-    wlmtk_box_add_element_back(
-        &titlebar_ptr->super_box,
-        wlmtk_titlebar_button_element(titlebar_ptr->close_button_ptr));
-
-    wlmtk_titlebar_set_properties(
-        titlebar_ptr,
-        _wlmtk_titlebar_default_properties);
-    return titlebar_ptr;
-}
 
 /* ------------------------------------------------------------------------- */
 wlmtk_titlebar_t *wlmtk_titlebar2_create(

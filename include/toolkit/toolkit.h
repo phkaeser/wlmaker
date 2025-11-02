@@ -29,7 +29,6 @@
 #include "buffer.h"
 #include "button.h"
 #include "container.h"
-#include "content.h"
 #include "dock.h"
 #include "element.h"
 #include "fsm.h"
@@ -54,7 +53,6 @@
 #include "titlebar_button.h"
 #include "titlebar_title.h"
 #include "util.h"
-#include "window.h"
 #include "window2.h"
 #include "workspace.h"
 // IWYU pragma: end_exports

@@ -32,7 +32,6 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 #include "layer.h"  // IWYU pragma: keep
 #include "root.h"  // IWYU pragma: keep
 #include "tile.h"
-#include "window.h"  // IWYU pragma: keep
 #include "window2.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
@@ -163,9 +162,6 @@ bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr);
  * @param workspace_ptr
  * @param window_ptr
  */
-void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
-                                wlmtk_window_t *window_ptr);
-/** Maps the window. TODO(kaeser@gubbe.ch): Replace the above with it. */
 void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
                                  wlmtk_window2_t *window_ptr);
 
@@ -175,9 +171,6 @@ void wlmtk_workspace_map_window2(wlmtk_workspace_t *workspace_ptr,
  * @param workspace_ptr
  * @param window_ptr
  */
-void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
-                                  wlmtk_window_t *window_ptr);
-/** Unmaps the window. TODO(kaeser@gubbe.ch): Replace the above with it. */
 void wlmtk_workspace_unmap_window2(wlmtk_workspace_t *workspace_ptr,
                                    wlmtk_window2_t *window_ptr);
 
@@ -214,8 +207,8 @@ wlmtk_layer_t *wlmtk_workspace_get_layer(
  * @param workspace_ptr
  *
  * @return A pointer to the list. Note that the list should not be manipulated
- *     directly. It's contents can change on @ref wlmtk_workspace_map_window or
- *     @ref wlmtk_workspace_unmap_window calls.
+ *     directly. It's contents can change on @ref wlmtk_workspace_map_window2
+ *     or @ref wlmtk_workspace_unmap_window2 calls.
  */
 bs_dllist_t *wlmtk_workspace_get_window2s_dllist(
     wlmtk_workspace_t *workspace_ptr);
@@ -223,7 +216,7 @@ bs_dllist_t *wlmtk_workspace_get_window2s_dllist(
 /**
  * Promotes the window to the fullscreen layer (or back).
  *
- * To be called by @ref wlmtk_window_commit_fullscreen.
+ * To be called by @ref wlmtk_window2_commit_fullscreen.
  *
  * @param workspace_ptr
  * @param window_ptr
@@ -261,12 +254,12 @@ void wlmtk_workspace_activate_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window2_t *window_ptr);
 
-/** @return Pointer to the activated @ref wlmtk_window_t, if any. */
+/** @return Pointer to the activated @ref wlmtk_window2_t, if any. */
 wlmtk_window2_t *wlmtk_workspace_get_activated_window(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Activates the @ref wlmtk_window_t *before* the currently activated one.
+ * Activates the @ref wlmtk_window2_t *before* the currently activated one.
  *
  * Intended to permit cycling through tasks. Will activate the window, but not
  * raise it. See @ref wlmtk_workspace_activate_next_window.
@@ -277,7 +270,7 @@ void wlmtk_workspace_activate_previous_window(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Activates the @ref wlmtk_window_t *after* the currently activated one.
+ * Activates the @ref wlmtk_window2_t *after* the currently activated one.
  *
  * Intended to permit cycling through tasks. Will activate the window, but not
  * raise it. See @ref wlmtk_workspace_activate_previous_window.

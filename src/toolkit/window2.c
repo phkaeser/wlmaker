@@ -100,7 +100,7 @@ struct _wlmtk_window2_t {
 
     /**
      * Whether an "inorganic" sizing operation is in progress, and thus size
-     * changes should not be recorded in @ref wlmtk_window_t::organic_size.
+     * changes should not record to @ref wlmtk_window2_t::organic_bounding_box.
      *
      * This is eg. between @ref wlmtk_window2_request_fullscreen and
      * @ref wlmtk_window2_commit_fullscreen.
