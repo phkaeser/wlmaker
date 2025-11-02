@@ -151,7 +151,25 @@ void wlmtk_window2_set_properties(
     wlmtk_window2_t *window_ptr,
     uint32_t properties);
 
-/** @return Pointer to @ref wlmtk_content_t::client for the window's element. */
+/**
+ * Sets client information for the window.
+ *
+ * @param window_ptr
+ * @param client_ptr          The client's information will be copied into
+ *                            @ref wlmtk_window2_t::client, and does not need
+ *                            to outlive this call.
+ */
+void wlmtk_window2_set_client(
+    wlmtk_window2_t *window_ptr,
+    const wlmtk_util_client_t *client_ptr);
+
+/**
+ * Returns a pointer to @ref wlmtk_window2_t::client.
+ *
+ * @param window_ptr
+ *
+ * @return Client information. Remains walid until `window_ptr` is destroyed.
+ */
 const wlmtk_util_client_t *wlmtk_window2_get_client_ptr(
     wlmtk_window2_t *window_ptr);
 
