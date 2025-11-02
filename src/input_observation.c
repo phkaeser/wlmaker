@@ -386,7 +386,7 @@ void _wlmaker_input_position_observer_handle_cursor_frame(
     // Guard clause: No wlmtk surface or no scene means it's not fully mapped.
     wlmtk_surface_t *surface_ptr = position_observer_ptr->wlr_surface_ptr->data;
     if (NULL == surface_ptr ||
-        NULL == surface_ptr->wlr_scene_tree_ptr) return;
+        NULL == wlmtk_surface_element(surface_ptr)->wlr_scene_node_ptr) return;
 
     // TODO(kaeser@gubbe.ch): For a lower-level implementation, we should
     // only send if the pointer is from the given seat.
@@ -395,7 +395,10 @@ void _wlmaker_input_position_observer_handle_cursor_frame(
     // Get coordinates. Returns false if not all parents rae enabled.
     int node_x, node_y;
     if (!wlr_scene_node_coords(
-            &surface_ptr->wlr_scene_tree_ptr->node, &node_x, &node_y)) return;
+            wlmtk_surface_element(surface_ptr)->wlr_scene_node_ptr,
+            &node_x, &node_y)) {
+        return;
+    }
 
     // Then, compute the cursor position, relative to the surface dimenions.
     // Note: This assumes the surface remains aligned to X/Y axes.

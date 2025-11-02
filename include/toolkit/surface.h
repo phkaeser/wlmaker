@@ -41,51 +41,6 @@ struct wlr_xdg_surface;
 extern "C" {
 #endif  // __cplusplus
 
-/** State of a `struct wlr_surface`, encapsuled for toolkit. */
-struct _wlmtk_surface_t {
-    /** Super class of the surface: An element. */
-    wlmtk_element_t           super_element;
-    /** Virtual method table of the super element before extending it. */
-    wlmtk_element_vmt_t       orig_super_element_vmt;
-    /** Seat. */
-    struct wlr_seat           *wlr_seat_ptr;
-
-    /** The `struct wlr_surface` wrapped. */
-    struct wlr_surface        *wlr_surface_ptr;
-    /** The `struct wlr_xdg_surface` wrapped. */
-    struct wlr_xdg_surface        *wlr_xdg_surface_ptr;
-
-    /** The scene API node displaying a surface and all it's sub-surfaces. */
-    struct wlr_scene_tree     *wlr_scene_tree_ptr;
-    /** Listener for the `destroy` signal of `wlr_scene_tree_ptr->node`. */
-    struct wl_listener        wlr_scene_tree_node_destroy_listener;
-
-    /** Committed width of the surface, in pixels. */
-    int                       committed_width;
-    /** Committed height of the surface, in pixels. */
-    int                       committed_height;
-
-    /** Listener for the `events.commit` signal of `wlr_surface`. */
-    struct wl_listener        surface_commit_listener;
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_map_listener;
-    /** Listener for the `map` signal of `wlr_surface`. */
-    struct wl_listener        surface_unmap_listener;
-
-    /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
-    struct wl_listener        element_pointer_leave_listener;
-    /** Listener for @ref wlmtk_element_events_t::pointer_motion. */
-    struct wl_listener        element_pointer_motion_listener;
-
-    /** Whether this surface is activated, ie. has keyboard focus. */
-    bool                      activated;
-};
-
-/** Type of the surface ctor, for injection. @see wlmtk_surface_create. */
-typedef wlmtk_surface_t *(*wlmtk_surface_create_t)(
-    struct wlr_surface *wlr_surface_ptr,
-    struct wlr_seat *wlr_seat_ptr);
-
 /**
  * Creates a toolkit surface from the `wlr_surface_ptr`.
  *
@@ -152,6 +107,9 @@ void wlmtk_surface_get_size(
 void wlmtk_surface_set_activated(
     wlmtk_surface_t *surface_ptr,
     bool activated);
+
+/** @return Whether the surface is activated. */
+bool wlmtk_surface_is_activated(wlmtk_surface_t *surface_ptr);
 
 /** Connects a listener and handler to the `map` signal of `wlr_surface`. */
 void wlmtk_surface_connect_map_listener_signal(

@@ -641,7 +641,7 @@ bool _wlmaker_lock_update_output(
         wlmtk_surface_element(lock_surface_ptr->wlmtk_surface_ptr),
         box.x, box.y);
 
-    if (lock_surface_ptr->wlmtk_surface_ptr->activated) {
+    if (wlmtk_surface_is_activated(lock_surface_ptr->wlmtk_surface_ptr)) {
         arg_ptr->has_activated_surface = true;
     }
 
@@ -1120,9 +1120,9 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
 
-    wlmtk_surface_t *wlmtk_surface_ptr = wlr_surface1.data;
+    wlmtk_surface_t *surface_ptr = wlr_surface1.data;
     int x, y;
-    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
     BS_TEST_VERIFY_EQ(test_ptr, 0, x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, y);
 
@@ -1160,8 +1160,8 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
 
-    wlmtk_surface_ptr = wlr_surface3.data;
-    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    surface_ptr = wlr_surface3.data;
+    wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
     BS_TEST_VERIFY_EQ(test_ptr, 1024, x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, y);
 
@@ -1187,20 +1187,20 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
 
-    wlmtk_surface_ptr = wlr_surface1.data;
-    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    surface_ptr = wlr_surface1.data;
+    wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
     BS_TEST_VERIFY_EQ(test_ptr, 3120, x);
     BS_TEST_VERIFY_EQ(test_ptr, 200, y);
 
-    wlmtk_surface_ptr = wlr_surface3.data;
-    wlmtk_element_get_position(wlmtk_surface_element(wlmtk_surface_ptr), &x, &y);
+    surface_ptr = wlr_surface3.data;
+    wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
     BS_TEST_VERIFY_EQ(test_ptr, 1200, x);
     BS_TEST_VERIFY_EQ(test_ptr, 200, y);
 
     // Confirm: The most recently added surface is active.
-    wlmtk_surface_ptr = wlr_surface3.data;
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlmtk_surface_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_ptr->activated);
+    surface_ptr = wlr_surface3.data;
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, surface_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_is_activated(surface_ptr));
     wlr_output_layout_remove(server.wlr_output_layout_ptr, &o3);
     _mock_configure_serial = 44;
     _mock_configure_lock_surface = NULL;
@@ -1208,9 +1208,9 @@ void test_lock_multi_output(bs_test_t *test_ptr)
                    server.wlr_output_layout_ptr);
 
     // Now want surface1 active.
-    wlmtk_surface_ptr = wlr_surface1.data;
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlmtk_surface_ptr);
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_ptr->activated);
+    surface_ptr = wlr_surface1.data;
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, surface_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_is_activated(surface_ptr));
 
     // Unlock correctly.
     wl_signal_emit(&wlr_session_lock_v1.events.unlock, NULL);
