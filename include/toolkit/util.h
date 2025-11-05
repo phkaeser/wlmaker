@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <wayland-server-core.h>
 #include <wlr/util/box.h>

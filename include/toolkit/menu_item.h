@@ -32,8 +32,6 @@ typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
 
 #include "menu.h"  // IWYU pragma: keep
 
-enum wlmtk_menu_mode;
-
 /** Forward declaration: Virtual method table of the menu item. */
 typedef struct _wlmtk_menu_item_vmt_t wlmtk_menu_item_vmt_t;
 

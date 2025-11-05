@@ -32,11 +32,9 @@
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
-struct _wlmaker_server_t;
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
 
-struct _wlmaker_key_combo_t;
 /** A key combination. */
 typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
 /** Handle for a key binding. */

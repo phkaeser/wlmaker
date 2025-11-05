@@ -23,13 +23,13 @@
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */

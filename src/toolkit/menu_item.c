@@ -26,6 +26,7 @@
 #include <linux/input-event-codes.h>
 #include <stdlib.h>
 
+#include "base.h"
 #include "buffer.h"
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"

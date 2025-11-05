@@ -25,8 +25,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-struct _wlmtk_fsm_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus

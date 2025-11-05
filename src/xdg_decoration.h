@@ -20,6 +20,11 @@
 #ifndef __XDG_DECORATION_H__
 #define __XDG_DECORATION_H__
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+
+struct wl_display;
+
 /** The decoration manager handle. */
 typedef struct _wlmaker_xdg_decoration_manager_t wlmaker_xdg_decoration_manager_t;
 

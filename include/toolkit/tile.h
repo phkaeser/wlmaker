@@ -20,7 +20,6 @@
 #ifndef __WLMTK_TILE_H__
 #define __WLMTK_TILE_H__
 
-struct _wlmtk_tile_t;
 /** Forward declaration: State of a tile. */
 typedef struct _wlmtk_tile_t wlmtk_tile_t;
 

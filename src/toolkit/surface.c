@@ -37,8 +37,8 @@
 #include "container.h"
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
-#include "test.h"
 #include "util.h"
+#include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

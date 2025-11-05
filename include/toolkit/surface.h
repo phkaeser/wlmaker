@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <wayland-server-core.h>
 
-struct _wlmtk_surface_t;
 /** Forward declaration: State of a toolkit's WLR surface. */
 typedef struct _wlmtk_surface_t wlmtk_surface_t;
 /** Forward declaration: Virtual method table of the toolkit's WLR surface. */

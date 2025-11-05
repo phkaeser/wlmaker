@@ -25,9 +25,11 @@
 #include <linux/input-event-codes.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
@@ -37,7 +39,9 @@
 #include "input.h"
 #include "menu.h"
 #include "primitives.h"
-#include "test.h"
+#include "test.h"  // IWYU pragma: keep
+#include "tile.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 

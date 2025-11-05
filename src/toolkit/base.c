@@ -20,7 +20,10 @@
 
 #include "base.h"
 
-#include "test.h"
+#include <stddef.h>
+#include <libbase/libbase.h>
+
+#include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

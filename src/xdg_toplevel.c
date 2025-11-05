@@ -20,14 +20,12 @@
 
 #include "xdg_toplevel.h"
 
-#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #include <wayland-server.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/util/box.h>

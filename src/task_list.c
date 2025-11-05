@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 /// Include unstable interfaces of wlroots.

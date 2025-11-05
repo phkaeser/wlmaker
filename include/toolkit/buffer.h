@@ -27,8 +27,6 @@
 #include "element.h"
 #include "input.h"
 
-
-struct _wlmtk_buffer_t;
 /** Forward declaration: Buffer state. */
 typedef struct _wlmtk_buffer_t wlmtk_buffer_t;
 

@@ -20,6 +20,11 @@
 #ifndef __WLMTK_WINDOW2_H__
 #define __WLMTK_WINDOW2_H__
 
+#include <libbase/libbase.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <wayland-server-core.h>
+
 struct wlr_output;
 
 /** Forward declaration: Window. */
@@ -29,7 +34,7 @@ typedef struct _wlmtk_window_t wlmtk_window_t;
 #include "menu.h"
 #include "style.h"
 #include "util.h"
-#include "workspace.h"
+#include "workspace.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {

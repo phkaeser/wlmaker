@@ -20,7 +20,6 @@
 #ifndef __XDG_POPUP_H__
 #define __XDG_POPUP_H__
 
-#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
@@ -29,8 +28,6 @@
 
 struct wlr_seat;
 struct wlr_xdg_popup;
-
-struct _wlmaker_xdg_popup_t;
 
 /** Forward declaration: State of the toolkit's XDG popup. */
 typedef struct _wlmaker_xdg_popup_t wlmaker_xdg_popup_t;

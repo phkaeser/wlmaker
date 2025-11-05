@@ -38,9 +38,6 @@
 
 #include "toolkit/toolkit.h"
 
-struct _wlmaker_lock_surface_t;
-struct _wlmaker_lock_t;
-
 /* == Declarations ========================================================= */
 
 /** Type of wlr_session_lock_surface_v1_configure(). */

@@ -31,8 +31,6 @@
 #include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
-struct _wlmtk_element_t;
-struct _wlmtk_element_vmt_t;
 struct wlr_scene_tree;
 
 /** Forward declaration: Element. */
