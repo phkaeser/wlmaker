@@ -22,7 +22,6 @@
 
 #include <stdbool.h>
 
-struct _wlmtk_popup_t;
 /** Forward declaration: Popup. */
 typedef struct _wlmtk_popup_t wlmtk_popup_t;
 

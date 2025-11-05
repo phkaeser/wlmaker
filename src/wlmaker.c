@@ -25,6 +25,7 @@
 #include <libbase/plist.h>
 #include <limits.h>
 #include <regex.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

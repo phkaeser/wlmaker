@@ -29,7 +29,6 @@
 #include "rectangle.h"
 #include "style.h"
 
-struct _wlmtk_bordered_t;
 /** Forward declaration: Bordered container state. */
 typedef struct _wlmtk_bordered_t wlmtk_bordered_t;
 

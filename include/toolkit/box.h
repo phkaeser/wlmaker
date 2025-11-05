@@ -28,7 +28,6 @@
 #include "element.h"
 #include "style.h"
 
-struct _wlmtk_box_t;
 /** Forward declaration: Box. */
 typedef struct _wlmtk_box_t wlmtk_box_t;
 

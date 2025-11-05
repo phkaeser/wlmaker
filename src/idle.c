@@ -34,8 +34,6 @@
 #include "subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 
-struct _wlmaker_idle_inhibitor_t;
-
 /* == Declarations ========================================================= */
 
 /** Forward declaration: Handle of an idle inhibitor. */

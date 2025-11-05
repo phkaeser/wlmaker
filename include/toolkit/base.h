@@ -20,7 +20,6 @@
 #ifndef __WLMTK_BASE_H__
 #define __WLMTK_BASE_H__
 
-struct _wlmtk_base_t;
 /** Forward declaration: State of a base element. */
 typedef struct _wlmtk_base_t wlmtk_base_t;
 

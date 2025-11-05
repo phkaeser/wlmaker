@@ -22,7 +22,6 @@
 
 #include <stdint.h>
 
-struct _wlmtk_button_event_t;
 struct wlr_cursor;
 struct wlr_xcursor_manager;
 

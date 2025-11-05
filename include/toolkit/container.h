@@ -25,8 +25,6 @@
 
 #include "libbase/libbase.h"
 
-struct _wlmtk_container_t;
-struct _wlmtk_container_vmt_t;
 struct wlr_scene_tree;
 /** Forward declaration: Container. */
 typedef struct _wlmtk_container_t wlmtk_container_t;

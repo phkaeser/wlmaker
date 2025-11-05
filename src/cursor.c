@@ -26,6 +26,7 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #undef WLR_USE_UNSTABLE
 

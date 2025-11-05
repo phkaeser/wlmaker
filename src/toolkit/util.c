@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <wayland-util.h>
 
-#include "test.h"
+#include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

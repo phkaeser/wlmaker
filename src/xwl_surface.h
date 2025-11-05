@@ -25,7 +25,6 @@
 #include <libbase/libbase.h>
 
 #include "server.h"
-#include "toolkit/toolkit.h"
 #include "xwl.h"
 
 #ifdef __cplusplus

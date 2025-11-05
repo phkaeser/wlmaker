@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 # Default arguments:
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -B build
-# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -B build-clang
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build
+# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(wlmaker VERSION 0.1
@@ -50,14 +50,6 @@ ELSE()
   MESSAGE(STATUS "libbacktrace not found. Will compile without.")
 ENDIF()
 
-# Pruning includes.
-FIND_PROGRAM(iwyu_executable NAMES include-what-you-use iwyu OPTIONAL)
-IF(iwyu_executable)
-  SET(iwyu_path_and_options
-    ${iwyu_executable}
-    -Xiwyu --error=0 -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
-ENDIF(iwyu_executable)
-
 FIND_PROGRAM(wmmenugen_executable NAMES wmmenugen OPTIONAL)
 IF(wmmenugen_executable)
   MESSAGE(STATUS, "Found wmmenugen: ${wmmenugen_executable}")
@@ -68,6 +60,9 @@ OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
 OPTION(config_DOXYGEN_CRITICAL "Whether to fail on doxygen warnings" OFF)
 OPTION(config_WERROR "Make all compiler warnings into errors." OFF)
+
+SET(IWYU_MODE "OFF" CACHE STRING "Whether to run `iwyu`. OFF, WARN or FAIL.")
+SET_PROPERTY(CACHE IWYU_MODE PROPERTY STRINGS "OFF" "WARN" "FAIL")
 
 # Toplevel compile options, for GCC and clang.
 IF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -89,6 +84,30 @@ IF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
   # CMake provides absolute paths to GCC, hence the __FILE__ macro includes the
   # full path. This option resets it to a path relative to project source.
   ADD_COMPILE_OPTIONS(-fmacro-prefix-map=${PROJECT_SOURCE_DIR}=.)
+
+  # Run iwyu when available.
+  IF((IWYU_MODE STREQUAL "WARN") OR (IWYU_MODE STREQUAL "FAIL"))
+    FIND_PROGRAM(iwyu_executable NAMES include-what-you-use iwyu REQUIRED)
+
+    IF(IWYU_MODE STREQUAL "FAIL")
+      SET(iwyu_error "1")
+    ELSE(IWYU_MODE STREQUAL "FAIL")
+      SET(iwyu_error "0")
+    ENDIF(IWYU_MODE STREQUAL "FAIL")
+
+    IF(iwyu_executable)
+      SET(iwyu_path_and_options
+        ${iwyu_executable}
+        -Xiwyu --error=${iwyu_error} -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
+    ENDIF(iwyu_executable)
+
+    MESSAGE(STATUS "Configured iwyu (${iwyu_executable}) to run in mode \"${IWYU_MODE}\"")
+  ELSEIF(IWYU_MODE STREQUAL "OFF")
+    # Permitted value, we don't set iwyu_path_and_options.
+  ELSE()
+    MESSAGE(FATAL_ERROR
+      "Invalid value for IWYU_MODE: \"${IWYU_MODE}\". Must be OFF, WARN or FAIL")
+  ENDIF()
 
 ENDIF(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 SET(CMAKE_C_STANDARD 11)

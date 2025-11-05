@@ -25,7 +25,7 @@
 #include <string.h>
 #include <wlr/util/edges.h>
 
-#include "test.h"  // IWYU pragma: keep.
+#include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

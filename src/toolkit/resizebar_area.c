@@ -25,9 +25,12 @@
 #include <libbase/libbase.h>
 #include <linux/input-event-codes.h>
 #include <stdlib.h>
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
@@ -35,7 +38,10 @@
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
-#include "test.h"
+#include "test.h"  // IWYU pragma: keep
+#include "tile.h"
+#include "util.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 

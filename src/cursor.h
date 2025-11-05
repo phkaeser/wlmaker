@@ -24,7 +24,6 @@
 
 #include "toolkit/toolkit.h"
 
-struct _wlmaker_cursor_t;
 /** Forward declaration of wlmaker cursor state. */
 typedef struct _wlmaker_cursor_t wlmaker_cursor_t;
 

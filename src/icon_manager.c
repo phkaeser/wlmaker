@@ -30,7 +30,6 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #undef WLR_USE_UNSTABLE
 
-#include "config.h"
 #include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
 #include "xdg_shell.h"

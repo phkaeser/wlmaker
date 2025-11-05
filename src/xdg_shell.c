@@ -21,8 +21,8 @@
 #include "xdg_shell.h"
 
 #include <libbase/libbase.h>
-#include <stdbool.h>
 #include <stdlib.h>
+#include <wayland-server-protocol.h>
 #include <wayland-util.h>
 
 #include "toolkit/toolkit.h"

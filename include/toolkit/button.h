@@ -27,8 +27,6 @@
 #include "buffer.h"
 #include "element.h"
 
-struct _wlmtk_button_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus

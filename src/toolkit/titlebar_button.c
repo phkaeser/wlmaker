@@ -32,6 +32,7 @@
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
+#include "util.h"
 
 /* == Declarations ========================================================= */
 

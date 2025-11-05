@@ -23,7 +23,6 @@
 #include <stdbool.h>
 
 #include "server.h"
-#include "toolkit/toolkit.h"
 
 struct wlr_xdg_toplevel;
 struct wlmaker_xdg_toplevel;

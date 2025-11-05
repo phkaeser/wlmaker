@@ -23,6 +23,8 @@
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
+enum wlmtk_menu_mode;  // IWYU pragma: keep
+
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stddef.h>

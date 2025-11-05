@@ -32,6 +32,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "container.h"
+#include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 

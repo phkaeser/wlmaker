@@ -20,18 +20,30 @@
 
 #include "window.h"
 
+#include <libbase/libbase.h>
 #include <linux/input-event-codes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
 #include "bordered.h"
+#include "box.h"
 #include "container.h"
-#include "titlebar.h"
+#include "input.h"
+#include "menu_item.h"
 #include "resizebar.h"
-#include "test.h"
+#include "test.h"  // IWYU pragma: keep
+#include "tile.h"
+#include "titlebar.h"
 
 /* == Declarations ========================================================= */
 

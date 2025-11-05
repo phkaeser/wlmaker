@@ -38,7 +38,6 @@
 #include "fsm.h"
 #include "input.h"
 #include "layer.h"
-#include "surface.h"
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "util.h"

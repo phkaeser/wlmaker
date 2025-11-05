@@ -27,11 +27,6 @@
 #include "container.h"
 #include "element.h"
 
-struct _wlmtk_fake_panel_t;
-struct _wlmtk_panel_positioning_t;
-struct _wlmtk_panel_t;
-struct _wlmtk_panel_vmt_t;
-
 /** Forward declaration: An element of a layer, we call it: Panel. */
 typedef struct _wlmtk_panel_t wlmtk_panel_t;
 /** Forward declaration: The panel's virtual method table. */
