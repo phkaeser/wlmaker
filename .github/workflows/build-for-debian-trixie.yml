@@ -26,6 +26,7 @@ jobs:
           flex \
           gcc \
           git \
+          iwyu \
           libbacktrace-dev \
           libcairo2-dev \
           libncurses-dev \
@@ -44,7 +45,7 @@ jobs:
     - name: Configure wlmaker through CMake.
       run: |
         export CC="${{ matrix.compiler }}"
-        cmake -B build/ -Dconfig_WERROR=ON
+        cmake -B build/ -Dconfig_WERROR=ON -DIWYU_MODE=FAIL
 
     - name: Build wlmaker.
       run: |
