@@ -42,8 +42,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.
   * [done] Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
+  * [done] Be `iwyu`-clean on Trixie.
   * Embed version and have a `--version` argument to print out.
-  * Be `iwyu`-clean on Trixie.
   * logo: Upsize header font, and show on div with white background.
   * logo: propagate icon downstream to Debian's application definition, and in share/
 
