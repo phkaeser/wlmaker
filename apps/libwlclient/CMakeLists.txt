@@ -40,22 +40,22 @@ SET(SOURCES
   xdg_toplevel.c
 )
 WaylandProtocol_ADD(
-  SOURCES
+  libwlclient
   BASE_NAME xdg-decoration
   PROTOCOL_FILE "${WAYLAND_PROTOCOL_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
   SIDE client)
 WaylandProtocol_ADD(
-  SOURCES
+  libwlclient
   BASE_NAME xdg-shell
   PROTOCOL_FILE "${WAYLAND_PROTOCOL_DIR}/stable/xdg-shell/xdg-shell.xml"
   SIDE client)
 WaylandProtocol_ADD(
-  SOURCES
+  libwlclient
   BASE_NAME wlmaker-icon-unstable-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
   SIDE client)
 WaylandProtocol_ADD(
-  SOURCES
+  libwlclient
   BASE_NAME ext-input-observation-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
   SIDE client)

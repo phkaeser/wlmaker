@@ -21,15 +21,16 @@ PKG_GET_VARIABLE(WAYLAND_PROTOCOL_DIR wayland-protocols pkgdatadir)
 
 INCLUDE(WaylandProtocol)
 
-SET(SOURCES)
+ADD_LIBRARY(wlmaker_protocols INTERFACE)
+
 WaylandProtocol_ADD(
-  SOURCES
+  wlmaker_protocols
   BASE_NAME wlmaker-icon-unstable-v1
   PROTOCOL_FILE wlmaker-icon-unstable-v1.xml
   SIDE server)
 
 WaylandProtocol_ADD(
-  SOURCES
+  wlmaker_protocols
   BASE_NAME ext-input-observation-v1
   PROTOCOL_FILE ext-input-observation-v1.xml
   SIDE server)
@@ -37,18 +38,13 @@ WaylandProtocol_ADD(
 PKG_GET_VARIABLE(WAYLAND_PROTOCOLDIR wayland-protocols pkgdatadir)
 # Needing XDG Shell, since the toplevel icon protocol refers to it.
 WaylandProtocol_ADD(
-  SOURCES
+  wlmaker_protocols
   BASE_NAME xdg-shell
   PROTOCOL_FILE "${WAYLAND_PROTOCOLDIR}/stable/xdg-shell/xdg-shell.xml"
   SIDE server)
 
-ADD_LIBRARY(wlmaker_protocols STATIC)
-TARGET_SOURCES(
-  wlmaker_protocols PRIVATE
-  ${SOURCES})
-
 TARGET_COMPILE_OPTIONS(
-  wlmaker_protocols PRIVATE
+  wlmaker_protocols INTERFACE
   ${WAYLAND_SERVER_CFLAGS}
   ${WAYLAND_SERVER_CFLAGS_OTHER}
   ${WAYLAND_PROTOCOLS_CFLAGS}

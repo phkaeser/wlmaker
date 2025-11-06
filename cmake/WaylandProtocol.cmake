@@ -23,7 +23,7 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(
   REQUIRED_VARS WaylandScanner_EXECUTABLE)
 
 # -----------------------------------------------------------------------------
-# Adds the wayland protocol's header and glue code to <target_var>.
+# Builds a library for the protocol, and adds as dependency to target_var.
 FUNCTION(WaylandProtocol_ADD target_var)
   IF(NOT WaylandScanner_EXECUTABLE)
     MESSAGE(FATAL_ERROR "'wayland-scanner' executable required, not found.")
@@ -59,6 +59,32 @@ FUNCTION(WaylandProtocol_ADD target_var)
     DEPENDS ${WaylandScanner_EXECUTABLE} ${_protocol_file}
     VERBATIM)
 
-  LIST(APPEND ${target_var} "${_header}" "${_glue_code}")
-  SET(${target_var} ${${target_var}} PARENT_SCOPE)
+  SET(libName "lib-${ARGS_BASE_NAME}-${ARGS_SIDE}")
+
+  ADD_LIBRARY("${libName}" STATIC)
+  ADD_DEPENDENCIES(${target_var} "${libName}")
+  TARGET_SOURCES("${libName}" PRIVATE "${_glue_code}" "${_header}")
+  SET_TARGET_PROPERTIES("${libName}" PROPERTIES VERSION 1.0 PUBLIC_HEADER "${_header}")
+
+  # Add dependencies.
+  IF(${ARGS_SIDE} STREQUAL "client")
+    PKG_CHECK_MODULES(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
+    TARGET_INCLUDE_DIRECTORIES(
+      "${libName}" PRIVATE
+      ${WAYLAND_CLIENT_INCLUDE_DIRS})
+  ELSE()
+    PKG_CHECK_MODULES(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
+    TARGET_INCLUDE_DIRECTORIES(
+      "${libName}" PRIVATE
+      ${WAYLAND_SERVER_INCLUDE_DIRS})
+  ENDIF()
+
+  # The target may be an INTERFACE library. That needs INTERFACE linking.
+  GET_PROPERTY(target_type TARGET ${target_var} PROPERTY TYPE)
+  IF(target_type STREQUAL "INTERFACE_LIBRARY")
+    TARGET_LINK_LIBRARIES(${target_var} INTERFACE "${libName}")
+  ELSE()
+    TARGET_LINK_LIBRARIES(${target_var} "${libName}")
+  ENDIF()
+
 ENDFUNCTION()
