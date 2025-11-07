@@ -35,7 +35,6 @@
 #undef WLR_USE_UNSTABLE
 
 #include "output.h"
-#include "output_config.h"
 
 struct wl_list;
 
@@ -338,25 +337,16 @@ static bool _wlmaker_output_manager_config_head_apply(
         wlr_output_layout_remove(wlr_output_layout_ptr, wlr_output_ptr);
     }
 
-    wlmbe_output_config_attributes_t *attr_ptr =
-        wlmbe_output_attributes(wlr_output_ptr->data);
-    attr_ptr->enabled = wlr_output_ptr->enabled;
-    attr_ptr->position.x = x;
-    attr_ptr->position.y = y;
-
-    attr_ptr->mode.width = wlr_output_ptr->width;
-    attr_ptr->mode.height = wlr_output_ptr->height;
-    attr_ptr->mode.refresh = wlr_output_ptr->refresh;
-    attr_ptr->has_mode = true;
-
+    bool has_position = false;
     struct wlr_output_layout_output *wlr_output_layout_output_ptr =
         wlr_output_layout_get(
             arg_ptr->wlr_output_layout_ptr,
             wlr_output_ptr);
     if (NULL != wlr_output_layout_output_ptr) {
-        attr_ptr->has_position =
-            !wlr_output_layout_output_ptr->auto_configured;
+        has_position = !wlr_output_layout_output_ptr->auto_configured;
     }
+
+    wlmbe_output_update_attributes(wlr_output_ptr->data, x, y, has_position);
 
     bs_log(BS_INFO,
            "Applied: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
@@ -365,7 +355,7 @@ static bool _wlmaker_output_manager_config_head_apply(
            wlr_output_ptr->width, wlr_output_ptr->height,
            1e-3 * wlr_output_ptr->refresh,
            x, y,
-           attr_ptr->has_position ? "explicit" : "auto");
+           has_position ? "explicit" : "auto");
     return true;
 }
 

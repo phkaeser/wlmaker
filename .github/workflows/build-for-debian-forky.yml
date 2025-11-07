@@ -30,6 +30,7 @@ jobs:
           libcairo2-dev \
           libncurses-dev \
           libwlroots-0.19-dev \
+          libxdg-basedir \
           pkg-config \
           plantuml \
           xwayland

@@ -20,10 +20,10 @@
 #ifndef __WLMBE_BACKEND_H__
 #define __WLMBE_BACKEND_H__
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-//#include <wayland-server-core.h>
 
 struct wl_display;
 struct wlr_output_layout;
@@ -102,6 +102,11 @@ size_t wlmbe_num_outputs(struct wlr_output_layout *wlr_output_layout_ptr);
 void wlmbe_backend_magnify(wlmbe_backend_t *backend_ptr);
 /** Reduces all backend outputs by @ref _wlmbke_backend_magnification. */
 void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr);
+
+/** Saves the output's ephemeral state into a plist file. */
+bool wlmbe_backend_save_ephemeral_state(
+    wlmbe_backend_t *backend_ptr,
+    const char *fname_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmbe_backend_test_cases[];

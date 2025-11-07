@@ -46,6 +46,7 @@ SET(PUBLIC_HEADER_FILES
   corner.h
   cursor.h
   dock.h
+  files.h
   icon_manager.h
   idle.h
   input_observation.h
@@ -77,6 +78,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   corner.c
   cursor.c
   dock.c
+  files.c
   icon_manager.c
   idle.c
   input_observation.c
@@ -133,6 +135,7 @@ TARGET_LINK_LIBRARIES(
   toolkit
   wlmaker_protocols
   PkgConfig::CAIRO
+  PkgConfig::LIBXDGBASEDIR
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
   PkgConfig::XCB
@@ -145,6 +148,7 @@ TARGET_INCLUDE_DIRECTORIES(
   ${PROJECT_BINARY_DIR}/third_party/protocols
   ${PROJECT_BINARY_DIR}/protocols
   ${CAIRO_INCLUDE_DIRS}
+  ${LIBXDGBASEDIR_INCLUDE_DIRS}
   ${WAYLAND_SERVER_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
   ${XKBCOMMON_INCLUDE_DIRS}

@@ -108,6 +108,13 @@ wlmaker_server_t *wlmaker_server_create(
     if (NULL == server_ptr) return NULL;
     server_ptr->options_ptr = options_ptr;
 
+    server_ptr->files_ptr = wlmaker_files_create("wlmaker");
+    if (NULL == server_ptr->files_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_files_create(\"wlmaker\")");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
     server_ptr->config_dict_ptr = bspl_dict_ref(config_dict_ptr);
     if (NULL == server_ptr->config_dict_ptr) {
         wlmaker_server_destroy(server_ptr);
@@ -412,6 +419,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     if (NULL != server_ptr->config_dict_ptr) {
         bspl_dict_unref(server_ptr->config_dict_ptr);
         server_ptr->config_dict_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->files_ptr) {
+        wlmaker_files_destroy(server_ptr->files_ptr);
+        server_ptr->files_ptr = NULL;
     }
 
     free(server_ptr);

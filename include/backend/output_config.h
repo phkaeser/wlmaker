@@ -105,8 +105,26 @@ bs_dllist_node_t *wlmbe_dlnode_from_output_config(
     wlmbe_output_config_t *config_ptr);
 
 /** Returns pointer to @ref wlmbe_output_config_t::attributes. */
-wlmbe_output_config_attributes_t *wlmbe_output_config_attributes(
+const wlmbe_output_config_attributes_t *wlmbe_output_config_attributes(
     wlmbe_output_config_t *config_ptr);
+
+/** Updates the attributes from wlr_output_ptr and the given position info. */
+void wlmbe_output_config_update_attributes(
+    wlmbe_output_config_t *config_ptr,
+    struct wlr_output *wlr_output_ptr,
+    int x,
+    int y,
+    bool has_position);
+
+/**
+ * Applies `attributes_ptr` to the configuration. Respects presence flags.
+ *
+ * @param config_ptr
+ * @param attributes_ptr
+ */
+void wlmbe_output_config_apply_attributes(
+    wlmbe_output_config_t *config_ptr,
+    const wlmbe_output_config_attributes_t *attributes_ptr);
 
 /**
  * Creates a new output config from `wlr_output`.

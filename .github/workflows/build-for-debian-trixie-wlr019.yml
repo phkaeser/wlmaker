@@ -51,6 +51,7 @@ jobs:
           libxcb-shm0-dev \
           libxcb-xinput-dev \
           libxcb1-dev \
+          libxdg-basedir \
           libxkbcommon-dev \
           meson \
           pkgconf \

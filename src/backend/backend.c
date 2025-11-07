@@ -25,7 +25,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <toolkit/toolkit.h>
+#include <unistd.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -357,6 +359,30 @@ void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr)
         1.0 / _wlmbke_backend_magnification);
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmbe_backend_save_ephemeral_state(
+    wlmbe_backend_t *backend_ptr,
+    const char *fname_ptr)
+{
+    bspl_dict_t *dict_ptr = bspl_encode_dict(
+        _wlmbe_outputs_state_desc,
+        backend_ptr);
+    if (NULL != dict_ptr) {
+        bs_dynbuf_t dynbuf = {};
+        if (bs_dynbuf_init(&dynbuf, getpagesize(), SIZE_MAX)) {
+            if (bspl_object_write(
+                    bspl_object_from_dict(dict_ptr),
+                    &dynbuf) &&
+                bs_dynbuf_write_file(&dynbuf, fname_ptr, S_IRUSR | S_IWUSR)) {
+                return true;
+            }
+            bs_dynbuf_fini(&dynbuf);
+        }
+        bspl_dict_unref(dict_ptr);
+    }
+    return false;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -372,7 +398,7 @@ bool _wlmbe_backend_add_output(
     wlmbe_backend_t *backend_ptr,
     wlmbe_output_t *output_ptr)
 {
-    wlmbe_output_config_attributes_t *attr_ptr =
+    const wlmbe_output_config_attributes_t *attr_ptr =
         wlmbe_output_attributes(output_ptr);
     BS_ASSERT(NULL != attr_ptr);
 
@@ -394,8 +420,6 @@ bool _wlmbe_backend_add_output(
                wlrop->name);
         return false;
     }
-    attr_ptr->position.x = wlr_output_layout_output_ptr->x;
-    attr_ptr->position.y = wlr_output_layout_output_ptr->y;
 
     struct wlr_scene_output *wlr_scene_output_ptr = wlr_scene_output_create(
         backend_ptr->wlr_scene_ptr, wlrop);
@@ -459,8 +483,9 @@ void _wlmbe_backend_handle_new_output(
                 wlmbe_output_config_fnmatches,
                 wlr_output_ptr));
     if (NULL != outputs_config_ptr) {
-        *wlmbe_output_config_attributes(config_ptr) =
-            *wlmbe_output_config_attributes(outputs_config_ptr);
+        wlmbe_output_config_apply_attributes(
+            config_ptr,
+            wlmbe_output_config_attributes(outputs_config_ptr));
     }
 
     wlmbe_output_t *output_ptr = wlmbe_output_create(
@@ -698,17 +723,19 @@ void _wlmbe_backend_test_encode_state(bs_test_t *test_ptr)
         "    {\n"
         "      Enabled = False;\n"
         "      Mode = \"1024x768@60.0\";\n"
+        "      Name = Name0;\n"
         "      Scale = \"2.000000e+00\";\n"
         "      Transformation = Normal;\n"
         "    },\n"
         "    {\n"
         "      Enabled = True;\n"
         "      Mode = \"640x480@80.0\";\n"
+        "      Name = Name1;\n"
         "      Scale = \"1.000000e+00\";\n"
         "      Transformation = Normal;\n"
         "    }\n"
         "  );\n"
-        "}";
+        "}\n";
     BS_TEST_VERIFY_MEMEQ(test_ptr, expected, dynbuf.data_ptr, dynbuf.length);
 
     bs_dynbuf_fini(&dynbuf);
