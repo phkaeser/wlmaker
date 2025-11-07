@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
@@ -95,6 +96,11 @@ struct wlmaker_xdg_toplevel {
     struct wl_listener        window_request_fullscreen_listener;
     /** Listener for @ref wlmtk_window_events_t::request_maximized. */
     struct wl_listener        window_request_maximized_listener;
+
+    /** Serial of the most recent commit() call. */
+    uint32_t                  committed_serial;
+    /** Serial of the most recent set_size() call. */
+    uint32_t                  set_size_serial;
 
     /** Whether this toplevel is configured to be server-side decorated. */
     bool                      server_side_decorated;
@@ -623,6 +629,9 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized);
     }
+
+    wxt_ptr->committed_serial =
+        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.configure_serial;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -665,16 +674,30 @@ void _wlmaker_xdg_toplevel_handle_window_request_size(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr,
         struct wlmaker_xdg_toplevel,
         window_request_size_listener);
     const struct wlr_box *box_ptr = data_ptr;
 
-    wlr_xdg_toplevel_set_size(
-        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
-        box_ptr->width,
-        box_ptr->height);
+    // Ignore the request, if commits have not caught up yet.
+    if (wxt_ptr->set_size_serial > wxt_ptr->committed_serial) return;
+
+    // The toplevel may have extra subsurfes, changing the size we need
+    // to request. Adjust the box for that delta.
+    struct wlr_box surface_box = wlmtk_element_get_dimensions_box(
+        wlmtk_surface_element(wxt_ptr->surface_ptr));
+    struct wlr_box toplevel_box =
+        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry;
+    int requested_width =
+        BS_MAX(0, box_ptr->width + toplevel_box.width - surface_box.width);
+    int requested_height =
+        BS_MAX(0, box_ptr->height + toplevel_box.height - surface_box.height);
+
+    wxt_ptr->set_size_serial = wlr_xdg_toplevel_set_size(
+        wxt_ptr->wlr_xdg_toplevel_ptr,
+        requested_width,
+        requested_height);
 }
 
 /* ------------------------------------------------------------------------- */
