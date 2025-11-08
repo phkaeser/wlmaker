@@ -45,6 +45,7 @@ extern "C" {
  * @param width
  * @param height
  * @param config_dict_ptr
+ * @param state_fname_ptr
  *
  * @return the server backend state, or NULL on error.
  */
@@ -54,7 +55,8 @@ wlmbe_backend_t *wlmbe_backend_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     int width,
     int height,
-    bspl_dict_t *config_dict_ptr);
+    bspl_dict_t *config_dict_ptr,
+    const char *state_fname_ptr);
 
 /**
  * Destroys the server backend.
@@ -103,10 +105,8 @@ void wlmbe_backend_magnify(wlmbe_backend_t *backend_ptr);
 /** Reduces all backend outputs by @ref _wlmbke_backend_magnification. */
 void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr);
 
-/** Saves the output's ephemeral state into a plist file. */
-bool wlmbe_backend_save_ephemeral_state(
-    wlmbe_backend_t *backend_ptr,
-    const char *fname_ptr);
+/** Saves the output's ephemeral state into the state file. */
+bool wlmbe_backend_save_ephemeral_state(wlmbe_backend_t *backend_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmbe_backend_test_cases[];

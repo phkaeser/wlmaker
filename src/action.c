@@ -37,7 +37,6 @@
 #include "backend/backend.h"
 #include "cursor.h"
 #include "default_configuration.h"
-#include "files.h"
 #include "idle.h"
 #include "keyboard.h"
 #include "root_menu.h"
@@ -409,15 +408,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_OUTPUT_SAVE_STATE:
-    {
-        char *f = wlmaker_files_xdg_config_fname(
-            server_ptr->files_ptr, "OutputState.plist");
-        if (NULL != f) {
-            wlmbe_backend_save_ephemeral_state(server_ptr->backend_ptr, f);
-            free(f);
-        }
+        wlmbe_backend_save_ephemeral_state(server_ptr->backend_ptr);
         break;
-    }
 
     case WLMAKER_ACTION_SWITCH_TO_VT1:
     case WLMAKER_ACTION_SWITCH_TO_VT2:
