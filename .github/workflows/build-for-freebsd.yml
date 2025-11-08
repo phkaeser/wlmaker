@@ -35,6 +35,7 @@ jobs:
             lang/gcc \
             x11-toolkits/wlroots018 \
             x11/libxcb \
+            x11/libxdg-basedir \
             x11/libxkbcommon
           cmake -B build/ -Dconfig_WERROR=ON
           cmake --build build/

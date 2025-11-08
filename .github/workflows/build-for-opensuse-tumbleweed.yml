@@ -23,6 +23,8 @@ jobs:
           gcc \
           git \
           libxcb-devel \
+          libxdg-basedir \
+          libxdg-basedir-devel \
           libxkbcommon-devel \
           ncurses-devel \
           wayland-devel \

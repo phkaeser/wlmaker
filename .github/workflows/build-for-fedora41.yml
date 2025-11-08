@@ -27,6 +27,7 @@ jobs:
           flex \
           gcc \
           git \
+          libxdg-basedir-devel \
           ncurses-devel \
           pkg-config \
           plantuml \

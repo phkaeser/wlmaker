@@ -27,6 +27,7 @@
 #include "config.h"
 #include "corner.h"
 #include "dock.h"
+#include "files.h"
 #include "launcher.h"
 #include "layer_panel.h"
 #include "lock_mgr.h"
@@ -45,6 +46,7 @@ const bs_test_set_t wlmaker_tests[] = {
     { 1, "config", wlmaker_config_test_cases },
     { 1, "corner", wlmaker_corner_test_cases },
     { 1, "dock", wlmaker_dock_test_cases },
+    { 1, "files", wlmaker_files_test_cases },
     { 1, "launcher", wlmaker_launcher_test_cases},
     { 1, "layer_panel", wlmaker_layer_panel_test_cases },
     { 1, "lock", wlmaker_lock_mgr_test_cases },
