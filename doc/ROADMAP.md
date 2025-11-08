@@ -16,6 +16,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Save state for Output.
     * [done] Create the base directory, if it does not yet exist.
     * [done] Load Output on startup, and (re)apply the configuration.
+    * Document the state file.
     * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
@@ -57,6 +58,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Embed version and have a `--version` argument to print out.
   * logo: Upsize header font, and show on div with white background.
   * logo: propagate icon downstream to Debian's application definition, and in share/
+  * [stretch goal] Themes: Add means to change theme while running.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
