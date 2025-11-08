@@ -40,6 +40,7 @@ FIND_PACKAGE(PkgConfig REQUIRED)
 
 PKG_CHECK_MODULES(CAIRO REQUIRED IMPORTED_TARGET cairo>=1.16.0)
 PKG_CHECK_MODULES(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon>=1.5.0)
+PKG_CHECK_MODULES(LIBXDGBASEDIR REQUIRED IMPORTED_TARGET libxdg-basedir>=1.2)
 
 # https://github.com/ianlancetaylor/libbacktrace.
 # The REQUIRED arg is available only from cmake 3.28.
