@@ -109,6 +109,9 @@ struct _wlmbe_backend_t {
     struct wlr_scene          *wlr_scene_ptr;
     /** Points to struct wlr_output_layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
+
+    /** Name of the file for storing the output's state. */
+    char                      *state_fname_ptr;
 };
 
 static void _wlmbe_backend_handle_new_output(
@@ -163,7 +166,8 @@ wlmbe_backend_t *wlmbe_backend_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     int width,
     int height,
-    bspl_dict_t *config_dict_ptr)
+    bspl_dict_t *config_dict_ptr,
+    const char *state_fname_ptr)
 {
     wlmbe_backend_t *backend_ptr = logged_calloc(1, sizeof(wlmbe_backend_t));
     if (NULL == backend_ptr) return NULL;
@@ -178,6 +182,26 @@ wlmbe_backend_t *wlmbe_backend_create(
             backend_ptr)) {
         wlmbe_backend_destroy(backend_ptr);
         return NULL;
+    }
+
+    // Loads state (if available).
+    backend_ptr->state_fname_ptr = logged_strdup(state_fname_ptr);
+    if (NULL == backend_ptr->state_fname_ptr) {
+        wlmbe_backend_destroy(backend_ptr);
+        return NULL;
+    }
+    bspl_object_t *o = bspl_create_object_from_plist_file(
+        backend_ptr->state_fname_ptr);
+    if (NULL != o) {
+        bool rv = bspl_decode_dict(
+            bspl_dict_from_object(o),
+            _wlmbe_outputs_state_desc,
+            backend_ptr);
+        bspl_object_unref(o);
+        if (!rv) {
+            wlmbe_backend_destroy(backend_ptr);
+            return NULL;
+        }
     }
 
     // Auto-create the wlroots backend. Can be X11 or direct.
@@ -294,6 +318,11 @@ void wlmbe_backend_destroy(wlmbe_backend_t *backend_ptr)
 
     // @ref wlmbe_backend_t::wlr_backend_ptr is destroyed from wl_display.
 
+    if (NULL != backend_ptr->state_fname_ptr) {
+        free(backend_ptr->state_fname_ptr);
+        backend_ptr->state_fname_ptr = NULL;
+    }
+
     free(backend_ptr);
 }
 
@@ -360,9 +389,7 @@ void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_backend_save_ephemeral_state(
-    wlmbe_backend_t *backend_ptr,
-    const char *fname_ptr)
+bool wlmbe_backend_save_ephemeral_state(wlmbe_backend_t *backend_ptr)
 {
     bspl_dict_t *dict_ptr = bspl_encode_dict(
         _wlmbe_outputs_state_desc,
@@ -373,7 +400,10 @@ bool wlmbe_backend_save_ephemeral_state(
             if (bspl_object_write(
                     bspl_object_from_dict(dict_ptr),
                     &dynbuf) &&
-                bs_dynbuf_write_file(&dynbuf, fname_ptr, S_IRUSR | S_IWUSR)) {
+                bs_dynbuf_write_file(
+                    &dynbuf,
+                    backend_ptr->state_fname_ptr,
+                    S_IRUSR | S_IWUSR)) {
                 return true;
             }
             bs_dynbuf_fini(&dynbuf);

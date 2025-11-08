@@ -15,6 +15,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Add option to save state (Dock, Clip, Output).
     * [done] Save state for Output.
     * [done] Create the base directory, if it does not yet exist.
+    * [done] Load Output on startup, and (re)apply the configuration.
     * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
@@ -28,9 +29,13 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
     * [done] Rename wlmtk_window2_t to wlmtk_window_t once earlier references gone.
     * Extend wlmtk_window2_t to support minimize.
+  * wlmtk_backend_t review & improve naming.
+    * Inconsistency of "ephemeral" state vs state.
+    * Check file existence, so there is no ERROR in the log. bs_file_exists?
   * Recompute pointer focus max once per frame.
   * Verify that right-click on title after window menu re-raises window menu.
   * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
+  * Move config and data files into XDG-compliant config, resp. data paths.
 
 * Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
@@ -43,7 +48,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * From libxdg-basedir:
     * Fix leak with libxdg-basedir.
     * Look whether to expand to use XDG_STATE_HOME
-
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.

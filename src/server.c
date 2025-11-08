@@ -168,13 +168,21 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
+    char *f = wlmaker_files_xdg_config_fname(
+        server_ptr->files_ptr, "OutputState.plist");
+    if (NULL == f) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
     server_ptr->backend_ptr = wlmbe_backend_create(
         server_ptr->wl_display_ptr,
         server_ptr->wlr_scene_ptr,
         server_ptr->wlr_output_layout_ptr,
         server_ptr->options_ptr->width,
         server_ptr->options_ptr->height,
-        server_ptr->config_dict_ptr);
+        server_ptr->config_dict_ptr,
+        f);
+    free(f);
     if (NULL == server_ptr->backend_ptr) {
         bs_log(BS_ERROR, "Failed wlmbe_backend_create()");
         wlmaker_server_destroy(server_ptr);
