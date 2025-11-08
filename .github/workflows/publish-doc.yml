@@ -47,6 +47,7 @@ jobs:
             libcairo2-dev \
             libncurses-dev \
             libwlroots-0.18-dev \
+            libxdg-basedir-dev \
             pkg-config \
             plantuml \
             wmaker

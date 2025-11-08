@@ -50,7 +50,7 @@ void wlmaker_files_destroy(wlmaker_files_t *files_ptr);
 /**
  * Returns a full path name for a config file.
  *
- * This expands into ${XDG_CONFIG_HOME}/<dirname>/<fname>.
+ * This expands into ${XDG_CONFIG_HOME}/`*dirname_ptr`/`*fname_ptr`.
  *
  * @param files_ptr
  * @param fname_ptr

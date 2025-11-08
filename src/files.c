@@ -26,6 +26,7 @@
 
 /* == Declarations ========================================================= */
 
+/** State of the files module. */
 struct _wlmaker_files_t {
     /** Handle for libxdg-basedir. */
     xdgHandle                 xdg_handle;
@@ -92,6 +93,7 @@ const bs_test_case_t wlmaker_files_test_cases[] = {
 };
 
 /* ------------------------------------------------------------------------- */
+/** Tests building filenames relative to XDG base directories. */
 void _wlmaker_files_test_builders(bs_test_t *test_ptr)
 {
     wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
