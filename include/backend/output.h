@@ -21,6 +21,7 @@
 #define __WLMBE_OUTPUT_H__
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 
 #include "output_config.h"
 
@@ -71,9 +72,23 @@ const char *wlmbe_output_description(wlmbe_output_t *output_ptr);
 /** Returns @ref wlmbe_output_t::wlr_output_ptr. */
 struct wlr_output *wlmbe_wlr_output_from_output(wlmbe_output_t *output_ptr);
 
-/** Returns @ref wlmbe_output_t::attributes_ptr. */
-wlmbe_output_config_attributes_t *wlmbe_output_attributes(
+/**
+ * Gets the attributes of this output.
+ *
+ * @param output_ptr
+ *
+ * @return pointer to @ref wlmbe_output_config_t::attributes of
+ *     @ref wlmbe_output_t::output_config_ptr.
+ */
+const wlmbe_output_config_attributes_t *wlmbe_output_attributes(
     wlmbe_output_t *output_ptr);
+
+/** Updates attributes from wlr_output, and from the given position data. */
+void wlmbe_output_update_attributes(
+    wlmbe_output_t *output_ptr,
+    int x,
+    int y,
+    bool has_position);
 
 /** Returns a pointer to @ref wlmbe_output_t::dlnode. */
 bs_dllist_node_t *wlmbe_dlnode_from_output(wlmbe_output_t *output_ptr);

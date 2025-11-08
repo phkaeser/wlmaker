@@ -53,6 +53,7 @@ typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 #include "config.h"
 #include "corner.h"  // IWYU pragma: keep
 #include "cursor.h"  // IWYU pragma: keep
+#include "files.h"
 #include "icon_manager.h"  // IWYU pragma: keep
 #include "input_observation.h"
 #include "idle.h"  // IWYU pragma: keep
@@ -81,8 +82,10 @@ typedef struct {
 
 /** State of the Wayland server. */
 struct _wlmaker_server_t {
+    /** Files module handle. */
+    wlmaker_files_t           *files_ptr;
     /** Configuration dictionnary. */
-    bspl_dict_t             *config_dict_ptr;
+    bspl_dict_t               *config_dict_ptr;
     /** Copy of the options. */
     const wlmaker_server_options_t *options_ptr;
 

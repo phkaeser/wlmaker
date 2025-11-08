@@ -65,6 +65,7 @@ typedef enum {
 
     WLMAKER_ACTION_OUTPUT_MAGNIFY,
     WLMAKER_ACTION_OUTPUT_REDUCE,
+    WLMAKER_ACTION_OUTPUT_SAVE_STATE,
 
     // Note: Keep these numbered consecutively.
     WLMAKER_ACTION_SWITCH_TO_VT1,

@@ -13,6 +13,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Clip & Dock handling
   * Add option to save state (Dock, Clip, Output).
+    * [done] Save state for Output.
+    * [done] Create the base directory, if it does not yet exist.
+    * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
 
@@ -37,6 +40,10 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
+  * From libxdg-basedir:
+    * Fix leak with libxdg-basedir.
+    * Look whether to expand to use XDG_STATE_HOME
+
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.

@@ -136,10 +136,54 @@ bs_dllist_node_t *wlmbe_dlnode_from_output_config(
 }
 
 /* ------------------------------------------------------------------------- */
-wlmbe_output_config_attributes_t *wlmbe_output_config_attributes(
+const wlmbe_output_config_attributes_t *wlmbe_output_config_attributes(
     wlmbe_output_config_t *config_ptr)
 {
     return &config_ptr->attributes;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_config_update_attributes(
+    wlmbe_output_config_t *config_ptr,
+    struct wlr_output *wlr_output_ptr,
+    int x,
+    int y,
+    bool has_position)
+{
+    config_ptr->attributes.transformation = wlr_output_ptr->transform;
+    config_ptr->attributes.scale = wlr_output_ptr->scale;
+    config_ptr->attributes.enabled = wlr_output_ptr->enabled;
+
+    if (has_position) {
+        config_ptr->attributes.position.x = x;
+        config_ptr->attributes.position.y = y;
+        config_ptr->attributes.has_position = has_position;
+    }
+
+    config_ptr->attributes.mode.width = wlr_output_ptr->width;
+    config_ptr->attributes.mode.height = wlr_output_ptr->height;
+    config_ptr->attributes.mode.refresh = wlr_output_ptr->refresh;
+    config_ptr->attributes.has_mode = true;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmbe_output_config_apply_attributes(
+    wlmbe_output_config_t *config_ptr,
+    const wlmbe_output_config_attributes_t *attributes_ptr)
+{
+    config_ptr->attributes.transformation = attributes_ptr->transformation;
+    config_ptr->attributes.scale = attributes_ptr->scale;
+    config_ptr->attributes.enabled = attributes_ptr->enabled;
+
+    if (attributes_ptr->has_position) {
+        config_ptr->attributes.position = attributes_ptr->position;
+        config_ptr->attributes.has_position = true;
+    }
+
+    if (attributes_ptr->has_mode) {
+        config_ptr->attributes.mode = attributes_ptr->mode;
+        config_ptr->attributes.has_mode = true;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -212,7 +256,18 @@ wlmbe_output_config_t *wlmbe_output_config_create_from_plist(
 bspl_dict_t *wlmbe_output_config_create_into_plist(
     const wlmbe_output_config_t *config_ptr)
 {
-    return bspl_encode_dict(_wlmbe_output_config_desc, config_ptr);
+    bspl_dict_t *dict_ptr = bspl_encode_dict(
+        _wlmbe_output_config_desc, config_ptr);
+    if (NULL != dict_ptr) {
+        if (bspl_encode_into_dict(
+                _wlmbe_output_description_desc,
+                &config_ptr->description,
+                dict_ptr)) {
+            return dict_ptr;
+        }
+        bspl_dict_unref(dict_ptr);
+    }
+    return NULL;
 }
 
 /* ------------------------------------------------------------------------- */
