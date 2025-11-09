@@ -32,7 +32,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Extend wlmtk_window2_t to support minimize.
   * wlmtk_backend_t review & improve naming.
     * Inconsistency of "ephemeral" state vs state.
-    * Check file existence, so there is no ERROR in the log. bs_file_exists?
+    * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
   * Recompute pointer focus max once per frame.
   * Verify that right-click on title after window menu re-raises window menu.
   * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
