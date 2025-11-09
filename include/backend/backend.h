@@ -106,7 +106,7 @@ void wlmbe_backend_magnify(wlmbe_backend_t *backend_ptr);
 void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr);
 
 /** Saves the output's ephemeral state into the state file. */
-bool wlmbe_backend_save_ephemeral_state(wlmbe_backend_t *backend_ptr);
+bool wlmbe_backend_save_ephemeral_output_configs(wlmbe_backend_t *backend_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmbe_backend_test_cases[];
