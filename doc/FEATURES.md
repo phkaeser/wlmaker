@@ -233,20 +233,20 @@ TBD: Raise/Lower.
 ### `xdg-shell`
 
 * [x] :white_check_mark: Support toplevel shell and popups.
-* [ ] Refactor: split `xdg_surface` off `xdg_toplevel`, encode as separate classes.
+* [x] :white_check_mark: Refactor: split `xdg_surface` off `xdg_toplevel`, encode as separate classes.
 * [ ] Accept state (maximize, fullscreen, ...) before mapping the surface, but apply
   them only after first commit.
 * [ ] Accept decoration requests before first commit, and forward them after the first
   commit was received (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
 * [ ] Support `set_parent`, associating a child `wlmtk_window_t` with a paraent.
-* [ ] Consider suggested position on `show_window_menu`
+* [x] :white_check_mark: Consider suggested position on `show_window_menu`
 
 ## X11 client support (XWayland)
 
 * [x] :white_check_mark: Support windows and popups, enough for `xterm` and `emacs`.
 * [ ] Modal windows should be a child `wlmtk_window_t`
-* [ ] Investigate if the connection can identify the real X client, not the
-  XWayland connection.
+* [x] :white_check_mark: Investigate if the connection can identify the real X client, not the
+  XWayland connection (yes, it does).
 
 ## Dock, Clip, Icon Area
 
@@ -306,13 +306,14 @@ TBD.
 ### Multiple outputs ([#122](https://github.com/phkaeser/wlmaker/issues/122))
 
 * [x] :white_check_mark: Output layout configurable via third-party tool, eg. `wlr-randr`.
+* [x] :white_check_mark: Save state in a state file (in the *config* directory currently).
 * [ ] When saving state, store the current layout in the *state* config file.
 
 
 ## General
 
 * [ ] Use SVG as principal format for icons.
-* [ ] Add a logo.
+* [ ] :construction: Add a logo.
 * [ ] Add an info panel, showing version, name, copyright and link to documentation.
 * [ ] Upon first launch, show an onboarding screen with basic instructions
   ([#131](https://github.com/phkaeser/wlmaker/issues/131)).
@@ -325,9 +326,10 @@ TBD.
 
 ### System integration
 
-* [ ] Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
+* [ ] :construction: Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
       FreeDesktop specification ([#262](https://github.com/phkaeser/wlmaker/issues/262)).
 * [ ] Review and define what to support from https://specifications.freedesktop.org.
+    * [ ] Set `XDG_CURRENT_DESKTOP` to a sensible value.
 * [ ] System Tray (potentially through a Dock App)
 * [ ] Notifications (potentially through a Dock App)
 * [ ] Review whether to support Icon themes.
