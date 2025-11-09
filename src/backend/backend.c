@@ -190,9 +190,13 @@ wlmbe_backend_t *wlmbe_backend_create(
         wlmbe_backend_destroy(backend_ptr);
         return NULL;
     }
-    bspl_object_t *o = bspl_create_object_from_plist_file(
-        backend_ptr->state_fname_ptr);
-    if (NULL != o) {
+    if (bs_file_realpath_is(backend_ptr->state_fname_ptr, S_IFREG)) {
+        bspl_object_t *o = bspl_create_object_from_plist_file(
+            backend_ptr->state_fname_ptr);
+        if (NULL == o) {
+            wlmbe_backend_destroy(backend_ptr);
+            return NULL;
+        }
         bool rv = bspl_decode_dict(
             bspl_dict_from_object(o),
             _wlmbe_outputs_state_desc,
