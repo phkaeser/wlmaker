@@ -30,8 +30,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
     * [done] Rename wlmtk_window2_t to wlmtk_window_t once earlier references gone.
     * Extend wlmtk_window2_t to support minimize.
-  * wlmtk_backend_t review & improve naming.
-    * Inconsistency of "ephemeral" state vs state.
+  * [done] wlmtk_backend_t review & improve naming.
+    * [done] Inconsistency of "ephemeral" state vs state.
     * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
   * Recompute pointer focus max once per frame.
   * Verify that right-click on title after window menu re-raises window menu.

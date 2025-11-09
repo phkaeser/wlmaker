@@ -408,7 +408,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_OUTPUT_SAVE_STATE:
-        wlmbe_backend_save_ephemeral_state(server_ptr->backend_ptr);
+        wlmbe_backend_save_ephemeral_output_configs(server_ptr->backend_ptr);
         break;
 
     case WLMAKER_ACTION_SWITCH_TO_VT1:

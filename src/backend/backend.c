@@ -92,12 +92,17 @@ struct _wlmbe_backend_t {
     bs_dllist_t               output_configs;
     /**
      * Another list of @ref wlmbe_output_config_t items. This is
-     * initialized from wlmaker's state file.
+     * initialized from wlmaker's state file upon startup, ie. in
+     * @ref wlmbe_backend_create.
      *
      * If a discovered output equals to one of the nodes here, it's attributes
      * will be taken from here. Otherwise, a new entry is created in this list.
      * The intent is to memorize state of connected configs, so that
      * re-connected outputs are using the same attributes they left with.
+     *
+     * These configurations can be saved by calling
+     * @ref wlmbe_backend_save_ephemeral_output_configs, otherwise any updates
+     * will be lost on restart.
      */
     bs_dllist_t               ephemeral_output_configs;
 
@@ -134,7 +139,8 @@ static void _wlmbe_backend_config_dlnode_destroy(
 
 /** Descriptor for the output configuration. */
 static const bspl_desc_t _wlmbe_output_configs_desc[] = {
-    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, output_configs,
+    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t,
+                    output_configs,
                     output_configs,
                     _wlmbe_backend_decode_item,
                     _wlmbe_backend_encode_all,
@@ -143,9 +149,10 @@ static const bspl_desc_t _wlmbe_output_configs_desc[] = {
     BSPL_DESC_SENTINEL(),
 };
 
-/** Descriptor for the output state, stored as plist. */
+/** Descriptor for ephemeral output onfigurations, stored as plist. */
 static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
-    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t, ephemeral_output_configs,
+    BSPL_DESC_ARRAY("Outputs", true, wlmbe_backend_t,
+                    ephemeral_output_configs,
                     ephemeral_output_configs,
                     _wlmbe_backend_decode_item,
                     _wlmbe_backend_encode_all,
@@ -393,7 +400,7 @@ void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlmbe_backend_save_ephemeral_state(wlmbe_backend_t *backend_ptr)
+bool wlmbe_backend_save_ephemeral_output_configs(wlmbe_backend_t *backend_ptr)
 {
     bspl_dict_t *dict_ptr = bspl_encode_dict(
         _wlmbe_outputs_state_desc,
@@ -630,11 +637,11 @@ void _wlmbe_backend_config_dlnode_destroy(
 /* == Unit tests =========================================================== */
 
 static void _wlmbe_backend_test_find(bs_test_t *test_ptr);
-static void _wlmbe_backend_test_encode_state(bs_test_t *test_ptr);
+static void _wlmbe_backend_test_encode_output_configs(bs_test_t *test_ptr);
 
 const bs_test_case_t          wlmbe_backend_test_cases[] = {
     { 1, "find", _wlmbe_backend_test_find },
-    { 1, "encode_state", _wlmbe_backend_test_encode_state },
+    { 1, "encode_output_configs", _wlmbe_backend_test_encode_output_configs },
     { 0, NULL, NULL }
 };
 
@@ -706,8 +713,8 @@ void _wlmbe_backend_test_find(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Tests encoding of the output state */
-void _wlmbe_backend_test_encode_state(bs_test_t *test_ptr)
+/** Tests encoding of the ephemeral output configs */
+void _wlmbe_backend_test_encode_output_configs(bs_test_t *test_ptr)
 {
     wlmbe_backend_t backend = {};
 
