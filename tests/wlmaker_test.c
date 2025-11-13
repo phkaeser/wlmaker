@@ -34,6 +34,7 @@
 #include "root_menu.h"
 #include "server.h"
 #include "xdg_decoration.h"
+#include "xdg_toplevel.h"
 #if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
