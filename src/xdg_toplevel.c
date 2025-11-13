@@ -29,6 +29,10 @@
 #include <wayland-server.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
@@ -97,6 +101,9 @@ struct wlmaker_xdg_toplevel {
     /** Listener for @ref wlmtk_window_events_t::request_maximized. */
     struct wl_listener        window_request_maximized_listener;
 
+    /** Injected method for wlr_xdg_toplevel_set_maximized(). */
+    uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *toplevel, bool maximized);
+
     /** Serial of the most recent commit() call. */
     uint32_t                  committed_serial;
     /** Serial of the most recent set_size() call. */
@@ -104,7 +111,25 @@ struct wlmaker_xdg_toplevel {
 
     /** Whether this toplevel is configured to be server-side decorated. */
     bool                      server_side_decorated;
+
+    /** Properties that are pending to be configured for the toplevel. */
+    struct {
+        enum {
+            /** Maximization status. */
+            WXT_PROP_MAXIMIZED = 1 << 0,
+        }  properties;
+        /** Maximization status. */
+        bool                  maximized;
+    } pending;
 };
+
+struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    wlmaker_server_t *server_ptr,
+    uint32_t (*_set_maximized)(
+        struct wlr_xdg_toplevel *toplevel, bool maximized));
+static void _wlmaker_xdg_toplevel_flush_properties(
+    struct wlmaker_xdg_toplevel *wxt_ptr);
 
 static void _wlmaker_xdg_toplevel_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -174,6 +199,79 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr)
 {
+    return _wlmaker_xdg_toplevel_create_injected(
+        wlr_xdg_toplevel_ptr,
+        server_ptr,
+        wlr_xdg_toplevel_set_maximized);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
+{
+    bs_log(BS_INFO, "Destroying XDG toplevel %p", wxt_ptr);
+    wxt_ptr->wlr_xdg_toplevel_ptr->base->data = NULL;
+
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_fullscreen_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_size_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_set_activated_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_close_listener);
+
+    wlmtk_util_disconnect_listener(&wxt_ptr->surface_commit_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->surface_unmap_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->surface_map_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->new_popup_listener);
+
+    wlmtk_util_disconnect_listener(&wxt_ptr->set_app_id_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->set_title_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->set_parent_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_show_window_menu_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_resize_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_move_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_fullscreen_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_maximize_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->request_minimize_listener);
+    wlmtk_util_disconnect_listener(&wxt_ptr->destroy_listener);
+
+    if (NULL != wxt_ptr->tl_menu_ptr) {
+        wlmaker_tl_menu_destroy(wxt_ptr->tl_menu_ptr);
+        wxt_ptr->tl_menu_ptr = NULL;
+    }
+
+    if (NULL != wxt_ptr->window_ptr) {
+        wl_signal_emit(
+            &wxt_ptr->server_ptr->window_destroyed_event,
+            wxt_ptr->window_ptr);
+
+        wlmtk_window_destroy(wxt_ptr->window_ptr);
+        wxt_ptr->window_ptr = NULL;
+    }
+
+    wlmtk_base_fini(&wxt_ptr->base);
+
+    free(wxt_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_xdg_toplevel_set_server_side_decorated(
+    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr,
+    bool server_side_decorated)
+{
+    wlmaker_xdg_toplevel_ptr->server_side_decorated = server_side_decorated;
+    wlmtk_window_set_server_side_decorated(
+        wlmaker_xdg_toplevel_ptr->window_ptr,
+        wlmaker_xdg_toplevel_ptr->server_side_decorated);
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Creates the toplevel, permitting injected calls to set properties. */
+struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    wlmaker_server_t *server_ptr,
+    uint32_t (*_set_maximized)(
+        struct wlr_xdg_toplevel *toplevel, bool maximized))
+{
     // Guard clause: Must have a base. */
     if (NULL == wlr_xdg_toplevel_ptr->base) {
         bs_log(BS_ERROR, "Missing base for wlr_xdg_toplevel at %p",
@@ -186,6 +284,7 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     if (NULL == wlmaker_xdg_toplevel_ptr) return NULL;
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     wlmaker_xdg_toplevel_ptr->server_ptr = server_ptr;
+    wlmaker_xdg_toplevel_ptr->_set_maximized = _set_maximized;
 
     if (!wlmtk_base_init(&wlmaker_xdg_toplevel_ptr->base, NULL)) goto error;
 
@@ -207,10 +306,12 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         WLMTK_WINDOW_PROPERTY_RESIZABLE |
         WLMTK_WINDOW_PROPERTY_ICONIFIABLE |
         WLMTK_WINDOW_PROPERTY_CLOSABLE);
-    wlmtk_util_client_t client;
-    wl_client_get_credentials(
-        wlr_xdg_toplevel_ptr->resource->client,
-        &client.pid, &client.uid, &client.gid);
+    wlmtk_util_client_t client = {};
+    if (NULL != wlr_xdg_toplevel_ptr->resource) {
+        wl_client_get_credentials(
+            wlr_xdg_toplevel_ptr->resource->client,
+            &client.pid, &client.uid, &client.gid);
+    }
     wlmtk_window_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
 
     wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
@@ -314,63 +415,28 @@ error:
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
+/**
+ * Sends pending properties as configure() to the client, after 1st commit.
+ *
+ * If the first commit hasn't happened yet, the properties will not be sent.
+ * A later call to @ref _wlmaker_xdg_toplevel_flush_properties will then flush
+ * them. See @ref wlmaker_xdg_toplevel::pending.
+ *
+ * @param wxt_ptr
+ */
+void _wlmaker_xdg_toplevel_flush_properties(
+    struct wlmaker_xdg_toplevel *wxt_ptr)
 {
-    bs_log(BS_INFO, "Destroying XDG toplevel %p", wxt_ptr);
-    wxt_ptr->wlr_xdg_toplevel_ptr->base->data = NULL;
+    if (!wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) return;
 
-    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_fullscreen_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_size_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->window_set_activated_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->window_request_close_listener);
-
-    wlmtk_util_disconnect_listener(&wxt_ptr->surface_commit_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->surface_unmap_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->surface_map_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->new_popup_listener);
-
-    wlmtk_util_disconnect_listener(&wxt_ptr->set_app_id_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->set_title_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->set_parent_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_show_window_menu_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_resize_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_move_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_fullscreen_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_maximize_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->request_minimize_listener);
-    wlmtk_util_disconnect_listener(&wxt_ptr->destroy_listener);
-
-    if (NULL != wxt_ptr->tl_menu_ptr) {
-        wlmaker_tl_menu_destroy(wxt_ptr->tl_menu_ptr);
-        wxt_ptr->tl_menu_ptr = NULL;
+    if (wxt_ptr->pending.properties & WXT_PROP_MAXIMIZED) {
+        wxt_ptr->_set_maximized(
+            wxt_ptr->wlr_xdg_toplevel_ptr,
+            wxt_ptr->pending.maximized);
     }
 
-    if (NULL != wxt_ptr->window_ptr) {
-        wl_signal_emit(
-            &wxt_ptr->server_ptr->window_destroyed_event,
-            wxt_ptr->window_ptr);
-
-        wlmtk_window_destroy(wxt_ptr->window_ptr);
-        wxt_ptr->window_ptr = NULL;
-    }
-
-    wlmtk_base_fini(&wxt_ptr->base);
-
-    free(wxt_ptr);
+    wxt_ptr->pending.properties = 0;
 }
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_xdg_toplevel_set_server_side_decorated(
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr,
-    bool server_side_decorated)
-{
-    wlmaker_xdg_toplevel_ptr->server_side_decorated = server_side_decorated;
-    wlmtk_window_set_server_side_decorated(
-        wlmaker_xdg_toplevel_ptr->window_ptr,
-        wlmaker_xdg_toplevel_ptr->server_side_decorated);
-}
-
-/* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** The XDG toplevel is destroyed: Destry the wlmaker toplevel, too. */
@@ -392,20 +458,17 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
-    if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized !=
-        wlmtk_window_is_maximized(wxt_ptr->window_ptr)) {
-        wlmtk_window_request_maximized(
+    if (wlmtk_window_request_maximized(
             wxt_ptr->window_ptr,
-            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
-    }
+            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized)) return;
 
-    // Protocol expects an `configure`. Depending on current state, that may
-    // not have been sent yet, hence adding an explicit `configure` here.
-    if (wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
-        // TODO(kaeser@gubbe.ch): Store state and then issue these pending
-        // configures once initialized.
-        wlr_xdg_surface_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
-    }
+    // The 'maximized' request was not accepted. XDG protocol expects a
+    // configure, so we respond with a "set_maximized" with the current
+    // maximization state.
+    wxt_ptr->pending.properties |= WXT_PROP_MAXIMIZED;
+    wxt_ptr->pending.maximized = wlmtk_window_is_maximized(
+        wxt_ptr->window_ptr);
+    _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -613,10 +676,6 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
 
     struct wlr_xdg_surface *wlr_xdg_surface_ptr =
         wxt_ptr->wlr_xdg_toplevel_ptr->base;
-    if (wlr_xdg_surface_ptr->initial_commit) {
-        // Initial commit: Ensure a configure is responded with.
-        wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
-    }
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
         wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
@@ -628,6 +687,12 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
         wlmtk_window_commit_maximized(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized);
+    }
+
+    if (0 != wxt_ptr->pending.properties) {
+        _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
+    } else if (wlr_xdg_surface_ptr->initial_commit) {
+        wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
     }
 
     wxt_ptr->committed_serial =
@@ -723,15 +788,242 @@ void _wlmaker_xdg_toplevel_handle_window_request_maximized(
     struct wl_listener *listener_ptr,
     void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr,
         struct wlmaker_xdg_toplevel,
         window_request_maximized_listener);
     bool *maximized_ptr = data_ptr;
 
-    wlr_xdg_toplevel_set_maximized(
-        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
-        *maximized_ptr);
+    wxt_ptr->pending.properties |= WXT_PROP_MAXIMIZED;
+    wxt_ptr->pending.maximized = *maximized_ptr;
+    _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
+}
+
+/** == Unit test helpers =================================================== */
+
+/** Data needed for using an output layout for tests. */
+struct _wlmaker_test_layout {
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    struct wl_display         *wl_display_ptr;
+    struct wlr_output_layout  *wlr_output_layout_ptr;
+    struct wlr_output         wlr_output;
+#endif
+};
+
+static bool _wlmaker_test_layout_init(struct _wlmaker_test_layout *tl_ptr);
+static void _wlmaker_test_layout_fini(struct _wlmaker_test_layout *tl_ptr);
+
+/** Initializes @ref _wlmaker_test_layout */
+bool _wlmaker_test_layout_init(struct _wlmaker_test_layout *tl_ptr)
+{
+    *tl_ptr = (struct _wlmaker_test_layout){};
+
+    tl_ptr->wl_display_ptr = wl_display_create();
+    if (NULL == tl_ptr->wl_display_ptr) return false;
+
+    tl_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        tl_ptr->wl_display_ptr);
+    if (NULL == tl_ptr->wl_display_ptr) {
+        _wlmaker_test_layout_fini(tl_ptr);
+        return false;
+    }
+
+    tl_ptr->wlr_output = (struct wlr_output){
+        .name = "Output", .width = 1024, .height = 768, .scale = 1
+    };
+    wlmtk_test_wlr_output_init(&tl_ptr->wlr_output);
+
+    return true;
+}
+
+/** Un-initializes @ref _wlmaker_test_layout */
+void _wlmaker_test_layout_fini(struct _wlmaker_test_layout *tl_ptr)
+{
+    if (NULL != tl_ptr->wl_display_ptr) {
+        wl_display_destroy(tl_ptr->wl_display_ptr);
+        tl_ptr->wl_display_ptr = NULL;
+    }
+}
+
+/** Data for testing an XDG toplevel. */
+struct _xdg_toplevel_test_data {
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+    struct wlr_surface        wlr_surface;
+    struct wlr_xdg_surface    wlr_xdg_surface;
+    struct wlr_xdg_toplevel   wlr_xdg_toplevel;
+
+    struct _wlmaker_test_layout test_layout;
+    wlmaker_server_t          server;
+
+    int                       set_maximized_calls;
+#endif
+};
+
+/** A fake for wlr_xdg_toplevel_set_maximized(). Records the call. */
+uint32_t _wlmaker_xdg_toplevel_fake_set_maximized(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    __UNUSED__ bool maximized)
+{
+    struct _xdg_toplevel_test_data *td_ptr = BS_CONTAINER_OF(
+        wlr_xdg_toplevel_ptr, struct _xdg_toplevel_test_data, wlr_xdg_toplevel);
+
+    td_ptr->set_maximized_calls++;
+    return 0;
+}
+
+/* == Unit tests =========================================================== */
+
+static void *_wlmaker_xdg_toplevel_test_setup(void);
+static void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr);
+
+
+static void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr);
+
+/** Unit test cases. */
+const bs_test_case_t _test_cases[] = {
+    { true, "client_maximize", _wlmaker_xdg_toplevel_test_maximize },
+    BS_TEST_CASE_SENTINEL()
+};
+
+const bs_test_set_t wlmaker_xdg_toplevel_test_set = BS_TEST_SET_CONTEXT(
+    true,
+    "xdg_toplevel",
+    _test_cases,
+    _wlmaker_xdg_toplevel_test_setup,
+    _wlmaker_xdg_toplevel_test_teardown);
+
+/* ------------------------------------------------------------------------- */
+/** Creates a @ref _xdg_toplevel_test_data in the test context. */
+void *_wlmaker_xdg_toplevel_test_setup(void)
+{
+    struct _xdg_toplevel_test_data *td_ptr = logged_calloc(
+        1, sizeof(struct _xdg_toplevel_test_data));
+    if (NULL == td_ptr) return NULL;
+    td_ptr->wlr_xdg_surface.surface = &td_ptr->wlr_surface;
+    td_ptr->wlr_xdg_toplevel.base = &td_ptr->wlr_xdg_surface;
+
+    if (!_wlmaker_test_layout_init(&td_ptr->test_layout)) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+    wlr_output_layout_add_auto(
+        td_ptr->test_layout.wlr_output_layout_ptr,
+        &td_ptr->test_layout.wlr_output);
+
+    td_ptr->server.wlr_scene_ptr = wlr_scene_create();
+    if (NULL == td_ptr->server.wlr_scene_ptr) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+
+    td_ptr->server.root_ptr = wlmtk_root_create(
+        td_ptr->server.wlr_scene_ptr,
+        td_ptr->test_layout.wlr_output_layout_ptr);
+    if (NULL == td_ptr->server.root_ptr) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+
+    wl_signal_init(&td_ptr->server.window_created_event);
+    wl_signal_init(&td_ptr->server.window_destroyed_event);
+
+    wl_signal_init(&td_ptr->wlr_surface.events.commit);
+    wl_signal_init(&td_ptr->wlr_surface.events.map);
+    wl_signal_init(&td_ptr->wlr_surface.events.unmap);
+
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.destroy);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.ping_timeout);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.new_popup);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.configure);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.ack_configure);
+
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.destroy);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_maximize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_fullscreen);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_minimize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_move);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_resize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_show_window_menu);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_parent);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_title);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_app_id);
+
+    return td_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tear down XDG toplevel data. */
+void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr = test_context_ptr;
+
+    if (NULL != td_ptr->server.root_ptr) {
+        wlmtk_root_destroy(td_ptr->server.root_ptr);
+        td_ptr->server.root_ptr = NULL;
+    }
+
+    wlr_scene_node_destroy(&td_ptr->server.wlr_scene_ptr->tree.node);
+
+    _wlmaker_test_layout_fini(&td_ptr->test_layout);
+    free(td_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests maximize requests, from client & window. */
+void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr =
+        BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
+
+    wlmtk_util_test_listener_t created, destroyed;
+    wlmtk_util_connect_test_listener(
+        &td_ptr->server.window_created_event, &created);
+    wlmtk_util_connect_test_listener(
+        &td_ptr->server.window_destroyed_event, &destroyed);
+
+    struct wlmaker_xdg_toplevel *wxt_ptr =
+        _wlmaker_xdg_toplevel_create_injected(
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
+            _wlmaker_xdg_toplevel_fake_set_maximized);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, created.calls);
+
+    // No initial commit yet. No `set_maximized`.
+    wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, td_ptr->set_maximized_calls);
+
+    // Now we have pending properties. Commit must trigger a `configure`.
+    td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_maximized_calls);
+
+    // When initialized a `request_maximize` configures right away.
+    td_ptr->set_maximized_calls = 0;
+    wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_maximized_calls);
+
+    // Issued from the window, ie. from the compositor.
+    bool m = true;
+    td_ptr->wlr_xdg_surface.initialized = false;  // Ready for configure().
+    td_ptr->set_maximized_calls = 0;
+    wl_signal_emit(
+        &wlmtk_window_events(wxt_ptr->window_ptr)->request_maximized, &m);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, td_ptr->set_maximized_calls);
+
+    // Pending properties. Next commit must trigger.
+    td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_maximized_calls);
+
+    td_ptr->set_maximized_calls = 0;
+    wl_signal_emit(
+        &wlmtk_window_events(wxt_ptr->window_ptr)->request_maximized, &m);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_maximized_calls);
+
+
+    wlmaker_xdg_toplevel_destroy(wxt_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, destroyed.calls);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

@@ -20,6 +20,7 @@
 #ifndef __XDG_TOPLEVEL_H__
 #define __XDG_TOPLEVEL_H__
 
+#include <libbase/libbase.h>
 #include <stdbool.h>
 
 #include "server.h"
@@ -51,6 +52,9 @@ void wlmaker_xdg_toplevel_destroy(
 void wlmaker_xdg_toplevel_set_server_side_decorated(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr,
     bool server_side_decorated);
+
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_xdg_toplevel_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
