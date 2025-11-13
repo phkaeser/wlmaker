@@ -35,6 +35,7 @@
 #include "root_menu.h"
 #include "server.h"
 #include "xdg_decoration.h"
+#include "xdg_toplevel.h"
 #if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
@@ -64,6 +65,7 @@ int main(int argc, const char **argv)
         &wlmaker_root_menu_test_set,
         &wlmaker_server_test_set,
         &wlmaker_xdg_decoration_test_set,
+        &wlmaker_xdg_toplevel_test_set,
 #if defined(WLMAKER_HAVE_XWAYLAND)
         &wlmaker_xwl_surface_test_set,
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
