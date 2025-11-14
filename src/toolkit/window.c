@@ -561,7 +561,7 @@ void wlmtk_window_commit_fullscreen(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_request_maximized(
+bool wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized)
 {
@@ -569,22 +569,31 @@ void wlmtk_window_request_maximized(
     // dimensions if already maximized, hence let that pass.
     // Also: No maximizing when not mapped. No idea how large that should be.
     if (window_ptr->fullscreen ||
-        NULL == window_ptr->workspace_ptr) return;
+        NULL == window_ptr->workspace_ptr) return false;
     window_ptr->inorganic_sizing = maximized;
-
 
     if (maximized) {
         struct wlr_box desired_size = wlmtk_workspace_get_maximize_extents(
             window_ptr->workspace_ptr,
             wlmtk_window_get_wlr_output(window_ptr));
+
+        struct wlr_box current_size = wlmtk_window_get_bounding_box(
+            window_ptr);
+        if (desired_size.width == current_size.width &&
+            desired_size.height == current_size.height) return false;
+
         _wlmtk_window_issue_request_size(window_ptr, &desired_size);
     } else {
+
+        if (!wlmtk_window_is_maximized(window_ptr)) return false;
+
         struct wlr_box desired_size = window_ptr->organic_bounding_box;
         desired_size.x = 0;
         desired_size.y = 0;
         wl_signal_emit(&window_ptr->events.request_size, &desired_size);
     }
     wl_signal_emit(&window_ptr->events.request_maximized, &maximized);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1400,6 +1409,9 @@ void test_fullscreen(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
 
+    // No maximization permitted.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_request_maximized(w, true));
+
     // Request to end fullscreen. Also not taking immediate effect.
     wlmtk_window_request_fullscreen(w, false);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
@@ -1555,6 +1567,10 @@ void test_maximized(bs_test_t *test_ptr)
         &wlmtk_window_events(w)->request_size,
         &request_size_listener);
 
+    // Before mapped: Refuses.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_request_maximized(w, false));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_request_maximized(w, true));
+
     // Map the window. Must be activated.
     wlmtk_window_set_server_side_decorated(w, true);
     wlmtk_workspace_map_window(ws_ptr, w);
@@ -1569,9 +1585,10 @@ void test_maximized(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
         wlmtk_window_get_bounding_box(w));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_request_maximized(w, false));
 
     // Request maximized. Size yet unchanged, but requests issued.
-    wlmtk_window_request_maximized(w, true);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_request_maximized(w, true));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
         wlmtk_window_get_bounding_box(w));
@@ -1595,8 +1612,22 @@ void test_maximized(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
 
+    // A further "request_maximized" call will be refued.
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_request_maximized(w, true));
+
+    // But, if the workspace extents are different, it will accept and request
+    // resizing..
+    output.width = 800; output.height = 600;
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_request_maximized(w, true));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, request_maximized_listener.calls);
+    wlmtk_util_clear_test_listener(&request_maximized_listener);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 796, 579, request_size_listener.box);
+    wlmtk_util_clear_test_wlr_box_listener(&request_size_listener);
+
     // Request to end maximized. Also not taking immediate effect.
-    wlmtk_window_request_maximized(w, false);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_request_maximized(w, false));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
         wlmtk_window_get_bounding_box(w));

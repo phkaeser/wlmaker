@@ -46,6 +46,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
+  * Fix: Maximizing non-decorated window does not use all space. Review size computation.
   * From libxdg-basedir:
     * Fix leak with libxdg-basedir.
     * Look whether to expand to use XDG_STATE_HOME
