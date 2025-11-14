@@ -325,8 +325,14 @@ void wlmtk_window_commit_fullscreen(
  *
  * @param window_ptr
  * @param maximized
+ *
+ * @return true if the window accepted the maximization change. If the
+ * window is in fullscreen mode or not mapped, the maximization update
+ * is not accepted.
  */
-void wlmtk_window_request_maximized(wlmtk_window_t *window_ptr, bool maximized);
+bool wlmtk_window_request_maximized(
+    wlmtk_window_t *window_ptr,
+    bool maximized);
 
 /** @return whether the window currently is in maximized mode. */
 bool wlmtk_window_is_maximized(wlmtk_window_t *window_ptr);
