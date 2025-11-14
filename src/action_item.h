@@ -104,8 +104,8 @@ bool wlmaker_menu_item_bind_action(
     const char *action_arg_ptr,
     wlmaker_server_t *server_ptr);
 
-/** Unit test cases. */
-extern const bs_test_case_t   wlmaker_action_item_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t   wlmaker_action_item_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

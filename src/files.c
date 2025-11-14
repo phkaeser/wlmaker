@@ -20,6 +20,7 @@
 
 #include "files.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <basedir.h>
 #include <libbase/libbase.h>
@@ -87,10 +88,14 @@ char *wlmaker_files_xdg_config_fname(
 
 static void _wlmaker_files_test_builders(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_files_test_cases[] = {
-    { 1, "builders", _wlmaker_files_test_builders },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_files_test_cases[] = {
+    { true, "builders", _wlmaker_files_test_builders },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_files_test_set = BS_TEST_SET(
+    true, "files", wlmaker_files_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests building filenames relative to XDG base directories. */

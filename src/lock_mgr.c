@@ -832,12 +832,16 @@ static void _init_test_session_lock(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr);
 static void _init_test_surface(struct wlr_surface *wlr_surface_ptr);
 
+/** Unit test cases. */
 const bs_test_case_t wlmaker_lock_mgr_test_cases[] = {
-    { 1, "lock_unlock", test_lock_unlock },
-    { 1, "lock_crash", test_lock_crash },
-    { 1, "lock_multi_output", test_lock_multi_output },
-    { 0, NULL, NULL }
+    { true, "lock_unlock", test_lock_unlock },
+    { true, "lock_crash", test_lock_crash },
+    { true, "lock_multi_output", test_lock_multi_output },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_lock_mgr_test_set = BS_TEST_SET(
+    true, "lock_mgr", wlmaker_lock_mgr_test_cases);
 
 /** Return value for @ref _mock_wlr_session_lock_surface_v1_configure. */
 static uint32_t _mock_configure_serial;

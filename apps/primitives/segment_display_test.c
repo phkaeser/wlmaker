@@ -19,14 +19,15 @@
  */
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "segment_display.h"
 
 /** Unit tests. */
 const bs_test_set_t tests[] = {
-    { 1, "segment_dipslay", wlm_cairo_segment_display_test_cases },
-    { 0, NULL, NULL }
+    BS_TEST_SET(true, "segment_dipslay", wlm_cairo_segment_display_test_cases),
+    BS_TEST_SET(false, NULL, NULL),
 };
 
 #if !defined(TEST_DATA_DIR)

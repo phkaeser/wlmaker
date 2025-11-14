@@ -308,10 +308,14 @@ void _wlmaker_dock_handle_output_layout_change(
 
 static void test_create_destroy(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_dock_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_dock_test_cases[] = {
+    { true, "create_destroy", test_create_destroy },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_dock_test_set = BS_TEST_SET(
+    true, "dock", wlmaker_dock_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests ctor and dtor; to help fix leaks. */

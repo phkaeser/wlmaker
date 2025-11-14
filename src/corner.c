@@ -426,10 +426,14 @@ void _wlmaker_corner_handle_position_updated(
 
 static void _wlmaker_corner_test(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_corner_test_cases[] = {
-    { 1, "test", _wlmaker_corner_test },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_corner_test_cases[] = {
+    { true, "test", _wlmaker_corner_test },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_corner_test_set = BS_TEST_SET(
+    true, "corner", wlmaker_corner_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises the hot corner module. */

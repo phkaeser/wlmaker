@@ -691,9 +691,12 @@ static void test_bind(bs_test_t *test_ptr);
 
 /** Test cases for the server. */
 const bs_test_case_t          wlmaker_server_test_cases[] = {
-    { 1, "bind", test_bind },
-    { 0, NULL, NULL }
+    { true, "bind", test_bind },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_server_test_set = BS_TEST_SET(
+    true, "server", wlmaker_server_test_cases);
 
 /** Test helper: Callback for a keybinding. */
 bool test_binding_callback(

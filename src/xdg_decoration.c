@@ -434,12 +434,16 @@ static void test_manager(bs_test_t *test_ptr);
 static void test_decoration_initialized(bs_test_t *test_ptr);
 static void test_decoration_uninitialized(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_xdg_decoration_test_cases[] = {
-    { 1, "manager", test_manager },
-    { 1, "decoration_initialized", test_decoration_initialized },
-    { 1, "decoration_uninitialized", test_decoration_uninitialized },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_xdg_decoration_test_cases[] = {
+    { true, "manager", test_manager },
+    { true, "decoration_initialized", test_decoration_initialized },
+    { true, "decoration_uninitialized", test_decoration_uninitialized },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_xdg_decoration_test_set = BS_TEST_SET(
+    true, "xdg_decoration", wlmaker_xdg_decoration_test_cases);
 
 /** Argument to injected set_mode. */
 struct _xdg_decoration_test_arg {

@@ -38,27 +38,6 @@
 #include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
 
-/** WLMaker unit tests. */
-const bs_test_set_t wlmaker_tests[] = {
-    { 1, "action", wlmaker_action_test_cases },
-    { 1, "action_item", wlmaker_action_item_test_cases },
-    { 1, "clip", wlmaker_clip_test_cases },
-    { 1, "config", wlmaker_config_test_cases },
-    { 1, "corner", wlmaker_corner_test_cases },
-    { 1, "dock", wlmaker_dock_test_cases },
-    { 1, "files", wlmaker_files_test_cases },
-    { 1, "launcher", wlmaker_launcher_test_cases},
-    { 1, "layer_panel", wlmaker_layer_panel_test_cases },
-    { 1, "lock", wlmaker_lock_mgr_test_cases },
-    { 1, "root_menu", wlmaker_root_menu_test_cases },
-    { 1, "server", wlmaker_server_test_cases },
-    { 1, "xdg_decoration", wlmaker_xdg_decoration_test_cases },
-#if defined(WLMAKER_HAVE_XWAYLAND)
-    { 1, "xwl_surface", wlmaker_xwl_surface_test_cases },
-#endif  // defined(WLMAKER_HAVE_XWAYLAND)
-    { 0, NULL, NULL }
-};
-
 #if !defined(TEST_DATA_DIR)
 /** Directory root for looking up test data. See `bs_test_resolve_path`. */
 #define TEST_DATA_DIR "./"
@@ -67,10 +46,27 @@ const bs_test_set_t wlmaker_tests[] = {
 /** Main program, runs the unit tests. */
 int main(int argc, const char **argv)
 {
-    const bs_test_param_t params = {
-        .test_data_dir_ptr   = TEST_DATA_DIR
+    const bs_test_param_t params = { .test_data_dir_ptr   = TEST_DATA_DIR };
+    const bs_test_set_t* sets[] = {
+        &wlmaker_action_item_test_set,
+        &wlmaker_action_test_set,
+        &wlmaker_clip_test_set,
+        &wlmaker_config_test_set,
+        &wlmaker_corner_test_set,
+        &wlmaker_dock_test_set,
+        &wlmaker_files_test_set,
+        &wlmaker_launcher_test_set,
+        &wlmaker_layer_panel_test_set,
+        &wlmaker_lock_mgr_test_set,
+        &wlmaker_root_menu_test_set,
+        &wlmaker_server_test_set,
+        &wlmaker_xdg_decoration_test_set,
+#if defined(WLMAKER_HAVE_XWAYLAND)
+        &wlmaker_xwl_surface_test_set,
+#endif  // defined(WLMAKER_HAVE_XWAYLAND)
+        NULL
     };
-    return bs_test(wlmaker_tests, argc, argv, &params);
+    return bs_test_sets(sets, argc, argv, &params);
 }
 
 /* == End of wlmaker_test.c ================================================ */

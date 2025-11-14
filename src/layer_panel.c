@@ -560,10 +560,14 @@ void _wlmaker_layer_panel_handle_new_popup(
 
 static void test_create_destroy(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_layer_panel_test_cases[] = {
-    { 0, "create_destroy", test_create_destroy },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_layer_panel_test_cases[] = {
+    { false, "create_destroy", test_create_destroy },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_layer_panel_test_set = BS_TEST_SET(
+    true, "layer_panel", wlmaker_layer_panel_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises creation and teardown. */

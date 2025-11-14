@@ -483,14 +483,18 @@ static void test_style_file(bs_test_t *test_ptr);
 static void test_decode_fill(bs_test_t *test_ptr);
 static void test_decode_font(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_config_test_cases[] = {
-    { 1, "embedded", test_embedded },
-    { 1, "file", test_file },
-    { 1, "style_file", test_style_file },
-    { 1, "decode_fill", test_decode_fill },
-    { 1, "decode_font", test_decode_font },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_config_test_cases[] = {
+    { true, "embedded", test_embedded },
+    { true, "file", test_file },
+    { true, "style_file", test_style_file },
+    { true, "decode_fill", test_decode_fill },
+    { true, "decode_font", test_decode_font },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_config_test_set = BS_TEST_SET(
+    true, "config", wlmaker_config_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that the embedded config loads. */

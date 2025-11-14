@@ -57,8 +57,8 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr);
 /** @return A pointer to the @ref wlmtk_tile_t superclass of `launcher_ptr`. */
 wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr);
 
-/** Unit tests. */
-extern const bs_test_case_t wlmaker_launcher_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_launcher_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

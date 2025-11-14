@@ -58,8 +58,8 @@ wlmaker_xwl_surface_t *wlmaker_xwl_surface_create(
  */
 void wlmaker_xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr);
 
-/** Unit tests for XWL surface. */
-extern const bs_test_case_t wlmaker_xwl_surface_test_cases[];
+/** Unit test set for XWL surface. */
+extern const bs_test_set_t wlmaker_xwl_surface_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

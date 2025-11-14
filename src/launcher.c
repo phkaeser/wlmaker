@@ -551,10 +551,15 @@ void _wlmaker_launcher_handle_window_destroyed(
 
 static void test_create_from_plist(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_launcher_test_cases[] = {
-    { 1, "create_from_plist", test_create_from_plist },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_launcher_test_cases[] = {
+    { true, "create_from_plist", test_create_from_plist },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_launcher_test_set = BS_TEST_SET(
+    true, "launcher", wlmaker_launcher_test_cases);
+
 
 /* ------------------------------------------------------------------------- */
 /** Exercises plist parser. */

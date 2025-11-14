@@ -847,12 +847,15 @@ wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
 static void test_default_menu(bs_test_t *test_ptr);
 static void test_generated_menu(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_root_menu_test_cases[] = {
-    { 1, "default_menu", test_default_menu },
-    { 1, "generated_menu", test_generated_menu },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_root_menu_test_cases[] = {
+    { true, "default_menu", test_default_menu },
+    { true, "generated_menu", test_generated_menu },
+    BS_TEST_CASE_SENTINEL()
 };
 
+const bs_test_set_t wlmaker_root_menu_test_set = BS_TEST_SET(
+    true, "root_menu", wlmaker_root_menu_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that the compiled-in configuration translates into a menu. */

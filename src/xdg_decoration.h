@@ -54,8 +54,8 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
 void wlmaker_xdg_decoration_manager_destroy(
     wlmaker_xdg_decoration_manager_t *decoration_manager_ptr);
 
-/** Unit test cases. */
-extern const bs_test_case_t wlmaker_xdg_decoration_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_xdg_decoration_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
