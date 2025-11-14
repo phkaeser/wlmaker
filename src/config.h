@@ -148,8 +148,8 @@ bspl_dict_t *wlmaker_state_load(const char *fname_ptr);
 
 extern const bspl_desc_t wlmaker_config_style_desc[];
 
-/** Unit test cases. */
-extern const bs_test_case_t wlmaker_config_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_config_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

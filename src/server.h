@@ -279,8 +279,8 @@ struct wlr_output *wlmaker_server_get_output_at_cursor(
 /** All modifiers to use by default. */
 extern const uint32_t wlmaker_modifier_default_mask;
 
-/** Unit test cases. */
-extern const bs_test_case_t   wlmaker_server_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t   wlmaker_server_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

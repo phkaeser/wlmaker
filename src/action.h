@@ -120,8 +120,8 @@ void wlmaker_action_execute(
     wlmaker_action_t action,
     void *arg_ptr);
 
-/** Unit test cases. */
-extern const bs_test_case_t   wlmaker_action_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t   wlmaker_action_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

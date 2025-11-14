@@ -61,8 +61,8 @@ char *wlmaker_files_xdg_config_fname(
     wlmaker_files_t *files_ptr,
     const char *fname_ptr);
 
-/** Unit test cases for @ref wlmaker_files_t. */
-extern const bs_test_case_t wlmaker_files_test_cases[];
+/** Unit test set for @ref wlmaker_files_t. */
+extern const bs_test_set_t wlmaker_files_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

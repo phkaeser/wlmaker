@@ -827,10 +827,14 @@ void _wlmaker_clip_handle_pointer_motion(
 
 static void test_draw_tile(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_clip_test_cases[] = {
-    { 1, "draw_tile", test_draw_tile },
-    { 0, NULL, NULL }
+/** Test cases. */
+static const bs_test_case_t wlmaker_clip_test_cases[] = {
+    { true, "draw_tile", test_draw_tile },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_clip_test_set = BS_TEST_SET(
+    true, "clip", wlmaker_clip_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests that the clip tile is drawn correctly. */

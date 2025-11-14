@@ -229,12 +229,15 @@ static void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr);
 static void _wlmaker_action_item_test_bind(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
-const bs_test_case_t          wlmaker_action_item_test_cases[] = {
-    { 1, "create", _wlmaker_action_item_test_create },
-    { 1, "menu_dtor", _wlmaker_action_item_test_menu_dtor },
-    { 1, "bind", _wlmaker_action_item_test_bind },
-    { 0, NULL, NULL },
+static const bs_test_case_t   wlmaker_action_item_test_cases[] = {
+    { true, "create", _wlmaker_action_item_test_create },
+    { true, "menu_dtor", _wlmaker_action_item_test_menu_dtor },
+    { true, "bind", _wlmaker_action_item_test_bind },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_action_item_test_set = BS_TEST_SET(
+    true, "action_item", wlmaker_action_item_test_cases);
 
 /** Test data: style for the menu item. */
 static const wlmtk_menu_style_t _wlmaker_action_item_menu_style = {};

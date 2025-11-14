@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <libbase/libbase.h>
 
@@ -25,34 +26,34 @@
 
 /** Toolkit unit tests. */
 const bs_test_set_t toolkit_tests[] = {
-    { 1, "base", wlmtk_base_test_cases },
-    { 1, "bordered", wlmtk_bordered_test_cases },
-    { 1, "box", wlmtk_box_test_cases },
-    { 1, "buffer", wlmtk_buffer_test_cases },
-    { 1, "button", wlmtk_button_test_cases },
-    { 1, "container", wlmtk_container_test_cases },
-    { 1, "dock", wlmtk_dock_test_cases },
-    { 1, "element", wlmtk_element_test_cases },
-    { 1, "fsm", wlmtk_fsm_test_cases },
-    { 1, "image", wlmtk_image_test_cases },
-    { 1, "layer", wlmtk_layer_test_cases },
-    { 1, "menu", wlmtk_menu_test_cases },
-    { 1, "menu_item", wlmtk_menu_item_test_cases },
-    { 1, "panel", wlmtk_panel_test_cases },
-    { 1, "surface", wlmtk_surface_test_cases },
-    { 1, "rectangle", wlmtk_rectangle_test_cases },
-    { 1, "resizebar", wlmtk_resizebar_test_cases },
-    { 1, "resizebar_area", wlmtk_resizebar_area_test_cases },
-    { 1, "root", wlmtk_root_test_cases },
-    { 1, "tile", wlmtk_tile_test_cases },
-    { 1, "titlebar", wlmtk_titlebar_test_cases },
-    { 1, "titlebar_button", wlmtk_titlebar_button_test_cases },
-    { 1, "titlebar_title", wlmtk_titlebar_title_test_cases },
-    { 1, "util", wlmtk_util_test_cases },
-    { 1, "window", wlmtk_window_test_cases },
-    { 1, "workspace", wlmtk_workspace_test_cases },
-    { 1, "primitives", wlmaker_primitives_test_cases },
-    { 0, NULL, NULL }
+    BS_TEST_SET(true, "base", wlmtk_base_test_cases),
+    BS_TEST_SET(true, "bordered", wlmtk_bordered_test_cases),
+    BS_TEST_SET(true, "box", wlmtk_box_test_cases),
+    BS_TEST_SET(true, "buffer", wlmtk_buffer_test_cases),
+    BS_TEST_SET(true, "button", wlmtk_button_test_cases),
+    BS_TEST_SET(true, "container", wlmtk_container_test_cases),
+    BS_TEST_SET(true, "dock", wlmtk_dock_test_cases),
+    BS_TEST_SET(true, "element", wlmtk_element_test_cases),
+    BS_TEST_SET(true, "fsm", wlmtk_fsm_test_cases),
+    BS_TEST_SET(true, "image", wlmtk_image_test_cases),
+    BS_TEST_SET(true, "layer", wlmtk_layer_test_cases),
+    BS_TEST_SET(true, "menu", wlmtk_menu_test_cases),
+    BS_TEST_SET(true, "menu_item", wlmtk_menu_item_test_cases),
+    BS_TEST_SET(true, "panel", wlmtk_panel_test_cases),
+    BS_TEST_SET(true, "surface", wlmtk_surface_test_cases),
+    BS_TEST_SET(true, "rectangle", wlmtk_rectangle_test_cases),
+    BS_TEST_SET(true, "resizebar", wlmtk_resizebar_test_cases),
+    BS_TEST_SET(true, "resizebar_area", wlmtk_resizebar_area_test_cases),
+    BS_TEST_SET(true, "root", wlmtk_root_test_cases),
+    BS_TEST_SET(true, "tile", wlmtk_tile_test_cases),
+    BS_TEST_SET(true, "titlebar", wlmtk_titlebar_test_cases),
+    BS_TEST_SET(true, "titlebar_button", wlmtk_titlebar_button_test_cases),
+    BS_TEST_SET(true, "titlebar_title", wlmtk_titlebar_title_test_cases),
+    BS_TEST_SET(true, "util", wlmtk_util_test_cases),
+    BS_TEST_SET(true, "window", wlmtk_window_test_cases),
+    BS_TEST_SET(true, "workspace", wlmtk_workspace_test_cases),
+    BS_TEST_SET(true, "primitives", wlmaker_primitives_test_cases),
+    BS_TEST_SET(0, NULL, NULL)
 };
 
 #if !defined(TEST_DATA_DIR)

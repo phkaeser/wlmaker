@@ -48,8 +48,8 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
  */
 void wlmaker_lock_mgr_destroy(wlmaker_lock_mgr_t *lock_mgr_ptr);
 
-/** Unit test cases for @ref wlmaker_lock_mgr_t. */
-extern const bs_test_case_t wlmaker_lock_mgr_test_cases[];
+/** Unit test set for @ref wlmaker_lock_mgr_t. */
+extern const bs_test_set_t wlmaker_lock_mgr_test_set;
 
 
 #ifdef __cplusplus

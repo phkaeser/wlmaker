@@ -60,8 +60,8 @@ wlmaker_clip_t *wlmaker_clip_create(
  */
 void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr);
 
-/** Unit test cases. */
-extern const bs_test_case_t wlmaker_clip_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_clip_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -580,11 +580,14 @@ static void test_keybindings_parse(bs_test_t *test_ptr);
 static void test_default_keybindings(bs_test_t *test_ptr);
 
 /** Test cases for key bindings. */
-const bs_test_case_t          wlmaker_action_test_cases[] = {
-    { 1, "parse", test_keybindings_parse },
-    { 1, "default_keybindings", test_default_keybindings },
-    { 0, NULL, NULL }
+static const bs_test_case_t   wlmaker_action_test_cases[] = {
+    { true, "parse", test_keybindings_parse },
+    { true, "default_keybindings", test_default_keybindings },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_action_test_set = BS_TEST_SET(
+    true, "action", wlmaker_action_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests @ref _wlmaker_keybindings_parse. */

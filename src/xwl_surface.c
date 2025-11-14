@@ -764,11 +764,15 @@ static void test_nested(bs_test_t *test_ptr);
 static void fake_init_wlr_xwayland_surface(
     struct wlr_xwayland_surface* wlr_xwayland_surface_ptr);
 
-const bs_test_case_t wlmaker_xwl_surface_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
-    { 1, "nested", test_nested },
-    { 0, NULL, NULL },
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_xwl_surface_test_cases[] = {
+    { true, "create_destroy", test_create_destroy },
+    { true, "nested", test_nested },
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_xwl_surface_test_set = BS_TEST_SET(
+    true, "xwl_surface", wlmaker_xwl_surface_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests setup and teardown. */

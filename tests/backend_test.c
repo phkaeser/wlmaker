@@ -19,6 +19,7 @@
  */
 
 #include <libbase/libbase.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "backend/backend.h"
@@ -26,9 +27,9 @@
 
 /** Backend unit tests. */
 const bs_test_set_t backend_tests[] = {
-    { 1, "backend", wlmbe_backend_test_cases },
-    { 1, "output_config", wlmbe_output_config_test_cases },
-    { 0, NULL, NULL }
+    BS_TEST_SET(true, "backend", wlmbe_backend_test_cases),
+    BS_TEST_SET(true, "output_config", wlmbe_output_config_test_cases),
+    BS_TEST_SET(0, NULL, NULL),
 };
 
 /** Main program, runs the unit tests. */
