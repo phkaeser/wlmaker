@@ -490,6 +490,12 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
             wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
     }
 
+    // FIXME: if the window is already maximized, we can return with
+    // a set_maximized with the same value, to satisfy protocol needs.
+    // Otherwise, we request maximizing from the window.
+    //
+    // THIS MUST GUARANTEE A CALL TO CONFIGURE.
+
     // Protocol expects an `configure`. Depending on current state, that may
     // not have been sent yet, hence adding an explicit `configure` here.
     if (wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
@@ -796,9 +802,10 @@ void _wlmaker_xdg_toplevel_handle_window_request_maximized(
 
 static void _wlmaker_xdg_toplevel_test_early_properties(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmaker_xdg_toplevel_test_cases[] = {
-    { 1, "early_properties", _wlmaker_xdg_toplevel_test_early_properties },
-    { 0, NULL, NULL }
+/** Unit test cases. */
+const bs_test_case_t _test_cases[] = {
+    { true, "early_properties", _wlmaker_xdg_toplevel_test_early_properties },
+    BS_TEST_CASE_SENTINEL()
 };
 
 static struct {
@@ -825,59 +832,153 @@ static uint32_t _wlmaker_xdg_toplevel_fake_schedule_configure(
 #endif
 
 
+struct _test_layout {
+    struct wl_display         *wl_display_ptr;
+    struct wlr_output_layout  *wlr_output_layout_ptr;
+    struct wlr_output         wlr_output;
+};
+
+static bool _test_layout_init(struct _test_layout *tl_ptr);
+static void _test_layout_fini(struct _test_layout *tl_ptr);
+
+
+bool _test_layout_init(struct _test_layout *tl_ptr)
+{
+    *tl_ptr = (struct _test_layout){};
+
+    tl_ptr->wl_display_ptr = wl_display_create();
+    if (NULL == tl_ptr->wl_display_ptr) return false;
+
+    tl_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        tl_ptr->wl_display_ptr);
+    if (NULL == tl_ptr->wl_display_ptr) {
+        _test_layout_fini(tl_ptr);
+        return false;
+    }
+
+    tl_ptr->wlr_output = (struct wlr_output){
+        .name = "Output", .width = 1024, .height = 768, .scale = 1
+    };
+    wlmtk_test_wlr_output_init(&tl_ptr->wlr_output);
+
+    return true;
+}
+
+void _test_layout_fini(struct _test_layout *tl_ptr)
+{
+    if (NULL != tl_ptr->wl_display_ptr) {
+        wl_display_destroy(tl_ptr->wl_display_ptr);
+        tl_ptr->wl_display_ptr = NULL;
+    }
+}
+
+
+struct _test_data {
+    struct wlr_surface        wlr_surface;
+    struct wlr_xdg_surface    wlr_xdg_surface;
+    struct wlr_xdg_toplevel   wlr_xdg_toplevel;
+
+    struct _test_layout       test_layout;
+
+    wlmaker_server_t          server;
+};
+
+static void *_wlmaker_xdg_toplevel_test_setup(void);
+static void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr);
+
+void *_wlmaker_xdg_toplevel_test_setup(void)
+{
+    struct _test_data *td_ptr = logged_calloc(1, sizeof(struct _test_data));
+    if (NULL == td_ptr) return NULL;
+    td_ptr->wlr_xdg_surface.surface = &td_ptr->wlr_surface;
+    td_ptr->wlr_xdg_toplevel.base = &td_ptr->wlr_xdg_surface;
+
+    if (!_test_layout_init(&td_ptr->test_layout)) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+    wlr_output_layout_add_auto(
+        td_ptr->test_layout.wlr_output_layout_ptr,
+        &td_ptr->test_layout.wlr_output);
+
+    td_ptr->server.wlr_scene_ptr = wlr_scene_create();
+    if (NULL == td_ptr->server.wlr_scene_ptr) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+
+    td_ptr->server.root_ptr = wlmtk_root_create(
+        td_ptr->server.wlr_scene_ptr,
+        td_ptr->test_layout.wlr_output_layout_ptr);
+    if (NULL == td_ptr->server.root_ptr) {
+        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+        return NULL;
+    }
+
+    wl_signal_init(&td_ptr->server.window_created_event);
+    wl_signal_init(&td_ptr->server.window_destroyed_event);
+
+    wl_signal_init(&td_ptr->wlr_surface.events.commit);
+    wl_signal_init(&td_ptr->wlr_surface.events.map);
+    wl_signal_init(&td_ptr->wlr_surface.events.unmap);
+
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.destroy);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.ping_timeout);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.new_popup);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.configure);
+    wl_signal_init(&td_ptr->wlr_xdg_surface.events.ack_configure);
+
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.destroy);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_maximize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_fullscreen);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_minimize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_move);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_resize);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.request_show_window_menu);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_parent);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_title);
+    wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_app_id);
+
+    return td_ptr;
+}
+
+void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr)
+{
+    struct _test_data *td_ptr = test_context_ptr;
+
+    if (NULL != td_ptr->server.root_ptr) {
+        wlmtk_root_destroy(td_ptr->server.root_ptr);
+        td_ptr->server.root_ptr = NULL;
+    }
+
+    wlr_scene_node_destroy(&td_ptr->server.wlr_scene_ptr->tree.node);
+
+    _test_layout_fini(&td_ptr->test_layout);
+    free(td_ptr);
+}
+
+const bs_test_set_t wlmaker_xdg_toplevel_test_set = BS_TEST_SET_CONTEXT(
+    true,
+    "xdg_toplevel",
+    _test_cases,
+    _wlmaker_xdg_toplevel_test_setup,
+    _wlmaker_xdg_toplevel_test_teardown);
+
 /* ------------------------------------------------------------------------- */
 void _wlmaker_xdg_toplevel_test_early_properties(bs_test_t *test_ptr)
 {
-    struct wlr_surface wlr_surface = {};
-    struct wlr_xdg_surface wlr_xdg_surface = { .surface = &wlr_surface };
-    struct wlr_xdg_toplevel wlr_xdg_toplevel = { .base = & wlr_xdg_surface };
-
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        wl_display_ptr);
-    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
-    wlmtk_test_wlr_output_init(&output);
-    wlr_output_layout_add_auto(wlr_output_layout_ptr, &output);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-
-    wlmaker_server_t server = { .root_ptr = root_ptr };
-    wl_signal_init(&server.window_created_event);
-    wl_signal_init(&server.window_destroyed_event);
-
-    wl_signal_init(&wlr_surface.events.commit);
-    wl_signal_init(&wlr_surface.events.map);
-    wl_signal_init(&wlr_surface.events.unmap);
-
-    wl_signal_init(&wlr_xdg_surface.events.destroy);
-    wl_signal_init(&wlr_xdg_surface.events.ping_timeout);
-    wl_signal_init(&wlr_xdg_surface.events.new_popup);
-    wl_signal_init(&wlr_xdg_surface.events.configure);
-    wl_signal_init(&wlr_xdg_surface.events.ack_configure);
-
-    wl_signal_init(&wlr_xdg_toplevel.events.destroy);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_maximize);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_fullscreen);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_minimize);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_move);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_resize);
-    wl_signal_init(&wlr_xdg_toplevel.events.request_show_window_menu);
-    wl_signal_init(&wlr_xdg_toplevel.events.set_parent);
-    wl_signal_init(&wlr_xdg_toplevel.events.set_title);
-    wl_signal_init(&wlr_xdg_toplevel.events.set_app_id);
+    struct _test_data *td_ptr = BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
 
     wlmtk_util_test_listener_t created, destroyed;
-    wlmtk_util_connect_test_listener(&server.window_created_event, &created);
-    wlmtk_util_connect_test_listener(&server.window_destroyed_event, &destroyed);
+    wlmtk_util_connect_test_listener(
+        &td_ptr->server.window_created_event, &created);
+    wlmtk_util_connect_test_listener(
+        &td_ptr->server.window_destroyed_event, &destroyed);
 
     struct wlmaker_xdg_toplevel *wxt_ptr =
         _wlmaker_xdg_toplevel_create_injected(
-            &wlr_xdg_toplevel,
-            &server,
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
 #if WLR_VERSION_NUM >= (19 << 8)
             _wlmaker_xdg_toplevel_fake_configure
 #else
@@ -889,14 +990,14 @@ void _wlmaker_xdg_toplevel_test_early_properties(bs_test_t *test_ptr)
 
 
     memset(&fake_data, 0, sizeof(fake_data));
-    wl_signal_emit(&wlr_xdg_toplevel.events.request_maximize, NULL);
+    wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 0, fake_data.configure_calls);
 
     // FIXME: When a commit comes: the request must be forwarded.
 
     // FIXME: Rely on "initialized" or on "first commit" ?
-    wlr_xdg_surface.initialized = true;
-    wl_signal_emit(&wlr_xdg_toplevel.events.request_maximize, NULL);
+    td_ptr->wlr_xdg_surface.initialized = true;
+    wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, fake_data.configure_calls);
 
 
@@ -905,10 +1006,6 @@ void _wlmaker_xdg_toplevel_test_early_properties(bs_test_t *test_ptr)
 
     wlmaker_xdg_toplevel_destroy(wxt_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, destroyed.calls);
-
-    wlmtk_root_destroy(root_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* == End of xdg_toplevel.c ================================================ */

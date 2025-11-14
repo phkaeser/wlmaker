@@ -53,8 +53,8 @@ void wlmaker_xdg_toplevel_set_server_side_decorated(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr,
     bool server_side_decorated);
 
-/** Unit test cases. */
-extern const bs_test_case_t wlmaker_xdg_toplevel_test_cases[];
+/** Unit test set. */
+extern const bs_test_set_t wlmaker_xdg_toplevel_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
