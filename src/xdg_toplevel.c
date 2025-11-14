@@ -101,12 +101,8 @@ struct wlmaker_xdg_toplevel {
     /** Listener for @ref wlmtk_window_events_t::request_maximized. */
     struct wl_listener        window_request_maximized_listener;
 
-#if WLR_VERSION_NUM >= (19 << 8)
-    uint32_t (*_configure)(struct wlr_xdg_toplevel *toplevel,
-                           const struct wlr_xdg_toplevel_configure *configure);
-#else
-    uint32_t (*_schedule_configure)(struct wlr_xdg_surface *surface);
-#endif
+    uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *toplevel, bool maximized);
+
 
     /** Serial of the most recent commit() call. */
     uint32_t                  committed_serial;
@@ -120,13 +116,8 @@ struct wlmaker_xdg_toplevel {
 struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr,
-#if WLR_VERSION_NUM >= (19 << 8)
-    uint32_t (*_configure)(struct wlr_xdg_toplevel *toplevel,
-                           const struct wlr_xdg_toplevel_configure *configure);
-#else
-    uint32_t (*_schedule_configure)(struct wlr_xdg_surface *surface);
-#endif
-    );
+    uint32_t (*_set_maximized)(
+        struct wlr_xdg_toplevel *toplevel, bool maximized));
 
 static void _wlmaker_xdg_toplevel_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -199,12 +190,7 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
     return _wlmaker_xdg_toplevel_create_injected(
         wlr_xdg_toplevel_ptr,
         server_ptr,
-#if WLR_VERSION_NUM >= (19 << 8)
-        wlr_xdg_toplevel_configure
-#else
-        wlr_xdg_surface_schedule_configure
-#endif
-        );
+        wlr_xdg_toplevel_set_maximized);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -270,13 +256,8 @@ void wlmaker_xdg_toplevel_set_server_side_decorated(
 struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr,
-#if WLR_VERSION_NUM >= (19 << 8)
-    uint32_t (*_configure)(struct wlr_xdg_toplevel *toplevel,
-                           const struct wlr_xdg_toplevel_configure *configure);
-#else
-    uint32_t (*_schedule_configure)(struct wlr_xdg_surface *surface)
-#endif
-    )
+    uint32_t (*_set_maximized)(
+        struct wlr_xdg_toplevel *toplevel, bool maximized))
 {
     // Guard clause: Must have a base. */
     if (NULL == wlr_xdg_toplevel_ptr->base) {
@@ -290,11 +271,7 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     if (NULL == wlmaker_xdg_toplevel_ptr) return NULL;
     wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr = wlr_xdg_toplevel_ptr;
     wlmaker_xdg_toplevel_ptr->server_ptr = server_ptr;
-#if WLR_VERSION_NUM >= (19 << 8)
-    wlmaker_xdg_toplevel_ptr->_configure = _configure;
-#else
-    wlmaker_xdg_toplevel_ptr->_schedule_configure = _schedule_configure;
-#endif
+    wlmaker_xdg_toplevel_ptr->_set_maximized = _set_maximized;
 
     if (!wlmtk_base_init(&wlmaker_xdg_toplevel_ptr->base, NULL)) goto error;
 
@@ -444,25 +421,21 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
-    if (wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized !=
-        wlmtk_window_is_maximized(wxt_ptr->window_ptr)) {
-        wlmtk_window_request_maximized(
+    if (wlmtk_window_request_maximized(
             wxt_ptr->window_ptr,
-            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
-    }
+            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized)) return;
 
-    // Protocol expects an `configure`. Depending on current state, that may
-    // not have been sent yet, hence adding an explicit `configure` here.
+    // The 'maximized' request was not accepted: The window may be in
+    // fullscreen, unmapped, ... . XDG protocol expects a configure, so we
+    // respond with a "set_maximized" with the current maximization state.
+    //
+    // But, this must only be sent after the first commit.
     if (wxt_ptr->wlr_xdg_toplevel_ptr->base->initialized) {
         // TODO(kaeser@gubbe.ch): Store state and then issue these pending
         // configures once initialized.
-#if WLR_VERSION_NUM >= (19 << 8)
-        wxt_ptr->_configure(
+        wxt_ptr->_set_maximized(
             wxt_ptr->wlr_xdg_toplevel_ptr,
-            &wxt_ptr->wlr_xdg_toplevel_ptr->scheduled);
-#else
-        wxt_ptr->_schedule_configure(wxt_ptr->wlr_xdg_toplevel_ptr->base);
-#endif
+            wlmtk_window_is_maximized(wxt_ptr->window_ptr));
     }
 }
 
@@ -793,7 +766,7 @@ void _wlmaker_xdg_toplevel_handle_window_request_maximized(
         window_request_maximized_listener);
     bool *maximized_ptr = data_ptr;
 
-    wlr_xdg_toplevel_set_maximized(
+    wlmaker_xdg_toplevel_ptr->_set_maximized(
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
         *maximized_ptr);
 }
@@ -809,27 +782,17 @@ const bs_test_case_t _test_cases[] = {
 };
 
 static struct {
-    int                       configure_calls;
-
+    int                       set_maximized_calls;
 } fake_data = {};
 
 
-#if WLR_VERSION_NUM >= (19 << 8)
-static uint32_t _wlmaker_xdg_toplevel_fake_configure(
+uint32_t _wlmaker_xdg_toplevel_fake_set_maximized(
     __UNUSED__ struct wlr_xdg_toplevel *toplevel,
-    __UNUSED__ const struct wlr_xdg_toplevel_configure *configure)
+    __UNUSED__ bool maximized)
 {
-    fake_data.configure_calls++;
+    fake_data.set_maximized_calls++;
     return 0;
 }
-#else
-static uint32_t _wlmaker_xdg_toplevel_fake_schedule_configure(
-    __UNUSED__ struct wlr_xdg_surface *surface)
-{
-    fake_data.configure_calls++;
-    return 0;
-}
-#endif
 
 
 struct _test_layout {
@@ -979,27 +942,21 @@ void _wlmaker_xdg_toplevel_test_early_properties(bs_test_t *test_ptr)
         _wlmaker_xdg_toplevel_create_injected(
             &td_ptr->wlr_xdg_toplevel,
             &td_ptr->server,
-#if WLR_VERSION_NUM >= (19 << 8)
-            _wlmaker_xdg_toplevel_fake_configure
-#else
-            _wlmaker_xdg_toplevel_fake_schedule_configure
-#endif
-            );
+            _wlmaker_xdg_toplevel_fake_set_maximized);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, created.calls);
 
 
     memset(&fake_data, 0, sizeof(fake_data));
     wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, fake_data.configure_calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, fake_data.set_maximized_calls);
 
     // FIXME: When a commit comes: the request must be forwarded.
 
     // FIXME: Rely on "initialized" or on "first commit" ?
     td_ptr->wlr_xdg_surface.initialized = true;
     wl_signal_emit(&td_ptr->wlr_xdg_toplevel.events.request_maximize, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, fake_data.configure_calls);
-
+    BS_TEST_VERIFY_EQ(test_ptr, 1, fake_data.set_maximized_calls);
 
 
     // FIXME: If 'commit_fullscreen' => applied upon commit?
