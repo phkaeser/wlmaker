@@ -35,4 +35,4 @@ This can be used to define a menu item with a submenu, or to directly define
 the toplevel root window.
 
 Example usage:
-@snippet{trimleft} etc/root-menu-debian.plist wmmenugen
+@snippet{trimleft} etc/RootMenuDebian.plist wmmenugen

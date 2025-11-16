@@ -1,6 +1,6 @@
-//! @page etc_wlmaker_plist etc/wlmaker.plist
+//! @page etc_config_plist etc/Config.plist
 //! Compiled-in default configuration. See @ref config_file for details.
-//! @include etc/wlmaker.plist
+//! @include etc/Config.plist
 // Base configuration for wlmaker: Keyboard and autostarted applications.
 {
     Keyboard = {

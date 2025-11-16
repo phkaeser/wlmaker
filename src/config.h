@@ -26,6 +26,7 @@
 #include <stddef.h>
 
 #include "toolkit/toolkit.h"
+#include "files.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,40 +93,36 @@ typedef struct {
 extern const float config_output_scale;
 
 /**
- * Loads a plist object from the given file(s) or data.
+ * Loads a plist object from the given config file or data.
  *
- * Useful to load configuration files from (1) the expclitly provided name in
- * `fname_ptr`, (2) any of the files listed in `fname_defaults`, or (3)
+ * Useful to load configuration files from the provided name in `fname_ptr` or
  * an in-memory buffer, as a compiled-in fallback option.
  *
+ * @param files_ptr
  * @param name_ptr            Name to use when logging about the plist.
- * @param fname_ptr           Explicit filename to use for loading the file,
+ * @param arg_fname_ptr       Explicit filename to use for loading the file,
  *                            eg. from the commandline. Or NULL.
- * @param fname_defaults      NULL-terminated list of pointers to default
- *                            paths & filenames to use for searching plist
- *                            file(s).
- * @param default_data_ptr    Points to in-memory plist data, or NULL.
- *                            Will be used if fname_ptr was NULL and no
- *                            file was found at fname_defaults.
+ * @param xdg_config_fname_ptr File name relative to XDG config home. See
+ *                            @ref wlmaker_files_xdg_config_find.
+ * @param default_data_ptr    Points to in-memory plist data, or NULL. Will be
+ *                            used if fname_ptr was NULL.
  * @param default_data_size   The size of the in-memory plist data.
  *
  * @returns a bspl_object_t on success, or NULL if none of the options had
  *     data, or if there was a file or parsing error.
  */
-bspl_object_t *wlmaker_plist_load(
+bspl_object_t *wlmaker_config_object_load(
+    wlmaker_files_t *files_ptr,
     const char *name_ptr,
-    const char *fname_ptr,
-    const char **fname_defaults,
+    const char *arg_fname_ptr,
+    const char *xdg_config_fname_ptr,
     const uint8_t *default_data_ptr,
     size_t default_data_size);
 
 /**
  * Loads the configuration for wlmaker.
  *
- * If `fname_ptr` is give, it will attempt to load the configuration from the
- * specified file. Otherwise, it will attempt to load the files specified in
- * @ref _wlmaker_config_fname_ptrs, or (at last) use the built-in default.
- *
+ * @param files_ptr
  * @param fname_ptr           Optional: Name of the file to load it from. May
  *                            be NULL.
  *
@@ -133,18 +130,23 @@ bspl_object_t *wlmaker_plist_load(
  *     The caller must free the associated resources by calling
  *      bspl_object_unref().
  */
-bspl_dict_t *wlmaker_config_load(const char *fname_ptr);
+bspl_dict_t *wlmaker_config_load(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr);
 
 /**
  * Loads the state for wlmaker.
  *
  * Behaviour is similar to @ref wlmaker_config_load.
  *
+ * @param files_ptr
  * @param fname_ptr
  *
  * @return A dict object or NULL on error.
  */
-bspl_dict_t *wlmaker_state_load(const char *fname_ptr);
+bspl_dict_t *wlmaker_state_load(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr);
 
 extern const bspl_desc_t wlmaker_config_style_desc[];
 

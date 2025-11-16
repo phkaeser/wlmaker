@@ -52,7 +52,7 @@ IF(DOXYGEN_FOUND)
   ADD_CUSTOM_TARGET(
     doc
     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-    DEPENDS ${DOXYGEN_OUT} ${PROJECT_BINARY_DIR}/etc/root-menu-debian.plist
+    DEPENDS ${DOXYGEN_OUT} ${PROJECT_BINARY_DIR}/etc/RootMenuDebian.plist
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen."
     VERBATIM)

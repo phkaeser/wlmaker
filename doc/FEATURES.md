@@ -326,7 +326,7 @@ TBD.
 
 ### System integration
 
-* [ ] :construction: Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
+* [x] :books: Store config files not in `${HOME}/~`, but in `${HOME}/.config/`, according
       FreeDesktop specification ([#262](https://github.com/phkaeser/wlmaker/issues/262)).
 * [ ] Review and define what to support from https://specifications.freedesktop.org.
     * [ ] Set `XDG_CURRENT_DESKTOP` to a sensible value.
