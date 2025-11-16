@@ -61,6 +61,20 @@ char *wlmaker_files_xdg_config_fname(
     wlmaker_files_t *files_ptr,
     const char *fname_ptr);
 
+/**
+ * Finds a file (or directory, ...) from XDG configuration directories.
+ *
+ * Joins @ref wlmaker_files_t::dirname_ptr with `fname_ptr`, and then looks for
+ * that entity in `${XDG_CONFIG_HOME}` and `${XDG_CONFIG_DIRS}`. Returns true
+ * if the file has `mode_type`, eg. `S_IFREG` or `S_ISDIR`.
+ *
+ * @return Full path name.
+ */
+char *wlmaker_files_xdg_config_find(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr,
+    int mode_type);
+
 /** Unit test set for @ref wlmaker_files_t. */
 extern const bs_test_set_t wlmaker_files_test_set;
 

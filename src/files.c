@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <basedir.h>
 #include <libbase/libbase.h>
+#include <sys/stat.h>
 
 /* == Declarations ========================================================= */
 
@@ -78,19 +79,42 @@ char *wlmaker_files_xdg_config_fname(
     if (NULL == config_home_ptr) return NULL;
 
     return bs_strdupf(
-        "%s/%s/%s",
-        config_home_ptr,
-        files_ptr->dirname_ptr,
-        fname_ptr);
+        "%s/%s/%s", config_home_ptr, files_ptr->dirname_ptr, fname_ptr);
 }
+
+/* ------------------------------------------------------------------------- */
+char *wlmaker_files_xdg_config_find(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr,
+    int mode_type)
+{
+    const char * const *dirs_ptr = xdgSearchableConfigDirectories(
+        &files_ptr->xdg_handle);
+    if (NULL == dirs_ptr) return NULL;
+
+    while (NULL != *dirs_ptr) {
+        char *candidate_path_ptr = bs_strdupf(
+            "%s/%s/%s", *dirs_ptr, files_ptr->dirname_ptr, fname_ptr);
+        if (bs_file_realpath_is(candidate_path_ptr, mode_type)) {
+            return candidate_path_ptr;
+        }
+        free(candidate_path_ptr);
+        ++dirs_ptr;
+    }
+
+    return NULL;
+}
+
 
 /* == Unit Tests =========================================================== */
 
 static void _wlmaker_files_test_builders(bs_test_t *test_ptr);
+static void _wlmaker_files_test_config_find(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 static const bs_test_case_t wlmaker_files_test_cases[] = {
     { true, "builders", _wlmaker_files_test_builders },
+    { true, "config_find", _wlmaker_files_test_config_find },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -107,6 +131,30 @@ void _wlmaker_files_test_builders(bs_test_t *test_ptr)
     char *f = wlmaker_files_xdg_config_fname(files_ptr, "state.plist");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, f);
     BS_TEST_VERIFY_STRMATCH(test_ptr, f, "/wlmaker/state.plist$");
+    free(f);
+
+    wlmaker_files_destroy(files_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests finding a config. */
+void _wlmaker_files_test_config_find(bs_test_t *test_ptr)
+{
+    char *backup_env = NULL;
+    if (NULL != getenv("XDG_CONFIG_DIRS")) {
+        backup_env = strdup(getenv("XDG_CONFIG_DIRS"));
+    }
+    const char *p = bs_test_data_path(test_ptr, "subdir");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
+    setenv("XDG_CONFIG_DIRS", p, 1);
+    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    if (NULL != backup_env) setenv("XDG_CONFIG_DIRS", backup_env, 1);
+
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
+
+    char *f = wlmaker_files_xdg_config_find(files_ptr, "a.txt", S_IFREG);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, f);
+    BS_TEST_VERIFY_STRMATCH(test_ptr, f, "/wlmaker/a.txt$");
     free(f);
 
     wlmaker_files_destroy(files_ptr);

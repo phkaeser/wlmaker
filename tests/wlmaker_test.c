@@ -19,10 +19,11 @@
  */
 
 #include <libbase/libbase.h>
-#include <stddef.h>
+#include <stdlib.h>
 
 #include "action.h"
 #include "action_item.h"
+#include "backtrace.h"
 #include "clip.h"
 #include "config.h"
 #include "corner.h"
@@ -46,7 +47,9 @@
 /** Main program, runs the unit tests. */
 int main(int argc, const char **argv)
 {
-    const bs_test_param_t params = { .test_data_dir_ptr   = TEST_DATA_DIR };
+    if (!wlmaker_backtrace_setup(argv[0])) return EXIT_FAILURE;
+
+    const bs_test_param_t params = { .test_data_dir_ptr = TEST_DATA_DIR };
     const bs_test_set_t* sets[] = {
         &wlmaker_action_item_test_set,
         &wlmaker_action_test_set,
