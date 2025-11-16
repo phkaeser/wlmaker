@@ -44,6 +44,7 @@
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
+#include "files.h"
 #include "root_menu.h"
 #include "server.h"
 #include "task_list.h"
@@ -290,13 +291,6 @@ bool create_workspaces(
     return rv;
 }
 
-/** Lookup paths for the style config file. */
-static const char *_wlmaker_style_fname_ptrs[] = {
-    "~/.wlmaker-style.plist",
-    "/usr/share/wlmaker/style.plist",
-    NULL  // Sentinel.
-};
-
 /* == Main program ========================================================= */
 /** The main program. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
@@ -329,8 +323,15 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         bs_arg_print_usage(stderr, wlmaker_args);
         return EXIT_FAILURE;
     }
+
+    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    if (NULL == files_ptr) {
+        bs_log(BS_ERROR, "Failed wlmaker_files_create(\"wlmaker\")");
+        return EXIT_FAILURE;
+    }
+
     bspl_dict_t *config_dict_ptr = wlmaker_config_load(
-        wlmaker_arg_config_file_ptr);
+        files_ptr, wlmaker_arg_config_file_ptr);
     if (NULL != wlmaker_arg_config_file_ptr) free(wlmaker_arg_config_file_ptr);
     if (NULL == config_dict_ptr) {
         fprintf(stderr, "Failed to load & initialize configuration.\n");
@@ -338,7 +339,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     bspl_dict_t *state_dict_ptr = wlmaker_state_load(
-        wlmaker_arg_state_file_ptr);
+        files_ptr, wlmaker_arg_state_file_ptr);
     if (NULL != wlmaker_arg_state_file_ptr) free(wlmaker_arg_state_file_ptr);
     if (NULL == state_dict_ptr) {
         fprintf(stderr, "Failed to load & initialize state.\n");
@@ -346,14 +347,15 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     wlmaker_server_t *server_ptr = wlmaker_server_create(
-        config_dict_ptr, &wlmaker_server_options);
+        config_dict_ptr, files_ptr, &wlmaker_server_options);
     if (NULL == server_ptr) return EXIT_FAILURE;
 
     bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
-        wlmaker_plist_load(
+        wlmaker_config_object_load(
+            server_ptr->files_ptr,
             "style",
             wlmaker_arg_style_file_ptr,
-            _wlmaker_style_fname_ptrs,
+            "Themes/Default.plist",
             embedded_binary_style_data,
             embedded_binary_style_size));
     if (NULL == style_dict_ptr) return EXIT_FAILURE;

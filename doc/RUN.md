@@ -48,28 +48,29 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
 
 ## Customize it!
 
-* [etc/wlmaker.plist](../etc/wlmaker.plist) is the where keyboard options, key
+* [etc/Config.plist](../etc/Config.plist) is the where keyboard options, key
   bindings, screensaver details and more can be configured. That file in the
   source tree is the compiled-in default.
 
-  To extend: Create a copy of the file to `/usr/share/wlmaker/wlmaker.plist` or
-  `~/.wlmaker.plist` and modify it according to your needs. Or, move it
-  somewhere else and call `wlmaker` with the `--config_file=...` arugment.
+  To extend: Create a copy of the file to `~/.config/wlmaker/Config.plist` and
+  modify it according to your needs. Or, move it somewhere else and call
+  `wlmaker` with the `--config_file=...` arugment.
 
-* [etc/style.plist](../etc/style.plist) is the compiled-in  default theme. With
-  [etc/style-debian.plist](../etc/style-debian.plist), there is an alternative
-  theme you can use -- or extend it on your own.
+* [etc/Themes/Default.plist](../etc/Themes/Default.plist) is the compiled-in
+  default theme. With [etc/Themes/Debian.plist](../etc/Themes/Debian.plist),
+  there is an alternative theme you can use -- or extend it on your own.
 
   Run `wlmaker` with `--style_file=...` to use an alternative style. Or create
-  your own in `/usr/share/wlmaker/style.plist` or `~/.wlmaker-style.plist`.
+  your own in `/etc/xdg/wlmaker/Themes/Style.plist` or
+  `~/.config/wlmaker/Style.plist`.
 
-* [etc/root-menu.plist](../etc/root-menu.plist) defines the contents of the
-  root menu. To customize, copy to `/usr/share/wlmaker/root-menu.plist`,
-  `~/wlmaker-root-menu.plist` or provide via the `--root_menu_file` argument.
+* [etc/RootMenu.plist](../etc/RootMenu.plist) defines the contents of the
+  root menu. To customize, copy to `~/.config/wlmaker/RootMenu.plist` or
+  provide via the `--root_menu_file` argument.
 
-* [etc/wlmaker-state.plist](../etc/wlmaker-state.plist) stores state of dock
-  and clip.  To customize, copy to `/usr/share/wlmaker/state.plist`,
-  `~/wlmaker-state.plist` or provide via the `--state_file` argument.
+* [etc/State.plist](../etc/State.plist) stores state of dock and clip. To
+  customize, copy to `~/.config/wlmaker/State.plist` or provide via the
+  `--state_file` argument.
 
 * To run X11 applications in Wayland Maker, XWayland must be enabled. It is
   compiled in, if the `xwayland` package is installed. In that case, use the
@@ -77,11 +78,11 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
   suitably.
 
 * To make Wayland Maker look well on a high-resolution screen, you can either
-  set the `Output` `Scale` in [etc/wlmaker.plist](../etc/wlmaker.plist) (and
+  set the `Output` `Scale` in [etc/Config.plist](../etc/Config.plist) (and
   use `--config_file=...`). This will scale all surfaces.
 
   Or, you can configure the style with larger decorations & fonts, as is done
-  in [etc/style-debian.plist](../etc/style-debian.plist). That approach will
+  in [etc/Themes/Debian.plist](../etc/Themes/Debian.plist). That approach will
   not scale application surfaces.
 
 # Debugging issues

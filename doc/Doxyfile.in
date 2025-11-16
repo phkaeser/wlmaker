@@ -864,9 +864,9 @@ INPUT                  = \
                          @PROJECT_SOURCE_DIR@/doc/manual.md \
                          @PROJECT_SOURCE_DIR@/doc/protocols.md \
                          @PROJECT_SOURCE_DIR@/doc/root_menu.md \
-                         @PROJECT_SOURCE_DIR@/etc/wlmaker.plist \
-                         @PROJECT_SOURCE_DIR@/etc/root-menu.plist \
-                         @PROJECT_BINARY_DIR@/etc/root-menu-debian.plist \
+                         @PROJECT_SOURCE_DIR@/etc/Config.plist \
+                         @PROJECT_SOURCE_DIR@/etc/RootMenu.plist \
+                         @PROJECT_BINARY_DIR@/etc/RootMenuDebian.plist \
                          @PROJECT_SOURCE_DIR@/include/backend \
                          @PROJECT_SOURCE_DIR@/include/toolkit \
                          @PROJECT_SOURCE_DIR@/src \

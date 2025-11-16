@@ -18,22 +18,22 @@ INCLUDE(EmbedBinary)
 EmbedBinary_ADD_LIBRARY(
   embedded_root_menu
   "root_menu"
-  "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+  "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
 
 EmbedBinary_ADD_LIBRARY(
   embedded_style
   "style"
-  "${CMAKE_CURRENT_SOURCE_DIR}/style.plist")
+  "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
 
 EmbedBinary_ADD_LIBRARY(
   embedded_configuration
   "default_configuration"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
+  "${CMAKE_CURRENT_SOURCE_DIR}/Config.plist")
 
 EmbedBinary_ADD_LIBRARY(
   embedded_state
   "default_state"
-  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-state.plist")
+  "${CMAKE_CURRENT_SOURCE_DIR}/State.plist")
 
 # Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
 # with what GNUstep expects. Optional.
@@ -48,49 +48,49 @@ IF(PLDES)
 
   ADD_TEST(
     NAME root_menu_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/root-menu.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
   SET_PROPERTY(
     TEST root_menu_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME style_default_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
   SET_PROPERTY(
     TEST style_default_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME style_debian_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/style-debian.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Debian.plist")
   SET_PROPERTY(
     TEST style_debian_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME wlmaker_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Config.plist")
   SET_PROPERTY(
     TEST wlmaker_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME wlmaker_example_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-example.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/ExampleConfig.plist")
   SET_PROPERTY(
     TEST wlmaker_example_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME wlmaker_home_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-home.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/HomeConfig.plist")
   SET_PROPERTY(
     TEST wlmaker_home_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
     NAME wlmaker_state_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker-state.plist")
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/State.plist")
   SET_PROPERTY(
     TEST wlmaker_state_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
@@ -99,19 +99,24 @@ ENDIF(PLDES)
 
 INSTALL(
   FILES
-  root-menu.plist
-  style.plist
-  wlmaker-state.plist
-  wlmaker.plist
-  DESTINATION share/wlmaker)
+  RootMenu.plist
+  State.plist
+  Config.plist
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker)
+
+INSTALL(
+  FILES
+  Themes/Default.plist
+  Themes/Debian.plist
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker/Themes)
 
 IF(wmmenugen_executable)
   CONFIGURE_FILE(
-    ${CMAKE_CURRENT_SOURCE_DIR}/root-menu-debian.plist.in
-    ${CMAKE_CURRENT_BINARY_DIR}/root-menu-debian.plist
+    ${CMAKE_CURRENT_SOURCE_DIR}/RootMenuDebian.plist.in
+    ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
     @ONLY)
   INSTALL(
     FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/root-menu-debian.plist
-    DESTINATION share/wlmaker)
+    ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
+    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker/Themes)
 ENDIF(wmmenugen_executable)

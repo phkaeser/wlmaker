@@ -7,10 +7,11 @@ wlmaker is highly configurable, and uses a human-readable configuration file in
 format.
 
 wlmaker will load try loading a configuration file from these locations:
-* If a `--config_file=<FILE>` argument is provided, load `<FILE>`.
-* Otherwise, from the configured lookup paths: @ref _wlmaker_config_fname_ptrs
-  @snippet{trimleft} src/config.c LookupPathsConfig
-* Otherwise, compiled-in setttings from @ref etc_wlmaker_plist will be loaded.
+* If a `--config_file=<FILE>` argument is provided, load `<FILE>`;
+* if not given: from the "config home" according to XDG base directory spec;
+* if not found there: from any of the preference-ordered "config directories",
+  as described in the XDG base directory specification;
+* Otherwise: compiled-in setttings from @ref etc_config_plist will be loaded.
 
 The configuration file is a dictionary that may hold values for the following
 keys:
@@ -40,7 +41,7 @@ This dictionary configures the keyboard layout and properties.
   * `Rate` (required): Repeats per second, once `Delay` has expired.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist Keyboard
+@snippet{trimleft} etc/ExampleConfig.plist Keyboard
 
 ## Decoration {#config_decoration}
 
@@ -61,7 +62,7 @@ Permitted modes (see @ref _wlmaker_config_decoration_desc):
 * `EnforceServer`: wlmaker will add decorations, even if the client refuses.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist Decoration
+@snippet{trimleft} etc/ExampleConfig.plist Decoration
 
 ## KeyBindings {#config_keybindings}
 
@@ -73,7 +74,7 @@ See @ref _wlmaker_keybindings_modifiers for the supported modifiers.
 See @ref wlmaker_action_desc for the list of permitted actions.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist KeyBindings
+@snippet{trimleft} etc/ExampleConfig.plist KeyBindings
 
 ## HotCorner {#config_hotcorner}
 
@@ -93,7 +94,7 @@ not be reachable when using multiple outputs that don't have the same
 resolution.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist HotCorner
+@snippet{trimleft} etc/ExampleConfig.plist HotCorner
 
 ## ScreenLock {#config_screenlock}
 
@@ -106,7 +107,7 @@ following keys:
 The `LockScreen` action is wired to execute `Command` of `ScreenLock`.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist ScreenLock
+@snippet{trimleft} etc/ExampleConfig.plist ScreenLock
 
 ## Autostart {#config_autostart}
 
@@ -114,7 +115,7 @@ An array of strings, each denoting an executable that will be executed once
 wlmaker has started.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist Autostart
+@snippet{trimleft} etc/ExampleConfig.plist Autostart
 
 ## Outputs {#config_output}
 
@@ -151,7 +152,7 @@ propertis.
   specified refresh rate `<RATE>` in Hz.
 
 Example:
-@snippet{trimleft} etc/wlmaker-example.plist Outputs
+@snippet{trimleft} etc/ExampleConfig.plist Outputs
 
 That example will configure any added output to use `Normal` transformation
 with a scale of `1.0`.

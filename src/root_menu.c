@@ -140,13 +140,6 @@ static wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
 
 /* == Data ================================================================= */
 
-/** Lookup paths for the root menu config file. */
-static const char *_wlmaker_root_menu_fname_ptrs[] = {
-    "~/.wlmaker-root-menu.plist",
-    "/usr/share/wlmaker/root-menu.plist",
-    NULL  // Sentinel.
-};
-
 /** Indicates to load the file specified in following argument. */
 static const char *_wlmaker_root_menu_statement_include = "IncludePlistMenu";
 
@@ -172,10 +165,11 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     const wlmtk_menu_style_t *menu_style_ptr)
 {
     bspl_array_t *root_menu_array_ptr = bspl_array_from_object(
-        wlmaker_plist_load(
-            "root menu",
+        wlmaker_config_object_load(
+            server_ptr->files_ptr,
+            "root_menu",
             arg_root_menu_file_ptr,
-            _wlmaker_root_menu_fname_ptrs,
+            "RootMenu.plist",
             embedded_binary_root_menu_data,
             embedded_binary_root_menu_size));
     if (NULL == root_menu_array_ptr) return NULL;

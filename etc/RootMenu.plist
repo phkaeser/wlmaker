@@ -1,7 +1,7 @@
-//! @page etc_root_menu_plist etc/root-menu.plist
+//! @page etc_root_menu_plist etc/RootMenu.plist
 //! Compiled-in default configuration for the root menu. See @ref root_menu
 //! for details.
-//! @include etc/root-menu.plist
+//! @include etc/RootMenu.plist
 // Definition of root menu. Follows Window Maker plist order.
 ("Root Menu",
  ("Applications",
