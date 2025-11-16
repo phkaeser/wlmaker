@@ -906,7 +906,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     // Exercise & verify including a submenu from a file.
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
-        bs_test_resolve_path("menu-include.plist"),
+        bs_test_data_path(test_ptr, "menu-include.plist"),
         &window_style, &menu_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     wlmtk_menu_t *menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
@@ -916,7 +916,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     // Exercise & verify generating a submenu from a shell command.
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
-        bs_test_resolve_path("menu-generate.plist"),
+        bs_test_data_path(test_ptr, "menu-generate.plist"),
         &window_style, &menu_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);

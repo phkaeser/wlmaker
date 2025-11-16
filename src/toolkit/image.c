@@ -197,7 +197,7 @@ const bs_test_case_t wlmtk_image_test_cases[] = {
 void test_create_destroy(bs_test_t *test_ptr)
 {
     wlmtk_image_t *image_ptr = wlmtk_image_create(
-        bs_test_resolve_path("toolkit/test_icon.png"));
+        bs_test_data_path(test_ptr, "toolkit/test_icon.png"));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, image_ptr);
 
     BS_TEST_VERIFY_GFXBUF_EQUALS_PNG(
