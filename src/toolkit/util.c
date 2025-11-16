@@ -112,6 +112,7 @@ void wlmtk_util_connect_test_wlr_box_listener(
         signal_ptr,
         &test_wlr_box_listener_ptr->listener,
         _wlmtk_util_test_wlr_box_listener_handler);
+    wlmtk_util_clear_test_wlr_box_listener(test_wlr_box_listener_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
