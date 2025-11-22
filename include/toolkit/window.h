@@ -323,14 +323,14 @@ void wlmtk_window_commit_fullscreen(
 /**
  * Requests the window to be maximized (or end maximized).
  *
+ * Guarantees to emit a @ref wlmtk_window_events_t::request_maximized signal,
+ * either with the provided `maximized` value, or with what the compositor
+ * deems acceptable.
+ *
  * @param window_ptr
  * @param maximized
- *
- * @return true if the window accepted the maximization change. If the
- * window is in fullscreen mode or not mapped, the maximization update
- * is not accepted.
  */
-bool wlmtk_window_request_maximized(
+void wlmtk_window_request_maximized(
     wlmtk_window_t *window_ptr,
     bool maximized);
 
