@@ -458,17 +458,9 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
-    if (wlmtk_window_request_maximized(
-            wxt_ptr->window_ptr,
-            wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized)) return;
-
-    // The 'maximized' request was not accepted. XDG protocol expects a
-    // configure, so we respond with a "set_maximized" with the current
-    // maximization state.
-    wxt_ptr->pending.properties |= WXT_PROP_MAXIMIZED;
-    wxt_ptr->pending.maximized = wlmtk_window_is_maximized(
-        wxt_ptr->window_ptr);
-    _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
+    wlmtk_window_request_maximized(
+        wxt_ptr->window_ptr,
+        wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
 }
 
 /* ------------------------------------------------------------------------- */
