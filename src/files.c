@@ -142,13 +142,16 @@ void _wlmaker_files_test_config_find(bs_test_t *test_ptr)
 {
     char *backup_env = NULL;
     if (NULL != getenv("XDG_CONFIG_DIRS")) {
-        backup_env = strdup(getenv("XDG_CONFIG_DIRS"));
+        backup_env = logged_strdup(getenv("XDG_CONFIG_DIRS"));
     }
     const char *p = bs_test_data_path(test_ptr, "subdir");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
     setenv("XDG_CONFIG_DIRS", p, 1);
     wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
-    if (NULL != backup_env) setenv("XDG_CONFIG_DIRS", backup_env, 1);
+    if (NULL != backup_env) {
+        setenv("XDG_CONFIG_DIRS", backup_env, 1);
+        free(backup_env);
+    }
 
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
