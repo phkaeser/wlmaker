@@ -7,29 +7,34 @@ Support for visual effects to improve usability, but not for pure show.
 
 See the [Detailed Feature List](FEATURES.md) for details.
 
-## Plan for 0.7
+## Plan for 0.8
 
-**Focus**: Smooth resizing for surfaces and clean implementation.
+**Focus** Dock & Mini-Windows
 
 * Clip & Dock handling
-  * Add option to save state (Dock, Clip, Output).
-    * [done] Save state for Output.
-    * [done] Create the base directory, if it does not yet exist.
-    * [done] Load Output on startup, and (re)apply the configuration.
+  * Add option to save Dokc & Clip state.
     * Document the state file.
     * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
+  * Support window minimize
+
+* From libxdg-basedir:
+  * Fix leak with libxdg-basedir.
+  * Look whether to expand to use XDG_STATE_HOME
+
+## Plan for 0.7
+
+**Focus**: Smooth resizing for surfaces and clean implementation. Styles and Output.
 
 * Cleanups:
-  * Replace wlmtk_window_t, wlmtk_conent_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
+  * [done] Replace wlmtk_window_t, wlmtk_content_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
     * [done] Add wlmtk_window2_t as the updated window version.
     * [done] Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
     * [done] Extend wlmtk_window2_t to support shade, maximize, menu, popups, client.
     * [done] Replace wlmtk_window_t with wlmtk_window2_t for XWL windows.
     * [done] Remove all references of wlmtk_window_t, wlmkt_content_t, wlmtk_pane_t.
     * [done] Rename wlmtk_window2_t to wlmtk_window_t once earlier references gone.
-    * Extend wlmtk_window2_t to support minimize.
   * [done] wlmtk_backend_t review & improve naming.
     * [done] Inconsistency of "ephemeral" state vs state.
     * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
@@ -49,9 +54,15 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * Fix: Maximizing non-decorated window does not use all space. Review size computation.
-  * From libxdg-basedir:
-    * Fix leak with libxdg-basedir.
-    * Look whether to expand to use XDG_STATE_HOME
+
+* Themes/Styles
+  * Settle on whether to use 'Themes' or 'Styles'. Update files & references.
+  * Add means to change theme while running.
+
+* [done] Persist output state
+  * [done] Save state for Output.
+  * [done] Create the base directory, if it does not yet exist.
+  * [done] Load Output on startup, and (re)apply the configuration.
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.
@@ -59,9 +70,14 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
   * [done] Be `iwyu`-clean on Trixie.
   * Embed version and have a `--version` argument to print out.
-  * logo: Upsize header font, and show on div with white background.
-  * logo: propagate icon downstream to Debian's application definition, and in share/
-  * [stretch goal] Themes: Add means to change theme while running.
+  * Remove `Logo` key from default configured hotkeys. Add an argument or option to
+    add it as extra, when running under Wayland or X11 backend.
+
+* Branding
+  * Align SVG logo exactly with horizontals & verticals.
+  * Add white background elements for logo to show well on dark backgrounds.
+  * Propagate icon downstream to Debian's application definition, and in share/
+  * Documentation: Upsize header font, and show on div with white background.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 
