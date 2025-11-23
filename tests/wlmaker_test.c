@@ -38,21 +38,21 @@
 
 /** WLMaker unit tests. */
 const bs_test_set_t wlmaker_tests[] = {
-    { 1, "action", wlmaker_action_test_cases },
-    { 1, "action_item", wlmaker_action_item_test_cases },
-    { 1, "clip", wlmaker_clip_test_cases },
-    { 1, "config", wlmaker_config_test_cases },
-    { 1, "corner", wlmaker_corner_test_cases },
-    { 1, "dock", wlmaker_dock_test_cases },
-    { 1, "launcher", wlmaker_launcher_test_cases},
-    { 1, "layer_panel", wlmaker_layer_panel_test_cases },
-    { 1, "lock", wlmaker_lock_mgr_test_cases },
-    { 1, "root_menu", wlmaker_root_menu_test_cases },
-    { 1, "server", wlmaker_server_test_cases },
+    { 1, "action", wlmaker_action_test_cases, NULL, NULL },
+    { 1, "action_item", wlmaker_action_item_test_cases, NULL, NULL },
+    { 1, "clip", wlmaker_clip_test_cases, NULL, NULL },
+    { 1, "config", wlmaker_config_test_cases, NULL, NULL },
+    { 1, "corner", wlmaker_corner_test_cases, NULL, NULL },
+    { 1, "dock", wlmaker_dock_test_cases, NULL, NULL },
+    { 1, "launcher", wlmaker_launcher_test_cases, NULL, NULL },
+    { 1, "layer_panel", wlmaker_layer_panel_test_cases, NULL, NULL },
+    { 1, "lock", wlmaker_lock_mgr_test_cases, NULL, NULL },
+    { 1, "root_menu", wlmaker_root_menu_test_cases, NULL, NULL },
+    { 1, "server", wlmaker_server_test_cases, NULL, NULL },
 #if defined(WLMAKER_HAVE_XWAYLAND)
-    { 1, "xwl_content", wlmaker_xwl_content_test_cases },
+    { 1, "xwl_content", wlmaker_xwl_content_test_cases, NULL, NULL },
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
-    { 0, NULL, NULL }
+    { 0, NULL, NULL, NULL, NULL }
 };
 
 #if !defined(TEST_DATA_DIR)

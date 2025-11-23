@@ -38,11 +38,13 @@ struct _wlmbe_output_config_t {
 
 static bool _wlmbe_output_position_decode(
     bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
     void *dest_ptr);
 static bool _wlmbe_output_position_decode_init(void *dest_ptr);
 
 static bool _wlmbe_output_mode_decode(
     bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
     void *dest_ptr);
 static bool _wlmbe_output_mode_decode_init(void *dest_ptr);
 
@@ -96,12 +98,14 @@ static const bspl_desc_t    _wlmbe_output_config_desc[] = {
         "Position", false, wlmbe_output_config_t,
         attributes.position, attributes.has_position,
         _wlmbe_output_position_decode,
+        NULL,
         _wlmbe_output_position_decode_init,
         NULL),
     BSPL_DESC_CUSTOM(
         "Mode", false, wlmbe_output_config_t,
         attributes.mode, attributes.has_mode,
         _wlmbe_output_mode_decode,
+        NULL,
         _wlmbe_output_mode_decode_init,
         NULL),
     BSPL_DESC_SENTINEL()
@@ -364,6 +368,7 @@ struct wlr_output *wlmbe_output_description_first_fnmatch(
 /** Decodes a plist "x,y" string into @ref wlmbe_output_config_position_t. */
 bool _wlmbe_output_position_decode(
     bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
     void *dest_ptr)
 {
     const char *s = bspl_string_value(bspl_string_from_object(object_ptr));
@@ -406,6 +411,7 @@ bool _wlmbe_output_position_decode_init(void *dest_ptr)
 /** Decodes a plist "WxH@R" string into @ref wlmbe_output_config_mode_t. */
 bool _wlmbe_output_mode_decode(
     bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
     void *dest_ptr)
 {
     const char *s = bspl_string_value(bspl_string_from_object(object_ptr));
@@ -513,21 +519,21 @@ void _wlmbe_output_test_decode_position(bs_test_t *test_ptr)
 
     bspl_object_t *o = bspl_object_from_string(bspl_string_create("1,2"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, NULL, &p));
     BS_TEST_VERIFY_EQ(test_ptr, 1, p.x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, p.y);
     bspl_object_unref(o);
 
     o = bspl_object_from_string(bspl_string_create("2147483647,-2147483648"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_position_decode(o, NULL, &p));
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, p.x);
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MIN, p.y);
     bspl_object_unref(o);
 
     o = bspl_object_from_string(bspl_string_create("2147483648,-2147483649"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_position_decode(o, &p));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_position_decode(o, NULL, &p));
     bspl_object_unref(o);
 }
 
@@ -543,7 +549,7 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
 
     bspl_object_t *o = bspl_object_from_string(bspl_string_create("1x2@3.4"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, NULL, &m));
     BS_TEST_VERIFY_EQ(test_ptr, 1, m.width);
     BS_TEST_VERIFY_EQ(test_ptr, 2, m.height);
     BS_TEST_VERIFY_EQ(test_ptr, 3400, m.refresh);
@@ -552,7 +558,7 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
     o = bspl_object_from_string(
         bspl_string_create("2147483647x-2147483648@2147483"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, NULL, &m));
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MAX, m.width);
     BS_TEST_VERIFY_EQ(test_ptr, INT32_MIN, m.height);
     BS_TEST_VERIFY_EQ(test_ptr, 2147483000, m.refresh);
@@ -561,12 +567,12 @@ void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr)
     o = bspl_object_from_string(
         bspl_string_create("2147483648x-2147483649@2147483648"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_FALSE(test_ptr, _wlmbe_output_mode_decode(o, NULL, &m));
     bspl_object_unref(o);
 
     o = bspl_object_from_string(bspl_string_create("3x4"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, &m));
+    BS_TEST_VERIFY_TRUE(test_ptr, _wlmbe_output_mode_decode(o, NULL, &m));
     BS_TEST_VERIFY_EQ(test_ptr, 3, m.width);
     BS_TEST_VERIFY_EQ(test_ptr, 4, m.height);
     BS_TEST_VERIFY_EQ(test_ptr, 0, m.refresh);

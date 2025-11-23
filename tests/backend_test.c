@@ -26,9 +26,9 @@
 
 /** Backend unit tests. */
 const bs_test_set_t backend_tests[] = {
-    { 1, "backend", wlmbe_backend_test_cases },
-    { 1, "output_config", wlmbe_output_config_test_cases },
-    { 0, NULL, NULL }
+    { 1, "backend", wlmbe_backend_test_cases, NULL, NULL },
+    { 1, "output_config", wlmbe_output_config_test_cases, NULL, NULL },
+    { 0, NULL, NULL, NULL, NULL }
 };
 
 /** Main program, runs the unit tests. */

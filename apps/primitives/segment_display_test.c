@@ -25,8 +25,8 @@
 
 /** Unit tests. */
 const bs_test_set_t tests[] = {
-    { 1, "segment_dipslay", wlm_cairo_segment_display_test_cases },
-    { 0, NULL, NULL }
+    { 1, "segment_dipslay", wlm_cairo_segment_display_test_cases, NULL, NULL },
+    { 0, NULL, NULL, NULL, NULL }
 };
 
 #if !defined(TEST_DATA_DIR)
