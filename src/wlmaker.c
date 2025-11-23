@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 /// Use non-stable features of wlroots.
 #define WLR_USE_UNSTABLE
@@ -58,6 +59,14 @@ static char *wlmaker_arg_state_file_ptr = NULL;
 static char *wlmaker_arg_style_file_ptr = NULL;
 /** Will hold the value of --root_menu_file. */
 static char *wlmaker_arg_root_menu_file_ptr = NULL;
+
+#if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
+#eror "WLMAKER_VERSION_... not defined!"
+#else
+static const char *wlmaker_version_major = WLMAKER_VERSION_MAJOR;
+static const char *wlmaker_version_minor = WLMAKER_VERSION_MINOR;
+static const char *wlmaker_version_full = WLMAKER_VERSION_FULL;
+#endif
 
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {
@@ -318,11 +327,31 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_background_stack));
 
-    if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
+    if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
         bs_arg_print_usage(stderr, wlmaker_args);
         return EXIT_FAILURE;
     }
+
+    for (int i = 1; i < argc; ++i) {
+        if (0 == strcmp(argv[i], "--help")) {
+            bs_arg_print_usage(stdout, wlmaker_args);
+            return EXIT_SUCCESS;
+        } else if (0 == strcmp(argv[i], "--version")) {
+            fprintf(stdout, "wlmaker version %s.%s (%s)\n",
+                    wlmaker_version_major,
+                    wlmaker_version_minor,
+                    wlmaker_version_full);
+            return EXIT_SUCCESS;
+        } else {
+            bs_log(BS_ERROR, "Unhandled extra argument \"%s\"", argv[i]);
+            return EXIT_FAILURE;
+        }
+    }
+    bs_log(BS_INFO, "Starting wlmaker %s.%s (%s)",
+           wlmaker_version_major,
+           wlmaker_version_minor,
+           wlmaker_version_full);
 
     wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
     if (NULL == files_ptr) {
