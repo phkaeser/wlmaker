@@ -17,8 +17,11 @@
 # CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-PROJECT(wlmaker VERSION 0.1
+PROJECT(
+  wlmaker
+  VERSION "0.6"
   DESCRIPTION "Wayland Maker - A Wayland compositor inspired by Window Maker"
+  HOMEPAGE_URL "https://github.com/phkaeser/wlmaker"
   LANGUAGES C)
 
 # Requires out-of-source builds.
@@ -30,6 +33,37 @@ IF(EXISTS "${LOCATION_PATH}")
     "Please make a build subdirectory, for example:\n"
     "cmake -B build\n"
     "(cd build && make)")
+ENDIF()
+
+SET(WLMAKER_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+SET(WLMAKER_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+SET(WLMAKER_VERSION_FULL ${PROJECT_VERSION})
+# PROJECT version check: When on a git repository, we verify that the PROJECT
+# version is equal-or-larger than the git version.
+IF(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+  EXECUTE_PROCESS(
+    COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_SOURCE_DIR}"
+    git describe --always --tags --dirty
+    OUTPUT_VARIABLE git_version
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE git_result)
+
+  IF(git_result EQUAL 0)
+    STRING(REGEX MATCH "^v([0-9]+)\\.([0-9]+)" DUMMY_VAR ${git_version})
+    IF(NOT CMAKE_MATCH_COUNT EQUAL 2)
+      MESSAGE(FATAL_ERROR "Not a v<MAJOR>.<MINOR> version \"${git_version}\"")
+    ENDIF()
+
+    IF(${PROJECT_VERSION_MAJOR} LESS ${CMAKE_MATCH_1} OR
+        ${PROJECT_VERSION_MINOR} LESS ${CMAKE_MATCH_2})
+      MESSAGE(FATAL_ERROR "Git ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} >= "
+        "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+    ENDIF()
+
+    SET(WLMAKER_VERSION_MAJOR ${CMAKE_MATCH_1})
+    SET(WLMAKER_VERSION_MINOR ${CMAKE_MATCH_2})
+    SET(WLMAKER_VERSION_FULL ${git_version})
+  ENDIF()
 ENDIF()
 
 # Defaults to /usr/local/lib for installation.

@@ -69,9 +69,10 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
   * [done] Be `iwyu`-clean on Trixie.
-  * Embed version and have a `--version` argument to print out.
+  * [done] Embed version and have a `--version` argument to print out.
   * Remove `Logo` key from default configured hotkeys. Add an argument or option to
     add it as extra, when running under Wayland or X11 backend.
+  * Add menu option to add, respectively remove workspace.
 
 * Branding
   * Align SVG logo exactly with horizontals & verticals.
