@@ -15,9 +15,21 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 INSTALL(FILES
+  wlmaker.svg
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/scalable/apps)
+INSTALL(FILES
+  wlmaker-48x48.png
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/48x48/apps
+  RENAME wlmaker.png)
+INSTALL(FILES
+  wlmaker-64x64.png
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/64x64/apps
+  RENAME wlmaker.png)
+
+INSTALL(FILES
   chrome-48x48.png
   clip-48x48.png
   firefox-48x48.png
   terminal-48x48.png
   wlmclock-64x64.png
-  DESTINATION share/icons/wlmaker)
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/wlmaker)
