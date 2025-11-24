@@ -73,11 +73,13 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Remove `Logo` key from default configured hotkeys. Add an argument or option to
     add it as extra, when running under Wayland or X11 backend.
   * Add menu option to add, respectively remove workspace.
+  * Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
 
 * Branding
-  * Align SVG logo exactly with horizontals & verticals.
-  * Add white background elements for logo to show well on dark backgrounds.
-  * Propagate icon downstream to Debian's application definition, and in share/
+  * [done] Align SVG logo exactly with horizontals & verticals.
+  * [done] Add white background elements for logo to show well on dark backgrounds.
+  * [done] Install the icon suitable for XDG desktop. Includes 48x48 and 64x64.
+  * Propagate icon downstream to Debian's application definition.
   * Documentation: Upsize header font, and show on div with white background.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)

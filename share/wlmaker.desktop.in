@@ -3,3 +3,4 @@ Name=WaylandMaker
 Comment=A Wayland compositor inspired by Window Maker
 Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmaker
 Type=Application
+Icon=wlmaker.svg
