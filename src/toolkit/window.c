@@ -508,7 +508,12 @@ void wlmtk_window_request_fullscreen(
 
     // TODO: Window should store the state, and then apply dimensions when
     // mapped, belatedly.
-    if (NULL == window_ptr->workspace_ptr) return;
+    if (NULL == window_ptr->workspace_ptr) {
+        bool not_fullscreen = false;
+        wl_signal_emit(&window_ptr->events.request_fullscreen,
+                       &not_fullscreen);
+        return;
+    }
 
     struct wlr_box desired_size = window_ptr->organic_bounding_box;
     if (fullscreen) {
