@@ -54,6 +54,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * Fix: Maximizing non-decorated window does not use all space. Review size computation.
+  * Fix: Backend state not loaded on laptop?
+  * Fix: Support alt-click to emulate right-click on laptop.
+  * Fix: Issue with PgUp/PgDn on laptop.
 
 * Themes/Styles
   * Settle on whether to use 'Themes' or 'Styles'. Update files & references.
