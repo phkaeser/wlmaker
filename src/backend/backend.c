@@ -213,6 +213,7 @@ wlmbe_backend_t *wlmbe_backend_create(
             wlmbe_backend_destroy(backend_ptr);
             return NULL;
         }
+        bs_log(BS_INFO, "Loaded output state from \"%s\"", state_fname_ptr);
     }
 
     // Auto-create the wlroots backend. Can be X11 or direct.
