@@ -105,6 +105,10 @@ struct wlmaker_xdg_toplevel {
     uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *, bool);
     /** Injected method for wlr_xdg_toplevel_set_fullscreen(). */
     uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool);
+    /** Injected method for wlr_xdg_toplevel_set_size(). */
+    uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t);
+    /** Injected method for wlr_xdg_toplevel_set_activated(). */
+    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool);
 
     /** Serial of the most recent commit() call. */
     uint32_t                  committed_serial;
@@ -121,11 +125,19 @@ struct wlmaker_xdg_toplevel {
             WXT_PROP_MAXIMIZED = 1 << 0,
             /** Fullscreen. */
             WXT_PROP_FULLSCREEN = 1 << 1,
+            /** Size. */
+            WXT_PROP_SIZE = 1 << 2,
+            /** Activation. */
+            WXT_PROP_ACTIVATED =  1 << 3
         }  properties;
         /** Maximization status. */
         bool                  maximized;
-        /** Fulslcreen status. */
+        /** Fullscreen status. */
         bool                  fullscreen;
+        /** Width and height. */
+        int32_t               width, height;
+        /** Activated. */
+        bool                  activated;
     } pending;
 };
 
@@ -133,7 +145,9 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr,
     uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *, bool),
-    uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool));
+    uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool),
+    uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t),
+    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool));
 static void _wlmaker_xdg_toplevel_flush_properties(
     struct wlmaker_xdg_toplevel *wxt_ptr);
 
@@ -209,7 +223,9 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         wlr_xdg_toplevel_ptr,
         server_ptr,
         wlr_xdg_toplevel_set_maximized,
-        wlr_xdg_toplevel_set_fullscreen);
+        wlr_xdg_toplevel_set_fullscreen,
+        wlr_xdg_toplevel_set_size,
+        wlr_xdg_toplevel_set_activated);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -277,7 +293,9 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     wlmaker_server_t *server_ptr,
     uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *, bool),
-    uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool))
+    uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool),
+    uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t),
+    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool))
 {
     // Guard clause: Must have a base. */
     if (NULL == wlr_xdg_toplevel_ptr->base) {
@@ -293,6 +311,8 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     wlmaker_xdg_toplevel_ptr->server_ptr = server_ptr;
     wlmaker_xdg_toplevel_ptr->_set_maximized = _set_maximized;
     wlmaker_xdg_toplevel_ptr->_set_fullscreen = _set_fullscreen;
+    wlmaker_xdg_toplevel_ptr->_set_size = _set_size;
+    wlmaker_xdg_toplevel_ptr->_set_activated = _set_activated;
 
     if (!wlmtk_base_init(&wlmaker_xdg_toplevel_ptr->base, NULL)) goto error;
 
@@ -449,6 +469,18 @@ void _wlmaker_xdg_toplevel_flush_properties(
             wxt_ptr->pending.fullscreen);
     }
 
+    if (wxt_ptr->pending.properties & WXT_PROP_SIZE) {
+        wxt_ptr->set_size_serial = wxt_ptr->_set_size(
+            wxt_ptr->wlr_xdg_toplevel_ptr,
+            wxt_ptr->pending.width,
+            wxt_ptr->pending.height);
+    }
+
+    if (wxt_ptr->pending.properties & WXT_PROP_ACTIVATED){
+        wxt_ptr->_set_activated(
+            wxt_ptr->wlr_xdg_toplevel_ptr,
+            wxt_ptr->pending.activated);
+    }
     wxt_ptr->pending.properties = 0;
 }
 
@@ -719,9 +751,10 @@ void _wlmaker_xdg_toplevel_handle_window_set_activated(
         struct wlmaker_xdg_toplevel,
         window_set_activated_listener);
 
-    wlr_xdg_toplevel_set_activated(
-        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr,
-        wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+    wlmaker_xdg_toplevel_ptr->pending.properties |= WXT_PROP_ACTIVATED;
+    wlmaker_xdg_toplevel_ptr->pending.activated =
+        wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr);
+    _wlmaker_xdg_toplevel_flush_properties(wlmaker_xdg_toplevel_ptr);
     wlmtk_surface_set_activated(
         wlmaker_xdg_toplevel_ptr->surface_ptr,
         wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
@@ -748,15 +781,13 @@ void _wlmaker_xdg_toplevel_handle_window_request_size(
         wlmtk_surface_element(wxt_ptr->surface_ptr));
     struct wlr_box toplevel_box =
         wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry;
-    int requested_width =
-        BS_MAX(0, box_ptr->width + toplevel_box.width - surface_box.width);
-    int requested_height =
-        BS_MAX(0, box_ptr->height + toplevel_box.height - surface_box.height);
 
-    wxt_ptr->set_size_serial = wlr_xdg_toplevel_set_size(
-        wxt_ptr->wlr_xdg_toplevel_ptr,
-        requested_width,
-        requested_height);
+    wxt_ptr->pending.width =
+        BS_MAX(0, box_ptr->width + toplevel_box.width - surface_box.width);
+    wxt_ptr->pending.height =
+        BS_MAX(0, box_ptr->height + toplevel_box.height - surface_box.height);
+    wxt_ptr->pending.properties |= WXT_PROP_SIZE;
+    _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -849,8 +880,13 @@ struct _xdg_toplevel_test_data {
     struct _wlmaker_test_layout test_layout;
     wlmaker_server_t          server;
 
+    int32_t                   set_size_width;
+    int32_t                   set_size_height;
+
     int                       set_maximized_calls;
     int                       set_fullscreen_calls;
+    int                       set_size_calls;
+    int                       set_activated_calls;
 #endif
 };
 
@@ -878,18 +914,49 @@ uint32_t _wlmaker_xdg_toplevel_fake_set_fullscreen(
     return 0;
 }
 
+/** A fake for wlr_xdg_toplevel_set_size(). Recods the call. */
+uint32_t _wlmaker_xdg_toplevel_fake_set_size(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    int32_t width,
+    int32_t height)
+{
+    struct _xdg_toplevel_test_data *td_ptr = BS_CONTAINER_OF(
+        wlr_xdg_toplevel_ptr, struct _xdg_toplevel_test_data, wlr_xdg_toplevel);
+
+    td_ptr->set_size_calls++;
+    td_ptr->set_size_width = width;
+    td_ptr->set_size_height = height;
+    return 0;
+}
+
+/** A fake for wlr_xdg_toplevel_set_activated(). Recods the call. */
+uint32_t _wlmaker_xdg_toplevel_fake_set_activated(
+    struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
+    __UNUSED__ bool activated)
+{
+    struct _xdg_toplevel_test_data *td_ptr = BS_CONTAINER_OF(
+        wlr_xdg_toplevel_ptr, struct _xdg_toplevel_test_data, wlr_xdg_toplevel);
+
+    td_ptr->set_activated_calls++;
+    return 0;
+}
+
 /* == Unit tests =========================================================== */
 
 static void *_wlmaker_xdg_toplevel_test_setup(void);
 static void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr);
 
 static void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr);
-void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr);
+static void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr);
+static void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr);
+static void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 const bs_test_case_t _test_cases[] = {
     { true, "maximize", _wlmaker_xdg_toplevel_test_maximize },
     { true, "fullscreen", _wlmaker_xdg_toplevel_test_fullscreen },
+    { true, "size", _wlmaker_xdg_toplevel_test_size },
+    { true, "activated", _wlmaker_xdg_toplevel_test_activated },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -994,7 +1061,9 @@ void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr)
             &td_ptr->wlr_xdg_toplevel,
             &td_ptr->server,
             _wlmaker_xdg_toplevel_fake_set_maximized,
-            _wlmaker_xdg_toplevel_fake_set_fullscreen);
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, created.calls);
 
@@ -1046,7 +1115,9 @@ void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr)
             &td_ptr->wlr_xdg_toplevel,
             &td_ptr->server,
             _wlmaker_xdg_toplevel_fake_set_maximized,
-            _wlmaker_xdg_toplevel_fake_set_fullscreen);
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
 
     // Issued from the window, ie. from the compositor.
@@ -1070,6 +1141,70 @@ void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr)
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_fullscreen_calls);
+
+    wlmaker_xdg_toplevel_destroy(wxt_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests set_size requests. */
+void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr =
+        BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
+
+    struct wlmaker_xdg_toplevel *wxt_ptr =
+        _wlmaker_xdg_toplevel_create_injected(
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
+            _wlmaker_xdg_toplevel_fake_set_maximized,
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
+
+    // Issued from the window, ie. from the compositor.
+    struct wlr_box b = { .width = 10, .height = 20 };
+    wl_signal_emit(
+        &wlmtk_window_events(wxt_ptr->window_ptr)->request_size, &b);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, td_ptr->set_size_calls);
+
+    // Pending properties. Next commit must trigger.
+    td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_size_calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, td_ptr->set_size_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, td_ptr->set_size_height);
+
+    wlmaker_xdg_toplevel_destroy(wxt_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests set_activated requests. */
+void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr =
+        BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
+
+    struct wlmaker_xdg_toplevel *wxt_ptr =
+        _wlmaker_xdg_toplevel_create_injected(
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
+            _wlmaker_xdg_toplevel_fake_set_maximized,
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
+
+    // Issued from the window, ie. from the compositor.
+    bool a = true;
+    wl_signal_emit(
+        &wlmtk_window_events(wxt_ptr->window_ptr)->set_activated, &a);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, td_ptr->set_activated_calls);
+
+    // Pending properties. Next commit must trigger.
+    td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_activated_calls);
 
     wlmaker_xdg_toplevel_destroy(wxt_ptr);
 }
