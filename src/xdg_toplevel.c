@@ -703,6 +703,11 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr =
         wxt_ptr->wlr_xdg_toplevel_ptr->base;
 
+    wlmtk_window_commit_size(
+        wxt_ptr->window_ptr,
+        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.width,
+        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.height);
+
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
         wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
         wlmtk_window_commit_fullscreen(
@@ -775,17 +780,8 @@ void _wlmaker_xdg_toplevel_handle_window_request_size(
     // Ignore the request, if commits have not caught up yet.
     if (wxt_ptr->set_size_serial > wxt_ptr->committed_serial) return;
 
-    // The toplevel may have extra subsurfes, changing the size we need
-    // to request. Adjust the box for that delta.
-    struct wlr_box surface_box = wlmtk_element_get_dimensions_box(
-        wlmtk_surface_element(wxt_ptr->surface_ptr));
-    struct wlr_box toplevel_box =
-        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry;
-
-    wxt_ptr->pending.width =
-        BS_MAX(0, box_ptr->width + toplevel_box.width - surface_box.width);
-    wxt_ptr->pending.height =
-        BS_MAX(0, box_ptr->height + toplevel_box.height - surface_box.height);
+    wxt_ptr->pending.width = box_ptr->width;
+    wxt_ptr->pending.height = box_ptr->height;
     wxt_ptr->pending.properties |= WXT_PROP_SIZE;
     _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
 }
@@ -804,6 +800,7 @@ void _wlmaker_xdg_toplevel_handle_window_request_fullscreen(
 
     wxt_ptr->pending.properties |= WXT_PROP_FULLSCREEN;
     wxt_ptr->pending.fullscreen = *fullscreen_ptr;
+    if (wxt_ptr->pending.fullscreen) wxt_ptr->pending.maximized = false;
     _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
 }
 

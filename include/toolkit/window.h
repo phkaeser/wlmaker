@@ -272,6 +272,28 @@ void wlmtk_window_request_size(
     const struct wlr_box *box_ptr);
 
 /**
+ * Sets the window's committed size. Should be called when the content size
+ * is changed, eg. on surface commit.
+ *
+ * @param window_ptr
+ * @param width
+ * @param height
+ */
+void wlmtk_window_commit_size(
+    wlmtk_window_t *window_ptr,
+    int width, int height);
+
+/**
+ * Returns the window's (committed) size. That may be different than the
+ * dimensions of the window's @ref wlmtk_window_t::content_element_ptr.
+ *
+ * @param window_ptr
+ *
+ * @return The size box. Only `width` and `height` will be used.
+ */
+struct wlr_box wlmtk_window_get_size(wlmtk_window_t *window_ptr);
+
+/**
  * Sets the resizing edges. Keeps the opposite edges firm when resizing.
  *
  * @param window_ptr

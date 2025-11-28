@@ -74,6 +74,8 @@ struct _wlmaker_xwl_surface_t {
     struct wl_listener        surface_map_listener;
     /** Listener for the `unmap` signal of `wlr_xwayland_surface`. */
     struct wl_listener        surface_unmap_listener;
+    /** Listener for the `commit` signal. */
+    struct wl_listener        surface_commit_listener;
 
     /** Listener for @ref wlmtk_window_events_t::request_close. */
     struct wl_listener        window_request_close_listener;
@@ -129,6 +131,9 @@ static void _xwl_surface_handle_surface_map(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _xwl_surface_handle_surface_unmap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _xwl_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -344,6 +349,14 @@ void _xwl_surface_handle_associate(
         &xwl_surface_ptr->surface_unmap_listener,
         _xwl_surface_handle_surface_unmap);
 
+    wlmtk_util_connect_listener_signal(
+        &xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->events.commit,
+        &xwl_surface_ptr->surface_commit_listener,
+        _xwl_surface_handle_surface_commit);
+    _xwl_surface_handle_surface_commit(
+        &xwl_surface_ptr->surface_commit_listener,
+        NULL);
+
     wlmtk_base_set_content_element(
         &xwl_surface_ptr->base,
         wlmtk_surface_element(xwl_surface_ptr->surface_ptr));
@@ -456,6 +469,7 @@ void _xwl_surface_handle_dissociate(
         xwl_surface_ptr->parent_surface_ptr = NULL;
     }
 
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_commit_listener);
     wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_map_listener);
     wlmtk_util_disconnect_listener(&xwl_surface_ptr->surface_unmap_listener);
     wlmtk_base_set_content_element(&xwl_surface_ptr->base, NULL);
@@ -608,6 +622,23 @@ void _xwl_surface_handle_surface_unmap(
     wlmtk_workspace_unmap_window(
         wlmtk_window_get_workspace(xwl_surface_ptr->window_ptr),
         xwl_surface_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Surface committed. Update size. */
+void _xwl_surface_handle_surface_commit(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_xwl_surface_t, surface_commit_listener);
+
+    if (NULL == xwl_surface_ptr->window_ptr) return;
+
+    wlmtk_window_commit_size(
+        xwl_surface_ptr->window_ptr,
+        xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->current.width,
+        xwl_surface_ptr->wlr_xwayland_surface_ptr->surface->current.height);
 }
 
 /* ------------------------------------------------------------------------- */
