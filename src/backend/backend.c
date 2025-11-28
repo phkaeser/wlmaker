@@ -509,25 +509,26 @@ void _wlmbe_backend_handle_new_output(
         wlr_output_destroy(wlr_output_ptr);
         return;
     }
+
     if (NULL == config_ptr) {
         config_ptr = wlmbe_output_config_create_from_wlr(wlr_output_ptr);
         bs_dllist_push_front(
             &backend_ptr->ephemeral_output_configs,
             wlmbe_dlnode_from_output_config(config_ptr));
-    }
 
-    // See if we have a corresponding entry among configured outputs. If yes,
-    // apply the attributes to our new config.
-    wlmbe_output_config_t *outputs_config_ptr =
-        wlmbe_output_config_from_dlnode(
-            bs_dllist_find(
-                &backend_ptr->output_configs,
-                wlmbe_output_config_fnmatches,
-                wlr_output_ptr));
-    if (NULL != outputs_config_ptr) {
-        wlmbe_output_config_apply_attributes(
-            config_ptr,
+        // See if we have a corresponding entry among configured outputs. If
+        // yes, apply the attributes to our new config.
+        wlmbe_output_config_t *outputs_config_ptr =
+            wlmbe_output_config_from_dlnode(
+                bs_dllist_find(
+                    &backend_ptr->output_configs,
+                    wlmbe_output_config_fnmatches,
+                    wlr_output_ptr));
+        if (NULL != outputs_config_ptr) {
+            wlmbe_output_config_apply_attributes(
+                config_ptr,
             wlmbe_output_config_attributes(outputs_config_ptr));
+        }
     }
 
     wlmbe_output_t *output_ptr = wlmbe_output_create(
