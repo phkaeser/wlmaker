@@ -72,7 +72,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Save state for Output.
   * [done] Create the base directory, if it does not yet exist.
   * [done] Load Output on startup, and (re)apply the configuration.
-  * Fix: Backend state not loaded on laptop?
+  * [done] Fix: Backend state not loaded on laptop?
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.

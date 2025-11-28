@@ -136,6 +136,7 @@ wlmbe_output_t *wlmbe_output_create(
     struct wlr_output_state state;
     wlr_output_state_init(&state);
     wlr_output_state_set_enabled(&state, attr_ptr->enabled);
+    bs_log(BS_ERROR, "FIXME: set scale %.2f", attr_ptr->scale);
     wlr_output_state_set_scale(&state, attr_ptr->scale);
 
     // Issue #97: Found that X11 and transformations do not translate
