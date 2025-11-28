@@ -7,7 +7,7 @@ Support for visual effects to improve usability, but not for pure show.
 
 See the [Detailed Feature List](FEATURES.md) for details.
 
-## Plan for 0.8
+## Plan for 0.9
 
 **Focus** Dock & Mini-Windows
 
@@ -23,9 +23,21 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
 
+## Plan for 0.8
+
+**Focus** Themes
+
+* Themes/Styles
+  * Settle on whether to use 'Themes' or 'Styles'. Update files & references.
+  * Add means to change theme while running.
+
+* Infrastructure
+  * Recompute pointer focus max once per frame.
+
+
 ## Plan for 0.7
 
-**Focus**: Smooth resizing for surfaces and clean implementation. Styles and Output.
+**Focus**: Smooth resizing for surfaces and clean implementation, persist Output state.
 
 * Cleanups:
   * [done] Replace wlmtk_window_t, wlmtk_content_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
@@ -38,7 +50,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] wlmtk_backend_t review & improve naming.
     * [done] Inconsistency of "ephemeral" state vs state.
     * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
-  * Recompute pointer focus max once per frame.
   * Verify that right-click on title after window menu re-raises window menu.
   * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
   * Move config and data files into XDG-compliant config, resp. data paths.
@@ -54,18 +65,14 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * Fix: Maximizing non-decorated window does not use all space. Review size computation.
-  * Fix: Backend state not loaded on laptop?
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
-
-* Themes/Styles
-  * Settle on whether to use 'Themes' or 'Styles'. Update files & references.
-  * Add means to change theme while running.
 
 * [done] Persist output state
   * [done] Save state for Output.
   * [done] Create the base directory, if it does not yet exist.
   * [done] Load Output on startup, and (re)apply the configuration.
+  * Fix: Backend state not loaded on laptop?
 
 * Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.
