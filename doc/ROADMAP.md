@@ -60,10 +60,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Particularly when using large decorations, there is resize jitter.
   * [done] Fix size increase on client-side decoration when resizing: Internal size mismatch?
   * [done] Propagate decoration mode and toplevel configure() only after first surface commit.
-  * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
-  * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
-  * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
+  * [done] [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
+  * [done] [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * [done] Fix: Maximizing non-decorated window does not use all space. Review size computation.
+  * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
+  * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
 
