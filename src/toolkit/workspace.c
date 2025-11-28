@@ -1081,8 +1081,8 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
         &workspace_ptr->initial_x,
         &workspace_ptr->initial_y);
 
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_window_element(workspace_ptr->grabbed_window_ptr));
+    struct wlr_box box = wlmtk_window_get_size(
+        workspace_ptr->grabbed_window_ptr);
     workspace_ptr->initial_width = box.width;
     workspace_ptr->initial_height = box.height;
 

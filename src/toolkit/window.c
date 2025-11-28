@@ -99,6 +99,12 @@ struct _wlmtk_window_t {
      * fullscreen or maximized state.
      */
     struct wlr_box            organic_bounding_box;
+    /**
+     * Committed content size. That may differ from the dimensions of
+     * the content element. See @ref wlmtk_window_t::committed_size and
+     * @ref wlmtk_window_get_size.
+     */
+    struct wlr_box            committed_size;
 
     /** Edges to anchor on when resizing. */
     uint32_t                  resize_edges;
@@ -148,9 +154,6 @@ static void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_destroy_titlebar(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_set_decoration_width(wlmtk_window_t *window_ptr);
-static void _wlmtk_window_issue_request_size(
-    wlmtk_window_t *window_ptr,
-    const struct wlr_box *box_ptr);
 
 static void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
@@ -467,7 +470,30 @@ void wlmtk_window_request_size(
         static bool not_maximized = false;
         wl_signal_emit(&window_ptr->events.request_maximized, &not_maximized);
     }
-    _wlmtk_window_issue_request_size(window_ptr, box_ptr);
+    wl_signal_emit(&window_ptr->events.request_size, (void*)box_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_commit_size(
+    wlmtk_window_t *window_ptr,
+    int width, int height)
+{
+    window_ptr->committed_size = (struct wlr_box){
+        .width = width, .height = height };
+
+    // Store organic size. If we're in an organic mode.
+    if (!window_ptr->inorganic_sizing &&
+        !window_ptr->fullscreen &&
+        !window_ptr->maximized) {
+        window_ptr->organic_bounding_box.width = width;
+        window_ptr->organic_bounding_box.height = height;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_box wlmtk_window_get_size(wlmtk_window_t *window_ptr)
+{
+    return window_ptr->committed_size;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -514,6 +540,7 @@ void wlmtk_window_request_fullscreen(
                        &not_fullscreen);
         return;
     }
+    wl_signal_emit(&window_ptr->events.request_fullscreen, &fullscreen);
 
     struct wlr_box desired_size = window_ptr->organic_bounding_box;
     if (fullscreen) {
@@ -524,10 +551,9 @@ void wlmtk_window_request_fullscreen(
     } else {
         desired_size.x = 0;
         desired_size.y = 0;
-        _wlmtk_window_issue_request_size(window_ptr, &desired_size);
+        wl_signal_emit(&window_ptr->events.request_size, &desired_size);
     }
 
-    wl_signal_emit(&window_ptr->events.request_fullscreen, &fullscreen);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -579,19 +605,31 @@ void wlmtk_window_request_maximized(
     }
 
     window_ptr->inorganic_sizing = maximized;
+    wl_signal_emit(&window_ptr->events.request_maximized, &maximized);
 
     if (maximized) {
+        // For decorated windows, we need to subtract the decorations size.
+        // Since maximization will be requested from an organic size, we can
+        // derive this from the delta of the "bordered" element, minus the
+        // dimensions of the "content" element.
+        // That will be zero for non-decorated windows.
+        struct wlr_box wbox = wlmtk_element_get_dimensions_box(
+            wlmtk_bordered_element(&window_ptr->bordered));
+        struct wlr_box cbox = wlmtk_element_get_dimensions_box(
+            window_ptr->content_element_ptr);
+
         struct wlr_box desired_size = wlmtk_workspace_get_maximize_extents(
             window_ptr->workspace_ptr,
             wlmtk_window_get_wlr_output(window_ptr));
-        _wlmtk_window_issue_request_size(window_ptr, &desired_size);
+        desired_size.width -= wbox.width - cbox.width;
+        desired_size.height -= wbox.height - cbox.height;
+        wl_signal_emit(&window_ptr->events.request_size, &desired_size);
     } else {
         struct wlr_box desired_size = window_ptr->organic_bounding_box;
         desired_size.x = 0;
         desired_size.y = 0;
         wl_signal_emit(&window_ptr->events.request_size, &desired_size);
     }
-    wl_signal_emit(&window_ptr->events.request_maximized, &maximized);
     return;
 }
 
@@ -834,16 +872,6 @@ bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
         NULL == window_ptr->content_element_ptr->parent_container_ptr) {
         return false;
     }
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        window_ptr->content_element_ptr);
-
-    // Store organic size. If we're in an organic mode.
-    if (!window_ptr->inorganic_sizing &&
-        !window_ptr->fullscreen &&
-        !window_ptr->maximized) {
-        window_ptr->organic_bounding_box.width = box.width;
-        window_ptr->organic_bounding_box.height = box.height;
-    }
 
     // new_box includes potential decorations.
     struct wlr_box new_box = wlmtk_element_get_dimensions_box(
@@ -997,29 +1025,6 @@ void _wlmtk_window_set_decoration_width(wlmtk_window_t *window_ptr)
     if (NULL != window_ptr->resizebar_ptr) {
         wlmtk_resizebar_set_width(window_ptr->resizebar_ptr, box.width);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/** Issues a `request_size` signal to the client. box_ptr includes deco.  */
-void _wlmtk_window_issue_request_size(
-    wlmtk_window_t *window_ptr,
-    const struct wlr_box *box_ptr)
-{
-    // The box includes current decoration around the content. Compute the
-    // difference to determine what new size to request from the content.
-    struct wlr_box wbox = wlmtk_element_get_dimensions_box(
-        wlmtk_bordered_element(&window_ptr->bordered));
-    struct wlr_box cbox = wlmtk_element_get_dimensions_box(
-        window_ptr->content_element_ptr);
-
-    struct wlr_box no_decorations_box = {
-        .x = box_ptr->x,
-        .y = box_ptr->y,
-        .width = BS_MAX(0, box_ptr->width - (wbox.width - cbox.width)),
-        .height = BS_MAX(0, box_ptr->height -  (wbox.height - cbox.height))
-    };
-
-    wl_signal_emit(&window_ptr->events.request_size, &no_decorations_box);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1378,10 +1383,14 @@ void test_fullscreen(bs_test_t *test_ptr)
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_window_commit_size(w, 200, 100);
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 200, 100,
+        wlmtk_window_get_size(w));
 
     // Request fullscreen. Size yet unchanged, but requests issued.
     wlmtk_window_request_fullscreen(w, true);
@@ -1398,12 +1407,16 @@ void test_fullscreen(bs_test_t *test_ptr)
     // Only after commit: Be fullscreen.
     wlmtk_fake_element_set_dimensions(fe_ptr, 1024, 768);
     wlmtk_window_commit_fullscreen(w, true);
+    wlmtk_window_commit_size(w, 1024, 768);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1024, 768,
+        wlmtk_window_get_size(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, w->resizebar_ptr);
@@ -1416,6 +1429,9 @@ void test_fullscreen(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1024, 768,
+        wlmtk_window_get_size(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_fullscreen_listener.calls);
     wlmtk_util_clear_test_listener(&request_fullscreen_listener);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
@@ -1582,10 +1598,14 @@ void test_maximized(bs_test_t *test_ptr)
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_window_commit_size(w, 150, 80);
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 150, 80,
+        wlmtk_window_get_size(w));
 
     wlmtk_util_clear_test_listener(&state_changed_listener);
     wlmtk_window_request_maximized(w, false);
@@ -1607,12 +1627,16 @@ void test_maximized(bs_test_t *test_ptr)
     // Only after commit: Be maximized.
     wlmtk_fake_element_set_dimensions(fe_ptr, 1020, 747);
     wlmtk_window_commit_maximized(w, true);
+    wlmtk_window_commit_size(w, 1010, 737);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, state_changed_listener.last_data_ptr);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1010, 737,
+        wlmtk_window_get_size(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);
@@ -1639,19 +1663,26 @@ void test_maximized(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 1024, 768,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1010, 737,
+        wlmtk_window_get_size(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_maximized_listener.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
-        test_ptr, 0, 0, 200, 100, request_size_listener.box);
+        test_ptr, 0, 0, 150, 80, request_size_listener.box);
 
     // Only after commit: Be back at organic size.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_window_commit_size(w, 160, 80);
     wlmtk_window_commit_maximized(w, false);
     BS_TEST_VERIFY_EQ(test_ptr, 1, state_changed_listener.calls);
     wlmtk_util_clear_test_listener(&state_changed_listener);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,
         wlmtk_window_get_bounding_box(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 160, 80,
+        wlmtk_window_get_size(w));
     BS_TEST_VERIFY_TRUE(test_ptr, w->server_side_decorated);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->titlebar_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, w->resizebar_ptr);

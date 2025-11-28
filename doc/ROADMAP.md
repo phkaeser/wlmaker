@@ -34,7 +34,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Infrastructure
   * Recompute pointer focus max once per frame.
 
-
 ## Plan for 0.7
 
 **Focus**: Smooth resizing for surfaces and clean implementation, persist Output state.
@@ -64,7 +63,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
-  * Fix: Maximizing non-decorated window does not use all space. Review size computation.
+  * [done] Fix: Maximizing non-decorated window does not use all space. Review size computation.
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
 
