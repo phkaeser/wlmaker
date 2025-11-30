@@ -518,11 +518,12 @@ void _xwl_surface_handle_set_parent(
     wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_xwl_surface_t, set_parent_listener);
 
-    BS_ASSERT(NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent);
-    wlmaker_xwl_surface_t *parent_xwl_surface_ptr =
-        xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
+    wlmaker_xwl_surface_t *parent_xwl_surface_ptr = NULL;
+    if (NULL != xwl_surface_ptr->wlr_xwayland_surface_ptr->parent) {
+        parent_xwl_surface_ptr =
+            xwl_surface_ptr->wlr_xwayland_surface_ptr->parent->data;
+    }
 
-    if (NULL == parent_xwl_surface_ptr) return;
     if (xwl_surface_ptr->parent_surface_ptr == parent_xwl_surface_ptr) return;
 
     if (NULL != xwl_surface_ptr->parent_surface_ptr) {
@@ -531,6 +532,8 @@ void _xwl_surface_handle_set_parent(
             wlmtk_base_element(&xwl_surface_ptr->base));
         xwl_surface_ptr->parent_surface_ptr = NULL;
     }
+
+    if (NULL == parent_xwl_surface_ptr) return;
 
     // TODO(kaeser@gubbe.ch): We're currently treating modal windows as
     // toplevel windows. They're not popups, for sure. To support this,

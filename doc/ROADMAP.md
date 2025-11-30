@@ -67,6 +67,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
+  * [done] Fix: Crash with xterm observed with wlroots 0.19.
 
 * [done] Persist output state
   * [done] Save state for Output.

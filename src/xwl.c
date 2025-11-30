@@ -171,6 +171,10 @@ wlmaker_xwl_t *wlmaker_xwl_create(wlmaker_server_t *server_ptr)
 void wlmaker_xwl_destroy(wlmaker_xwl_t *xwl_ptr)
 {
 #if defined(WLMAKER_HAVE_XWAYLAND)
+
+    wlmtk_util_disconnect_listener(&xwl_ptr->ready_listener);
+    wlmtk_util_disconnect_listener(&xwl_ptr->new_surface_listener);
+
     if (NULL != xwl_ptr->wlr_xwayland_ptr) {
         wlr_xwayland_destroy(xwl_ptr->wlr_xwayland_ptr);
         xwl_ptr->wlr_xwayland_ptr = NULL;
