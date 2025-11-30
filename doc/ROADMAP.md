@@ -28,7 +28,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 **Focus** Themes
 
 * Themes/Styles
-  * Settle on whether to use 'Themes' or 'Styles'. Update files & references.
+  * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
   * Add means to change theme while running.
 
 * Infrastructure

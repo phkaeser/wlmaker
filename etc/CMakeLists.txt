@@ -21,8 +21,8 @@ EmbedBinary_ADD_LIBRARY(
   "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
 
 EmbedBinary_ADD_LIBRARY(
-  embedded_style
-  "style"
+  embedded_theme
+  "theme"
   "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
 
 EmbedBinary_ADD_LIBRARY(
@@ -54,17 +54,17 @@ IF(PLDES)
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
-    NAME style_default_plist_test
+    NAME theme_default_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
   SET_PROPERTY(
-    TEST style_default_plist_test
+    TEST theme_default_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
-    NAME style_debian_plist_test
+    NAME theme_debian_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Debian.plist")
   SET_PROPERTY(
-    TEST style_debian_plist_test
+    TEST theme_debian_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(

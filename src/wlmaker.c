@@ -37,7 +37,7 @@
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
 
-#include "../etc/style.h"  // IWYU pragma: keep
+#include "../etc/theme.h"  // IWYU pragma: keep
 #include "action.h"
 #include "backend/backend.h"
 #include "background.h"
@@ -55,8 +55,8 @@
 static char *wlmaker_arg_config_file_ptr = NULL;
 /** Will hold the value of --state_file. */
 static char *wlmaker_arg_state_file_ptr = NULL;
-/** Will hold the value of --style_file. */
-static char *wlmaker_arg_style_file_ptr = NULL;
+/** Will hold the value of --theme_file. */
+static char *wlmaker_arg_theme_file_ptr = NULL;
 /** Will hold the value of --root_menu_file. */
 static char *wlmaker_arg_root_menu_file_ptr = NULL;
 
@@ -108,11 +108,11 @@ static const bs_arg_t wlmaker_args[] = {
         NULL,
         &wlmaker_arg_state_file_ptr),
     BS_ARG_STRING(
-        "style_file",
-        "Optional: Path to a style (\"theme\") file. If not provided, wlmaker "
-        "will use a built-in default style.",
+        "theme_file",
+        "Optional: Path to a \"theme\" file, configuring the visual style for "
+        "elements. If not provided, wlmaker will use a built-in default theme.",
         NULL,
-        &wlmaker_arg_style_file_ptr),
+        &wlmaker_arg_theme_file_ptr),
     BS_ARG_STRING(
         "root_menu_file",
         "Optional: Path to a file describing the root menu. If not provided, "
@@ -383,10 +383,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         wlmaker_config_object_load(
             server_ptr->files_ptr,
             "style",
-            wlmaker_arg_style_file_ptr,
+            wlmaker_arg_theme_file_ptr,
             "Themes/Default.plist",
-            embedded_binary_style_data,
-            embedded_binary_style_size));
+            embedded_binary_theme_data,
+            embedded_binary_theme_size));
     if (NULL == style_dict_ptr) return EXIT_FAILURE;
     if (!bspl_decode_dict(
             style_dict_ptr,

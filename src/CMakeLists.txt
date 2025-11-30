@@ -116,7 +116,7 @@ ADD_DEPENDENCIES(
   embedded_configuration
   embedded_root_menu
   embedded_state
-  embedded_style
+  embedded_theme
   libbase
   libbase_plist
   protocol_headers
@@ -129,7 +129,7 @@ TARGET_LINK_LIBRARIES(
   embedded_configuration
   embedded_root_menu
   embedded_state
-  embedded_style
+  embedded_theme
   libbase
   libbase_plist
   toolkit
