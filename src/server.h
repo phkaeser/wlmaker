@@ -99,6 +99,10 @@ struct _wlmaker_server_t {
     /** Idle monitor. */
     wlmaker_idle_monitor_t    *idle_monitor_ptr;
 
+    /** WLR viewporter. */
+    struct wlr_viewporter     *wlr_viewporter_ptr;
+    /** Fractional scale manager. */
+    struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager_ptr;
     /** wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
     /** The scene graph API. */
