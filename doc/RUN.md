@@ -60,9 +60,9 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
   default theme. With [etc/Themes/Debian.plist](../etc/Themes/Debian.plist),
   there is an alternative theme you can use -- or extend it on your own.
 
-  Run `wlmaker` with `--style_file=...` to use an alternative style. Or create
-  your own in `/etc/xdg/wlmaker/Themes/Style.plist` or
-  `~/.config/wlmaker/Style.plist`.
+  Run `wlmaker` with `--theme_file=...` to use an alternative theme. Or create
+  your own in `/etc/xdg/wlmaker/Themes/Default.plist` or
+  `~/.config/wlmaker/Themes/Default.plist`.
 
 * [etc/RootMenu.plist](../etc/RootMenu.plist) defines the contents of the
   root menu. To customize, copy to `~/.config/wlmaker/RootMenu.plist` or
@@ -81,7 +81,7 @@ The desktop entry will execute `${HOME}/.local/bin/wlmaker`.
   set the `Output` `Scale` in [etc/Config.plist](../etc/Config.plist) (and
   use `--config_file=...`). This will scale all surfaces.
 
-  Or, you can configure the style with larger decorations & fonts, as is done
+  Or, you can configure the theme with larger decorations & fonts, as is done
   in [etc/Themes/Debian.plist](../etc/Themes/Debian.plist). That approach will
   not scale application surfaces.
 

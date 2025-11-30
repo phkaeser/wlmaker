@@ -35,7 +35,7 @@
 
 #include "default_configuration.h"
 #include "default_state.h"
-#include "../etc/style.h"  // IWYU pragma: keep
+#include "../etc/theme.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
 
@@ -520,8 +520,8 @@ void test_embedded(bs_test_t *test_ptr)
     bspl_object_unref(obj_ptr);
 
     obj_ptr = bspl_create_object_from_plist_data(
-        embedded_binary_style_data,
-        embedded_binary_style_size);
+        embedded_binary_theme_data,
+        embedded_binary_theme_size);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, bspl_dict_from_object(obj_ptr));
     bspl_object_unref(obj_ptr);
 }

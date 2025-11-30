@@ -6,7 +6,7 @@
 --start_xwayland : Optional: Whether to start XWayland. Disabled by default.
 --config_file : Optional: Path to a configuration file. If not provided, wlmaker will scan default paths for a configuration file, or fall back to a built-in configuration.
 --state_file : Optional: Path to a state file, with state of workspaces, dock and clips configured. If not provided, wlmaker will scan default paths for a state file, or fall back to a built-in default.
---style_file : Optional: Path to a style ("theme") file. If not provided, wlmaker will use a built-in default style.
+--theme_file : Optional: Path to a "theme" file, configuring the visual style for elements. If not provided, wlmaker will use a built-in default theme.
 --root_menu_file : Optional: Path to a file describing the root menu. If not provided, wlmaker will use a built-in definition for the root menu.
 --log_level : Log level to apply. One of DEBUG, INFO, WARNING, ERROR.
     Enum values:
@@ -31,7 +31,7 @@
   provided, wlmaker will attempt to load the file from default locations, or
   fall back to use a compiled-in default.
 
-* `--style_file=<FILE>`: Loads the *Style* from `<FILE>`. Optional. If not
+* `--theme_file=<FILE>`: Loads the *Theme* from `<FILE>`. Optional. If not
   provided, wlmaker will attempt to load the file from default locations, or
   fall back to use a compiled-in default.
 
