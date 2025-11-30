@@ -833,7 +833,8 @@ void _wlmtk_window_container_element_get_dimensions(
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_window_t, content_container.super_element);
 
-    if (NULL == window_ptr->content_element_ptr) {
+    if (NULL == window_ptr->content_element_ptr ||
+        !window_ptr->content_element_ptr->visible) {
         if (NULL != x1_ptr) *x1_ptr = 0;
         if (NULL != y1_ptr) *y1_ptr = 0;
         if (NULL != x2_ptr) *x2_ptr = 0;
@@ -1703,6 +1704,7 @@ void test_shaded(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 42, 20);
     wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
     wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
@@ -1717,6 +1719,9 @@ void test_shaded(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_shaded(w));
     wlmtk_window_set_server_side_decorated(w, true);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 46, 41,
+        wlmtk_window_get_bounding_box(w));
 
     // Fullscreen: Will not be shaded.
     wlmtk_window_commit_fullscreen(w, true);
@@ -1734,6 +1739,9 @@ void test_shaded(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_resizebar_element(w->resizebar_ptr)->visible);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 46, 15,
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
 
@@ -1745,6 +1753,9 @@ void test_shaded(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_resizebar_element(w->resizebar_ptr)->visible);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 46, 41,
+        wlmtk_window_get_bounding_box(w));
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, l.last_data_ptr);
 
