@@ -41,7 +41,6 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "output.h"
@@ -218,11 +217,7 @@ wlmbe_backend_t *wlmbe_backend_create(
 
     // Auto-create the wlroots backend. Can be X11 or direct.
     backend_ptr->wlr_backend_ptr = wlr_backend_autocreate(
-#if WLR_VERSION_NUM >= (18 << 8)
         wl_display_get_event_loop(wl_display_ptr),
-#else // WLR_VERSION_NUM >= (18 << 8)
-        wl_display_ptr,
-#endif // WLR_VERSION_NUM >= (18 << 8)
         &backend_ptr->wlr_session_ptr);
     if (NULL == backend_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed wlr_backend_autocreate()");

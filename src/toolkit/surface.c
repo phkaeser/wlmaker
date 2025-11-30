@@ -30,7 +30,6 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xdg_shell.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "element.h"
@@ -557,15 +556,9 @@ bool _wlmtk_surface_element_pointer_button(
     // We're only forwarding PRESSED & RELEASED events.
     if (WLMTK_BUTTON_DOWN == button_event_ptr->type ||
         WLMTK_BUTTON_UP == button_event_ptr->type) {
-#if WLR_VERSION_NUM >= (18 << 8)
         enum wl_pointer_button_state state =
             (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
             WL_POINTER_BUTTON_STATE_PRESSED : WL_POINTER_BUTTON_STATE_RELEASED;
-#else // WLR_VERSION_NUM >= (18 << 8)
-        enum wlr_button_state state =
-            (button_event_ptr->type == WLMTK_BUTTON_DOWN) ?
-            WLR_BUTTON_PRESSED : WLR_BUTTON_RELEASED;
-#endif // WLR_VERSION_NUM >= (18 << 8)
         wlr_seat_pointer_notify_button(
             surface_ptr->wlr_seat_ptr,
             button_event_ptr->time_msec,
@@ -606,9 +599,7 @@ bool _wlmtk_surface_element_pointer_axis(
         wlr_pointer_axis_event_ptr->delta,
         wlr_pointer_axis_event_ptr->delta_discrete,
         wlr_pointer_axis_event_ptr->source
-#if WLR_VERSION_NUM >= (18 << 8)
         , wlr_pointer_axis_event_ptr->relative_direction
-#endif // WLR_VERSION_NUM >= (18 << 8)
         );
     return true;
 }
