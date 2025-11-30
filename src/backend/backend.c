@@ -470,11 +470,12 @@ bool _wlmbe_backend_add_output(
         wlmbe_dlnode_from_output(output_ptr));
 
     bs_log(BS_INFO,
-           "Created: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
+           "Created: Output <%s> %s to %dx%d@%.2f x%.2f position (%d,%d) %s",
            wlmbe_output_description(output_ptr),
            wlrop->enabled ? "enabled" : "disabled",
            wlrop->width, wlrop->height,
            1e-3 * wlrop->refresh,
+           wlrop->scale,
            wlr_output_layout_output_ptr->x,
            wlr_output_layout_output_ptr->y,
            attr_ptr->has_position ? "explicit" : "auto");

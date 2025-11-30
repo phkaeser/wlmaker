@@ -30,7 +30,9 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
+#include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -133,6 +135,22 @@ wlmaker_server_t *wlmaker_server_create(
         server_ptr->wl_display_ptr);
     if (NULL == server_ptr->wl_socket_name_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_add_socket_auto()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    server_ptr->wlr_viewporter_ptr = wlr_viewporter_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->wlr_viewporter_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_viewporter_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    server_ptr->wlr_fractional_scale_manager_ptr =
+        wlr_fractional_scale_manager_v1_create(server_ptr->wl_display_ptr, 1);
+    if (NULL == server_ptr->wlr_fractional_scale_manager_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_fractional_scale_manager_v1_create()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }

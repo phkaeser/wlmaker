@@ -151,7 +151,7 @@ void wlmbe_output_config_update_attributes(
     bool has_position)
 {
     config_ptr->attributes.transformation = wlr_output_ptr->transform;
-    config_ptr->attributes.scale = wlr_output_ptr->scale;
+    config_ptr->attributes.scale = BS_MAX(1.0, wlr_output_ptr->scale);
     config_ptr->attributes.enabled = wlr_output_ptr->enabled;
 
     if (has_position) {
@@ -172,7 +172,7 @@ void wlmbe_output_config_apply_attributes(
     const wlmbe_output_config_attributes_t *attributes_ptr)
 {
     config_ptr->attributes.transformation = attributes_ptr->transformation;
-    config_ptr->attributes.scale = attributes_ptr->scale;
+    config_ptr->attributes.scale = BS_MAX(1.0, attributes_ptr->scale);
     config_ptr->attributes.enabled = attributes_ptr->enabled;
 
     if (attributes_ptr->has_position) {

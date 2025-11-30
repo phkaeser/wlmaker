@@ -288,7 +288,8 @@ bool _wlmaker_output_manager_config_head_scale(
 {
     struct wlr_output_configuration_head_v1 *head_v1_ptr  = BS_CONTAINER_OF(
         link_ptr, struct wlr_output_configuration_head_v1, link);
-    head_v1_ptr->state. scale *= *(double*)ud_ptr;
+    head_v1_ptr->state.scale =
+        BS_MAX(1.0, head_v1_ptr->state.scale * *(double*)ud_ptr);
     return true;
 }
 
@@ -320,6 +321,8 @@ static bool _wlmaker_output_manager_config_head_apply(
     }
 
     wlr_output_head_v1_state_apply(&head_v1_ptr->state, &state);
+    state.scale = BS_MAX(1.0, state.scale);
+
     if (!wlr_output_test_state(wlr_output_ptr, &state)) return false;
     if (!arg_ptr->really) return true;
 
@@ -349,11 +352,12 @@ static bool _wlmaker_output_manager_config_head_apply(
     wlmbe_output_update_attributes(wlr_output_ptr->data, x, y, has_position);
 
     bs_log(BS_INFO,
-           "Applied: Output <%s> %s to %dx%d@%.2f position (%d,%d) %s",
+           "Applied: Output <%s> %s to %dx%d@%.2f x%.2f position (%d,%d) %s",
            wlmbe_output_description(wlr_output_ptr->data),
            wlr_output_ptr->enabled ? "enabled" : "disabled",
            wlr_output_ptr->width, wlr_output_ptr->height,
            1e-3 * wlr_output_ptr->refresh,
+           wlr_output_ptr->scale,
            x, y,
            has_position ? "explicit" : "auto");
     return true;
