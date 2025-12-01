@@ -23,11 +23,11 @@
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <limits.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
@@ -38,6 +38,7 @@
 
 #include "backend/backend.h"
 #include "backend/output_config.h"
+#include "files.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -153,19 +154,6 @@ const bspl_desc_t _wlmaker_clip_desc[] = {
     BSPL_DESC_SENTINEL(),
 };
 
-/** Lookup paths for icons -- FIXME: de-duplicate this! */
-static const char *lookup_paths[] = {
-    "/usr/share/icons/wlmaker",
-    "/usr/local/share/icons/wlmaker",
-#if defined(WLMAKER_SOURCE_DIR)
-    WLMAKER_SOURCE_DIR "/icons",
-#endif  // WLMAKER_SOURCE_DIR
-#if defined(WLMAKER_ICON_DATA_DIR)
-    WLMAKER_ICON_DATA_DIR,
-#endif  // WLMAKER_ICON_DATA_DIR
-    NULL
-};
-
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -265,12 +253,13 @@ wlmaker_clip_t *wlmaker_clip_create(
         return NULL;
     }
 
-    char full_path[PATH_MAX];
-    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
-        "clip-48x48.png", lookup_paths, 0, full_path);
+    // Resolves to a full path, and verifies the icon file exists.
+    char *path_ptr = wlmaker_files_xdg_data_find(
+        server_ptr->files_ptr, "icons/clip-48x48.png", S_IFREG);
     if (NULL == path_ptr) {
-        bs_log(BS_ERROR | BS_ERRNO,
-               "Failed bs_file_resolve_and_lookup_from_paths(\"clip-48x48.png\" ...)");
+        bs_log(
+            BS_ERROR,
+            "Failed to locate ${XDG_DATA_DIRS}/wlmaker/icons/clip-48x48.png");
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
@@ -278,6 +267,7 @@ wlmaker_clip_t *wlmaker_clip_create(
         path_ptr,
         clip_ptr->super_tile.style.content_size,
         clip_ptr->super_tile.style.content_size);
+    free(path_ptr);
     if (NULL == clip_ptr->image_ptr) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
