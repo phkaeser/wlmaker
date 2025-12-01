@@ -20,7 +20,7 @@ CONFIGURE_FILE(
   @ONLY)
 INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
-  TYPE DATA)
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmclock.desktop.in
@@ -28,4 +28,28 @@ CONFIGURE_FILE(
   @ONLY)
 INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop
-  TYPE DATA)
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+
+INSTALL(FILES
+  wlmaker.svg
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+INSTALL(FILES
+  wlmaker-48x48.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/48x48/apps
+  RENAME wlmaker.png)
+INSTALL(FILES
+  wlmaker-64x64.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  RENAME wlmaker.png)
+
+INSTALL(FILES
+  wlmclock-64x64.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  RENAME wlmclock.png)
+
+INSTALL(FILES
+  wlmaker/icons/chrome-48x48.png
+  wlmaker/icons/clip-48x48.png
+  wlmaker/icons/firefox-48x48.png
+  wlmaker/icons/terminal-48x48.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/wlmaker/icons)

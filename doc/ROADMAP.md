@@ -51,9 +51,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
   * Verify that right-click on title after window menu re-raises window menu.
   * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
-  * Move config and data files into XDG-compliant config, resp. data paths.
+  * [done] Move config and data files into XDG-compliant config, resp. data paths.
     * [done] Move config files to XDG configuration home, and lookup from there.
-    * Move the desktop and logo files to XDG-compliant data paths.
+    * [done] Move the desktop and logo files to XDG-compliant data paths.
 
 * Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
@@ -63,11 +63,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] [#275](https://github.com/phkaeser/wlmaker/issues/275): Fix crash with early configure.
   * [done] [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * [done] Fix: Maximizing non-decorated window does not use all space. Review size computation.
+  * [done] Fix: Crash with xterm observed with wlroots 0.19.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
-  * [done] Fix: Crash with xterm observed with wlroots 0.19.
 
 * [done] Persist output state
   * [done] Save state for Output.
@@ -81,10 +81,10 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
   * [done] Be `iwyu`-clean on Trixie.
   * [done] Embed version and have a `--version` argument to print out.
+  * [done] Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
   * Remove `Logo` key from default configured hotkeys. Add an argument or option to
     add it as extra, when running under Wayland or X11 backend.
   * Add menu option to add, respectively remove workspace.
-  * Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
 
 * Branding
   * [done] Align SVG logo exactly with horizontals & verticals.

@@ -102,13 +102,13 @@ INSTALL(
   RootMenu.plist
   State.plist
   Config.plist
-  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker)
+  DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR})
 
 INSTALL(
   FILES
   Themes/Default.plist
   Themes/Debian.plist
-  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker/Themes)
+  DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR}/Themes)
 
 IF(wmmenugen_executable)
   CONFIGURE_FILE(
@@ -118,5 +118,5 @@ IF(wmmenugen_executable)
   INSTALL(
     FILES
     ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
-    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker/Themes)
+    DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR}/Themes)
 ENDIF(wmmenugen_executable)

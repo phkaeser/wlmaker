@@ -23,10 +23,10 @@
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <limits.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "toolkit/toolkit.h"
 
@@ -67,19 +67,6 @@ static const bspl_desc_t _wlmaker_launcher_plist_desc[] = {
     BSPL_DESC_STRING(
         "Icon", true, wlmaker_launcher_t, icon_path_ptr, icon_path_ptr, ""),
     BSPL_DESC_SENTINEL(),
-};
-
-/** Lookup paths for icons. */
-static const char *lookup_paths[] = {
-    "/usr/share/icons/wlmaker",
-    "/usr/local/share/icons/wlmaker",
-#if defined(WLMAKER_SOURCE_DIR)
-    WLMAKER_SOURCE_DIR "/icons",
-#endif  // WLMAKER_SOURCE_DIR
-#if defined(WLMAKER_ICON_DATA_DIR)
-    WLMAKER_ICON_DATA_DIR,
-#endif  // WLMAKER_ICON_DATA_DIR
-    NULL
 };
 
 static void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr);
@@ -130,7 +117,8 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const wlmtk_tile_style_t *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlmaker_subprocess_monitor_t *monitor_ptr)
+    wlmaker_subprocess_monitor_t *monitor_ptr,
+    wlmaker_files_t *files_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = logged_calloc(
         1, sizeof(wlmaker_launcher_t));
@@ -181,13 +169,18 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     }
 
     // Resolves to a full path, and verifies the icon file exists.
-    char full_path[PATH_MAX];
-    char *path_ptr = bs_file_resolve_and_lookup_from_paths(
-        BS_ASSERT_NOTNULL(launcher_ptr->icon_path_ptr),
-        lookup_paths, 0, full_path);
+    char *p = bs_strdupf("icons/%s", launcher_ptr->icon_path_ptr);
+    if (NULL == p) {
+        bs_log(BS_ERROR | BS_ERRNO, "Failed bs_strdupf(\"icons/%s\")",
+               launcher_ptr->icon_path_ptr);
+        wlmaker_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
+    char *path_ptr = wlmaker_files_xdg_data_find(files_ptr, p, S_IFREG);
+    free(p);
     if (NULL == path_ptr) {
-        bs_log(BS_ERROR | BS_ERRNO,
-               "Failed bs_file_resolve_and_lookup_from_paths(\"%s\" ...)",
+        bs_log(BS_ERROR,
+               "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
                launcher_ptr->icon_path_ptr);
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -196,6 +189,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         path_ptr,
         launcher_ptr->super_tile.style.content_size,
         launcher_ptr->super_tile.style.content_size);
+    free(path_ptr);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -560,7 +554,6 @@ static const bs_test_case_t wlmaker_launcher_test_cases[] = {
 const bs_test_set_t wlmaker_launcher_test_set = BS_TEST_SET(
     true, "launcher", wlmaker_launcher_test_cases);
 
-
 /* ------------------------------------------------------------------------- */
 /** Exercises plist parser. */
 void test_create_from_plist(bs_test_t *test_ptr)
@@ -569,19 +562,35 @@ void test_create_from_plist(bs_test_t *test_ptr)
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
 
+    char *backup_env = NULL;
+    if (NULL != getenv("XDG_DATA_DIRS")) {
+        backup_env = logged_strdup(getenv("XDG_DATA_DIRS"));
+    }
+    setenv("XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share", 1);
+
     bspl_dict_t *dict_ptr = bspl_dict_from_object(
         bspl_create_object_from_plist_string(plist_ptr));
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+
+    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
+
     wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
-        &style, dict_ptr, NULL);
+        &style, dict_ptr, NULL, files_ptr);
     bspl_dict_unref(dict_ptr);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, launcher_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, launcher_ptr);
 
     BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher_ptr->cmdline_ptr);
     BS_TEST_VERIFY_STREQ(
         test_ptr, "chrome-48x48.png", launcher_ptr->icon_path_ptr);
 
     wlmaker_launcher_destroy(launcher_ptr);
+    wlmaker_files_destroy(files_ptr);
+
+    if (NULL != backup_env) {
+        setenv("XDG_DATA_DIRS", backup_env, 1);
+        free(backup_env);
+    }
 }
 
 /* == End of launcher.c ==================================================== */

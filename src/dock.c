@@ -37,6 +37,7 @@
 #include "backend/output_config.h"
 #include "config.h"
 #include "default_state.h"
+#include "files.h"
 #include "launcher.h"
 #include "toolkit/toolkit.h"
 
@@ -177,7 +178,8 @@ wlmaker_dock_t *wlmaker_dock_create(
         }
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
             &style_ptr->tile, dict_ptr,
-            server_ptr->monitor_ptr);
+            server_ptr->monitor_ptr,
+            server_ptr->files_ptr);
         if (NULL == launcher_ptr) {
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
@@ -321,12 +323,20 @@ const bs_test_set_t wlmaker_dock_test_set = BS_TEST_SET(
 /** Tests ctor and dtor; to help fix leaks. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
+    char *backup_env = NULL;
+    if (NULL != getenv("XDG_DATA_DIRS")) {
+        backup_env = logged_strdup(getenv("XDG_DATA_DIRS"));
+    }
+    setenv("XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share", 1);
+
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     wlmaker_server_t server = {
         .wlr_scene_ptr = wlr_scene_ptr,
         .wl_display_ptr = wl_display_create(),
+        .files_ptr = wlmaker_files_create("wlmaker"),
     };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.files_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
     server.wlr_output_layout_ptr = wlr_output_layout_create(
         server.wl_display_ptr);
@@ -357,12 +367,19 @@ void test_create_destroy(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dock_ptr);
 
     wlmaker_dock_destroy(dock_ptr);
+
     bspl_dict_unref(dict_ptr);
     wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
     wlmtk_root_destroy(server.root_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
+    wlmaker_files_destroy(server.files_ptr);
+
+    if (NULL != backup_env) {
+        setenv("XDG_DATA_DIRS", backup_env, 1);
+        free(backup_env);
+    }
 }
 
 /* == End of dock.c ======================================================== */

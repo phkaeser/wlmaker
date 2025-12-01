@@ -6,3 +6,4 @@ Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmclock
 Type=Application
 Categories=Utility;Clock;
 Keywords=clock;dockapp;wlmaker
+Icon=wlmclock.png

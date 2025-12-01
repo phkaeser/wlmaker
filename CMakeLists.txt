@@ -13,8 +13,10 @@
 # limitations under the License.
 #
 # Default arguments:
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build
-# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -DCMAKE_INSTALL_SYSCONFDIR=/etc -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build
+# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH="${HOME}/.local" -DCMAKE_INSTALL_SYSCONFDIR=/etc -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
+#
+# Useor "/etc".
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(
@@ -68,6 +70,8 @@ ENDIF()
 
 # Defaults to /usr/local/lib for installation.
 INCLUDE(GNUInstallDirs)
+SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker")
+
 INCLUDE(CTest)
 
 FIND_PACKAGE(PkgConfig REQUIRED)
@@ -151,7 +155,6 @@ LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 ADD_SUBDIRECTORY(apps)
 ADD_SUBDIRECTORY(etc)
-ADD_SUBDIRECTORY(icons)
 ADD_SUBDIRECTORY(protocols)
 ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(share)
