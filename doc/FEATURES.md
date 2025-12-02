@@ -124,7 +124,7 @@ TBD: Raise/Lower.
 * [ ] Define whether control-double-click should do resize height to full screen.
 * [ ] Define whether shift-double-click should do resize height to full screen.
 * [ ] Define whether control-shift-double-click should do maximize.
-* [ ] Add a configuration option whether 'Maximize' may obscure Dock, Clip and Icons.
+* [ ] Add a configuration option whether 'Maximize' may obscure Dock, Clip and Icons ([#328](https://github.com/phkaeser/wlmaker/issues/328)).
 
 ### Window Placement
 
@@ -184,7 +184,7 @@ TBD: Raise/Lower.
 
 ### Window commands
 
-* [*] :white_check_mark: Static contents, shown when right-clicking on title bar.
+* [x] :white_check_mark: Static contents, shown when right-clicking on title bar.
 * [ ] Items and contents adapting to state (eg. no "maximize" when maximized).
 
 ## Wayland protocol support
@@ -197,6 +197,10 @@ TBD: Raise/Lower.
 
 * [x] :white_check_mark: Implement, verified on single output.
 * [x] :white_check_mark: Make it work on multiple outputs: Lock surface shown on each.
+
+### `fractional-scale-v1`
+
+* [x] :white_check_mark: Support fractional surface scales.
 
 ### `idle-inhibit-unstable-v1`
 
@@ -222,6 +226,10 @@ TBD: Raise/Lower.
 
 * [x] :white_check_mark: Implemented, works for `wdisplays`.
 
+### `wp_viewporter`
+
+* [x] :white_check_mark: Support surface cropping and scaling.
+
 ### `xdg-activation-v1`
 
 * [ ] Implement.
@@ -236,7 +244,7 @@ TBD: Raise/Lower.
 * [x] :white_check_mark: Refactor: split `xdg_surface` off `xdg_toplevel`, encode as separate classes.
 * [ ] Accept state (maximize, fullscreen, ...) before mapping the surface, but apply
   them only after first commit.
-* [ ] Accept decoration requests before first commit, and forward them after the first
+* [x] :white_check_mark: Accept decoration requests before first commit, and forward them after the first
   commit was received (see also https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/4648#note_2386593).
 * [ ] Support `set_parent`, associating a child `wlmtk_window_t` with a paraent.
 * [x] :white_check_mark: Consider suggested position on `show_window_menu`
@@ -244,9 +252,9 @@ TBD: Raise/Lower.
 ## X11 client support (XWayland)
 
 * [x] :white_check_mark: Support windows and popups, enough for `xterm` and `emacs`.
-* [ ] Modal windows should be a child `wlmtk_window_t`
 * [x] :white_check_mark: Investigate if the connection can identify the real X client, not the
   XWayland connection (yes, it does).
+* [ ] Modal windows should be a child `wlmtk_window_t`
 
 ## Dock, Clip, Icon Area
 
@@ -307,22 +315,21 @@ TBD.
 
 * [x] :white_check_mark: Output layout configurable via third-party tool, eg. `wlr-randr`.
 * [x] :white_check_mark: Save state in a state file (in the *config* directory currently).
-* [ ] When saving state, store the current layout in the *state* config file.
-
+* [x] :white_check_mark: When saving state, store the current layout in the *state* config file.
 
 ## General
 
+* [x] :white_check_mark: Add a logo.
 * [ ] Use SVG as principal format for icons.
-* [ ] :construction: Add a logo.
 * [ ] Add an info panel, showing version, name, copyright and link to documentation.
 * [ ] Upon first launch, show an onboarding screen with basic instructions
   ([#131](https://github.com/phkaeser/wlmaker/issues/131)).
 
 ### Configuration files
 
+* [x] :white_check_mark: Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
 * [ ] Change KeyBindings format to be similar to menu actions: Lists, where item 1+
   holds the action and optional parameters.
-* [x] Support `Execute` action (vs. `ShellExecute`) ([#261](https://github.com/phkaeser/wlmaker/issues/261))
 
 ### System integration
 
@@ -336,7 +343,7 @@ TBD.
 
 ### CI/CD
 
-* [x] :white_check_mark Have github workflows to build with GCC and Clang, x86_64
+* [x] :white_check_mark: Have github workflows to build with GCC and Clang, x86_64
   and arm64, and Linux + *BSD.
 * [ ] Generate the screenshots (extend wlroots for a PNG backend?)
 * [ ] Provide a binary package of wlmaker, from HEAD.
