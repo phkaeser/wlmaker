@@ -182,8 +182,17 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         bs_log(BS_ERROR,
                "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
                launcher_ptr->icon_path_ptr);
+#ifndef WLMAKER_SOURCE_DIR
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
+#else
+        path_ptr = bs_strdupf(WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
+                              launcher_ptr->icon_path_ptr);
+        if (NULL == path_ptr) {
+            wlmaker_launcher_destroy(launcher_ptr);
+            return NULL;
+        }
+#endif
     }
     launcher_ptr->image_ptr = wlmtk_image_create_scaled(
         path_ptr,

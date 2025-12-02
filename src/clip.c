@@ -256,15 +256,20 @@ wlmaker_clip_t *wlmaker_clip_create(
     // Resolves to a full path, and verifies the icon file exists.
     char *path_ptr = wlmaker_files_xdg_data_find(
         server_ptr->files_ptr, "icons/clip-48x48.png", S_IFREG);
+    const char *p1 = path_ptr;
     if (NULL == path_ptr) {
         bs_log(
-            BS_ERROR,
+            BS_WARNING,
             "Failed to locate ${XDG_DATA_DIRS}/wlmaker/icons/clip-48x48.png");
+#ifndef WLMAKER_SOURCE_DIR
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
+#else
+        p1 = WLMAKER_SOURCE_DIR "/share/wlmaker/icons/clip-48x48.png";
+#endif
     }
     clip_ptr->image_ptr = wlmtk_image_create_scaled(
-        path_ptr,
+        p1,
         clip_ptr->super_tile.style.content_size,
         clip_ptr->super_tile.style.content_size);
     free(path_ptr);
