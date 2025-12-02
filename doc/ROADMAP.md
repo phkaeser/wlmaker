@@ -49,11 +49,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] wlmtk_backend_t review & improve naming.
     * [done] Inconsistency of "ephemeral" state vs state.
     * [done] Check file existence, so there is no ERROR in the log. bs_file_exists?
-  * Verify that right-click on title after window menu re-raises window menu.
-  * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
   * [done] Move config and data files into XDG-compliant config, resp. data paths.
     * [done] Move config files to XDG configuration home, and lookup from there.
     * [done] Move the desktop and logo files to XDG-compliant data paths.
+  * Verify that right-click on title after window menu re-raises window menu.
+  * Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
 
 * Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
