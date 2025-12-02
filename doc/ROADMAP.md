@@ -68,6 +68,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
   * Fix: Issue with PgUp/PgDn on laptop.
+  * [#325](https://github.com/phkaeser/wlmaker/issues/325): Set a default window position that is within the layout.
 
 * [done] Persist output state
   * [done] Save state for Output.
