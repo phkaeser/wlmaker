@@ -23,26 +23,35 @@
         Mode = SuggestServer;
     };
     KeyBindings = {
-        "Ctrl+Alt+Logo+Q" = Quit;
-        "Ctrl+Alt+Logo+L" = LockScreen;
-        "Ctrl+Alt+Logo+T" = LaunchTerminal;
+        "Ctrl+Alt+Backspace" = Quit;
 
-        "Ctrl+Alt+Logo+Left" = WorkspacePrevious;
-        "Ctrl+Alt+Logo+Right" = WorkspaceNext;
+        "Ctrl+Alt+L" = LockScreen;
+        "Logo+L" = LockScreen;
 
-        "Ctrl+Alt+Logo+Escape" = TaskNext;
-        "Shift+Ctrl+Alt+Logo+Escape" = TaskPrevious;
+        "Ctrl+Alt+T" = LaunchTerminal;
+        "Logo+Return" = LaunchTerminal;
 
-        "Alt+Logo+Up" = WindowRaise;
-        "Alt+Logo+Down" = WindowLower;
-        "Ctrl+Alt+Logo+F" = WindowToggleFullscreen;
-        "Ctrl+Alt+Logo+M" = WindowToggleMaximized;
+        "Alt+Tab" = TaskNext;
+        "Shift+Alt+ISO_Left_Tab" = TaskPrevious;
 
-        // TODO(kaeser@gubbe.ch): Swap with F12, to match Window Maker's behaviour.
-        "Ctrl+Alt+Logo+R" = RootMenu;
+        "Ctrl+Alt+Left" = WorkspacePrevious;
+        "Ctrl+Alt+Right" = WorkspaceNext;
 
-        "Ctrl+Alt+Logo+Page_Up" = OutputMagnify;
-        "Ctrl+Alt+Logo+Page_Down" = OutputReduce;
+        "Alt+Up" = WindowRaise;
+        "Alt+Down" = WindowLower;
+        "Alt+F10" = WindowToggleMaximized;
+        "Ctrl+Shift+M" = WindowToggleMaximized;
+        "Alt+F11" = WindowToggleFullscreen;
+        "Ctrl+Shift+F" = WindowToggleFullscreen;
+        // TODO(kaeser@gubbe.ch): Add Alt+F4 for 'close active window'.
+
+        "F12" = RootMenu;
+        "Ctrl+Escape" = RootMenu;
+
+        // TODO(kaeser@gubbe.ch): Swap to Plus, Minus, once finding a way to
+        // exclude the Shift-modifier well.
+        "Ctrl+Shift+Page_Up" = OutputMagnify;
+        "Ctrl+Shift+Page_Down" = OutputReduce;
 
         // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
         // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
