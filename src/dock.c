@@ -323,11 +323,7 @@ const bs_test_set_t wlmaker_dock_test_set = BS_TEST_SET(
 /** Tests ctor and dtor; to help fix leaks. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    char *backup_env = NULL;
-    if (NULL != getenv("XDG_DATA_DIRS")) {
-        backup_env = logged_strdup(getenv("XDG_DATA_DIRS"));
-    }
-    setenv("XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share", 1);
+    bs_test_setenv(test_ptr, "XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share");
 
     struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
@@ -375,11 +371,6 @@ void test_create_destroy(bs_test_t *test_ptr)
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
     wlmaker_files_destroy(server.files_ptr);
-
-    if (NULL != backup_env) {
-        setenv("XDG_DATA_DIRS", backup_env, 1);
-        free(backup_env);
-    }
 }
 
 /* == End of dock.c ======================================================== */

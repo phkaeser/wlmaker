@@ -571,11 +571,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
 
-    char *backup_env = NULL;
-    if (NULL != getenv("XDG_DATA_DIRS")) {
-        backup_env = logged_strdup(getenv("XDG_DATA_DIRS"));
-    }
-    setenv("XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share", 1);
+    bs_test_setenv(test_ptr, "XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share");
 
     bspl_dict_t *dict_ptr = bspl_dict_from_object(
         bspl_create_object_from_plist_string(plist_ptr));
@@ -595,11 +591,6 @@ void test_create_from_plist(bs_test_t *test_ptr)
 
     wlmaker_launcher_destroy(launcher_ptr);
     wlmaker_files_destroy(files_ptr);
-
-    if (NULL != backup_env) {
-        setenv("XDG_DATA_DIRS", backup_env, 1);
-        free(backup_env);
-    }
 }
 
 /* == End of launcher.c ==================================================== */
