@@ -104,19 +104,17 @@ INSTALL(
   Config.plist
   DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR})
 
+CONFIGURE_FILE(
+  ${CMAKE_CURRENT_SOURCE_DIR}/RootMenuDebian.plist.in
+  ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
+  @ONLY)
+INSTALL(
+  FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
+  DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR})
+
 INSTALL(
   FILES
   Themes/Default.plist
   Themes/Debian.plist
   DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR}/Themes)
-
-IF(wmmenugen_executable)
-  CONFIGURE_FILE(
-    ${CMAKE_CURRENT_SOURCE_DIR}/RootMenuDebian.plist.in
-    ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
-    @ONLY)
-  INSTALL(
-    FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
-    DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR}/Themes)
-ENDIF(wmmenugen_executable)
