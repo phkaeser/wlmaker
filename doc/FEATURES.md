@@ -58,6 +58,7 @@ that map to above states.
   * [x] :white_check_mark: Drag with the left button resizes the window.
   * [ ] Drag with the middle mouse button resizes the window *without raising it*.
   * [ ] Drag while holding the control key resizes the window *without focusing it*.
+  * [ ] Drag while holding the meta key moves the window.
 
 * Client Area: Holds the application's toplevel surface(s).
   * [x] :white_check_mark: Clicking into the client area focuses the window.
@@ -94,6 +95,16 @@ TBD: Raise/Lower.
 * [x] :white_check_mark: Holding Alt and left-dragging while anywhere on the window
   moves the window.
 * [ ] The modifier key for left-dragging anywhere on the content is configurable.
+* [ ] Drag resizebar while holding Meta: Moves the window.
+* [ ] Drag titlebar with middle mouse button: Moves window without changing stacking order.
+* [ ] Drag titlebar while holding Control: Moves window without focussing.
+
+### Resizing a Window
+
+* [x] :white_check_mark: Drag left, middle or right region on the resizebar resizes the window.
+* [ ] Drag window in the client area with right mouse button, holding meta: Resizes the window.
+* [ ] Drag resizebar with the middle mouse button: Resize window without bringing it to the front.
+* [ ] Drag resizebar while holding the control key: Resize window without focussing it.
 
 ### Shading a Window
 
