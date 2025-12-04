@@ -73,6 +73,7 @@ static wlmaker_server_options_t wlmaker_server_options = {
     .start_xwayland = false,
     .width = 0,
     .height = 0,
+    .bind_with_logo = false,
 };
 
 /** Log levels. */
@@ -125,6 +126,13 @@ static const bs_arg_t wlmaker_args[] = {
         "INFO",
         &wlmaker_log_levels[0],
         (int*)&bs_log_severity),
+    BS_ARG_BOOL(
+        "bind_with_logo",
+        "Optional: Whether to add 'Logo' as modifier to each key binding. "
+        "Useful to test key bindings in wlmaker when running as a Wayland "
+        "or X11 client. Disabled by default.",
+        false,
+        &wlmaker_server_options.bind_with_logo),
     BS_ARG_UINT32(
         "height",
         "Desired output height. Applies when running in windowed mode, and "
@@ -409,7 +417,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     wlmaker_action_handle_t *action_handle_ptr = wlmaker_action_bind_keys(
         server_ptr,
-        bspl_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key));
+        bspl_dict_get_dict(config_dict_ptr, wlmaker_action_config_dict_key),
+        wlmaker_server_options.bind_with_logo);
     if (NULL == action_handle_ptr) {
         bs_log(BS_ERROR, "Failed to bind keys.");
         return EXIT_FAILURE;

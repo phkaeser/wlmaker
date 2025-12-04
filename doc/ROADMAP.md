@@ -85,7 +85,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Embed version and have a `--version` argument to print out.
   * [done] Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
   * [done] Remove `Logo` key from default configured hotkeys.
-  * Add an argument to require `Logo` for key bindings when running under Wayland or X11 backend.
+  * [done] Add an argument to require `Logo` for key bindings when running under Wayland or X11 backend.
   * Add menu option to add, respectively remove workspace.
 
 * Branding

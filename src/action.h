@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdbool.h>
 
 #include "server.h"
 
@@ -94,12 +95,14 @@ typedef struct _wlmaker_action_handle_t wlmaker_action_handle_t;
  *
  * @param server_ptr
  * @param keybindings_dict_ptr
+ * @param add_logo            Whether to add `Logo` to all modifiers.
  *
  * @return A bound action handle, or NULL on error.
  */
 wlmaker_action_handle_t *wlmaker_action_bind_keys(
     wlmaker_server_t *server_ptr,
-    bspl_dict_t *keybindings_dict_ptr);
+    bspl_dict_t *keybindings_dict_ptr,
+    bool add_logo);
 
 /**
  * Unbinds actions previously bound by @ref wlmaker_action_bind_keys.

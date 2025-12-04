@@ -52,6 +52,8 @@ struct _wlmaker_action_handle_t {
     bs_dequeue_t              bindings;
     /** Back-link to server state. */
     wlmaker_server_t          *server_ptr;
+    /** Whether to add 'Logo' to the bindings. */
+    bool                      add_logo;
 };
 
 /** Key binding for a standard action. */
@@ -159,12 +161,14 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmaker_action_handle_t *wlmaker_action_bind_keys(
     wlmaker_server_t *server_ptr,
-    bspl_dict_t *keybindings_dict_ptr)
+    bspl_dict_t *keybindings_dict_ptr,
+    bool add_logo)
 {
     wlmaker_action_handle_t *handle_ptr = logged_calloc(
         1, sizeof(wlmaker_action_handle_t));
     if (NULL == handle_ptr) return NULL;
     handle_ptr->server_ptr = server_ptr;
+    handle_ptr->add_logo = add_logo;
 
     if (bspl_dict_foreach(
             keybindings_dict_ptr,
@@ -470,6 +474,7 @@ bool _wlmaker_keybindings_bind_item(
                key_ptr, bspl_string_value(string_ptr));
         return false;
     }
+    if (handle_ptr->add_logo) modifiers |= WLR_MODIFIER_LOGO;
 
     int action;
     if (!bspl_enum_name_to_value(
@@ -642,7 +647,7 @@ void test_default_keybindings(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
 
     wlmaker_action_handle_t *handle_ptr = wlmaker_action_bind_keys(
-        &server, dict_ptr);
+        &server, dict_ptr, false);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
     bspl_object_unref(obj_ptr);
     wlmaker_action_unbind_keys(handle_ptr);
