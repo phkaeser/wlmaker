@@ -33,6 +33,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Infrastructure
   * Recompute pointer focus max once per frame.
+  * Read keymap from `/etc/default/keyboard` or similar.
 
 ## Plan for 0.7
 
@@ -83,8 +84,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Be `iwyu`-clean on Trixie.
   * [done] Embed version and have a `--version` argument to print out.
   * [done] Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
-  * Remove `Logo` key from default configured hotkeys. Add an argument or option to
-    add it as extra, when running under Wayland or X11 backend.
+  * [done] Remove `Logo` key from default configured hotkeys.
+  * Add an argument to require `Logo` for key bindings when running under Wayland or X11 backend.
   * Add menu option to add, respectively remove workspace.
 
 * Branding
