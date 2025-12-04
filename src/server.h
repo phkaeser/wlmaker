@@ -78,6 +78,8 @@ typedef struct {
     uint32_t                  width;
     /** Desired output height, for windowed mode. 0 for no preference. */
     uint32_t                  height;
+    /** Whether to include 'Logo' to modifiers. */
+    bool                      bind_with_logo;
 } wlmaker_server_options_t;
 
 /** State of the Wayland server. */
