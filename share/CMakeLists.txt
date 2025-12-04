@@ -30,6 +30,14 @@ INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
+CONFIGURE_FILE(
+  ${CMAKE_CURRENT_SOURCE_DIR}/wlmeyes.desktop.in
+  ${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop
+  @ONLY)
+INSTALL(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+
 INSTALL(FILES
   wlmaker.svg
   DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
@@ -46,6 +54,11 @@ INSTALL(FILES
   wlmclock-64x64.png
   DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
   RENAME wlmclock.png)
+
+INSTALL(FILES
+  wlmeyes-64x64.png
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  RENAME wlmeyes.png)
 
 INSTALL(FILES
   wlmaker/icons/chrome-48x48.png

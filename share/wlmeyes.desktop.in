@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WLMEyes
+GenericName="Wayland Maker Eyes dockapp"
+Comment="Watches your mouse moves"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmeyes
+Type=Application
+Categories=Utility;
+Keywords=eyes;dockapp;wlmaker
+Icon=wlmeyes.png

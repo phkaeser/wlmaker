@@ -86,8 +86,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Define lookup path for Dock icons (can these be in XDG_DATA_DIR?).
   * [done] Remove `Logo` key from default configured hotkeys.
   * [done] Add an argument to require `Logo` for key bindings when running under Wayland or X11 backend.
+  * [done] Add desktop entry and logo for wlmeyes.
   * Add menu option to add, respectively remove workspace.
-  * Add desktop entry and logo for wlmeyes.
   * Change drag-move to use 'Alt' not 'Logo+Alt'.
 
 * Branding
