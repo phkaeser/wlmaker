@@ -6,4 +6,4 @@ Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmeyes
 Type=Application
 Categories=Utility;
 Keywords=eyes;dockapp;wlmaker
-Icon=wlmeyes.png
+Icon=wlmeyes

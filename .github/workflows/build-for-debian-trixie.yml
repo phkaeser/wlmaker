@@ -23,6 +23,7 @@ jobs:
           bison \
           clang \
           cmake \
+          desktop-file-utils \
           flex \
           gcc \
           git \

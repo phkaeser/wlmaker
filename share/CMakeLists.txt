@@ -38,6 +38,33 @@ INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
+FIND_PROGRAM(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
+IF(DESKTOP_FILE_VALIDATOR)
+  ADD_TEST(
+    NAME wlmaker_desktop_test
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop")
+  # We also want to report errors that are not "fatal" yet.
+  SET_PROPERTY(
+    TEST wlmaker_desktop_test
+    PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
+  ADD_TEST(
+    NAME wlmclock_desktop_test
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop")
+  # We also want to report errors that are not "fatal" yet.
+  SET_PROPERTY(
+    TEST wlmclock_desktop_test
+    PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
+  ADD_TEST(
+    NAME wlmeyes_desktop_test
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop")
+  # We also want to report errors that are not "fatal" yet.
+  SET_PROPERTY(
+    TEST wlmeyes_desktop_test
+    PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
+ELSE()
+  MESSAGE(STATUS "Skipping .desktop file validation -- `desktop-file-validate` not found")
+ENDIF()
+
 INSTALL(FILES
   wlmaker.svg
   DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
