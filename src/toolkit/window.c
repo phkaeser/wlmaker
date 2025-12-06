@@ -801,8 +801,7 @@ bool _wlmtk_window_element_pointer_button(
     // Modifier-click initiates move.
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type &&
-        (WLR_MODIFIER_ALT | WLR_MODIFIER_LOGO) ==
-        button_event_ptr->keyboard_modifiers &&
+        WLR_MODIFIER_ALT == button_event_ptr->keyboard_modifiers &&
         NULL != wlmtk_window_get_workspace(window_ptr)) {
         wlmtk_workspace_begin_window_move(
             wlmtk_window_get_workspace(window_ptr),
@@ -1802,7 +1801,7 @@ void test_modifier_move(bs_test_t *test_ptr)
     wlmtk_button_event_t bev = {
         .button = BTN_LEFT,
         .type = WLMTK_BUTTON_DOWN,
-        .keyboard_modifiers = WLR_MODIFIER_LOGO | WLR_MODIFIER_ALT
+        .keyboard_modifiers = WLR_MODIFIER_ALT
     };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
