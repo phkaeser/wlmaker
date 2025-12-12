@@ -23,6 +23,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
 
+* XWayland
+  * Fix for audacious in Winamp mode.
+
 ## Plan for 0.8
 
 **Focus** Themes
@@ -34,6 +37,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Infrastructure
   * Recompute pointer focus max once per frame.
   * Read keymap from `/etc/default/keyboard` or similar.
+  * Support keypad (tap to click) and middle click alternatives.
+  * On scaled output, pointer cursor is tiny.
+  * Write log to logfile (vs. stderr).
+  * Have a naive app to show battery status.
+  * Wire up backlight control to window menu.
 
 ## Plan for 0.7
 
