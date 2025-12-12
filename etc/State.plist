@@ -11,7 +11,7 @@
         Icon = "terminal-48x48.png";
       },
       {
-        CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland --user-data-dir=/tmp/chrome-wayland";
+        CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland";
         Icon = "chrome-48x48.png";
       },
       {
