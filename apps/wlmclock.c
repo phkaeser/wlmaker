@@ -210,7 +210,8 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
     bs_log_severity = BS_DEBUG;
 
-    wlclient_t *wlclient_ptr = wlclient_create("wlmclock");
+    wlclient_t *wlclient_ptr = wlclient_create(
+        "io.github.phkaeser.wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     if (wlclient_icon_supported(wlclient_ptr)) {

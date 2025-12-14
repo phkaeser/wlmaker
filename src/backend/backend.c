@@ -32,6 +32,7 @@
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
+#include <wlr/backend/wayland.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
@@ -162,6 +163,11 @@ static const bspl_desc_t _wlmbe_outputs_state_desc[] = {
 
 /** Magnification factor: 3rd square root of 2.0. ~10, doubles exactly. */
 static const double _wlmbke_backend_magnification = 1.0905077326652577;
+
+/** The window title to set, when on a Wayland backend. */
+static const char *_wlmbe_wl_title = "wlmaker";
+/** The application ID to set, when on a Wayland backend. */
+static const char *_wlmbe_wl_app_id = "io.github.phkaeser.wlmaker";
 
 /* == Exported methods ===================================================== */
 
@@ -491,6 +497,12 @@ void _wlmbe_backend_handle_new_output(
     wlmbe_backend_t *backend_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmbe_backend_t, new_output_listener);
     struct wlr_output *wlr_output_ptr = data_ptr;
+
+    // New output: If it's using a Wayland backend, set title & App ID.
+    if (wlr_output_is_wl(wlr_output_ptr)) {
+        wlr_wl_output_set_app_id(wlr_output_ptr, _wlmbe_wl_app_id);
+        wlr_wl_output_set_title(wlr_output_ptr, _wlmbe_wl_title);
+    }
 
     // See if there is an exact match among the ephemeral output configs. If
     // yes, pick that configuration. Otherwise, create a new one.

@@ -258,7 +258,7 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlclient_ptr = wlclient_create("wlmeyes");
+    wlclient_ptr = wlclient_create("io.github.phkaeser.wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     _key_listener.notify = _handle_key;
