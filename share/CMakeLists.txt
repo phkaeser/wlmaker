@@ -15,48 +15,48 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 CONFIGURE_FILE(
-  ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.desktop.in
-  ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
+  ${CMAKE_CURRENT_SOURCE_DIR}/io.github.phkaeser.wlmaker.desktop.in
+  ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.desktop
   @ONLY)
 INSTALL(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.desktop
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
 CONFIGURE_FILE(
-  ${CMAKE_CURRENT_SOURCE_DIR}/wlmclock.desktop.in
-  ${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop
+  ${CMAKE_CURRENT_SOURCE_DIR}/io.github.phkaeser.wlmaker.wlmclock.desktop.in
+  ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmclock.desktop
   @ONLY)
 INSTALL(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmclock.desktop
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
 CONFIGURE_FILE(
-  ${CMAKE_CURRENT_SOURCE_DIR}/wlmeyes.desktop.in
-  ${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop
+  ${CMAKE_CURRENT_SOURCE_DIR}/io.github.phkaeser.wlmaker.wlmeyes.desktop.in
+  ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmeyes.desktop
   @ONLY)
 INSTALL(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmeyes.desktop
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
 FIND_PROGRAM(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
 IF(DESKTOP_FILE_VALIDATOR)
   ADD_TEST(
     NAME wlmaker_desktop_test
-    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop")
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.desktop")
   # We also want to report errors that are not "fatal" yet.
   SET_PROPERTY(
     TEST wlmaker_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
   ADD_TEST(
     NAME wlmclock_desktop_test
-    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmclock.desktop")
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmclock.desktop")
   # We also want to report errors that are not "fatal" yet.
   SET_PROPERTY(
     TEST wlmclock_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
   ADD_TEST(
     NAME wlmeyes_desktop_test
-    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmeyes.desktop")
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/io.github.phkaeser.wlmaker.wlmeyes.desktop")
   # We also want to report errors that are not "fatal" yet.
   SET_PROPERTY(
     TEST wlmeyes_desktop_test
