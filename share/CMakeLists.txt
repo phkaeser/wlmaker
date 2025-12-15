@@ -18,9 +18,14 @@ CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
   @ONLY)
+# Install to both wayland-sessions/ and applications/ -- it can run in windowed
+# mode.
 INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+INSTALL(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions)
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmclock.desktop.in
@@ -28,7 +33,7 @@ CONFIGURE_FILE(
   @ONLY)
 INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmeyes.desktop.in
@@ -36,7 +41,7 @@ CONFIGURE_FILE(
   @ONLY)
 INSTALL(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 
 FIND_PROGRAM(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
 IF(DESKTOP_FILE_VALIDATOR)
@@ -67,24 +72,24 @@ ENDIF()
 
 INSTALL(FILES
   wlmaker.svg
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
 INSTALL(FILES
   wlmaker-48x48.png
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/48x48/apps
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/48x48/apps
   RENAME wlmaker.png)
 INSTALL(FILES
   wlmaker-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
   RENAME wlmaker.png)
 
 INSTALL(FILES
   wlmclock-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
   RENAME wlmclock.png)
 
 INSTALL(FILES
   wlmeyes-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
   RENAME wlmeyes.png)
 
 INSTALL(FILES
@@ -92,4 +97,4 @@ INSTALL(FILES
   wlmaker/icons/clip-48x48.png
   wlmaker/icons/firefox-48x48.png
   wlmaker/icons/terminal-48x48.png
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/wlmaker/icons)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/icons)
