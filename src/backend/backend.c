@@ -167,7 +167,7 @@ static const double _wlmbke_backend_magnification = 1.0905077326652577;
 /** The window title to set, when on a Wayland backend. */
 static const char *_wlmbe_wl_title = "wlmaker";
 /** The application ID to set, when on a Wayland backend. */
-static const char *_wlmbe_wl_app_id = "io.github.phkaeser.wlmaker";
+static const char *_wlmbe_wl_app_id = "wlmaker";
 
 /* == Exported methods ===================================================== */
 
