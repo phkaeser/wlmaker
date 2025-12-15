@@ -70,7 +70,13 @@ ENDIF()
 
 # Defaults to /usr/local/lib for installation.
 INCLUDE(GNUInstallDirs)
-SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker")
+# Override: If using a non-standard prefix, install the config files beneath
+# the prefix. Otherwise, fall back to use ${CMAKE_INSTALL_SYSCONFDIR} (/etc/).
+IF(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr" AND NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+  SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_PREFIX}/etc/xdg/wlmaker")
+ELSE()
+  SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker")
+ENDIF()
 
 INCLUDE(CTest)
 
