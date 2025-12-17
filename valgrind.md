@@ -24,6 +24,7 @@ valgrind \
   --error-limit=no \
   --gen-suppressions=all \
   --suppressions=./libdrm.supp \
+  --suppressions=./libgallium.supp \
   --suppressions=./libcairo-fontconfig.supp \
   --log-file=new_suppressions.log \
   build/src/wlmaker

@@ -1,0 +1,7 @@
+{
+   <libdrm>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/*/libgallium-*
+   ...
+}

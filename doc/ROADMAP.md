@@ -23,9 +23,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
 
-* XWayland
-  * Fix for audacious in Winamp mode.
-
 ## Plan for 0.8
 
 **Focus** Themes
@@ -73,6 +70,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] [#258](https://github.com/phkaeser/wlmaker/issues/258): Fix crash on early non-fullscreen
   * [done] Fix: Maximizing non-decorated window does not use all space. Review size computation.
   * [done] Fix: Crash with xterm observed with wlroots 0.19.
+  * [done] xwl: Fix for audacious crashing on exit in Winamp mode.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.

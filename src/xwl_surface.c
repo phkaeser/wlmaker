@@ -107,6 +107,9 @@ static void _xwl_surface_handle_request_configure(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmaker_xwl_surface_base_element_destroy(
+    wlmtk_element_t *element_ptr);
+
 static void _xwl_surface_handle_associate(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -162,6 +165,11 @@ static void _xwl_surface_adjust_absolute_pos(
 
 /* == Data ================================================================= */
 
+/** Virtual method table of the base's @ref wlmtk_element_t. */
+static const wlmtk_element_vmt_t _wlmaker_xwl_surface_base_element_vmt = {
+    .destroy = _wlmaker_xwl_surface_base_element_destroy
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -182,6 +190,9 @@ wlmaker_xwl_surface_t *wlmaker_xwl_surface_create(
         wlmaker_xwl_surface_destroy(xwl_surface_ptr);
         return NULL;
     }
+    wlmtk_element_extend(
+        wlmtk_base_element(&xwl_surface_ptr->base),
+        &_wlmaker_xwl_surface_base_element_vmt);
 
     wlmtk_util_connect_listener_signal(
         &wlr_xwayland_surface_ptr->events.destroy,
@@ -240,6 +251,11 @@ void wlmaker_xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr)
     wl_list_remove(&xwl_surface_ptr->request_configure_listener.link);
     wl_list_remove(&xwl_surface_ptr->destroy_listener.link);
 
+    if (NULL != xwl_surface_ptr->title_ptr) {
+        free(xwl_surface_ptr->title_ptr);
+        xwl_surface_ptr->title_ptr = NULL;
+    }
+
     wlmtk_base_fini(&xwl_surface_ptr->base);
     xwl_surface_ptr->surface_ptr = NULL;
     free(xwl_surface_ptr);
@@ -279,7 +295,7 @@ void _xwl_surface_handle_request_configure(
     struct wlr_xwayland_surface_configure_event *cfg_event_ptr = data_ptr;
 
     bs_log(BS_INFO, "Request configure for %p: "
-           "%"PRId16" x %"PRId16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
+           "%"PRId16",%"PRId16" size %"PRIu16" x %"PRIu16" mask 0x%"PRIx16,
            xwl_surface_ptr,
            cfg_event_ptr->x, cfg_event_ptr->y,
            cfg_event_ptr->width, cfg_event_ptr->height,
@@ -294,6 +310,29 @@ void _xwl_surface_handle_request_configure(
         xwl_surface_ptr->wlr_xwayland_surface_ptr,
         cfg_event_ptr->x, cfg_event_ptr->y,
         cfg_event_ptr->width, cfg_event_ptr->height);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Dtor for @ref wlmaker_xwl_surface_t::base.
+ *
+ * This may be called when the parent window is destroyed, but the child(ren)
+ * have not yet. It implies that this window already had been removed from the
+ * parent surface's base. To prevent double cleanup, we can set
+ * @ref wlmaker_xwl_surface_t::parent_surface_ptr to NULL.
+ *
+ * @param element_ptr
+ */
+void _wlmaker_xwl_surface_base_element_destroy(
+    wlmtk_element_t *element_ptr)
+{
+    wlmaker_xwl_surface_t *xwl_surface_ptr = BS_CONTAINER_OF(
+        element_ptr,
+        wlmaker_xwl_surface_t,
+        base.super_container.super_element);
+
+    xwl_surface_ptr->parent_surface_ptr = NULL;
+    wlmaker_xwl_surface_destroy(xwl_surface_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
