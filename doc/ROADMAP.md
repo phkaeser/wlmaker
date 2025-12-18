@@ -59,7 +59,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Move config files to XDG configuration home, and lookup from there.
     * [done] Move the desktop and logo files to XDG-compliant data paths.
   * [done] Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
-  * Verify that right-click on title after window menu re-raises window menu.
+  * [done] Fixes lost poitner focus when releasing right-clicked window menu.
 
 * Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.

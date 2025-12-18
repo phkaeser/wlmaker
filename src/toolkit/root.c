@@ -76,6 +76,9 @@ struct _wlmtk_root_t {
     // Elements below not owned by wlmtk_root_t.
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
+
+    /** Last recorded pointer movement. */
+    wlmtk_pointer_motion_event_t mev;
 };
 
 static void _wlmtk_root_switch_to_workspace(
@@ -203,11 +206,11 @@ bool wlmtk_root_pointer_motion(
     uint32_t time_msec,
     wlmtk_pointer_t *pointer_ptr)
 {
-    wlmtk_pointer_motion_event_t mev = {
+    root_ptr->mev = (wlmtk_pointer_motion_event_t){
         .x = x, .y = y, .time_msec = time_msec, .pointer_ptr = pointer_ptr
     };
     return wlmtk_element_pointer_motion(
-        &root_ptr->container.super_element, &mev);
+        &root_ptr->container.super_element, &root_ptr->mev);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -239,6 +242,15 @@ bool wlmtk_root_pointer_button(
         event.type = WLMTK_BUTTON_CLICK;
         rv = wlmtk_element_pointer_button(
             &root_ptr->container.super_element, &event);
+
+        // Hack: Fix lost focus when a menu releases the pointer grab. This
+        // should not be needed here, but needs a better means of updating
+        // the pointer focus.
+        // TODO(kaeser@gubbe.ch): Have a test for this with a window + menu,
+        // and ensure focus computation is done well there.
+        wlmtk_element_pointer_motion(
+            &root_ptr->container.super_element,
+            &root_ptr->mev);
         break;
 
     default:
