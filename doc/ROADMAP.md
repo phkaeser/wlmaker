@@ -71,7 +71,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Fix: Maximizing non-decorated window does not use all space. Review size computation.
   * [done] Fix: Crash with xterm observed with wlroots 0.19.
   * [done] xwl: Fix for audacious crashing on exit in Winamp mode.
-  * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
+  * [done] [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [#325](https://github.com/phkaeser/wlmaker/issues/325): Set a default window position that is within the layout.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
@@ -82,7 +82,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Load Output on startup, and (re)apply the configuration.
   * [done] Fix: Backend state not loaded on laptop?
 
-* Infrastructure
+* [done] Infrastructure
   * [done] Make it compile for wlroots 0.19, and update tests accordingly.
   * [done] Add Debian Forky as tested distribution, and update from Bookworm to Trixie.
   * [done] Add `pointer-position` experimental protocol, and a `wlmeyes` app.
