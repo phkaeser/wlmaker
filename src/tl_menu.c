@@ -47,6 +47,8 @@ struct _wlmaker_tl_menu_t {
 
     /** Listener for @ref wlmtk_window_events_t::state_changed. */
     struct wl_listener        window_state_changed_listener;
+    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
+    struct wl_listener        workspace_changed_listener;
 
     /** Action item for 'Maximize'. */
     wlmaker_action_item_t     *maximize_ai_ptr;
@@ -91,6 +93,9 @@ static void _wlmaker_tl_menu_ws_items_iterator_enable_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 static void _wlmaker_tl_menu_handle_window_state_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_tl_menu_handle_workspace_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -197,15 +202,6 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
     wlmtk_menu_item_set_submenu(
         wlmaker_action_item_menu_item(tl_menu_ptr->move_to_ws_ai_ptr),
         tl_menu_ptr->workspaces_submenu_ptr);
-    wlmtk_root_for_each_workspace(
-        server_ptr->root_ptr,
-        _wlmaker_tl_menu_workspace_iterator_create_item,
-        tl_menu_ptr);
-
-    bs_dllist_for_each(
-        &tl_menu_ptr->submenu_items,
-        _wlmaker_tl_menu_ws_items_iterator_enable_workspace,
-        NULL);
 
     // Connect state listener and initialize state.
     wlmtk_util_connect_listener_signal(
@@ -216,12 +212,22 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
         &tl_menu_ptr->window_state_changed_listener,
         window_ptr);
 
+    wlmtk_util_connect_listener_signal(
+        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
+        &tl_menu_ptr->workspace_changed_listener,
+        _wlmaker_tl_menu_handle_workspace_changed);
+    _wlmaker_tl_menu_handle_workspace_changed(
+        &tl_menu_ptr->workspace_changed_listener,
+        NULL);
+
     return tl_menu_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmaker_tl_menu_destroy(wlmaker_tl_menu_t *tl_menu_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &tl_menu_ptr->workspace_changed_listener);
     wlmtk_util_disconnect_listener(
         &tl_menu_ptr->window_state_changed_listener);
 
@@ -264,6 +270,33 @@ void _wlmaker_tl_menu_handle_window_state_changed(
         _wlmaker_tl_menu_ws_items_iterator_enable_workspace,
         NULL);
 
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles workspace changes: Refreshes the workspace menu. */
+void _wlmaker_tl_menu_handle_workspace_changed(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_tl_menu_t *tl_menu_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_tl_menu_t, workspace_changed_listener);
+
+    // Flush, then rebuild the workspaces submenu.
+    while (0 < wlmtk_menu_items_size(tl_menu_ptr->workspaces_submenu_ptr)) {
+        wlmtk_menu_remove_item(
+            tl_menu_ptr->workspaces_submenu_ptr,
+            wlmtk_menu_item_at(tl_menu_ptr->workspaces_submenu_ptr, 0));
+    }
+    wlmtk_root_for_each_workspace(
+        tl_menu_ptr->server_ptr->root_ptr,
+        _wlmaker_tl_menu_workspace_iterator_create_item,
+        tl_menu_ptr);
+
+    // Disable the currently-active workspace.
+    bs_dllist_for_each(
+        &tl_menu_ptr->submenu_items,
+        _wlmaker_tl_menu_ws_items_iterator_enable_workspace,
+        NULL);
 }
 
 /* ------------------------------------------------------------------------- */

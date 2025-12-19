@@ -301,6 +301,8 @@ void wlmtk_root_add_workspace(
 
     if (NULL == root_ptr->current_workspace_ptr) {
         _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
+    } else {
+        wl_signal_emit(&root_ptr->events.workspace_changed, workspace_ptr);
     }
 }
 
@@ -320,23 +322,41 @@ void wlmtk_root_remove_workspace(
     wlmtk_element_set_visible(
         wlmtk_workspace_element(workspace_ptr), false);
 
-    if (root_ptr->current_workspace_ptr == workspace_ptr) {
-        _wlmtk_root_switch_to_workspace(
-            root_ptr,
-            wlmtk_workspace_from_dlnode(root_ptr->workspaces.head_ptr));
-    }
-
-    int index = 0;
+    int index = 1;
     bs_dllist_for_each(
         &root_ptr->workspaces,
         _wlmtk_root_enumerate_workspaces,
         &index);
+
+    if (root_ptr->current_workspace_ptr == workspace_ptr) {
+        _wlmtk_root_switch_to_workspace(
+            root_ptr,
+            wlmtk_workspace_from_dlnode(root_ptr->workspaces.head_ptr));
+    } else {
+        wl_signal_emit(&root_ptr->events.workspace_changed, NULL);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr)
 {
     return root_ptr->current_workspace_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_root_destroy_last_workspace(wlmtk_root_t *root_ptr)
+{
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(
+        root_ptr->workspaces.tail_ptr);
+
+    // Guard clause: Must have further workspaces, not be current workspace,
+    // and not have windows on that workspace.
+    if (1 >= bs_dllist_size(&root_ptr->workspaces) ||
+        ws_ptr == root_ptr->current_workspace_ptr ||
+        !bs_dllist_empty(wlmtk_workspace_get_windows_dllist(ws_ptr))) return;
+
+    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
+    wlmtk_workspace_destroy(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -709,6 +729,8 @@ void test_workspaces(bs_test_t *test_ptr)
 
     wlmtk_util_connect_test_listener(
         &wlmtk_root_events(root_ptr)->workspace_changed, &l);
+    // Empty? A no-op.
+    wlmtk_root_destroy_last_workspace(root_ptr);
 
     static const wlmtk_tile_style_t tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
@@ -722,6 +744,11 @@ void test_workspaces(bs_test_t *test_ptr)
         wlmtk_workspace_element(ws1_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, ws1_ptr, l.last_data_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+    // Will not destroy the last workspace.
+    wlmtk_root_destroy_last_workspace(root_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "2", &tstyle);
@@ -732,26 +759,44 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_workspace_element(ws2_ptr)->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2_ptr, l.last_data_ptr);
+    wlmtk_util_clear_test_listener(&l);
 
     wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_workspace_element(ws1_ptr)->visible);
-    wlmtk_workspace_destroy(ws1_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, ws2_ptr, wlmtk_root_get_current_workspace(root_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_workspace_element(ws2_ptr)->visible);
-    BS_TEST_VERIFY_EQ(test_ptr, ws2_ptr, l.last_data_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, l.calls);
+    // Again: not destroying the workspace.
+    wlmtk_root_destroy_last_workspace(root_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    // Now add ws1 again. Deleting last workspace
+    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, bs_dllist_size(&root_ptr->workspaces));
+    wlmtk_root_destroy_last_workspace(root_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
 
     wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    wlmtk_util_clear_test_listener(&l);
     wlmtk_workspace_destroy(ws2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
     BS_TEST_VERIFY_EQ(test_ptr, NULL, l.last_data_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 3, l.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     wlmtk_util_disconnect_test_listener(&l);
     wlmtk_root_destroy(root_ptr);

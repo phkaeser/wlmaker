@@ -116,6 +116,7 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
     BSPL_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     BSPL_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
     BSPL_ENUM("WorkspaceAdd", WLMAKER_ACTION_WORKSPACE_ADD),
+    BSPL_ENUM("WorkspaceDestroyLast", WLMAKER_ACTION_WORKSPACE_DESTROY_LAST),
 
     BSPL_ENUM("TaskPrevious", WLMAKER_ACTION_TASK_TO_PREVIOUS),
     BSPL_ENUM("TaskNext", WLMAKER_ACTION_TASK_TO_NEXT),
@@ -271,6 +272,10 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                                   server_ptr->style.background_color));
             wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
         }
+        break;
+
+    case WLMAKER_ACTION_WORKSPACE_DESTROY_LAST:
+        wlmtk_root_destroy_last_workspace(server_ptr->root_ptr);
         break;
 
     case WLMAKER_ACTION_TASK_TO_PREVIOUS:

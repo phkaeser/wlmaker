@@ -14,7 +14,8 @@
   ("Save State", OutputSaveState)),
  ("Workspaces...",
   ("New", WorkspaceAdd),
-  ("Previous", WorkspacePrevious),
-  ("Next", WorkspaceNext)),
+  ("Destroy Last", WorkspaceDestroyLast),
+  ("Go To Previous", WorkspacePrevious),
+  ("Go To Next", WorkspaceNext)),
  ("Lock", LockScreen),
  (Exit, Quit))
