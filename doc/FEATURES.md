@@ -163,14 +163,14 @@ TBD: Raise/Lower.
   configuration file.
 * [x] :white_check_mark: Navigate between workspaces using a configurable key
   combination (ctrl-arrow).
-* [ ] Navigate between workspaces through scrollwheel or buttons on the *Clip*.
+* [x] :white_check_mark: Navigate between workspaces through scrollwheel or buttons on the *Clip*.
 * [ ] When saving state, the current workspace configuation is saved to the *state*
   configuration file.
 
 ## Workspaces menu
 
-* [ ] "New", to create a new workspace.
-* [ ] "Destroy" or "Destroy last" for destroying a workspace.
+* [x] :white_check_mark: "New", to create a new workspace.
+* [x] :white_check_mark: "Destroy" or "Destroy last" for destroying a workspace.
 * [ ] Menu item to navigate to the provided workspace.
 * [ ] Ctrl-click on menu item to rename the workspace, through a dialog.
 
@@ -181,7 +181,7 @@ TBD: Raise/Lower.
 
 ## Window assignments
 
-* [ ] Send window to another workspace through ctrl-shift-arrow (or configurable combination)
+* [x] :white_check_mark: Send window to another workspace through ctrl-shift-arrow (or configurable combination)
 * [ ] Navigate to workspace using key combination (eg. Alt-<number>)
 * [ ] Navigate to same workspace in next group, using key combination.
 * [ ] Support workspace groups, addressable by an extra modifier of key combinations.
