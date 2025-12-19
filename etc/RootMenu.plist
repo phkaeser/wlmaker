@@ -12,7 +12,9 @@
   ("Reduce", OutputReduce),
   ("Configure", Execute, "wdisplays"),
   ("Save State", OutputSaveState)),
- ("Previous Workspace", WorkspacePrevious),
- ("Next Workspace", WorkspaceNext),
+ ("Workspaces...",
+  ("New", WorkspaceAdd),
+  ("Previous", WorkspacePrevious),
+  ("Next", WorkspaceNext)),
  ("Lock", LockScreen),
  (Exit, Quit))
