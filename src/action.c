@@ -35,6 +35,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "backend/backend.h"
+#include "background.h"
 #include "cursor.h"
 #include "default_configuration.h"
 #include "idle.h"
@@ -114,6 +115,7 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
 
     BSPL_ENUM("WorkspacePrevious", WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS),
     BSPL_ENUM("WorkspaceNext", WLMAKER_ACTION_WORKSPACE_TO_NEXT),
+    BSPL_ENUM("WorkspaceAdd", WLMAKER_ACTION_WORKSPACE_ADD),
 
     BSPL_ENUM("TaskPrevious", WLMAKER_ACTION_TASK_TO_PREVIOUS),
     BSPL_ENUM("TaskNext", WLMAKER_ACTION_TASK_TO_NEXT),
@@ -255,6 +257,20 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 
     case WLMAKER_ACTION_WORKSPACE_TO_NEXT:
         wlmtk_root_switch_to_next_workspace(server_ptr->root_ptr);
+        break;
+
+    case WLMAKER_ACTION_WORKSPACE_ADD:
+        workspace_ptr = wlmtk_workspace_create(
+            server_ptr->wlr_output_layout_ptr,
+            "New",
+            &server_ptr->style.tile);
+        if (NULL != workspace_ptr) {
+            BS_ASSERT_NOTNULL(wlmaker_background_create(
+                                  workspace_ptr,
+                                  server_ptr->wlr_output_layout_ptr,
+                                  server_ptr->style.background_color));
+            wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
+        }
         break;
 
     case WLMAKER_ACTION_TASK_TO_PREVIOUS:
