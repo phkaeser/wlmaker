@@ -43,7 +43,9 @@
         "Ctrl+Shift+M" = WindowToggleMaximized;
         "Alt+F11" = WindowToggleFullscreen;
         "Ctrl+Shift+F" = WindowToggleFullscreen;
-        // TODO(kaeser@gubbe.ch): Add Alt+F4 for 'close active window'.
+        "Alt+F4" = WindowClose;
+        "Ctrl+Alt+Shift+Right" = WindowToNextWorkspace;
+        "Ctrl+Alt+Shift+Left" = WindowToPreviousWorkspace;
 
         "F12" = RootMenu;
         "Ctrl+Escape" = RootMenu;
