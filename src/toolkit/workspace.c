@@ -472,6 +472,9 @@ void wlmtk_workspace_confine_within(
     int max_y = y - elem_box.y + elem_box.height;
     if (max_y > box.height) y -= max_y - box.height;
 
+    if (x < box.x) x = box.x;
+    if (y < box.y) y = box.y;
+
     wlmtk_workspace_set_window_position(workspace_ptr, window_ptr, x, y);
 }
 
@@ -544,6 +547,7 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
                          wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, workspace_ptr);
 
+    wlmtk_workspace_confine_within(workspace_ptr, window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 
     if (NULL != workspace_ptr->root_ptr) {
@@ -1249,6 +1253,9 @@ void test_map_unmap(bs_test_t *test_ptr)
         wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
     wlmtk_root_add_workspace(root_ptr, workspace_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 20, 10);
 
     wlmtk_util_test_listener_t mapped, unmapped;
     wlmtk_util_connect_test_listener(
@@ -1270,6 +1277,11 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(wdl_ptr));
     BS_TEST_VERIFY_EQ(test_ptr, 1, mapped.calls);
     BS_TEST_VERIFY_EQ(test_ptr, w, mapped.last_data_ptr);
+
+    int x, y;
+    wlmtk_element_get_position(wlmtk_window_element(w), &x, &y);
+    BS_TEST_VERIFY_EQ(test_ptr, 20, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 10, y);
 
     wlmtk_workspace_unmap_window(workspace_ptr, w);
     BS_TEST_VERIFY_EQ(
