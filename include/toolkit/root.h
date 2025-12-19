@@ -46,7 +46,7 @@ extern "C" {
 typedef struct {
     /**
      * Signal: Raised when the current workspace is changed.
-     * Data: Pointer to the new `wlmaker_workspace_t`.
+     * Data: Pointer to the new `wlmaker_workspace_t`, or NULL.
      */
     struct wl_signal          workspace_changed;
 
@@ -168,6 +168,14 @@ void wlmtk_root_remove_workspace(
  * @param root_ptr
  */
 wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr);
+
+/**
+ * Destroys the last workspace -- if it's not the only remaining workspace, not
+ * the current workspace, and if there's no windows contained in it.
+ *
+ * @param root_ptr
+ */
+void wlmtk_root_destroy_last_workspace(wlmtk_root_t *root_ptr);
 
 /**
  * Switches to the next workspace.

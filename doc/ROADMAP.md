@@ -94,7 +94,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Add an argument to require `Logo` for key bindings when running under Wayland or X11 backend.
   * [done] Add desktop entry and logo for wlmeyes.
   * [done] Change drag-move to use 'Alt' not 'Logo+Alt'.
-  * Add menu option to add, respectively remove workspace.
+  * [done] Add menu option to add, respectively remove workspace.
 
 * Branding
   * [done] Align SVG logo exactly with horizontals & verticals.
