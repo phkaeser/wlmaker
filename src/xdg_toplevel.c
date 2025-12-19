@@ -139,6 +139,12 @@ struct wlmaker_xdg_toplevel {
         /** Activated. */
         bool                  activated;
     } pending;
+
+    /**
+     * Whether the surface had been mapped. Actual map to the workspace may be
+     * pending, if size was not yet non-zero.
+     */
+    bool                      mapped;
 };
 
 struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
@@ -149,6 +155,8 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t),
     uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool));
 static void _wlmaker_xdg_toplevel_flush_properties(
+    struct wlmaker_xdg_toplevel *wxt_ptr);
+static void _wlmaker_xdg_toplevel_try_map(
     struct wlmaker_xdg_toplevel *wxt_ptr);
 
 static void _wlmaker_xdg_toplevel_handle_destroy(
@@ -485,6 +493,28 @@ void _wlmaker_xdg_toplevel_flush_properties(
 }
 
 /* ------------------------------------------------------------------------- */
+/**
+ * Maps the window to the workspace, if the surface is ready.
+ *
+ * A surface is ready if it had received the map signal (and no unmap), and
+ * if it has non-zero width and height.
+ *
+ * @param wxt_ptr
+ */
+void _wlmaker_xdg_toplevel_try_map(struct wlmaker_xdg_toplevel *wxt_ptr)
+{
+    if (!wxt_ptr->mapped) return;
+    struct wlr_box committed_size = wlmtk_window_get_size(wxt_ptr->window_ptr);
+    if (0 == committed_size.width || 0 == committed_size.height) return;
+
+    if (NULL != wlmtk_window_get_workspace(wxt_ptr->window_ptr)) return;
+
+    wlmtk_workspace_t *workspace_ptr = wlmtk_root_get_current_workspace(
+        wxt_ptr->server_ptr->root_ptr);
+    wlmtk_workspace_map_window(workspace_ptr, wxt_ptr->window_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** The XDG toplevel is destroyed: Destry the wlmaker toplevel, too. */
 void _wlmaker_xdg_toplevel_handle_destroy(
     struct wl_listener *listener_ptr,
@@ -666,15 +696,11 @@ void _wlmaker_xdg_toplevel_handle_surface_map(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_map_listener);
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_root_get_current_workspace(
-        wlmaker_xdg_toplevel_ptr->server_ptr->root_ptr);
-
-    wlmtk_workspace_map_window(
-        workspace_ptr,
-        wlmaker_xdg_toplevel_ptr->window_ptr);
+    wxt_ptr->mapped = true;
+    _wlmaker_xdg_toplevel_try_map(wxt_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -683,12 +709,15 @@ void _wlmaker_xdg_toplevel_handle_surface_unmap(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
+    struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, surface_unmap_listener);
 
-    wlmtk_workspace_unmap_window(
-        wlmtk_window_get_workspace(wlmaker_xdg_toplevel_ptr->window_ptr),
-        wlmaker_xdg_toplevel_ptr->window_ptr);
+    wxt_ptr->mapped = false;
+    if (NULL != wlmtk_window_get_workspace(wxt_ptr->window_ptr)) {
+        wlmtk_workspace_unmap_window(
+            wlmtk_window_get_workspace(wxt_ptr->window_ptr),
+            wxt_ptr->window_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -728,6 +757,7 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
 
     wxt_ptr->committed_serial =
         wxt_ptr->wlr_xdg_toplevel_ptr->base->current.configure_serial;
+    _wlmaker_xdg_toplevel_try_map(wxt_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -760,9 +790,11 @@ void _wlmaker_xdg_toplevel_handle_window_set_activated(
     wlmaker_xdg_toplevel_ptr->pending.activated =
         wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr);
     _wlmaker_xdg_toplevel_flush_properties(wlmaker_xdg_toplevel_ptr);
-    wlmtk_surface_set_activated(
-        wlmaker_xdg_toplevel_ptr->surface_ptr,
-        wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+    if (NULL != wlmaker_xdg_toplevel_ptr->surface_ptr) {
+        wlmtk_surface_set_activated(
+            wlmaker_xdg_toplevel_ptr->surface_ptr,
+            wlmtk_window_is_activated(wlmaker_xdg_toplevel_ptr->window_ptr));
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -884,6 +916,8 @@ struct _xdg_toplevel_test_data {
     int                       set_fullscreen_calls;
     int                       set_size_calls;
     int                       set_activated_calls;
+
+    wlmtk_workspace_t         *workspace_ptr;
 #endif
 };
 
@@ -947,6 +981,7 @@ static void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr);
+static void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 const bs_test_case_t _test_cases[] = {
@@ -954,6 +989,7 @@ const bs_test_case_t _test_cases[] = {
     { true, "fullscreen", _wlmaker_xdg_toplevel_test_fullscreen },
     { true, "size", _wlmaker_xdg_toplevel_test_size },
     { true, "activated", _wlmaker_xdg_toplevel_test_activated },
+    { true, "map", _wlmaker_xdg_toplevel_test_map },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -974,27 +1010,18 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     td_ptr->wlr_xdg_surface.surface = &td_ptr->wlr_surface;
     td_ptr->wlr_xdg_toplevel.base = &td_ptr->wlr_xdg_surface;
 
-    if (!_wlmaker_test_layout_init(&td_ptr->test_layout)) {
-        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
-        return NULL;
-    }
+    if (!_wlmaker_test_layout_init(&td_ptr->test_layout)) goto error;
     wlr_output_layout_add_auto(
         td_ptr->test_layout.wlr_output_layout_ptr,
         &td_ptr->test_layout.wlr_output);
 
     td_ptr->server.wlr_scene_ptr = wlr_scene_create();
-    if (NULL == td_ptr->server.wlr_scene_ptr) {
-        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
-        return NULL;
-    }
+    if (NULL == td_ptr->server.wlr_scene_ptr) goto error;
 
     td_ptr->server.root_ptr = wlmtk_root_create(
         td_ptr->server.wlr_scene_ptr,
         td_ptr->test_layout.wlr_output_layout_ptr);
-    if (NULL == td_ptr->server.root_ptr) {
-        _wlmaker_xdg_toplevel_test_teardown(td_ptr);
-        return NULL;
-    }
+    if (NULL == td_ptr->server.root_ptr) goto error;
 
     wl_signal_init(&td_ptr->server.window_created_event);
     wl_signal_init(&td_ptr->server.window_destroyed_event);
@@ -1020,7 +1047,17 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_title);
     wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_app_id);
 
+    static const wlmtk_tile_style_t ts = { .size = 64 };
+    td_ptr->workspace_ptr = wlmtk_workspace_create(
+        td_ptr->test_layout.wlr_output_layout_ptr, "test", &ts);
+    if (NULL == td_ptr->workspace_ptr) goto error;
+    wlmtk_root_add_workspace(td_ptr->server.root_ptr, td_ptr->workspace_ptr);
+
     return td_ptr;
+
+error:
+    _wlmaker_xdg_toplevel_test_teardown(td_ptr);
+    return NULL;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1202,6 +1239,57 @@ void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr)
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_activated_calls);
+
+    wlmaker_xdg_toplevel_destroy(wxt_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests surface map calls. */
+void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr =
+        BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
+
+    struct wlmaker_xdg_toplevel *wxt_ptr =
+        _wlmaker_xdg_toplevel_create_injected(
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
+            _wlmaker_xdg_toplevel_fake_set_maximized,
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
+    wlmtk_window_t *w = wxt_ptr->window_ptr;  // for convenience.
+
+    // Override the surface element. We cannot actually map it.
+    wlmtk_base_set_content_element(&wxt_ptr->base, NULL);
+    wxt_ptr->surface_ptr = NULL;
+
+    // Situation 1: Initial map call, but surface has size (0x0) yet.
+    // => ill not be mapped yet, but only after a commit with non-zero size.
+    wl_signal_emit(&td_ptr->wlr_surface.events.map, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    td_ptr->wlr_xdg_surface.current.geometry.width = 200;
+    td_ptr->wlr_xdg_surface.current.geometry.height = 100;
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.unmap, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    // Situation 2: Size is set. Must get mapped upon surface 'map'.
+    wl_signal_emit(&td_ptr->wlr_surface.events.map, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.unmap, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
 
     wlmaker_xdg_toplevel_destroy(wxt_ptr);
 }
