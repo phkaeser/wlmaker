@@ -72,10 +72,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Fix: Crash with xterm observed with wlroots 0.19.
   * [done] xwl: Fix for audacious crashing on exit in Winamp mode.
   * [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
+  * [#325](https://github.com/phkaeser/wlmaker/issues/325): Set a default window position that is within the layout.
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Fix: Support alt-click to emulate right-click on laptop.
-  * Fix: Issue with PgUp/PgDn on laptop.
-  * [#325](https://github.com/phkaeser/wlmaker/issues/325): Set a default window position that is within the layout.
 
 * [done] Persist output state
   * [done] Save state for Output.
