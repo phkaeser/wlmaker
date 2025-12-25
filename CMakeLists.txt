@@ -21,7 +21,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(
   wlmaker
-  VERSION "0.6"
+  VERSION "0.7"
   DESCRIPTION "Wayland Maker - A Wayland compositor inspired by Window Maker"
   HOMEPAGE_URL "https://github.com/phkaeser/wlmaker"
   LANGUAGES C)
