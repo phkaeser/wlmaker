@@ -31,11 +31,16 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
   * Add means to change theme while running.
 
+* Windows
+  * Store and accept window state (fullscreen, maximize) before mapping.
+  * Initial placement algorithm.
+
 * Infrastructure
   * Recompute pointer focus max once per frame.
   * Read keymap from `/etc/default/keyboard` or similar.
   * Support keypad (tap to click) and middle click alternatives.
-  * On scaled output, pointer cursor is tiny.
+  * Support configurable means (eg. Alt+) to emulate right-click on laptop.
+  * Fix: On scaled output, pointer cursor is tiny.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
@@ -44,7 +49,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 **Focus**: Smooth resizing for surfaces and clean implementation, persist Output state.
 
-* Cleanups:
+* [done] Cleanups:
   * [done] Replace wlmtk_window_t, wlmtk_content_t & wlmtk_pane_t) with simpler wlmtk_window2_t implementation.
     * [done] Add wlmtk_window2_t as the updated window version.
     * [done] Replace wlmtk_window_t with wlmtk_window2_t for menu windows.
@@ -59,9 +64,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Move config files to XDG configuration home, and lookup from there.
     * [done] Move the desktop and logo files to XDG-compliant data paths.
   * [done] Use app_id for wlmclock, wlmeyes that encodes URL, as seen otherwise.
-  * [done] Fixes lost poitner focus when releasing right-clicked window menu.
+  * [done] Fixes lost pointer focus when releasing right-clicked window menu.
 
-* Bug fixes
+* [done] Bug fixes
   * [done] Resize-from-left jitter observed on the raspi or with gnome-terminal.
   * [done] Particularly when using large decorations, there is resize jitter.
   * [done] Fix size increase on client-side decoration when resizing: Internal size mismatch?
@@ -73,8 +78,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] xwl: Fix for audacious crashing on exit in Winamp mode.
   * [done] [#322](https://github.com/phkaeser/wlmaker/issues/322): Fix lost click with root menu.
   * [done] [#325](https://github.com/phkaeser/wlmaker/issues/325): Set a default window position that is within the layout.
-  * Store and accept window state (fullscreen, maximize) before mapping.
-  * Fix: Support alt-click to emulate right-click on laptop.
 
 * [done] Persist output state
   * [done] Save state for Output.
