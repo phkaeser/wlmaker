@@ -23,14 +23,17 @@ See [here](doc/FEATURES.md) for a detailed list of implemented or planned
 features, or the [roadmap](doc/ROADMAP.md) for what's planned for the upcoming
 versions.
 
-Highlights for current version ([0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)):
+Highlights for current version ([0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)):
 
-* *new* Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
-* *new* [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wmmenugen`), and can be navigated by keyboard.
-* *new* User manual at https://phkaeser.github.io/wlmaker/.
-* Builds with [wlroots 0.18](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
-* Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
+* *new* Rework *window* code: Fixes lags and jitter on resize and two crashing bugs.
+* *new* Look for config files relative to Freedesktop XDG base dir specification (new dependency: `libxdg-basedir-dev`)
+* *new* Ability to save output state in `${XDG_DATA_DIR}/OutputState.plist` and re-use on startup.
+* *new* Changes default key bindings to better conform with Linux-wide norms.
+* *new* Builds with [wlroots 0.19](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
+* [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wmmenugen`), and can be navigated by keyboard.
 * Screen saver support, through `ext-session-lock-v1` and `idle-inhibit-unstable-v1` protocols.
+* Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
 * Configurable through plist text files: [base configuration](etc/wlmaker.plist),
   [style](etc/style.plist), [root menu](etc/root-menu.plist) and
   [docks & workspaces](etc/wlmaker-state.plist).
@@ -39,7 +42,7 @@ Highlights for current version ([0.6](https://github.com/phkaeser/wlmaker/releas
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
   Use `--start_xwayland` argument to enable XWayland, it's off by default.
-* A prototype DockApp (`apps/wlmclock`).
+* Prototype DockApps (`apps/wlmclock`, `apps/wlmeyes`).
 
 ### All the details?
 
