@@ -64,7 +64,7 @@ IF(DOXYGEN_FOUND)
     COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_minimize_icon.png
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
   FILE(
-    COPY ${PROJECT_SOURCE_DIR}/doc/wlmaker-header.png
+    COPY ${PROJECT_SOURCE_DIR}/share/wlmaker.svg
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
 
 ELSE()

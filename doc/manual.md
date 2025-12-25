@@ -1,8 +1,6 @@
 # wlmaker Manual {#mainpage}
 
-![wlmaker Header](wlmaker-header.png)
-
-## wlmaker
+<div class="wlmtitle"><img src="wlmaker.svg" alt="logo" class="wlmlogo"> <span class="wlmprefix">Wayland</span>Maker - wlmaker</div>
 
 wlmaker is a [Wayland Compositor](https://en.wikipedia.org/wiki/Wayland_(protocol)#Wayland_compositors),
 designed to reproduce the behaviour of

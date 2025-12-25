@@ -95,12 +95,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Change drag-move to use 'Alt' not 'Logo+Alt'.
   * [done] Add menu option to add, respectively remove workspace.
 
-* Branding
+* [done] Branding
   * [done] Align SVG logo exactly with horizontals & verticals.
   * [done] Add white background elements for logo to show well on dark backgrounds.
   * [done] Install the icon suitable for XDG desktop. Includes 48x48 and 64x64.
-  * Propagate icon downstream to Debian's application definition.
-  * Documentation: Upsize header font, and show on div with white background.
+  * [done] Documentation: Upsize header font, and show on div with white background.
 
 ## [0.6](https://github.com/phkaeser/wlmaker/releases/tag/v0.6)
 

@@ -1,6 +1,4 @@
-![wlmaker Header](doc/wlmaker-header.png)
-
-# wlmaker - Wayland Maker
+# <img src="share/wlmaker.svg" style="height: 1.1em; width: 1.1em;" align="top"> WaylandMaker - wlmaker
 
 A [Wayland](https://wayland.freedesktop.org/) compositor inspired by
 [Window Maker](https://www.windowmaker.org/).
