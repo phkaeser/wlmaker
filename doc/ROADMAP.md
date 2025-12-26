@@ -44,6 +44,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
+  * Adds built-in XDG desktop file parsing: Eliminate downstream need to include wmmenugen, prepare for icons.
+  * If released: Build with wlroots-0.20.
 
 ## [0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)
 
