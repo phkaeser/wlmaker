@@ -919,14 +919,12 @@ void test_generated_menu(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
     wlmaker_root_menu_destroy(root_menu_ptr);
 
-    // Exercise & verify that a menu can be generated from output of
-    // Window Maker's `wmmenugen` command. This is conditional of that binary
-    // being present on the host.
+    // Exercise & verify that a menu can be generated from output of the
+    // `wlmtool` command.
     // Note: RootMenuDebian.plist is generated, it in WLMAKER_BINARY_DIR.
 #ifndef WLMAKER_BINARY_DIR
 #error "Missing definition of WLMAKER_BINARY_DIR!"
 #endif
-#if defined(WLMAKER_WMMENUGEN_PATH)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         WLMAKER_BINARY_DIR "/etc/RootMenuDebian.plist",
@@ -948,7 +946,6 @@ void test_generated_menu(bs_test_t *test_ptr)
         wlmtk_menu_item_get_state(item_ptr));
 
     wlmaker_root_menu_destroy(root_menu_ptr);
-#endif
 
     wlmaker_subprocess_monitor_destroy(server.monitor_ptr);
     wlmtk_root_destroy(server.root_ptr);
