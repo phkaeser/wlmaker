@@ -30,6 +30,7 @@ jobs:
           iwyu \
           libbacktrace-dev \
           libcairo2-dev \
+          libinih-dev \
           libncurses-dev \
           libwlroots-0.18-dev \
           libxdg-basedir-dev \
