@@ -9,3 +9,6 @@
 [submodule "dependencies"]
         path = dependencies
         url = https://github.com/phkaeser/wlmaker-dependencies.git
+[submodule "submodules/inih"]
+	path = submodules/inih
+	url = https://github.com/benhoyt/inih.git

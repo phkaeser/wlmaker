@@ -25,14 +25,16 @@ command to generate a plist menu output.
 
 @include tests/data/menu-generate.plist
 
-## wmmenugen
+## Automatic Generation
 
-Window Maker provides the tool [`wmmenugen`](https://www.windowmaker.org/docs/manpages/wmmenugen.html)
-to generate a Plist menu specification from a file specification; for example
-from the XDG application repository.
+Wayland Maker provides the `wlmtool` utility for generating a Plist menu
+specification from the applications found in the host's XDG application
+repository.
 
 This can be used to define a menu item with a submenu, or to directly define
 the toplevel root window.
 
 Example usage:
-@snippet{trimleft} etc/RootMenuDebian.plist wmmenugen
+@snippet{trimleft} etc/RootMenuDebian.plist wlmtool
+
+Alternatively, the [`wmmenugen`](https://www.windowmaker.org/docs/manpages/wmmenugen.html) tool from Window Maker can be used.

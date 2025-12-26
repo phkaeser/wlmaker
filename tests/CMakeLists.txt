@@ -34,6 +34,15 @@ TARGET_COMPILE_DEFINITIONS(
   wlmaker_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 ADD_TEST(NAME wlmaker_test COMMAND wlmaker_test)
 
+ADD_EXECUTABLE(desktop_parser_test desktop_parser_test.c)
+ADD_DEPENDENCIES(desktop_parser_test libbase desktop-parser)
+TARGET_LINK_LIBRARIES(
+  desktop_parser_test
+  desktop-parser
+  libbase)
+TARGET_COMPILE_DEFINITIONS(
+  desktop_parser_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
+
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(
     backend_test PROPERTIES

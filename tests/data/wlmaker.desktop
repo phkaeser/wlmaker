@@ -1,0 +1,13 @@
+# Made-up entry, used as input for desting the .desktop parser.
+[Desktop Entry]
+Name=WaylandMaker
+Comment=A Wayland compositor inspired by Window Maker
+Exec=/usr/local/bin/wlmaker
+TryExec=./wlmaker
+Path=/usr/local
+Type=Application
+Icon=wlmaker
+Hidden=false
+NoDisplay=false
+Terminal=true
+Categories=System;Compositor;

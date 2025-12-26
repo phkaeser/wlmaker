@@ -95,11 +95,6 @@ ELSE()
   MESSAGE(STATUS "libbacktrace not found. Will compile without.")
 ENDIF()
 
-FIND_PROGRAM(wmmenugen_executable NAMES wmmenugen OPTIONAL)
-IF(wmmenugen_executable)
-  MESSAGE(STATUS, "Found wmmenugen: ${wmmenugen_executable}")
-ENDIF(wmmenugen_executable)
-
 # Configuration. Remove CMakeCache.txt to rerun...
 OPTION(config_DEBUG "Include debugging information" ON)
 OPTION(config_OPTIM "Optimizations" OFF)
@@ -166,8 +161,9 @@ ADD_SUBDIRECTORY(third_party/protocols)
 ADD_SUBDIRECTORY(share)
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY(tool)
 
 ADD_SUBDIRECTORY(doc)
 
 # Adds submodules last, to permit checking on already-existing targets.
-ADD_SUBDIRECTORY(submodules/libbase)
+ADD_SUBDIRECTORY(submodules)

@@ -1,0 +1,10 @@
+wlmaker
+Copyright 2026 Google LLC & Philipp Käser (kaeser@gubbe.ch).
+
+This product includes software copyrighted by Google LLC
+(https://github.com/phkaeser/wlmaker).
+
+This product bundles the inih library, which is available under a "New BSD"
+(3-Clause) license.  For details, see the original license and copyright 
+information in submodules/inih/LICENSE.txt, or at
+https://github.com/benhoyt/inih/blob/master/LICENSE.txt.
