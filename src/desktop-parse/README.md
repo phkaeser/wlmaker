@@ -2,6 +2,7 @@
 
 * https://specifications.freedesktop.org/desktop-entry/latest/
 * https://specifications.freedesktop.org/menu/latest/
+* https://specifications.freedesktop.org/icon-theme/latest/
 * https://github.com/benhoyt/inih
 
 # Parse a single file

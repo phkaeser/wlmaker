@@ -18,8 +18,15 @@ FIND_PACKAGE(PkgConfig REQUIRED)
 PKG_CHECK_MODULES(INIH REQUIRED IMPORTED_TARGET inih>=58)
 
 
-ADD_EXECUTABLE(desktop-parse desktop_parse.c)
+ADD_EXECUTABLE(desktop-parse desktop_parse.c parse.c)
 TARGET_LINK_LIBRARIES(
   desktop-parse
   libbase
   inih)
+
+ADD_EXECUTABLE(parse_test parse_test.c parse.c)
+TARGET_LINK_LIBRARIES(
+  parse_test
+  libbase
+  inih)
+ADD_DEPENDENCIES(parse_test libbase)

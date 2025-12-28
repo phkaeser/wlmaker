@@ -21,6 +21,8 @@
 #include <libbase/libbase.h>
 #include <ini.h>
 
+#include "parse.h"
+
 /* == Declarations ========================================================= */
 
 /* == Data ================================================================= */
@@ -46,6 +48,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
     if (ini_parse("/etc/default/keyboard", handler, NULL)) {
         bs_log(BS_ERROR, "Failed");
+        return EXIT_FAILURE;
+    }
+
+    if (ini_parse("/usr/share/applications/firefox-esr.desktop",
+                  handle_desktop_file, NULL)) {
+        bs_log(BS_ERROR, "Failed desktop");
         return EXIT_FAILURE;
     }
 
