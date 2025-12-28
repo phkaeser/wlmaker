@@ -1,7 +1,17 @@
 # FIXME: Parser for desktop files
 
 * https://specifications.freedesktop.org/desktop-entry/latest/
+* https://specifications.freedesktop.org/menu/latest/
 * https://github.com/benhoyt/inih
+
+# Parse a single file
+
+* Get Type ("Application") is needed
+* Get boolean for Hidden, No...
+* Get TryExec
+* Get Exec
+* Get list of Categories
+* Get localized name
 
 # References from wlmmenugen
 
@@ -33,6 +43,7 @@ Skip:
 
 
 category lookup:
+-> see https://specifications.freedesktop.org/menu/latest/category-registry.html
 
     p = strtok(category, ";");
     while (p) {     /* get a known category */
