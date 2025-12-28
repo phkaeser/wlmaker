@@ -1,9 +1,9 @@
 /* ========================================================================= */
 /**
- * @file (>>>FILE<<<)
+ * @file `(file-name-nondirectory (buffer-file-name))`
  *
  * @copyright
- * Copyright (>>>YEAR<<<) Google LLC
+ * Copyright (c) `(format-time-string "%Y")` Google LLC and `user-full-name`
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-(>>>POINT<<<)
+$0
 
 /* == Declarations ========================================================= */
 
@@ -30,4 +30,4 @@
 
 /* == Unit Tests =========================================================== */
 
-/* == End of (>>>FILE<<<) ================================================== */
+/* == End of `(file-name-nondirectory (buffer-file-name))` ================= */
