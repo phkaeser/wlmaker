@@ -30,5 +30,5 @@ $0
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif __WLMAKER_`(upcase (file-name-nondirectory (file-name-sans-extension (buffer-file-name))))`_H__
+#endif  // __WLMAKER_`(upcase (file-name-nondirectory (file-name-sans-extension (buffer-file-name))))`_H__
 /* == End of `(file-name-nondirectory (buffer-file-name))` ================= */
