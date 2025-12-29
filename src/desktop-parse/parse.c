@@ -27,6 +27,8 @@
 
 /* == Declarations ========================================================= */
 
+static char *_create_locale_key(const char *l, const char *t, const char *m);
+
 /* == Data ================================================================= */
 
 static const char *desktop_entry_group_name = "Desktop Entry";
@@ -59,12 +61,74 @@ static const char *desktop_entry_group_name = "Desktop Entry";
 //
 static const char *key_regex_str =
     "^"
-    "[A-Za-z0-9-]+"
+    "([A-Za-z0-9-]+)"
     "(\\[[a-z]{2,3}[a-zA-Z0-9_@\\.-]*\\])?"
     "$";
 
 struct desktop_parser {
+    /** Describes a key entry, and extracts the optional localization key. */
     regex_t                   key_regex;
+
+    /** Lookup keys for localized strings, ordered in decreasing priority. */
+    char                      *localization_key[4];
+    /** Length of each of the localized strings. */
+    size_t                    localization_key_len[4];
+
+    struct desktop_entry      *desktop_entry_ptr;
+};
+
+/** Possible value types. */
+enum value_type {
+    DESKTOP_ENTRY_VALUE_TYPE_STRING,
+    DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
+    DESKTOP_ENTRY_VALUE_TYPE_ICONSTRING,
+    DESKTOP_ENTRY_VALUE_TYPE_BOOLEAN,
+    DESKTOP_ENTRY_VALUE_TYPE_NUMERIC
+};
+
+static bool translate_string(
+    const char *value_ptr,
+    void *dest_ptr,
+    int *prio_ptr)
+{
+    char **str_ptr_ptr = dest_ptr;
+    prio_ptr = prio_ptr;
+
+    if (NULL != *str_ptr_ptr) {
+        free(*str_ptr_ptr);
+    }
+    *str_ptr_ptr = strdup(value_ptr);
+    return NULL != *str_ptr_ptr;
+}
+
+struct key_descriptor {
+    const char *key;
+    size_t len;
+    enum value_type           type;
+
+    size_t ofs;
+
+    bool (*translate)(const char *value_ptr, void *dest_ptr, int *prio_ptr);
+};
+struct key_descriptor keys[] = {
+    {
+        .key = "Name",
+        .type = DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
+        .len = strlen("Name")
+    },
+    {
+        .key = "K",
+        .type = DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
+        .len = strlen("K"),
+    },
+    {
+        .key = "Exec",
+        .len = strlen("Exec"),
+        .type = DESKTOP_ENTRY_VALUE_TYPE_STRING,
+        .ofs = offsetof(struct desktop_entry, exec_ptr),
+        .translate = translate_string
+    },
+    { .key = NULL }
 };
 
 /* == Exported methods ===================================================== */
@@ -86,39 +150,51 @@ struct desktop_parser *desktop_parse_create(void)
     if (NULL != locale_ptr && 0 != strcmp("C", locale_ptr)) {
         // Splits the locale, see setlocale(3). The locale name is of the form
         // language[_territory][.codeset][@modifier].
-        char *copied_ptr = strdup(locale_ptr);
-        if (NULL == copied_ptr) {
+        char *language_ptr = strdup(locale_ptr);
+        if (NULL == language_ptr) {
             desktop_parse_destroy(parser);
             errno = ENOMEM;
             return NULL;
         }
-
-        strtok(copied_ptr, "@");
+        language_ptr = strtok(language_ptr, "@");
         char *modifier_ptr = strtok(NULL, "@");
-        strtok(copied_ptr, ".");
-        char *codeset_ptr = strtok(NULL, ".");
-        char *language_ptr = strtok(copied_ptr, "_");
+        language_ptr = strtok(language_ptr, ".");
+        strtok(NULL, ".");  // Code set. Not used for desktop file key.
+        language_ptr = strtok(language_ptr, "_");
         char *territory_ptr = strtok(NULL, "_");
 
-        // Now, build lookup priorities:
-        // highest: l_c@m
-        // next: l_c
-        // then: l@m
-        // then: l
-        bs_log(BS_ERROR, "FIXME: %s - %s - %s - %s",
-               language_ptr, territory_ptr, codeset_ptr, modifier_ptr);
+        // Matching order. See speficication in "Localized values for keys".
+        parser->localization_key[0] = _create_locale_key(
+            language_ptr, territory_ptr, modifier_ptr);
+        parser->localization_key[1] = _create_locale_key(
+            language_ptr, territory_ptr, NULL);
+        parser->localization_key[2] = _create_locale_key(
+            language_ptr, NULL, modifier_ptr);
+        parser->localization_key[3] = _create_locale_key(
+            language_ptr, NULL, NULL);
+        for (int i = 0; i < 4; ++i) {
+            char *c = parser->localization_key[i];
+            parser->localization_key_len[i] = c ? strlen(c) : 0;
+            bs_log(BS_ERROR, "FIXME: prio %d - %s", i, c);
+        }
 
-        free(copied_ptr);
+        free(language_ptr);
     }
-
 
     return parser;
 }
 
 /* ------------------------------------------------------------------------- */
 void desktop_parse_destroy(struct desktop_parser *parser)
-
 {
+    for (int i = 0; i < 4; ++i) {
+        if (NULL != parser->localization_key[i]) {
+            free(parser->localization_key[i]);
+        }
+        parser->localization_key[i] = NULL;
+        parser->localization_key_len[i] = 0;
+    }
+
     regfree(&parser->key_regex);
     free(parser);
 }
@@ -133,18 +209,52 @@ int handle_desktop_file(
     //struct desktop_entry *entry_ptr = userdata_ptr;
     struct desktop_parser *parser = userdata_ptr;
 
-    // Skip groups other than the main entry.
+    // FIXME: Skip groups other than the main entry. Remove type?
     if (0 != strcmp(section_ptr, desktop_entry_group_name)) return 1;
 
-    // key names: A-Za-z0-9-  [locale]
+    // Verify that the key is valid, with optional locale index.
+    regmatch_t m[3];
+    if (0 != regexec(&parser->key_regex, name_ptr, 3, &m[0], 0)) return 0;
 
-    regmatch_t matches[4];
-    if (0 != regexec(&parser->key_regex, name_ptr, 4, &matches[0], 0)) {
-        bs_log(BS_ERROR, "FIXME: no match for %s", name_ptr);
-        return 0;
-    } else {
-        bs_log(BS_WARNING, "FIXME: match for %s", name_ptr);
+    // Lookup priority of the LOCALE key, if given. -1 indicates the key had
+    // no LOCALE, and 4 indicates the key had no matching locale.
+    //
+    // FIXME: if there is a locale, but no match => ignore that value.
+    int priority = -1;
+    if (0 <= m[2].rm_so)
+    for (priority = 0; priority < 4; ++priority) {
+        if (0 < m[2].rm_eo - m[2].rm_so &&
+            (parser->localization_key_len[priority] + 2 ==
+             (size_t)(m[2].rm_eo - m[2].rm_so)) &&
+            0 == memcmp(
+                parser->localization_key[priority],
+                name_ptr + m[2].rm_so + 1,
+                parser->localization_key_len[priority])) break;
     }
+
+    // Look for a matching key descriptor, then translate.
+    for (const struct key_descriptor *key_ptr = &keys[0];
+         NULL != key_ptr->key;
+         ++key_ptr) {
+        if (0 >= m[1].rm_eo - m[1].rm_so ||
+            key_ptr->len != (size_t)(m[1].rm_eo - m[1].rm_so) ||
+            0 != memcmp(key_ptr->key, name_ptr + m[1].rm_so, key_ptr->len)) {
+            continue;
+        }
+
+
+        if (NULL == key_ptr->translate) {
+            bs_log(BS_ERROR, "FIXME: Match! %s prio %d", key_ptr->key, priority);
+            continue;
+        }
+
+        // Take localization key? Or, priority?. -> function to complain if
+        key_ptr->translate(
+            value_ptr,
+            (char*)parser->desktop_entry_ptr + key_ptr->ofs,
+            NULL);
+    }
+
 
     name_ptr = name_ptr;
     value_ptr = value_ptr;
@@ -154,6 +264,30 @@ int handle_desktop_file(
 }
 
 /* == Local (static) methods =============================================== */
+
+/**
+ * Creates a lookup key for localization.
+ *
+ * @param l Language ("lang"). If NULL, no string is created.
+ * @param t Territory (Freedesktop speficication: "COUNTRY"), may be NULL.
+ * @param m Modifier ("MODIFIER"), may be NULL.
+ *
+ * @return Pointer to an allocated string, holding "lang[_COUNTRY][@MODIFIER]",
+ *     or NULL on error, or NULL if `l` was NULL.
+ */
+char *_create_locale_key(const char *l, const char *t, const char *m)
+{
+    if (!l) return NULL;
+    size_t len = strlen(l)+1 + (t ? strlen(t)+1 : 0) + (m ? strlen(m)+1 : 0);
+
+    char *key_ptr = malloc(len);
+    if (NULL == key_ptr) return NULL;
+
+    snprintf(key_ptr, len, "%s%s%s%s%s", l,
+             (t ? "_" : ""), (t ? t : ""),
+             (m ? "@" : ""), (m ? m : ""));
+    return key_ptr;
+}
 
 /* == Unit Tests =========================================================== */
 
@@ -178,6 +312,8 @@ void _parse_test_key(bs_test_t *test_ptr)
     struct desktop_parser *p = desktop_parse_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
 
+    struct desktop_entry entry = {};
+    p->desktop_entry_ptr = &entry;
     const char *gn = desktop_entry_group_name;  // For convenience.
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K", "V"));
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de]", "V"));
@@ -185,9 +321,11 @@ void _parse_test_key(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de@d]", "V"));
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE.UTF-8]", "V"));
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de@euro]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE@euro]", "V"));
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[en_US@euro]", "V"));
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de.UTF-8@euro]", "V"));
     BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE.UTF-8@euro]", "V"));
+
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "Exec", "V"));
 
     desktop_parse_destroy(p);
 }

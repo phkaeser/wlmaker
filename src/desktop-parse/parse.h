@@ -39,6 +39,8 @@ struct desktop_entry {
     enum desktop_entry_type   type;
 
     char *name_ptr;
+    int name_priority;
+
     char *exec_ptr;
     char *categories;
 
