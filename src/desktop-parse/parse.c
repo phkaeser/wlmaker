@@ -20,13 +20,26 @@
 
 #include "parse.h"
 
-#include <errno.h>
+#include <ini.h>
 #include <locale.h>
 #include <regex.h>
 #include <string.h>
 
 /* == Declarations ========================================================= */
 
+/** Encapsulates both parser and entry as argument to the inih handler. */
+struct _desktop_parser_handler_arg {
+    /** Parser. */
+    const struct desktop_parser *parser;
+    /** The entry to parse into. */
+    struct desktop_entry      *entry_ptr;
+};
+
+static int _desktop_parser_handler(
+    void *userdata_ptr,
+    const char *section_ptr,
+    const char *name_ptr,
+    const char *value_ptr);
 static char *_create_locale_key(const char *l, const char *t, const char *m);
 
 /* == Data ================================================================= */
@@ -65,31 +78,20 @@ static const char *key_regex_str =
     "(\\[[a-z]{2,3}[a-zA-Z0-9_@\\.-]*\\])?"
     "$";
 
+/** Parser handle. */
 struct desktop_parser {
     /** Describes a key entry, and extracts the optional localization key. */
     regex_t                   key_regex;
-
     /** Lookup keys for localized strings, ordered in decreasing priority. */
     char                      *localization_key[4];
     /** Length of each of the localized strings. */
     size_t                    localization_key_len[4];
-
-    struct desktop_entry      *desktop_entry_ptr;
-};
-
-/** Possible value types. */
-enum value_type {
-    DESKTOP_ENTRY_VALUE_TYPE_STRING,
-    DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
-    DESKTOP_ENTRY_VALUE_TYPE_ICONSTRING,
-    DESKTOP_ENTRY_VALUE_TYPE_BOOLEAN,
-    DESKTOP_ENTRY_VALUE_TYPE_NUMERIC
 };
 
 static bool translate_string(
     const char *value_ptr,
     void *dest_ptr,
-    int *prio_ptr)
+    int8_t *prio_ptr)
 {
     char **str_ptr_ptr = dest_ptr;
     prio_ptr = prio_ptr;
@@ -101,31 +103,52 @@ static bool translate_string(
     return NULL != *str_ptr_ptr;
 }
 
+static void destroy_string(void *dest_ptr)
+{
+    char **str_ptr_ptr = dest_ptr;
+    if (NULL == *str_ptr_ptr) return;
+    free(*str_ptr_ptr);
+    *str_ptr_ptr = NULL;
+}
+
+/** Descriptor for a key. */
 struct key_descriptor {
+    /** The key's name. */
     const char *key;
+    /** Length of the key's name. */
     size_t len;
-    enum value_type           type;
 
+    /**
+     * Offset of the value field, relative to the userdata.
+     */
     size_t ofs;
+    /**
+     * Offset of the locale priority indicator. Iff priority_ofs != ofs, the
+     * field is treated as localized.
+     */
+    size_t priority_ofs;
 
-    bool (*translate)(const char *value_ptr, void *dest_ptr, int *prio_ptr);
+    /** Translator function. */
+    bool (*translate)(const char *value_ptr, void *dest_ptr, int8_t *prio_ptr);
+    /** Dtor. */
+    void (*destroy)(void *dest_ptr);
 };
+
 struct key_descriptor keys[] = {
     {
         .key = "Name",
-        .type = DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
-        .len = strlen("Name")
-    },
-    {
-        .key = "K",
-        .type = DESKTOP_ENTRY_VALUE_TYPE_LOCALESTRING,
-        .len = strlen("K"),
+        .len = strlen("Name"),
+        .ofs = offsetof(struct desktop_entry, name_ptr),
+        .translate = translate_string,
+        .destroy = destroy_string,
+        .priority_ofs = offsetof(struct desktop_entry, name_priority),
     },
     {
         .key = "Exec",
         .len = strlen("Exec"),
-        .type = DESKTOP_ENTRY_VALUE_TYPE_STRING,
         .ofs = offsetof(struct desktop_entry, exec_ptr),
+        .priority_ofs = offsetof(struct desktop_entry, exec_ptr),
+        .destroy = destroy_string,
         .translate = translate_string
     },
     { .key = NULL }
@@ -134,26 +157,22 @@ struct key_descriptor keys[] = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-struct desktop_parser *desktop_parse_create(void)
+struct desktop_parser *desktop_parser_create(const char *locale_ptr)
 {
     struct desktop_parser *parser = calloc(1, sizeof(struct desktop_parser));
     if (NULL == parser) return NULL;
 
     if (0 != regcomp(&parser->key_regex, key_regex_str, REG_EXTENDED)) {
-        bs_log(BS_ERROR, "FIXME: Failed regcomp");
-        desktop_parse_destroy(parser);
-        errno = EINVAL;
-        return 0;
+        desktop_parser_destroy(parser);
+        return NULL;
     }
 
-    char *locale_ptr = setlocale(LC_MESSAGES, NULL);
     if (NULL != locale_ptr && 0 != strcmp("C", locale_ptr)) {
         // Splits the locale, see setlocale(3). The locale name is of the form
         // language[_territory][.codeset][@modifier].
         char *language_ptr = strdup(locale_ptr);
         if (NULL == language_ptr) {
-            desktop_parse_destroy(parser);
-            errno = ENOMEM;
+            desktop_parser_destroy(parser);
             return NULL;
         }
         language_ptr = strtok(language_ptr, "@");
@@ -164,20 +183,18 @@ struct desktop_parser *desktop_parse_create(void)
         char *territory_ptr = strtok(NULL, "_");
 
         // Matching order. See speficication in "Localized values for keys".
-        parser->localization_key[0] = _create_locale_key(
-            language_ptr, territory_ptr, modifier_ptr);
-        parser->localization_key[1] = _create_locale_key(
-            language_ptr, territory_ptr, NULL);
-        parser->localization_key[2] = _create_locale_key(
-            language_ptr, NULL, modifier_ptr);
         parser->localization_key[3] = _create_locale_key(
+            language_ptr, territory_ptr, modifier_ptr);
+        parser->localization_key[2] = _create_locale_key(
+            language_ptr, territory_ptr, NULL);
+        parser->localization_key[1] = _create_locale_key(
+            language_ptr, NULL, modifier_ptr);
+        parser->localization_key[0] = _create_locale_key(
             language_ptr, NULL, NULL);
         for (int i = 0; i < 4; ++i) {
             char *c = parser->localization_key[i];
             parser->localization_key_len[i] = c ? strlen(c) : 0;
-            bs_log(BS_ERROR, "FIXME: prio %d - %s", i, c);
         }
-
         free(language_ptr);
     }
 
@@ -185,7 +202,7 @@ struct desktop_parser *desktop_parse_create(void)
 }
 
 /* ------------------------------------------------------------------------- */
-void desktop_parse_destroy(struct desktop_parser *parser)
+void desktop_parser_destroy(struct desktop_parser *parser)
 {
     for (int i = 0; i < 4; ++i) {
         if (NULL != parser->localization_key[i]) {
@@ -200,14 +217,51 @@ void desktop_parse_destroy(struct desktop_parser *parser)
 }
 
 /* ------------------------------------------------------------------------- */
-int handle_desktop_file(
+int desktop_parser_string_to_entry(
+    const struct desktop_parser *parser,
+    const char *string_ptr,
+    struct desktop_entry *entry_ptr)
+{
+    struct _desktop_parser_handler_arg arg = {
+        .parser = parser, .entry_ptr = entry_ptr
+    };
+    return ini_parse_string(string_ptr, _desktop_parser_handler, &arg);
+}
+
+/* ------------------------------------------------------------------------- */
+void desktop_parser_entry_release(struct desktop_entry *entry_ptr)
+{
+    for (const struct key_descriptor *key_ptr = &keys[0];
+         NULL != key_ptr->key;
+         ++key_ptr) {
+        if (NULL == key_ptr->destroy) continue;
+        key_ptr->destroy((char*)entry_ptr + key_ptr->ofs);
+    }
+    *entry_ptr = (struct desktop_entry){};
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback handler for the inih parse methods. Parses "Desktop Entry".
+ *
+ * @param section_ptr
+ * @param name_ptr
+ * @param value_ptr
+ *
+ * @return 0 on error, and 1 if the name/value was parsed (or skipped for
+ *     legitimate reason).
+ */
+int _desktop_parser_handler(
     void *userdata_ptr,
     const char *section_ptr,
     const char *name_ptr,
-    const char *value_ptr)
+    const char *val_ptr)
 {
-    //struct desktop_entry *entry_ptr = userdata_ptr;
-    struct desktop_parser *parser = userdata_ptr;
+    struct _desktop_parser_handler_arg *arg = userdata_ptr;
+    const struct desktop_parser *parser = arg->parser;
+    struct desktop_entry *entry_ptr = arg->entry_ptr;
 
     // FIXME: Skip groups other than the main entry. Remove type?
     if (0 != strcmp(section_ptr, desktop_entry_group_name)) return 1;
@@ -216,55 +270,47 @@ int handle_desktop_file(
     regmatch_t m[3];
     if (0 != regexec(&parser->key_regex, name_ptr, 3, &m[0], 0)) return 0;
 
-    // Lookup priority of the LOCALE key, if given. -1 indicates the key had
-    // no LOCALE, and 4 indicates the key had no matching locale.
-    //
-    // FIXME: if there is a locale, but no match => ignore that value.
-    int priority = -1;
-    if (0 <= m[2].rm_so)
-    for (priority = 0; priority < 4; ++priority) {
+    // If there is a LOCALE key, attempt to match it with the configured locale
+    // and priority. 0 indicates no LOCALE key, higher value is better match.
+    int priority = 0 < m[2].rm_so;
+    for (; 0 < priority && priority <= 4; ++priority) {
+        size_t len = parser->localization_key_len[priority - 1];
+        const char *lk = parser->localization_key[priority - 1];
         if (0 < m[2].rm_eo - m[2].rm_so &&
-            (parser->localization_key_len[priority] + 2 ==
-             (size_t)(m[2].rm_eo - m[2].rm_so)) &&
-            0 == memcmp(
-                parser->localization_key[priority],
-                name_ptr + m[2].rm_so + 1,
-                parser->localization_key_len[priority])) break;
+            len + 2 == (size_t)(m[2].rm_eo - m[2].rm_so) &&
+            0 == memcmp(lk, name_ptr + m[2].rm_so + 1, len)) break;
     }
+    // 5 means we didn't have a match: Skip this key/value pair.
+    if (5 <= priority) return 1;
 
     // Look for a matching key descriptor, then translate.
-    for (const struct key_descriptor *key_ptr = &keys[0];
-         NULL != key_ptr->key;
-         ++key_ptr) {
+    for (const struct key_descriptor *kd = &keys[0]; kd->key; ++kd) {
         if (0 >= m[1].rm_eo - m[1].rm_so ||
-            key_ptr->len != (size_t)(m[1].rm_eo - m[1].rm_so) ||
-            0 != memcmp(key_ptr->key, name_ptr + m[1].rm_so, key_ptr->len)) {
-            continue;
+            kd->len != (size_t)(m[1].rm_eo - m[1].rm_so) ||
+            0 != memcmp(kd->key, name_ptr + m[1].rm_so, kd->len)) continue;
+
+        // Descriptor doesn't expect a LOCALE, but the key had one: Fail.
+        if (kd->priority_ofs == kd->ofs && 0 < priority) return 0;
+
+        // Don't overwrite higher priority or earlier values for same priority.
+        if (kd->priority_ofs != kd->ofs) {
+            int8_t stored_priority = ((int8_t*)entry_ptr)[kd->priority_ofs];
+            if (stored_priority & (1 << priority)) return 0;  // Duplicate.
+            ((int8_t*)entry_ptr)[kd->priority_ofs] |= 1 << priority;
+            if (stored_priority > (1 << priority)) return 1;  // Higher prio.
+        } else {
+            if (NULL != *(char**)((char*)entry_ptr + kd->ofs)) return 0;
         }
 
-
-        if (NULL == key_ptr->translate) {
-            bs_log(BS_ERROR, "FIXME: Match! %s prio %d", key_ptr->key, priority);
-            continue;
-        }
-
-        // Take localization key? Or, priority?. -> function to complain if
-        key_ptr->translate(
-            value_ptr,
-            (char*)parser->desktop_entry_ptr + key_ptr->ofs,
-            NULL);
+        if (!kd->translate(val_ptr, (char*)entry_ptr+kd->ofs, NULL)) return 0;
+        return 1;
     }
 
-
-    name_ptr = name_ptr;
-    value_ptr = value_ptr;
-
-    // FIXME
+    // Unknown key. Skip.
     return 1;
 }
 
-/* == Local (static) methods =============================================== */
-
+/* ------------------------------------------------------------------------- */
 /**
  * Creates a lookup key for localization.
  *
@@ -293,41 +339,98 @@ char *_create_locale_key(const char *l, const char *t, const char *m)
 
 /* == Unit tests =========================================================== */
 
-static void _parse_test_key(bs_test_t *test_ptr);
+static void _desktop_parser_test_ini_string(bs_test_t *test_ptr);
+static void _desktop_parser_test_locale_string(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
-static const bs_test_case_t   parse_test_cases[] = {
-    { true, "key", _parse_test_key },
+static const bs_test_case_t   _desktop_parser_test_cases[] = {
+    { true, "ini_string", _desktop_parser_test_ini_string },
+    { true, "locale_string", _desktop_parser_test_locale_string },
     BS_TEST_CASE_SENTINEL()
 };
 
-const bs_test_set_t           parse_test_set = BS_TEST_SET(
-    true, "parse", parse_test_cases);
+const bs_test_set_t           desktop_parser_test_set = BS_TEST_SET(
+    true, "parse", _desktop_parser_test_cases);
 
-void _parse_test_key(bs_test_t *test_ptr)
+/* ------------------------------------------------------------------------- */
+void _desktop_parser_test_ini_string(bs_test_t *test_ptr)
 {
-    bs_log(BS_ERROR, "FIXME: locale %s", setlocale(LC_MESSAGES, "en_US.UTF-8@euro")); //_US.UTF-8@euro"));
-    bs_log(BS_ERROR, "FIXME: locale %s", setlocale(LC_MESSAGES, NULL));
-
-    struct desktop_parser *p = desktop_parse_create();
+    struct desktop_parser *p = desktop_parser_create("en_US.UTF-8@euro");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
 
-    struct desktop_entry entry = {};
-    p->desktop_entry_ptr = &entry;
-    const char *gn = desktop_entry_group_name;  // For convenience.
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de@d]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE.UTF-8]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de@euro]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[en_US@euro]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de.UTF-8@euro]", "V"));
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "K[de_DE.UTF-8@euro]", "V"));
+    struct desktop_entry e = {};
+    static const char *i = "\
+[Desktop Entry]\n\
+Exec=TheBinary\n\
+Name[en]=Name1\n\
+Name[en_US@euro]=Name2\n\
+Name[en_US]=Name3\n\
+Name[de]=DerName";
+    BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
 
-    BS_TEST_VERIFY_NEQ(test_ptr, 0, handle_desktop_file(p, gn, "Exec", "V"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "TheBinary", e.exec_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "Name2", e.name_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 4));
 
-    desktop_parse_destroy(p);
+    desktop_parser_entry_release(&e);
+    desktop_parser_destroy(p);
+}
+
+/* ------------------------------------------------------------------------- */
+void _desktop_parser_test_locale_string(bs_test_t *test_ptr)
+{
+    // For convenience.
+    const char *gn = desktop_entry_group_name;
+    int (*h)(void *, const char *, const char *, const char *) =
+        _desktop_parser_handler;
+
+    struct desktop_entry e = {};
+    struct _desktop_parser_handler_arg ha = {
+        .parser = desktop_parser_create("en_US.UTF-8@euro"),
+        .entry_ptr = &e
+    };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ha.parser);
+
+    // 'Exec' is not a localestring. Fail.
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Exec[en]", "x"));
+
+    // Name is a localestring. Exercise increasing priority.
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name", "n0"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n0", e.name_ptr);
+    // Cannot set twice.
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name", "n10"));
+
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name[en]", "n1"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n1", e.name_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority && (1 << 1));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name", "n0"));
+    e.name_priority = 1 << 1;
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name", "n0"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n1", e.name_ptr);
+
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name[en@euro]", "n2"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n2", e.name_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 2));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name[en]", "n1"));
+    e.name_priority = 1 << 2;
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name[en]", "n1"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n2", e.name_ptr);
+
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name[en_US]", "n3"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n3", e.name_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 3));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name[en@euro]", "n2"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n3", e.name_ptr);
+
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, h(&ha, gn, "Name[en_US@euro]", "n4"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n4", e.name_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 4));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name[en_US@euro]", "n4"));
+    BS_TEST_VERIFY_EQ(test_ptr, 0, h(&ha, gn, "Name[en_US]", "n3"));
+    BS_TEST_VERIFY_STREQ(test_ptr, "n4", e.name_ptr);
+
+    desktop_parser_destroy((struct desktop_parser*)ha.parser);
+    desktop_parser_entry_release(&e);
 }
 
 /* == End of parse.c ======================================================= */

@@ -33,7 +33,7 @@ int main(int argc, const char **argv)
     const bs_test_param_t params = { .test_data_dir_ptr = TEST_DATA_DIR };
 
     const bs_test_set_t *sets[] = {
-        &parse_test_set,
+        &desktop_parser_test_set,
         NULL
     };
 

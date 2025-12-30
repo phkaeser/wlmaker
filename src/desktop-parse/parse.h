@@ -27,6 +27,8 @@
 extern "C" {
 #endif  // __cplusplus
 
+struct desktop_parser;
+
 /** Permissible values for `Type=...`. */
 enum desktop_entry_type {
     DESKTOP_ENTRY_TYPE_UNKONN = 0,
@@ -38,27 +40,45 @@ enum desktop_entry_type {
 struct desktop_entry {
     enum desktop_entry_type   type;
 
-    char *name_ptr;
-    int name_priority;
+    int8_t name_priority;
 
+    char *name_ptr;
     char *exec_ptr;
     char *categories;
-
 };
 
-struct desktop_parser;
+/**
+ * Creates a desktop parser, using the provided locale.
+ *
+ * @param locale_ptr          Locale set for `LC_MESSAGES`. See setlocale(3).
+ *
+ * @return Pointer to the desktop parser, or NULL on error. Must be destroyed
+ *     by calling @ref desktop_parse_destroy.
+ */
+struct desktop_parser *desktop_parser_create(const char *locale_ptr);
 
-struct desktop_parser *desktop_parse_create(void);
-void desktop_parse_destroy(struct desktop_parser *parser_ptr);
+/**
+ * Destroys the desktop parser.
+ *
+ * @param parser
+ */
+void desktop_parser_destroy(struct desktop_parser *parser);
 
-int handle_desktop_file(
-    void *userdata_ptr,
-    const char *section_ptr,
-    const char *name_ptr,
-    const char *value_ptr);
+int desktop_parser_string_to_entry(
+    const struct desktop_parser *parser,
+    const char *string_ptr,
+    struct desktop_entry *entry_ptr);
+
+
+/**
+ * Releases the resources associated to the entry.
+ *
+ * @param entry_ptr
+ */
+void desktop_parser_entry_release(struct desktop_entry *entry_ptr);
 
 /** Unit test set. */
-extern const bs_test_set_t    parse_test_set;
+extern const bs_test_set_t    desktop_parser_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

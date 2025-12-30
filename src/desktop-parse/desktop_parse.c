@@ -51,12 +51,6 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         return EXIT_FAILURE;
     }
 
-    if (ini_parse("/usr/share/applications/firefox-esr.desktop",
-                  handle_desktop_file, NULL)) {
-        bs_log(BS_ERROR, "Failed desktop");
-        return EXIT_FAILURE;
-    }
-
     bs_log(BS_ERROR, "Success.");
     return 0;
 }
