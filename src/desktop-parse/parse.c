@@ -88,6 +88,11 @@ struct desktop_parser {
     size_t                    localization_key_len[4];
 };
 
+static bool _desktop_parser_translate_type(
+    const char *value_ptr,
+    void *dest_ptr,
+    int8_t *prio_ptr);
+
 static bool translate_string(
     const char *value_ptr,
     void *dest_ptr,
@@ -135,6 +140,14 @@ struct key_descriptor {
 };
 
 struct key_descriptor keys[] = {
+    {
+        .key = "Type",
+        .len = strlen("Type"),
+        .ofs = offsetof(struct desktop_entry, type),
+        .destroy = NULL,
+        .priority_ofs = offsetof(struct desktop_entry, type),
+        .translate = _desktop_parser_translate_type,
+    },
     {
         .key = "Name",
         .len = strlen("Name"),
@@ -234,8 +247,9 @@ void desktop_parser_entry_release(struct desktop_entry *entry_ptr)
     for (const struct key_descriptor *key_ptr = &keys[0];
          NULL != key_ptr->key;
          ++key_ptr) {
-        if (NULL == key_ptr->destroy) continue;
-        key_ptr->destroy((char*)entry_ptr + key_ptr->ofs);
+        if (key_ptr->destroy) {
+            key_ptr->destroy((char*)entry_ptr + key_ptr->ofs);
+        }
     }
     *entry_ptr = (struct desktop_entry){};
 }
@@ -335,7 +349,37 @@ char *_create_locale_key(const char *l, const char *t, const char *m)
     return key_ptr;
 }
 
-/* == Unit Tests =========================================================== */
+/* ------------------------------------------------------------------------- */
+/**
+ * Translates the "Type" key into an enum deskop_entry_type.
+ *
+ * @param value_ptr
+ * @param dest_ptr
+ * @param prio_ptr            Unused.
+ *
+ * @return true on success.
+ */
+bool _desktop_parser_translate_type(
+    const char *value_ptr,
+    void *dest_ptr,
+    int8_t *prio_ptr)
+{
+    enum desktop_entry_type *entry_type_ptr = dest_ptr;
+    prio_ptr = prio_ptr;
+
+    if (0 == strcmp("Application", value_ptr)) {
+        *entry_type_ptr = DESKTOP_ENTRY_TYPE_APPLICATION;
+        return true;
+    } else if (0 == strcmp("Link", value_ptr)) {
+        *entry_type_ptr = DESKTOP_ENTRY_TYPE_LINK;
+        return true;
+    } else if (0 == strcmp("Directory", value_ptr)) {
+        *entry_type_ptr = DESKTOP_ENTRY_TYPE_DIRECTORY;
+        return true;
+    }
+    *entry_type_ptr = DESKTOP_ENTRY_TYPE_UNKNOWN;
+    return false;
+}
 
 /* == Unit tests =========================================================== */
 

@@ -2,6 +2,31 @@
 /**
  * @file parse.h
  *
+ * Simple parser for FreeDesktop `.desktop` files, to provide application-
+ * specific information within a compositor and for constructing application
+ * menus.
+ *
+ * Reference:
+ * * http://specifications.freedesktop.org/desktop-entry/1.5/
+ *
+ * Supported keys:
+ * * [ ] Type
+ * * [ ] Name
+ * * [ ] NoDisplay
+ * * [ ] Hidden
+ * * [ ] Exec
+ * * [ ] TryExec
+ * * [ ] Path
+ * * [ ] Terminal
+ * * [ ] Categories
+ *
+ * TODO(kaeser@gubbe.ch):
+ * * unescape the string
+ * * handle the %F, ... speficiers (remove them?)
+ * * split categories
+ * * add wlmmenugen with --locale option.
+ * * add bool, number
+ *
  * @copyright
  * Copyright (c) 2025 Google LLC and Philipp Kaeser
  *
@@ -31,7 +56,7 @@ struct desktop_parser;
 
 /** Permissible values for `Type=...`. */
 enum desktop_entry_type {
-    DESKTOP_ENTRY_TYPE_UNKONN = 0,
+    DESKTOP_ENTRY_TYPE_UNKNOWN = 0,
     DESKTOP_ENTRY_TYPE_APPLICATION = 1,
     DESKTOP_ENTRY_TYPE_LINK = 2,
     DESKTOP_ENTRY_TYPE_DIRECTORY = 3,
