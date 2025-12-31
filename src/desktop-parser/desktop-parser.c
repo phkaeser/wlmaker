@@ -90,31 +90,14 @@ struct desktop_parser {
 
 static bool _desktop_parser_translate_type(
     const char *value_ptr,
-    void *dest_ptr,
-    int8_t *prio_ptr);
-
-static bool translate_string(
+    void *dest_ptr);
+static bool _desktop_parser_translate_boolean(
     const char *value_ptr,
-    void *dest_ptr,
-    int8_t *prio_ptr)
-{
-    char **str_ptr_ptr = dest_ptr;
-    prio_ptr = prio_ptr;
-
-    if (NULL != *str_ptr_ptr) {
-        free(*str_ptr_ptr);
-    }
-    *str_ptr_ptr = strdup(value_ptr);
-    return NULL != *str_ptr_ptr;
-}
-
-static void destroy_string(void *dest_ptr)
-{
-    char **str_ptr_ptr = dest_ptr;
-    if (NULL == *str_ptr_ptr) return;
-    free(*str_ptr_ptr);
-    *str_ptr_ptr = NULL;
-}
+    void *dest_ptr);
+static bool _desktop_parser_translate_string(
+    const char *value_ptr,
+    void *dest_ptr);
+static void _desktop_parser_destroy_string(void *dest_ptr);
 
 /** Descriptor for a key. */
 struct key_descriptor {
@@ -134,7 +117,7 @@ struct key_descriptor {
     size_t priority_ofs;
 
     /** Translator function. */
-    bool (*translate)(const char *value_ptr, void *dest_ptr, int8_t *prio_ptr);
+    bool (*translate)(const char *value_ptr, void *dest_ptr);
     /** Dtor. */
     void (*destroy)(void *dest_ptr);
 };
@@ -149,11 +132,35 @@ struct key_descriptor keys[] = {
         .translate = _desktop_parser_translate_type,
     },
     {
+        .key = "Hidden",
+        .len = strlen("Hidden"),
+        .ofs = offsetof(struct desktop_entry, hidden),
+        .priority_ofs = offsetof(struct desktop_entry, hidden),
+        .destroy = NULL,
+        .translate = _desktop_parser_translate_boolean,
+    },
+    {
+        .key = "NoDisplay",
+        .len = strlen("NoDisplay"),
+        .ofs = offsetof(struct desktop_entry, no_display),
+        .priority_ofs = offsetof(struct desktop_entry, no_display),
+        .destroy = NULL,
+        .translate = _desktop_parser_translate_boolean,
+    },
+    {
+        .key = "Terminal",
+        .len = strlen("Terminal"),
+        .ofs = offsetof(struct desktop_entry, terminal),
+        .priority_ofs = offsetof(struct desktop_entry, terminal),
+        .destroy = NULL,
+        .translate = _desktop_parser_translate_boolean,
+    },
+    {
         .key = "Name",
         .len = strlen("Name"),
         .ofs = offsetof(struct desktop_entry, name_ptr),
-        .translate = translate_string,
-        .destroy = destroy_string,
+        .translate = _desktop_parser_translate_string,
+        .destroy = _desktop_parser_destroy_string,
         .priority_ofs = offsetof(struct desktop_entry, name_priority),
     },
     {
@@ -161,8 +168,8 @@ struct key_descriptor keys[] = {
         .len = strlen("Exec"),
         .ofs = offsetof(struct desktop_entry, exec_ptr),
         .priority_ofs = offsetof(struct desktop_entry, exec_ptr),
-        .destroy = destroy_string,
-        .translate = translate_string
+        .destroy = _desktop_parser_destroy_string,
+        .translate = _desktop_parser_translate_string
     },
     { .key = NULL }
 };
@@ -326,7 +333,7 @@ int _desktop_parser_handler(
             if (stored_priority > (1 << priority)) return 1;  // Higher prio.
         }
 
-        if (!kd->translate(val_ptr, (char*)entry_ptr+kd->ofs, NULL)) return 0;
+        if (!kd->translate(val_ptr, (char*)entry_ptr+kd->ofs)) return 0;
         return 1;
     }
 
@@ -365,17 +372,14 @@ char *_create_locale_key(const char *l, const char *t, const char *m)
  *
  * @param value_ptr
  * @param dest_ptr
- * @param prio_ptr            Unused.
  *
  * @return true on success.
  */
 bool _desktop_parser_translate_type(
     const char *value_ptr,
-    void *dest_ptr,
-    int8_t *prio_ptr)
+    void *dest_ptr)
 {
     enum desktop_entry_type *entry_type_ptr = dest_ptr;
-    prio_ptr = prio_ptr;
 
     if (0 == strcmp("Application", value_ptr)) {
         *entry_type_ptr = DESKTOP_ENTRY_TYPE_APPLICATION;
@@ -389,6 +393,64 @@ bool _desktop_parser_translate_type(
     }
     *entry_type_ptr = DESKTOP_ENTRY_TYPE_UNKNOWN;
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Translates a boolean-typed value into a bool at *dest_ptr.
+ *
+ * @param value_ptr           Must either be "false" or "true".
+ * @param dest_ptr            Pointer to a bool.
+ *
+ * @return true on success.
+ */
+bool _desktop_parser_translate_boolean(
+    const char *value_ptr,
+    void *dest_ptr)
+{
+    bool *bool_ptr = dest_ptr;
+
+    if (0 == strcmp("true", value_ptr)) {
+        *bool_ptr = true;
+        return true;
+    } else if (0 == strcmp("false", value_ptr)) {
+        *bool_ptr = false;
+        return true;
+    }
+    *bool_ptr = false;
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Translates a string.
+ *
+ * @param value_ptr
+ * @param dest_ptr
+ *
+ * @return true on success.
+ */
+bool _desktop_parser_translate_string(
+    const char *value_ptr,
+    void *dest_ptr)
+{
+    char **str_ptr_ptr = dest_ptr;
+
+    if (NULL != *str_ptr_ptr) {
+        free(*str_ptr_ptr);
+    }
+    *str_ptr_ptr = strdup(value_ptr);
+    return NULL != *str_ptr_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Frees the memory associated with the string. */
+void _desktop_parser_destroy_string(void *dest_ptr)
+{
+    char **str_ptr_ptr = dest_ptr;
+    if (NULL == *str_ptr_ptr) return;
+    free(*str_ptr_ptr);
+    *str_ptr_ptr = NULL;
 }
 
 /* == Unit tests =========================================================== */
@@ -446,6 +508,9 @@ void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, DESKTOP_ENTRY_TYPE_APPLICATION, e.type);
     BS_TEST_VERIFY_STREQ(test_ptr, "WaylandMaker", e.name_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "/usr/local/bin/wlmaker", e.exec_ptr);
+    BS_TEST_VERIFY_FALSE(test_ptr, e.hidden);
+    BS_TEST_VERIFY_FALSE(test_ptr, e.no_display);
+    BS_TEST_VERIFY_TRUE(test_ptr, e.terminal);
 
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);

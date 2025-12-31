@@ -11,13 +11,13 @@
  *
  * Supported keys:
  * * [*] Type
+ * * [*] NoDisplay
+ * * [*] Hidden
+ * * [*] Terminal
  * * [ ] Name
- * * [ ] NoDisplay
- * * [ ] Hidden
  * * [ ] Exec
  * * [ ] TryExec
  * * [ ] Path
- * * [ ] Terminal
  * * [ ] Categories
  *
  * TODO(kaeser@gubbe.ch):
@@ -25,7 +25,7 @@
  * * handle the %F, ... speficiers (remove them?)
  * * split categories
  * * add wlmmenugen with --locale option.
- * * add bool, number
+ * * add number
  *
  * @copyright
  * Copyright (c) 2025 Google LLC and Philipp Kaeser
@@ -62,14 +62,26 @@ enum desktop_entry_type {
     DESKTOP_ENTRY_TYPE_DIRECTORY = 3,
 };
 
+/** Holds information for one desktop entry. */
 struct desktop_entry {
+    /** Type of the desktop entry. */
     enum desktop_entry_type   type;
 
+    /** Whether this desktop entry had been deleted (to be ignored). */
+    bool                      hidden;
+    /** Whether to exclude this entry from the menus. */
+    bool                      no_display;
+    /** Whether the program runs in a terminal window. */
+    bool                      terminal;
+
+    /** Helper for localized "Name". */
     int8_t name_priority;
 
+    /** Localized specific name of the application. */
     char *name_ptr;
+
+    /** Program to execute, possibly with arguments. */
     char *exec_ptr;
-    char *categories;
 };
 
 /**
