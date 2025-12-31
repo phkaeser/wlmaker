@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=WaylandMaker
+Comment=A Wayland compositor inspired by Window Maker
+Exec=/usr/local/bin/wlmaker
+Type=Application
+Icon=wlmaker

@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file parse.h
+ * @file desktop-parser.h
  *
  * Simple parser for FreeDesktop `.desktop` files, to provide application-
  * specific information within a compositor and for constructing application
@@ -10,7 +10,7 @@
  * * http://specifications.freedesktop.org/desktop-entry/1.5/
  *
  * Supported keys:
- * * [ ] Type
+ * * [*] Type
  * * [ ] Name
  * * [ ] NoDisplay
  * * [ ] Hidden
@@ -89,11 +89,33 @@ struct desktop_parser *desktop_parser_create(const char *locale_ptr);
  */
 void desktop_parser_destroy(struct desktop_parser *parser);
 
+/**
+ * Parses a file into the provided entry.
+ *
+ * @param parser
+ * @param fname_ptr
+ * @param entry_ptr
+ *
+ * @return 0 on success, or the line number where the parser failed.
+ */
+int desktop_parser_file_to_entry(
+    const struct desktop_parser *parser,
+    const char *fname_ptr,
+    struct desktop_entry *entry_ptr);
+
+/**
+ * Parses an in-memory string into the provided entry.
+ *
+ * @param parser
+ * @param fname_ptr
+ * @param entry_ptr
+ *
+ * @return 0 on success, or the line number where the parser failed.
+ */
 int desktop_parser_string_to_entry(
     const struct desktop_parser *parser,
     const char *string_ptr,
     struct desktop_entry *entry_ptr);
-
 
 /**
  * Releases the resources associated to the entry.

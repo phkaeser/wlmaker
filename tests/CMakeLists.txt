@@ -40,6 +40,8 @@ TARGET_LINK_LIBRARIES(
   desktop_parser_test
   desktop-parser
   libbase)
+TARGET_COMPILE_DEFINITIONS(
+  desktop_parser_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(

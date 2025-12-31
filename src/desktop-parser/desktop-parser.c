@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file parse.c
+ * @file desktop-parser.c
  *
  * @copyright
  * Copyright (c) 2025 Google LLC and Philipp Kaeser
@@ -144,8 +144,8 @@ struct key_descriptor keys[] = {
         .key = "Type",
         .len = strlen("Type"),
         .ofs = offsetof(struct desktop_entry, type),
-        .destroy = NULL,
         .priority_ofs = offsetof(struct desktop_entry, type),
+        .destroy = NULL,
         .translate = _desktop_parser_translate_type,
     },
     {
@@ -227,6 +227,18 @@ void desktop_parser_destroy(struct desktop_parser *parser)
 
     regfree(&parser->key_regex);
     free(parser);
+}
+
+/* ------------------------------------------------------------------------- */
+int desktop_parser_file_to_entry(
+    const struct desktop_parser *parser,
+    const char *fname_ptr,
+    struct desktop_entry *entry_ptr)
+{
+    struct _desktop_parser_handler_arg arg = {
+        .parser = parser, .entry_ptr = entry_ptr
+    };
+    return ini_parse(fname_ptr, _desktop_parser_handler, &arg);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -312,8 +324,6 @@ int _desktop_parser_handler(
             if (stored_priority & (1 << priority)) return 0;  // Duplicate.
             ((int8_t*)entry_ptr)[kd->priority_ofs] |= 1 << priority;
             if (stored_priority > (1 << priority)) return 1;  // Higher prio.
-        } else {
-            if (NULL != *(char**)((char*)entry_ptr + kd->ofs)) return 0;
         }
 
         if (!kd->translate(val_ptr, (char*)entry_ptr+kd->ofs, NULL)) return 0;
@@ -384,11 +394,13 @@ bool _desktop_parser_translate_type(
 /* == Unit tests =========================================================== */
 
 static void _desktop_parser_test_ini_string(bs_test_t *test_ptr);
+static void _desktop_parser_test_ini_file(bs_test_t *test_ptr);
 static void _desktop_parser_test_locale_string(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 static const bs_test_case_t   _desktop_parser_test_cases[] = {
     { true, "ini_string", _desktop_parser_test_ini_string },
+    { true, "ini_file", _desktop_parser_test_ini_file },
     { true, "locale_string", _desktop_parser_test_locale_string },
     BS_TEST_CASE_SENTINEL()
 };
@@ -415,6 +427,25 @@ Name[de]=DerName";
     BS_TEST_VERIFY_STREQ(test_ptr, "TheBinary", e.exec_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "Name2", e.name_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 4));
+
+    desktop_parser_entry_release(&e);
+    desktop_parser_destroy(p);
+}
+
+/* ------------------------------------------------------------------------- */
+void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
+{
+    struct desktop_parser *p = desktop_parser_create("en_US.UTF-8@euro");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
+
+    struct desktop_entry e = {};
+    const char *f = bs_test_data_path(test_ptr, "wlmaker.desktop");
+    BS_TEST_VERIFY_EQ_OR_RETURN(
+        test_ptr, 0, desktop_parser_file_to_entry(p, f, &e));
+
+    BS_TEST_VERIFY_EQ(test_ptr, DESKTOP_ENTRY_TYPE_APPLICATION, e.type);
+    BS_TEST_VERIFY_STREQ(test_ptr, "WaylandMaker", e.name_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "/usr/local/bin/wlmaker", e.exec_ptr);
 
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);
