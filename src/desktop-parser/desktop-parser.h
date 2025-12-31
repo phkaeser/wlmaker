@@ -42,8 +42,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_PARSE_H__
-#define __WLMAKER_PARSE_H__
+#ifndef __WLMAKER_DESKTOP_PARSER_H__
+#define __WLMAKER_DESKTOP_PARSER_H__
 
 #include <stdbool.h>
 #include <libbase/libbase.h>
@@ -109,5 +109,5 @@ extern const bs_test_set_t    desktop_parser_test_set;
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // __WLMAKER_PARSE_H__
-/* == End of parse.h ======================================================= */
+#endif  // __WLMAKER_DESKTOP_PARSER_H__
+/* == End of desktop-parser.h ============================================== */

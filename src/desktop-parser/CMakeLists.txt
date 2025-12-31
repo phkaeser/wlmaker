@@ -17,16 +17,19 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 FIND_PACKAGE(PkgConfig REQUIRED)
 PKG_CHECK_MODULES(INIH REQUIRED IMPORTED_TARGET inih>=58)
 
+ADD_LIBRARY(desktop-parser STATIC desktop-parser.c)
+TARGET_LINK_LIBRARIES(desktop-parser PRIVATE libbase inih)
+TARGET_INCLUDE_DIRECTORIES(
+  desktop-parser
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/..)
+SET_TARGET_PROPERTIES(
+  desktop-parser PROPERTIES
+  VERSION 1.0
+  PUBLIC_HEADER desktop-parser.h)
 
-ADD_EXECUTABLE(desktop-parse desktop_parse.c parse.c)
-TARGET_LINK_LIBRARIES(
-  desktop-parse
-  libbase
-  inih)
-
-ADD_EXECUTABLE(parse_test parse_test.c parse.c)
-TARGET_LINK_LIBRARIES(
-  parse_test
-  libbase
-  inih)
-ADD_DEPENDENCIES(parse_test libbase)
+IF(iwyu_path_and_options)
+  SET_TARGET_PROPERTIES(
+    desktop-parser PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+ENDIF(iwyu_path_and_options)

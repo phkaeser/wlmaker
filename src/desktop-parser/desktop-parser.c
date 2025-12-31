@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "parse.h"
+#include "desktop-parser.h"
 
 #include <ini.h>
 #include <locale.h>
