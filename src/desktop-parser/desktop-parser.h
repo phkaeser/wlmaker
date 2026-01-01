@@ -14,18 +14,19 @@
  * * [*] NoDisplay
  * * [*] Hidden
  * * [*] Terminal
- * * [ ] Name
- * * [ ] Exec
+ * * [*] Exec
+ * * [*] Name
  * * [ ] TryExec
  * * [ ] Path
  * * [ ] Categories
  *
  * TODO(kaeser@gubbe.ch):
- * * unescape the string
- * * handle the %F, ... speficiers (remove them?)
  * * split categories
  * * add wlmmenugen with --locale option.
  * * add number
+ *
+ * Further improvements:
+ * * Handle the %f, %u, ... specifiers.
  *
  * @copyright
  * Copyright (c) 2025 Google LLC and Philipp Kaeser

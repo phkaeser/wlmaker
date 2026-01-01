@@ -97,6 +97,9 @@ static bool _desktop_parser_translate_boolean(
 static bool _desktop_parser_translate_string(
     const char *value_ptr,
     void *dest_ptr);
+static bool _desktop_parser_translate_exec(
+    const char *value_ptr,
+    void *dest_ptr);
 static void _desktop_parser_destroy_string(void *dest_ptr);
 
 /** Descriptor for a key. */
@@ -169,7 +172,7 @@ struct key_descriptor keys[] = {
         .ofs = offsetof(struct desktop_entry, exec_ptr),
         .priority_ofs = offsetof(struct desktop_entry, exec_ptr),
         .destroy = _desktop_parser_destroy_string,
-        .translate = _desktop_parser_translate_string
+        .translate = _desktop_parser_translate_exec
     },
     { .key = NULL }
 };
@@ -423,7 +426,7 @@ bool _desktop_parser_translate_boolean(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Translates a string.
+ * Translates a string, while un-escaping supported escape codes (s, n, t, r).
  *
  * @param value_ptr
  * @param dest_ptr
@@ -459,6 +462,64 @@ bool _desktop_parser_translate_string(
     }
     *d = '\0';
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Translates an exec key value, and un-escapes the specific escape codes.
+ *
+ * https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html
+ *
+ * TODO(kaeser@gubbe.ch): This is... lossy. When un-escaping the arguments, the
+ * result should be stored as separate strings, such as usable for execve(2).
+ *
+ * @param value_ptr
+ * @param dest_ptr
+ *
+ * @return true on success
+ */
+bool _desktop_parser_translate_exec(
+    const char *value_ptr,
+    void *dest_ptr)
+{
+    char **str_ptr_ptr = dest_ptr;
+
+    if (NULL != *str_ptr_ptr) {
+        free(*str_ptr_ptr);
+    }
+
+    char *d = calloc(1, (strlen(value_ptr) + 1));
+    if (NULL == d) return false;
+    *str_ptr_ptr = d;
+    bool quoted_arg = false;
+    for (const char *s = value_ptr; *s != '\0'; ++s) {
+        if (quoted_arg) {
+            if (*s == '"') {
+                quoted_arg = false;
+            } else if (*s == '\\') {
+                switch (*++s) {
+                case '"': *d++ = '"'; break;
+                case '`': *d++ = '`'; break;
+                case '$': *d++ = '$'; break;
+                case '\\': *d++ = '\\'; break;
+                default: /* Invalid escape code. */ return false;
+                }
+            } else {
+                *d++ = *s;
+            }
+        } else {
+            if (*s == '"') {
+                quoted_arg = true;
+            } else if (*s == '%') {
+                if (!strchr("fFuUdDnNickvm", *(s + 1))) return false;
+                ++s;  // For now: Skip all (valid) field codes.
+            } else {
+                *d++ = *s;
+            }
+        }
+    }
+    *d = '\0';
+    return !quoted_arg;  // All quotes must be closed.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -604,6 +665,10 @@ void _desktop_parser_test_translate(bs_test_t *test_ptr)
     const char *i = "[Desktop Entry]\nName=A\\sB\\nC\\tD\\rE\\\\F\\xG";
     BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
     BS_TEST_VERIFY_STREQ(test_ptr, "A B\nC\tD\rE\\FG", e.name_ptr);
+
+    i = "[Desktop Entry]\nExec=a %f %U \"a \\` \\\" \\$ \\\\ \"";
+    BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
+    BS_TEST_VERIFY_STREQ(test_ptr, "a   a ` \" $ \\ ", e.exec_ptr);
 
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);
