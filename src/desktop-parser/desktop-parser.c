@@ -439,8 +439,26 @@ bool _desktop_parser_translate_string(
     if (NULL != *str_ptr_ptr) {
         free(*str_ptr_ptr);
     }
-    *str_ptr_ptr = strdup(value_ptr);
-    return NULL != *str_ptr_ptr;
+
+    char *d = malloc(strlen(value_ptr) + 1);
+    if (NULL == d) return false;
+    *str_ptr_ptr = d;
+    for (const char *s = value_ptr; *s != '\0'; ++s) {
+        if (*s == '\\') {
+            switch (*++s) {
+            case 's': *d++ = ' '; break;
+            case 'n': *d++ = '\n'; break;
+            case 't': *d++ = '\t'; break;
+            case 'r': *d++ = '\r'; break;
+            case '\\': *d++ = '\\'; break;
+            default: /* Escaped code not specified. Skip. */ break;
+            }
+        } else {
+            *d++ = *s;
+        }
+    }
+    *d = '\0';
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -458,12 +476,14 @@ void _desktop_parser_destroy_string(void *dest_ptr)
 static void _desktop_parser_test_ini_string(bs_test_t *test_ptr);
 static void _desktop_parser_test_ini_file(bs_test_t *test_ptr);
 static void _desktop_parser_test_locale_string(bs_test_t *test_ptr);
+static void _desktop_parser_test_translate(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 static const bs_test_case_t   _desktop_parser_test_cases[] = {
     { true, "ini_string", _desktop_parser_test_ini_string },
     { true, "ini_file", _desktop_parser_test_ini_file },
     { true, "locale_string", _desktop_parser_test_locale_string },
+    { true, "translate", _desktop_parser_test_translate },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -571,6 +591,22 @@ void _desktop_parser_test_locale_string(bs_test_t *test_ptr)
 
     desktop_parser_destroy((struct desktop_parser*)ha.parser);
     desktop_parser_entry_release(&e);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests translators: Escaped string. */
+void _desktop_parser_test_translate(bs_test_t *test_ptr)
+{
+    struct desktop_parser *p = desktop_parser_create("en_US.UTF-8@euro");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
+    struct desktop_entry e = {};
+
+    const char *i = "[Desktop Entry]\nName=A\\sB\\nC\\tD\\rE\\\\F\\xG";
+    BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
+    BS_TEST_VERIFY_STREQ(test_ptr, "A B\nC\tD\rE\\FG", e.name_ptr);
+
+    desktop_parser_entry_release(&e);
+    desktop_parser_destroy(p);
 }
 
 /* == End of parse.c ======================================================= */
