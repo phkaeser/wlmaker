@@ -83,6 +83,9 @@ struct desktop_entry {
 
     /** Program to execute, possibly with arguments. */
     char *exec_ptr;
+
+    /** An array of strings, each indicating a category. NULL-terminated. */
+    char                      **category_ptrs;
 };
 
 /**

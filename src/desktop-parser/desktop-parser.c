@@ -97,10 +97,14 @@ static bool _desktop_parser_translate_boolean(
 static bool _desktop_parser_translate_string(
     const char *value_ptr,
     void *dest_ptr);
+static bool _desktop_parser_translate_strings(
+    const char *value_ptr,
+    void *dest_ptr);
 static bool _desktop_parser_translate_exec(
     const char *value_ptr,
     void *dest_ptr);
 static void _desktop_parser_destroy_string(void *dest_ptr);
+static void _desktop_parser_destroy_strings(void *dest_ptr);
 
 /** Descriptor for a key. */
 struct key_descriptor {
@@ -173,6 +177,14 @@ struct key_descriptor keys[] = {
         .priority_ofs = offsetof(struct desktop_entry, exec_ptr),
         .destroy = _desktop_parser_destroy_string,
         .translate = _desktop_parser_translate_exec
+    },
+    {
+        .key = "Categories",
+        .len = strlen("Categories"),
+        .ofs = offsetof(struct desktop_entry, category_ptrs),
+        .priority_ofs = offsetof(struct desktop_entry, category_ptrs),
+        .destroy = _desktop_parser_destroy_strings,
+        .translate = _desktop_parser_translate_strings
     },
     { .key = NULL }
 };
@@ -466,6 +478,59 @@ bool _desktop_parser_translate_string(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Translates multiple strings, separated by semicolon.
+ *
+ * @param value_ptr
+ * @param dest_ptr
+ *
+ * @return true on success.
+ */
+bool _desktop_parser_translate_strings(
+    const char *value_ptr,
+    void *dest_ptr)
+{
+    char *c = NULL;
+    bool rv = _desktop_parser_translate_string(value_ptr, &c);
+    if (!rv) goto error;
+
+    size_t count = 1;
+    for (char *s = c; *s != '\0'; ++s) {
+        if (*s == ';') ++count; else  if (*s == '\\') ++s;
+    }
+
+    char ***categories_ptr_ptr = dest_ptr;
+    *categories_ptr_ptr = calloc(count + 1, sizeof(char*));
+    if (NULL == *categories_ptr_ptr) goto error;
+
+    size_t i = 0;
+    for (char *s = c; *s != '\0'; ++s) {
+        // Compute length of segment. Unescape semicolons.
+        char *p;
+        size_t l = 0;
+        for (p = s; *p != ';' && *p != '\0'; ++p, ++l) {
+            if (*p == '\\') ++p;
+            s[l] = *p;
+        }
+        s[l] = '\0';
+
+        *categories_ptr_ptr[i] = strdup(s);
+        bs_log(BS_ERROR, "FIXME: %zu - %s - %p", i, s, *categories_ptr_ptr[i]);
+        if (NULL == categories_ptr_ptr[i]) goto error;
+        ++i;
+        s = p;
+    }
+    *categories_ptr_ptr[i] = NULL;
+    bs_log(BS_ERROR, "FIXME: %zu", i);
+    free(c);
+    return true;
+
+error:
+    free(c);
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Translates an exec key value, and un-escapes the specific escape codes.
  *
  * https://specifications.freedesktop.org/desktop-entry/latest/exec-variables.html
@@ -532,6 +597,21 @@ void _desktop_parser_destroy_string(void *dest_ptr)
     *str_ptr_ptr = NULL;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Frees the memory associated with the NULL-terminated string array. */
+void _desktop_parser_destroy_strings(void *dest_ptr)
+{
+    char ***str_ptr_ptr = (char***)dest_ptr;
+    if (NULL == *str_ptr_ptr) return;
+
+    for (char **s = *str_ptr_ptr; *s != NULL; ++s) {
+        free(*s);
+    }
+
+    free(*str_ptr_ptr);
+    *(void**)dest_ptr = NULL;
+}
+
 /* == Unit tests =========================================================== */
 
 static void _desktop_parser_test_ini_string(bs_test_t *test_ptr);
@@ -549,7 +629,7 @@ static const bs_test_case_t   _desktop_parser_test_cases[] = {
 };
 
 const bs_test_set_t           desktop_parser_test_set = BS_TEST_SET(
-    true, "parse", _desktop_parser_test_cases);
+    true, "desktop-parser", _desktop_parser_test_cases);
 
 /* ------------------------------------------------------------------------- */
 void _desktop_parser_test_ini_string(bs_test_t *test_ptr)
