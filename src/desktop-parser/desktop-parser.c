@@ -478,7 +478,7 @@ bool _desktop_parser_translate_string(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Translates multiple strings, separated by semicolon.
+ * Translates multiple strings, separated by semicolon; as for "Categories".
  *
  * @param value_ptr
  * @param dest_ptr
@@ -489,43 +489,40 @@ bool _desktop_parser_translate_strings(
     const char *value_ptr,
     void *dest_ptr)
 {
-    char *c = NULL;
-    bool rv = _desktop_parser_translate_string(value_ptr, &c);
+    char *translated_ptr = NULL;
+    bool rv = _desktop_parser_translate_string(value_ptr, &translated_ptr);
     if (!rv) goto error;
 
-    size_t count = 1;
-    for (char *s = c; *s != '\0'; ++s) {
-        if (*s == ';') ++count; else  if (*s == '\\') ++s;
-    }
+    char ***category_ptrs_ptr = dest_ptr;
+    *category_ptrs_ptr = calloc( 1, sizeof(char*));
+    if (NULL == *category_ptrs_ptr) goto error;
 
-    char ***categories_ptr_ptr = dest_ptr;
-    *categories_ptr_ptr = calloc(count + 1, sizeof(char*));
-    if (NULL == *categories_ptr_ptr) goto error;
-
-    size_t i = 0;
-    for (char *s = c; *s != '\0'; ++s) {
-        // Compute length of segment. Unescape semicolons.
-        char *p;
-        size_t l = 0;
-        for (p = s; *p != ';' && *p != '\0'; ++p, ++l) {
-            if (*p == '\\') ++p;
-            s[l] = *p;
+    size_t cat_idx = 0;
+    for (char *cat_ptr = translated_ptr; *cat_ptr != '\0'; ++cat_ptr) {
+        // Unescape the semicolon and terminate this category string.
+        char *s = cat_ptr, *d = cat_ptr;
+        for (; *s != ';' && *s != '\0'; ++s, ++d) {
+            if (*s == '\\') ++s;
+            *d = *s;
         }
-        s[l] = '\0';
+        *d = '\0';
 
-        *categories_ptr_ptr[i] = strdup(s);
-        bs_log(BS_ERROR, "FIXME: %zu - %s - %p", i, s, *categories_ptr_ptr[i]);
-        if (NULL == categories_ptr_ptr[i]) goto error;
-        ++i;
-        s = p;
+        *category_ptrs_ptr = realloc(
+            *category_ptrs_ptr,
+            (cat_idx + 2) * sizeof(char*));
+        if (NULL == *category_ptrs_ptr) goto error;
+        (*category_ptrs_ptr)[cat_idx + 1] = NULL;
+
+        (*category_ptrs_ptr)[cat_idx] = strdup(cat_ptr);
+        if (NULL == (*category_ptrs_ptr)[cat_idx]) goto error;
+        cat_ptr = s;
+        ++cat_idx;
     }
-    *categories_ptr_ptr[i] = NULL;
-    bs_log(BS_ERROR, "FIXME: %zu", i);
-    free(c);
+    free(translated_ptr);
     return true;
 
 error:
-    free(c);
+    if (translated_ptr) free(translated_ptr);
     return false;
 }
 
@@ -672,6 +669,11 @@ void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, e.hidden);
     BS_TEST_VERIFY_FALSE(test_ptr, e.no_display);
     BS_TEST_VERIFY_TRUE(test_ptr, e.terminal);
+
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, e.category_ptrs);
+    BS_TEST_VERIFY_STREQ(test_ptr, "System", e.category_ptrs[0]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "Compositor", e.category_ptrs[1]);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, e.category_ptrs[2]);
 
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);
