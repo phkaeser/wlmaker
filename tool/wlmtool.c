@@ -23,10 +23,118 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 
-/* == Main program ========================================================= */
-int main(__UNUSED__ int argc, __UNUSED__ char *argv[])
+/* == Declarations ========================================================= */
+
+static bool print_version(int argc, const char **argv);
+static bool print_help(int argc, const char **argv);
+static bool generate_menu(int argc, const char **argv);
+
+#if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
+#eror "WLMAKER_VERSION_... not defined!"
+#else
+static const char *wlmaker_version_major = WLMAKER_VERSION_MAJOR;
+static const char *wlmaker_version_minor = WLMAKER_VERSION_MINOR;
+static const char *wlmaker_version_full = WLMAKER_VERSION_FULL;
+#endif
+
+/** Command descriptor. */
+struct command_desc {
+    /** Command that can be invoked. */
+    const char *command_ptr;
+    /** Description of the command. */
+    const char *description_ptr;
+    /** The operation executed by the command. */
+    bool (*op)(int argc, const char **argv);
+};
+
+/* == Data ================================================================= */
+
+/** Definition of commandline arguments. */
+static const bs_arg_t wlmtool_args[] = {
+    BS_ARG_SENTINEL()
+};
+
+/** List of available commands. */
+static const struct command_desc commands[] = {
+    {
+        .command_ptr = "--help",
+        .description_ptr = "Prints usage information.",
+        .op = print_help
+    },
+    {
+        .command_ptr = "--version",
+        .description_ptr = "Prints version information.",
+        .op = print_version
+    },
+    {
+        .command_ptr = "genmenu",
+        .description_ptr =
+        "Generates a root menu for Wayland Maker, in .plist text format.",
+        .op = generate_menu
+    },
+    {}  // Sentinel.
+};
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Prints version information. */
+bool print_version(__UNUSED__ int argc, __UNUSED__ const char **argv)
 {
-    return EXIT_SUCCESS;
+    fprintf(stdout, "Wayland Maker wlmtool version %s.%s (%s)\n",
+            wlmaker_version_major,
+            wlmaker_version_minor,
+            wlmaker_version_full);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Prints help. */
+bool print_help(__UNUSED__ int argc, __UNUSED__ const char **argv)
+{
+    fprintf(stderr, "\nAvailable commands:\n");
+    for (const struct command_desc *d = commands; d->command_ptr; ++d) {
+        fprintf(stdout, "%s: %s\n", d->command_ptr, d->description_ptr);
+    }
+
+    bs_arg_print_usage(stdout, wlmtool_args);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Generates the plist menu. */
+bool generate_menu(int argc, const char **argv)
+{
+    bs_log(BS_ERROR, "%d - %p", argc, argv);
+    return true;
+}
+
+/* == Main program ========================================================= */
+/** The main program. */
+int main(int argc, const char **argv)
+{
+    if (!bs_arg_parse(wlmtool_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
+        fprintf(stderr, "Failed to parse commandline arguments.\n");
+        bs_arg_print_usage(stderr, wlmtool_args);
+        return EXIT_FAILURE;
+    }
+
+    if (1 < argc) {
+        for (const struct command_desc *d = commands; d->command_ptr; ++d) {
+            if (0 == strcmp(argv[1], d->command_ptr)) {
+                return d->op(argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE;
+            }
+        }
+        fprintf(stderr, "Unknown command: %s.\n", argv[1]);
+    } else {
+        fprintf(stderr, "Missing command.\n");
+    }
+    fprintf(stderr, "\nAvailable commands:\n");
+    for (const struct command_desc *d = commands; d->command_ptr; ++d) {
+        fprintf(stderr, "%s: %s\n", d->command_ptr, d->description_ptr);
+    }
+    bs_arg_print_usage(stderr, wlmtool_args);
+    return EXIT_FAILURE;
 }
 
 /* == End of wlmtool.c ===================================================== */
