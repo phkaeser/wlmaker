@@ -4,29 +4,30 @@
  *
  * Simple parser for FreeDesktop `.desktop` files, to provide application-
  * specific information within a compositor and for constructing application
- * menus.
+ * menus. Depends on `libinih-dev`.
  *
  * Reference:
  * * http://specifications.freedesktop.org/desktop-entry/1.5/
+ * * https://github.com/benhoyt/inih
  *
- * Supported keys:
+ * Currently built to support the necessary keys for building the root menu
+ * for Wayland Maker. Specifically, that includes:
  * * [*] Type
  * * [*] NoDisplay
  * * [*] Hidden
  * * [*] Terminal
  * * [*] Exec
  * * [*] Name
- * * [ ] TryExec
- * * [ ] Path
- * * [ ] Categories
+ * * [*] Categories
+ * * [*] TryExec
+ * * [*] Path
  *
  * TODO(kaeser@gubbe.ch):
- * * split categories
  * * add wlmmenugen with --locale option.
- * * add number
  *
  * Further improvements:
  * * Handle the %f, %u, ... specifiers.
+ * * Add support for "numeric" type. Though, it's currently unused for .desktop.
  *
  * @copyright
  * Copyright (c) 2025 Google LLC and Philipp Kaeser
@@ -76,14 +77,16 @@ struct desktop_entry {
     bool                      terminal;
 
     /** Helper for localized "Name". */
-    int8_t name_priority;
+    int8_t                    name_priority;
 
     /** Localized specific name of the application. */
-    char *name_ptr;
-
+    char                      *name_ptr;
     /** Program to execute, possibly with arguments. */
-    char *exec_ptr;
-
+    char                      *exec_ptr;
+    /** Path to executable, used to determine if the program is installed. */
+    char                      *try_exec_ptr;
+    /** The working directory to run the program in. */
+    char                      *path_ptr;
     /** An array of strings, each indicating a category. NULL-terminated. */
     char                      **category_ptrs;
 };
@@ -94,7 +97,7 @@ struct desktop_entry {
  * @param locale_ptr          Locale set for `LC_MESSAGES`. See setlocale(3).
  *
  * @return Pointer to the desktop parser, or NULL on error. Must be destroyed
- *     by calling @ref desktop_parse_destroy.
+ *     by calling @ref desktop_parser_destroy.
  */
 struct desktop_parser *desktop_parser_create(const char *locale_ptr);
 
@@ -123,7 +126,7 @@ int desktop_parser_file_to_entry(
  * Parses an in-memory string into the provided entry.
  *
  * @param parser
- * @param fname_ptr
+ * @param string_ptr
  * @param entry_ptr
  *
  * @return 0 on success, or the line number where the parser failed.

@@ -28,7 +28,7 @@ Use:
 - TryExec
 - Exec (can have % with fFuUdDnNickvm => skip these; and: un-escape for ", `, $, \
 - Path
-- store if Terminal=true
+- store if Terminal=true   (launch "x-terminal-emulator -e ")
 - use first matching of Categories  (c1;c2;c3)
   => and lookup using table below.
   => fold all else into "Other"

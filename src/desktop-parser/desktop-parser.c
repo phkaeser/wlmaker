@@ -44,34 +44,10 @@ static char *_create_locale_key(const char *l, const char *t, const char *m);
 
 /* == Data ================================================================= */
 
+/** Group name for the application details in a `.desktop` file. */
 static const char *desktop_entry_group_name = "Desktop Entry";
 
-// -> overall: initialize parser
-// -> build regexp for key with optional language modifier
-// -> build locale search string(s) with priority. Split, use strtok.
-//    (C/NULL == none, ...)
-// -> then, build it.
-
-// https://wiki.archlinux.org/title/Locale - l_terr.codeset@modifier
-// (man setlocale)
-//
-// lang: two- or 3 letter codes [a-z]{2,3}
-// (https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes)
-//
-// country (territory): [A-Z]{2}, [A-Z][3], [0-9]{3}
-// (https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes)
-//
-// encoding (codeset): (eg. UTF-8)  [a-zA-Z0-9-]+ ?
-//
-// modifier (??) - [a-zA-Z0-9_-]+
-//
-//
-// Order:
-// - if LC_MESSAGES is l_C.E@m => l_C@m / l_C / l@m / l
-// - if LC_MESSAGES is l_C.E => l_C / l
-//
-// locale.h >= setlocale(LC_MESSAGES, NULL)
-//
+/** Regular expression describing a (possibly localized) key. */
 static const char *key_regex_str =
     "^"
     "([A-Za-z0-9-]+)"
@@ -129,6 +105,7 @@ struct key_descriptor {
     void (*destroy)(void *dest_ptr);
 };
 
+/** Supported keys. */
 struct key_descriptor keys[] = {
     {
         .key = "Type",
@@ -177,6 +154,22 @@ struct key_descriptor keys[] = {
         .priority_ofs = offsetof(struct desktop_entry, exec_ptr),
         .destroy = _desktop_parser_destroy_string,
         .translate = _desktop_parser_translate_exec
+    },
+    {
+        .key = "TryExec",
+        .len = strlen("TryExec"),
+        .ofs = offsetof(struct desktop_entry, try_exec_ptr),
+        .priority_ofs = offsetof(struct desktop_entry, try_exec_ptr),
+        .destroy = _desktop_parser_destroy_string,
+        .translate = _desktop_parser_translate_string
+    },
+    {
+        .key = "Path",
+        .len = strlen("Path"),
+        .ofs = offsetof(struct desktop_entry, path_ptr),
+        .priority_ofs = offsetof(struct desktop_entry, path_ptr),
+        .destroy = _desktop_parser_destroy_string,
+        .translate = _desktop_parser_translate_string
     },
     {
         .key = "Categories",
@@ -294,6 +287,7 @@ void desktop_parser_entry_release(struct desktop_entry *entry_ptr)
 /**
  * Callback handler for the inih parse methods. Parses "Desktop Entry".
  *
+ * @param userdata_ptr
  * @param section_ptr
  * @param name_ptr
  * @param value_ptr
@@ -305,7 +299,7 @@ int _desktop_parser_handler(
     void *userdata_ptr,
     const char *section_ptr,
     const char *name_ptr,
-    const char *val_ptr)
+    const char *value_ptr)
 {
     struct _desktop_parser_handler_arg *arg = userdata_ptr;
     const struct desktop_parser *parser = arg->parser;
@@ -348,7 +342,7 @@ int _desktop_parser_handler(
             if (stored_priority > (1 << priority)) return 1;  // Higher prio.
         }
 
-        if (!kd->translate(val_ptr, (char*)entry_ptr+kd->ofs)) return 0;
+        if (!kd->translate(value_ptr, (char*)entry_ptr+kd->ofs)) return 0;
         return 1;
     }
 
@@ -629,6 +623,7 @@ const bs_test_set_t           desktop_parser_test_set = BS_TEST_SET(
     true, "desktop-parser", _desktop_parser_test_cases);
 
 /* ------------------------------------------------------------------------- */
+/** Tests parsing INI content, but from a string. */
 void _desktop_parser_test_ini_string(bs_test_t *test_ptr)
 {
     struct desktop_parser *p = desktop_parser_create("en_US.UTF-8@euro");
@@ -653,6 +648,7 @@ Name[de]=DerName";
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests parsing a sample .desktop file. */
 void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
 {
     struct desktop_parser *p = desktop_parser_create("en_US.UTF-8@euro");
@@ -666,6 +662,8 @@ void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, DESKTOP_ENTRY_TYPE_APPLICATION, e.type);
     BS_TEST_VERIFY_STREQ(test_ptr, "WaylandMaker", e.name_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "/usr/local/bin/wlmaker", e.exec_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "./wlmaker", e.try_exec_ptr);
+    BS_TEST_VERIFY_STREQ(test_ptr, "/usr/local", e.path_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, e.hidden);
     BS_TEST_VERIFY_FALSE(test_ptr, e.no_display);
     BS_TEST_VERIFY_TRUE(test_ptr, e.terminal);
@@ -680,6 +678,7 @@ void _desktop_parser_test_ini_file(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Tests parsing localized strings. */
 void _desktop_parser_test_locale_string(bs_test_t *test_ptr)
 {
     // For convenience.
