@@ -171,4 +171,4 @@ ADD_SUBDIRECTORY(tool)
 ADD_SUBDIRECTORY(doc)
 
 # Adds submodules last, to permit checking on already-existing targets.
-ADD_SUBDIRECTORY(submodules/libbase)
+ADD_SUBDIRECTORY(submodules)

@@ -23,6 +23,8 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 
+#include "gen_menu.h"
+
 /* == Declarations ========================================================= */
 
 static bool print_version(int argc, const char **argv);
@@ -105,8 +107,23 @@ bool print_help(__UNUSED__ int argc, __UNUSED__ const char **argv)
 /** Generates the plist menu. */
 bool generate_menu(int argc, const char **argv)
 {
-    bs_log(BS_ERROR, "%d - %p", argc, argv);
-    return true;
+    if (2 > argc) {
+        fprintf(stderr, "Usage: wlmtool genmenu PATH\n");
+        return false;
+    }
+
+    bspl_array_t *menu_array_ptr = wlmaker_menu_generate(argv[1]);
+    if (NULL == menu_array_ptr) return false;
+
+    bs_dynbuf_t buf = {};
+    bool rv = bs_dynbuf_init(&buf, 1024, SIZE_MAX);
+    if (rv) {
+        rv = bspl_object_write(bspl_object_from_array(menu_array_ptr), &buf);
+        if (rv) fprintf(stdout, "%.*s", (int)buf.length, (char*)buf.data_ptr);
+    }
+    bspl_array_unref(menu_array_ptr);
+    bs_dynbuf_fini(&buf);
+    return rv;
 }
 
 /* == Main program ========================================================= */
@@ -122,7 +139,7 @@ int main(int argc, const char **argv)
     if (1 < argc) {
         for (const struct command_desc *d = commands; d->command_ptr; ++d) {
             if (0 == strcmp(argv[1], d->command_ptr)) {
-                return d->op(argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE;
+                return d->op(argc - 1, argv + 1) ? EXIT_SUCCESS : EXIT_FAILURE;
             }
         }
         fprintf(stderr, "Unknown command: %s.\n", argv[1]);

@@ -14,8 +14,8 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-ADD_EXECUTABLE(wlmtool wlmtool.c)
-TARGET_LINK_LIBRARIES(wlmtool libbase desktop-parser)
+ADD_EXECUTABLE(wlmtool wlmtool.c gen_menu.c)
+TARGET_LINK_LIBRARIES(wlmtool libbase libbase_plist desktop-parser)
 TARGEt_COMPILE_DEFINITIONS(
   wlmtool PRIVATE
   WLMAKER_VERSION_MAJOR="${WLMAKER_VERSION_MAJOR}"

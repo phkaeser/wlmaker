@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-ADD_LIBRARY(desktop-parser STATIC desktop-parser.c)
-TARGET_LINK_LIBRARIES(desktop-parser PRIVATE libbase inih)
-TARGET_INCLUDE_DIRECTORIES(
-  desktop-parser
-  PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/..)
-SET_TARGET_PROPERTIES(
-  desktop-parser PROPERTIES
-  VERSION 1.0
-  PUBLIC_HEADER desktop-parser.h)
+ADD_SUBDIRECTORY(libbase)
 
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
-    desktop-parser PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+ADD_LIBRARY(inih STATIC ${CMAKE_CURRENT_SOURCE_DIR}/inih/ini.c)
+TARGET_COMPILE_DEFINITIONS(
+  inih PUBLIC
+  INI_STOP_ON_FIRST_ERROR=1
+  INI_MAX_LINE=65536
+  INI_USE_STACK=0
+  INI_ALLOW_REALLOC=1)
+TARGET_INCLUDE_DIRECTORIES(
+  inih
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/inih)
+SET_TARGET_PROPERTIES(
+  inih PROPERTIES
+  VERSION 1.0
+  PUBLIC_HEADER ini.h)
