@@ -1,7 +1,7 @@
 // Definition of root menu, for Debian with wmmenugen(1).
 ("Root Menu",
  //! [wlmtool]
- ("Applications...", GeneratePlistMenu, "@PROJECT_BINARY_DIR@/tool/wlmtool genmenu"),
+ ("Applications...", GeneratePlistMenu, "@PROJECT_BINARY_DIR@/tool/wlmtool genmenu @PROJECT_BINARY_DIR@/share"),
  //! [wlmtool]
  ("Workspaces...",
   ("New", WorkspaceAdd),
