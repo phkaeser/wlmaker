@@ -39,12 +39,14 @@ const bs_test_set_t toolkit_tests[] = {
     BS_TEST_SET(true, "layer", wlmtk_layer_test_cases),
     BS_TEST_SET(true, "menu", wlmtk_menu_test_cases),
     BS_TEST_SET(true, "menu_item", wlmtk_menu_item_test_cases),
+    BS_TEST_SET(true, "output_tracker", wlmtk_output_tracker_test_cases),
     BS_TEST_SET(true, "panel", wlmtk_panel_test_cases),
-    BS_TEST_SET(true, "surface", wlmtk_surface_test_cases),
+    BS_TEST_SET(true, "primitives", wlmaker_primitives_test_cases),
     BS_TEST_SET(true, "rectangle", wlmtk_rectangle_test_cases),
     BS_TEST_SET(true, "resizebar", wlmtk_resizebar_test_cases),
     BS_TEST_SET(true, "resizebar_area", wlmtk_resizebar_area_test_cases),
     BS_TEST_SET(true, "root", wlmtk_root_test_cases),
+    BS_TEST_SET(true, "surface", wlmtk_surface_test_cases),
     BS_TEST_SET(true, "tile", wlmtk_tile_test_cases),
     BS_TEST_SET(true, "titlebar", wlmtk_titlebar_test_cases),
     BS_TEST_SET(true, "titlebar_button", wlmtk_titlebar_button_test_cases),
@@ -52,7 +54,6 @@ const bs_test_set_t toolkit_tests[] = {
     BS_TEST_SET(true, "util", wlmtk_util_test_cases),
     BS_TEST_SET(true, "window", wlmtk_window_test_cases),
     BS_TEST_SET(true, "workspace", wlmtk_workspace_test_cases),
-    BS_TEST_SET(true, "primitives", wlmaker_primitives_test_cases),
     BS_TEST_SET(0, NULL, NULL)
 };
 

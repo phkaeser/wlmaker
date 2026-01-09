@@ -38,6 +38,7 @@
 #include "layer.h"
 #include "menu.h"
 #include "menu_item.h"
+#include "output_tracker.h"
 #include "panel.h"
 #include "popup.h"
 #include "primitives.h"
