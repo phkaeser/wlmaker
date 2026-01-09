@@ -30,6 +30,7 @@ SET(PUBLIC_HEADER_FILES
   layer.h
   menu.h
   menu_item.h
+  output_tracker.h
   panel.h
   popup.h
   primitives.h
@@ -67,6 +68,7 @@ TARGET_SOURCES(toolkit PRIVATE
   layer.c
   menu.c
   menu_item.c
+  output_tracker.c
   panel.c
   popup.c
   primitives.c
