@@ -101,6 +101,24 @@ wlmtk_output_tracker_t *wlmtk_output_tracker_create(
  */
 void wlmtk_output_tracker_destroy(wlmtk_output_tracker_t *tracker_ptr);
 
+/**
+ * Returns the "created output" for `wlr_output_ptr`.
+ *
+ * @param tracker_ptr
+ * @param wlr_output_ptr
+ *
+ * @return Return value of @ref wlmtk_output_tracker_output_create_callback_t
+ *     that was called for the value of `wlr_output_ptr`. Or NULL, if
+ *     `wlr_output_ptr` is not tracked.
+ */
+void *wlmtk_output_tracker_get_output(
+    wlmtk_output_tracker_t *tracker_ptr,
+    struct wlr_output *wlr_output_ptr);
+
+/** Returns @ref wlmtk_output_tracker_t::wlr_output_layout_ptr. */
+struct wlr_output_layout *wlmtk_output_tracker_get_layout(
+    wlmtk_output_tracker_t *tracker_ptr);
+
 /** Output tracker unit test. */
 extern const bs_test_case_t wlmtk_output_tracker_test_cases[];
 

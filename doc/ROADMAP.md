@@ -40,7 +40,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
   * Recompute pointer focus max once per frame.
     * [done] Add wlmtk_output_tracker_t for keeping all outputs tracker.
-    * Use wlmtk_output_tracker_t in wlmtk_layer_t, wlmaker_lock_mgr_t and wlmaker_background_t.
+    * [done] Use wlmtk_output_tracker_t in wlmtk_layer_t
+    * Use wlmtk_output_tracker_t in wlmaker_lock_mgr_t and wlmaker_background_t.
   * Read keymap from `/etc/default/keyboard` or similar.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.

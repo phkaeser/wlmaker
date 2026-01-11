@@ -142,6 +142,28 @@ void wlmtk_output_tracker_destroy(wlmtk_output_tracker_t *tracker_ptr)
     free(tracker_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+void *wlmtk_output_tracker_get_output(
+    wlmtk_output_tracker_t *tracker_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_lookup(
+        tracker_ptr->output_tree_ptr,
+        wlr_output_ptr);
+    if (NULL == avlnode_ptr) return NULL;
+
+    wlmtk_output_tracker_output_t *output_ptr = BS_CONTAINER_OF(
+        avlnode_ptr, wlmtk_output_tracker_output_t, avlnode);
+    return output_ptr->create_fn_retval_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlr_output_layout *wlmtk_output_tracker_get_layout(
+    wlmtk_output_tracker_t *tracker_ptr)
+{
+    return tracker_ptr->wlr_output_layout_ptr;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -357,6 +379,11 @@ void _wlmtk_output_tracker_test(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, t);
     BS_TEST_VERIFY_EQ(test_ptr, 2, state.create_calls);
     BS_TEST_VERIFY_EQ(test_ptr, 0, state.update_calls);
+
+    BS_TEST_VERIFY_EQ(
+        test_ptr, (void*)1, wlmtk_output_tracker_get_output(t, &o1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr, (void*)2, wlmtk_output_tracker_get_output(t, &o2));
 
     wlr_output_layout_add(wlr_output_layout_ptr, &o3, 0, 0);
     BS_TEST_VERIFY_EQ(test_ptr, 3, state.create_calls);
