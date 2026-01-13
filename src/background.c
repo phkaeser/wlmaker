@@ -62,12 +62,19 @@ static void _wlmaker_background_panel_destroy(
     struct wlr_output *wlr_output_ptr,
     void *ud_ptr,
     void *output_ptr);
+static void _wlmaker_background_panel_element_destroy(
+    wlmtk_element_t *element_ptr);
 
 /* == Data ================================================================= */
 
 /** The background panels' virtual method table. */
 static const wlmtk_panel_vmt_t _wlmaker_background_panel_vmt = {
     .request_size = _wlmaker_background_panel_request_size
+};
+
+/** The panel's superclass element virtual method table. */
+static const wlmtk_element_vmt_t _wlmaker_background_panel_element_vmt = {
+    .destroy = _wlmaker_background_panel_element_destroy
 };
 
 /** Panel's position: Anchored to all 4 edges, and auto-sized. */
@@ -152,6 +159,9 @@ void *_wlmaker_background_panel_create(
     }
     wlmtk_panel_extend(&background_panel_ptr->super_panel,
                        &_wlmaker_background_panel_vmt);
+    wlmtk_element_extend(
+        wlmtk_panel_element(&background_panel_ptr->super_panel),
+        &_wlmaker_background_panel_element_vmt);
 
     background_panel_ptr->rectangle_ptr = wlmtk_rectangle_create(
         0, 0, background_ptr->color);
@@ -188,6 +198,20 @@ void _wlmaker_background_panel_destroy(
 {
     wlmaker_background_panel_t *background_panel_ptr = output_ptr;
 
+    _wlmaker_background_panel_element_destroy(
+        wlmtk_panel_element(&background_panel_ptr->super_panel));
+    free(background_panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Dtor for the panel's element. Leaves the output handle intact. */
+void _wlmaker_background_panel_element_destroy(wlmtk_element_t *element_ptr)
+{
+    wlmaker_background_panel_t *background_panel_ptr = BS_CONTAINER_OF(
+        element_ptr,
+        wlmaker_background_panel_t,
+        super_panel.super_container.super_element);
+
     if (NULL != wlmtk_panel_get_layer(
             &background_panel_ptr->super_panel)) {
         wlmtk_layer_remove_panel(
@@ -205,8 +229,6 @@ void _wlmaker_background_panel_destroy(
     }
 
     wlmtk_panel_fini(&background_panel_ptr->super_panel);
-
-    free(background_panel_ptr);
 }
 
 /* == End of background.c ================================================== */

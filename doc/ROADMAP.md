@@ -41,7 +41,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Recompute pointer focus max once per frame.
     * [done] Add wlmtk_output_tracker_t for keeping all outputs tracker.
     * [done] Use wlmtk_output_tracker_t in wlmtk_layer_t, wlmaker_background_t and wlmaker_lock_t.
-    * Fix crash when closing window due to missing element dtor.
   * Read keymap from `/etc/default/keyboard` or similar.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
