@@ -31,6 +31,7 @@
 
 #include "container.h"
 #include "input.h"
+#include "output_tracker.h"
 #include "rectangle.h"
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
@@ -77,8 +78,16 @@ struct _wlmtk_root_t {
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
 
+    wlmtk_output_tracker_t    *output_tracker_ptr;
+
     /** Last recorded pointer movement. */
     wlmtk_pointer_motion_event_t mev;
+};
+
+
+struct wlmtk_root_output {
+    struct wl_listener        frame_listener;
+    wlmtk_root_t              *root_ptr;
 };
 
 static void _wlmtk_root_switch_to_workspace(
@@ -105,6 +114,17 @@ static void _wlmtk_root_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void *_wlmtk_root_output_create(
+    struct wlr_output *wlr_output_ptr,
+    void *ud_ptr);
+static void _wlmtk_root_output_destroy(
+    struct wlr_output *wlr_output_ptr,
+    void *ud_ptr,
+    void *output_ptr);
+static void _wlmtk_root_output_handle_frame(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
     .pointer_button = _wlmtk_root_element_pointer_button,
@@ -122,6 +142,13 @@ wlmtk_root_t *wlmtk_root_create(
     wlmtk_root_t *root_ptr = logged_calloc(1, sizeof(wlmtk_root_t));
     if (NULL == root_ptr) return NULL;
     root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
+
+    root_ptr->output_tracker_ptr = wlmtk_output_tracker_create(
+        wlr_output_layout_ptr,
+        root_ptr,
+        _wlmtk_root_output_create,
+        NULL,
+        _wlmtk_root_output_destroy);
 
     if (NULL != wlr_scene_ptr) {
         if (!wlmtk_container_init_attached(
@@ -188,6 +215,11 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
     }
 
     wlmtk_container_fini(&root_ptr->container);
+
+    if (NULL != root_ptr->output_tracker_ptr) {
+        wlmtk_output_tracker_destroy(root_ptr->output_tracker_ptr);
+        root_ptr->output_tracker_ptr = NULL;
+    }
 
     free(root_ptr);
 }
@@ -670,6 +702,45 @@ void _wlmtk_root_handle_output_layout_change(
         wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
         root_ptr->extents.x,
         root_ptr->extents.y);
+}
+
+/* ------------------------------------------------------------------------- */
+void *_wlmtk_root_output_create(
+    struct wlr_output *wlr_output_ptr,
+    void *ud_ptr)
+{
+    struct wlmtk_root_output *root_output_ptr = logged_calloc(
+        1, sizeof(struct wlmtk_root_output));
+    if (NULL == root_output_ptr) return NULL;
+    root_output_ptr->root_ptr = ud_ptr;
+
+    wlmtk_util_connect_listener_signal(
+        &wlr_output_ptr->events.present,
+        &root_output_ptr->frame_listener,
+        _wlmtk_root_output_handle_frame);
+    return root_output_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtk_root_output_destroy(
+    __UNUSED__ struct wlr_output *wlr_output_ptr,
+    __UNUSED__ void *ud_ptr,
+    void *output_ptr)
+{
+    struct wlmtk_root_output *root_output_ptr = output_ptr;
+    wlmtk_util_disconnect_listener(&root_output_ptr->frame_listener);
+    free(root_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtk_root_output_handle_frame(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    struct wlmtk_root_output *output_ptr = BS_CONTAINER_OF(
+        listener_ptr, struct wlmtk_root_output, frame_listener);
+
+    bs_log(BS_ERROR, "FIXME: frame for output %p", output_ptr);
 }
 
 /* == Unit tests =========================================================== */
