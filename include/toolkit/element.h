@@ -22,7 +22,6 @@
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
@@ -90,7 +89,7 @@ struct _wlmtk_element_vmt_t {
      * @param motion_event_ptr
      *
      * @return Whether the motion is accepted by this element (or any of it's
-     * cohildren). In that case, the caller should accept this element as
+     * children). In that case, the caller should accept this element as
      * having pointer focus.
      */
     bool (*pointer_accepts_motion)(
@@ -175,6 +174,13 @@ struct _wlmtk_element_vmt_t {
         xkb_keysym_t keysym,
         enum xkb_key_direction direction,
         uint32_t modifiers);
+
+    /**
+     * Redraws this element. For containers, will (re)arrange children.
+     *
+     * @param element_ptr
+     */
+    void (*layout)(wlmtk_element_t *element_ptr);
 };
 
 /** State of an element. */
@@ -438,6 +444,13 @@ void wlmtk_element_pointer_blur(wlmtk_element_t *element_ptr);
  */
 void wlmtk_element_pointer_grab_cancel(wlmtk_element_t *element_ptr);
 
+/** Calls @ref wlmtk_element_vmt_t::keyboard_blur. */
+static inline void wlmtk_element_keyboard_blur(
+    wlmtk_element_t *element_ptr)
+{
+    element_ptr->vmt.keyboard_blur(element_ptr);
+}
+
 /** Calls @ref wlmtk_element_vmt_t::keyboard_event. */
 static inline bool wlmtk_element_keyboard_event(
     wlmtk_element_t *element_ptr,
@@ -458,13 +471,10 @@ static inline bool wlmtk_element_keyboard_sym(
         element_ptr, keysym, direction, modifiers);
 }
 
-/** Calls @ref wlmtk_element_vmt_t::keyboard_blur. */
-static inline void wlmtk_element_keyboard_blur(
-    wlmtk_element_t *element_ptr)
+/** Calls @ref wlmtk_element_vmt_t::layout, if given. */
+static inline void wlmtk_element_layout(wlmtk_element_t *element_ptr)
 {
-    if (NULL != element_ptr->vmt.keyboard_blur) {
-        element_ptr->vmt.keyboard_blur(element_ptr);
-    }
+    element_ptr->vmt.layout(element_ptr);
 }
 
 /**
@@ -508,6 +518,8 @@ typedef struct {
     bool                      keyboard_event_called;
     /** Indicates that @ref wlmtk_element_vmt_t::keyboard_sym() was called. */
     bool                      keyboard_sym_called;
+    /** Indicates that @ref wlmtk_element_vmt_t::layout() was called. */
+    bool                      layout_called;
 
     /** Last axis event received. */
     struct wlr_pointer_axis_event wlr_pointer_axis_event;

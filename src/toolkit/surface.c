@@ -810,7 +810,7 @@ void _wlmtk_surface_commit_size(
     }
 
     if (NULL != surface_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
+        wlmtk_container_invalidate_layout(
             surface_ptr->super_element.parent_container_ptr);
     }
 }

@@ -37,11 +37,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Infrastructure
   * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
+  * [done] Refactors pointer focus and layout computation to compute only once per frame.
   * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
     * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
-  * Recompute pointer focus max once per frame.
-    * [done] Add wlmtk_output_tracker_t for keeping all outputs tracker.
-    * [done] Use wlmtk_output_tracker_t in wlmtk_layer_t, wlmaker_background_t and wlmaker_lock_t.
   * Read keymap from `/etc/default/keyboard` or similar.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.

@@ -208,7 +208,8 @@ bool wlmtk_resizebar_set_width(
         return false;
     }
 
-    wlmtk_container_update_layout_and_pointer_focus(
+    wlmtk_element_layout(wlmtk_box_element(&resizebar_ptr->super_box));
+    wlmtk_container_invalidate_layout(
         &resizebar_ptr->super_box.super_container);
     return true;
 }
@@ -272,7 +273,7 @@ void test_variable_width(bs_test_t *test_ptr)
     wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
     wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar2_create(w, &style);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, resizebar_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(
         resizebar_ptr->left_area_ptr);

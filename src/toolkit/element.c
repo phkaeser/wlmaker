@@ -50,6 +50,7 @@ static bool _wlmtk_element_keyboard_sym(
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
     uint32_t modifiers);
+static void _wlmtk_element_layout(wlmtk_element_t *element_ptr);
 
 static void handle_wlr_scene_node_destroy(
     struct wl_listener *listener_ptr,
@@ -64,6 +65,7 @@ static const wlmtk_element_vmt_t element_vmt = {
     .keyboard_blur = _wlmtk_element_keyboard_blur,
     .keyboard_event = _wlmtk_element_keyboard_event,
     .keyboard_sym = _wlmtk_element_keyboard_sym,
+    .layout = _wlmtk_element_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -122,6 +124,9 @@ wlmtk_element_vmt_t wlmtk_element_extend(
     }
     if (NULL != element_vmt_ptr->keyboard_sym) {
         element_ptr->vmt.keyboard_sym = element_vmt_ptr->keyboard_sym;
+    }
+    if (NULL != element_vmt_ptr->layout) {
+        element_ptr->vmt.layout = element_vmt_ptr->layout;
     }
 
     return orig_vmt;
@@ -218,8 +223,7 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
     }
 
     if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
-            element_ptr->parent_container_ptr);
+        wlmtk_container_invalidate_layout(element_ptr->parent_container_ptr);
     }
 }
 
@@ -255,8 +259,7 @@ void wlmtk_element_set_position(
     element_ptr->y = y;
 
     if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
-            element_ptr->parent_container_ptr);
+        wlmtk_container_invalidate_layout(element_ptr->parent_container_ptr);
     }
 }
 
@@ -391,13 +394,20 @@ bool _wlmtk_element_keyboard_event(
 
 /* ------------------------------------------------------------------------- */
 /** Handler for translated keys. By default: Nothing is handled. */
-static bool _wlmtk_element_keyboard_sym(
+bool _wlmtk_element_keyboard_sym(
     __UNUSED__ wlmtk_element_t *element_ptr,
     __UNUSED__ xkb_keysym_t keysym,
     __UNUSED__ enum xkb_key_direction direction,
     __UNUSED__ uint32_t modifiers)
 {
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Redraws the element contents. By default: Nothing is done. */
+void _wlmtk_element_layout(__UNUSED__ wlmtk_element_t *element_ptr)
+{
+    // Nothing.
 }
 
 /* ------------------------------------------------------------------------- */
@@ -451,6 +461,8 @@ static bool fake_keyboard_sym(
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
     uint32_t modifiers);
+static void fake_layout(
+    wlmtk_element_t *element_ptr);
 
 /** Virtual method table for the fake element. */
 static const wlmtk_element_vmt_t fake_element_vmt = {
@@ -464,6 +476,7 @@ static const wlmtk_element_vmt_t fake_element_vmt = {
     .keyboard_blur = fake_keyboard_blur,
     .keyboard_event = fake_keyboard_event,
     .keyboard_sym = fake_keyboard_sym,
+    .layout = fake_layout,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -492,7 +505,7 @@ void wlmtk_fake_element_set_dimensions(
     fake_element_ptr->dimensions.width = width;
     fake_element_ptr->dimensions.height = height;
     if (NULL != fake_element_ptr->element.parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
+        wlmtk_container_invalidate_layout(
             fake_element_ptr->element.parent_container_ptr);
     }
 }
@@ -638,6 +651,15 @@ bool fake_keyboard_sym(
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Handles 'laoyut' calls for the fake element. */
+void fake_layout(wlmtk_element_t *element_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_fake_element_t, element);
+    fake_element_ptr->layout_called = true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -649,6 +671,7 @@ static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_axis(bs_test_t *test_ptr);
 static void test_keyboard_focus(bs_test_t *test_ptr);
 static void test_keyboard_activity(bs_test_t *test_ptr);
+static void test_layout(bs_test_t *test_ptr);
 
 const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
@@ -660,6 +683,7 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "pointer_axis", test_pointer_axis },
     { 1, "keyboard_focus", test_keyboard_focus },
     { 1, "keyboard_activity", test_keyboard_activity },
+    { 1, "layout", test_layout },
     { 0, NULL, NULL }
 };
 
@@ -947,6 +971,19 @@ void test_keyboard_activity(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->keyboard_sym_called);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Exercises "layout" methods. */
+void test_layout(bs_test_t *test_ptr)
+{
+    wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
+
+    wlmtk_element_layout(&fake_element_ptr->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->layout_called);
+    wlmtk_element_destroy(&fake_element_ptr->element);
+
 }
 
 /* == End of toolkit.c ===================================================== */

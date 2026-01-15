@@ -67,8 +67,6 @@ struct _wlmtk_window_t {
 
     /** Container for the content. */
     wlmtk_container_t         content_container;
-    /** Virtual method table of @ref wlmtk_window_t::content_container. */
-    wlmtk_container_vmt_t     orig_content_container_vmt;
     /** The content. */
     wlmtk_element_t           *content_element_ptr;
 
@@ -139,14 +137,14 @@ struct _wlmtk_window_t {
 static bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
+static void _wlmtk_window_element_layout(
+    wlmtk_element_t *element_ptr);
 static void _wlmtk_window_container_element_get_dimensions(
         wlmtk_element_t *element_ptr,
         int *x1_ptr,
         int *y1_ptr,
         int *x2_ptr,
         int *y2_ptr);
-static bool _wlmtk_window_container_update_layout(
-    wlmtk_container_t *container_ptr);
 
 static void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr);
@@ -164,16 +162,12 @@ static void _wlmtk_window_menu_request_close_handler(
 /** Virtual method table for the window's element superclass. */
 static const wlmtk_element_vmt_t window_element_vmt = {
     .pointer_button = _wlmtk_window_element_pointer_button,
+    .layout = _wlmtk_window_element_layout,
 };
 
-/** Virtual method table for the window's container superclass element. */
-static const wlmtk_element_vmt_t _wlmtk_window_container_element_vmt = {
+/** Virtual method table for the window's content superclass element. */
+static const wlmtk_element_vmt_t _wlmtk_window_content_container_element_vmt = {
     .get_dimensions = _wlmtk_window_container_element_get_dimensions,
-};
-
-/** Virtual method table for the window's container superclass. */
-static const wlmtk_container_vmt_t _wlmtk_window_container_vmt = {
-    .update_layout = _wlmtk_window_container_update_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -216,10 +210,7 @@ wlmtk_window_t *wlmtk_window_create(
 
     wlmtk_element_extend(
         &window_ptr->content_container.super_element,
-        &_wlmtk_window_container_element_vmt);
-    window_ptr->orig_content_container_vmt = wlmtk_container_extend(
-        &window_ptr->content_container,
-        &_wlmtk_window_container_vmt);
+        &_wlmtk_window_content_container_element_vmt);
     wlmtk_element_set_visible(
         &window_ptr->content_container.super_element, true);
     if (NULL != content_element_ptr) {
@@ -488,6 +479,12 @@ void wlmtk_window_commit_size(
         window_ptr->organic_bounding_box.width = width;
         window_ptr->organic_bounding_box.height = height;
     }
+
+    wlmtk_element_layout(wlmtk_window_element(window_ptr));
+    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
+        wlmtk_container_invalidate_layout(
+            wlmtk_window_element(window_ptr)->parent_container_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -677,6 +674,12 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
 
     window_ptr->shaded = shaded;
     wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
+
+    wlmtk_element_layout(wlmtk_window_element(window_ptr));
+    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
+        wlmtk_container_invalidate_layout(
+            wlmtk_window_element(window_ptr)->parent_container_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -846,31 +849,28 @@ void _wlmtk_window_container_element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Implementation of @ref wlmtk_container_vmt_t::update_layout.
+ * Implementation of @ref wlmtk_element_vmt_t::layout.
  *
  * Invoked when the window's contained elements triggered a layout update,
  * and will use this to trigger (potential) size updates to the window
  * decorations.
  *
- * @param container_ptr
+ * @param element_ptr
  */
-bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
+void _wlmtk_window_element_layout(
+    wlmtk_element_t *element_ptr)
 {
     wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_window_t, content_container);
+        element_ptr, wlmtk_window_t, bordered.super_container.super_element);
 
     _wlmtk_window_set_decoration_width(window_ptr);
 
-    // Update layout for the parent. This is... hacky.
-    if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
-            container_ptr->super_element.parent_container_ptr);
-    }
+    window_ptr->orig_super_element_vmt.layout(element_ptr);
 
     // No updates if there is no content element (or not in the container).
     if (NULL == window_ptr->content_element_ptr ||
         NULL == window_ptr->content_element_ptr->parent_container_ptr) {
-        return false;
+        return;
     }
 
     // new_box includes potential decorations.
@@ -889,8 +889,6 @@ bool _wlmtk_window_container_update_layout(wlmtk_container_t *container_ptr)
     wlmtk_element_set_position(
         wlmtk_bordered_element(&window_ptr->bordered), x, y);
     window_ptr->old_box = new_box;
-
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -930,6 +928,12 @@ void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
     wlmtk_bordered_set_style(&window_ptr->bordered, &bstyle);
 
     _wlmtk_window_set_decoration_width(window_ptr);
+
+    wlmtk_element_layout(wlmtk_window_element(window_ptr));
+    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
+        wlmtk_container_invalidate_layout(
+            wlmtk_window_element(window_ptr)->parent_container_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1204,8 +1208,9 @@ void test_decoration(bs_test_t *test_ptr)
         test_ptr, 0, 0, 46, 41,
         wlmtk_window_get_bounding_box(w));
 
-    // An update in the element would call the paren's update_layout.
+    // An update in the element would call the parent's update_layout.
     wlmtk_fake_element_set_dimensions(fe, 52, 20);
+    wlmtk_element_layout(wlmtk_window_element(w));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 52, 10,
         wlmtk_element_get_dimensions_box(te));
@@ -1216,6 +1221,10 @@ void test_decoration(bs_test_t *test_ptr)
     // Update again, with top-left edges resizing.
     wlmtk_window_set_resize_edges(w, WLR_EDGE_TOP | WLR_EDGE_LEFT);
     wlmtk_fake_element_set_dimensions(fe, 32, 10);
+    wlmtk_element_layout(wlmtk_window_element(w));
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        w->bordered.super_container.invalidated_layout);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 32, 10,
         wlmtk_element_get_dimensions_box(te));
@@ -1506,6 +1515,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
 
     // Setup initial size and position. Verify.
     wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_element_layout(wlmtk_window_element(w));
     wlmtk_workspace_set_window_position(ws_ptr, w, 20, 10);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 20, 10, 204, 121,

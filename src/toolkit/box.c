@@ -23,19 +23,19 @@
 #include <string.h>
 
 #include "libbase/libbase.h"
+#include "container.h"
 #include "rectangle.h"
 
 /* == Declarations ========================================================= */
 
-static bool _wlmtk_box_container_update_layout(
-    wlmtk_container_t *container_ptr);
+static void _wlmtk_box_element_layout(wlmtk_element_t *element_ptr);
 static bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr);
 
 /* == Data ================================================================= */
 
-/** Virtual method table: @ref wlmtk_container_t at @ref wlmtk_box_t level. */
-static const wlmtk_container_vmt_t box_container_vmt = {
-    .update_layout = _wlmtk_box_container_update_layout,
+/** Virtual method table: @ref wlmtk_element_t at @ref wlmtk_box_t level. */
+static const wlmtk_element_vmt_t box_element_vmt = {
+    .layout = _wlmtk_box_element_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -51,8 +51,8 @@ bool wlmtk_box_init(
     if (!wlmtk_container_init(&box_ptr->super_container)) {
         return false;
     }
-    box_ptr->orig_super_container_vmt = wlmtk_container_extend(
-        &box_ptr->super_container, &box_container_vmt);
+    box_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        wlmtk_box_element(box_ptr), &box_element_vmt);
 
     if (!wlmtk_container_init(&box_ptr->element_container)) {
         wlmtk_box_fini(box_ptr);
@@ -102,6 +102,7 @@ void wlmtk_box_add_element_front(
     wlmtk_element_t *element_ptr)
 {
     wlmtk_container_add_element(&box_ptr->element_container, element_ptr);
+    wlmtk_element_layout(wlmtk_box_element(box_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -111,12 +112,14 @@ void wlmtk_box_add_element_back(
 {
     wlmtk_container_add_element_atop(
         &box_ptr->element_container, NULL, element_ptr);
+    wlmtk_element_layout(wlmtk_box_element(box_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr)
 {
     wlmtk_container_remove_element(&box_ptr->element_container, element_ptr);
+    wlmtk_element_layout(wlmtk_box_element(box_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -129,19 +132,20 @@ wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Updates the layout of the box.
+ * Lays out the elements of the box.
  *
  * Steps through all visible elements, and sets their position to be
  * left-to-right. Also updates and repositions all margin elements.
  *
- * @param container_ptr
+ * @param element_ptr
  */
-bool _wlmtk_box_container_update_layout(
-    wlmtk_container_t *container_ptr)
+void _wlmtk_box_element_layout(wlmtk_element_t *element_ptr)
 {
     wlmtk_box_t *box_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_box_t, super_container);
+        element_ptr, wlmtk_box_t, super_container.super_element);
     wlmtk_element_t *margin_element_ptr = NULL;
+
+    box_ptr->orig_super_element_vmt.layout(element_ptr);
 
     int margin_x = 0;
     int margin_y = 0;
@@ -214,8 +218,6 @@ bool _wlmtk_box_container_update_layout(
             &box_ptr->margin_container, margin_element_ptr);
         wlmtk_element_destroy(margin_element_ptr);
     }
-
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -293,8 +295,10 @@ void test_layout_horizontal(bs_test_t *test_ptr)
     // Note: Elements are added "in front" == left.
     wlmtk_box_add_element_front(&box, &e1_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(&box.margin_container.elements));
+
     wlmtk_box_add_element_front(&box, &e2_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(&box.margin_container.elements));
+
     wlmtk_box_add_element_front(&box, &e3_ptr->element);
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&box.margin_container.elements));
 
@@ -308,14 +312,17 @@ void test_layout_horizontal(bs_test_t *test_ptr)
 
     // Make e2 visible, now we should have: e3 | e2 | e1.
     wlmtk_element_set_visible(&e2_ptr->element, true);
+    wlmtk_element_layout(wlmtk_box_element(&box));
     BS_TEST_VERIFY_EQ(test_ptr, 64, e1_ptr->element.x);
     BS_TEST_VERIFY_EQ(test_ptr, 42, e2_ptr->element.x);
     BS_TEST_VERIFY_EQ(test_ptr, 0, e3_ptr->element.x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, bs_dllist_size(&box.margin_container.elements));
 
     wlmtk_element_set_visible(&e1_ptr->element, false);
+    wlmtk_element_layout(wlmtk_box_element(&box));
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&box.margin_container.elements));
     wlmtk_element_set_visible(&e1_ptr->element, true);
+    wlmtk_element_layout(wlmtk_box_element(&box));
 
     // Remove elements. Must update each.
     wlmtk_box_remove_element(&box, &e3_ptr->element);

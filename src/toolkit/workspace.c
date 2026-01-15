@@ -1487,6 +1487,10 @@ void test_resize(bs_test_t *test_ptr)
 
     // Now, apply the dimension.
     wlmtk_fake_element_set_dimensions(fe_ptr, 39, 18);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        ws_ptr->super_container.invalidated_layout);
+    wlmtk_element_layout(wlmtk_workspace_element(ws_ptr));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 39, 18,
         wlmtk_element_get_dimensions_box(wlmtk_window_element(w)));

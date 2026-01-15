@@ -68,6 +68,8 @@ static bool _wlmtk_container_element_keyboard_sym(
     xkb_keysym_t keysym,
     enum xkb_key_direction direction,
     uint32_t modifiers);
+static void _wlmtk_container_element_layout(
+    wlmtk_element_t *element_ptr);
 
 static void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
@@ -75,7 +77,6 @@ static void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
 static void _wlmtk_container_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr);
-static bool _wlmtk_container_update_layout(wlmtk_container_t *container_ptr);
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t container_element_vmt = {
@@ -88,11 +89,7 @@ static const wlmtk_element_vmt_t container_element_vmt = {
     .keyboard_blur = _wlmtk_container_element_keyboard_blur,
     .keyboard_event = _wlmtk_container_element_keyboard_event,
     .keyboard_sym = _wlmtk_container_element_keyboard_sym,
-};
-
-/** Default virtual method table. Initializes non-abstract methods. */
-static const wlmtk_container_vmt_t container_vmt = {
-    .update_layout = _wlmtk_container_update_layout,
+    .layout = _wlmtk_container_element_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -101,7 +98,7 @@ static const wlmtk_container_vmt_t container_vmt = {
 bool wlmtk_container_init(wlmtk_container_t *container_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
-    *container_ptr = (wlmtk_container_t){ .vmt = container_vmt };
+    *container_ptr = (wlmtk_container_t){};
 
     if (!wlmtk_element_init(&container_ptr->super_element)) {
         return false;
@@ -132,20 +129,6 @@ bool wlmtk_container_init_attached(
 
     BS_ASSERT(NULL != container_ptr->super_element.wlr_scene_node_ptr);
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_container_vmt_t wlmtk_container_extend(
-    wlmtk_container_t *container_ptr,
-    const wlmtk_container_vmt_t *container_vmt_ptr)
-{
-    wlmtk_container_vmt_t orig_vmt = container_ptr->vmt;
-
-    if (NULL != container_vmt_ptr->update_layout) {
-        container_ptr->vmt.update_layout =
-            container_vmt_ptr->update_layout;
-    }
-    return orig_vmt;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -188,7 +171,7 @@ void wlmtk_container_add_element(
         wlmtk_dlnode_from_element(element_ptr));
     wlmtk_element_set_parent_container(element_ptr, container_ptr);
 
-    wlmtk_container_update_layout_and_pointer_focus(container_ptr);
+    wlmtk_container_invalidate_layout(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -226,7 +209,7 @@ void wlmtk_container_add_element_atop(
                 reference_element_ptr->wlr_scene_node_ptr);
         }
     }
-    wlmtk_container_update_layout_and_pointer_focus(container_ptr);
+    wlmtk_container_invalidate_layout(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -235,11 +218,6 @@ void wlmtk_container_remove_element(
     wlmtk_element_t *element_ptr)
 {
     BS_ASSERT(element_ptr->parent_container_ptr == container_ptr);
-
-    wlmtk_element_set_parent_container(element_ptr, NULL);
-    bs_dllist_remove(
-        &container_ptr->elements,
-        wlmtk_dlnode_from_element(element_ptr));
     wlmtk_element_pointer_blur(element_ptr);
 
     if (container_ptr->pointer_grab_element_ptr == element_ptr) {
@@ -259,8 +237,12 @@ void wlmtk_container_remove_element(
             container_ptr, element_ptr, false);
     }
 
+    wlmtk_element_set_parent_container(element_ptr, NULL);
+    bs_dllist_remove(
+        &container_ptr->elements,
+        wlmtk_dlnode_from_element(element_ptr));
 
-    wlmtk_container_update_layout_and_pointer_focus(container_ptr);
+    wlmtk_container_invalidate_layout(container_ptr);
 
     BS_ASSERT(element_ptr != container_ptr->pointer_focus_element_ptr);
     BS_ASSERT(element_ptr != container_ptr->keyboard_focus_element_ptr);
@@ -288,7 +270,7 @@ void wlmtk_container_raise_element_to_top(
         wlr_scene_node_raise_to_top(element_ptr->wlr_scene_node_ptr);
     }
 
-    wlmtk_container_update_layout_and_pointer_focus(container_ptr);
+    wlmtk_container_invalidate_layout(container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -372,7 +354,7 @@ void wlmtk_container_pointer_grab_release(
             &container_ptr->super_element);
     } else {
         // Re-trigger focus computation, from top-level.
-        wlmtk_container_update_layout_and_pointer_focus(container_ptr);
+        wlmtk_container_invalidate_layout(container_ptr);
     }
 }
 
@@ -409,26 +391,14 @@ void wlmtk_container_set_keyboard_focus_element(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_container_update_layout_and_pointer_focus(
+void wlmtk_container_invalidate_layout(
     wlmtk_container_t *container_ptr)
 {
-    if (container_ptr->inhibit_layout_update) return;
-
-    container_ptr->inhibit_layout_update = true;
-    container_ptr->vmt.update_layout(container_ptr);
-    container_ptr->inhibit_layout_update = false;
+    container_ptr->invalidated_layout = true;
 
     if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_update_layout_and_pointer_focus(
+        wlmtk_container_invalidate_layout(
             container_ptr->super_element.parent_container_ptr);
-    } else {
-        if (container_ptr->super_element.pointer_inside) {
-            _wlmtk_container_element_pointer_accepts_motion(
-                &container_ptr->super_element,
-                &container_ptr->super_element.last_pointer_motion_event);
-        } else {
-            BS_ASSERT(NULL == container_ptr->pointer_focus_element_ptr);
-        }
     }
 }
 
@@ -784,6 +754,32 @@ bool _wlmtk_container_element_keyboard_sym(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Runs @ref wlmtk_element_layout for each node element. */
+void _wlmtk_container_element_run_layout(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    wlmtk_element_t *element_ptr = wlmtk_element_from_dlnode(dlnode_ptr);
+    wlmtk_element_layout(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Imlements @ref wlmtk_element_vmt_t::layout. Calls layout for each child. */
+void _wlmtk_container_element_layout(wlmtk_element_t *element_ptr)
+{
+    wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_container_t, super_element);
+
+    if (!container_ptr->invalidated_layout) return;
+    container_ptr->invalidated_layout = false;
+
+    bs_dllist_for_each(
+        &container_ptr->elements,
+        _wlmtk_container_element_run_layout,
+        NULL);
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Handles the 'destroy' callback of wlr_scene_tree_ptr->node.
  *
@@ -827,20 +823,6 @@ void _wlmtk_container_handle_element_pointer_leave(
             container_ptr->pointer_focus_element_ptr);
         container_ptr->pointer_focus_element_ptr = NULL;
     }
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Base implementation of wlmtk_container_vmt_t::update_layout.
- *
- * @param container_ptr
- *
- * @return false, since a nondescript container doesn't rearrange elements.
- */
-bool _wlmtk_container_update_layout (
-    __UNUSED__ wlmtk_container_t *container_ptr)
-{
-    return false;
 }
 
 /* == Helper for unit tests: A fake container with a tree, as parent ======= */
@@ -1151,6 +1133,7 @@ void test_add_with_raise(bs_test_t *test_ptr)
         &fe1_ptr->element.wlr_scene_node_ptr->link);
 
     // Must also update pointer focus.
+    wlmtk_element_pointer_motion(&c_ptr->super_element, &e);
     BS_TEST_VERIFY_EQ(
         test_ptr, &fe2_ptr->element, c_ptr->pointer_focus_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fe2_ptr->pointer_accepts_motion_called);
@@ -1168,6 +1151,7 @@ void test_add_with_raise(bs_test_t *test_ptr)
         test_ptr,
         c_ptr->wlr_scene_tree_ptr->children.prev->prev,
         &fe2_ptr->element.wlr_scene_node_ptr->link);
+    wlmtk_element_pointer_motion(&c_ptr->super_element, &e);
     BS_TEST_VERIFY_EQ(
         test_ptr, &fe1_ptr->element, c_ptr->pointer_focus_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fe1_ptr->pointer_accepts_motion_called);
@@ -1844,6 +1828,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
         &e2_ptr->element.events.pointer_leave, &e2_leave);
     wlmtk_element_set_visible(&e2_ptr->element, true);
     wlmtk_container_add_element(&c, &e2_ptr->element);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_FALSE(test_ptr, e1_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 1, e1_leave.calls);
     BS_TEST_VERIFY_TRUE(test_ptr, e2_ptr->element.pointer_inside);
@@ -1852,6 +1837,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
 
     // 3. Make second element invisible. Blur, E1 focus, no container leave.
     wlmtk_element_set_visible(&e2_ptr->element, false);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_TRUE(test_ptr, e1_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_enter.calls);
     BS_TEST_VERIFY_FALSE(test_ptr, e2_ptr->element.pointer_inside);
@@ -1860,6 +1846,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
 
     // 4. Make it visible again. Receives focus.
     wlmtk_element_set_visible(&e2_ptr->element, true);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_FALSE(test_ptr, e1_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_leave.calls);
     BS_TEST_VERIFY_TRUE(test_ptr, e2_ptr->element.pointer_inside);
@@ -1923,6 +1910,7 @@ void test_pointer_focus_order(bs_test_t *test_ptr)
         &e2_ptr->element.events.pointer_leave, &e2_leave);
     wlmtk_element_set_visible(&e2_ptr->element, true);
     wlmtk_container_add_element_atop(&c, &e1_ptr->element, &e2_ptr->element);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_EQ(test_ptr, 1, e1_enter.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 1, e1_leave.calls);
     BS_TEST_VERIFY_FALSE(test_ptr, e1_ptr->element.pointer_inside);
@@ -1931,6 +1919,7 @@ void test_pointer_focus_order(bs_test_t *test_ptr)
 
     // 3. Raise e1. Must re-gain focus.
     wlmtk_container_raise_element_to_top(&c, &e1_ptr->element);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_enter.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 1, e1_leave.calls);
     BS_TEST_VERIFY_TRUE(test_ptr, e1_ptr->element.pointer_inside);
@@ -1940,6 +1929,7 @@ void test_pointer_focus_order(bs_test_t *test_ptr)
 
     // 4. Move e1 away. Must re-trigger focus computation, e2 gets it.
     wlmtk_element_set_position(&e1_ptr->element, 20, 0);
+    wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_enter.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_leave.calls);
     BS_TEST_VERIFY_FALSE(test_ptr, e1_ptr->element.pointer_inside);
