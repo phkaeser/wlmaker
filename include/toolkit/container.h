@@ -38,28 +38,12 @@ typedef struct _wlmtk_container_vmt_t wlmtk_container_vmt_t;
 extern "C" {
 #endif  // __cplusplus
 
-/** Virtual method table of the container. */
-struct _wlmtk_container_vmt_t {
-    /**
-     * Updates the layout of the container elements.
-     *
-     * @param container_ptr
-     *
-     * @return true if there was a change to the layout, eg. if elements got
-     * re-positioned.
-     */
-    bool (*update_layout)(wlmtk_container_t *container_ptr);
-};
-
 /** State of the container. */
 struct _wlmtk_container_t {
     /** Super class of the container. */
     wlmtk_element_t           super_element;
     /** Virtual method table of the super element before extending it. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
-
-    /** Virtual method table for the container. */
-    wlmtk_container_vmt_t     vmt;
 
     /**
      * Elements contained here.
@@ -85,8 +69,8 @@ struct _wlmtk_container_t {
     /** Stores the element with current keyboard focus. May be NULL. */
     wlmtk_element_t           *keyboard_focus_element_ptr;
 
-    /** @private inhibitor, to prevent recursive layout updates. */
-    bool                      inhibit_layout_update;
+    /** @private Stores whether the layout had been invalidated. */
+    bool                      invalidated_layout;
 };
 
 /**
@@ -97,18 +81,6 @@ struct _wlmtk_container_t {
  * @return true on success.
  */
 bool wlmtk_container_init(wlmtk_container_t *container_ptr);
-
-/**
- * Extends the container's virtual methods.
- *
- * @param container_ptr
- * @param container_vmt_ptr
- *
- * @return The previous virtual method table.
- */
-wlmtk_container_vmt_t wlmtk_container_extend(
-    wlmtk_container_t *container_ptr,
-    const wlmtk_container_vmt_t *container_vmt_ptr);
 
 /**
  * Initializes the container, and attach to WLR sene graph.
@@ -254,18 +226,15 @@ void wlmtk_container_set_keyboard_focus_element(
     bool enabled);
 
 /**
- * Updates the layout of the container, and recomputes pointer focus as needed.
+ * Informs the container (and parents) that the layout needs to be recomputed.
  *
  * Must be called if an element is added or removed, or if any of the child
  * elements changes visibility or dimensions. Propagates to the parent
  * container(s).
  *
- * If needed: Trigger a poitner focus computation.
- *
  * @param container_ptr
  */
-void wlmtk_container_update_layout_and_pointer_focus(
-    wlmtk_container_t *container_ptr);
+void wlmtk_container_invalidate_layout(wlmtk_container_t *container_ptr);
 
 /**
  * Returns the wlroots scene graph tree for this node.

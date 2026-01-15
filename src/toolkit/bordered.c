@@ -26,8 +26,7 @@
 
 /* == Declarations ========================================================= */
 
-static bool _wlmtk_bordered_container_update_layout(
-    wlmtk_container_t *container_ptr);
+static void _wlmtk_bordered_element_layout(wlmtk_element_t *element_ptr);
 
 static wlmtk_rectangle_t * _wlmtk_bordered_create_border_rectangle(
     wlmtk_bordered_t *bordered_ptr);
@@ -38,9 +37,9 @@ static void _wlmtk_bordered_set_positions(wlmtk_bordered_t *bordered_ptr);
 
 /* == Data ================================================================= */
 
-/** Virtual method table: @ref wlmtk_container_t at @ref wlmtk_bordered_t. */
-static const wlmtk_container_vmt_t bordered_container_vmt = {
-    .update_layout = _wlmtk_bordered_container_update_layout,
+/** Virtual method table: @ref wlmtk_element_t at @ref wlmtk_bordered_t. */
+static const wlmtk_element_vmt_t bordered_element_vmt = {
+    .layout = _wlmtk_bordered_element_layout,
 };
 
 /* == Exported methods ===================================================== */
@@ -55,8 +54,8 @@ bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
     if (!wlmtk_container_init(&bordered_ptr->super_container)) {
         return false;
     }
-    bordered_ptr->orig_super_container_vmt = wlmtk_container_extend(
-        &bordered_ptr->super_container, &bordered_container_vmt);
+    bordered_ptr->orig_super_element_vmt = wlmtk_element_extend(
+        wlmtk_bordered_element(bordered_ptr), &bordered_element_vmt);
 
     bordered_ptr->element_ptr = element_ptr;
     wlmtk_container_add_element(&bordered_ptr->super_container,
@@ -106,7 +105,11 @@ void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
 {
     bordered_ptr->style = *style_ptr;
 
-    _wlmtk_bordered_container_update_layout(&bordered_ptr->super_container);
+    wlmtk_element_layout(wlmtk_bordered_element(bordered_ptr));
+    if (NULL != wlmtk_bordered_element(bordered_ptr)->parent_container_ptr) {
+        wlmtk_container_invalidate_layout(
+            wlmtk_bordered_element(bordered_ptr)->parent_container_ptr);
+    }
 
     // Guard clause. Actually, if *any* of the rectangles was not created.
     if (NULL == bordered_ptr->western_border_rectangle_ptr) return;
@@ -133,16 +136,14 @@ wlmtk_element_t *wlmtk_bordered_element(wlmtk_bordered_t *bordered_ptr)
 /**
  * Updates the layout of the bordered element.
  *
- * @param container_ptr
+ * @param element_ptr
  */
-bool _wlmtk_bordered_container_update_layout(
-    wlmtk_container_t *container_ptr)
+void _wlmtk_bordered_element_layout(wlmtk_element_t *element_ptr)
 {
     wlmtk_bordered_t *bordered_ptr = BS_CONTAINER_OF(
-        container_ptr, wlmtk_bordered_t, super_container);
-
+        element_ptr, wlmtk_bordered_t, super_container.super_element);
+    bordered_ptr->orig_super_element_vmt.layout(element_ptr);
     _wlmtk_bordered_set_positions(bordered_ptr);
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -292,9 +293,8 @@ void test_init_fini(bs_test_t *test_ptr)
         0, 2, 2, 20);
 
     // Update layout, test updated positions.
-    fe_ptr->dimensions.width = 200;
-    fe_ptr->dimensions.height = 120;
-    wlmtk_container_update_layout_and_pointer_focus(&bordered.super_container);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 200, 120);
+    wlmtk_element_layout(wlmtk_bordered_element(&bordered));
     test_rectangle_pos(
         test_ptr, bordered.northern_border_rectangle_ptr,
         0, 0, 204, 2);

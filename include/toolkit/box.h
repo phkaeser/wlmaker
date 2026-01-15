@@ -24,7 +24,7 @@
 
 #include "libbase/libbase.h"
 
-#include "container.h"
+#include "container.h"  // IWYU pragma: keep
 #include "element.h"
 #include "style.h"
 
@@ -47,8 +47,8 @@ typedef enum {
 struct _wlmtk_box_t {
     /** Super class of the box. */
     wlmtk_container_t         super_container;
-    /** Virtual method table of the superclass' container. */
-    wlmtk_container_vmt_t     orig_super_container_vmt;
+    /** Virtual method table of the superclass' element. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
     /** Orientation of the box. */
     wlmtk_box_orientation_t   orientation;
 

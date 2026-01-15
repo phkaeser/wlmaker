@@ -671,6 +671,7 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         wlmtk_menu_add_item(menu_ptr, items[i].item);
         wlmtk_menu_item_set_enabled(items[i].item, items[i].enabled);
     }
+    wlmtk_element_layout(wlmtk_menu_element(menu_ptr));
 
     // Move pointer over items[2].
     wlmtk_pointer_motion_event_t e = { .x = 9, .y = 25 };

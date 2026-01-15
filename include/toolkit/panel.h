@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "container.h"
+#include "container.h"  // IWYU pragma: keep
 #include "element.h"
 
 /** Forward declaration: An element of a layer, we call it: Panel. */
@@ -89,9 +89,6 @@ struct _wlmtk_panel_t {
     wlmtk_container_t         super_container;
     /** The panel's virtual method table. */
     wlmtk_panel_vmt_t         vmt;
-
-    /** Virtual method table of the superclass' container. */
-    wlmtk_container_vmt_t     orig_super_container_vmt;
 
     /** Popup container. Panels may contain popups. */
     wlmtk_container_t         popup_container;

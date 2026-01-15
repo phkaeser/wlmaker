@@ -40,8 +40,8 @@ extern "C" {
 struct _wlmtk_bordered_t {
     /** Super class of the bordered. */
     wlmtk_container_t         super_container;
-    /** Virtual method table of the super container before extending it. */
-    wlmtk_container_vmt_t     orig_super_container_vmt;
+    /** Virtual method table of the super element before extending it. */
+    wlmtk_element_vmt_t       orig_super_element_vmt;
 
     /** Points to the element that will be enclosed by the border. */
     wlmtk_element_t           *element_ptr;

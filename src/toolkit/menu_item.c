@@ -1074,6 +1074,7 @@ void test_submenu_highlight(bs_test_t *test_ptr)
     wlmtk_menu_item_t *s1 = wlmtk_menu_item_create(&_item_test_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s1);
     wlmtk_menu_add_item(submenu_ptr, s1);
+    wlmtk_element_layout(wlmtk_menu_element(menu_ptr));
     BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_menu_get_parent_item(submenu_ptr));
     wlmtk_menu_item_set_submenu(i2, submenu_ptr);
     BS_TEST_VERIFY_EQ(
