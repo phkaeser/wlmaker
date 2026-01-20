@@ -50,6 +50,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Wire up backlight control to window menu.
   * If released: Build with wlroots-0.20.
 
+* Bug fixes
+  * Verify, document and fix problem with Chrome GMail attachment as file.
+
 ## [0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)
 
 **Focus**: Smooth resizing for surfaces and clean implementation, persist Output state.
