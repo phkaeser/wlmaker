@@ -2,9 +2,9 @@ name: Build for openSUSE Tumbleweed
 
 on:
   push:
-    branches: [ "disabled-main" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "disabled-main" ]
+    branches: [ "main" ]
 
 jobs:
   test:
