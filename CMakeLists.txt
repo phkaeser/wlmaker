@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 # Default arguments:
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -DCMAKE_INSTALL_SYSCONFDIR=/etc -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build
-# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH="${HOME}/.local" -DCMAKE_INSTALL_SYSCONFDIR=/etc -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build
+# CC=clang cmake -DCMAKE_INSTALL_PREFIX:PATH="${HOME}/.local" -Dconfig_DOXYGEN_CRITICAL=ON -Dconfig_WERROR=ON -DIWYU_MODE=FAIL -B build-clang
 #
 # Useor "/etc".
 
@@ -70,10 +70,9 @@ ENDIF()
 
 # Defaults to /usr/local/lib for installation.
 INCLUDE(GNUInstallDirs)
-# Override: If using a non-standard prefix, install the config files beneath
-# the prefix. Otherwise, fall back to use ${CMAKE_INSTALL_SYSCONFDIR} (/etc/).
-IF(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr" AND NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
-  SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_PREFIX}/etc/xdg/wlmaker")
+IF(CMAKE_INSTALL_PREFIX STREQUAL "/usr")
+  # For targets /usr, forces configurations into XDG config default path.
+  SET(WLMAKER_INSTALL_CONFIG_DIR "/etc/xdg/wlmaker")
 ELSE()
   SET(WLMAKER_INSTALL_CONFIG_DIR "${CMAKE_INSTALL_SYSCONFDIR}/xdg/wlmaker")
 ENDIF()
