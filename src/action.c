@@ -65,6 +65,8 @@ typedef struct {
     wlmaker_key_combo_t       key_combo;
     /** The associated action. */
     wlmaker_action_t          action;
+    /** Optional argument for the action (eg. command to execute). */
+    char                      *action_arg_ptr;
     /** The key binding it to this node. */
     wlmaker_key_binding_t     *key_binding_ptr;
     /** State of the bound actions. */
@@ -198,6 +200,7 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         wlmaker_server_unbind_key(
             handle_ptr->server_ptr,
             binding_ptr->key_binding_ptr);
+        free(binding_ptr->action_arg_ptr);
         free(binding_ptr);
     }
 
@@ -470,10 +473,14 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 /**
  * Binds an action for one item of the 'KeyBindings' dict.
  *
- * @param key_ptr             Name of the action to bind the key to.
- * @param object_ptr          Configuration object, must be a string and
- *                            contain a parse-able modifier + keysym.
- * @param userdata_ptr        Points to @ref wlmaker_server_t.
+ * Supports two configuration formats:
+ * - Array format: `"Key" = (Action, "command");` for actions with arguments.
+ * - String format: `"Key" = Action;` for simple actions without arguments.
+ *
+ * @param key_ptr             The key binding string (eg. "Logo+Return").
+ * @param object_ptr          Configuration value: a string with the action
+ *                            name, or an array with action and argument.
+ * @param userdata_ptr        Points to @ref wlmaker_action_handle_t.
  *
  * @return true on success.
  */
@@ -483,53 +490,89 @@ bool _wlmaker_keybindings_bind_item(
     void *userdata_ptr)
 {
     wlmaker_action_handle_t *handle_ptr = userdata_ptr;
-    bspl_string_t *string_ptr = bspl_string_from_object(object_ptr);
-    if (NULL == string_ptr) {
-        bs_log(BS_WARNING, "Action must be a string for key binding \"%s\"",
-               key_ptr);
-        return false;
+    const char *action_name_ptr = NULL;
+    char *action_arg_ptr = NULL;
+
+    // Extract action name and optional argument from the configuration value.
+    bspl_array_t *array_ptr = bspl_array_from_object(object_ptr);
+    if (NULL != array_ptr) {
+        // Array format: (Action, "command"). The command argument is optional.
+        action_name_ptr = bspl_array_string_value_at(array_ptr, 0);
+        if (NULL == action_name_ptr) {
+            bs_log(BS_WARNING,
+                   "Key binding \"%s\": first element must be a string.",
+                   key_ptr);
+            return false;
+        }
+        // Second element is the command argument, may be absent.
+        const char *arg_ptr = bspl_array_string_value_at(array_ptr, 1);
+        if (NULL != arg_ptr) {
+            action_arg_ptr = logged_strdup(arg_ptr);
+            if (NULL == action_arg_ptr) return false;
+        }
+    } else {
+        // String format: Action name only, no argument.
+        bspl_string_t *string_ptr = bspl_string_from_object(object_ptr);
+        if (NULL == string_ptr) {
+            bs_log(BS_WARNING,
+                   "Key binding \"%s\": must be a string or array.",
+                   key_ptr);
+            return false;
+        }
+        action_name_ptr = bspl_string_value(string_ptr);
     }
 
+    // Parse the key binding string into modifiers and keysym.
     uint32_t modifiers;
     xkb_keysym_t keysym;
     if (!_wlmaker_keybindings_parse(key_ptr, &modifiers, &keysym)) {
         bs_log(BS_WARNING,
                "Failed to parse binding '%s' for keybinding action '%s'",
-               key_ptr, bspl_string_value(string_ptr));
+               key_ptr, action_name_ptr);
+        free(action_arg_ptr);
         return false;
     }
     if (handle_ptr->add_logo) modifiers |= WLR_MODIFIER_LOGO;
 
+    // Lookup the action enum value from the action name.
     int action;
     if (!bspl_enum_name_to_value(
-            wlmaker_action_desc, bspl_string_value(string_ptr), &action)) {
+            wlmaker_action_desc, action_name_ptr, &action)) {
         bs_log(BS_WARNING, "Not a valid keybinding action: '%s'",
-               bspl_string_value(string_ptr));
+               action_name_ptr);
+        free(action_arg_ptr);
         return false;
     }
 
+    // Create and populate the binding structure.
     _wlmaker_action_binding_t *action_binding_ptr = logged_calloc(
         1, sizeof(_wlmaker_action_binding_t));
-    if (NULL == action_binding_ptr) return false;
+    if (NULL == action_binding_ptr) {
+        free(action_arg_ptr);
+        return false;
+    }
     action_binding_ptr->handle_ptr = handle_ptr;
     action_binding_ptr->action = action;
+    action_binding_ptr->action_arg_ptr = action_arg_ptr;
     action_binding_ptr->key_combo.keysym = keysym;
     action_binding_ptr->key_combo.ignore_case = true;
     action_binding_ptr->key_combo.modifiers = modifiers;
     action_binding_ptr->key_combo.modifiers_mask =
         wlmaker_modifier_default_mask;
+
+    // Register the key binding with the server.
     action_binding_ptr->key_binding_ptr = wlmaker_server_bind_key(
         handle_ptr->server_ptr,
         &action_binding_ptr->key_combo,
         _wlmaker_action_bound_callback);
-    if (NULL != action_binding_ptr->key_binding_ptr) {
-        bs_dequeue_push_back(
-            &handle_ptr->bindings, &action_binding_ptr->qnode);
-        return true;
+    if (NULL == action_binding_ptr->key_binding_ptr) {
+        free(action_binding_ptr->action_arg_ptr);
+        free(action_binding_ptr);
+        return false;
     }
 
-    free(action_binding_ptr);
-    return false;
+    bs_dequeue_push_back(&handle_ptr->bindings, &action_binding_ptr->qnode);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -599,7 +642,7 @@ bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
     wlmaker_action_execute(
         action_binding_ptr->handle_ptr->server_ptr,
         action_binding_ptr->action,
-        NULL);
+        action_binding_ptr->action_arg_ptr);
     return true;
 }
 
@@ -607,11 +650,13 @@ bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
 
 static void test_keybindings_parse(bs_test_t *test_ptr);
 static void test_default_keybindings(bs_test_t *test_ptr);
+static void test_keybindings_formats(bs_test_t *test_ptr);
 
 /** Test cases for key bindings. */
 static const bs_test_case_t   wlmaker_action_test_cases[] = {
     { true, "parse", test_keybindings_parse },
     { true, "default_keybindings", test_default_keybindings },
+    { true, "formats", test_keybindings_formats },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -675,6 +720,89 @@ void test_default_keybindings(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
     bspl_object_unref(obj_ptr);
     wlmaker_action_unbind_keys(handle_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests string and array format keybindings. */
+void test_keybindings_formats(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server = {};
+    bspl_object_t *obj_ptr;
+    bspl_dict_t *dict_ptr;
+    wlmaker_action_handle_t *handle_ptr;
+
+    // Test: String format (original format).
+    const char *string_format =
+        "{ \"Logo+q\" = Quit; \"Logo+l\" = LockScreen; }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)string_format, strlen(string_format));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
+    wlmaker_action_unbind_keys(handle_ptr);
+    bspl_object_unref(obj_ptr);
+
+    // Test: Array format with command argument.
+    const char *array_format =
+        "{ \"Logo+Return\" = (Execute, \"/usr/bin/foot\"); }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)array_format, strlen(array_format));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
+    wlmaker_action_unbind_keys(handle_ptr);
+    bspl_object_unref(obj_ptr);
+
+    // Test: Array format without command argument.
+    const char *array_no_arg = "{ \"Logo+q\" = (Quit); }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)array_no_arg, strlen(array_no_arg));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
+    wlmaker_action_unbind_keys(handle_ptr);
+    bspl_object_unref(obj_ptr);
+
+    // Test: Mixed formats in one dict.
+    const char *mixed_format =
+        "{ \"Logo+q\" = Quit; \"Logo+Return\" = (Execute, \"/bin/sh\"); }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)mixed_format, strlen(mixed_format));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
+    wlmaker_action_unbind_keys(handle_ptr);
+    bspl_object_unref(obj_ptr);
+
+    // Test: Empty array should fail.
+    const char *empty_array = "{ \"Logo+q\" = (); }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)empty_array, strlen(empty_array));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, handle_ptr);
+    bspl_object_unref(obj_ptr);
+
+    // Test: Invalid action name should fail.
+    const char *invalid_action = "{ \"Logo+q\" = NotAnAction; }";
+    obj_ptr = bspl_create_object_from_plist_data(
+        (const uint8_t*)invalid_action, strlen(invalid_action));
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, obj_ptr);
+    dict_ptr = bspl_dict_from_object(obj_ptr);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, dict_ptr);
+    handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, handle_ptr);
+    bspl_object_unref(obj_ptr);
 }
 
 /* == End of action.c ====================================================== */
