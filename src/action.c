@@ -65,7 +65,7 @@ typedef struct {
     wlmaker_key_combo_t       key_combo;
     /** The associated action. */
     wlmaker_action_t          action;
-    /** Optional argument for the action (eg. command to execute). */
+    /** Optional argument for the action (eg. command to execute, NULL when unset). */
     char                      *action_arg_ptr;
     /** The key binding it to this node. */
     wlmaker_key_binding_t     *key_binding_ptr;
