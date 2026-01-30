@@ -33,9 +33,12 @@
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_fractional_scale_v1.h>
+#include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_primary_selection.h>
+#include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
@@ -84,6 +87,14 @@ static void handle_destroy_input_device(
     void *data_ptr);
 
 static void _wlmaker_server_unclaimed_button_event_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void handle_request_set_selection(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void handle_request_set_primary_selection(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -244,9 +255,9 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    // The below helpers all setup a listener |display_destroy| for freeing the
-    // assets held via the respective create() calls. Hence no need to call a
-    // clean-up method from our end.
+    // The below clipboard-related helpers all setup a listener |display_destroy|
+    // for freeing the assets held via the respective create() calls. Hence no
+    // need to call a clean-up method from our end.
     server_ptr->wlr_data_device_manager_ptr = wlr_data_device_manager_create(
         server_ptr->wl_display_ptr);
     if (NULL == server_ptr->wlr_data_device_manager_ptr) {
@@ -254,6 +265,30 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
+    server_ptr->wlr_primary_selection_v1_device_manager_ptr =
+        wlr_primary_selection_v1_device_manager_create(
+            server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->wlr_primary_selection_v1_device_manager_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_primary_selection_v1_device_manager_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+    server_ptr->wlr_data_control_manager_v1_ptr =
+        wlr_data_control_manager_v1_create(server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->wlr_data_control_manager_v1_ptr) {
+        bs_log(BS_ERROR, "Failed wlr_data_control_manager_v1_create()");
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    wlmtk_util_connect_listener_signal(
+        &server_ptr->wlr_seat_ptr->events.request_set_selection,
+        &server_ptr->request_set_selection_listener,
+        handle_request_set_selection);
+    wlmtk_util_connect_listener_signal(
+        &server_ptr->wlr_seat_ptr->events.request_set_primary_selection,
+        &server_ptr->request_set_primary_selection_listener,
+        handle_request_set_primary_selection);
 
     server_ptr->xdg_shell_ptr = wlmaker_xdg_shell_create(server_ptr);
     if (NULL == server_ptr->xdg_shell_ptr) {
@@ -696,6 +731,44 @@ void _wlmaker_server_unclaimed_button_event_handler(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             true);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Approves a client's request to set the clipboard selection.
+ *
+ * @param listener_ptr
+ * @param data_ptr            Points to a struct wlr_seat_request_set_selection_event.
+ */
+void handle_request_set_selection(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, request_set_selection_listener);
+    struct wlr_seat_request_set_selection_event *event_ptr = data_ptr;
+
+    wlr_seat_set_selection(
+        server_ptr->wlr_seat_ptr, event_ptr->source, event_ptr->serial);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Approves a client's request to set the primary selection.
+ *
+ * @param listener_ptr
+ * @param data_ptr        Points to a struct
+ *                        wlr_seat_request_set_primary_selection_event.
+ */
+void handle_request_set_primary_selection(
+    struct wl_listener *listener_ptr,    void *data_ptr)
+{
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, request_set_primary_selection_listener);
+    struct wlr_seat_request_set_primary_selection_event *event_ptr = data_ptr;
+
+    wlr_seat_set_primary_selection(
+        server_ptr->wlr_seat_ptr, event_ptr->source, event_ptr->serial);
 }
 
 /* == Unit tests =========================================================== */

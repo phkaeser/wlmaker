@@ -28,7 +28,9 @@
 #include <xkbcommon/xkbcommon.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
+#include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
@@ -115,10 +117,23 @@ struct _wlmaker_server_t {
     /** Listener for `new_input` signals raised by `wlr_backend`. */
     struct wl_listener        backend_new_input_device_listener;
 
-    // From tinywl.c: A few hands-off wlroots interfaces.
+    // Clipboard and selection support.
 
-    /** The data device manager handles the clipboard. */
+    /** Provides the wl_data_device protocol for clipboard (Ctrl+C/V). */
     struct wlr_data_device_manager *wlr_data_device_manager_ptr;
+
+    /** Listener to approve clipboard selection requests. */
+    struct wl_listener        request_set_selection_listener;
+
+    /** Provides the primary selection protocol for middle-click paste. */
+    struct wlr_primary_selection_v1_device_manager
+        *wlr_primary_selection_v1_device_manager_ptr;
+
+    /** Listener to approve primary selection requests. */
+    struct wl_listener        request_set_primary_selection_listener;
+
+    /** Enables clipboard managers and tools (wl-copy, wl-paste). */
+    struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1_ptr;
 
     /** The cursor handler. */
     wlmaker_cursor_t          *cursor_ptr;
