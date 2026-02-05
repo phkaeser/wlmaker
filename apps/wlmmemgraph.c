@@ -287,11 +287,11 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
 /** Main program. */
 int main(const int argc, const char **argv)
 {
-    memgraph_state_t state = { 0 };
+    memgraph_state_t state = {};
 
     state.proc_fp = fopen("/proc/meminfo", "r");
     if (NULL == state.proc_fp) {
-        fprintf(stderr, "%s: Failed to open /proc/meminfo\n", _app_name);
+        bs_log(BS_ERROR | BS_ERRNO, "Failed to open /proc/meminfo");
         return EXIT_FAILURE;
     }
 
