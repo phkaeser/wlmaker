@@ -22,13 +22,14 @@
 
 #include "wlm_graph_shared.h"
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "wlm_graph_utildefines.h"
+#include <libbase/libbase.h>
 
 /** Application name. */
 static const char _app_name[] = "wlmcpugraph";
@@ -147,7 +148,7 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
     // First pass: count CPUs.
     while (NULL != fgets(line, sizeof(line), fp)) {
         if (0 != strncmp(line, "cpu", 3)) continue;
-        if (ISDIGIT(line[3])) {
+        if (isdigit(line[3])) {
             cpu_count++;
         }
     }
@@ -179,7 +180,7 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
     while (NULL != fgets(line, sizeof(line), fp) && read_count < cpu_count) {
         // Skip the aggregate "cpu" line, look for "cpu0", "cpu1", etc.
         if (0 != strncmp(line, "cpu", 3)) continue;
-        if (!ISDIGIT(line[3])) continue;
+        if (!isdigit(line[3])) continue;
 
         unsigned long user, nice, system, idle, iowait, irq, softirq;
         const int fields_parsed = sscanf(
@@ -197,7 +198,7 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
             if (0 != prev->total &&
                 abs_total > prev->total && abs_idle >= prev->idle) {
                 const unsigned long total_diff = abs_total - prev->total;
-                const unsigned long idle_diff = MIN2(abs_idle - prev->idle, total_diff);
+                const unsigned long idle_diff = BS_MIN(abs_idle - prev->idle, total_diff);
                 usage = (uint8_t)(((total_diff - idle_diff) * 255) / total_diff);
             }
 
@@ -219,17 +220,17 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
 /** Main program. */
 int main(const int argc, const char **argv)
 {
-    cpugraph_state_t state = { 0 };
+    cpugraph_state_t state = {};
 
     state.proc_fp = fopen("/proc/stat", "r");
     if (NULL == state.proc_fp) {
-        fprintf(stderr, "%s: Failed to open /proc/stat\n", _app_name);
+        bs_log(BS_ERROR | BS_ERRNO, "Failed to open /proc/stat");
         return EXIT_FAILURE;
     }
 
     // Prime prev values so first real sample computes proper delta.
     {
-        wlm_graph_values_t values = { 0 };
+        wlm_graph_values_t values = {};
         _stats_read_fn(&state, &values);
         free(values.data);
     }

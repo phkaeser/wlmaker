@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wlm_graph_utildefines.h"
+#include <libbase/libbase.h>
 
 /** Application name. */
 static const char _app_name[] = "wlmnetgraph";
@@ -296,9 +296,9 @@ static wlm_graph_read_result_t _stats_read_fn(void *app_state, wlm_graph_values_
     // Scale rates to 0-255 based on peak (clamped to peak).
     // IN_OUT uses min to show bidirectional activity (both directions active).
     const unsigned long long peak = state->peak_rate;
-    values->data[NET_CATEGORY_IN] = (uint8_t)((MIN2(rx_rate, peak) * 255) / peak);
-    values->data[NET_CATEGORY_OUT] = (uint8_t)((MIN2(tx_rate, peak) * 255) / peak);
-    values->data[NET_CATEGORY_IN_OUT] = (uint8_t)((MIN2(rx_rate, tx_rate) * 255) / peak);
+    values->data[NET_CATEGORY_IN] = (uint8_t)((BS_MIN(rx_rate, peak) * 255) / peak);
+    values->data[NET_CATEGORY_OUT] = (uint8_t)((BS_MIN(tx_rate, peak) * 255) / peak);
+    values->data[NET_CATEGORY_IN_OUT] = (uint8_t)((BS_MIN(rx_rate, tx_rate) * 255) / peak);
 
     // Request regeneration if scale changed.
     if (state->scale_index != prev_scale_index) {
@@ -326,7 +326,7 @@ static void _regenerate_fn(void *app_state, wlm_graph_values_t *samples, const u
     if (state->history_num > 1) {
         // Determine how many samples have history available (excludes current).
         const uint32_t samples_num_available = state->history_num - 1;
-        samples_num_regenerate = MIN2(samples_num, samples_num_available);
+        samples_num_regenerate = BS_MIN(samples_num, samples_num_available);
 
         // Regenerate samples that have history.
         // samples[0] = newest historical (before current), samples[N-1] = oldest.
@@ -345,11 +345,11 @@ static void _regenerate_fn(void *app_state, wlm_graph_values_t *samples, const u
 
             // Regenerate scaled values at current peak.
             samples[i].data[NET_CATEGORY_IN] =
-                (uint8_t)((MIN2(h->rx_rate, peak) * 255) / peak);
+                (uint8_t)((BS_MIN(h->rx_rate, peak) * 255) / peak);
             samples[i].data[NET_CATEGORY_OUT] =
-                (uint8_t)((MIN2(h->tx_rate, peak) * 255) / peak);
+                (uint8_t)((BS_MIN(h->tx_rate, peak) * 255) / peak);
             samples[i].data[NET_CATEGORY_IN_OUT] =
-                (uint8_t)((MIN2(h->rx_rate, h->tx_rate) * 255) / peak);
+                (uint8_t)((BS_MIN(h->rx_rate, h->tx_rate) * 255) / peak);
         }
     }
 
@@ -364,18 +364,18 @@ static void _regenerate_fn(void *app_state, wlm_graph_values_t *samples, const u
 /** Main program. */
 int main(const int argc, const char **argv)
 {
-    netgraph_state_t state = { 0 };
+    netgraph_state_t state = {};
 
     state.proc_fp = fopen("/proc/net/dev", "r");
     if (NULL == state.proc_fp) {
-        fprintf(stderr, "%s: Failed to open /proc/net/dev\n", _app_name);
+        bs_log(BS_ERROR | BS_ERRNO, "Failed to open /proc/net/dev");
         return EXIT_FAILURE;
     }
 
     // Prime prev values so first real sample computes proper delta.
     // Reset peak and history after priming (first read sets peak to total bytes).
     {
-        wlm_graph_values_t values = { 0 };
+        wlm_graph_values_t values = {};
         _stats_read_fn(&state, &values);
         free(values.data);
         state.peak_rate = 0;

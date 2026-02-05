@@ -33,7 +33,6 @@
 #include <string.h>
 
 #include "libwlclient/icon.h"
-#include "wlm_graph_utildefines.h"
 
 /* == Internal definitions ================================================= */
 
@@ -171,10 +170,6 @@ typedef struct {
 
 /* == Forward declarations ================================================= */
 
-#ifdef __GNUC__
-__attribute__((noreturn))
-#endif
-static void _wlm_graph_panic(const char *msg);
 static void _wlm_graph_sample_values_free(wlm_graph_sample_t *samples, const uint32_t count);
 static void _wlm_graph_samples_init(wlm_graph_sample_t *samples, const uint32_t count);
 static void _wlm_graph_sample_compute_peak(
@@ -246,8 +241,8 @@ static bool _wlm_graph_arg_parse_i32(
     errno = 0;
     const long val = strtol(str, &endptr, 10);
     if ('\0' != *endptr || 0 != errno || val < val_min || val > val_max) {
-        fprintf(stderr, "Error: %s value '%s' must be %d-%d\n",
-                opt_name, str, val_min, val_max);
+        bs_log(BS_ERROR, "Error: %s value '%s' must be %d-%d\n",
+               opt_name, str, val_min, val_max);
         return false;
     }
     *result_ptr = (int32_t)val;
@@ -277,8 +272,7 @@ static bool _wlm_graph_arg_parse_f64(
     errno = 0;
     const double val = strtod(str, &endptr);
     if ('\0' != *endptr || 0 != errno || val < val_min || val > val_max) {
-        fprintf(stderr, "Error: %s value '%s' must be %g-%g\n",
-                opt_name, str, val_min, val_max);
+        bs_log(BS_ERROR, "%s value '%s' must be %g-%g", opt_name, str, val_min, val_max);
         return false;
     }
     *result_ptr = val;
@@ -334,7 +328,7 @@ static bool _wlm_graph_arg_parse_font(
     // Extract font name (everything before first colon, or entire string).
     const size_t name_len = (NULL != colon) ? (size_t)(colon - str) : strlen(str);
     if (0 == name_len || name_len >= WLM_GRAPH_FONT_FACE_MAX) {
-        fprintf(stderr, "Error: %s font name too long or empty\n", opt_name);
+        bs_log(BS_ERROR, "%s font name too long or empty", opt_name);
         return false;
     }
     memcpy(font->face, str, name_len);
@@ -349,7 +343,7 @@ static bool _wlm_graph_arg_parse_font(
         if (_str_match_prefix(&pos, &len, "size=")) {
             char size_buf[16];
             if (len >= sizeof(size_buf)) {
-                fprintf(stderr, "Error: %s size value too long\n", opt_name);
+                bs_log(BS_ERROR, "%s size value too long", opt_name);
                 return false;
             }
             memcpy(size_buf, pos, len);
@@ -366,7 +360,7 @@ static bool _wlm_graph_arg_parse_font(
             } else if (_str_match_prefix(&pos, &len, "bold") && 0 == len) {
                 font->weight = CAIRO_FONT_WEIGHT_BOLD;
             } else {
-                fprintf(stderr, "Error: %s weight must be 'normal' or 'bold'\n", opt_name);
+                bs_log(BS_ERROR, "%s weight must be 'normal' or 'bold'", opt_name);
                 return false;
             }
         } else if (_str_match_prefix(&pos, &len, "slant=")) {
@@ -377,11 +371,11 @@ static bool _wlm_graph_arg_parse_font(
             } else if (_str_match_prefix(&pos, &len, "oblique") && 0 == len) {
                 font->slant = CAIRO_FONT_SLANT_OBLIQUE;
             } else {
-                fprintf(stderr, "Error: %s slant must be 'normal', 'italic', or 'oblique'\n", opt_name);
+                bs_log(BS_ERROR, "%s slant must be 'normal', 'italic', or 'oblique'", opt_name);
                 return false;
             }
         } else if (len > 0) {
-            fprintf(stderr, "Error: Unknown %s option starting with '%.20s'\n", opt_name, pos);
+            bs_log(BS_ERROR, "Unknown %s option starting with '%.20s'", opt_name, pos);
             return false;
         }
     }
@@ -456,15 +450,13 @@ static void _wlm_graph_pixel_lut_init(
  * @param graph_state       Graph state to resize.
  * @param size              New icon dimensions [width, height].
  * @param margin_logical_px Margin in logical pixels (at base icon size).
- * @param panic_fn          Function to call on allocation failure.
  *
  * @return true if buffers were resized, false if dimensions are too small.
  */
 static bool _wlm_graph_buffers_resize(
     wlm_graph_state_t *graph_state,
     const uint32_t size[2],
-    const uint32_t margin_logical_px,
-    void (*panic_fn)(const char *msg))
+    const uint32_t margin_logical_px)
 {
     // Calculate inner dimensions (graph area inside bezel).
     const uint32_t margin_px = (margin_logical_px * size[0]) / WLM_GRAPH_BASE_ICON_SIZE;
@@ -493,7 +485,7 @@ static bool _wlm_graph_buffers_resize(
         // Allocate sample buffer (values allocated lazily during capture).
         graph_state->samples_alloc = calloc(inner_size[0], sizeof(wlm_graph_sample_t));
         if (NULL == graph_state->samples_alloc) {
-            panic_fn("Failed to allocate sample buffer");
+            bs_log(BS_FATAL | BS_ERRNO, "Failed to allocate sample buffer");
         }
 
         // Initialize circular doubly-linked list.
@@ -511,13 +503,13 @@ static bool _wlm_graph_buffers_resize(
         // Allocate graph data buffer.
         graph_state->graph_pixels = malloc(sizeof(uint32_t) * inner_size[0] * inner_size[1]);
         if (NULL == graph_state->graph_pixels) {
-            panic_fn("Failed to allocate graph data buffer");
+            bs_log(BS_FATAL | BS_ERRNO, "Failed to allocate graph data buffer");
         }
 
         // Allocate row counts scratch buffer.
         graph_state->row_counts = malloc(sizeof(uint32_t) * inner_size[1]);
         if (NULL == graph_state->row_counts) {
-            panic_fn("Failed to allocate row counts buffer");
+            bs_log(BS_FATAL | BS_ERRNO, "Failed to allocate row counts buffer");
         }
 
         graph_state->graph_size[0] = inner_size[0];
@@ -665,7 +657,7 @@ static uint32_t _wlm_graph_column_render(
             if (0 == usage) continue;
 
             cumulative += usage;
-            const uint8_t level = (uint8_t)MIN2(cumulative, 255);
+            const uint8_t level = (uint8_t)BS_MIN(cumulative, 255U);
 
             // Calculate topmost line from cumulative usage.
             const uint32_t y_top = _wlm_graph_usage_to_y(level, graph_size[1]);
@@ -882,7 +874,7 @@ static bool _wlm_graph_bezel_draw(bs_gfxbuf_t *gfxbuf_ptr, const uint32_t margin
 
     // Offset from edge to bezel position (scales with icon size).
     const uint32_t bezel_offset = ((margin_logical_px - 1) * size[0]) / WLM_GRAPH_BASE_ICON_SIZE;
-    const uint32_t bezel_line_width = MAX2(size[0] / WLM_GRAPH_BASE_ICON_SIZE, 1);
+    const uint32_t bezel_line_width = BS_MAX(size[0] / WLM_GRAPH_BASE_ICON_SIZE, 1U);
 
     wlm_primitives_draw_bezel_at(
         cairo_ptr,
@@ -1041,12 +1033,12 @@ static void _wlm_graph_sample_compute_peak(
         for (uint32_t i = 0; i < values_num; i++) {
             total += values[i];
         }
-        sample->value_peak = (uint8_t)MIN2(total, 255);
+        sample->value_peak = (uint8_t)BS_MIN(total, 255U);
     } else {
         // Independent: peak is maximum of all values.
         uint8_t max_val = 0;
         for (uint32_t i = 0; i < values_num; i++) {
-            max_val = MAX2(max_val, values[i]);
+            max_val = BS_MAX(max_val, values[i]);
         }
         sample->value_peak = max_val;
     }
@@ -1184,8 +1176,8 @@ static int _wlm_graph_args_parse(
             } else if (0 == strcmp(argv[i + 1], "heat")) {
                 prefs->color_mode = WLM_GRAPH_COLOR_MODE_HEAT;
             } else {
-                fprintf(stderr, "Error: %s value '%s' must be 'alpha' or 'heat'\n",
-                        argv[i], argv[i + 1]);
+                bs_log(BS_ERROR, "%s value '%s' must be 'alpha' or 'heat'",
+                       argv[i], argv[i + 1]);
                 return -1;
             }
             i++;
@@ -1213,8 +1205,8 @@ static int _wlm_graph_args_parse(
             printf("  --help, -h        Show this help\n");
             return 1;
         } else {
-            fprintf(stderr, "Error: Unknown argument '%s'\n", argv[i]);
-            fprintf(stderr, "Try '%s --help' for usage.\n", app_name);
+            bs_log(BS_ERROR, "Unknown argument '%s'", argv[i]);
+            bs_log(BS_ERROR, "Try '%s --help' for usage.", app_name);
             return -1;
         }
     }
@@ -1246,7 +1238,7 @@ static bool _wlm_graph_icon_render_callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_pt
 
     // Reset graph buffers if icon size changed.
     if (size_changed) {
-        if (!_wlm_graph_buffers_resize(gs, size, margin_logical_px, _wlm_graph_panic)) {
+        if (!_wlm_graph_buffers_resize(gs, size, margin_logical_px)) {
             bs_log(BS_ERROR, "Failed to reset graph buffers for %ux%u icon",
                    size[0], size[1]);
             return false;
@@ -1383,21 +1375,6 @@ static void _wlm_graph_timer_callback(wlclient_t *client_ptr, void *ud_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Prints error message to stderr and terminates the application.
- *
- * @param msg               Error message to display.
- */
-#ifdef __GNUC__
-__attribute__((noreturn))
-#endif
-static void _wlm_graph_panic(const char *msg)
-{
-    fprintf(stderr, "wlm_graph: %s\n", msg);
-    exit(EXIT_FAILURE);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
  * Frees all resources associated with graph state.
  *
  * @param graph_state       Graph state to free, or NULL.
@@ -1437,7 +1414,7 @@ int wlm_graph_app_run(
     // Allocate graph state.
     wlm_graph_state_t *graph_state = calloc(1, sizeof(wlm_graph_state_t));
     if (NULL == graph_state) {
-        fprintf(stderr, "%s: Failed to allocate graph state\n", config->app_name);
+        bs_log(BS_ERROR, "%s: Failed to allocate graph state", config->app_name);
         return EXIT_FAILURE;
     }
 
@@ -1451,8 +1428,8 @@ int wlm_graph_app_run(
 
     // Initialize graph buffers with default icon size.
     const uint32_t size_default[2] = {WLM_GRAPH_BASE_ICON_SIZE, WLM_GRAPH_BASE_ICON_SIZE};
-    if (!_wlm_graph_buffers_resize(graph_state, size_default, prefs.margin_logical_px, _wlm_graph_panic)) {
-        fprintf(stderr, "Error: Icon dimensions too small for graph\n");
+    if (!_wlm_graph_buffers_resize(graph_state, size_default, prefs.margin_logical_px)) {
+        bs_log(BS_ERROR, "Icon dimensions too small for graph");
         _wlm_graph_state_free(graph_state);
         return EXIT_FAILURE;
     }
