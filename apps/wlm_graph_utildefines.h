@@ -22,15 +22,6 @@
 #ifndef WLM_GRAPH_UTILDEFINES_H
 #define WLM_GRAPH_UTILDEFINES_H
 
-/** Returns true if character is a decimal digit ('0'-'9'). */
-#define ISDIGIT(c) ((c) >= '0' && (c) <= '9')
-
-/** Returns the minimum of two values. */
-#define MIN2(a, b) ((a) < (b) ? (a) : (b))
-
-/** Returns the maximum of two values. */
-#define MAX2(a, b) ((a) > (b) ? (a) : (b))
-
 /** Clamps value up to a minimum (in-place). */
 #define CLAMP_MIN(value, min) \
   do { \

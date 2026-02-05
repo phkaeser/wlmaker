@@ -133,7 +133,7 @@ typedef struct {
     void (*state_free_fn)(void *app_state);
 
     /**
-     * Optional custom pixel lookup table (256 entries, ARGB format).
+     * Optional custom pixel lookup table (256 entries, ARGB32 format).
      *
      * If non-NULL, overrides the default heat-map LUT. Index 0 maps to lowest
      * intensity (single value active), index 255 to highest (all values active).
