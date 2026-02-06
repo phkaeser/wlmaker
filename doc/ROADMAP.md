@@ -36,6 +36,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
+  * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
   * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
     * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
   * Recompute pointer focus max once per frame.
