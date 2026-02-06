@@ -53,6 +53,9 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
  */
 void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr);
 
+/** Unit test set for @ref wlmaker_keyboard_t. */
+extern const bs_test_set_t wlmaker_keyboard_test_set;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

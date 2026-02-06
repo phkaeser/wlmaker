@@ -130,6 +130,7 @@ TARGET_LINK_LIBRARIES(
   embedded_root_menu
   embedded_state
   embedded_theme
+  inih
   libbase
   libbase_plist
   toolkit

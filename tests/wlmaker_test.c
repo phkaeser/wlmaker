@@ -29,6 +29,7 @@
 #include "corner.h"
 #include "dock.h"
 #include "files.h"
+#include "keyboard.h"
 #include "launcher.h"
 #include "layer_panel.h"
 #include "lock_mgr.h"
@@ -59,6 +60,7 @@ int main(int argc, const char **argv)
         &wlmaker_corner_test_set,
         &wlmaker_dock_test_set,
         &wlmaker_files_test_set,
+        &wlmaker_keyboard_test_set,
         &wlmaker_launcher_test_set,
         &wlmaker_layer_panel_test_set,
         &wlmaker_lock_mgr_test_set,
