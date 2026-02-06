@@ -1,0 +1,6 @@
+# -*- conf -*-  -- Keyboard configuration file, for wlmaker test.
+XKBMODEL="pc105"
+XKBLAYOUT= "us,ch"
+XKBVARIANT="intl," 
+XKBOPTIONS="grp:shift_caps_toggle"
+BACKSPACE="guess"

@@ -20,6 +20,7 @@
 #ifndef __WLMAKER_KEYBOARD_H__
 #define __WLMAKER_KEYBOARD_H__
 
+#include <libbase/libbase.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_seat.h>
@@ -52,6 +53,9 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
  * @param keyboard_ptr
  */
 void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr);
+
+/** Unit test set for @ref wlmaker_keyboard_t. */
+extern const bs_test_set_t wlmaker_keyboard_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

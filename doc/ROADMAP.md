@@ -36,11 +36,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
+  * [done] Read keymap from `/etc/default/keyboard` or similar.
   * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
   * [done] Refactors pointer focus and layout computation to compute only once per frame.
   * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
     * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
-  * Read keymap from `/etc/default/keyboard` or similar.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Fix: On scaled output, pointer cursor is tiny.

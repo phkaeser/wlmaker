@@ -20,11 +20,14 @@
 
 #include "keyboard.h"
 
+#include <ctype.h>
+#include <ini.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
@@ -56,13 +59,18 @@ struct _wlmaker_keyboard_t {
     struct wl_listener        key_listener;
 };
 
-static bool _wlmaker_keyboard_populate_rules(
+static bspl_dict_t *_wlmaker_keyboard_populate_rules(
     bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr);
 static bool _wlmaker_keyboard_populate_repeat(
     bspl_dict_t *dict_ptr,
     int32_t *rate_ptr,
     int32_t *delay_ptr);
+static int _wlmaker_keyboard_config_ini_handler(
+    void *user_ptr,
+    const char *section_ptr,
+    const char *name_ptr,
+    const char *value_ptr);
 
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
@@ -95,8 +103,9 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         bspl_dict_ref(config_dict_ptr));
 
     struct xkb_rule_names xkb_rule;
-    if (!_wlmaker_keyboard_populate_rules(
-            keyboard_ptr->config_dict_ptr, &xkb_rule)) {
+    bspl_dict_t *rmlvo_dict_ptr = _wlmaker_keyboard_populate_rules(
+        keyboard_ptr->config_dict_ptr, &xkb_rule);
+    if (NULL == rmlvo_dict_ptr) {
         bs_log(BS_ERROR, "No rule data found in 'Keyboard' dict.");
         wlmaker_keyboard_destroy(keyboard_ptr);
         return NULL;
@@ -116,9 +125,11 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
                xkb_rule.layout,
                xkb_rule.variant,
                xkb_rule.options);
+        bspl_dict_unref(rmlvo_dict_ptr);
         wlmaker_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
+    bspl_dict_unref(rmlvo_dict_ptr);
     wlr_keyboard_set_keymap(keyboard_ptr->wlr_keyboard_ptr, xkb_keymap_ptr);
     xkb_keymap_unref(xkb_keymap_ptr);
     xkb_context_unref(xkb_context_ptr);
@@ -169,25 +180,43 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
  * @param dict_ptr
  * @param rules_ptr
  *
- * @return true on success
+ * @return A referenced bspl_dict_t holding rules details, or NULL on error.
  */
-bool _wlmaker_keyboard_populate_rules(
+bspl_dict_t *_wlmaker_keyboard_populate_rules(
     bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr)
 {
-    dict_ptr = bspl_dict_get_dict(dict_ptr, "XkbRMLVO");
-    if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "No 'XkbRMLVO' dict in 'Keyboard' dict.");
-        return false;
+    bspl_dict_t *rmlvo = NULL;
+
+    const char *fname_ptr = bspl_dict_get_string_value(
+        dict_ptr, "XkbConfigurationFile");
+    if (NULL != fname_ptr) {
+        rmlvo = bspl_dict_create();
+        if (0 != ini_parse(
+                fname_ptr,
+                _wlmaker_keyboard_config_ini_handler,
+                rmlvo)) {
+            bs_log(BS_ERROR, "Failed to parse \"XkbConfigurationFile\" at %s",
+                   fname_ptr);
+            bspl_dict_unref(rmlvo);
+            return NULL;
+        }
+    } else {
+        rmlvo = bspl_dict_ref(bspl_dict_get_dict(dict_ptr, "XkbRMLVO"));
     }
 
-    rules_ptr->rules = bspl_dict_get_string_value(dict_ptr, "Rules");
-    rules_ptr->model = bspl_dict_get_string_value(dict_ptr, "Model");
-    rules_ptr->layout = bspl_dict_get_string_value(dict_ptr, "Layout");
-    rules_ptr->variant = bspl_dict_get_string_value(dict_ptr, "Variant");
-    rules_ptr->options = bspl_dict_get_string_value(dict_ptr, "Options");
+    if (NULL == rmlvo) {
+        bs_log(BS_ERROR, "No \"XkbConfigurationFile\" nor \"XkbRMLVO\" dict "
+               "found in \"Keyboard\" dict.");
+        return NULL;
+    }
 
-    return true;
+    rules_ptr->rules = bspl_dict_get_string_value(rmlvo, "Rules");
+    rules_ptr->model = bspl_dict_get_string_value(rmlvo, "Model");
+    rules_ptr->layout = bspl_dict_get_string_value(rmlvo, "Layout");
+    rules_ptr->variant = bspl_dict_get_string_value(rmlvo, "Variant");
+    rules_ptr->options = bspl_dict_get_string_value(rmlvo, "Options");
+    return rmlvo;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -233,6 +262,67 @@ bool _wlmaker_keyboard_populate_repeat(
     *rate_ptr = value;
 
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * inih parser callback. Fills XKB config file values into the dict.
+ *
+ * @param user_ptr            Points to a `bspl_dict_t`.
+ * @param section_ptr
+ * @param name_ptr
+ * @param value_ptr
+ *
+ * @return 0 on success.
+ */
+int _wlmaker_keyboard_config_ini_handler(
+    void *user_ptr,
+    __UNUSED__ const char *section_ptr,
+    const char *name_ptr,
+    const char *value_ptr)
+{
+    bspl_dict_t *rmlvo_dict_ptr = user_ptr;
+
+    struct field_definition { const char *n; const char *k; };
+    struct field_definition definitions[] = {
+        { .n = "XKBMODEL", .k = "Model" },
+        { .n = "XKBLAYOUT", .k = "Layout" },
+        { .n = "XKBVARIANT", .k = "Variant" },
+        { .n = "XKBOPTIONS", .k = "Options" },
+        { .n = "BACKSPACE", .k = NULL },
+        { .n = NULL }
+    };
+
+    for (const struct field_definition *def_ptr = &definitions[0];
+         NULL != def_ptr->n;
+         ++def_ptr) {
+        if (0 != strcmp(def_ptr->n, name_ptr)) continue;
+        if (NULL == def_ptr->k) return 1;
+
+        // Trim from left, and remove double-quote.
+        while ('\0' != *value_ptr && isblank(*value_ptr)) ++value_ptr;
+        if ('"' == *value_ptr) ++value_ptr;
+
+        // Trim from right, and also remove double-quote.
+        size_t l = strlen(value_ptr);
+        while (0 < l && isblank(value_ptr[l-1])) --l;
+        if (0 < l && '"' == value_ptr[l-1]) --l;
+
+        char *copied = logged_malloc(l+1);
+        if (NULL == copied) return 1;
+        memcpy(copied, value_ptr, l);
+        copied[l] = '\0';
+        bspl_string_t *s = bspl_string_create(copied);
+        free(copied);
+        if (NULL == s) return 0;
+
+        bspl_dict_add(rmlvo_dict_ptr, def_ptr->k, bspl_object_from_string(s));
+        bspl_string_unref(s);
+        return 1;
+    }
+
+    bs_log(BS_WARNING, "Unknown name: \"%s\"", name_ptr);
+    return 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -326,6 +416,69 @@ void handle_modifiers(struct wl_listener *listener_ptr,
     wlr_seat_keyboard_notify_modifiers(
         keyboard_ptr->wlr_seat_ptr,
         &keyboard_ptr->wlr_keyboard_ptr->modifiers);
+}
+
+/* == Unit tests =========================================================== */
+
+static void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr);
+static void _wlmaker_keyboard_test_keyboard_file(bs_test_t *test_ptr);
+
+/** Unit test cases. */
+static const bs_test_case_t wlmaker_keyboard_test_cases[] = {
+    { true, "rmlvo", _wlmaker_keyboard_test_rmlvo },
+    { true, "keyboard_file", _wlmaker_keyboard_test_keyboard_file },
+    BS_TEST_CASE_SENTINEL()
+};
+
+const bs_test_set_t wlmaker_keyboard_test_set = BS_TEST_SET(
+    true, "keyboard", wlmaker_keyboard_test_cases);
+
+/* ------------------------------------------------------------------------- */
+/** Tests keyboard rules are loaded from a given RMLVO dict. */
+void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr)
+{
+    struct xkb_rule_names r = {};
+    bspl_dict_t *d = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{XkbRMLVO={Rules=R;Model=M;Layout=L;Variant=V;Options=O}}"));
+
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+    bspl_dict_t *rmlvo = _wlmaker_keyboard_populate_rules(d, &r);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rmlvo);
+    BS_TEST_VERIFY_STREQ(test_ptr, "R", r.rules);
+    BS_TEST_VERIFY_STREQ(test_ptr, "M", r.model);
+    BS_TEST_VERIFY_STREQ(test_ptr, "L", r.layout);
+    BS_TEST_VERIFY_STREQ(test_ptr, "V", r.variant);
+    BS_TEST_VERIFY_STREQ(test_ptr, "O", r.options);
+    bspl_dict_unref(rmlvo);
+    bspl_dict_unref(d);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests keyboard rules are loaded from XKB configuration file. */
+void _wlmaker_keyboard_test_keyboard_file(bs_test_t *test_ptr)
+{
+    struct xkb_rule_names r = {};
+    bspl_dict_t *d = bspl_dict_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    bspl_object_t *o = bspl_object_from_string(
+        bspl_string_create(bs_test_data_path(test_ptr, "keyboard")));
+    BS_TEST_VERIFY_TRUE_OR_RETURN(
+        test_ptr,
+        bspl_dict_add(d, "XkbConfigurationFile", o));
+    bspl_object_unref(o);
+
+    bspl_dict_t *rmlvo = _wlmaker_keyboard_populate_rules(d, &r);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rmlvo);
+
+    BS_TEST_VERIFY_STREQ(test_ptr, "pc105", r.model);
+    BS_TEST_VERIFY_STREQ(test_ptr, "us,ch", r.layout);
+    BS_TEST_VERIFY_STREQ(test_ptr, "intl,", r.variant);
+    BS_TEST_VERIFY_STREQ(test_ptr, "grp:shift_caps_toggle", r.options);
+
+    bspl_dict_unref(rmlvo);
+    bspl_dict_unref(d);
 }
 
 /* == End of keyboard.c ==================================================== */
