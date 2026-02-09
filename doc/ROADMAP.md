@@ -36,6 +36,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
+  * [done] Build with wlroots-0.20 (tested with -rc1).
   * [done] Read keymap from `/etc/default/keyboard` or similar.
   * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
   * [done] Refactors pointer focus and layout computation to compute only once per frame.
@@ -47,7 +48,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
-  * If released: Build with wlroots-0.20.
 
 * Bug fixes
   * Verify, document and fix problem with Chrome GMail attachment as file.
