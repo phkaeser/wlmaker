@@ -61,6 +61,7 @@
 
 #if defined(WLMAKER_HAVE_XWAYLAND)
 #define WLR_USE_UNSTABLE
+#include <wlr/version.h>
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
@@ -285,6 +286,24 @@ void handle_ready(struct wl_listener *listener_ptr,
     xcb_disconnect(xcb_connection_ptr);
 
     // Sets the default cursor to use for XWayland surfaces, unless overrideen.
+#if WLR_VERSION_NUM >= (20 << 8)
+
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_xpm_create_from_data(x11_cursor_xpm);
+    if (NULL == gfxbuf_ptr) return;
+    struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
+        gfxbuf_ptr->width, gfxbuf_ptr->height);
+    if (NULL != wlr_buffer_ptr) {
+        bs_gfxbuf_copy(bs_gfxbuf_from_wlr_buffer(wlr_buffer_ptr), gfxbuf_ptr);
+        wlr_xwayland_set_cursor(
+            xwl_ptr->wlr_xwayland_ptr,
+            wlr_buffer_ptr,
+            0, 0);
+        wlr_buffer_drop(wlr_buffer_ptr);
+    }
+    bs_gfxbuf_destroy(gfxbuf_ptr);
+
+#else
+
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_xpm_create_from_data(x11_cursor_xpm);
     if (NULL != gfxbuf_ptr) {
         wlr_xwayland_set_cursor(
@@ -295,6 +314,8 @@ void handle_ready(struct wl_listener *listener_ptr,
             0, 0);
         bs_gfxbuf_destroy(gfxbuf_ptr);
     }
+
+#endif
 }
 
 /* ------------------------------------------------------------------------- */

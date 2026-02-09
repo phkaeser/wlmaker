@@ -1,4 +1,4 @@
-name: Build for Debian Trixie, with wlroots 0.19 submodule
+name: Build for Debian Trixie, with wlroots 0.20 submodule
 
 on:
   push:
@@ -50,6 +50,7 @@ jobs:
           libxcb-res0-dev \
           libxcb-shm0-dev \
           libxcb-xinput-dev \
+          libxcb-xkb-dev \
           libxcb1-dev \
           libxdg-basedir-dev \
           libxkbcommon-dev \
@@ -58,29 +59,23 @@ jobs:
           plantuml \
           seatd \
           wayland-protocols \
+          xmlto \
+          xsltproc \
           xwayland
-
-    - name: Checkout dependencies.
-      run: |
-        git clone https://github.com/phkaeser/wlmaker-dependencies.git
-        cd wlmaker-dependencies
-        git reset --hard 377b858ad0d07869e0afb2c2f7ba5273aee9460f
-        git submodule update --init --recursive --merge
-
-    - name: Configure and build dependencies/.
-      run: |
-        cd wlmaker-dependencies
-        export CC="${{ matrix.compiler }}"
-        export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
-        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
-        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
-        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} . -B build/
-        cmake --build build
 
     - name: Checkout code, including git submodules.
       uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
+
+    - name: Configure and build dependencies/.
+      run: |
+        export CC="${{ matrix.compiler }}"
+        export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
+        export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+        export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+        cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} dependencies/ -B dependencies/build/
+        cmake --build dependencies/build
 
     - name: Configure wlmaker through CMake.
       run: |
