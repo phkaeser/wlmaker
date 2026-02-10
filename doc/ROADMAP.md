@@ -50,7 +50,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Wire up backlight control to window menu.
 
 * Bug fixes
-  * Fix crash when changing to different terminal ([#438](https://github.com/phkaeser/wlmaker/issues/438)).
+  * [done] Fix crash when changing to different terminal ([#438](https://github.com/phkaeser/wlmaker/issues/438)).
   * Fix wlmaker not showing window of wlroots clients  ([#439](https://github.com/phkaeser/wlmaker/issues/439)).
 
 ## [0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)

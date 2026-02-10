@@ -965,6 +965,12 @@ void _wlmtk_window_reposition_window(
     wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
     wlmtk_workspace_t *workspace_ptr = ud_ptr;
 
+    // No re-positioning if extents are zero.
+    if (workspace_ptr->x1 >= workspace_ptr->x2 ||
+        workspace_ptr->y1 >= workspace_ptr->y2) {
+        return;
+    }
+
     // Fullscreen window? Re-position it. We commit right away, to re-position
     // the element.
     if (wlmtk_window_is_fullscreen(window_ptr)) {
@@ -1909,6 +1915,13 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 400, 0, 236, 186,
         wlmtk_window_get_bounding_box(w3));
+
+    // Remove the other layout. Extents now 0x0 -- no re-sizing expected.
+    wlmtk_util_clear_test_wlr_box_listener(&l1);
+    wlmtk_util_clear_test_wlr_box_listener(&l3);
+    wlr_output_layout_remove(wlr_output_layout_ptr, &o2);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l1.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l3.calls);
 
     wlmtk_workspace_unmap_window(ws_ptr, w3);
     wlmtk_window_destroy(w3);
