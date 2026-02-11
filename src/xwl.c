@@ -56,7 +56,6 @@
  *   properties for the window types.
  */
 
-
 #include "xwl.h"
 
 #if defined(WLMAKER_HAVE_XWAYLAND)

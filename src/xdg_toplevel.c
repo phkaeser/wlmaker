@@ -34,6 +34,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "server.h"
@@ -109,6 +110,8 @@ struct wlmaker_xdg_toplevel {
     uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t);
     /** Injected method for wlr_xdg_toplevel_set_activated(). */
     uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool);
+    /** Injected method for wlr_surface_get_extents(). */
+    void (*_get_extents)(struct wlr_surface *, struct wlr_box *);
 
     /** Serial of the most recent commit() call. */
     uint32_t                  committed_serial;
@@ -153,7 +156,8 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *, bool),
     uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool),
     uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t),
-    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool));
+    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool),
+    void (*_get_extents)(struct wlr_surface *, struct wlr_box *));
 static void _wlmaker_xdg_toplevel_flush_properties(
     struct wlmaker_xdg_toplevel *wxt_ptr);
 static void _wlmaker_xdg_toplevel_try_map(
@@ -233,7 +237,13 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         wlr_xdg_toplevel_set_maximized,
         wlr_xdg_toplevel_set_fullscreen,
         wlr_xdg_toplevel_set_size,
-        wlr_xdg_toplevel_set_activated);
+        wlr_xdg_toplevel_set_activated,
+#if WLR_VERSION_NUM >= (19 << 8)
+        wlr_surface_get_extents
+#else
+        wlr_surface_get_extends
+#endif
+        );
 }
 
 /* ------------------------------------------------------------------------- */
@@ -303,7 +313,8 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     uint32_t (*_set_maximized)(struct wlr_xdg_toplevel *, bool),
     uint32_t (*_set_fullscreen)(struct wlr_xdg_toplevel *, bool),
     uint32_t (*_set_size)(struct wlr_xdg_toplevel *, int32_t, int32_t),
-    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool))
+    uint32_t (*_set_activated)(struct wlr_xdg_toplevel *, bool),
+    void (*_get_extents)(struct wlr_surface *, struct wlr_box *))
 {
     // Guard clause: Must have a base. */
     if (NULL == wlr_xdg_toplevel_ptr->base) {
@@ -321,6 +332,7 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
     wlmaker_xdg_toplevel_ptr->_set_fullscreen = _set_fullscreen;
     wlmaker_xdg_toplevel_ptr->_set_size = _set_size;
     wlmaker_xdg_toplevel_ptr->_set_activated = _set_activated;
+    wlmaker_xdg_toplevel_ptr->_get_extents = _get_extents;
 
     if (!wlmtk_base_init(&wlmaker_xdg_toplevel_ptr->base, NULL)) goto error;
 
@@ -732,10 +744,14 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     struct wlr_xdg_surface *wlr_xdg_surface_ptr =
         wxt_ptr->wlr_xdg_toplevel_ptr->base;
 
+    struct wlr_box geo = wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry;
+    if (0 >= geo.width && 0 >= geo.height) {
+        wxt_ptr->_get_extents(
+            wxt_ptr->wlr_xdg_toplevel_ptr->base->surface,
+            &geo);
+    }
     wlmtk_window_commit_size(
-        wxt_ptr->window_ptr,
-        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.width,
-        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.geometry.height);
+        wxt_ptr->window_ptr, geo.width - geo.x, geo.height - geo.y);
 
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
         wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
@@ -945,7 +961,7 @@ uint32_t _wlmaker_xdg_toplevel_fake_set_fullscreen(
     return 0;
 }
 
-/** A fake for wlr_xdg_toplevel_set_size(). Recods the call. */
+/** A fake for wlr_xdg_toplevel_set_size(). Records the call. */
 uint32_t _wlmaker_xdg_toplevel_fake_set_size(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     int32_t width,
@@ -960,7 +976,7 @@ uint32_t _wlmaker_xdg_toplevel_fake_set_size(
     return 0;
 }
 
-/** A fake for wlr_xdg_toplevel_set_activated(). Recods the call. */
+/** A fake for wlr_xdg_toplevel_set_activated(). Records the call. */
 uint32_t _wlmaker_xdg_toplevel_fake_set_activated(
     struct wlr_xdg_toplevel *wlr_xdg_toplevel_ptr,
     __UNUSED__ bool activated)
@@ -970,6 +986,22 @@ uint32_t _wlmaker_xdg_toplevel_fake_set_activated(
 
     td_ptr->set_activated_calls++;
     return 0;
+}
+
+/** A fake for wlr_surface_get_extents(). Sets box to empty. */
+void _wlmaker_xdg_toplevel_fake_get_extents_empty(
+    __UNUSED__ struct wlr_surface *wlr_surface_ptr,
+    struct wlr_box *box_ptr)
+{
+    *box_ptr = (struct wlr_box){};
+}
+
+/** A fake for wlr_surface_get_extents(). Sets box to fixed size. */
+void _wlmaker_xdg_toplevel_fake_get_extents_64x32(
+    __UNUSED__ struct wlr_surface *wlr_surface_ptr,
+    struct wlr_box *box_ptr)
+{
+    *box_ptr = (struct wlr_box){ .width = 64, .height = 32 };
 }
 
 /* == Unit tests =========================================================== */
@@ -982,6 +1014,7 @@ static void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr);
 static void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr);
+static void _wlmaker_xdg_toplevel_test_map_nogeo(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 const bs_test_case_t _test_cases[] = {
@@ -990,6 +1023,7 @@ const bs_test_case_t _test_cases[] = {
     { true, "size", _wlmaker_xdg_toplevel_test_size },
     { true, "activated", _wlmaker_xdg_toplevel_test_activated },
     { true, "map", _wlmaker_xdg_toplevel_test_map },
+    { true, "map_nogeo", _wlmaker_xdg_toplevel_test_map_nogeo },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1007,6 +1041,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     struct _xdg_toplevel_test_data *td_ptr = logged_calloc(
         1, sizeof(struct _xdg_toplevel_test_data));
     if (NULL == td_ptr) return NULL;
+    td_ptr->wlr_surface.data = td_ptr;
     td_ptr->wlr_xdg_surface.surface = &td_ptr->wlr_surface;
     td_ptr->wlr_xdg_toplevel.base = &td_ptr->wlr_xdg_surface;
 
@@ -1097,7 +1132,8 @@ void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr)
             _wlmaker_xdg_toplevel_fake_set_maximized,
             _wlmaker_xdg_toplevel_fake_set_fullscreen,
             _wlmaker_xdg_toplevel_fake_set_size,
-            _wlmaker_xdg_toplevel_fake_set_activated);
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_empty);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, created.calls);
 
@@ -1107,6 +1143,8 @@ void _wlmaker_xdg_toplevel_test_maximize(bs_test_t *test_ptr)
 
     // Now we have pending properties. Commit must trigger a `configure`.
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    td_ptr->wlr_xdg_surface.current.geometry.width = 200;
+    td_ptr->wlr_xdg_surface.current.geometry.height = 100;
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_maximized_calls);
 
@@ -1151,7 +1189,8 @@ void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr)
             _wlmaker_xdg_toplevel_fake_set_maximized,
             _wlmaker_xdg_toplevel_fake_set_fullscreen,
             _wlmaker_xdg_toplevel_fake_set_size,
-            _wlmaker_xdg_toplevel_fake_set_activated);
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_empty);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
 
     // Issued from the window, ie. from the compositor.
@@ -1162,6 +1201,8 @@ void _wlmaker_xdg_toplevel_test_fullscreen(bs_test_t *test_ptr)
 
     // Pending properties. Next commit must trigger.
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    td_ptr->wlr_xdg_surface.current.geometry.width = 200;
+    td_ptr->wlr_xdg_surface.current.geometry.height = 100;
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_fullscreen_calls);
 
@@ -1193,7 +1234,8 @@ void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr)
             _wlmaker_xdg_toplevel_fake_set_maximized,
             _wlmaker_xdg_toplevel_fake_set_fullscreen,
             _wlmaker_xdg_toplevel_fake_set_size,
-            _wlmaker_xdg_toplevel_fake_set_activated);
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_empty);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
 
     // Issued from the window, ie. from the compositor.
@@ -1204,6 +1246,8 @@ void _wlmaker_xdg_toplevel_test_size(bs_test_t *test_ptr)
 
     // Pending properties. Next commit must trigger.
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    td_ptr->wlr_xdg_surface.current.geometry.width = 200;
+    td_ptr->wlr_xdg_surface.current.geometry.height = 100;
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_size_calls);
     BS_TEST_VERIFY_EQ(test_ptr, 10, td_ptr->set_size_width);
@@ -1226,7 +1270,8 @@ void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr)
             _wlmaker_xdg_toplevel_fake_set_maximized,
             _wlmaker_xdg_toplevel_fake_set_fullscreen,
             _wlmaker_xdg_toplevel_fake_set_size,
-            _wlmaker_xdg_toplevel_fake_set_activated);
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_empty);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
 
     // Issued from the window, ie. from the compositor.
@@ -1237,6 +1282,8 @@ void _wlmaker_xdg_toplevel_test_activated(bs_test_t *test_ptr)
 
     // Pending properties. Next commit must trigger.
     td_ptr->wlr_xdg_surface.initialized = true;  // Ready for configure().
+    td_ptr->wlr_xdg_surface.current.geometry.width = 200;
+    td_ptr->wlr_xdg_surface.current.geometry.height = 100;
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, 1, td_ptr->set_activated_calls);
 
@@ -1257,7 +1304,8 @@ void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr)
             _wlmaker_xdg_toplevel_fake_set_maximized,
             _wlmaker_xdg_toplevel_fake_set_fullscreen,
             _wlmaker_xdg_toplevel_fake_set_size,
-            _wlmaker_xdg_toplevel_fake_set_activated);
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_empty);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
     wlmtk_window_t *w = wxt_ptr->window_ptr;  // for convenience.
 
@@ -1266,7 +1314,7 @@ void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr)
     wxt_ptr->surface_ptr = NULL;
 
     // Situation 1: Initial map call, but surface has size (0x0) yet.
-    // => ill not be mapped yet, but only after a commit with non-zero size.
+    // => will not be mapped yet, but only after a commit with non-zero size.
     wl_signal_emit(&td_ptr->wlr_surface.events.map, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
 
@@ -1277,6 +1325,57 @@ void _wlmaker_xdg_toplevel_test_map(bs_test_t *test_ptr)
     td_ptr->wlr_xdg_surface.current.geometry.height = 100;
     wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 200, 100, wlmtk_window_get_size(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.unmap, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    // Situation 2: Size is set. Must get mapped upon surface 'map'.
+    wl_signal_emit(&td_ptr->wlr_surface.events.map, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.unmap, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wlmaker_xdg_toplevel_destroy(wxt_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests surface map calls if no geometry is given. */
+void _wlmaker_xdg_toplevel_test_map_nogeo(bs_test_t *test_ptr)
+{
+    struct _xdg_toplevel_test_data *td_ptr =
+        BS_ASSERT_NOTNULL(bs_test_context(test_ptr));
+
+    struct wlmaker_xdg_toplevel *wxt_ptr =
+        _wlmaker_xdg_toplevel_create_injected(
+            &td_ptr->wlr_xdg_toplevel,
+            &td_ptr->server,
+            _wlmaker_xdg_toplevel_fake_set_maximized,
+            _wlmaker_xdg_toplevel_fake_set_fullscreen,
+            _wlmaker_xdg_toplevel_fake_set_size,
+            _wlmaker_xdg_toplevel_fake_set_activated,
+            _wlmaker_xdg_toplevel_fake_get_extents_64x32);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wxt_ptr);
+    wlmtk_window_t *w = wxt_ptr->window_ptr;  // for convenience.
+
+    // Override the surface element. We cannot actually map it.
+    wlmtk_base_set_content_element(&wxt_ptr->base, NULL);
+    wxt_ptr->surface_ptr = NULL;
+
+    // Situation 1: Initial map call. Surface has geometry 0,0, but
+    // the extents are 64x32. Will map, with that size.
+    wl_signal_emit(&td_ptr->wlr_surface.events.map, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+
+    wl_signal_emit(&td_ptr->wlr_surface.events.commit, NULL);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 64, 32, wlmtk_window_get_size(w));
 
     wl_signal_emit(&td_ptr->wlr_surface.events.unmap, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_workspace(w));
