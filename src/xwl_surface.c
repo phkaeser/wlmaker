@@ -410,8 +410,8 @@ void _xwl_surface_handle_associate(
 
         xwl_surface_ptr->window_ptr = wlmtk_window_create(
             wlmtk_base_element(&xwl_surface_ptr->base),
-            &xwl_surface_ptr->server_ptr->style.window,
-            &xwl_surface_ptr->server_ptr->style.menu);
+            &xwl_surface_ptr->server_ptr->style_ptr->window,
+            &xwl_surface_ptr->server_ptr->style_ptr->menu);
         if (NULL == xwl_surface_ptr->window_ptr) {
             // TODO(kaeser@gubbe.ch): Relay error to client, instead of crash.
             bs_log(BS_FATAL, "Failed wlmtk_window_create.");

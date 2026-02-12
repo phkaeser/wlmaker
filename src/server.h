@@ -198,7 +198,7 @@ struct _wlmaker_server_t {
     struct wl_listener        unclaimed_button_event_listener;
 
     /** The current configuration style. */
-    wlmaker_config_style_t    style;
+    const wlmaker_config_style_t *style_ptr;
 };
 
 /** Specifies the key + modifier to bind. */
@@ -218,7 +218,8 @@ struct _wlmaker_key_combo_t {
  *
  * @param config_dict_ptr     Configuration, as dictionary object. The server
  *                            will keep a reference on it until destroyed.
- * @param files_ptr
+ * @param files_ptr           Files handle. Must outlive the server.
+ * @param style_ptr           Style. Must outlive the server.
  * @param options_ptr         Options for the server. The server expects the
  *                            pointed area to outlive the server.
  *
@@ -228,6 +229,7 @@ struct _wlmaker_key_combo_t {
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
     wlmaker_files_t *files_ptr,
+    const wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr);
 
 /**

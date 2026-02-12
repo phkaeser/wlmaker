@@ -280,7 +280,7 @@ bool create_workspaces(
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
             server_ptr->wlr_output_layout_ptr,
             s.name,
-            &server_ptr->style.tile);
+            &server_ptr->style_ptr->tile);
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\")", s.name);
             rv = false;
@@ -288,7 +288,7 @@ bool create_workspaces(
         }
 
         if (s.color == 0) {
-            s.color = server_ptr->style.background_color;
+            s.color = server_ptr->style_ptr->background_color;
         }
         wlmaker_background_t *background_ptr = wlmaker_background_create(
             workspace_ptr,
@@ -383,13 +383,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmaker_server_t *server_ptr = wlmaker_server_create(
-        config_dict_ptr, files_ptr, &wlmaker_server_options);
-    if (NULL == server_ptr) return EXIT_FAILURE;
-
+    wlmaker_config_style_t style = {};
     bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
         wlmaker_config_object_load(
-            server_ptr->files_ptr,
+            files_ptr,
             "style",
             wlmaker_arg_theme_file_ptr,
             "Themes/Default.plist",
@@ -399,15 +396,19 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     if (!bspl_decode_dict(
             style_dict_ptr,
             wlmaker_config_style_desc,
-            &server_ptr->style)) return EXIT_FAILURE;
+            &style)) return EXIT_FAILURE;
     bspl_dict_unref(style_dict_ptr);
+
+    wlmaker_server_t *server_ptr = wlmaker_server_create(
+        config_dict_ptr, files_ptr, &style, &wlmaker_server_options);
+    if (NULL == server_ptr) return EXIT_FAILURE;
 
     // TODO(kaeser@gubbe.ch): Uh, that's ugly...
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
         server_ptr,
         wlmaker_arg_root_menu_file_ptr,
-        &server_ptr->style.window,
-        &server_ptr->style.menu);
+        &server_ptr->style_ptr->window,
+        &server_ptr->style_ptr->menu);
     if (NULL == server_ptr->root_menu_ptr) {
         return EXIT_FAILURE;
     }
@@ -452,11 +453,11 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         }
 
         dock_ptr = wlmaker_dock_create(
-            server_ptr, state_dict_ptr, &server_ptr->style);
+            server_ptr, state_dict_ptr, &style);
         clip_ptr = wlmaker_clip_create(
-            server_ptr, state_dict_ptr, &server_ptr->style);
+            server_ptr, state_dict_ptr, &style);
         task_list_ptr = wlmaker_task_list_create(
-            server_ptr, &server_ptr->style);
+            server_ptr, &style);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
         } else {

@@ -44,7 +44,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
-  * Fix: On scaled output, pointer cursor is tiny.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
@@ -52,6 +51,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Bug fixes
   * [done] Fix crash when changing to different terminal ([#438](https://github.com/phkaeser/wlmaker/issues/438)).
   * [done]  wlmaker not showing window of wlroots clients  ([#439](https://github.com/phkaeser/wlmaker/issues/439)).
+  * [done] Cursor remains small (not scaled) on output with scale > 1.0 ([#444](https://github.com/phkaeser/wlmaker/issues/444)).
 
 ## [0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)
 

@@ -180,7 +180,7 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
         wlmaker_action_item_t *ai_ptr = wlmaker_action_item_create_from_desc(
             desc_ptr,
             tl_menu_ptr,
-            &server_ptr->style.menu.item,
+            &server_ptr->style_ptr->menu.item,
             server_ptr);
         if (NULL == ai_ptr) {
             bs_log(BS_ERROR, "Failed wlmaker_action_item_create_from_desc()");
@@ -194,7 +194,7 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
     }
 
     tl_menu_ptr->workspaces_submenu_ptr = wlmtk_menu_create(
-        &server_ptr->style.menu);
+        &server_ptr->style_ptr->menu);
     if (NULL == tl_menu_ptr->workspaces_submenu_ptr) {
         wlmaker_tl_menu_destroy(tl_menu_ptr);
         return NULL;
@@ -330,7 +330,7 @@ void _wlmaker_tl_menu_workspace_iterator_create_item(
     ws_item_ptr->window_ptr = tl_menu_ptr->window_ptr;
 
     ws_item_ptr->menu_item_ptr = wlmtk_menu_item_create(
-        &tl_menu_ptr->server_ptr->style.menu.item);
+        &tl_menu_ptr->server_ptr->style_ptr->menu.item);
     if (NULL == ws_item_ptr->menu_item_ptr) {
         _destroy(ws_item_ptr);
         return;
