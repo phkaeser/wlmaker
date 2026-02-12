@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WLMMemGraph
+GenericName="Wayland Maker memory usage graph dockapp"
+Comment="Display memory usage"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmmemgraph
+Type=Application
+Categories=Utility;Monitor;
+Keywords=memory;monitoring;dockapp;wlmaker
+Icon=wlmmemgraph

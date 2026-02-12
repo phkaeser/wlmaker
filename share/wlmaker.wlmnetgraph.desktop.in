@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WLMNetGraph
+GenericName="Wayland Maker network usage graph dockapp"
+Comment="Display network usage"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmnetgraph
+Type=Application
+Categories=Utility;Monitor;
+Keywords=network;monitoring;dockapp;wlmaker
+Icon=wlmnetgraph
