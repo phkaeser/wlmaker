@@ -36,6 +36,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
+  * [done] Dockapps for monitoring CPU, memory and network ([#431](https://github.com/phkaeser/wlmaker/pull/431)).
   * [done] Build with wlroots-0.20 (tested with -rc1).
   * [done] Read keymap from `/etc/default/keyboard` or similar.
   * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).

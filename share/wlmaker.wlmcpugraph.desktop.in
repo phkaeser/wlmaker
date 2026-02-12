@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WLMCPUGraph
+GenericName="Wayland Maker CPU usage graph dockapp"
+Comment="Display CPU usage"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmcpugraph
+Type=Application
+Categories=Utility;Monitor;
+Keywords=cpu;monitoring;dockapp;wlmaker
+Icon=wlmcpugraph
