@@ -85,8 +85,4 @@ void wlmtk_pointer_set_cursor(
         _wlmtk_pointer_cursor_names[cursor]);
 }
 
-/* == Local (static) methods =============================================== */
-
-/* == Unit Tests =========================================================== */
-
 /* == End of input.c ======================================================= */

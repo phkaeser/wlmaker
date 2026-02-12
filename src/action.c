@@ -270,12 +270,12 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         workspace_ptr = wlmtk_workspace_create(
             server_ptr->wlr_output_layout_ptr,
             "New",
-            &server_ptr->style.tile);
+            &server_ptr->style_ptr->tile);
         if (NULL != workspace_ptr) {
             BS_ASSERT_NOTNULL(wlmaker_background_create(
                                   workspace_ptr,
                                   server_ptr->wlr_output_layout_ptr,
-                                  server_ptr->style.background_color));
+                                  server_ptr->style_ptr->background_color));
             wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
         }
         break;

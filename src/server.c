@@ -116,12 +116,14 @@ const uint32_t wlmaker_modifier_default_mask = (
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
     wlmaker_files_t *files_ptr,
+    const wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr)
 {
     wlmaker_server_t *server_ptr = logged_calloc(1, sizeof(wlmaker_server_t));
     if (NULL == server_ptr) return NULL;
     server_ptr->options_ptr = options_ptr;
     server_ptr->files_ptr = files_ptr;
+    server_ptr->style_ptr = style_ptr;
 
     server_ptr->config_dict_ptr = bspl_dict_ref(config_dict_ptr);
     if (NULL == server_ptr->config_dict_ptr) {

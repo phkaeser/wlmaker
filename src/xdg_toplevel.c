@@ -37,6 +37,7 @@
 #include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
+#include "config.h"
 #include "server.h"
 #include "tl_menu.h"
 #include "toolkit/toolkit.h"
@@ -346,8 +347,8 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
 
     wlmaker_xdg_toplevel_ptr->window_ptr = wlmtk_window_create(
         wlmtk_base_element(&wlmaker_xdg_toplevel_ptr->base),
-        &wlmaker_xdg_toplevel_ptr->server_ptr->style.window,
-        &wlmaker_xdg_toplevel_ptr->server_ptr->style.menu);
+        &wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->window,
+        &wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->menu);
     if (NULL == wlmaker_xdg_toplevel_ptr->window_ptr) goto error;
     wlmtk_window_set_properties(
         wlmaker_xdg_toplevel_ptr->window_ptr,
@@ -923,6 +924,7 @@ struct _xdg_toplevel_test_data {
     struct wlr_xdg_toplevel   wlr_xdg_toplevel;
 
     struct _wlmaker_test_layout test_layout;
+    wlmaker_config_style_t    style;
     wlmaker_server_t          server;
 
     int32_t                   set_size_width;
@@ -1050,6 +1052,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
         td_ptr->test_layout.wlr_output_layout_ptr,
         &td_ptr->test_layout.wlr_output);
 
+    td_ptr->server.style_ptr = &td_ptr->style;
     td_ptr->server.wlr_scene_ptr = wlr_scene_create();
     if (NULL == td_ptr->server.wlr_scene_ptr) goto error;
 

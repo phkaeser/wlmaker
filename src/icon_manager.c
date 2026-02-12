@@ -368,7 +368,7 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
 
     if (!wlmtk_tile_init(
             &toplevel_icon_ptr->super_tile,
-            &icon_manager_ptr->server_ptr->style.tile)) {
+            &icon_manager_ptr->server_ptr->style_ptr->tile)) {
         wlmaker_toplevel_icon_destroy(toplevel_icon_ptr);
         return NULL;
     }
