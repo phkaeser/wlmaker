@@ -59,6 +59,8 @@
         // exclude the Shift-modifier well.
         "Ctrl+Shift+Page_Up" = OutputMagnify;
         "Ctrl+Shift+Page_Down" = OutputReduce;
+        "XF86MonBrightnessDown" = (ShellExecute, "brightnessctl set 5%-");
+        "XF86MonBrightnessUp" = (ShellExecute, "brightnessctl set +5%");
 
         // TODO(kaeser@gubbe.ch): xkbcommon emits XF86Switch_VT_n for Fn only with
         // Ctrl+Alt presset. Means: Here, it should not need the modifiers to be
