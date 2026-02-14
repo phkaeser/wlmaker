@@ -153,6 +153,29 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         &keyboard_ptr->modifiers_listener,
         handle_modifiers);
 
+    // Set (or restore) keyboard layout group in XKB state, and update modifiers.
+    xkb_state_update_mask(
+        keyboard_ptr->wlr_keyboard_ptr->xkb_state,
+        0,  // depressed_mods
+        0,  // latched_mods
+        0,  // locked_mods
+        0,  // depressed_layout
+        0,  // latched_layout
+        server_ptr->last_keyboard_group_index);  // locked_layout.
+    wlr_keyboard_ptr->modifiers.group = server_ptr->last_keyboard_group_index;
+    wlr_seat_keyboard_notify_modifiers(
+        wlr_seat_ptr,
+        &wlr_keyboard_ptr->modifiers);
+    // Also, re-trigger client's XKB state machine by an explicit "Enter".
+    if (NULL != wlr_seat_ptr->keyboard_state.focused_surface) {
+        wlr_seat_keyboard_enter(
+            wlr_seat_ptr,
+            wlr_seat_ptr->keyboard_state.focused_surface,
+            wlr_keyboard_ptr->keycodes,
+            wlr_keyboard_ptr->num_keycodes,
+            &wlr_keyboard_ptr->modifiers);
+    }
+
     wlr_seat_set_keyboard(wlr_seat_ptr, keyboard_ptr->wlr_keyboard_ptr);
     return keyboard_ptr;
 }
@@ -402,6 +425,11 @@ void handle_modifiers(struct wl_listener *listener_ptr,
         listener_ptr, wlmaker_keyboard_t, modifiers_listener);
 
     wlmaker_idle_monitor_reset(keyboard_ptr->server_ptr->idle_monitor_ptr);
+
+    keyboard_ptr->server_ptr->last_keyboard_group_index =
+        xkb_state_serialize_layout(
+            keyboard_ptr->wlr_keyboard_ptr->xkb_state,
+            XKB_STATE_LAYOUT_EFFECTIVE);
 
     uint32_t modifiers = wlr_keyboard_get_modifiers(
         keyboard_ptr->wlr_keyboard_ptr);

@@ -109,6 +109,8 @@ struct _wlmaker_server_t {
     struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager_ptr;
     /** wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
+    /** The last-used group of the keyboard layout. Used when using groups. */
+    uint32_t                  last_keyboard_group_index;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
     /** wlroots output layout. */
