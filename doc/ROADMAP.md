@@ -43,6 +43,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
 
+* Bug fixes
+  * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
+
 ## [0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)
 
 By: Campbell Barton <ideasman42@gmail.com>
