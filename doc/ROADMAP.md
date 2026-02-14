@@ -47,13 +47,13 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 By: Campbell Barton <ideasman42@gmail.com>
 * apps: Adds CPU, memory, and network usage graph dock-apps ([#431](https://github.com/phkaeser/wlmaker/pull/431])).
+* add clipboard support ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
 
 By: Alex Myczko <alex@aiei.ch>
 * themes: Sets the default style to be more aligned with GNUstep and with gray background ([#446](https://github.com/phkaeser/wlmaker/pull/446)).
 
 By: Philipp Kaeser <kaeser@gubbe.ch>
 * Infrastructure
-  * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
   * [done] Read keymap from `/etc/default/keyboard` or similar.
   * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
   * [done] Build with wlroots-0.20 (tested with -rc1).
