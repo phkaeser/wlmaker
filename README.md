@@ -23,13 +23,14 @@ See [here](doc/FEATURES.md) for a detailed list of implemented or planned
 features, or the [roadmap](doc/ROADMAP.md) for what's planned for the upcoming
 versions.
 
-Highlights for current version ([0.7](https://github.com/phkaeser/wlmaker/releases/tag/v0.7)):
+Highlights for current version ([0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)):
 
-* *new* Rework *window* code: Fixes lags and jitter on resize and two crashing bugs.
-* *new* Look for config files relative to Freedesktop XDG base dir specification (new dependency: `libxdg-basedir-dev`)
-* *new* Ability to save output state in `${XDG_DATA_DIR}/OutputState.plist` and re-use on startup.
-* *new* Changes default key bindings to better conform with Linux-wide norms.
-* *new* Builds with [wlroots 0.19](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* *new* Support for copy-paste and middle-click paste.
+* *new* Read keyboard configuration from `/etc/default/keyboard`.
+* *new* DockApps for monitoring CPU, Memory and Network.
+* *new* `wlmtool`, eliminating the need for depending on `wmmenugen`.
+* *new* Various bug fixes ([#438](https://github.com/phkaeser/wlmaker/issues/438), [#439](https://github.com/phkaeser/wlmaker/issues/439), [#444](https://github.com/phkaeser/wlmaker/issues/444)).
+* *new* Builds with [wlroots 0.18, 0.19 and 0.20](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
 * Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
 * [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wmmenugen`), and can be navigated by keyboard.
 * Screen saver support, through `ext-session-lock-v1` and `idle-inhibit-unstable-v1` protocols.

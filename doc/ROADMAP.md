@@ -36,18 +36,28 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
-  * [done] Dockapps for monitoring CPU, memory and network ([#431](https://github.com/phkaeser/wlmaker/pull/431)).
-  * [done] Build with wlroots-0.20 (tested with -rc1).
-  * [done] Read keymap from `/etc/default/keyboard` or similar.
-  * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
-  * [done] Refactors pointer focus and layout computation to compute only once per frame.
-  * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
-    * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
+  * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
   * Wire up backlight control to window menu.
+
+## [0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)
+
+By: Campbell Barton <ideasman42@gmail.com>
+* apps: Adds CPU, memory, and network usage graph dock-apps ([#431](https://github.com/phkaeser/wlmaker/pull/431])).
+
+By: Alex Myczko <alex@aiei.ch>
+* themes: Sets the default style to be more aligned with GNUstep and with gray background ([#446](https://github.com/phkaeser/wlmaker/pull/446)).
+
+By: Philipp Kaeser <kaeser@gubbe.ch>
+* Infrastructure
+  * [done] Support copy-paste and middle-click paste ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
+  * [done] Read keymap from `/etc/default/keyboard` or similar.
+  * [done] Adds `wlmtool` to parse XDG desktop files: Eliminates need for `wmmenugen`.
+  * [done] Build with wlroots-0.20 (tested with -rc1).
+  * [done] Refactors pointer focus and layout computation to compute only once per frame.
 
 * Bug fixes
   * [done] Fix crash when changing to different terminal ([#438](https://github.com/phkaeser/wlmaker/issues/438)).
