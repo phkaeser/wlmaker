@@ -36,12 +36,12 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Initial placement algorithm.
 
 * Infrastructure
+  * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.
   * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
   * Support keypad (tap to click) and middle click alternatives.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
-  * Wire up backlight control to window menu.
 
 * Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
