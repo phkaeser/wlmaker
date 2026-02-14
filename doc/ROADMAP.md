@@ -49,7 +49,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 ## [0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)
 
 By: Campbell Barton <ideasman42@gmail.com>
-* apps: Adds CPU, memory, and network usage graph dock-apps ([#431](https://github.com/phkaeser/wlmaker/pull/431])).
+* apps: Adds CPU, memory, and network usage graph dock-apps ([#431](https://github.com/phkaeser/wlmaker/pull/431)).
+* action: adds array format for keybindings to support command argument ([#430](https://github.com/phkaeser/wlmaker/pull/430)).
 * add clipboard support ([#399](https://github.com/phkaeser/wlmaker/issues/399)).
 
 By: Alex Myczko <alex@aiei.ch>
