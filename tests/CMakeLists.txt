@@ -17,6 +17,13 @@ ADD_DEPENDENCIES(backend_test backend)
 TARGET_LINK_LIBRARIES(backend_test backend)
 ADD_TEST(NAME backend_test COMMAND backend_test)
 
+ADD_EXECUTABLE(input_test input_test.c)
+ADD_DEPENDENCIES(input_test libbase input)
+TARGET_LINK_LIBRARIES(input_test libbase input)
+TARGET_COMPILE_DEFINITIONS(
+  input_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
+ADD_TEST(NAME input_test COMMAND input_test)
+
 ADD_EXECUTABLE(toolkit_test toolkit_test.c)
 TARGET_LINK_LIBRARIES(toolkit_test toolkit)
 TARGET_INCLUDE_DIRECTORIES(
@@ -46,6 +53,9 @@ TARGET_COMPILE_DEFINITIONS(
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(
     backend_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    input_test PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   SET_TARGET_PROPERTIES(
     toolkit_test PROPERTIES

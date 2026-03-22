@@ -36,10 +36,9 @@
 
 #include "backend/backend.h"
 #include "background.h"
-#include "cursor.h"
 #include "default_configuration.h"
 #include "idle.h"
-#include "keyboard.h"
+#include "input/manager.h"
 #include "root_menu.h"
 #include "server.h"
 #include "subprocess_monitor.h"
@@ -62,13 +61,13 @@ typedef struct {
     /** Node of @ref wlmaker_action_handle_t::bindings. */
     bs_dequeue_node_t         qnode;
     /** The key binding. */
-    wlmaker_key_combo_t       key_combo;
+    struct wlmim_keybinding_combo combo;
     /** The associated action. */
     wlmaker_action_t          action;
     /** Optional argument for the action (eg. command to execute, NULL when unset). */
     char                      *action_arg_ptr;
     /** The key binding it to this node. */
-    wlmaker_key_binding_t     *key_binding_ptr;
+    wlmim_keybinding_t        *keybinding_ptr;
     /** State of the bound actions. */
     wlmaker_action_handle_t   *handle_ptr;
 } _wlmaker_action_binding_t;
@@ -84,7 +83,7 @@ static bool _wlmaker_keybindings_bind_item(
     void *userdata_ptr);
 
 static bool _wlmaker_action_bound_callback(
-    const wlmaker_key_combo_t *binding_ptr);
+    const struct wlmim_keybinding_combo *binding_ptr);
 
 /* == Data ================================================================= */
 
@@ -197,9 +196,9 @@ void wlmaker_action_unbind_keys(wlmaker_action_handle_t *handle_ptr)
         _wlmaker_action_binding_t *binding_ptr = BS_CONTAINER_OF(
             qnode_ptr, _wlmaker_action_binding_t, qnode);
         qnode_ptr = qnode_ptr->next_ptr;
-        wlmaker_server_unbind_key(
-            handle_ptr->server_ptr,
-            binding_ptr->key_binding_ptr);
+        wlmim_unbind_key(
+            handle_ptr->server_ptr->input_manager_ptr,
+            binding_ptr->keybinding_ptr);
         free(binding_ptr->action_arg_ptr);
         free(binding_ptr);
     }
@@ -417,8 +416,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             wlmtk_workspace_set_window_position(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr),
-                server_ptr->cursor_ptr->wlr_cursor_ptr->x,
-                server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+                wlmim_wlr_cursor(server_ptr->input_manager_ptr)->x,
+                wlmim_wlr_cursor(server_ptr->input_manager_ptr)->y);
             wlmtk_workspace_confine_within(
                 wlmtk_root_get_current_workspace(server_ptr->root_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
@@ -554,18 +553,17 @@ bool _wlmaker_keybindings_bind_item(
     action_binding_ptr->handle_ptr = handle_ptr;
     action_binding_ptr->action = action;
     action_binding_ptr->action_arg_ptr = action_arg_ptr;
-    action_binding_ptr->key_combo.keysym = keysym;
-    action_binding_ptr->key_combo.ignore_case = true;
-    action_binding_ptr->key_combo.modifiers = modifiers;
-    action_binding_ptr->key_combo.modifiers_mask =
-        wlmaker_modifier_default_mask;
+    action_binding_ptr->combo.keysym = keysym;
+    action_binding_ptr->combo.ignore_case = true;
+    action_binding_ptr->combo.modifiers = modifiers;
+    action_binding_ptr->combo.modifiers_mask = wlmim_modifiers_default_mask;
 
     // Register the key binding with the server.
-    action_binding_ptr->key_binding_ptr = wlmaker_server_bind_key(
-        handle_ptr->server_ptr,
-        &action_binding_ptr->key_combo,
+    action_binding_ptr->keybinding_ptr = wlmim_bind_key(
+        handle_ptr->server_ptr->input_manager_ptr,
+        &action_binding_ptr->combo,
         _wlmaker_action_bound_callback);
-    if (NULL == action_binding_ptr->key_binding_ptr) {
+    if (NULL == action_binding_ptr->keybinding_ptr) {
         free(action_binding_ptr->action_arg_ptr);
         free(action_binding_ptr);
         return false;
@@ -630,14 +628,15 @@ bool _wlmaker_keybindings_parse(
  * Callback for when the bound key is triggered: Executes the corresponding
  * action.
  *
- * @param key_combo_ptr
+ * @param combo_ptr
  *
  * @return true always.
  */
-bool _wlmaker_action_bound_callback(const wlmaker_key_combo_t *key_combo_ptr)
+bool _wlmaker_action_bound_callback(
+    const struct wlmim_keybinding_combo *combo_ptr)
 {
     _wlmaker_action_binding_t *action_binding_ptr = BS_CONTAINER_OF(
-        key_combo_ptr, _wlmaker_action_binding_t, key_combo);
+        combo_ptr, _wlmaker_action_binding_t, combo);
 
     wlmaker_action_execute(
         action_binding_ptr->handle_ptr->server_ptr,
@@ -705,7 +704,11 @@ void test_keybindings_parse(bs_test_t *test_ptr)
 /** Tests the default configuration's 'KeyBindings' section. */
 void test_default_keybindings(bs_test_t *test_ptr)
 {
-    wlmaker_server_t server = {};
+    bspl_dict_t *d = bspl_dict_create();
+    wlmaker_server_t server = {
+        .input_manager_ptr = wlmim_input_manager_create(
+            NULL, NULL, NULL, d, NULL, NULL)
+    };
     bspl_object_t *obj_ptr = bspl_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
@@ -720,13 +723,20 @@ void test_default_keybindings(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, handle_ptr);
     bspl_object_unref(obj_ptr);
     wlmaker_action_unbind_keys(handle_ptr);
+
+    bspl_dict_unref(d);
+    wlmim_input_manager_destroy(server.input_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests string and array format keybindings. */
 void test_keybindings_formats(bs_test_t *test_ptr)
 {
-    wlmaker_server_t server = {};
+    bspl_dict_t *d = bspl_dict_create();
+    wlmaker_server_t server = {
+        .input_manager_ptr = wlmim_input_manager_create(
+            NULL, NULL, NULL, d, NULL, NULL)
+    };
     bspl_object_t *obj_ptr;
     bspl_dict_t *dict_ptr;
     wlmaker_action_handle_t *handle_ptr;
@@ -803,6 +813,9 @@ void test_keybindings_formats(bs_test_t *test_ptr)
     handle_ptr = wlmaker_action_bind_keys(&server, dict_ptr, false);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, handle_ptr);
     bspl_object_unref(obj_ptr);
+
+    bspl_dict_unref(d);
+    wlmim_input_manager_destroy(server.input_manager_ptr);
 }
 
 /* == End of action.c ====================================================== */

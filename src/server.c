@@ -20,14 +20,10 @@
 
 #include "server.h"
 
-#include <inttypes.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <linux/input-event-codes.h>
 #include <stdlib.h>
-#include <wayland-server-protocol.h>
-#include <wayland-util.h>
-#include <xkbcommon/xkbcommon-keysyms.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/types/wlr_viewporter.h>
@@ -39,10 +35,11 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
+#include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
-#include "keyboard.h"
+#include "input/manager.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -50,65 +47,21 @@
 /** Name of the "seat". */
 static const char             *seat_name_ptr = "seat0";
 
-/** Wraps an input device. */
-typedef struct {
-    /** List node, as an element of `wlmaker_server_t.input_devices`. */
-    bs_dllist_node_t          node;
-    /** Back-link to the server this belongs. */
-    wlmaker_server_t          *server_ptr;
-    /** The input device. */
-    struct wlr_input_device   *wlr_input_device_ptr;
-    /** Handle to the wlmaker actual device. */
-    void                      *handle_ptr;
-    /** Listener for the `destroy` signal of `wlr_input_device`. */
-    struct wl_listener        destroy_listener;
-} wlmaker_input_device_t;
-
-/** Internal struct holding a keybinding. */
-struct _wlmaker_key_binding_t {
-    /** Node within @ref wlmaker_server_t::bindings. */
-    bs_dllist_node_t          dlnode;
-    /** The key binding: Modifier and keysym to bind to. */
-    const wlmaker_key_combo_t *key_combo_ptr;
-    /** Callback for when this modifier + key is encountered. */
-    wlmaker_keybinding_callback_t callback;
-};
-
-static bool register_input_device(
-    wlmaker_server_t *server_ptr,
-    struct wlr_input_device *wlr_input_device_ptr,
-    void *handle_ptr);
-
-static void handle_new_input_device(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void handle_destroy_input_device(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-
 static void _wlmaker_server_unclaimed_button_event_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-
+static void _wlmaker_server_handle_input_activity(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_server_handle_deactivate_task_list(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void handle_request_set_selection(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-
 static void handle_request_set_primary_selection(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-
-/* == Data ================================================================= */
-
-const uint32_t wlmaker_modifier_default_mask = (
-    WLR_MODIFIER_SHIFT |
-    // Excluding: WLR_MODIFIER_CAPS.
-    WLR_MODIFIER_CTRL |
-    WLR_MODIFIER_ALT |
-    WLR_MODIFIER_MOD2 |
-    WLR_MODIFIER_MOD3 |
-    WLR_MODIFIER_LOGO |
-    WLR_MODIFIER_MOD5);
 
 /* == Exported methods ===================================================== */
 
@@ -214,20 +167,6 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
-    // Listen for new (or newly recognized) output and input devices.
-    wlmtk_util_connect_listener_signal(
-        &wlmbe_backend_wlr(server_ptr->backend_ptr)->events.new_input,
-        &server_ptr->backend_new_input_device_listener,
-        handle_new_input_device);
-
-    server_ptr->cursor_ptr = wlmaker_cursor_create(
-        server_ptr,
-        server_ptr->wlr_output_layout_ptr);
-    if (NULL == server_ptr->cursor_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_cursor_create()");
-        wlmaker_server_destroy(server_ptr);
-        return NULL;
-    }
 
     // Root element.
     server_ptr->root_ptr = wlmtk_root_create(
@@ -241,6 +180,26 @@ wlmaker_server_t *wlmaker_server_create(
         &wlmtk_root_events(server_ptr->root_ptr)->unclaimed_button_event,
         &server_ptr->unclaimed_button_event_listener,
         _wlmaker_server_unclaimed_button_event_handler);
+
+    server_ptr->input_manager_ptr = wlmim_input_manager_create(
+        wlmbe_backend_wlr(server_ptr->backend_ptr),
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->wlr_seat_ptr,
+        server_ptr->config_dict_ptr,
+        &style_ptr->cursor,
+        server_ptr->root_ptr);
+    if (NULL == server_ptr->input_manager_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+    wlmtk_util_connect_listener_signal(
+        &wlmim_events(server_ptr->input_manager_ptr)->deactivate_task_list,
+        &server_ptr->deactivate_task_list_listener,
+        _wlmaker_server_handle_deactivate_task_list);
+    wlmtk_util_connect_listener_signal(
+        &wlmim_events(server_ptr->input_manager_ptr)->activity,
+        &server_ptr->input_activity_listener,
+        _wlmaker_server_handle_input_activity);
 
     // Session lock manager.
     server_ptr->lock_mgr_ptr = wlmaker_lock_mgr_create(server_ptr);
@@ -330,7 +289,7 @@ wlmaker_server_t *wlmaker_server_create(
         wlmaker_input_observation_manager_create(
             server_ptr->wl_display_ptr,
             server_ptr->wlr_seat_ptr,
-            server_ptr->cursor_ptr->wlr_cursor_ptr);
+            wlmim_wlr_cursor(server_ptr->input_manager_ptr));
     if (NULL == server_ptr->input_observation_manager_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -355,14 +314,16 @@ wlmaker_server_t *wlmaker_server_create(
         bspl_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
         wl_display_get_event_loop(server_ptr->wl_display_ptr),
         server_ptr->wlr_output_layout_ptr,
-        server_ptr->cursor_ptr,
+        wlmim_wlr_cursor(server_ptr->input_manager_ptr),
+        &wlmim_events(server_ptr->input_manager_ptr)->cursor_position_updated,
         server_ptr);
     if (NULL == server_ptr->corner_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p)",
+        bs_log(BS_ERROR, "Failed wlmaker_corner_create(%p, %p, %p, %p, %p, %p)",
                bspl_dict_get_dict(server_ptr->config_dict_ptr, "HotCorner"),
                wl_display_get_event_loop(server_ptr->wl_display_ptr),
                server_ptr->wlr_output_layout_ptr,
-               server_ptr->cursor_ptr,
+               wlmim_wlr_cursor(server_ptr->input_manager_ptr),
+               &wlmim_events(server_ptr->input_manager_ptr)->cursor_position_updated,
                server_ptr);
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -385,16 +346,6 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     // * server_ptr->wlr_seat_ptr
     // * server_ptr->wlr_backend_ptr
     // * server_ptr->wlr_scene_ptr  (there is no "destroy" function)
-    {
-        bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
-        while (NULL != dlnode_ptr) {
-            wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
-                dlnode_ptr, wlmaker_key_binding_t, dlnode);
-            dlnode_ptr = dlnode_ptr->next_ptr;
-            wlmaker_server_unbind_key(server_ptr, key_binding_ptr);
-        }
-    }
-
     if (NULL != server_ptr->corner_ptr) {
         wlmaker_corner_destroy(server_ptr->corner_ptr);
         server_ptr->corner_ptr = NULL;
@@ -452,16 +403,20 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->lock_mgr_ptr = NULL;
     }
 
+    if (NULL != server_ptr->input_manager_ptr) {
+        wlmtk_util_disconnect_listener(
+            &server_ptr->deactivate_task_list_listener);
+        wlmtk_util_disconnect_listener(
+            &server_ptr->input_activity_listener);
+        wlmim_input_manager_destroy(server_ptr->input_manager_ptr);
+        server_ptr->input_manager_ptr = NULL;
+    }
+
     if (NULL != server_ptr->root_ptr) {
         wlmtk_util_disconnect_listener(
             &server_ptr->unclaimed_button_event_listener);
         wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
-    }
-
-    if (NULL != server_ptr->cursor_ptr) {
-        wlmaker_cursor_destroy(server_ptr->cursor_ptr);
-        server_ptr->cursor_ptr = NULL;
     }
 
     if (NULL != server_ptr->backend_ptr) {
@@ -495,209 +450,16 @@ void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr)
-{
-    if (!server_ptr->task_list_enabled) return;
-
-    server_ptr->task_list_enabled = false;
-    wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
-
-    wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
-    wlmtk_window_t *window_ptr =
-        wlmtk_workspace_get_activated_window(workspace_ptr);
-    if (NULL != window_ptr) {
-        wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr)
 {
     return wlr_output_layout_output_at(
         server_ptr->wlr_output_layout_ptr,
-        server_ptr->cursor_ptr->wlr_cursor_ptr->x,
-        server_ptr->cursor_ptr->wlr_cursor_ptr->y);
-}
-
-/* ------------------------------------------------------------------------- */
-wlmaker_key_binding_t *wlmaker_server_bind_key(
-    wlmaker_server_t *server_ptr,
-    const wlmaker_key_combo_t *key_combo_ptr,
-    wlmaker_keybinding_callback_t callback)
-{
-    wlmaker_key_binding_t *key_binding_ptr = logged_calloc(
-        1, sizeof(wlmaker_key_binding_t));
-    if (NULL == key_binding_ptr) return NULL;
-
-    key_binding_ptr->key_combo_ptr = key_combo_ptr;
-    key_binding_ptr->callback = callback;
-    bs_dllist_push_back(&server_ptr->bindings, &key_binding_ptr->dlnode);
-    return key_binding_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmaker_server_unbind_key(
-    wlmaker_server_t *server_ptr,
-    wlmaker_key_binding_t *key_binding_ptr)
-{
-    bs_dllist_remove(&server_ptr->bindings, &key_binding_ptr->dlnode);
-    free(key_binding_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmaker_keyboard_process_bindings(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t keysym,
-    uint32_t modifiers)
-{
-    if (bs_will_log(BS_DEBUG)) {
-        char keysym_name[128] = {};
-        xkb_keysym_get_name(keysym, keysym_name, sizeof(keysym_name));
-        bs_log(BS_DEBUG, "Process key '%s' (sym %d, modifiers %"PRIx32")",
-               keysym_name, keysym, modifiers);
-    }
-
-    for (bs_dllist_node_t *dlnode_ptr = server_ptr->bindings.head_ptr;
-         NULL != dlnode_ptr;
-         dlnode_ptr = dlnode_ptr->next_ptr) {
-        wlmaker_key_binding_t *key_binding_ptr = BS_CONTAINER_OF(
-            dlnode_ptr, wlmaker_key_binding_t, dlnode);
-        const wlmaker_key_combo_t *key_combo_ptr =
-            key_binding_ptr->key_combo_ptr;
-
-        uint32_t mask = key_combo_ptr->modifiers_mask;
-        if (!mask) mask = UINT32_MAX;
-        if ((modifiers & mask) != key_combo_ptr->modifiers) continue;
-
-        xkb_keysym_t bound_ks = key_combo_ptr->keysym;
-        if (!key_combo_ptr->ignore_case && keysym != bound_ks) continue;
-
-        if (key_combo_ptr->ignore_case &&
-            keysym != xkb_keysym_to_lower(bound_ks) &&
-            keysym != xkb_keysym_to_upper(bound_ks)) continue;
-
-        if (key_binding_ptr->callback(key_combo_ptr)) return true;
-    }
-    return false;
+        wlmim_wlr_cursor(server_ptr->input_manager_ptr)->x,
+        wlmim_wlr_cursor(server_ptr->input_manager_ptr)->y);
 }
 
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Registers the input device at |handle_ptr| with |server_ptr|.
- *
- * @param server_ptr
- * @param wlr_input_device_ptr
- * @param handle_ptr
- *
- * @return true on success.
- */
-bool register_input_device(wlmaker_server_t *server_ptr,
-                           struct wlr_input_device *wlr_input_device_ptr,
-                           void *handle_ptr)
-{
-    wlmaker_input_device_t *input_device_ptr = logged_calloc(
-        1, sizeof(wlmaker_input_device_t));
-    if (NULL == input_device_ptr) return false;
-
-    input_device_ptr->server_ptr = server_ptr;
-    input_device_ptr->wlr_input_device_ptr = wlr_input_device_ptr;
-    input_device_ptr->handle_ptr = handle_ptr;
-
-    wlmtk_util_connect_listener_signal(
-        &wlr_input_device_ptr->events.destroy,
-        &input_device_ptr->destroy_listener,
-        handle_destroy_input_device);
-
-    bs_dllist_push_back(&server_ptr->input_devices, &input_device_ptr->node);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Handler for the `new_input` signal raised by `wlr_backend`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_new_input_device(struct wl_listener *listener_ptr, void *data_ptr)
-{
-    struct wlr_input_device *wlr_input_device_ptr = data_ptr;
-    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_server_t, backend_new_input_device_listener);
-
-    wlmaker_keyboard_t *keyboard_ptr;
-    switch (wlr_input_device_ptr->type) {
-    case WLR_INPUT_DEVICE_KEYBOARD:
-        keyboard_ptr = wlmaker_keyboard_create(
-            server_ptr,
-            wlr_keyboard_from_input_device(wlr_input_device_ptr),
-            server_ptr->wlr_seat_ptr);
-        if (NULL != keyboard_ptr) {
-            if (!register_input_device(
-                    server_ptr, wlr_input_device_ptr, (void*)keyboard_ptr)) {
-                bs_log(BS_ERROR, "Failed wlmaker_server_keyboard_register()");
-                wlmaker_keyboard_destroy(keyboard_ptr);
-            }
-        }
-        break;
-
-    case WLR_INPUT_DEVICE_POINTER:
-    case WLR_INPUT_DEVICE_TOUCH:
-    case WLR_INPUT_DEVICE_TABLET_PAD:
-        wlmaker_cursor_attach_input_device(
-            server_ptr->cursor_ptr,
-            wlr_input_device_ptr);
-        break;
-
-    default:
-        bs_log(BS_INFO, "Server %p: Unhandled new input device type %d",
-               server_ptr, wlr_input_device_ptr->type);
-    }
-
-    // If the KEYBOARD capability isn't set, keys won't be forwarded...
-    uint32_t capabilities = WL_SEAT_CAPABILITY_POINTER;
-    for (bs_dllist_node_t *node_ptr = server_ptr->input_devices.head_ptr;
-         node_ptr != NULL;
-         node_ptr = node_ptr->next_ptr) {
-        if (((wlmaker_input_device_t*)node_ptr)->wlr_input_device_ptr->type ==
-            WLR_INPUT_DEVICE_KEYBOARD) {
-            capabilities |= WL_SEAT_CAPABILITY_KEYBOARD;
-        }
-    }
-    wlr_seat_set_capabilities(server_ptr->wlr_seat_ptr, capabilities);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Handler for the `destroy` signal raised by `wlr_input_device`.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void handle_destroy_input_device(struct wl_listener *listener_ptr,
-                                 __UNUSED__ void *data_ptr)
-{
-    wlmaker_input_device_t *input_device_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_input_device_t, destroy_listener);
-
-    wlmaker_keyboard_t *keyboard_ptr;
-    switch (input_device_ptr->wlr_input_device_ptr->type) {
-    case WLR_INPUT_DEVICE_KEYBOARD:
-        keyboard_ptr = (wlmaker_keyboard_t*)input_device_ptr->handle_ptr;
-        wlmaker_keyboard_destroy(keyboard_ptr);
-        break;
-
-    default:
-        break;
-    }
-
-    wl_list_remove(&input_device_ptr->destroy_listener.link);
-    bs_dllist_remove(&input_device_ptr->server_ptr->input_devices,
-                     &input_device_ptr->node);
-    free(input_device_ptr);
-}
 
 /* ------------------------------------------------------------------------- */
 /** Handles unclaimed button events: Right 'down' opens root menu. */
@@ -721,8 +483,8 @@ void _wlmaker_server_unclaimed_button_event_handler(
         wlmtk_workspace_set_window_position(
             wlmtk_root_get_current_workspace(server_ptr->root_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr),
-            server_ptr->cursor_ptr->wlr_cursor_ptr->x,
-            server_ptr->cursor_ptr->wlr_cursor_ptr->y);
+            wlmim_wlr_cursor(server_ptr->input_manager_ptr)->x,
+            wlmim_wlr_cursor(server_ptr->input_manager_ptr)->y);
         wlmtk_workspace_confine_within(
             wlmtk_root_get_current_workspace(server_ptr->root_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr));
@@ -732,6 +494,40 @@ void _wlmaker_server_unclaimed_button_event_handler(
         wlmtk_menu_set_open(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
             true);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles input activity: Resets the idle timer. */
+void _wlmaker_server_handle_input_activity(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, input_activity_listener);
+     wlmaker_idle_monitor_reset(server_ptr->idle_monitor_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles suggestions to deactivate the task list. */
+static void _wlmaker_server_handle_deactivate_task_list(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmaker_server_t *server_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_server_t, deactivate_task_list_listener);
+
+    if (!server_ptr->task_list_enabled) return;
+
+    server_ptr->task_list_enabled = false;
+    wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
+
+    wlmtk_workspace_t *workspace_ptr =
+        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
+    wlmtk_window_t *window_ptr =
+        wlmtk_workspace_get_activated_window(workspace_ptr);
+    if (NULL != window_ptr) {
+        wlmtk_workspace_raise_window(workspace_ptr, window_ptr);
     }
 }
 
@@ -771,79 +567,6 @@ void handle_request_set_primary_selection(
 
     wlr_seat_set_primary_selection(
         server_ptr->wlr_seat_ptr, event_ptr->source, event_ptr->serial);
-}
-
-/* == Unit tests =========================================================== */
-
-static void test_bind(bs_test_t *test_ptr);
-
-/** Test cases for the server. */
-const bs_test_case_t          wlmaker_server_test_cases[] = {
-    { true, "bind", test_bind },
-    BS_TEST_CASE_SENTINEL()
-};
-
-const bs_test_set_t wlmaker_server_test_set = BS_TEST_SET(
-    true, "server", wlmaker_server_test_cases);
-
-/** Test helper: Callback for a keybinding. */
-bool test_binding_callback(
-    __UNUSED__ const wlmaker_key_combo_t *key_combo_ptr) {
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests key bindings. */
-void test_bind(bs_test_t *test_ptr)
-{
-    wlmaker_server_t          srv = {};
-    wlmaker_key_combo_t      binding_a = {
-        .modifiers = WLR_MODIFIER_CTRL,
-        .modifiers_mask = WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT,
-        .keysym = XKB_KEY_A,
-        .ignore_case = true
-    };
-    wlmaker_key_combo_t      binding_b = {
-        .keysym = XKB_KEY_b
-    };
-
-    wlmaker_key_binding_t *kb1_ptr = wlmaker_server_bind_key(
-        &srv, &binding_a, test_binding_callback);
-    BS_TEST_VERIFY_NEQ(test_ptr, NULL, kb1_ptr);
-    wlmaker_key_binding_t *kb2_ptr = wlmaker_server_bind_key(
-        &srv, &binding_b, test_binding_callback);
-        BS_TEST_VERIFY_NEQ(test_ptr, NULL, kb2_ptr);
-
-    // First binding. Ctrl-A, permitting other modifiers except Ctrl.
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_A, WLR_MODIFIER_CTRL));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_a, WLR_MODIFIER_CTRL));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(
-            &srv, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT));
-
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(
-            &srv, XKB_KEY_a, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT));
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_A, 0));
-
-    // Second binding. Triggers only on lower-case 'b'.
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_b, 0));
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        wlmaker_keyboard_process_bindings(&srv, XKB_KEY_B, 0));
-
-    wlmaker_server_unbind_key(&srv, kb2_ptr);
-    wlmaker_server_unbind_key(&srv, kb1_ptr);
 }
 
 /* == End of server.c ====================================================== */

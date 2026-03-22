@@ -34,6 +34,7 @@ PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
 
 ADD_SUBDIRECTORY(backend)
+ADD_SUBDIRECTORY(input)
 ADD_SUBDIRECTORY(toolkit)
 
 SET(PUBLIC_HEADER_FILES
@@ -44,13 +45,11 @@ SET(PUBLIC_HEADER_FILES
   clip.h
   config.h
   corner.h
-  cursor.h
   dock.h
   files.h
   icon_manager.h
   idle.h
   input_observation.h
-  keyboard.h
   launcher.h
   layer_panel.h
   layer_shell.h
@@ -76,13 +75,11 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   clip.c
   config.c
   corner.c
-  cursor.c
   dock.c
   files.c
   icon_manager.c
   idle.c
   input_observation.c
-  keyboard.c
   launcher.c
   layer_panel.c
   layer_shell.c
@@ -117,6 +114,7 @@ ADD_DEPENDENCIES(
   embedded_root_menu
   embedded_state
   embedded_theme
+  input
   libbase
   libbase_plist
   protocol_headers
@@ -130,9 +128,9 @@ TARGET_LINK_LIBRARIES(
   embedded_root_menu
   embedded_state
   embedded_theme
-  inih
   libbase
   libbase_plist
+  input
   toolkit
   wlmaker_protocols
   $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
@@ -140,8 +138,7 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::LIBXDGBASEDIR
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
-  PkgConfig::XCB
-  PkgConfig::XKBCOMMON)
+  PkgConfig::XCB)
 TARGET_INCLUDE_DIRECTORIES(
   wlmaker_lib PUBLIC
   # Keep wlroots first -- multiple versions may interfere (#117).
@@ -153,7 +150,6 @@ TARGET_INCLUDE_DIRECTORIES(
   ${LIBXDGBASEDIR_INCLUDE_DIRS}
   ${WAYLAND_SERVER_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
-  ${XKBCOMMON_INCLUDE_DIRS}
 )
 TARGET_COMPILE_DEFINITIONS(
   wlmaker_lib PRIVATE WLMAKER_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
