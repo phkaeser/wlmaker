@@ -871,6 +871,7 @@ INPUT                  = \
                          @PROJECT_SOURCE_DIR@/include/toolkit \
                          @PROJECT_SOURCE_DIR@/src \
                          @PROJECT_SOURCE_DIR@/src/backend \
+                         @PROJECT_SOURCE_DIR@/src/input \
                          @PROJECT_SOURCE_DIR@/src/toolkit \
                          @PROJECT_SOURCE_DIR@/tool/desktop-parser \
                          @PROJECT_SOURCE_DIR@/tool \

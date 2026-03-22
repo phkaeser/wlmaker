@@ -23,13 +23,14 @@
 /** Forward declaration: State of hot corner monitor. */
 typedef struct _wlmaker_corner_t wlmaker_corner_t;
 
-#include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <libbase/libbase.h>
 
-#include "cursor.h"  // IWYU pragma: keep
 #include "server.h"  // IWYU pragma: keep
 
 struct wl_event_loop;
+struct wl_signal;
+struct wlr_cursor;
 struct wlr_output_layout;
 
 #ifdef __cplusplus
@@ -42,7 +43,8 @@ extern "C" {
  * @param hot_corner_config_dict_ptr
  * @param wl_event_loop_ptr
  * @param wlr_output_layout_ptr
- * @param cursor_ptr
+ * @param wlr_cursor_ptr
+ * @param cursor_position_updated_ptr
  * @param server_ptr
  *
  * @return Pointer to the hot-corner monitor.
@@ -51,7 +53,8 @@ wlmaker_corner_t *wlmaker_corner_create(
     bspl_dict_t *hot_corner_config_dict_ptr,
     struct wl_event_loop *wl_event_loop_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
-    wlmaker_cursor_t *cursor_ptr,
+    struct wlr_cursor *wlr_cursor_ptr,
+    struct wl_signal *cursor_position_updated_ptr,
     wlmaker_server_t *server_ptr);
 
 /**

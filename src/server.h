@@ -25,7 +25,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
-#include <xkbcommon/xkbcommon.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
 #include <wlr/types/wlr_data_control_v1.h>
@@ -34,22 +33,10 @@
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 
+#include "input/manager.h"
+
 /** A handle for a wlmaker server. */
 typedef struct _wlmaker_server_t wlmaker_server_t;
-
-/** A key combination. */
-typedef struct _wlmaker_key_combo_t wlmaker_key_combo_t;
-/** Handle for a key binding. */
-typedef struct _wlmaker_key_binding_t wlmaker_key_binding_t;
-
-/**
- * Callback for a key binding.
- *
- * @param kc                  The key combo that triggered the callback.
- *
- * @return true if the key can be considered "consumed".
- */
-typedef bool (*wlmaker_keybinding_callback_t)(const wlmaker_key_combo_t *kc);
 
 #include "backend/backend.h"
 #include "config.h"
@@ -109,36 +96,24 @@ struct _wlmaker_server_t {
     struct wlr_fractional_scale_manager_v1 *wlr_fractional_scale_manager_ptr;
     /** wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
-    /** The last-used group of the keyboard layout. Used when using groups. */
-    uint32_t                  last_keyboard_group_index;
     /** The scene graph API. */
     struct wlr_scene          *wlr_scene_ptr;
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
 
-    /** Listener for `new_input` signals raised by `wlr_backend`. */
-    struct wl_listener        backend_new_input_device_listener;
-
     // Clipboard and selection support.
-
     /** Provides the wl_data_device protocol for clipboard (Ctrl+C/V). */
     struct wlr_data_device_manager *wlr_data_device_manager_ptr;
-
     /** Listener to approve clipboard selection requests. */
     struct wl_listener        request_set_selection_listener;
-
     /** Provides the primary selection protocol for middle-click paste. */
     struct wlr_primary_selection_v1_device_manager
         *wlr_primary_selection_v1_device_manager_ptr;
-
     /** Listener to approve primary selection requests. */
     struct wl_listener        request_set_primary_selection_listener;
-
     /** Enables clipboard managers and tools (wl-copy, wl-paste). */
     struct wlr_data_control_manager_v1 *wlr_data_control_manager_v1_ptr;
 
-    /** The cursor handler. */
-    wlmaker_cursor_t          *cursor_ptr;
     /** The XDG Shell handler. */
     wlmaker_xdg_shell_t       *xdg_shell_ptr;
     /** The XDG decoration manager. */
@@ -147,6 +122,12 @@ struct _wlmaker_server_t {
     wlmaker_layer_shell_t     *layer_shell_ptr;
     /** Backend handler. */
     wlmbe_backend_t           *backend_ptr;
+    /** Input device manager. */
+    wlmim_t                   *input_manager_ptr;
+    /** Any activity from the input manager. */
+    struct wl_listener        input_activity_listener;
+    /** Hack: Deactivate task list, when losing 'ALT' modifier. */
+    struct wl_listener        deactivate_task_list_listener;
     /** Icon manager. */
     wlmaker_icon_manager_t    *icon_manager_ptr;
     /** Input observation. */
@@ -158,9 +139,6 @@ struct _wlmaker_server_t {
      */
     wlmaker_xwl_t             *xwl_ptr;
 
-    /** The list of input devices. */
-    bs_dllist_t               input_devices;
-
     /** The root element. */
     wlmtk_root_t              *root_ptr;
     /** Whether the task list is currently shown. */
@@ -169,9 +147,6 @@ struct _wlmaker_server_t {
     struct wl_signal          task_list_enabled_event;
     /** Signal: When the task list is disabled. (to be hidden) */
     struct wl_signal          task_list_disabled_event;
-
-    /** List of all bound keys, see @ref wlmaker_key_binding_t::dlnode. */
-    bs_dllist_t               bindings;
 
     /** Clients for this server. */
     bs_dllist_t               clients;
@@ -203,18 +178,6 @@ struct _wlmaker_server_t {
     const wlmaker_config_style_t *style_ptr;
 };
 
-/** Specifies the key + modifier to bind. */
-struct _wlmaker_key_combo_t {
-    /** Modifiers required. See `enum wlr_keyboard_modifiers`. */
-    uint32_t                  modifiers;
-    /** Modifier mask: Only masked modifiers are considered. */
-    uint32_t                  modifiers_mask;
-    /** XKB Keysym to trigger on. */
-    xkb_keysym_t              keysym;
-    /** Whether to ignore case when matching. */
-    bool                      ignore_case;
-};
-
 /**
  * Creates the server and initializes all needed sub-modules.
  *
@@ -242,56 +205,11 @@ wlmaker_server_t *wlmaker_server_create(
 void wlmaker_server_destroy(wlmaker_server_t *server_ptr);
 
 /**
- * Binds a particular key to a callback.
- *
- * @param server_ptr
- * @param key_combo_ptr
- * @param callback
- *
- * @return The key binding handle or NULL on error.
- */
-wlmaker_key_binding_t *wlmaker_server_bind_key(
-    wlmaker_server_t *server_ptr,
-    const wlmaker_key_combo_t *key_combo_ptr,
-    wlmaker_keybinding_callback_t callback);
-
-/**
- * Releases a key binding. @see wlmaker_bind_key.
- *
- * @param server_ptr
- * @param key_binding_ptr
- */
-void wlmaker_server_unbind_key(
-    wlmaker_server_t *server_ptr,
-    wlmaker_key_binding_t *key_binding_ptr);
-
-/**
- * Processes key bindings: Call back if a matching binding is found.
- *
- * @param server_ptr
- * @param keysym
- * @param modifiers
- *
- * @return true if a binding was found AND the callback returned true.
- */
-bool wlmaker_keyboard_process_bindings(
-    wlmaker_server_t *server_ptr,
-    xkb_keysym_t keysym,
-    uint32_t modifiers);
-
-/**
  * Activates the task list.
  *
  * @param server_ptr
  */
 void wlmaker_server_activate_task_list(wlmaker_server_t *server_ptr);
-
-/**
- * De-activates the task list.
- *
- * @param server_ptr
- */
-void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr);
 
 /**
  * Looks up which output serves the current cursor coordinates and returns that.
@@ -302,12 +220,6 @@ void wlmaker_server_deactivate_task_list(wlmaker_server_t *server_ptr);
  */
 struct wlr_output *wlmaker_server_get_output_at_cursor(
     wlmaker_server_t *server_ptr);
-
-/** All modifiers to use by default. */
-extern const uint32_t wlmaker_modifier_default_mask;
-
-/** Unit test set. */
-extern const bs_test_set_t   wlmaker_server_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

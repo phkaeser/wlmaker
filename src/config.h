@@ -25,8 +25,9 @@
 #include <libbase/plist.h>
 #include <stddef.h>
 
-#include "toolkit/toolkit.h"
 #include "files.h"
+#include "input/cursor.h"
+#include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,14 +63,6 @@ typedef struct {
     uint32_t                  text_color;
 } wlmaker_config_clip_style_t;
 
-/** Style of the cursor. */
-typedef struct {
-    /** Name of the XCursor theme to use. */
-    char                      *name_ptr;
-    /** Size, when non-scaled. */
-    uint64_t                  size;
-} wlmaker_config_cursor_style_t;
-
 /** Style information. */
 typedef struct {
     /** Background color, unless overriden in "Workspace" state. */
@@ -87,10 +80,8 @@ typedef struct {
     /** Task list style. */
     wlmaker_config_task_list_style_t task_list;
     /** Cursor style. */
-    wlmaker_config_cursor_style_t cursor;
+    struct wlmim_cursor_style cursor;
 } wlmaker_config_style_t;
-
-extern const float config_output_scale;
 
 /**
  * Loads a plist object from the given config file or data.

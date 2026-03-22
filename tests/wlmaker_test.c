@@ -29,12 +29,10 @@
 #include "corner.h"
 #include "dock.h"
 #include "files.h"
-#include "keyboard.h"
 #include "launcher.h"
 #include "layer_panel.h"
 #include "lock_mgr.h"
 #include "root_menu.h"
-#include "server.h"
 #include "xdg_decoration.h"
 #include "xdg_toplevel.h"
 #if defined(WLMAKER_HAVE_XWAYLAND)
@@ -60,12 +58,10 @@ int main(int argc, const char **argv)
         &wlmaker_corner_test_set,
         &wlmaker_dock_test_set,
         &wlmaker_files_test_set,
-        &wlmaker_keyboard_test_set,
         &wlmaker_launcher_test_set,
         &wlmaker_layer_panel_test_set,
         &wlmaker_lock_mgr_test_set,
         &wlmaker_root_menu_test_set,
-        &wlmaker_server_test_set,
         &wlmaker_xdg_decoration_test_set,
         &wlmaker_xdg_toplevel_test_set,
 #if defined(WLMAKER_HAVE_XWAYLAND)

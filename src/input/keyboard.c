@@ -33,40 +33,42 @@
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
 #include <xkbcommon/xkbcommon.h>
 
-#include "idle.h"
-#include "server.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
 
 /** Keyboard handle. */
-struct _wlmaker_keyboard_t {
+struct _wlmim_keyboard_t {
     /** Configuration dictionnary, just the "Keyboard" section. */
     bspl_dict_t             *config_dict_ptr;
-    /** Back-link to the server. */
-    wlmaker_server_t          *server_ptr;
-    /** The wlroots keyboard structure. */
-    struct wlr_keyboard       *wlr_keyboard_ptr;
-    /** The wlroots seat. */
-    struct wlr_seat           *wlr_seat_ptr;
 
     /** Listener for the `modifiers` signal of `wl_keyboard`. */
     struct wl_listener        modifiers_listener;
     /** Listener for the `key` signal of `wl_keyboard`. */
     struct wl_listener        key_listener;
+
+    /** Back-link to the input manager. */
+    wlmim_t                   *input_manager_ptr;
+    /** The wlroots keyboard structure. */
+    struct wlr_keyboard       *wlr_keyboard_ptr;
+    /** The wlroots seat. */
+    struct wlr_seat           *wlr_seat_ptr;
+    /** Root element, for forwarding events. */
+    wlmtk_element_t           *root_element_ptr;
 };
 
-static bspl_dict_t *_wlmaker_keyboard_populate_rules(
+static bspl_dict_t *_wlmim_keyboard_populate_rules(
     bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr);
-static bool _wlmaker_keyboard_populate_repeat(
+static bool _wlmim_keyboard_populate_repeat(
     bspl_dict_t *dict_ptr,
     int32_t *rate_ptr,
     int32_t *delay_ptr);
-static int _wlmaker_keyboard_config_ini_handler(
+static int _wlmim_keyboard_config_ini_handler(
     void *user_ptr,
     const char *section_ptr,
     const char *name_ptr,
@@ -79,35 +81,38 @@ static void handle_modifiers(struct wl_listener *listener_ptr,
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_keyboard_t *wlmaker_keyboard_create(
-    wlmaker_server_t *server_ptr,
+wlmim_keyboard_t *wlmim_keyboard_create(
+    wlmim_t *input_manager_ptr,
+    bspl_dict_t *wlmaker_config_dict_ptr,
     struct wlr_keyboard *wlr_keyboard_ptr,
-    struct wlr_seat *wlr_seat_ptr)
+    struct wlr_seat *wlr_seat_ptr,
+    wlmtk_element_t *root_element_ptr)
 {
-    wlmaker_keyboard_t *keyboard_ptr = logged_calloc(
-        1, sizeof(wlmaker_keyboard_t));
+    wlmim_keyboard_t *keyboard_ptr = logged_calloc(
+        1, sizeof(wlmim_keyboard_t));
     if (NULL == keyboard_ptr) return NULL;
-    keyboard_ptr->server_ptr = server_ptr;
+    keyboard_ptr->input_manager_ptr = input_manager_ptr;
     keyboard_ptr->wlr_keyboard_ptr = wlr_keyboard_ptr;
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
+    keyboard_ptr->root_element_ptr = root_element_ptr;
 
     // Retrieve configuration.
     bspl_dict_t *config_dict_ptr = bspl_dict_get_dict(
-        server_ptr->config_dict_ptr, "Keyboard");
+        wlmaker_config_dict_ptr, "Keyboard");
     if (NULL == config_dict_ptr) {
         bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
-        wlmaker_keyboard_destroy(keyboard_ptr);
+        wlmim_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
     keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
         bspl_dict_ref(config_dict_ptr));
 
     struct xkb_rule_names xkb_rule;
-    bspl_dict_t *rmlvo_dict_ptr = _wlmaker_keyboard_populate_rules(
+    bspl_dict_t *rmlvo_dict_ptr = _wlmim_keyboard_populate_rules(
         keyboard_ptr->config_dict_ptr, &xkb_rule);
     if (NULL == rmlvo_dict_ptr) {
         bs_log(BS_ERROR, "No rule data found in 'Keyboard' dict.");
-        wlmaker_keyboard_destroy(keyboard_ptr);
+        wlmim_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
 
@@ -126,7 +131,7 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
                xkb_rule.variant,
                xkb_rule.options);
         bspl_dict_unref(rmlvo_dict_ptr);
-        wlmaker_keyboard_destroy(keyboard_ptr);
+        wlmim_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
     bspl_dict_unref(rmlvo_dict_ptr);
@@ -136,10 +141,10 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
 
     // Repeat rate and delay.
     int32_t rate, delay;
-    if (!_wlmaker_keyboard_populate_repeat(
+    if (!_wlmim_keyboard_populate_repeat(
             keyboard_ptr->config_dict_ptr, &rate, &delay)) {
         bs_log(BS_ERROR, "No repeat data found in 'Keyboard' dict.");
-        wlmaker_keyboard_destroy(keyboard_ptr);
+        wlmim_keyboard_destroy(keyboard_ptr);
         return NULL;
     }
     wlr_keyboard_set_repeat_info(keyboard_ptr->wlr_keyboard_ptr, rate, delay);
@@ -161,8 +166,10 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
         0,  // locked_mods
         0,  // depressed_layout
         0,  // latched_layout
-        server_ptr->last_keyboard_group_index);  // locked_layout.
-    wlr_keyboard_ptr->modifiers.group = server_ptr->last_keyboard_group_index;
+        // locked_layout
+        wlmim_get_keyboard_group_index(keyboard_ptr->input_manager_ptr));
+    wlr_keyboard_ptr->modifiers.group = wlmim_get_keyboard_group_index(
+        keyboard_ptr->input_manager_ptr);
     wlr_seat_keyboard_notify_modifiers(
         wlr_seat_ptr,
         &wlr_keyboard_ptr->modifiers);
@@ -181,7 +188,7 @@ wlmaker_keyboard_t *wlmaker_keyboard_create(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
+void wlmim_keyboard_destroy(wlmim_keyboard_t *keyboard_ptr)
 {
     wl_list_remove(&keyboard_ptr->key_listener.link);
     wl_list_remove(&keyboard_ptr->modifiers_listener.link);
@@ -205,7 +212,7 @@ void wlmaker_keyboard_destroy(wlmaker_keyboard_t *keyboard_ptr)
  *
  * @return A referenced bspl_dict_t holding rules details, or NULL on error.
  */
-bspl_dict_t *_wlmaker_keyboard_populate_rules(
+bspl_dict_t *_wlmim_keyboard_populate_rules(
     bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr)
 {
@@ -217,7 +224,7 @@ bspl_dict_t *_wlmaker_keyboard_populate_rules(
         rmlvo = bspl_dict_create();
         if (0 != ini_parse(
                 fname_ptr,
-                _wlmaker_keyboard_config_ini_handler,
+                _wlmim_keyboard_config_ini_handler,
                 rmlvo)) {
             bs_log(BS_ERROR, "Failed to parse \"XkbConfigurationFile\" at %s",
                    fname_ptr);
@@ -252,7 +259,7 @@ bspl_dict_t *_wlmaker_keyboard_populate_rules(
  *
  * @return true on success.
  */
-bool _wlmaker_keyboard_populate_repeat(
+bool _wlmim_keyboard_populate_repeat(
     bspl_dict_t *dict_ptr,
     int32_t *rate_ptr,
     int32_t *delay_ptr)
@@ -298,7 +305,7 @@ bool _wlmaker_keyboard_populate_repeat(
  *
  * @return 0 on success.
  */
-int _wlmaker_keyboard_config_ini_handler(
+int _wlmim_keyboard_config_ini_handler(
     void *user_ptr,
     __UNUSED__ const char *section_ptr,
     const char *name_ptr,
@@ -357,11 +364,11 @@ int _wlmaker_keyboard_config_ini_handler(
  */
 void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 {
-    wlmaker_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_keyboard_t, key_listener);
+    wlmim_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmim_keyboard_t, key_listener);
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr = data_ptr;
 
-    wlmaker_idle_monitor_reset(keyboard_ptr->server_ptr->idle_monitor_ptr);
+    wlmim_report_activity(keyboard_ptr->input_manager_ptr);
 
     // TODO(kaeser@gubbe.ch): Omit consumed modifiers, see xkbcommon.h.
     uint32_t modifiers = wlr_keyboard_get_modifiers(
@@ -369,9 +376,10 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 
     // TODO(kaeser@gubbe.ch): Handle this better -- should respect the
     // modifiers of the task list actions, and be more generalized.
-    if ((modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT &&
-        keyboard_ptr->server_ptr->task_list_enabled) {
-        wlmaker_server_deactivate_task_list(keyboard_ptr->server_ptr);
+    if ((modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT) {
+        wl_signal_emit(
+            &wlmim_events(keyboard_ptr->input_manager_ptr)->deactivate_task_list,
+            NULL);
     }
 
     // Translates libinput keycode -> xkbcommon.
@@ -392,12 +400,13 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
             direction);
 
         if (WL_KEYBOARD_KEY_STATE_PRESSED == wlr_keyboard_key_event_ptr->state &&
-            wlmaker_keyboard_process_bindings(
-                keyboard_ptr->server_ptr, key_syms[i], modifiers)) {
+            wlmim_process_key(keyboard_ptr->input_manager_ptr,
+                              key_syms[i],
+                              modifiers)) {
             processed |= true;
         } else {
             processed |= wlmtk_element_keyboard_sym(
-                wlmtk_root_element(keyboard_ptr->server_ptr->root_ptr),
+                keyboard_ptr->root_element_ptr,
                 key_syms[i],
                 direction,
                 modifiers);
@@ -407,7 +416,7 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
     if (processed) return;
 
     wlmtk_element_keyboard_event(
-        wlmtk_root_element(keyboard_ptr->server_ptr->root_ptr),
+        keyboard_ptr->root_element_ptr,
         wlr_keyboard_key_event_ptr);
 }
 
@@ -421,21 +430,22 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 void handle_modifiers(struct wl_listener *listener_ptr,
                       __UNUSED__ void *data_ptr)
 {
-    wlmaker_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmaker_keyboard_t, modifiers_listener);
+    wlmim_keyboard_t *keyboard_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmim_keyboard_t, modifiers_listener);
 
-    wlmaker_idle_monitor_reset(keyboard_ptr->server_ptr->idle_monitor_ptr);
-
-    keyboard_ptr->server_ptr->last_keyboard_group_index =
+    wlmim_report_activity(keyboard_ptr->input_manager_ptr);
+    wlmim_set_keyboard_group_index(
+        keyboard_ptr->input_manager_ptr,
         xkb_state_serialize_layout(
             keyboard_ptr->wlr_keyboard_ptr->xkb_state,
-            XKB_STATE_LAYOUT_EFFECTIVE);
+            XKB_STATE_LAYOUT_EFFECTIVE));
 
     uint32_t modifiers = wlr_keyboard_get_modifiers(
         keyboard_ptr->wlr_keyboard_ptr);
-
     if ((modifiers & WLR_MODIFIER_ALT) != WLR_MODIFIER_ALT) {
-        wlmaker_server_deactivate_task_list(keyboard_ptr->server_ptr);
+        wl_signal_emit(
+            &wlmim_events(keyboard_ptr->input_manager_ptr)->deactivate_task_list,
+            NULL);
     }
 
     wlr_seat_set_keyboard(
@@ -448,22 +458,22 @@ void handle_modifiers(struct wl_listener *listener_ptr,
 
 /* == Unit tests =========================================================== */
 
-static void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr);
-static void _wlmaker_keyboard_test_keyboard_file(bs_test_t *test_ptr);
+static void _wlmim_keyboard_test_rmlvo(bs_test_t *test_ptr);
+static void _wlmim_keyboard_test_keyboard_file(bs_test_t *test_ptr);
 
 /** Unit test cases. */
-static const bs_test_case_t wlmaker_keyboard_test_cases[] = {
-    { true, "rmlvo", _wlmaker_keyboard_test_rmlvo },
-    { true, "keyboard_file", _wlmaker_keyboard_test_keyboard_file },
+static const bs_test_case_t wlmim_keyboard_test_cases[] = {
+    { true, "rmlvo", _wlmim_keyboard_test_rmlvo },
+    { true, "keyboard_file", _wlmim_keyboard_test_keyboard_file },
     BS_TEST_CASE_SENTINEL()
 };
 
-const bs_test_set_t wlmaker_keyboard_test_set = BS_TEST_SET(
-    true, "keyboard", wlmaker_keyboard_test_cases);
+const bs_test_set_t wlmim_keyboard_test_set = BS_TEST_SET(
+    true, "keyboard", wlmim_keyboard_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests keyboard rules are loaded from a given RMLVO dict. */
-void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr)
+void _wlmim_keyboard_test_rmlvo(bs_test_t *test_ptr)
 {
     struct xkb_rule_names r = {};
     bspl_dict_t *d = bspl_dict_from_object(
@@ -471,7 +481,7 @@ void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr)
             "{XkbRMLVO={Rules=R;Model=M;Layout=L;Variant=V;Options=O}}"));
 
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
-    bspl_dict_t *rmlvo = _wlmaker_keyboard_populate_rules(d, &r);
+    bspl_dict_t *rmlvo = _wlmim_keyboard_populate_rules(d, &r);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rmlvo);
     BS_TEST_VERIFY_STREQ(test_ptr, "R", r.rules);
     BS_TEST_VERIFY_STREQ(test_ptr, "M", r.model);
@@ -484,7 +494,7 @@ void _wlmaker_keyboard_test_rmlvo(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Tests keyboard rules are loaded from XKB configuration file. */
-void _wlmaker_keyboard_test_keyboard_file(bs_test_t *test_ptr)
+void _wlmim_keyboard_test_keyboard_file(bs_test_t *test_ptr)
 {
     struct xkb_rule_names r = {};
     bspl_dict_t *d = bspl_dict_create();
@@ -497,7 +507,7 @@ void _wlmaker_keyboard_test_keyboard_file(bs_test_t *test_ptr)
         bspl_dict_add(d, "XkbConfigurationFile", o));
     bspl_object_unref(o);
 
-    bspl_dict_t *rmlvo = _wlmaker_keyboard_populate_rules(d, &r);
+    bspl_dict_t *rmlvo = _wlmim_keyboard_populate_rules(d, &r);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, rmlvo);
 
     BS_TEST_VERIFY_STREQ(test_ptr, "pc105", r.model);

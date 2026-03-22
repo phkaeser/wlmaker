@@ -33,9 +33,10 @@
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
 
+#include "../etc/theme.h"  // IWYU pragma: keep
 #include "default_configuration.h"
 #include "default_state.h"
-#include "../etc/theme.h"  // IWYU pragma: keep
+#include "input/cursor.h"
 
 /* == Declarations ========================================================= */
 
@@ -52,9 +53,6 @@ static bool _wlmaker_config_decode_fill_style(
     void *value_ptr);
 
 /* == Data ================================================================= */
-
-/** Overall scale of output. */
-const float config_output_scale = 1.0;
 
 /** Plist decoding descriptor of the fill type. */
 static const bspl_enum_desc_t _wlmaker_config_fill_type_desc[] = {
@@ -274,10 +272,10 @@ static const bspl_desc_t _wlmaker_clip_style_desc[] = {
 /** Descriptor for decoding the "Cursor" dictionary. */
 static const bspl_desc_t _wlmaker_cursor_style_desc[] = {
     BSPL_DESC_STRING(
-        "Name", true, wlmaker_config_cursor_style_t, name_ptr, name_ptr,
+        "Name", true, struct wlmim_cursor_style, name_ptr, name_ptr,
         "default"),
     BSPL_DESC_UINT64(
-        "Size", true, wlmaker_config_cursor_style_t, size, size, 24),
+        "Size", true, struct wlmim_cursor_style, size, size, 24),
     BSPL_DESC_SENTINEL()
 };
 
