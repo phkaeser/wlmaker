@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
-#include <wlr/backend/libinput.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_keyboard.h>
@@ -224,6 +223,16 @@ void wlmim_cursor_attach_input_device(
     struct wlr_input_device *wlr_input_device_ptr)
 {
      wlr_cursor_attach_input_device(
+         cursor_ptr->wlr_cursor_ptr,
+         wlr_input_device_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmim_cursor_detach_input_device(
+    wlmim_cursor_t *cursor_ptr,
+    struct wlr_input_device *wlr_input_device_ptr)
+{
+     wlr_cursor_detach_input_device(
          cursor_ptr->wlr_cursor_ptr,
          wlr_input_device_ptr);
 }

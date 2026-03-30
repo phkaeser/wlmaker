@@ -82,6 +82,16 @@ void wlmim_cursor_attach_input_device(
     wlmim_cursor_t *cursor_ptr,
     struct wlr_input_device *wlr_input_device_ptr);
 
+/**
+ * Detaches the input device. @see wlmim_cursor_attach_input_device.
+ *
+ * @param cursor_ptr
+ * @param wlr_input_device_ptr
+ */
+void wlmim_cursor_detach_input_device(
+    wlmim_cursor_t *cursor_ptr,
+    struct wlr_input_device *wlr_input_device_ptr);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

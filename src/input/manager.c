@@ -36,6 +36,7 @@
 
 #include "cursor.h"
 #include "keyboard.h"
+#include "pointer.h"
 
 /* == Declarations ========================================================= */
 
@@ -54,6 +55,9 @@ struct _wlmim_t {
 
     /** The last-used group of the keyboard layout. Used when using groups. */
     uint32_t                  last_keyboard_group_index;
+
+    /** Pointer configuration. */
+    struct wlmim_pointer_param pointer_params;
 
     /** Cursor handle. */
     wlmim_cursor_t            *cursor_ptr;
@@ -157,6 +161,13 @@ wlmim_t *wlmim_input_manager_create(
     wl_signal_init(&input_manager_ptr->events.activity);
     wl_signal_init(&input_manager_ptr->events.deactivate_task_list);
 
+    if (!wlmim_pointer_parse_config(
+            config_dict_ptr,
+            &input_manager_ptr->pointer_params)) {
+        wlmim_input_manager_destroy(input_manager_ptr);
+        return NULL;
+    }
+
     if (NULL != wlr_seat_ptr && NULL != wlr_output_layout_ptr) {
         input_manager_ptr->cursor_ptr = wlmim_cursor_create(
             input_manager_ptr,
@@ -188,13 +199,15 @@ void wlmim_input_manager_destroy(wlmim_t *input_manager_ptr)
         _wlmim_unbind_node,
         input_manager_ptr);
 
+    bs_dllist_for_each(
+        &input_manager_ptr->devices,
+        _wlmim_device_unregister,
+        input_manager_ptr);
+
     if (NULL != input_manager_ptr->cursor_ptr) {
         wlmim_cursor_destroy(input_manager_ptr->cursor_ptr);
         input_manager_ptr->cursor_ptr = NULL;
     }
-
-    bs_dllist_for_each(
-        &input_manager_ptr->devices, _wlmim_device_unregister, NULL);
 
     bspl_dict_unref(input_manager_ptr->config_dict_ptr);
     free(input_manager_ptr);
@@ -323,9 +336,23 @@ void _wlmim_handle_new_input_device(
         break;
 
     case WLR_INPUT_DEVICE_POINTER:
-        wlmim_cursor_attach_input_device(
-            input_manager_ptr->cursor_ptr,
-            wlr_input_device_ptr);
+        handle_ptr = wlmim_pointer_create(
+            wlr_input_device_ptr,
+            &input_manager_ptr->pointer_params);
+        if (NULL != handle_ptr) {
+            if (!_wlmim_device_register(
+                    input_manager_ptr,
+                    wlr_input_device_ptr,
+                    handle_ptr)) {
+                bs_log(BS_ERROR, "Failed _wlim_device_register()");
+                wlmim_keyboard_destroy(handle_ptr);
+            } else if (wlmim_pointer_enabled(handle_ptr) &&
+                       NULL != input_manager_ptr->cursor_ptr) {
+                wlmim_cursor_attach_input_device(
+                    input_manager_ptr->cursor_ptr,
+                    wlr_input_device_ptr);
+            }
+        }
         break;
 
     case WLR_INPUT_DEVICE_SWITCH:
@@ -358,7 +385,9 @@ void _wlmim_handle_destroy_input_device(
 {
     struct wlmim_device *device_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmim_device, destroy_listener);
-    _wlmim_device_unregister(&device_ptr->dlnode, NULL);
+    _wlmim_device_unregister(
+        &device_ptr->dlnode,
+        device_ptr->input_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -402,14 +431,25 @@ bool _wlmim_device_register(
  */
 void _wlmim_device_unregister(
     bs_dllist_node_t *dlnode_ptr,
-    __UNUSED__ void *ud_ptr)
+    void *ud_ptr)
 {
     struct wlmim_device *device_ptr = BS_CONTAINER_OF(
         dlnode_ptr, struct wlmim_device, dlnode);
+    wlmim_t *input_manager_ptr = ud_ptr;
 
     switch (device_ptr->wlr_input_device_ptr->type) {
     case WLR_INPUT_DEVICE_KEYBOARD:
         wlmim_keyboard_destroy(device_ptr->handle_ptr);
+        break;
+
+    case WLR_INPUT_DEVICE_POINTER:
+        if (wlmim_pointer_enabled(device_ptr->handle_ptr) &&
+            NULL != input_manager_ptr->cursor_ptr) {
+            wlmim_cursor_detach_input_device(
+                input_manager_ptr->cursor_ptr,
+                device_ptr->wlr_input_device_ptr);
+        }
+        wlmim_pointer_destroy(device_ptr->handle_ptr);
         break;
     default:
         break;
