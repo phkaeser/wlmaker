@@ -23,6 +23,20 @@
             Rate = 25;
         };
     };
+
+    Touchpad = {
+        Enabled = True;
+        DisableWhileTyping = True;
+        // How the touchpad determines which button is meant on tap.
+        // None, ButtonAreas or ClickFinger.
+        ClickMethod = ClickFinger;
+        TapToClick = Enabled;
+        // How scrolling is initiated by the touchpad:
+        // NoScroll, TwoFingers, Edge or OnButtonDown.
+        ScrollMethod = TwoFingers;
+        NaturalScrolling = Enabled;
+    };
+
     // Configuration for XDG decoration protocol: Server or client-side?
     Decoration = {
         Mode = SuggestServer;
