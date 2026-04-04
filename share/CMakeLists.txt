@@ -28,6 +28,14 @@ INSTALL(
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions)
 
 CONFIGURE_FILE(
+  ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmbattery.desktop.in
+  ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop
+  @ONLY)
+INSTALL(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+
+CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmclock.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop
   @ONLY)
@@ -75,6 +83,13 @@ IF(DESKTOP_FILE_VALIDATOR)
   # We also want to report errors that are not "fatal" yet.
   SET_PROPERTY(
     TEST wlmaker_desktop_test
+    PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
+  ADD_TEST(
+    NAME wlmbattery_desktop_test
+    COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop")
+  # We also want to report errors that are not "fatal" yet.
+  SET_PROPERTY(
+    TEST wlmbattery_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
   ADD_TEST(
     NAME wlmclock_desktop_test
@@ -127,6 +142,10 @@ INSTALL(FILES
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
   RENAME wlmaker.png)
 
+INSTALL(FILES
+  wlmbattery-64x64.png
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  RENAME wlmbattery.png)
 INSTALL(FILES
   wlmclock-64x64.png
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps

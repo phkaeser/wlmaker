@@ -45,8 +45,12 @@ ADD_EXECUTABLE(wlmnetgraph wlmnetgraph.c)
 TARGET_INCLUDE_DIRECTORIES(wlmnetgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(wlmnetgraph wlm_graph_shared libwlclient primitives)
 
+ADD_EXECUTABLE(wlmbattery wlmbattery.c)
+TARGET_INCLUDE_DIRECTORIES(wlmbattery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+TARGET_LINK_LIBRARIES(wlmbattery libbase libwlclient primitives)
+
 INSTALL(
-  TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph
+  TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph wlmbattery
   DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 IF(iwyu_path_and_options)

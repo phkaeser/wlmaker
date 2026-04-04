@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WLMBattery
+GenericName="Wayland Maker battery dockapp"
+Comment="Display battery and power adapter status"
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmbattery
+Type=Application
+Categories=Utility;Monitor;
+Keywords=battery;monitoring;dockapp;wlmaker
+Icon=wlmbattery
