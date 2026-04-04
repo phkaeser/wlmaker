@@ -50,6 +50,12 @@ TARGET_LINK_LIBRARIES(
 TARGET_COMPILE_DEFINITIONS(
   desktop_parser_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 
+ADD_EXECUTABLE(wlmtool_test wlmtool_test.c)
+ADD_DEPENDENCIES(wlmtool_test libbase wlmtools)
+TARGET_LINK_LIBRARIES(wlmtool_test libbase wlmtools)
+TARGET_COMPILE_DEFINITIONS(
+  wlmtool_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
+
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(
     backend_test PROPERTIES
@@ -62,5 +68,11 @@ IF(iwyu_path_and_options)
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   SET_TARGET_PROPERTIES(
     wlmaker_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    desktop_parser_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    wlmtool_test PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 ENDIF(iwyu_path_and_options)

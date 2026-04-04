@@ -1,9 +1,9 @@
 /* ========================================================================= */
 /**
- * @file desktop_parser_test.c
+ * @file wlmtool_test.c
  *
  * @copyright
- * Copyright (c) 2025 Google LLC and Philipp Kaeser
+ * Copyright (c) 2026 Google LLC and Philipp Kaeser
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@
  * limitations under the License.
  */
 
-#include <desktop-parser/desktop-parser.h>
 #include <libbase/libbase.h>
 #include <stddef.h>
+
+#include "gen_menu.h"
 
 #if !defined(TEST_DATA_DIR)
 /** Directory root for looking up test data. See `bs_test_resolve_path`. */
@@ -33,10 +34,10 @@ int main(int argc, const char **argv)
     const bs_test_param_t params = { .test_data_dir_ptr = TEST_DATA_DIR };
 
     const bs_test_set_t *sets[] = {
-        &desktop_parser_test_set,
+        &wlmaker_menu_test_set,
         NULL
     };
 
     return bs_test_sets(sets, argc, argv, &params);
 }
-/* == End of desktop_parser_test.c ========================================= */
+/* == End of wlmtool_test.c ================================================ */

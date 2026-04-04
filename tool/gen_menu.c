@@ -39,6 +39,10 @@ struct desktop_parser;
 // TODO(kaeser@gubbe.ch): Internationalize.
 static const char *category_other_ptr = "Other";
 
+/** Command to use for terminal. */
+// TODO(kaeser@gubbe.ch): This should be configurable.
+#define TERMINAL_COMMAND "/usr/bin/foot"
+
 /** The category menu. */
 struct category_menu {
     /** Node within the overall menu tree. */
@@ -373,28 +377,41 @@ bspl_array_t *array_from_entry(const struct desktop_entry *entry_ptr)
         return NULL;
     }
 
-    bspl_array_t *array_ptr = bspl_array_create();
-    if (NULL == array_ptr) return NULL;
-
+    bspl_array_t *array_ptr = NULL;
     bspl_string_t *n = bspl_string_create(entry_ptr->name_ptr);
     bspl_string_t *a = bspl_string_create("ShellExecute");
     bspl_string_t *e = bspl_string_create(
         entry_ptr->try_exec_ptr ?
         entry_ptr->try_exec_ptr :
         entry_ptr->exec_ptr);
+    if (NULL == n || NULL == a || NULL == e) goto error;
 
-    if (!bspl_array_push_back(array_ptr, bspl_object_from_string(n)) ||
-        !bspl_array_push_back(array_ptr, bspl_object_from_string(a)) ||
-        !bspl_array_push_back(array_ptr, bspl_object_from_string(e)) ||
-        3 != bspl_array_size(array_ptr)) {
-        // Failed to build array. Zap it, return error.
-        bspl_array_unref(array_ptr);
-        array_ptr = NULL;
+    if (entry_ptr->terminal) {
+        char *terminal_cmd_ptr = bs_strdupf(
+            TERMINAL_COMMAND " %s", bspl_string_value(e));
+        if (NULL == terminal_cmd_ptr) goto error;
+        bspl_string_unref(e);
+        e = bspl_string_create(terminal_cmd_ptr);
+        free(terminal_cmd_ptr);
+        if (NULL == e) goto error;
     }
 
-    bspl_string_unref(e);
-    bspl_string_unref(a);
-    bspl_string_unref(n);
+    array_ptr = bspl_array_create();
+    if (NULL != array_ptr) {
+        if (!bspl_array_push_back(array_ptr, bspl_object_from_string(n)) ||
+            !bspl_array_push_back(array_ptr, bspl_object_from_string(a)) ||
+            !bspl_array_push_back(array_ptr, bspl_object_from_string(e)) ||
+            3 != bspl_array_size(array_ptr)) {
+            // Failed to build array. Zap it, return error.
+            bspl_array_unref(array_ptr);
+            array_ptr = NULL;
+        }
+    }
+
+error:
+    if (NULL != e) bspl_string_unref(e);
+    if (NULL != a) bspl_string_unref(a);
+    if (NULL != n) bspl_string_unref(n);
     return array_ptr;
 }
 
@@ -439,6 +456,48 @@ bspl_array_t *array_from_tree(bs_avltree_t *menu_tree_ptr)
     }
 
     return array_ptr;
+}
+
+/* == Unit tests =========================================================== */
+
+static void _wlmaker_gen_menu_array(bs_test_t *test_ptr);
+
+/** Test cases. */
+static const bs_test_case_t   _wlmaker_gen_menu_test_cases[] = {
+    { true, "array", _wlmaker_gen_menu_array },
+    BS_TEST_CASE_SENTINEL()
+};
+
+const bs_test_set_t           wlmaker_menu_test_set = BS_TEST_SET(
+    true, "gen_menu", _wlmaker_gen_menu_test_cases);
+
+/* ------------------------------------------------------------------------- */
+/** Tests how an entry generates the command array. */
+void _wlmaker_gen_menu_array(bs_test_t *t)
+{
+    struct desktop_entry e = { .name_ptr = "n0", .exec_ptr = "e0" };
+
+    // Normal menu for an application entry.
+    bspl_array_t *a = array_from_entry(&e);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(t, NULL, a);
+    BS_TEST_VERIFY_EQ_OR_RETURN(t, 3, bspl_array_size(a));
+    BS_TEST_VERIFY_STREQ(t, "n0", bspl_array_string_value_at(a, 0));
+    BS_TEST_VERIFY_STREQ(t, "ShellExecute", bspl_array_string_value_at(a, 1));
+    BS_TEST_VERIFY_STREQ(t, "e0", bspl_array_string_value_at(a, 2));
+    bspl_array_unref(a);
+
+    // The 'terminal' flag adds a terminal prefix.
+    e = (struct desktop_entry){
+        .name_ptr = "n1", .exec_ptr = "e1", .terminal = true
+    };
+    a = array_from_entry(&e);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(t, NULL, a);
+    BS_TEST_VERIFY_EQ_OR_RETURN(t, 3, bspl_array_size(a));
+    BS_TEST_VERIFY_STREQ(t, "n1", bspl_array_string_value_at(a, 0));
+    BS_TEST_VERIFY_STREQ(t, "ShellExecute", bspl_array_string_value_at(a, 1));
+    BS_TEST_VERIFY_STREQ(
+        t, TERMINAL_COMMAND " e1", bspl_array_string_value_at(a, 2));
+    bspl_array_unref(a);
 }
 
 /* == End of gen_menu.c ==================================================== */
