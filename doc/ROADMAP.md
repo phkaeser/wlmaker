@@ -12,7 +12,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 **Focus** Dock & Mini-Windows
 
 * Clip & Dock handling
-  * Add option to save Dokc & Clip state.
+  * Add option to save Dock & Clip state.
     * Document the state file.
     * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
@@ -39,9 +39,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.
   * [done] Adds configuration options (tap to click, scroll, ...) for touchpad.
   * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
+  * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
-  * Have a naive app to show battery status.
 
 * Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
