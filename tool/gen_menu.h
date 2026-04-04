@@ -38,6 +38,9 @@ bspl_array_t *wlmaker_menu_generate(
     const char *locale_ptr,
     const char *path_ptr);
 
+/** Unit test set. */
+extern const bs_test_set_t    wlmaker_menu_test_set;
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

@@ -38,7 +38,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Infrastructure
   * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.
   * [done] Adds configuration options (tap to click, scroll, ...) for touchpad.
-  * Fix: Handle `Terminal` flag and launch applications in a suitable terminal.
+  * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
   * Have a naive app to show battery status.
