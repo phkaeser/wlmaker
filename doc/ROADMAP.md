@@ -30,6 +30,14 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Themes/Styles
   * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
   * Add means to change theme while running.
+    * [done] Add functions to change window's style while running.
+    * Add function to change the background color while running.
+    * Add function to change Dock and Clip style while running.
+    * Wire up changing Cursor Style while running.
+    * Add function for changing tasklist style while running.
+    * Cleanup the Debian menu so it works for personal use.
+    * Adds theme "Name" plist entry.
+    * Add menu entry and generator to load from `Themes/...` files.
 
 * Windows
   * Store and accept window state (fullscreen, maximize) before mapping.
@@ -42,6 +50,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
+  * Use bs_file_tree_walk() over ftw() in gen_menu.c.
 
 * Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).

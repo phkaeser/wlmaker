@@ -23,6 +23,7 @@
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "files.h"
@@ -72,7 +73,9 @@ typedef struct {
     /** Dock optics: Margin. */
     wlmtk_dock_style_t        dock;
     /** Window style. */
-    wlmtk_window_style_t      window;
+    struct wlmtk_window_style *window_style_ptr;
+    /** Presence flag for window style. */
+    bool                      has_window_style;
     /** Menu style. */
     wlmtk_menu_style_t        menu;
     /** Clip style. */
@@ -138,6 +141,26 @@ bspl_dict_t *wlmaker_config_load(
 bspl_dict_t *wlmaker_state_load(
     wlmaker_files_t *files_ptr,
     const char *fname_ptr);
+
+/**
+ * Loads the theme file for wlmaker, stores into `style_ptr`.
+ *
+ * @param files_ptr
+ * @param fname_ptr           File to load from. If NULL, will load the defualt
+ *                            style.
+ * @param style_ptr           Points to the style. If loading and decoding
+ *                            succeeds, resources at `style_ptr` will be freed.
+ *                            `style_ptr` is untouched on failure.
+ *
+ * @return true on success.
+ */
+bool wlmaker_theme_load(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr,
+    wlmaker_config_style_t *style_ptr);
+
+/** Releases resources associated with the style. */
+void wlmaker_config_style_release(wlmaker_config_style_t *style_ptr);
 
 extern const bspl_desc_t wlmaker_config_style_desc[];
 

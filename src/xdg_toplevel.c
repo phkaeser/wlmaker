@@ -347,8 +347,9 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
 
     wlmaker_xdg_toplevel_ptr->window_ptr = wlmtk_window_create(
         wlmtk_base_element(&wlmaker_xdg_toplevel_ptr->base),
-        &wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->window,
-        &wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->menu);
+        &wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->menu,
+        wlmtk_window_style_to_ref(
+            wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->window_style_ptr));
     if (NULL == wlmaker_xdg_toplevel_ptr->window_ptr) goto error;
     wlmtk_window_set_properties(
         wlmaker_xdg_toplevel_ptr->window_ptr,
@@ -1046,6 +1047,10 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     td_ptr->wlr_surface.data = td_ptr;
     td_ptr->wlr_xdg_surface.surface = &td_ptr->wlr_surface;
     td_ptr->wlr_xdg_toplevel.base = &td_ptr->wlr_xdg_surface;
+    td_ptr->style = (wlmaker_config_style_t){
+        .window_style_ptr = wlmtk_window_style_create(),
+    };
+    if (NULL == td_ptr->style.window_style_ptr) goto error;
 
     if (!_wlmaker_test_layout_init(&td_ptr->test_layout)) goto error;
     wlr_output_layout_add_auto(
@@ -1112,6 +1117,12 @@ void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr)
     wlr_scene_node_destroy(&td_ptr->server.wlr_scene_ptr->tree.node);
 
     _wlmaker_test_layout_fini(&td_ptr->test_layout);
+
+    if (NULL != td_ptr->style.window_style_ptr) {
+        wlmtk_window_style_ref_release(
+            wlmtk_window_style_to_ref(td_ptr->style.window_style_ptr));
+    }
+
     free(td_ptr);
 }
 

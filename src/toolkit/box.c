@@ -20,6 +20,7 @@
 
 #include "box.h"
 
+#include <stdint.h>
 #include <string.h>
 
 #include "libbase/libbase.h"
@@ -30,6 +31,9 @@
 
 static void _wlmtk_box_element_layout(wlmtk_element_t *element_ptr);
 static bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr);
+static void _wlmtk_box_margin_set_color(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 /* == Data ================================================================= */
 
@@ -44,7 +48,7 @@ static const wlmtk_element_vmt_t box_element_vmt = {
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
     wlmtk_box_orientation_t orientation,
-    const wlmtk_margin_style_t *style_ptr)
+    const struct wlmtk_margin_style *style_ptr)
 {
     BS_ASSERT(NULL != box_ptr);
     *box_ptr = (wlmtk_box_t){ .style = *style_ptr };
@@ -126,6 +130,19 @@ void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr
 wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr)
 {
     return &box_ptr->super_container.super_element;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_box_set_style(
+    wlmtk_box_t *box_ptr,
+    const struct wlmtk_margin_style *style_ptr)
+{
+    box_ptr->style = *style_ptr;
+    wlmtk_element_layout(wlmtk_box_element(box_ptr));
+    bs_dllist_for_each(
+        &box_ptr->margin_container.elements,
+        _wlmtk_box_margin_set_color,
+        (void*)&style_ptr->color);
 }
 
 /* == Local (static) methods =============================================== */
@@ -237,6 +254,18 @@ bs_dllist_node_t *create_margin(wlmtk_box_t *box_ptr)
     return wlmtk_dlnode_from_element(wlmtk_rectangle_element(rect_ptr));
 }
 
+/* ------------------------------------------------------------------------- */
+/** Sets the color in each margin rectangle. */
+void _wlmtk_box_margin_set_color(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_element_t *e = wlmtk_element_from_dlnode(dlnode_ptr);
+    wlmtk_rectangle_t *r = wlmtk_rectangle_from_element(e);
+    const uint32_t *color_ptr = ud_ptr;
+    wlmtk_rectangle_set_color(r, *color_ptr);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -251,7 +280,7 @@ const bs_test_case_t wlmtk_box_test_cases[] = {
 };
 
 /** Style used for tests. */
-static const wlmtk_margin_style_t test_style = {
+static const struct wlmtk_margin_style test_style = {
     .width = 2,
     .color = 0xff000000
 };

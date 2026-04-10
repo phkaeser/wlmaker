@@ -175,7 +175,7 @@ struct _wlmaker_server_t {
     struct wl_listener        unclaimed_button_event_listener;
 
     /** The current configuration style. */
-    const wlmaker_config_style_t *style_ptr;
+    wlmaker_config_style_t    *style_ptr;
 };
 
 /**
@@ -194,7 +194,7 @@ struct _wlmaker_server_t {
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
     wlmaker_files_t *files_ptr,
-    const wlmaker_config_style_t *style_ptr,
+    wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr);
 
 /**

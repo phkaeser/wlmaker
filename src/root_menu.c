@@ -161,8 +161,8 @@ struct wl_display             *_wlmaker_root_menu_test_wl_display_ptr = NULL;
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const char *arg_root_menu_file_ptr,
-    const wlmtk_window_style_t *window_style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr)
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_window_style_ref_t *window_style_ref_ptr)
 {
     bspl_array_t *root_menu_array_ptr = bspl_array_from_object(
         wlmaker_config_object_load(
@@ -216,8 +216,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
 
     root_menu_ptr->window_ptr = wlmtk_window_create(
         wlmtk_menu_element(root_menu_ptr->menu_ptr),
-        window_style_ptr,
-        menu_style_ptr);
+        menu_style_ptr,
+        window_style_ref_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         bspl_array_unref(root_menu_array_ptr);
@@ -855,22 +855,26 @@ const bs_test_set_t wlmaker_root_menu_test_set = BS_TEST_SET(
 /** Verifies that the compiled-in configuration translates into a menu. */
 void test_default_menu(bs_test_t *test_ptr)
 {
-    wlmtk_window_style_t window_style = {};
     wlmtk_menu_style_t menu_style = {};
     wlmaker_server_t server = {};
 
+    wlmtk_window_style_ref_t *wsr = wlmtk_window_style_to_ref(wlmtk_window_style_create());
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wsr);
     wlmaker_root_menu_t *root_menu_ptr = wlmaker_root_menu_create(
-        &server, NULL, &window_style, &menu_style);
+        &server, NULL, &menu_style, wsr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, root_menu_ptr);
     wlmaker_root_menu_destroy(root_menu_ptr);
+    wlmtk_window_style_ref_release(wsr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that an example menu with generator is translated. */
 void test_generated_menu(bs_test_t *test_ptr)
 {
-    wlmtk_window_style_t window_style = {};
     wlmtk_menu_style_t menu_style = {};
+
+    wlmtk_window_style_ref_t *wsr = wlmtk_window_style_to_ref(wlmtk_window_style_create());
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wsr);
 
     wlmaker_server_t server = {
         .wl_display_ptr = wl_display_create(),
@@ -901,7 +905,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         bs_test_data_path(test_ptr, "menu-include.plist"),
-        &window_style, &menu_style);
+        &menu_style, wsr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     wlmtk_menu_t *menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
@@ -911,7 +915,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         bs_test_data_path(test_ptr, "menu-generate.plist"),
-        &window_style, &menu_style);
+        &menu_style, wsr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     _wlmaker_root_menu_test_wl_display_ptr = server.wl_display_ptr;
@@ -928,7 +932,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         WLMAKER_BINARY_DIR "/etc/RootMenuDebian.plist",
-        &window_style, &menu_style);
+        &menu_style, wsr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     _wlmaker_root_menu_test_wl_display_ptr = server.wl_display_ptr;
@@ -951,6 +955,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     wlmtk_root_destroy(server.root_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&server.wlr_scene_ptr->tree.node);
+    wlmtk_window_style_ref_release(wsr);
 }
 
 /* == End of root_menu.c =================================================== */

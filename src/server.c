@@ -69,7 +69,7 @@ static void handle_request_set_primary_selection(
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
     wlmaker_files_t *files_ptr,
-    const wlmaker_config_style_t *style_ptr,
+    wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr)
 {
     wlmaker_server_t *server_ptr = logged_calloc(1, sizeof(wlmaker_server_t));

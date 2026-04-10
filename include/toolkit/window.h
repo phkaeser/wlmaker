@@ -21,6 +21,7 @@
 #define __WLMTK_WINDOW2_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
@@ -30,8 +31,12 @@ struct wlr_output;
 /** Forward declaration: Window. */
 typedef struct _wlmtk_window_t wlmtk_window_t;
 
+/** Reference to the window's style. */
+typedef struct _wlmtk_window_style_ref_t wlmtk_window_style_ref_t;
+
 #include "element.h"
 #include "menu.h"
+#include "resizebar.h"  // IWYU pragma: keep
 #include "style.h"
 #include "util.h"
 #include "workspace.h"  // IWYU pragma: keep
@@ -89,6 +94,18 @@ typedef struct {
     struct wl_signal          request_maximized;
 } wlmtk_window_events_t;
 
+/** Style options for the window. */
+struct wlmtk_window_style {
+    /** The titlebar's style. */
+    struct wlmtk_titlebar_style titlebar;
+    /** The resizebar's style. */
+    struct wlmtk_resizebar_style resizebar;
+    /** Style of the window border. */
+    struct wlmtk_margin_style border;
+    /** Style of the margins between titlebar, window and resizebar. */
+    struct wlmtk_margin_style margin;
+};
+
 /** Window properties. */
 typedef enum {
     /** Can be resized. Server-side decorations will show resize-bar. */
@@ -110,15 +127,15 @@ typedef enum {
  * Creates a window.
  *
  * @param content_element_ptr
- * @param style_ptr
  * @param menu_style_ptr
+ * @param style_ref_ptr
  *
  * @return The window handle, or NULL on error.
  */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
-    const wlmtk_window_style_t *style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr);
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_window_style_ref_t *style_ref_ptr);
 
 /**
  * Destroys the window.
@@ -429,6 +446,45 @@ wlmtk_workspace_t *wlmtk_window_get_workspace(wlmtk_window_t *window_ptr);
 bs_dllist_node_t *wlmtk_dlnode_from_window(wlmtk_window_t *window_ptr);
 /** @return the @ref wlmtk_window_t for @ref wlmtk_window_t::dlnode. */
 wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+
+/**
+ * Applies the style held by the reference.
+ *
+ * @param window_ptr
+ * @param style_ref_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_window_set_style(
+    wlmtk_window_t *window_ptr,
+    wlmtk_window_style_ref_t *style_ref_ptr);
+
+/** Creates a holder for the window style, with initialized reference.
+ *
+ * @return Pointer to @ref wlmtk_window_style. To destroy, call
+ *     @ref wlmtk_window_style_ref_release on @ref wlmtk_window_style_to_ref.
+ */
+struct wlmtk_window_style *wlmtk_window_style_create(void);
+
+/** @return the @ref wlmtk_window_style_ref_t for the style. */
+wlmtk_window_style_ref_t *wlmtk_window_style_to_ref(
+    struct wlmtk_window_style *window_style_ptr);
+
+/** Retains a reference. @return a read-only style. */
+const struct wlmtk_window_style *wlmtk_window_style_ref_retain(
+    wlmtk_window_style_ref_t *ref_ptr);
+/** Releases a reference. */
+void wlmtk_window_style_ref_release(wlmtk_window_style_ref_t *ref_ptr);
+
+/** Decodes dict at `object_ptr` into @ref wlmtk_window_style at `value_ptr` */
+bool wlmtk_window_style_decode(
+    bspl_object_t *object_ptr,
+   const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr);
+/** Initializer. */
+bool wlmtk_window_style_decode_init(void *dst_ptr);
+/** Fini. */
+void wlmtk_window_style_decode_fini(void *dst_ptr);
 
 /** Window unit test cases. */
 extern const bs_test_case_t wlmtk_window_test_cases[];

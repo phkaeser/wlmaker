@@ -384,20 +384,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
 
     wlmaker_config_style_t style = {};
-    bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
-        wlmaker_config_object_load(
-            files_ptr,
-            "style",
-            wlmaker_arg_theme_file_ptr,
-            "Themes/Default.plist",
-            embedded_binary_theme_data,
-            embedded_binary_theme_size));
-    if (NULL == style_dict_ptr) return EXIT_FAILURE;
-    if (!bspl_decode_dict(
-            style_dict_ptr,
-            wlmaker_config_style_desc,
-            &style)) return EXIT_FAILURE;
-    bspl_dict_unref(style_dict_ptr);
+    if (!wlmaker_theme_load(files_ptr, wlmaker_arg_theme_file_ptr, &style)) {
+        fprintf(stderr, "Failed to load & initialize theme.\n");
+        return EXIT_FAILURE;
+    }
 
     wlmaker_server_t *server_ptr = wlmaker_server_create(
         config_dict_ptr, files_ptr, &style, &wlmaker_server_options);
@@ -407,8 +397,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
         server_ptr,
         wlmaker_arg_root_menu_file_ptr,
-        &server_ptr->style_ptr->window,
-        &server_ptr->style_ptr->menu);
+        &server_ptr->style_ptr->menu,
+        wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr));
     if (NULL == server_ptr->root_menu_ptr) {
         return EXIT_FAILURE;
     }

@@ -21,6 +21,7 @@
 #include "window.h"
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -76,10 +77,12 @@ struct _wlmtk_window_t {
     /** Preferred output. See @ref wlmtk_window_set_wlr_output. */
     struct wlr_output         *wlr_output_ptr;
 
-    /** Window style. */
-    wlmtk_window_style_t      style;
     /** Menu style. */
     wlmtk_menu_style_t        menu_style;
+    /** Reference to the window's style. */
+    wlmtk_window_style_ref_t  *style_ref_ptr;
+    /** The window's style. Implies holding a reference. */
+    const struct wlmtk_window_style *style_ptr;
 
     /** The titlebar, when server-side decorated. */
     wlmtk_titlebar_t          *titlebar_ptr;
@@ -134,6 +137,19 @@ struct _wlmtk_window_t {
     bool                      activated;
 };
 
+/** Type-safe holder for the window style's reference counter. */
+struct _wlmtk_window_style_ref_t {
+    /** Actual reference counter. */
+    bs_ref_t                  reference;
+};
+/** Holds the reference and the style. */
+struct wlmtk_window_style_holder {
+    /** Reference counter */
+    struct _wlmtk_window_style_ref_t wsr;
+    /** Style */
+    struct wlmtk_window_style style;
+};
+
 static bool _wlmtk_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -157,6 +173,8 @@ static void _wlmtk_window_menu_request_close_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static void _wlmtk_window_style_destroy(bs_ref_t *ref_ptr);
+
 /* == Data ================================================================= */
 
 /** Virtual method table for the window's element superclass. */
@@ -170,18 +188,36 @@ static const wlmtk_element_vmt_t _wlmtk_window_content_container_element_vmt = {
     .get_dimensions = _wlmtk_window_container_element_get_dimensions,
 };
 
+/** Descriptor for decoding the "Window" dictionary. */
+static const bspl_desc_t _wlmtk_window_style_desc[] = {
+    BSPL_DESC_DICT(
+        "TitleBar", true, struct wlmtk_window_style, titlebar, titlebar,
+        wlmtk_titlebar_style_desc),
+    BSPL_DESC_DICT(
+        "ResizeBar", true, struct wlmtk_window_style, resizebar, resizebar,
+        wlmtk_resizebar_style_desc),
+    BSPL_DESC_DICT(
+        "Border", true, struct wlmtk_window_style, border, border,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_DICT(
+        "Margin", true, struct wlmtk_window_style, margin, margin,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_SENTINEL()
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
-    const wlmtk_window_style_t *style_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr)
+    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_window_style_ref_t *style_ref_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
-    window_ptr->style = *style_ptr;
     window_ptr->menu_style = *menu_style_ptr;
+    window_ptr->style_ref_ptr = style_ref_ptr;
+    window_ptr->style_ptr = wlmtk_window_style_ref_retain(style_ref_ptr);
     wl_signal_init(&window_ptr->events.state_changed);
     wl_signal_init(&window_ptr->events.request_close);
     wl_signal_init(&window_ptr->events.set_activated);
@@ -195,13 +231,13 @@ wlmtk_window_t *wlmtk_window_create(
     if (!wlmtk_box_init(
             &window_ptr->box,
             WLMTK_BOX_VERTICAL,
-            &window_ptr->style.margin)) {
+            &window_ptr->style_ptr->margin)) {
         goto error;
     }
     if (!wlmtk_bordered_init(
             &window_ptr->bordered,
             wlmtk_box_element(&window_ptr->box),
-            &window_ptr->style.margin)) {
+            &window_ptr->style_ptr->border)) {
         goto error;
     }
     window_ptr->orig_super_element_vmt = wlmtk_element_extend(
@@ -280,6 +316,10 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
     if (NULL != window_ptr->title_ptr) {
         free(window_ptr->title_ptr);
         window_ptr->title_ptr = NULL;
+    }
+
+    if (NULL != window_ptr->style_ref_ptr) {
+        wlmtk_window_style_ref_release(window_ptr->style_ref_ptr);
     }
     free(window_ptr);
 }
@@ -773,6 +813,108 @@ wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr)
     return BS_CONTAINER_OF(dlnode_ptr, wlmtk_window_t, dlnode);
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_set_style(
+    wlmtk_window_t *window_ptr,
+    wlmtk_window_style_ref_t *style_ref_ptr)
+{
+    // Cautiously keep the reference until style update is done.
+    wlmtk_window_style_ref_t *old_ref_ptr = window_ptr->style_ref_ptr;
+    window_ptr->style_ref_ptr = style_ref_ptr;
+    window_ptr->style_ptr = wlmtk_window_style_ref_retain(style_ref_ptr);
+
+    bool rv = true;
+    wlmtk_bordered_set_style(
+        &window_ptr->bordered,
+        &window_ptr->style_ptr->border);
+    wlmtk_box_set_style(
+        &window_ptr->box,
+        &window_ptr->style_ptr->margin);
+
+    if (NULL != window_ptr->resizebar_ptr) {
+        rv &= wlmtk_resizebar_set_style(window_ptr->resizebar_ptr,
+                                        &window_ptr->style_ptr->resizebar);
+    }
+
+    if (NULL != window_ptr->titlebar_ptr) {
+        rv &= wlmtk_titlebar_set_style(window_ptr->titlebar_ptr,
+                                 &window_ptr->style_ptr->titlebar);
+    }
+
+    wlmtk_window_style_ref_release(old_ref_ptr);
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlmtk_window_style *wlmtk_window_style_create(void)
+{
+    struct wlmtk_window_style_holder *sh = logged_calloc(1, sizeof(*sh));
+    if (NULL == sh) return NULL;
+
+    bs_ref_init(&sh->wsr.reference, _wlmtk_window_style_destroy);
+    return &sh->style;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_window_style_ref_t *wlmtk_window_style_to_ref(
+    struct wlmtk_window_style *window_style_ptr)
+{
+    // Guard clause.
+    if (NULL == window_style_ptr) return NULL;
+
+    struct wlmtk_window_style_holder *sh = BS_CONTAINER_OF(
+        window_style_ptr, struct wlmtk_window_style_holder, style);
+    return &sh->wsr;
+}
+
+/* ------------------------------------------------------------------------- */
+const struct wlmtk_window_style *wlmtk_window_style_ref_retain(
+    wlmtk_window_style_ref_t *ref_ptr)
+{
+    bs_ref_retain(&ref_ptr->reference);
+    struct wlmtk_window_style_holder *sh = BS_CONTAINER_OF(
+        ref_ptr, struct wlmtk_window_style_holder, wsr.reference);
+    return &sh->style;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_style_ref_release(wlmtk_window_style_ref_t *ref_ptr)
+{
+    bs_ref_release(&ref_ptr->reference);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_style_decode(
+    bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr)
+{
+    struct wlmtk_window_style **s = value_ptr;
+
+    return bspl_decode_dict(
+        bspl_dict_from_object(object_ptr),
+        _wlmtk_window_style_desc,
+        *s);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_window_style_decode_init(void *dst_ptr)
+{
+    struct wlmtk_window_style **s = dst_ptr;
+    *s = wlmtk_window_style_create();
+    return *s != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_window_style_decode_fini(void *dst_ptr)
+{
+    struct wlmtk_window_style **s = dst_ptr;
+    if (NULL != *s) {
+        wlmtk_window_style_ref_release(wlmtk_window_style_to_ref(*s));
+        *s = NULL;
+    }
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -895,7 +1037,7 @@ void _wlmtk_window_element_layout(
 /** Applies window decoration depending on current state. */
 void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
 {
-    wlmtk_margin_style_t bstyle = window_ptr->style.border;
+    struct wlmtk_margin_style bstyle = window_ptr->style_ptr->border;
 
     if (window_ptr->server_side_decorated && !window_ptr->fullscreen) {
         _wlmtk_window_create_titlebar(window_ptr);
@@ -946,8 +1088,8 @@ void _wlmtk_window_create_titlebar(wlmtk_window_t *window_ptr)
     if (NULL != window_ptr->titlebar_ptr) return;
 
     // Create decoration.
-    window_ptr->titlebar_ptr = wlmtk_titlebar2_create(
-        window_ptr, &window_ptr->style.titlebar);
+    window_ptr->titlebar_ptr = wlmtk_titlebar_create(
+        window_ptr, &window_ptr->style_ptr->titlebar);
     BS_ASSERT(NULL != window_ptr->titlebar_ptr);
 
     wlmtk_element_set_visible(
@@ -988,8 +1130,8 @@ void _wlmtk_window_create_resizebar(wlmtk_window_t *window_ptr)
     // Guard clause: Don't add decoration.
     if (NULL != window_ptr->resizebar_ptr) return;
 
-    window_ptr->resizebar_ptr = wlmtk_resizebar2_create(
-        window_ptr, &window_ptr->style.resizebar);
+    window_ptr->resizebar_ptr = wlmtk_resizebar_create(
+        window_ptr, &window_ptr->style_ptr->resizebar);
     BS_ASSERT(NULL != window_ptr->resizebar_ptr);
     wlmtk_element_set_visible(
         wlmtk_resizebar_element(window_ptr->resizebar_ptr), true);
@@ -1042,6 +1184,15 @@ void _wlmtk_window_menu_request_close_handler(
     wlmtk_window_menu_set_enabled(window_ptr, false);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Destroys the window style. */
+void _wlmtk_window_style_destroy(bs_ref_t *ref_ptr)
+{
+    struct wlmtk_window_style_holder *sh = BS_CONTAINER_OF(
+        ref_ptr, struct wlmtk_window_style_holder, wsr.reference);
+    free(sh);
+}
+
 /* == Unit Tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -1055,6 +1206,8 @@ static void test_maximized(bs_test_t *test_ptr);
 static void test_shaded(bs_test_t *test_ptr);
 static void test_modifier_move(bs_test_t *test_ptr);
 static void test_menu(bs_test_t *test_ptr);
+static void test_style(bs_test_t *test_ptr);
+static void test_style_decode(bs_test_t *test_ptr);
 
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * storing organic_bounding_box
@@ -1071,15 +1224,20 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "shaded", test_shaded },
     { 1, "modifier_move", test_modifier_move },
     { 1, "menu", test_menu },
+    { 1, "style", test_style },
+    { 1, "style_decode", test_style_decode },
     { 0, NULL, NULL }
 };
 
-/** Window style used as default for testing. */
-static const wlmtk_window_style_t _wlmtk_window_test_style = {
-    .titlebar = { .height = 10 },
-    .resizebar = { .height = 5 },
-    .margin = { .width = 1 },
-    .border = { .width = 2 },
+/** Window style used as default for testing, including a reference. */
+static struct wlmtk_window_style_holder _wlmtk_window_test_style_holder = {
+    .wsr = { .reference = { .count = 1 } },
+    .style = {
+        .titlebar = { .height = 10 },
+        .resizebar = { .height = 5 },
+        .margin = { .width = 1 },
+        .border = { .width = 2 },
+    }
 };
 
 /** Menu style used as default for testing windows. */
@@ -1096,8 +1254,8 @@ wlmtk_window_t *wlmtk_test_window_create(
 {
     return wlmtk_window_create(
         content_element_ptr,
-        &_wlmtk_window_test_style,
-        &_wlmtk_window_test_menu_style);
+        &_wlmtk_window_test_menu_style,
+        &_wlmtk_window_test_style_holder.wsr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1870,6 +2028,85 @@ void test_menu(bs_test_t *test_ptr)
         wlmtk_menu_element(wlmtk_window_menu(w))->visible);
 
     wlmtk_window_destroy(w);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests style reference counter. */
+void test_style(bs_test_t *test_ptr)
+{
+    struct wlmtk_window_style *s = wlmtk_window_style_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, s);
+
+    wlmtk_window_style_ref_t *r = wlmtk_window_style_to_ref(s);
+    BS_TEST_VERIFY_EQ(test_ptr, s, wlmtk_window_style_ref_retain(r));
+    wlmtk_window_style_ref_release(r);
+    wlmtk_window_style_ref_release(r);
+
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_style_to_ref(NULL));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests decoding the window style from a plist dict. */
+void test_style_decode(bs_test_t *test_ptr)
+{
+    static const char *s = ("{"
+         "  TitleBar = {"
+         "    FocussedFill = {"
+         "      Color = \"argb32:ff000000\";"
+         "      Type = SOLID;"
+         "    };"
+         "    FocussedTextColor = \"argb32:ffffffff\";"
+         "    BlurredFill = {"
+         "      Color = \"argb32:ff666666\";"
+         "      Type = SOLID;"
+         "    };"
+         "    BlurredTextColor = \"argb32:ff000000\";"
+         "    Height = 22;"
+         "    BezelWidth = 1;"
+         "    Margin = {"
+         "      Width = 1;"
+         "      Color = \"argb32:ff000000\";"
+         "    };"
+         "    Font = {"
+         "      Face = Helvetica;"
+         "      Weight = Bold;"
+         "      Size = 15;"
+         "    };"
+         "  };"
+         "  ResizeBar = {"
+         "    Fill = { Color = \"argb32:ffaaaaaa\"; Type = SOLID; };"
+         "    Height = 7; CornerWidth = 29; BezelWidth = 1;"
+         "  };"
+         "  Border = { Width = 1; Color = \"argb32:10203040\"; };"
+         "  Margin = { Width = 2; Color = \"argb32:01020304\"; }"
+         "}");
+
+    struct wlmtk_window_style *ws = wlmtk_window_style_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws);
+
+    bspl_dict_t *d = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(s));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bspl_decode_dict(d, _wlmtk_window_style_desc, ws));
+
+    BS_TEST_VERIFY_EQ(test_ptr, 0xffffffff, ws->titlebar.focussed_text_color);
+    BS_TEST_VERIFY_EQ(test_ptr, 15, ws->titlebar.font.size);
+
+    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, ws->resizebar.fill.type);
+    BS_TEST_VERIFY_EQ(test_ptr, 0xffaaaaaa, ws->resizebar.fill.param.solid.color);
+    BS_TEST_VERIFY_EQ(test_ptr, 7, ws->resizebar.height);
+    BS_TEST_VERIFY_EQ(test_ptr, 29, ws->resizebar.corner_width);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, ws->resizebar.bezel_width);
+
+    BS_TEST_VERIFY_EQ(test_ptr, 1, ws->border.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x10203040, ws->border.color);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, ws->margin.width);
+    BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, ws->margin.color);
+
+    bspl_dict_unref(d);
+    wlmtk_window_style_ref_release(wlmtk_window_style_to_ref(ws));
 }
 
 /* == End of window.c ===================================================== */

@@ -43,9 +43,9 @@ extern "C" {
 /** Style definition for the menu. */
 typedef struct  {
     /** Margin. */
-    wlmtk_margin_style_t      margin;
+    struct wlmtk_margin_style margin;
     /** Border. */
-    wlmtk_margin_style_t      border;
+    struct wlmtk_margin_style border;
     /** Item's style. */
     wlmtk_menu_item_style_t   item;
 } wlmtk_menu_style_t;

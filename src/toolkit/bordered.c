@@ -47,7 +47,7 @@ static const wlmtk_element_vmt_t bordered_element_vmt = {
 /* ------------------------------------------------------------------------- */
 bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
                          wlmtk_element_t *element_ptr,
-                         const wlmtk_margin_style_t *style_ptr)
+                         const struct wlmtk_margin_style *style_ptr)
 {
     BS_ASSERT(NULL != bordered_ptr);
     *bordered_ptr = (wlmtk_bordered_t){ .style = *style_ptr };
@@ -101,7 +101,7 @@ void wlmtk_bordered_fini(wlmtk_bordered_t *bordered_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
-                              const wlmtk_margin_style_t *style_ptr)
+                              const struct wlmtk_margin_style *style_ptr)
 {
     bordered_ptr->style = *style_ptr;
 
@@ -244,7 +244,7 @@ const bs_test_case_t wlmtk_bordered_test_cases[] = {
 };
 
 /** Style used for tests. */
-static const wlmtk_margin_style_t test_style = {
+static const struct wlmtk_margin_style test_style = {
     .width = 2,
     .color = 0xff000000
 };

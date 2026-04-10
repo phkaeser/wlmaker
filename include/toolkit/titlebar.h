@@ -21,14 +21,15 @@
 #define __WLMTK_TITLEBAR_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 /** Forward declaration: Title bar. */
 typedef struct _wlmtk_titlebar_t wlmtk_titlebar_t;
+struct wlmtk_titlebar_style;
 
 #include "element.h"
-#include "style.h"
 #include "window.h"  // IWYU pragma: keep
 
 /** Properties of the titlebar: Which buttons to show. */
@@ -52,9 +53,9 @@ extern "C" {
  * @return Pointer to the title bar state, or NULL on error. Must be free'd
  *     by calling @ref wlmtk_titlebar_destroy.
  */
-wlmtk_titlebar_t *wlmtk_titlebar2_create(
+wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_window_t *window_ptr,
-    const wlmtk_titlebar_style_t *style_ptr);
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /**
  * Destroys the title bar.
@@ -74,6 +75,18 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr);
 bool wlmtk_titlebar_set_width(
     wlmtk_titlebar_t *titlebar_ptr,
     unsigned width);
+
+/**
+ * Sets the style of the title bar.
+ *
+ * @param titlebar_ptr
+ * @param style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_titlebar_set_style(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /**
  * Sets the properties of the title bar.
@@ -119,6 +132,9 @@ void wlmtk_titlebar_set_title(
  *     titlebar_ptr.
  */
 wlmtk_element_t *wlmtk_titlebar_element(wlmtk_titlebar_t *titlebar_ptr);
+
+/** Descriptor for decoding the "TitleBar" dict below "Window". */
+extern const bspl_desc_t wlmtk_titlebar_style_desc[];
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_titlebar_test_cases[];

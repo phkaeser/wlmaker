@@ -66,6 +66,8 @@ typedef enum {
 
     WLMAKER_ACTION_ROOT_MENU,
 
+    WLMAKER_ACTION_THEME_LOAD_FROM_FILE,
+
     WLMAKER_ACTION_OUTPUT_MAGNIFY,
     WLMAKER_ACTION_OUTPUT_REDUCE,
     WLMAKER_ACTION_OUTPUT_SAVE_STATE,
@@ -83,6 +85,7 @@ typedef enum {
     WLMAKER_ACTION_SWITCH_TO_VT10,
     WLMAKER_ACTION_SWITCH_TO_VT11,
     WLMAKER_ACTION_SWITCH_TO_VT12,
+
 } wlmaker_action_t;
 
 extern const char *wlmaker_action_config_dict_key;

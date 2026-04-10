@@ -38,6 +38,7 @@
 #include "input.h"
 #include "menu.h"
 #include "primitives.h"
+#include "style.h"
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "workspace.h"
@@ -75,7 +76,7 @@ struct wlr_buffer *title_create_buffer(
     unsigned width,
     uint32_t text_color,
     const char *title_ptr,
-    const wlmtk_titlebar_style_t *style_ptr);
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /* == Data ================================================================= */
 
@@ -89,7 +90,7 @@ static const wlmtk_element_vmt_t titlebar_title_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(wlmtk_window_t *window_ptr)
+wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(wlmtk_window_t *window_ptr)
 {
     wlmtk_titlebar_title_t *titlebar_title_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_title_t));
@@ -125,7 +126,7 @@ bool wlmtk_titlebar_title_redraw(
     int width,
     bool activated,
     const char *title_ptr,
-    const wlmtk_titlebar_style_t *style_ptr)
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
     BS_ASSERT(style_ptr->height == focussed_gfxbuf_ptr->height);
@@ -284,7 +285,7 @@ struct wlr_buffer *title_create_buffer(
     unsigned width,
     uint32_t text_color,
     const char *title_ptr,
-    const wlmtk_titlebar_style_t *style_ptr)
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     BS_ASSERT(NULL != title_ptr);
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
@@ -330,7 +331,7 @@ const bs_test_case_t wlmtk_titlebar_title_test_cases[] = {
 /** Tests title drawing. */
 void test_title(bs_test_t *test_ptr)
 {
-    const wlmtk_titlebar_style_t style = {
+    const struct wlmtk_titlebar_style style = {
         .focussed_text_color = 0xffc0c0c0,
         .blurred_text_color = 0xff808080,
         .height = 22,
@@ -366,7 +367,7 @@ void test_title(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
     wlmtk_workspace_map_window(ws_ptr, w);
 
-    wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar2_title_create(w);
+    wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar_title_create(w);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, title_ptr);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(
         title_ptr);
@@ -448,7 +449,7 @@ void test_shade(bs_test_t *test_ptr)
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar2_title_create(w);
+    wlmtk_titlebar_title_t *title_ptr = wlmtk_titlebar_title_create(w);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, title_ptr);
     wlmtk_element_t *element_ptr = wlmtk_titlebar_title_element(title_ptr);
 

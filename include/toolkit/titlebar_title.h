@@ -22,12 +22,12 @@
 
 /** Forward declaration. */
 typedef struct _wlmtk_titlebar_title_t wlmtk_titlebar_title_t;
+struct wlmtk_titlebar_style;
 
 #include <stdbool.h>
 #include <libbase/libbase.h>
 
 #include "element.h"
-#include "style.h"
 #include "window.h"
 
 #ifdef __cplusplus
@@ -41,7 +41,7 @@ extern "C" {
  *
  * @return Title handle.
  */
-wlmtk_titlebar_title_t *wlmtk_titlebar2_title_create(
+wlmtk_titlebar_title_t *wlmtk_titlebar_title_create(
     wlmtk_window_t *window_ptr);
 
 /**
@@ -74,7 +74,7 @@ bool wlmtk_titlebar_title_redraw(
     int width,
     bool activated,
     const char *title_ptr,
-    const wlmtk_titlebar_style_t *style_ptr);
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /**
  * Sets activation status of the titlebar's title.

@@ -32,6 +32,7 @@ typedef struct _wlmtk_root_t wlmtk_root_t;
 #include "element.h"
 #include "input.h"
 #include "surface.h"  // IWYU pragma: keep
+#include "window.h"  // IWYU pragma: keep
 #include "workspace.h"  // IWYU pragma: keep
 
 struct wlr_output_layout;
@@ -256,6 +257,11 @@ void wlmtk_root_lock_unreference(
 
 /** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
 wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
+
+/** Updates the style for all windows contained in root. */
+bool wlmtk_root_set_style(
+    wlmtk_root_t *root_ptr,
+    wlmtk_window_style_ref_t *window_style_ref_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_root_test_cases[];

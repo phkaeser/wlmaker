@@ -22,6 +22,7 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdlib.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/interfaces/wlr_buffer.h>
@@ -30,6 +31,7 @@
 #include "box.h"
 #include "container.h"
 #include "primitives.h"
+#include "style.h"
 #include "titlebar_button.h"
 #include "titlebar_title.h"
 
@@ -70,17 +72,49 @@ struct _wlmtk_titlebar_t {
     uint32_t                  properties;
 
     /** Title bar style. */
-    wlmtk_titlebar_style_t    style;
+    const struct wlmtk_titlebar_style *style_ptr;
 };
 
 static void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr);
-static void _wlmtk_titlebar_compute_positions(wlmtk_titlebar_t *titlebar_ptr);
-static bool redraw_buffers(
+static void _wlmtk_titlebar_compute_positions(
     wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr);
+static bool _wlmtk_titlebar_redraw_buffers(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr,
     unsigned width);
-static bool redraw(wlmtk_titlebar_t *titlebar_ptr);
+static bool _wlmtk_titlebar_redraw(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /* == Data ================================================================= */
+
+const bspl_desc_t wlmtk_titlebar_style_desc[] = {
+    BSPL_DESC_CUSTOM(
+        "FocussedFill", true, struct wlmtk_titlebar_style, focussed_fill,
+        focussed_fill, wlmtk_style_decode_fill, NULL, NULL, NULL),
+    BSPL_DESC_ARGB32(
+        "FocussedTextColor", true, struct wlmtk_titlebar_style,
+        focussed_text_color, focussed_text_color, 0),
+    BSPL_DESC_CUSTOM(
+        "BlurredFill", true, struct wlmtk_titlebar_style, blurred_fill,
+        blurred_fill, wlmtk_style_decode_fill, NULL, NULL, NULL),
+    BSPL_DESC_ARGB32(
+        "BlurredTextColor", true, struct wlmtk_titlebar_style,
+        blurred_text_color, blurred_text_color, 0),
+    BSPL_DESC_UINT64(
+        "Height", true, struct wlmtk_titlebar_style, height, height, 22),
+    BSPL_DESC_UINT64(
+        "BezelWidth", true, struct wlmtk_titlebar_style,
+        bezel_width, bezel_width, 1),
+    BSPL_DESC_DICT(
+        "Margin", true, struct wlmtk_titlebar_style, margin, margin,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_DICT(
+        "Font", true, struct wlmtk_titlebar_style, font, font,
+        wlmtk_style_font_desc),
+    BSPL_DESC_SENTINEL()
+};
 
 /** Virtual method table extension for the titlebar's element superclass. */
 static const wlmtk_element_vmt_t titlebar_element_vmt = {
@@ -95,19 +129,19 @@ static const uint32_t _wlmtk_titlebar_default_properties =
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_titlebar_t *wlmtk_titlebar2_create(
+wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_window_t *window_ptr,
-    const wlmtk_titlebar_style_t *style_ptr)
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
-    titlebar_ptr->style = *style_ptr;
+    titlebar_ptr->style_ptr = style_ptr;
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
-                        &titlebar_ptr->style.margin)) {
+                        &titlebar_ptr->style_ptr->margin)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -115,7 +149,7 @@ wlmtk_titlebar_t *wlmtk_titlebar2_create(
         &titlebar_ptr->super_box.super_container.super_element,
         &titlebar_element_vmt);
 
-    titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar2_title_create(window_ptr);
+    titlebar_ptr->titlebar_title_ptr = wlmtk_titlebar_title_create(window_ptr);
     if (NULL == titlebar_ptr->titlebar_title_ptr) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
@@ -124,7 +158,7 @@ wlmtk_titlebar_t *wlmtk_titlebar2_create(
         &titlebar_ptr->super_box,
         wlmtk_titlebar_title_element(titlebar_ptr->titlebar_title_ptr));
 
-    titlebar_ptr->minimize_button_ptr = wlmtk_titlebar2_button_create(
+    titlebar_ptr->minimize_button_ptr = wlmtk_titlebar_button_create(
         wlmtk_window_request_minimize,
         window_ptr,
         wlmaker_primitives_draw_minimize_icon);
@@ -136,7 +170,7 @@ wlmtk_titlebar_t *wlmtk_titlebar2_create(
         &titlebar_ptr->super_box,
         wlmtk_titlebar_button_element(titlebar_ptr->minimize_button_ptr));
 
-    titlebar_ptr->close_button_ptr = wlmtk_titlebar2_button_create(
+    titlebar_ptr->close_button_ptr = wlmtk_titlebar_button_create(
         wlmtk_window_request_close,
         window_ptr,
         wlmaker_primitives_draw_close_icon);
@@ -197,20 +231,28 @@ void wlmtk_titlebar_destroy(wlmtk_titlebar_t *titlebar_ptr)
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_titlebar_set_width(
-    wlmtk_titlebar_t *titlebar_ptr,
+    wlmtk_titlebar_t *tb,
     unsigned width)
 {
-    if (titlebar_ptr->width == width) return true;
-    if (!redraw_buffers(titlebar_ptr, width)) return false;
-    BS_ASSERT(width == titlebar_ptr->width);
+    if (tb->width == width) return true;
+    if (!_wlmtk_titlebar_redraw_buffers(tb, tb->style_ptr, width)) return false;
+    BS_ASSERT(width == tb->width);
+    return _wlmtk_titlebar_redraw(tb, tb->style_ptr);
+}
 
-    _wlmtk_titlebar_compute_positions(titlebar_ptr);
-    if (!redraw(titlebar_ptr)) return false;
+/* ------------------------------------------------------------------------- */
+bool wlmtk_titlebar_set_style(
+    wlmtk_titlebar_t *tb,
+    const struct wlmtk_titlebar_style *style_ptr)
+{
+    wlmtk_box_set_style(&tb->super_box, &style_ptr->margin);
 
-    // Don't forget to re-position the elements.
-    wlmtk_element_layout(wlmtk_box_element(&titlebar_ptr->super_box));
-    wlmtk_container_invalidate_layout(
-        &titlebar_ptr->super_box.super_container);
+    if (!_wlmtk_titlebar_redraw_buffers(tb, style_ptr, tb->width) ||
+        !_wlmtk_titlebar_redraw(tb, style_ptr)) {
+        return false;
+    }
+
+    tb->style_ptr = style_ptr;
     return true;
 }
 
@@ -222,13 +264,7 @@ void wlmtk_titlebar_set_properties(
     if (titlebar_ptr->properties == properties) return;
     titlebar_ptr->properties = properties;
 
-    _wlmtk_titlebar_compute_positions(titlebar_ptr);
-    if (!redraw(titlebar_ptr)) return;
-
-    // Don't forget to re-position the elements.
-    wlmtk_element_layout(wlmtk_box_element(&titlebar_ptr->super_box));
-    wlmtk_container_invalidate_layout(
-        &titlebar_ptr->super_box.super_container);
+    (void)_wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -260,7 +296,7 @@ void wlmtk_titlebar_set_title(
     if (titlebar_ptr->title_ptr == title_ptr) return;
 
     titlebar_ptr->title_ptr = title_ptr;
-    redraw(titlebar_ptr);
+    _wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -289,56 +325,57 @@ void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr)
  * wlmtk_titlebar_t::title_position and @ref wlmtk_titlebar_t::title_width.
  *
  * @param titlebar_ptr
+ * @param style_ptr
  */
-void _wlmtk_titlebar_compute_positions(wlmtk_titlebar_t *titlebar_ptr)
+void _wlmtk_titlebar_compute_positions(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     titlebar_ptr->title_width = titlebar_ptr->width;
 
     // Room for a close button?
     titlebar_ptr->close_position = titlebar_ptr->width;
-    if (3 * titlebar_ptr->style.height < titlebar_ptr->width &&
+    if (3 * style_ptr->height < titlebar_ptr->width &&
         (titlebar_ptr->properties & WLMTK_TITLEBAR_PROPERTY_CLOSE)) {
         titlebar_ptr->close_position =
-            titlebar_ptr->width -
-            titlebar_ptr->style.height;
+            titlebar_ptr->width - style_ptr->height;
         titlebar_ptr->title_width -=
-            titlebar_ptr->style.height +
-            titlebar_ptr->style.margin.width;
+            style_ptr->height + style_ptr->margin.width;
     }
 
     titlebar_ptr->title_position = 0;
     // Also having room for a minimize button?
-    if (4 * titlebar_ptr->style.height < titlebar_ptr->width &&
+    if (4 * style_ptr->height < titlebar_ptr->width &&
         (titlebar_ptr->properties & WLMTK_TITLEBAR_PROPERTY_ICONIFY)) {
         titlebar_ptr->title_position =
-            titlebar_ptr->style.height +
-            titlebar_ptr->style.margin.width;
+            style_ptr->height + style_ptr->margin.width;
         titlebar_ptr->title_width -=
-            titlebar_ptr->style.height +
-            titlebar_ptr->style.margin.width;
+            style_ptr->height + style_ptr->margin.width;
     }
 }
 
 /* ------------------------------------------------------------------------- */
 /** Redraws the titlebar's background in appropriate size. */
-bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
+bool _wlmtk_titlebar_redraw_buffers(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr,
+    unsigned width)
 {
     cairo_t *cairo_ptr;
 
     bs_gfxbuf_t *focussed_gfxbuf_ptr = bs_gfxbuf_create(
-        width, titlebar_ptr->style.height);
+        width, style_ptr->height);
     if (NULL == focussed_gfxbuf_ptr) return false;
     cairo_ptr = cairo_create_from_bs_gfxbuf(focussed_gfxbuf_ptr);
     if (NULL == cairo_ptr) {
         bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
         return false;
     }
-    wlmaker_primitives_cairo_fill(
-        cairo_ptr, &titlebar_ptr->style.focussed_fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->focussed_fill);
     cairo_destroy(cairo_ptr);
 
     bs_gfxbuf_t *blurred_gfxbuf_ptr = bs_gfxbuf_create(
-        width, titlebar_ptr->style.height);
+        width, style_ptr->height);
     if (NULL == blurred_gfxbuf_ptr) return false;
     cairo_ptr = cairo_create_from_bs_gfxbuf(blurred_gfxbuf_ptr);
     if (NULL == cairo_ptr) {
@@ -346,8 +383,7 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
         bs_gfxbuf_destroy(focussed_gfxbuf_ptr);
         return false;
     }
-    wlmaker_primitives_cairo_fill(
-        cairo_ptr, &titlebar_ptr->style.blurred_fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->blurred_fill);
     cairo_destroy(cairo_ptr);
 
     if (NULL != titlebar_ptr->focussed_gfxbuf_ptr) {
@@ -364,10 +400,14 @@ bool redraw_buffers(wlmtk_titlebar_t *titlebar_ptr, unsigned width)
 
 /* ------------------------------------------------------------------------- */
 /** Redraws the titlebar elements. */
-bool redraw(wlmtk_titlebar_t *titlebar_ptr)
+bool _wlmtk_titlebar_redraw(
+    wlmtk_titlebar_t *titlebar_ptr,
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     // Guard clause: Nothing to do... yet.
     if (0 >= titlebar_ptr->width) return true;
+
+    _wlmtk_titlebar_compute_positions(titlebar_ptr, style_ptr);
 
     if (!wlmtk_titlebar_title_redraw(
             titlebar_ptr->titlebar_title_ptr,
@@ -377,7 +417,7 @@ bool redraw(wlmtk_titlebar_t *titlebar_ptr)
             titlebar_ptr->title_width,
             titlebar_ptr->activated,
             titlebar_ptr->title_ptr,
-            &titlebar_ptr->style)) {
+            style_ptr)) {
         return false;
     }
     wlmtk_element_set_visible(
@@ -389,7 +429,7 @@ bool redraw(wlmtk_titlebar_t *titlebar_ptr)
                 titlebar_ptr->focussed_gfxbuf_ptr,
                 titlebar_ptr->blurred_gfxbuf_ptr,
                 0,
-                &titlebar_ptr->style)) {
+                style_ptr)) {
             return false;
         }
         wlmtk_element_set_visible(
@@ -407,7 +447,7 @@ bool redraw(wlmtk_titlebar_t *titlebar_ptr)
                 titlebar_ptr->focussed_gfxbuf_ptr,
                 titlebar_ptr->blurred_gfxbuf_ptr,
                 titlebar_ptr->close_position,
-                &titlebar_ptr->style)) {
+                style_ptr)) {
             return false;
         }
         wlmtk_element_set_visible(
@@ -419,6 +459,11 @@ bool redraw(wlmtk_titlebar_t *titlebar_ptr)
             false);
     }
 
+
+    // Don't forget to re-position the elements.
+    wlmtk_element_layout(wlmtk_box_element(&titlebar_ptr->super_box));
+    wlmtk_container_invalidate_layout(
+        &titlebar_ptr->super_box.super_container);
     return true;
 }
 
@@ -439,8 +484,8 @@ void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_titlebar_style_t style = { .height = 22, .margin = { .width = 2 } };
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar2_create(w, &style);
+    struct wlmtk_titlebar_style style = { .height = 22, .margin = { .width = 2 } };
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(w, &style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.
@@ -495,8 +540,8 @@ void test_properties(bs_test_t *test_ptr)
 {
     wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
-    wlmtk_titlebar_style_t style = { .height = 22, .margin = { .width = 2 } };
-    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar2_create(w, &style);
+    struct wlmtk_titlebar_style style = { .height = 22, .margin = { .width = 2 } };
+    wlmtk_titlebar_t *titlebar_ptr = wlmtk_titlebar_create(w, &style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, titlebar_ptr);
 
     // Short names, for improved readability.
