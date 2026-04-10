@@ -38,6 +38,7 @@
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
+#include "resizebar.h"
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "util.h"
@@ -77,7 +78,7 @@ static struct wlr_buffer *create_buffer(
     bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr,
+    const struct wlmtk_resizebar_style *style_ptr,
     bool pressed);
 
 /* ========================================================================= */
@@ -91,7 +92,7 @@ static const wlmtk_element_vmt_t resizebar_area_element_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_resizebar_area_t *wlmtk_resizebar2_area_create(
+wlmtk_resizebar_area_t *wlmtk_resizebar_area_create(
     wlmtk_window_t *window_ptr,
     uint32_t edges)
 {
@@ -149,7 +150,7 @@ bool wlmtk_resizebar_area_redraw(
     bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr)
+    const struct wlmtk_resizebar_style *style_ptr)
 {
     struct wlr_buffer *released_wlr_buffer_ptr = create_buffer(
         gfxbuf_ptr, position, width, style_ptr, false);
@@ -261,7 +262,7 @@ struct wlr_buffer *create_buffer(
     bs_gfxbuf_t *gfxbuf_ptr,
     unsigned position,
     unsigned width,
-    const wlmtk_resizebar_style_t *style_ptr,
+    const struct wlmtk_resizebar_style *style_ptr,
     bool pressed)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
@@ -320,14 +321,14 @@ void test_area(bs_test_t *test_ptr)
         &wlmtk_window_events(w)->request_size, &l);
     wlmtk_workspace_map_window(ws_ptr, w);
 
-    wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar2_area_create(
+    wlmtk_resizebar_area_t *area_ptr = wlmtk_resizebar_area_create(
         w, WLR_EDGE_BOTTOM);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, area_ptr);
     wlmtk_element_t *element_ptr = wlmtk_resizebar_area_element(area_ptr);
     wlmtk_element_set_visible(element_ptr, true);
 
     // Draw and verify release state.
-    wlmtk_resizebar_style_t style = { .height = 7, .bezel_width = 1.0 };
+    struct wlmtk_resizebar_style style = { .height = 7, .bezel_width = 1.0 };
     bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(30, 7);
     bs_gfxbuf_clear(gfxbuf_ptr, 0xff604020);
     BS_TEST_VERIFY_TRUE(

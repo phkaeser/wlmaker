@@ -126,6 +126,13 @@ static void _wlmtk_root_output_handle_frame(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
+static bool _wlmtk_root_window_set_style(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+static bool _wlmtk_root_workspace_set_style(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
     .pointer_button = _wlmtk_root_element_pointer_button,
@@ -519,6 +526,17 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
     return &root_ptr->container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmtk_root_set_style(
+    wlmtk_root_t *root_ptr,
+    wlmtk_window_style_ref_t *window_style_ref_ptr)
+{
+    return bs_dllist_all(
+        &root_ptr->workspaces,
+        _wlmtk_root_workspace_set_style,
+        window_style_ref_ptr);
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -748,6 +766,33 @@ void _wlmtk_root_output_handle_frame(
     struct wlmtk_root_output *root_output_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmtk_root_output, frame_listener);
     wlmtk_element_layout(wlmtk_root_element(root_output_ptr->root_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/** Calls @ref wlmtk_window_set_style for the window at `dlnode_ptr`. */
+bool _wlmtk_root_window_set_style(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
+    wlmtk_window_style_ref_t *window_style_ref_ptr = ud_ptr;
+
+    wlmtk_window_set_style(window_ptr, window_style_ref_ptr);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Sets the style for each window of the workspace. */
+bool _wlmtk_root_workspace_set_style(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+    wlmtk_window_style_ref_t *window_style_ref_ptr = ud_ptr;
+    return bs_dllist_all(
+        wlmtk_workspace_get_windows_dllist(workspace_ptr),
+        _wlmtk_root_window_set_style,
+        window_style_ref_ptr);
 }
 
 /* == Unit tests =========================================================== */

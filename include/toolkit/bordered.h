@@ -46,7 +46,7 @@ struct _wlmtk_bordered_t {
     /** Points to the element that will be enclosed by the border. */
     wlmtk_element_t           *element_ptr;
     /** Style of the border. */
-    wlmtk_margin_style_t      style;
+    struct wlmtk_margin_style style;
 
     /** Border element at the northern side. Includes east + west corners. */
     wlmtk_rectangle_t         *northern_border_rectangle_ptr;
@@ -72,7 +72,7 @@ struct _wlmtk_bordered_t {
  */
 bool wlmtk_bordered_init(wlmtk_bordered_t *bordered_ptr,
                          wlmtk_element_t *element_ptr,
-                         const wlmtk_margin_style_t *style_ptr);
+                         const struct wlmtk_margin_style *style_ptr);
 
 /**
  * Un-initializes the bordered element.
@@ -88,7 +88,7 @@ void wlmtk_bordered_fini(wlmtk_bordered_t *bordered_ptr);
  * @param style_ptr
  */
 void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
-                              const wlmtk_margin_style_t *style_ptr);
+                              const struct wlmtk_margin_style *style_ptr);
 
 /** Returns the superclass @ref wlmtk_element_t for `bordered_ptr`. */
 wlmtk_element_t *wlmtk_bordered_element(wlmtk_bordered_t *bordered_ptr);

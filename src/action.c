@@ -36,6 +36,7 @@
 
 #include "backend/backend.h"
 #include "background.h"
+#include "config.h"
 #include "default_configuration.h"
 #include "idle.h"
 #include "input/manager.h"
@@ -84,6 +85,10 @@ static bool _wlmaker_keybindings_bind_item(
 
 static bool _wlmaker_action_bound_callback(
     const struct wlmim_keybinding_combo *binding_ptr);
+
+static bool _wlmaker_action_theme_load_from_file(
+    wlmaker_server_t *server_ptr,
+    const char *fname_ptr);
 
 /* == Data ================================================================= */
 
@@ -137,6 +142,8 @@ const bspl_enum_desc_t wlmaker_action_desc[] = {
     BSPL_ENUM("WindowToPreviousWorkspace", WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE),
 
     BSPL_ENUM("RootMenu", WLMAKER_ACTION_ROOT_MENU),
+
+    BSPL_ENUM("ThemeLoadFromFile", WLMAKER_ACTION_THEME_LOAD_FROM_FILE),
 
     BSPL_ENUM("OutputMagnify", WLMAKER_ACTION_OUTPUT_MAGNIFY),
     BSPL_ENUM("OutputReduce", WLMAKER_ACTION_OUTPUT_REDUCE),
@@ -430,6 +437,10 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         }
         break;
 
+    case WLMAKER_ACTION_THEME_LOAD_FROM_FILE:
+        _wlmaker_action_theme_load_from_file(server_ptr, arg_ptr);
+        break;
+
     case WLMAKER_ACTION_OUTPUT_MAGNIFY:
         wlmbe_backend_magnify(server_ptr->backend_ptr);
         break;
@@ -643,6 +654,29 @@ bool _wlmaker_action_bound_callback(
         action_binding_ptr->action,
         action_binding_ptr->action_arg_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Loads a theme file and applies it. */
+bool _wlmaker_action_theme_load_from_file(
+    wlmaker_server_t *server_ptr,
+    const char *fname_ptr)
+{
+    if (!wlmaker_theme_load(
+            server_ptr->files_ptr,
+            fname_ptr,
+            server_ptr->style_ptr)) return false;
+
+    // TODO(kaeser@gubbe.ch): Als update style for ...
+    // - Dock
+    // - Clip
+    // - Cursor
+    // - BackgroundColor
+    // - Menu
+    // - Tasklist
+    return wlmtk_root_set_style(
+        server_ptr->root_ptr,
+        wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr));
 }
 
 /* == Unit tests =========================================================== */

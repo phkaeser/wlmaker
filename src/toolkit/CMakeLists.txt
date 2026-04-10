@@ -116,7 +116,7 @@ TARGET_COMPILE_OPTIONS(
 TARGET_LINK_LIBRARIES(
   toolkit
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
-  PRIVATE PkgConfig::WAYLAND_SERVER
+  PRIVATE PkgConfig::WAYLAND_SERVER libbase_plist
 )
 
 IF(iwyu_path_and_options)

@@ -47,53 +47,7 @@ static bspl_object_t *_wlmaker_plist_load(
     size_t default_data_size);
 static bspl_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
 
-static bool _wlmaker_config_decode_fill_style(
-    bspl_object_t *object_ptr,
-    const union bspl_desc_value *desc_value_ptr,
-    void *value_ptr);
-
 /* == Data ================================================================= */
-
-/** Plist decoding descriptor of the fill type. */
-static const bspl_enum_desc_t _wlmaker_config_fill_type_desc[] = {
-    BSPL_ENUM("SOLID", WLMTK_STYLE_COLOR_SOLID),
-    BSPL_ENUM("HGRADIENT", WLMTK_STYLE_COLOR_HGRADIENT),
-    BSPL_ENUM("VGRADIENT", WLMTK_STYLE_COLOR_VGRADIENT),
-    BSPL_ENUM("DGRADIENT", WLMTK_STYLE_COLOR_DGRADIENT),
-    BSPL_ENUM("ADGRADIENT", WLMTK_STYLE_COLOR_ADGRADIENT),
-    BSPL_ENUM_SENTINEL()
-};
-
-/** Plist decoding descriptor for font weight. */
-static const bspl_enum_desc_t _wlmaker_config_font_weight_desc[] = {
-    BSPL_ENUM("Normal", WLMTK_FONT_WEIGHT_NORMAL),
-    BSPL_ENUM("Bold", WLMTK_FONT_WEIGHT_BOLD),
-    BSPL_ENUM_SENTINEL()
-};
-
-/** Plist decoding descriptor of the fill style. */
-static const bspl_desc_t _wlmaker_config_fill_style_desc[] = {
-    BSPL_DESC_ENUM("Type", true, wlmtk_style_fill_t, type, type,
-                     WLMTK_STYLE_COLOR_SOLID,
-                     _wlmaker_config_fill_type_desc),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Plist decoding descriptor of the solid color. */
-static const bspl_desc_t _wlmaker_config_style_color_solid_desc[] = {
-    BSPL_DESC_ARGB32(
-        "Color", true, wlmtk_style_color_solid_data_t, color, color, 0),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Plist decoding descriptor of a color gradient. */
-static const bspl_desc_t _wlmaker_config_style_color_gradient_desc[] = {
-    BSPL_DESC_ARGB32(
-        "From", true, wlmtk_style_color_gradient_data_t, from, from, 0),
-    BSPL_DESC_ARGB32(
-        "To", true, wlmtk_style_color_gradient_data_t, to, to, 0),
-    BSPL_DESC_SENTINEL()
-};
 
 /** Plist decoding descriptor of a tile style. */
 static const bspl_desc_t _wlmaker_config_tile_style_desc[] = {
@@ -105,16 +59,7 @@ static const bspl_desc_t _wlmaker_config_tile_style_desc[] = {
         "BezelWidth", true, wlmtk_tile_style_t, bezel_width, bezel_width, 2),
     BSPL_DESC_CUSTOM(
         "Fill", true, wlmtk_tile_style_t, fill, fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Plist decoding descriptor of a margin's style. */
-static const bspl_desc_t _wlmaker_config_margin_style_desc[] = {
-    BSPL_DESC_UINT64(
-        "Width", true, wlmtk_margin_style_t, width, width, 0),
-    BSPL_DESC_ARGB32(
-        "Color", true, wlmtk_margin_style_t, color, color, 0xff000000),
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
     BSPL_DESC_SENTINEL()
 };
 
@@ -122,81 +67,7 @@ static const bspl_desc_t _wlmaker_config_margin_style_desc[] = {
 static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
     BSPL_DESC_DICT(
         "Margin", true, wlmtk_dock_style_t, margin, margin,
-        _wlmaker_config_margin_style_desc),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Descriptor for decoding "Font" sections. */
-static const bspl_desc_t _wlmaker_config_font_style_desc[] = {
-    BSPL_DESC_CHARBUF(
-        "Face", true, wlmtk_style_font_t, face, face,
-        WLMTK_STYLE_FONT_FACE_LENGTH, NULL),
-    BSPL_DESC_ENUM(
-        "Weight", true, wlmtk_style_font_t, weight, weight,
-        WLMTK_FONT_WEIGHT_NORMAL, _wlmaker_config_font_weight_desc),
-    BSPL_DESC_UINT64(
-        "Size", true, wlmtk_style_font_t, size, size, 10),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Descroptor for decoding the "TitleBar" dict below "Window". */
-static const bspl_desc_t _wlmaker_config_window_titlebar_style_desc[] = {
-    BSPL_DESC_CUSTOM(
-        "FocussedFill", true, wlmtk_titlebar_style_t, focussed_fill,
-        focussed_fill, _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
-    BSPL_DESC_ARGB32(
-        "FocussedTextColor", true, wlmtk_titlebar_style_t,
-        focussed_text_color, focussed_text_color, 0),
-    BSPL_DESC_CUSTOM(
-        "BlurredFill", true, wlmtk_titlebar_style_t, blurred_fill,
-        blurred_fill, _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
-    BSPL_DESC_ARGB32(
-        "BlurredTextColor", true, wlmtk_titlebar_style_t,
-        blurred_text_color, blurred_text_color, 0),
-    BSPL_DESC_UINT64(
-        "Height", true, wlmtk_titlebar_style_t, height, height, 22),
-    BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_titlebar_style_t, bezel_width, bezel_width,
-        1),
-    BSPL_DESC_DICT(
-        "Margin", true, wlmtk_titlebar_style_t, margin, margin,
-        _wlmaker_config_margin_style_desc),
-    BSPL_DESC_DICT(
-        "Font", true, wlmtk_titlebar_style_t, font, font,
-        _wlmaker_config_font_style_desc),
-    BSPL_DESC_SENTINEL()
- };
-
-/** Descroptor for decoding the "TitleBar" dict below "Window". */
-static const bspl_desc_t _wlmaker_config_window_resize_style_desc[] = {
-    BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_resizebar_style_t, fill, fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
-    BSPL_DESC_UINT64(
-        "Height", true, wlmtk_resizebar_style_t, height, height, 7),
-    BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_resizebar_style_t, bezel_width, bezel_width,
-        1),
-    BSPL_DESC_UINT64(
-        "CornerWidth", true, wlmtk_resizebar_style_t, corner_width,
-        corner_width, 1),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Descriptor for decoding the "Window" dictionary. */
-static const bspl_desc_t _wlmaker_config_window_style_desc[] = {
-    BSPL_DESC_DICT(
-        "TitleBar", true, wlmtk_window_style_t, titlebar, titlebar,
-        _wlmaker_config_window_titlebar_style_desc),
-    BSPL_DESC_DICT(
-        "ResizeBar", true, wlmtk_window_style_t, resizebar, resizebar,
-        _wlmaker_config_window_resize_style_desc),
-    BSPL_DESC_DICT(
-        "Border", true, wlmtk_window_style_t, border, border,
-        _wlmaker_config_margin_style_desc),
-    BSPL_DESC_DICT(
-        "Margin", true, wlmtk_window_style_t, margin, margin,
-        _wlmaker_config_margin_style_desc),
+        wlmtk_style_margin_desc),
     BSPL_DESC_SENTINEL()
 };
 
@@ -204,13 +75,13 @@ static const bspl_desc_t _wlmaker_config_window_style_desc[] = {
 static const bspl_desc_t _wlmaker_config_menu_item_style_desc[] = {
     BSPL_DESC_CUSTOM(
         "Fill", true, wlmtk_menu_item_style_t, fill, fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
     BSPL_DESC_CUSTOM(
         "HighlightedFill", true, wlmtk_menu_item_style_t, highlighted_fill,
-        highlighted_fill, _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
+        highlighted_fill, wlmtk_style_decode_fill, NULL, NULL, NULL),
     BSPL_DESC_DICT(
         "Font", true, wlmtk_menu_item_style_t, font, font,
-        _wlmaker_config_font_style_desc),
+        wlmtk_style_font_desc),
     BSPL_DESC_ARGB32(
         "EnabledTextColor", true, wlmtk_menu_item_style_t,
         enabled_text_color, enabled_text_color, 0),
@@ -237,10 +108,10 @@ static const bspl_desc_t _wlmaker_config_menu_style_desc[] = {
         _wlmaker_config_menu_item_style_desc),
     BSPL_DESC_DICT(
         "Margin", true, wlmtk_menu_style_t, margin, margin,
-        _wlmaker_config_margin_style_desc),
+        wlmtk_style_margin_desc),
     BSPL_DESC_DICT(
         "Border", true, wlmtk_menu_style_t, border, border,
-        _wlmaker_config_margin_style_desc),
+        wlmtk_style_margin_desc),
     BSPL_DESC_SENTINEL()
 };
 
@@ -248,10 +119,10 @@ static const bspl_desc_t _wlmaker_config_menu_style_desc[] = {
 static const bspl_desc_t _wlmaker_task_list_style_desc[] = {
     BSPL_DESC_CUSTOM(
         "Fill", true, wlmaker_config_task_list_style_t, fill, fill,
-        _wlmaker_config_decode_fill_style, NULL, NULL, NULL),
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
     BSPL_DESC_DICT(
         "Font", true, wlmaker_config_task_list_style_t, font, font,
-        _wlmaker_config_font_style_desc),
+        wlmtk_style_font_desc),
     BSPL_DESC_ARGB32(
         "TextColor", true, wlmaker_config_task_list_style_t,
         text_color, text_color, 0),
@@ -262,7 +133,7 @@ static const bspl_desc_t _wlmaker_task_list_style_desc[] = {
 static const bspl_desc_t _wlmaker_clip_style_desc[] = {
     BSPL_DESC_DICT(
         "Font", true, wlmaker_config_clip_style_t, font, font,
-        _wlmaker_config_font_style_desc),
+        wlmtk_style_font_desc),
     BSPL_DESC_ARGB32(
         "TextColor", true, wlmaker_config_clip_style_t,
         text_color, text_color, 0),
@@ -290,9 +161,11 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
     BSPL_DESC_DICT(
         "Dock", true, wlmaker_config_style_t, dock, dock,
         _wlmaker_config_dock_style_desc),
-    BSPL_DESC_DICT(
-        "Window", true, wlmaker_config_style_t, window, window,
-        _wlmaker_config_window_style_desc),
+    BSPL_DESC_CUSTOM(
+        "Window", true, wlmaker_config_style_t, window_style_ptr, has_window_style,
+        wlmtk_window_style_decode, NULL,
+        wlmtk_window_style_decode_init,
+        wlmtk_window_style_decode_fini),
     BSPL_DESC_DICT(
         "Menu", true, wlmaker_config_style_t, menu, menu,
         _wlmaker_config_menu_style_desc),
@@ -366,6 +239,36 @@ bspl_dict_t *wlmaker_state_load(
                 embedded_binary_default_state_size)));
 }
 
+/* ------------------------------------------------------------------------- */
+bool wlmaker_theme_load(
+    wlmaker_files_t *files_ptr,
+    const char *fname_ptr,
+    wlmaker_config_style_t *style_ptr)
+{
+    bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
+        wlmaker_config_object_load(
+            files_ptr,
+            "style",
+            fname_ptr,
+            "Themes/Default.plist",
+            embedded_binary_theme_data,
+            embedded_binary_theme_size));
+    if (NULL == style_dict_ptr) return NULL;
+
+    wlmaker_config_style_t tmp_style = {};
+    bool rv = bspl_decode_dict(
+        style_dict_ptr,
+        wlmaker_config_style_desc,
+        &tmp_style);
+    bspl_dict_unref(style_dict_ptr);
+
+    if (!rv || NULL == tmp_style.window_style_ptr) return false;
+
+    bspl_decoded_destroy(wlmaker_config_style_desc, style_ptr);
+    *style_ptr = tmp_style;
+    return true;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -417,79 +320,17 @@ bspl_dict_t *_wlmaker_config_from_plist(const char *fname_ptr)
     return dict_ptr;
 }
 
-/* ------------------------------------------------------------------------- */
-/**
- * Custom decoder for fill style struct from a plist dict.
- *
- * @param object_ptr
- * @param desc_value_ptr
- * @param value_ptr
- *
- * @return true on success.
- */
-bool _wlmaker_config_decode_fill_style(
-    bspl_object_t *object_ptr,
-    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
-    void *value_ptr)
-{
-    wlmtk_style_fill_t *fill_ptr = value_ptr;
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(object_ptr);
-    if (NULL == dict_ptr) return false;
-
-    if (!bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_fill_style_desc,
-            fill_ptr)) return false;
-
-    switch (fill_ptr->type) {
-    case WLMTK_STYLE_COLOR_SOLID:
-        return bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_solid_desc,
-            &fill_ptr->param.solid);
-    case WLMTK_STYLE_COLOR_HGRADIENT:
-        return bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_gradient_desc,
-            &fill_ptr->param.hgradient);
-    case WLMTK_STYLE_COLOR_VGRADIENT:
-        return bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_gradient_desc,
-            &fill_ptr->param.vgradient);
-    case WLMTK_STYLE_COLOR_DGRADIENT:
-        return bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_gradient_desc,
-            &fill_ptr->param.dgradient);
-    case WLMTK_STYLE_COLOR_ADGRADIENT:
-        return bspl_decode_dict(
-            dict_ptr,
-            _wlmaker_config_style_color_gradient_desc,
-            &fill_ptr->param.adgradient);
-    default:
-        bs_log(BS_ERROR, "Unhandled fill type %d", fill_ptr->type);
-        return false;
-    }
-    bs_log(BS_FATAL, "Uh... no idea how this got here.");
-    return false;
-}
-
 /* == Unit tests =========================================================== */
 
 static void test_embedded(bs_test_t *test_ptr);
 static void test_file(bs_test_t *test_ptr);
 static void test_style_file(bs_test_t *test_ptr);
-static void test_decode_fill(bs_test_t *test_ptr);
-static void test_decode_font(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 static const bs_test_case_t wlmaker_config_test_cases[] = {
     { true, "embedded", test_embedded },
     { true, "file", test_file },
     { true, "style_file", test_style_file },
-    { true, "decode_fill", test_decode_fill },
-    { true, "decode_font", test_decode_font },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -561,113 +402,19 @@ void test_file(bs_test_t *test_ptr)
 /** Loads and decodes the style file. */
 void test_style_file(bs_test_t *test_ptr)
 {
-    bspl_dict_t *dict_ptr;
-    wlmaker_config_style_t config_style = {};
+    wlmaker_config_style_t cs = {};
 
 #ifndef WLMAKER_SOURCE_DIR
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
 
-    dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/Themes/Default.plist");
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
+    const char *f = WLMAKER_SOURCE_DIR "/etc/Themes/Default.plist";
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_theme_load(NULL, f, &cs));
+    bspl_decoded_destroy(wlmaker_config_style_desc, &cs);
 
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        bspl_decode_dict(
-            dict_ptr, wlmaker_config_style_desc, &config_style));
-    bspl_dict_unref(dict_ptr);
-    free(config_style.cursor.name_ptr);
-
-    dict_ptr = _wlmaker_config_from_plist(
-        WLMAKER_SOURCE_DIR "/etc/Themes/Debian.plist");
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        bspl_decode_dict(
-            dict_ptr, wlmaker_config_style_desc, &config_style));
-    bspl_dict_unref(dict_ptr);
-    free(config_style.cursor.name_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests the decoder for the fill style. */
-void test_decode_fill(bs_test_t *test_ptr)
-{
-    const char *s = ("{"
-                     "Type = DGRADIENT;"
-                     "From = \"argb32:0x01020304\";"
-                     "To = \"argb32:0x0204080c\""
-                     "}");
-    wlmtk_style_fill_t fill;
-    bspl_object_t *object_ptr;
-
-    object_ptr = bspl_create_object_from_plist_string(s);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
-
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        _wlmaker_config_decode_fill_style(object_ptr, NULL, &fill));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_DGRADIENT, fill.type);
-    BS_TEST_VERIFY_EQ(test_ptr, 0x01020304, fill.param.dgradient.from);
-    BS_TEST_VERIFY_EQ(test_ptr, 0x0204080c, fill.param.dgradient.to);
-    bspl_object_unref(object_ptr);
-
-    s = ("{"
-         "Type = HGRADIENT;"
-         "From = \"argb32:0x04030201\";"
-         "To = \"argb32:0x40302010\""
-         "}");
-    object_ptr = bspl_create_object_from_plist_string(s);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        _wlmaker_config_decode_fill_style(object_ptr, NULL, &fill));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_HGRADIENT, fill.type);
-    BS_TEST_VERIFY_EQ(test_ptr, 0x04030201, fill.param.hgradient.from);
-    BS_TEST_VERIFY_EQ(test_ptr, 0x40302010, fill.param.hgradient.to);
-    bspl_object_unref(object_ptr);
-
-    s = ("{"
-         "Type = SOLID;"
-         "Color = \"argb32:0x11223344\""
-         "}");
-    object_ptr = bspl_create_object_from_plist_string(s);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        _wlmaker_config_decode_fill_style(object_ptr, NULL, &fill));
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_STYLE_COLOR_SOLID, fill.type);
-    BS_TEST_VERIFY_EQ(test_ptr, 0x11223344, fill.param.solid.color);
-    bspl_object_unref(object_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Tests the decoder for a font descriptor. */
-void test_decode_font(bs_test_t *test_ptr)
-{
-    bspl_object_t *object_ptr;
-    const char *s = ("{"
-                     "Face = Helvetica;"
-                     "Weight = Bold;"
-                     "Size = 12;"
-                     "}");
-
-    object_ptr = bspl_create_object_from_plist_string(s);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, object_ptr);
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(object_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
-
-    wlmtk_style_font_t font = {};
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        bspl_decode_dict(dict_ptr, _wlmaker_config_font_style_desc, &font));
-
-    BS_TEST_VERIFY_STREQ(test_ptr, "Helvetica", font.face);
-    BS_TEST_VERIFY_EQ(test_ptr, WLMTK_FONT_WEIGHT_BOLD, font.weight);
-    BS_TEST_VERIFY_EQ(test_ptr, 12, font.size);
-
-    bspl_object_unref(object_ptr);
+    f = WLMAKER_SOURCE_DIR "/etc/Themes/Debian.plist";
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_theme_load(NULL, f, &cs));
+    bspl_decoded_destroy(wlmaker_config_style_desc, &cs);
 }
 
 /* == End of config.c ====================================================== */

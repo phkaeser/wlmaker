@@ -32,6 +32,7 @@
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
+#include "style.h"
 #include "util.h"
 
 /* == Declarations ========================================================= */
@@ -66,7 +67,7 @@ static struct wlr_buffer *create_buf(
     int position,
     bool pressed,
     bool focussed,
-    const wlmtk_titlebar_style_t *style_ptr,
+    const struct wlmtk_titlebar_style *style_ptr,
     wlmtk_titlebar_button_draw_t draw);
 
 /* == Data ================================================================= */
@@ -84,7 +85,7 @@ static const wlmtk_button_vmt_t titlebar_button_vmt = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
+wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw)
@@ -144,7 +145,7 @@ bool wlmtk_titlebar_button_redraw(
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     int position,
-    const wlmtk_titlebar_style_t *style_ptr)
+    const struct wlmtk_titlebar_style *style_ptr)
 {
     BS_ASSERT(focussed_gfxbuf_ptr->width == blurred_gfxbuf_ptr->width);
     BS_ASSERT(focussed_gfxbuf_ptr->height == blurred_gfxbuf_ptr->height);
@@ -244,7 +245,7 @@ struct wlr_buffer *create_buf(
     int position,
     bool pressed,
     bool focussed,
-    const wlmtk_titlebar_style_t *style_ptr,
+    const struct wlmtk_titlebar_style *style_ptr,
     wlmtk_titlebar_button_draw_t draw)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
@@ -290,7 +291,7 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_util_connect_test_listener(
         &wlmtk_window_events(w)->request_close, &l);
 
-    wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar2_button_create(
+    wlmtk_titlebar_button_t *button_ptr = wlmtk_titlebar_button_create(
         wlmtk_window_request_close, w, wlmaker_primitives_draw_close_icon);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, button_ptr);
     wlmtk_titlebar_button_set_activated(button_ptr, true);
@@ -301,7 +302,7 @@ void test_button(bs_test_t *test_ptr)
     wlmtk_element_set_visible(element_ptr, true);
 
     // Draw contents.
-    wlmtk_titlebar_style_t style = {
+    struct wlmtk_titlebar_style style = {
         .height = 22,
         .focussed_text_color = 0xffffffff,
         .blurred_text_color = 0xffe0c0a0,

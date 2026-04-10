@@ -46,6 +46,7 @@ const bs_test_set_t toolkit_tests[] = {
     BS_TEST_SET(true, "resizebar", wlmtk_resizebar_test_cases),
     BS_TEST_SET(true, "resizebar_area", wlmtk_resizebar_area_test_cases),
     BS_TEST_SET(true, "root", wlmtk_root_test_cases),
+    BS_TEST_SET(true, "style", wlmtk_style_test_cases),
     BS_TEST_SET(true, "surface", wlmtk_surface_test_cases),
     BS_TEST_SET(true, "tile", wlmtk_tile_test_cases),
     BS_TEST_SET(true, "titlebar", wlmtk_titlebar_test_cases),

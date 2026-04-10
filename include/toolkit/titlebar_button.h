@@ -26,11 +26,11 @@
 #include <stdint.h>
 
 #include "element.h"
-#include "style.h"
 #include "window.h"
 
 /** Forward declaration. */
 typedef struct _wlmtk_titlebar_button_t wlmtk_titlebar_button_t;
+struct wlmtk_titlebar_style;
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +49,7 @@ typedef void (*wlmtk_titlebar_button_draw_t)(
  *
  * @return Pointer to the titlebar button, or NULL on error.
  */
-wlmtk_titlebar_button_t *wlmtk_titlebar2_button_create(
+wlmtk_titlebar_button_t *wlmtk_titlebar_button_create(
     void (*click_handler)(wlmtk_window_t *window_ptr),
     wlmtk_window_t *window_ptr,
     wlmtk_titlebar_button_draw_t draw);
@@ -88,7 +88,7 @@ bool wlmtk_titlebar_button_redraw(
     bs_gfxbuf_t *focussed_gfxbuf_ptr,
     bs_gfxbuf_t *blurred_gfxbuf_ptr,
     int position,
-    const wlmtk_titlebar_style_t *style_ptr);
+    const struct wlmtk_titlebar_style *style_ptr);
 
 /**
  * Returns the titlebar button's super element.

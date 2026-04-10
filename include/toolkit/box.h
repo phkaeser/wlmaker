@@ -58,7 +58,7 @@ struct _wlmtk_box_t {
     wlmtk_container_t         margin_container;
 
     /** Margin style. */
-    wlmtk_margin_style_t      style;
+    struct wlmtk_margin_style style;
 };
 
 /**
@@ -73,7 +73,7 @@ struct _wlmtk_box_t {
 bool wlmtk_box_init(
     wlmtk_box_t *box_ptr,
     wlmtk_box_orientation_t orientation,
-    const wlmtk_margin_style_t *style_ptr);
+    const struct wlmtk_margin_style *style_ptr);
 
 /**
  * Un-initializes the box.
@@ -110,6 +110,11 @@ void wlmtk_box_remove_element(wlmtk_box_t *box_ptr, wlmtk_element_t *element_ptr
 
 /** @return Pointer to the superclass' @ref wlmtk_element_t of `box_ptr`. */
 wlmtk_element_t *wlmtk_box_element(wlmtk_box_t *box_ptr);
+
+/** Updates the box style and updates the layout of the contained elements. */
+void wlmtk_box_set_style(
+    wlmtk_box_t *box_ptr,
+    const struct wlmtk_margin_style *style_ptr);
 
 /** Unit tests. */
 extern const bs_test_case_t wlmtk_box_test_cases[];

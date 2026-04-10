@@ -22,6 +22,9 @@
 
 #include <cairo.h>
 #include <inttypes.h>
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,17 +112,17 @@ typedef struct {
 
 
 /** Specifies color and width of a margin. */
-typedef struct {
+struct wlmtk_margin_style {
     /** Width of the margin. */
     uint64_t                  width;
     /** Color of the margin. */
     uint32_t                  color;
-} wlmtk_margin_style_t;
+};
 
 /** Styling information for the dock. */
 typedef struct {
     /** The margin's style of the dock's box. */
-    wlmtk_margin_style_t      margin;
+    struct wlmtk_margin_style margin;
 } wlmtk_dock_style_t;
 
 /** Menu item style. */
@@ -144,20 +147,8 @@ typedef struct {
     uint64_t                  width;
 } wlmtk_menu_item_style_t;
 
-/** Style options for the resizebar. */
-typedef struct {
-    /** Fill style for the complete resizebar. */
-    wlmtk_style_fill_t        fill;
-    /** Height of the resize bar. */
-    uint64_t                  height;
-    /** Width of the corners. */
-    uint64_t                  corner_width;
-    /** Width of the bezel. */
-    uint64_t                  bezel_width;
-} wlmtk_resizebar_style_t;
-
 /** Style options for the titlebar. */
-typedef struct {
+struct wlmtk_titlebar_style {
     /** Fill style for when the titlebar is focussed (activated). */
     wlmtk_style_fill_t        focussed_fill;
     /** Fill style for when the titlebar is blurred (not activated). */
@@ -171,26 +162,37 @@ typedef struct {
     /** Width of the bezel. */
     uint64_t                  bezel_width;
     /** Style of the margin within the resizebar. */
-    wlmtk_margin_style_t      margin;
+    struct wlmtk_margin_style margin;
     /** Font style for the titlebar's title. */
     wlmtk_style_font_t       font;
-} wlmtk_titlebar_style_t;
-
-/** Style options for the window. */
-typedef struct {
-    /** The titlebar's style. */
-    wlmtk_titlebar_style_t    titlebar;
-    /** The resizebar's style. */
-    wlmtk_resizebar_style_t    resizebar;
-    /** Style of the window border. */
-    wlmtk_margin_style_t       border;
-    /** Style of the margins between titlebar, window and resizebar. */
-    wlmtk_margin_style_t       margin;
-} wlmtk_window_style_t;
+};
 
 /** Translates the font weight from toolkit into cairo enum. */
 cairo_font_weight_t wlmtk_style_font_weight_cairo_from_wlmtk(
     wlmtk_style_font_weight_t weight);
+
+/**
+ * Custom decoder for fill style struct from a plist dict.
+ *
+ * @param object_ptr
+ * @param desc_value_ptr
+ * @param value_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_style_decode_fill(
+    bspl_object_t *object_ptr,
+    const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr);
+
+/** Plist decoding descriptor of a margin's style. */
+extern const bspl_desc_t wlmtk_style_margin_desc[];
+
+/** Plist decoding descriptor for decoding "Font" sections. */
+extern const bspl_desc_t wlmtk_style_font_desc[];
+
+/** Unit test cases. */
+extern const bs_test_case_t wlmtk_style_test_cases[];
 
 #ifdef __cplusplus
 }  // extern "C"

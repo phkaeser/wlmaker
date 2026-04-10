@@ -24,10 +24,24 @@
 typedef struct _wlmtk_resizebar_t wlmtk_resizebar_t;
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "element.h"
 #include "style.h"
+
+/** Style options for the resizebar. */
+struct wlmtk_resizebar_style {
+    /** Fill style for the complete resizebar. */
+    wlmtk_style_fill_t        fill;
+    /** Height of the resize bar. */
+    uint64_t                  height;
+    /** Width of the corners. */
+    uint64_t                  corner_width;
+    /** Width of the bezel. */
+    uint64_t                  bezel_width;
+};
 
 #include "window.h"  // IWYU pragma: keep
 
@@ -39,13 +53,14 @@ extern "C" {
  * Creates the resize bar.
  *
  * @param window_ptr
- * @param style_ptr
+ * @param style_ptr           Style. Must outlive the resize bar, or until next
+ *                            call to @ref wlmtk_resizebar_set_style.
  *
  * @return Pointer to the resizebar state, or NULL on error.
  */
-wlmtk_resizebar_t *wlmtk_resizebar2_create(
+wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_window_t *window_ptr,
-    const wlmtk_resizebar_style_t *style_ptr);
+    const struct wlmtk_resizebar_style *style_ptr);
 
 /**
  * Destroys the resize bar.
@@ -63,8 +78,21 @@ void wlmtk_resizebar_destroy(wlmtk_resizebar_t *resizebar_ptr);
  * @return true on success.
  */
 bool wlmtk_resizebar_set_width(
-    wlmtk_resizebar_t * resizebar_ptr,
+    wlmtk_resizebar_t *resizebar_ptr,
     unsigned width);
+
+/**
+ * Sets the resizebar's style.
+ *
+ * @param resizebar_ptr
+ * @param style_ptr           Style. Must outlive the resize bar, or until next
+ *                            call to @ref wlmtk_resizebar_set_style.
+ *
+ * @return true on success.
+ */
+bool wlmtk_resizebar_set_style(
+    wlmtk_resizebar_t *resizebar_ptr,
+    const struct wlmtk_resizebar_style *style_ptr);
 
 /**
  * Returns the super Element of the resizebar.
@@ -74,6 +102,8 @@ bool wlmtk_resizebar_set_width(
  * @return Pointer to the element.
  */
 wlmtk_element_t *wlmtk_resizebar_element(wlmtk_resizebar_t *resizebar_ptr);
+
+extern const bspl_desc_t wlmtk_resizebar_style_desc[];
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_resizebar_test_cases[];

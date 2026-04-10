@@ -22,6 +22,7 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdlib.h>
 #include <toolkit/box.h>
 #include <toolkit/primitives.h>
@@ -44,7 +45,7 @@ struct _wlmtk_resizebar_t {
     /** Current width of the resize bar. */
     unsigned                  width;
     /** Style of the resize bar. */
-    wlmtk_resizebar_style_t   style;
+    const struct wlmtk_resizebar_style *style_ptr;
 
     /** Background. */
     bs_gfxbuf_t               *gfxbuf_ptr;
@@ -58,7 +59,14 @@ struct _wlmtk_resizebar_t {
 };
 
 static void _wlmtk_resizebar_element_destroy(wlmtk_element_t *element_ptr);
-static bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width);
+static bool _wlmtk_resizebar_redraw(
+    wlmtk_resizebar_t *resizebar_ptr,
+    const struct wlmtk_resizebar_style *style_ptr,
+    unsigned width);
+static bool redraw_buffers(
+    wlmtk_resizebar_t *resizebar_ptr,
+    const struct wlmtk_resizebar_style *style_ptr,
+    unsigned width);
 
 /* == Data ================================================================= */
 
@@ -67,18 +75,34 @@ static const wlmtk_element_vmt_t resizebar_element_vmt = {
     .destroy = _wlmtk_resizebar_element_destroy,
 };
 
+/** Descriptor for decoding the "ResizeBar" dict below "Window". */
+const bspl_desc_t wlmtk_resizebar_style_desc[] = {
+    BSPL_DESC_CUSTOM(
+        "Fill", true, struct wlmtk_resizebar_style, fill, fill,
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
+    BSPL_DESC_UINT64(
+        "Height", true, struct wlmtk_resizebar_style, height, height, 7),
+    BSPL_DESC_UINT64(
+        "BezelWidth", true, struct wlmtk_resizebar_style, bezel_width, bezel_width,
+        1),
+    BSPL_DESC_UINT64(
+        "CornerWidth", true, struct wlmtk_resizebar_style, corner_width,
+        corner_width, 1),
+    BSPL_DESC_SENTINEL()
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_resizebar_t *wlmtk_resizebar2_create(
+wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_window_t *window_ptr,
-    const wlmtk_resizebar_style_t *style_ptr)
+    const struct wlmtk_resizebar_style *style_ptr)
 {
-    static const wlmtk_margin_style_t empty_margin_style = {};
+    static const struct wlmtk_margin_style empty_margin_style = {};
     wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_t));
     if (NULL == resizebar_ptr) return NULL;
-    resizebar_ptr->style = *style_ptr;
+    resizebar_ptr->style_ptr = style_ptr;
 
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
@@ -90,7 +114,7 @@ wlmtk_resizebar_t *wlmtk_resizebar2_create(
         &resizebar_ptr->super_box.super_container.super_element,
         &resizebar_element_vmt);
 
-    resizebar_ptr->left_area_ptr = wlmtk_resizebar2_area_create(
+    resizebar_ptr->left_area_ptr = wlmtk_resizebar_area_create(
         window_ptr, WLR_EDGE_LEFT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->left_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
@@ -100,7 +124,7 @@ wlmtk_resizebar_t *wlmtk_resizebar2_create(
         &resizebar_ptr->super_box,
         wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr));
 
-    resizebar_ptr->center_area_ptr = wlmtk_resizebar2_area_create(
+    resizebar_ptr->center_area_ptr = wlmtk_resizebar_area_create(
         window_ptr, WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->center_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
@@ -110,7 +134,7 @@ wlmtk_resizebar_t *wlmtk_resizebar2_create(
         &resizebar_ptr->super_box,
         wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr));
 
-    resizebar_ptr->right_area_ptr = wlmtk_resizebar2_area_create(
+    resizebar_ptr->right_area_ptr = wlmtk_resizebar_area_create(
         window_ptr, WLR_EDGE_RIGHT | WLR_EDGE_BOTTOM);
     if (NULL == resizebar_ptr->right_area_ptr) {
         wlmtk_resizebar_destroy(resizebar_ptr);
@@ -164,53 +188,18 @@ bool wlmtk_resizebar_set_width(
     unsigned width)
 {
     if (resizebar_ptr->width == width) return true;
-    if (!redraw_buffers(resizebar_ptr, width)) return false;
-    BS_ASSERT(width == resizebar_ptr->width);
-    BS_ASSERT(width == resizebar_ptr->gfxbuf_ptr->width);
+    return _wlmtk_resizebar_redraw(
+        resizebar_ptr, resizebar_ptr->style_ptr, width);
+}
 
-    int right_corner_width = BS_MIN(
-        (int)width, (int)resizebar_ptr->style.corner_width);
-    int left_corner_width = BS_MAX(
-        0, BS_MIN((int)width - right_corner_width,
-                  (int)resizebar_ptr->style.corner_width));
-    int center_width = BS_MAX(
-        0, (int)width - right_corner_width - left_corner_width);
-
-    wlmtk_element_set_visible(
-        wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr),
-        0 < left_corner_width);
-    wlmtk_element_set_visible(
-        wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr),
-        0 < center_width);
-    wlmtk_element_set_visible(
-        wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr),
-        0 < right_corner_width);
-
-    if (!wlmtk_resizebar_area_redraw(
-            resizebar_ptr->left_area_ptr,
-            resizebar_ptr->gfxbuf_ptr,
-            0, left_corner_width,
-            &resizebar_ptr->style)) {
-        return false;
-    }
-    if (!wlmtk_resizebar_area_redraw(
-            resizebar_ptr->center_area_ptr,
-            resizebar_ptr->gfxbuf_ptr,
-            left_corner_width, center_width,
-            &resizebar_ptr->style)) {
-        return false;
-    }
-    if (!wlmtk_resizebar_area_redraw(
-            resizebar_ptr->right_area_ptr,
-            resizebar_ptr->gfxbuf_ptr,
-            left_corner_width + center_width, right_corner_width,
-            &resizebar_ptr->style)) {
-        return false;
-    }
-
-    wlmtk_element_layout(wlmtk_box_element(&resizebar_ptr->super_box));
-    wlmtk_container_invalidate_layout(
-        &resizebar_ptr->super_box.super_container);
+/* ------------------------------------------------------------------------- */
+bool wlmtk_resizebar_set_style(
+    wlmtk_resizebar_t *resizebar_ptr,
+    const struct wlmtk_resizebar_style *style_ptr)
+{
+    if (!_wlmtk_resizebar_redraw(
+            resizebar_ptr, style_ptr, resizebar_ptr->width)) return false;
+    resizebar_ptr->style_ptr = style_ptr;
     return true;
 }
 
@@ -233,20 +222,76 @@ void _wlmtk_resizebar_element_destroy(wlmtk_element_t *element_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Redraws the resizebar. */
+bool _wlmtk_resizebar_redraw(
+    wlmtk_resizebar_t *resizebar_ptr,
+    const struct wlmtk_resizebar_style *style_ptr,
+    unsigned width)
+{
+    if (!redraw_buffers(resizebar_ptr, style_ptr, width)) return false;
+    BS_ASSERT(width == resizebar_ptr->width);
+    BS_ASSERT(width == resizebar_ptr->gfxbuf_ptr->width);
+
+    int right_corner_width = BS_MIN((int)width, (int)style_ptr->corner_width);
+    int left_corner_width = BS_MAX(0, BS_MIN((int)width - right_corner_width,
+                                             (int)style_ptr->corner_width));
+    int center_width = BS_MAX(
+        0, (int)width - right_corner_width - left_corner_width);
+
+    if (!wlmtk_resizebar_area_redraw(
+            resizebar_ptr->left_area_ptr,
+            resizebar_ptr->gfxbuf_ptr,
+            0, left_corner_width,
+            style_ptr)) {
+        return false;
+    }
+    if (!wlmtk_resizebar_area_redraw(
+            resizebar_ptr->center_area_ptr,
+            resizebar_ptr->gfxbuf_ptr,
+            left_corner_width, center_width,
+            style_ptr)) {
+        return false;
+    }
+    if (!wlmtk_resizebar_area_redraw(
+            resizebar_ptr->right_area_ptr,
+            resizebar_ptr->gfxbuf_ptr,
+            left_corner_width + center_width, right_corner_width,
+            style_ptr)) {
+        return false;
+    }
+
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_area_element(resizebar_ptr->left_area_ptr),
+        0 < left_corner_width);
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_area_element(resizebar_ptr->center_area_ptr),
+        0 < center_width);
+    wlmtk_element_set_visible(
+        wlmtk_resizebar_area_element(resizebar_ptr->right_area_ptr),
+        0 < right_corner_width);
+
+    wlmtk_element_layout(wlmtk_box_element(&resizebar_ptr->super_box));
+    wlmtk_container_invalidate_layout(
+        &resizebar_ptr->super_box.super_container);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Redraws the resizebar's background in appropriate size. */
-bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr, unsigned width)
+bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr,
+                    const struct wlmtk_resizebar_style *style_ptr,
+                    unsigned width)
 {
     cairo_t *cairo_ptr;
 
-    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(
-        width, resizebar_ptr->style.height);
+    bs_gfxbuf_t *gfxbuf_ptr = bs_gfxbuf_create(width, style_ptr->height);
     if (NULL == gfxbuf_ptr) return false;
     cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
     if (NULL == cairo_ptr) {
         bs_gfxbuf_destroy(gfxbuf_ptr);
         return false;
     }
-    wlmaker_primitives_cairo_fill(cairo_ptr, &resizebar_ptr->style.fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
     cairo_destroy(cairo_ptr);
 
     if (NULL != resizebar_ptr->gfxbuf_ptr) {
@@ -271,8 +316,8 @@ const bs_test_case_t wlmtk_resizebar_test_cases[] = {
 void test_variable_width(bs_test_t *test_ptr)
 {
     wlmtk_window_t *w = wlmtk_test_window_create(NULL);
-    wlmtk_resizebar_style_t style = { .height = 7, .corner_width = 16 };
-    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar2_create(w, &style);
+    struct wlmtk_resizebar_style style = { .height = 10, .corner_width = 17 };
+    wlmtk_resizebar_t *resizebar_ptr = wlmtk_resizebar_create(w, &style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, resizebar_ptr);
 
     wlmtk_element_t *left_elem_ptr = wlmtk_resizebar_area_element(
@@ -287,7 +332,20 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, center_elem_ptr->visible);
     BS_TEST_VERIFY_FALSE(test_ptr, right_elem_ptr->visible);
 
+    // Not enough space for the center element with all margins.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 33));
+    BS_TEST_VERIFY_EQ(test_ptr, 10, resizebar_ptr->gfxbuf_ptr->height);
+    BS_TEST_VERIFY_TRUE(test_ptr, left_elem_ptr->visible);
+    BS_TEST_VERIFY_FALSE(test_ptr, center_elem_ptr->visible);
+    BS_TEST_VERIFY_TRUE(test_ptr, right_elem_ptr->visible);
+    BS_TEST_VERIFY_EQ(test_ptr, 16, right_elem_ptr->x);
+
     // Sufficient space for all the elements.
+    style = (struct wlmtk_resizebar_style){ .height = 7, .corner_width = 16 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr, wlmtk_resizebar_set_style(resizebar_ptr, &style));
+    BS_TEST_VERIFY_EQ(test_ptr, 7, resizebar_ptr->gfxbuf_ptr->height);
     BS_TEST_VERIFY_TRUE(
         test_ptr, wlmtk_resizebar_set_width(resizebar_ptr, 33));
     BS_TEST_VERIFY_TRUE(test_ptr, left_elem_ptr->visible);
