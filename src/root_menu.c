@@ -75,8 +75,8 @@ typedef struct {
     wlmaker_server_t          *server_ptr;
     /** The menu this generator is going to populate. */
     wlmtk_menu_t              *menu_ptr;
-    /** Menu style. */
-    wlmtk_menu_style_t        menu_style;
+    /** Menu style reference. */
+    wlmtk_menu_style_ref_t    *style_ref_ptr;
     /** Dynamic buffer to hold stdout while the process is running. */
     bs_dynbuf_t               *stdout_dynbuf_ptr;
     /** Listener for @ref wlmtk_menu_events_t::destroy. */
@@ -100,22 +100,22 @@ static void _wlmaker_root_menu_handle_request_close(
 static bool _wlmaker_root_menu_init_menu_from_array(
     wlmtk_menu_t *menu_ptr,
     bspl_array_t *array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr);
 static bool _wlmaker_root_menu_populate_menu_items_from_array(
     wlmtk_menu_t *menu_ptr,
     bspl_array_t *array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr);
 static bool _wlmaker_root_menu_populate_menu_items_from_file(
     wlmtk_menu_t *menu_ptr,
     const char *filename_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr);
 static bool _wlmaker_root_menu_populate_menu_items_from_generator(
     wlmtk_menu_t *menu_ptr,
     const char *command_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr);
 
 static void _wlmaker_root_menu_generator_destroy(
@@ -131,10 +131,10 @@ static void _wlmaker_root_menu_generator_handle_terminated(
 
 static wlmtk_menu_item_t *_wlmaker_root_menu_create_item_from_array(
     bspl_array_t *item_array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr);
 static wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     const char *fmt_ptr,
     ...) __ARG_PRINTF__(2, 3);
 
@@ -161,8 +161,8 @@ struct wl_display             *_wlmaker_root_menu_test_wl_display_ptr = NULL;
 wlmaker_root_menu_t *wlmaker_root_menu_create(
     wlmaker_server_t *server_ptr,
     const char *arg_root_menu_file_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
-    wlmtk_window_style_ref_t *window_style_ref_ptr)
+    wlmtk_window_style_ref_t *window_style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr)
 {
     bspl_array_t *root_menu_array_ptr = bspl_array_from_object(
         wlmaker_config_object_load(
@@ -190,7 +190,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     root_menu_ptr->server_ptr = server_ptr;
     root_menu_ptr->server_ptr->root_menu_ptr = root_menu_ptr;
 
-    root_menu_ptr->menu_ptr = wlmtk_menu_create(menu_style_ptr);
+    root_menu_ptr->menu_ptr = wlmtk_menu_create(menu_style_ref_ptr);
     if (NULL == root_menu_ptr->menu_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         bspl_array_unref(root_menu_array_ptr);
@@ -199,7 +199,7 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
     if (!_wlmaker_root_menu_init_menu_from_array(
             root_menu_ptr->menu_ptr,
             root_menu_array_ptr,
-            menu_style_ptr,
+            menu_style_ref_ptr,
             server_ptr)) {
         bspl_array_unref(root_menu_array_ptr);
         return NULL;
@@ -216,8 +216,8 @@ wlmaker_root_menu_t *wlmaker_root_menu_create(
 
     root_menu_ptr->window_ptr = wlmtk_window_create(
         wlmtk_menu_element(root_menu_ptr->menu_ptr),
-        menu_style_ptr,
-        window_style_ref_ptr);
+        window_style_ref_ptr,
+        menu_style_ref_ptr);
     if (NULL == root_menu_ptr->window_ptr) {
         wlmaker_root_menu_destroy(root_menu_ptr);
         bspl_array_unref(root_menu_array_ptr);
@@ -385,7 +385,7 @@ void _wlmaker_root_menu_handle_request_close(
  *
  * @param menu_ptr
  * @param array_ptr
- * @param menu_style_ptr
+ * @param menu_style_ref_ptr
  * @param server_ptr
  *
  * @return true on success.
@@ -393,7 +393,7 @@ void _wlmaker_root_menu_handle_request_close(
 bool _wlmaker_root_menu_init_menu_from_array(
     wlmtk_menu_t *menu_ptr,
     bspl_array_t *array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     // (1) object must be array, and have >= 2 elements: title and content.
@@ -412,7 +412,7 @@ bool _wlmaker_root_menu_init_menu_from_array(
         return _wlmaker_root_menu_populate_menu_items_from_array(
             menu_ptr,
             array_ptr,
-            menu_style_ptr,
+            menu_style_ref_ptr,
             server_ptr);
 
     case BSPL_STRING:
@@ -430,7 +430,7 @@ bool _wlmaker_root_menu_init_menu_from_array(
             return _wlmaker_root_menu_populate_menu_items_from_file(
                 menu_ptr,
                 bspl_array_string_value_at(array_ptr, 2),
-                menu_style_ptr,
+                menu_style_ref_ptr,
                 server_ptr);
 
         } else if (0 == strcmp(
@@ -439,7 +439,7 @@ bool _wlmaker_root_menu_init_menu_from_array(
             return _wlmaker_root_menu_populate_menu_items_from_generator(
                 menu_ptr,
                 bspl_array_string_value_at(array_ptr, 2),
-                menu_style_ptr,
+                menu_style_ref_ptr,
                 server_ptr);
 
         }
@@ -465,7 +465,7 @@ bool _wlmaker_root_menu_init_menu_from_array(
  *
  * @param menu_ptr
  * @param array_ptr
- * @param menu_style_ptr
+ * @param menu_style_ref_ptr
  * @param server_ptr
  *
  * @return true on success
@@ -473,7 +473,7 @@ bool _wlmaker_root_menu_init_menu_from_array(
 bool _wlmaker_root_menu_populate_menu_items_from_array(
     wlmtk_menu_t *menu_ptr,
     bspl_array_t *array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     if (bspl_array_size(array_ptr) <= 1) {
@@ -505,7 +505,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_array(
         wlmtk_menu_item_t *menu_item_ptr =
             _wlmaker_root_menu_create_item_from_array(
                 item_array_ptr,
-                menu_style_ptr,
+                menu_style_ref_ptr,
                 server_ptr);
         if (NULL == menu_item_ptr) return false;
         wlmtk_menu_add_item(menu_ptr, menu_item_ptr);
@@ -520,7 +520,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_array(
  *
  * @param menu_ptr
  * @param filename_ptr
- * @param menu_style_ptr
+ * @param menu_style_ref_ptr
  * @param server_ptr
  *
  * @return true on success
@@ -528,7 +528,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_array(
 bool _wlmaker_root_menu_populate_menu_items_from_file(
     wlmtk_menu_t *menu_ptr,
     const char *filename_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     char *path_ptr = bs_file_resolve_path(filename_ptr, NULL);
@@ -550,7 +550,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_file(
     bool rv = _wlmaker_root_menu_populate_menu_items_from_array(
             menu_ptr,
             bspl_array_from_object(object_ptr),
-            menu_style_ptr,
+            menu_style_ref_ptr,
             server_ptr);
     if (!rv) {
         bs_log(BS_ERROR, "Failed to generate menu from Plist file \"%s\"",
@@ -569,7 +569,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_file(
  *
  * @param menu_ptr
  * @param command_ptr
- * @param menu_style_ptr
+ * @param menu_style_ref_ptr
  * @param server_ptr
  *
  * @return true on success
@@ -577,7 +577,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_file(
 bool _wlmaker_root_menu_populate_menu_items_from_generator(
     wlmtk_menu_t *menu_ptr,
     const char *command_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     bs_subprocess_t *subprocess_ptr = NULL;
@@ -586,7 +586,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_generator(
     if (NULL == generator_ptr) return false;
     generator_ptr->server_ptr = server_ptr;
     generator_ptr->menu_ptr = menu_ptr;
-    generator_ptr->menu_style = *menu_style_ptr;
+    generator_ptr->style_ref_ptr = menu_style_ref_ptr;
 
     generator_ptr->stdout_dynbuf_ptr = bs_dynbuf_create(1024, INT32_MAX);
     if (NULL == generator_ptr->stdout_dynbuf_ptr) goto error;
@@ -677,13 +677,13 @@ void _wlmaker_root_menu_generator_handle_terminated(
     if (0 != state) {
         if (INT_MIN != state) {
             menu_item_ptr = _wlmaker_root_menu_create_disabled_item(
-                &generator_ptr->menu_style.item,
+                generator_ptr->style_ref_ptr,
                 "Failed, exit code %d", state);
             bs_log(BS_ERROR, "Subprocess %p failed, exit code %d",
                    subprocess_handle_ptr, state);
         } else {
             menu_item_ptr = _wlmaker_root_menu_create_disabled_item(
-                &generator_ptr->menu_style.item,
+                generator_ptr->style_ref_ptr,
                 "Failed, signal %d", code);
             bs_log(BS_ERROR, "Subprocess %p failed, signal %d",
                    subprocess_handle_ptr, code);
@@ -697,7 +697,7 @@ void _wlmaker_root_menu_generator_handle_terminated(
         if (NULL == object_ptr ||
             BSPL_ARRAY != bspl_object_type(object_ptr)) {
             menu_item_ptr = _wlmaker_root_menu_create_disabled_item(
-                &generator_ptr->menu_style.item,
+                generator_ptr->style_ref_ptr,
                 "Failed to parse Plist ARRAY from \"%.*s\"",
                 (int)(generator_ptr->stdout_dynbuf_ptr->length),
                 (char*)(generator_ptr->stdout_dynbuf_ptr->data_ptr));
@@ -710,10 +710,10 @@ void _wlmaker_root_menu_generator_handle_terminated(
             if (!_wlmaker_root_menu_populate_menu_items_from_array(
                     generator_ptr->menu_ptr,
                     bspl_array_from_object(object_ptr),
-                    &generator_ptr->menu_style,
+                    generator_ptr->style_ref_ptr,
                     generator_ptr->server_ptr)) {
                 menu_item_ptr = _wlmaker_root_menu_create_disabled_item(
-                    &generator_ptr->menu_style.item,
+                    generator_ptr->style_ref_ptr,
                     "Failed to populate menu from Plist ARRAY \"%.*s\"",
                     (int)(generator_ptr->stdout_dynbuf_ptr->length),
                     (char*)(generator_ptr->stdout_dynbuf_ptr->data_ptr));
@@ -753,18 +753,18 @@ void _wlmaker_root_menu_generator_handle_terminated(
  * For the list of permitted `ActionName` values, see @ref wlmaker_action_desc.
 
  * @param item_array_ptr
- * @param menu_style_ptr
+ * @param menu_style_ref_ptr
  * @param server_ptr
  *
  * @return The menu item, or NULL on error.
  */
 wlmtk_menu_item_t *_wlmaker_root_menu_create_item_from_array(
     bspl_array_t *item_array_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(
-        &menu_style_ptr->item);
+        menu_style_ref_ptr);
     if (NULL == menu_item_ptr) return NULL;
 
     if (!wlmtk_menu_item_set_text(
@@ -785,14 +785,14 @@ wlmtk_menu_item_t *_wlmaker_root_menu_create_item_from_array(
         return menu_item_ptr;
     }
 
-    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(menu_style_ptr);
+    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(menu_style_ref_ptr);
     if (NULL == submenu_ptr) goto error;
     wlmtk_menu_item_set_submenu(menu_item_ptr, submenu_ptr);
 
     if (!_wlmaker_root_menu_init_menu_from_array(
             submenu_ptr,
             item_array_ptr,
-            menu_style_ptr,
+            menu_style_ref_ptr,
             server_ptr)) {
         goto error;
     }
@@ -807,13 +807,13 @@ return NULL;
 /**
  * Creates a disabled menu item as a means to display generator state.
  *
- * @param style_ptr
+ * @param style_ref_ptr
  * @param fmt_ptr
  *
  * @return the disabled menu item, or NULL on error.
  */
 wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     const char *fmt_ptr,
     ...)
 {
@@ -824,10 +824,10 @@ wlmtk_menu_item_t *_wlmaker_root_menu_create_disabled_item(
     vsnprintf(buf, sizeof(buf), fmt_ptr, ap);
     va_end(ap);
 
-    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(style_ptr);
+    wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(style_ref_ptr);
     if (NULL == menu_item_ptr) {
         bs_log(BS_ERROR, "Failed wlmtk_menu_item_create(%p) for \"%s\"",
-               style_ptr, buf);
+               style_ref_ptr, buf);
         return NULL;
     }
 
@@ -855,26 +855,28 @@ const bs_test_set_t wlmaker_root_menu_test_set = BS_TEST_SET(
 /** Verifies that the compiled-in configuration translates into a menu. */
 void test_default_menu(bs_test_t *test_ptr)
 {
-    wlmtk_menu_style_t menu_style = {};
     wlmaker_server_t server = {};
 
     wlmtk_window_style_ref_t *wsr = wlmtk_window_style_to_ref(wlmtk_window_style_create());
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wsr);
+    wlmtk_menu_style_ref_t *msr = wlmtk_menu_style_to_ref(wlmtk_menu_style_create());
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, msr);
     wlmaker_root_menu_t *root_menu_ptr = wlmaker_root_menu_create(
-        &server, NULL, &menu_style, wsr);
+        &server, NULL, wsr, msr);
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, root_menu_ptr);
     wlmaker_root_menu_destroy(root_menu_ptr);
     wlmtk_window_style_ref_release(wsr);
+    wlmtk_menu_style_ref_release(msr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Verifies that an example menu with generator is translated. */
 void test_generated_menu(bs_test_t *test_ptr)
 {
-    wlmtk_menu_style_t menu_style = {};
-
     wlmtk_window_style_ref_t *wsr = wlmtk_window_style_to_ref(wlmtk_window_style_create());
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wsr);
+    wlmtk_menu_style_ref_t *msr = wlmtk_menu_style_to_ref(wlmtk_menu_style_create());
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, msr);
 
     wlmaker_server_t server = {
         .wl_display_ptr = wl_display_create(),
@@ -905,7 +907,8 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         bs_test_data_path(test_ptr, "menu-include.plist"),
-        &menu_style, wsr);
+        wsr,
+        msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     wlmtk_menu_t *menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
@@ -915,7 +918,8 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         bs_test_data_path(test_ptr, "menu-generate.plist"),
-        &menu_style, wsr);
+        wsr,
+        msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     _wlmaker_root_menu_test_wl_display_ptr = server.wl_display_ptr;
@@ -932,7 +936,8 @@ void test_generated_menu(bs_test_t *test_ptr)
     root_menu_ptr = wlmaker_root_menu_create(
         &server,
         WLMAKER_BINARY_DIR "/etc/RootMenuDebian.plist",
-        &menu_style, wsr);
+        wsr,
+        msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_menu_ptr);
     menu_ptr = wlmaker_root_menu_menu(root_menu_ptr);
     _wlmaker_root_menu_test_wl_display_ptr = server.wl_display_ptr;
@@ -956,6 +961,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&server.wlr_scene_ptr->tree.node);
     wlmtk_window_style_ref_release(wsr);
+    wlmtk_menu_style_ref_release(msr);
 }
 
 /* == End of root_menu.c =================================================== */

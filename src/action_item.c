@@ -63,7 +63,7 @@ static void _wlmaker_action_item_handle_destroy(
 /* ------------------------------------------------------------------------- */
 wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     wlmaker_action_t action,
     const char *action_arg_ptr,
     wlmaker_server_t *server_ptr)
@@ -81,7 +81,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
     }
     action_item_ptr->server_ptr = server_ptr;
 
-    action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ptr);
+    action_item_ptr->menu_item_ptr = wlmtk_menu_item_create(style_ref_ptr);
     if (NULL == action_item_ptr->menu_item_ptr) {
         _wlmaker_action_item_destroy(action_item_ptr);
         return NULL;
@@ -107,12 +107,12 @@ wlmaker_action_item_t *wlmaker_action_item_create(
 wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
     const wlmaker_action_item_desc_t *desc_ptr,
     void *dest_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     wlmaker_server_t *server_ptr)
 {
     wlmaker_action_item_t *action_item_ptr = wlmaker_action_item_create(
         desc_ptr->text_ptr,
-        style_ptr,
+        style_ref_ptr,
         desc_ptr->action,
         NULL,
         server_ptr);
@@ -240,7 +240,7 @@ const bs_test_set_t wlmaker_action_item_test_set = BS_TEST_SET(
     true, "action_item", wlmaker_action_item_test_cases);
 
 /** Test data: style for the menu item. */
-static const wlmtk_menu_style_t _wlmaker_action_item_menu_style = {};
+static const struct wlmtk_menu_style _wlmaker_action_item_menu_style = {};
 /** Test data: Descriptor for the action item used in tests. */
 static const wlmaker_action_item_desc_t _wlmaker_action_item_desc = {
     "text", 42, NULL, 0
@@ -253,14 +253,18 @@ void _wlmaker_action_item_test_create(bs_test_t *test_ptr)
     wlmaker_action_item_t *ai_ptr = NULL;
     wlmaker_server_t server = {};
 
+    struct wlmtk_menu_style *s = wlmtk_menu_style_create();
+    *s = _wlmaker_action_item_menu_style;
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmaker_action_item_create_from_desc(
             &_wlmaker_action_item_desc,
             &ai_ptr,
-            &_wlmaker_action_item_menu_style.item, &server));
+            wlmtk_menu_style_to_ref(s),
+            &server));
     BS_TEST_VERIFY_NEQ(test_ptr, NULL, ai_ptr);
     _wlmaker_action_item_destroy(ai_ptr);
+    wlmtk_menu_style_ref_release(wlmtk_menu_style_to_ref(s));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -271,31 +275,38 @@ void _wlmaker_action_item_test_menu_dtor(bs_test_t *test_ptr)
     wlmaker_action_item_t *ai_ptr;
     wlmaker_server_t server = {};
 
-    menu_ptr = wlmtk_menu_create(&_wlmaker_action_item_menu_style);
+    struct wlmtk_menu_style *s = wlmtk_menu_style_create();
+    *s = _wlmaker_action_item_menu_style;
+    menu_ptr = wlmtk_menu_create(wlmtk_menu_style_to_ref(s));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     ai_ptr = wlmaker_action_item_create_from_desc(
         &_wlmaker_action_item_desc,
         &ai_ptr,
-        &_wlmaker_action_item_menu_style.item, &server);
+        wlmtk_menu_style_to_ref(s),
+        &server);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ai_ptr);
     wlmtk_menu_add_item(menu_ptr, wlmaker_action_item_menu_item(ai_ptr));
 
     wlmtk_menu_destroy(menu_ptr);
+    wlmtk_menu_style_ref_release(wlmtk_menu_style_to_ref(s));
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests that binding works and cleanup leaves no leaks. */
 void _wlmaker_action_item_test_bind(bs_test_t *test_ptr)
 {
+    struct wlmtk_menu_style *s = wlmtk_menu_style_create();
+    *s = _wlmaker_action_item_menu_style;
     wlmtk_menu_item_t *menu_item_ptr = wlmtk_menu_item_create(
-        &_wlmaker_action_item_menu_style.item);
+        wlmtk_menu_style_to_ref(s));
 
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_item_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmaker_menu_item_bind_action(menu_item_ptr, 42, 0, NULL));
     wlmtk_menu_item_destroy(menu_item_ptr);
+    wlmtk_menu_style_ref_release(wlmtk_menu_style_to_ref(s));
 }
 
 /* == End of action_item.c ================================================= */

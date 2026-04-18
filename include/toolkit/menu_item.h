@@ -21,7 +21,9 @@
 #define __WLMTK_MENU_ITEM_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <wayland-server-core.h>
 
 #include "element.h"
@@ -30,10 +32,33 @@
 /** Forward declaration: State of the menu item. */
 typedef struct _wlmtk_menu_item_t wlmtk_menu_item_t;
 
+/** Menu item style. */
+struct wlmtk_menu_item_style {
+    /** Fill style. */
+    wlmtk_style_fill_t        fill;
+    /** Fill style when disabled. */
+    wlmtk_style_fill_t        highlighted_fill;
+    /** Style of the font used in the menu item. */
+    wlmtk_style_font_t        font;
+    /** Height of the menu item, in pixels. */
+    uint64_t                  height;
+    /** Width of the bezel, in pixels. */
+    uint64_t                  bezel_width;
+    /** Text color. */
+    uint32_t                  enabled_text_color;
+    /** Text color when highlighted. */
+    uint32_t                  highlighted_text_color;
+    /** Text color when disabled. */
+    uint32_t                  disabled_text_color;
+    /** Width of the item. */
+    uint64_t                  width;
+};
+
 #include "menu.h"  // IWYU pragma: keep
 
-/** Forward declaration: Virtual method table of the menu item. */
-typedef struct _wlmtk_menu_item_vmt_t wlmtk_menu_item_vmt_t;
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
 /** States a menu item can be in. */
 typedef enum {
@@ -50,21 +75,17 @@ typedef struct {
     struct wl_signal          destroy;
 } wlmtk_menu_item_events_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
 /**
  * Creates a menu item.
  *
  * Note: Menu items are created as 'visible' elements.
  *
- * @param style_ptr
+ * @param style_ref_ptr       Reference of the menu's style.
  *
  * @return Pointer to the menu item state, or NULL on failure.
  */
 wlmtk_menu_item_t *wlmtk_menu_item_create(
-    const wlmtk_menu_item_style_t *style_ptr);
+    wlmtk_menu_style_ref_t *style_ref_ptr);
 
 /**
  * Destroys the menu item.
@@ -76,6 +97,18 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr);
 /** Returns pointer to the menu item's @ref wlmtk_menu_item_t::events. */
 wlmtk_menu_item_events_t *wlmtk_menu_item_events(
     wlmtk_menu_item_t *menu_item_ptr);
+
+/**
+ * Udpates the style of this item.
+ *
+ * @param menu_item_ptr
+ * @param style_ref_ptr       Reference of the menu's style.
+ *
+ * @return true on success.
+ */
+bool wlmtk_menu_item_set_style(
+    wlmtk_menu_item_t *menu_item_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr);
 
 /**
  * Sets the menu this item belongs to.
@@ -179,6 +212,9 @@ wlmtk_menu_item_t *wlmtk_menu_item_from_dlnode(bs_dllist_node_t *dlnode_ptr);
 
 /** Returns a pointer to the superclass @ref wlmtk_element_t. */
 wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
+
+/** Descriptor for decoding the "Item" style dictionary. */
+extern const bspl_desc_t wlmtk_menu_item_style_desc[];
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_item_test_cases[];

@@ -21,6 +21,7 @@
 #include "menu.h"
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <linux/input-event-codes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,7 +41,9 @@ struct _wlmtk_menu_t {
     /** And, of a box, holding menu items. */
     wlmtk_box_t               box;
     /** Style of the menu. */
-    wlmtk_menu_style_t        style;
+    const struct wlmtk_menu_style *style_ptr;
+    /** Reference to the menu style. */
+    wlmtk_menu_style_ref_t    *style_ref_ptr;
 
     /** Signals that can be raised by the menu. */
     wlmtk_menu_events_t       events;
@@ -57,7 +60,23 @@ struct _wlmtk_menu_t {
     enum wlmtk_menu_mode      mode;
 };
 
+/** Type-safe holder for the menu style's reference counter. */
+struct _wlmtk_menu_style_ref_t {
+    /** Actual reference counter. */
+    bs_ref_t                  reference;
+};
+/** Holds the reference and the style. */
+struct wlmtk_menu_style_holder {
+    /** Reference counter */
+    struct _wlmtk_menu_style_ref_t msr;
+    /** Style */
+    struct wlmtk_menu_style   style;
+};
+
 static void _wlmtk_menu_eliminate_item(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+static bool _wlmtk_menu_set_item_style(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 static void _wlmtk_menu_set_item_mode(
@@ -80,6 +99,8 @@ static bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
     bs_dllist_node_t *dlnode_ptr,
     bs_dllist_node_iterator_t iterator);
 
+static void _wlmtk_menu_style_destroy(bs_ref_t *ref_ptr);
+
 /* == Data ================================================================= */
 
 /** The superclass' element virtual method table. */
@@ -94,19 +115,34 @@ static const wlmtk_element_vmt_t _wlmtk_menu_box_element_vmt = {
     .destroy = _wlmtk_menu_box_element_destroy
 };
 
+/** Descriptor for decoding the "Menu" dictionary. */
+static const bspl_desc_t _wlmtk_menu_style_desc[] = {
+    BSPL_DESC_DICT(
+        "Item", true, struct wlmtk_menu_style, item, item,
+        wlmtk_menu_item_style_desc),
+    BSPL_DESC_DICT(
+        "Margin", true, struct wlmtk_menu_style, margin, margin,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_DICT(
+        "Border", true, struct wlmtk_menu_style, border, border,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_SENTINEL()
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmtk_menu_t *wlmtk_menu_create(const wlmtk_menu_style_t *style_ptr)
+wlmtk_menu_t *wlmtk_menu_create(wlmtk_menu_style_ref_t *style_ref_ptr)
 {
     wlmtk_menu_t *menu_ptr = logged_calloc(1, sizeof(wlmtk_menu_t));
     if (NULL == menu_ptr) return NULL;
-    menu_ptr->style = *style_ptr;
+    menu_ptr->style_ref_ptr = style_ref_ptr;
+    menu_ptr->style_ptr = wlmtk_menu_style_ref_retain(style_ref_ptr);
 
     if (!wlmtk_box_init(
             &menu_ptr->box,
             WLMTK_BOX_VERTICAL,
-            &menu_ptr->style.margin)) {
+            &menu_ptr->style_ptr->margin)) {
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
@@ -143,6 +179,10 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
         menu_ptr);
 
     wlmtk_base_fini(&menu_ptr->base);
+
+    if (NULL != menu_ptr->style_ref_ptr) {
+        wlmtk_menu_style_ref_release(menu_ptr->style_ref_ptr);
+    }
     free(menu_ptr);
 }
 
@@ -162,6 +202,26 @@ wlmtk_base_t *wlmtk_menu_base(wlmtk_menu_t *menu_ptr)
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr)
 {
     return &menu_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_menu_set_style(
+    wlmtk_menu_t *menu_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr)
+{
+    wlmtk_menu_style_ref_t *old_ref_ptr = menu_ptr->style_ref_ptr;
+    menu_ptr->style_ref_ptr = style_ref_ptr;
+    menu_ptr->style_ptr = wlmtk_menu_style_ref_retain(style_ref_ptr);
+
+    wlmtk_box_set_style(&menu_ptr->box, &menu_ptr->style_ptr->margin);
+
+    bool rv = bs_dllist_all(
+        &menu_ptr->items,
+        _wlmtk_menu_set_item_style,
+        style_ref_ptr);
+
+    wlmtk_menu_style_ref_release(old_ref_ptr);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -282,6 +342,75 @@ wlmtk_menu_item_t *wlmtk_menu_item_at(wlmtk_menu_t *menu_ptr, size_t i)
     return wlmtk_menu_item_from_dlnode(dlnode_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+struct wlmtk_menu_style *wlmtk_menu_style_create(void)
+{
+    struct wlmtk_menu_style_holder *sh = logged_calloc(1, sizeof(*sh));
+    if (NULL == sh) return NULL;
+    bs_ref_init(&sh->msr.reference, _wlmtk_menu_style_destroy);
+    return &sh->style;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_menu_style_ref_t *wlmtk_menu_style_to_ref(
+    struct wlmtk_menu_style *menu_style_ptr)
+{
+    // Guard clause.
+    if (NULL == menu_style_ptr) return NULL;
+
+    struct wlmtk_menu_style_holder *sh = BS_CONTAINER_OF(
+        menu_style_ptr, struct wlmtk_menu_style_holder, style);
+    return &sh->msr;
+}
+
+/* ------------------------------------------------------------------------- */
+const struct wlmtk_menu_style *wlmtk_menu_style_ref_retain(
+    wlmtk_menu_style_ref_t *ref_ptr)
+{
+    bs_ref_retain(&ref_ptr->reference);
+    struct wlmtk_menu_style_holder *sh = BS_CONTAINER_OF(
+        ref_ptr, struct wlmtk_menu_style_holder, msr.reference);
+    return &sh->style;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_style_ref_release(wlmtk_menu_style_ref_t *ref_ptr)
+{
+    bs_ref_release(&ref_ptr->reference);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_menu_style_decode(
+    bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr)
+{
+    struct wlmtk_menu_style **s = value_ptr;
+
+    return bspl_decode_dict(
+        bspl_dict_from_object(object_ptr),
+        _wlmtk_menu_style_desc,
+        *s);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_menu_style_decode_init(void *dst_ptr)
+{
+    struct wlmtk_menu_style **s = dst_ptr;
+    *s = wlmtk_menu_style_create();
+    return *s != NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_menu_style_decode_fini(void *dst_ptr)
+{
+    struct wlmtk_menu_style **s = dst_ptr;
+    if (NULL != *s) {
+        wlmtk_menu_style_ref_release(wlmtk_menu_style_to_ref(*s));
+        *s = NULL;
+    }
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -293,6 +422,23 @@ void _wlmtk_menu_eliminate_item(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
 
     wlmtk_menu_remove_item(menu_ptr, item_ptr);
     wlmtk_element_destroy(wlmtk_menu_item_element(item_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Callback for bs_dllist_all: Sets the style for each menu item.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr
+ *
+ * @return true on success.
+ */
+bool _wlmtk_menu_set_item_style(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_from_dlnode(dlnode_ptr);
+    wlmtk_menu_style_ref_t *style_ref_ptr = ud_ptr;
+
+    return wlmtk_menu_item_set_style(item_ptr, style_ref_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -492,6 +638,15 @@ bs_dllist_node_t *_wlmtk_menu_this_or_next_non_disabled_dlnode(
         iterator(dlnode_ptr), iterator);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Destroys the menu style. */
+void _wlmtk_menu_style_destroy(bs_ref_t *ref_ptr)
+{
+    struct wlmtk_menu_style_holder *sh = BS_CONTAINER_OF(
+        ref_ptr, struct wlmtk_menu_style_holder, msr.reference);
+    free(sh);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_pointer_highlight(bs_test_t *test_ptr);
@@ -508,25 +663,28 @@ const bs_test_case_t wlmtk_menu_test_cases[] = {
 };
 
 /** For tests: Meu style to apply. */
-static const wlmtk_menu_style_t _test_style = {
-    .margin = { .width = 2 },
-    .border = { .width = 2 },
-    .item = { .height = 10, .bezel_width=1, .width = 100 }
+static struct wlmtk_menu_style_holder _test_style_holder = {
+    .msr = { .reference = { .count = 1 } },
+    .style = {
+        .margin = { .width = 2 },
+        .border = { .width = 2 },
+        .item = { .height = 10, .bezel_width=1, .width = 100 }
+    }
 };
 
 /* ------------------------------------------------------------------------- */
 /** Tests that pointer moves highlight the items. */
 void test_pointer_highlight(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
     wlmtk_element_set_visible(me, true);
 
-    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i1 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i1);
     wlmtk_menu_add_item(menu_ptr, i1);
-    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i2 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i2);
     wlmtk_menu_add_item(menu_ptr, i2);
 
@@ -582,7 +740,7 @@ void test_pointer_highlight(bs_test_t *test_ptr)
 /** Tests setting the menu's mode. */
 void test_set_mode(bs_test_t *test_ptr)
 {
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
 
     wlmtk_util_test_listener_t destroy_test_listener;
@@ -591,7 +749,7 @@ void test_set_mode(bs_test_t *test_ptr)
         &destroy_test_listener);
 
     wlmtk_menu_item_t *item1_ptr = wlmtk_menu_item_create(
-        &_test_style.item);
+        &_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item1_ptr);
     wlmtk_menu_add_item(menu_ptr, item1_ptr);
 
@@ -608,7 +766,7 @@ void test_set_mode(bs_test_t *test_ptr)
 
     // A new item must get the mode applied.
     wlmtk_menu_item_t *item2_ptr = wlmtk_menu_item_create(
-        &_test_style.item);
+        &_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item2_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
@@ -642,7 +800,7 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
 {
     static const wlmtk_menu_item_state_t HL = WLMTK_MENU_ITEM_HIGHLIGHTED;
 
-    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style);
+    wlmtk_menu_t *menu_ptr = wlmtk_menu_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     wlmtk_element_t *me = wlmtk_menu_element(menu_ptr);
     wlmtk_element_set_visible(me, true);
@@ -663,7 +821,7 @@ void test_keyboard_navigation(bs_test_t *test_ptr)
         [4] = { .enabled = true },
     };
     for (int i = 0; i < 5; ++i) {
-        items[i].item = wlmtk_menu_item_create(&_test_style.item);
+        items[i].item = wlmtk_menu_item_create(&_test_style_holder.msr);
         BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, items[i].item);
         wlmtk_util_connect_test_listener(
             &wlmtk_menu_item_events(items[i].item)->triggered,
@@ -750,12 +908,12 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
     static const wlmtk_menu_item_state_t HL = WLMTK_MENU_ITEM_HIGHLIGHTED;
 
     // Menu m0 with two items (i00, i01).
-    wlmtk_menu_t *m0 = wlmtk_menu_create(&_test_style);
+    wlmtk_menu_t *m0 = wlmtk_menu_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, m0);
-    wlmtk_menu_item_t *i00 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i00 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i00);
     wlmtk_menu_add_item(m0, i00);
-    wlmtk_menu_item_t *i01 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i01 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i01);
     wlmtk_menu_add_item(m0, i01);
 
@@ -765,13 +923,13 @@ void test_keyboard_navigation_nested(bs_test_t *test_ptr)
         &request_close_test_listener);
 
     // i01 has submenu m1 with two items (i10, i11).
-    wlmtk_menu_t *m1 = wlmtk_menu_create(&_test_style);
+    wlmtk_menu_t *m1 = wlmtk_menu_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, m1);
     wlmtk_menu_item_set_submenu(i01, m1);
-    wlmtk_menu_item_t *i10 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i10 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i10);
     wlmtk_menu_add_item(m1, i10);
-    wlmtk_menu_item_t *i11 = wlmtk_menu_item_create(&_test_style.item);
+    wlmtk_menu_item_t *i11 = wlmtk_menu_item_create(&_test_style_holder.msr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i11);
     wlmtk_menu_add_item(m1, i11);
     wlmtk_element_t *me = wlmtk_menu_element(m0);

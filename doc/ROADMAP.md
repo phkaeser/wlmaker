@@ -31,6 +31,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
   * Add means to change theme while running.
     * [done] Add functions to change window's style while running.
+    * [done] Add functions to change menu's style while running.
     * Add function to change the background color while running.
     * Add function to change Dock and Clip style while running.
     * Wire up changing Cursor Style while running.

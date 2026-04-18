@@ -397,8 +397,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     server_ptr->root_menu_ptr = wlmaker_root_menu_create(
         server_ptr,
         wlmaker_arg_root_menu_file_ptr,
-        &server_ptr->style_ptr->menu,
-        wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr));
+        wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr),
+        wlmtk_menu_style_to_ref(server_ptr->style_ptr->menu_style_ptr));
     if (NULL == server_ptr->root_menu_ptr) {
         return EXIT_FAILURE;
     }
@@ -478,6 +478,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     }
     bs_ptr_stack_fini(&wlmaker_subprocess_stack);
 
+    bspl_decoded_destroy(wlmaker_config_style_desc, &style);
     bspl_dict_unref(config_dict_ptr);
     bspl_dict_unref(state_dict_ptr);
     regfree(&wlmaker_wlr_log_regex);

@@ -77,8 +77,8 @@ struct _wlmtk_window_t {
     /** Preferred output. See @ref wlmtk_window_set_wlr_output. */
     struct wlr_output         *wlr_output_ptr;
 
-    /** Menu style. */
-    wlmtk_menu_style_t        menu_style;
+    /** Reference to the menu's style. */
+    wlmtk_menu_style_ref_t    *menu_style_ref_ptr;
     /** Reference to the window's style. */
     wlmtk_window_style_ref_t  *style_ref_ptr;
     /** The window's style. Implies holding a reference. */
@@ -210,14 +210,15 @@ static const bspl_desc_t _wlmtk_window_style_desc[] = {
 /* ------------------------------------------------------------------------- */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
-    wlmtk_window_style_ref_t *style_ref_ptr)
+    wlmtk_window_style_ref_t *style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr)
 {
     wlmtk_window_t *window_ptr = logged_calloc(1, sizeof(wlmtk_window_t));
     if (NULL == window_ptr) return NULL;
-    window_ptr->menu_style = *menu_style_ptr;
     window_ptr->style_ref_ptr = style_ref_ptr;
     window_ptr->style_ptr = wlmtk_window_style_ref_retain(style_ref_ptr);
+    window_ptr->menu_style_ref_ptr = menu_style_ref_ptr;
+    wlmtk_menu_style_ref_retain(menu_style_ref_ptr);
     wl_signal_init(&window_ptr->events.state_changed);
     wl_signal_init(&window_ptr->events.request_close);
     wl_signal_init(&window_ptr->events.set_activated);
@@ -263,7 +264,7 @@ wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_set_visible(wlmtk_box_element(&window_ptr->box), true);
 
     // Create the window menu. It is kept hidden until invoked.
-    window_ptr->window_menu_ptr = wlmtk_menu_create(menu_style_ptr);
+    window_ptr->window_menu_ptr = wlmtk_menu_create(menu_style_ref_ptr);
     if (NULL == window_ptr->window_menu_ptr) goto error;
     wlmtk_container_add_element(
         &window_ptr->content_container,
@@ -320,6 +321,11 @@ void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 
     if (NULL != window_ptr->style_ref_ptr) {
         wlmtk_window_style_ref_release(window_ptr->style_ref_ptr);
+        window_ptr->style_ref_ptr = NULL;
+    }
+    if (NULL != window_ptr->menu_style_ref_ptr) {
+        wlmtk_menu_style_ref_release(window_ptr->menu_style_ref_ptr);
+        window_ptr->menu_style_ref_ptr = NULL;
     }
     free(window_ptr);
 }
@@ -816,12 +822,17 @@ wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmtk_window_set_style(
     wlmtk_window_t *window_ptr,
-    wlmtk_window_style_ref_t *style_ref_ptr)
+    wlmtk_window_style_ref_t *style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr)
 {
     // Cautiously keep the reference until style update is done.
     wlmtk_window_style_ref_t *old_ref_ptr = window_ptr->style_ref_ptr;
     window_ptr->style_ref_ptr = style_ref_ptr;
     window_ptr->style_ptr = wlmtk_window_style_ref_retain(style_ref_ptr);
+
+    wlmtk_menu_style_ref_t *old_menu_ref_ptr = window_ptr->menu_style_ref_ptr;
+    window_ptr->menu_style_ref_ptr = menu_style_ref_ptr;
+    wlmtk_menu_style_ref_retain(menu_style_ref_ptr);
 
     bool rv = true;
     wlmtk_bordered_set_style(
@@ -838,9 +849,15 @@ bool wlmtk_window_set_style(
 
     if (NULL != window_ptr->titlebar_ptr) {
         rv &= wlmtk_titlebar_set_style(window_ptr->titlebar_ptr,
-                                 &window_ptr->style_ptr->titlebar);
+                                       &window_ptr->style_ptr->titlebar);
     }
 
+    if (NULL != window_ptr->window_menu_ptr) {
+        rv &= wlmtk_menu_set_style(window_ptr->window_menu_ptr,
+                                   menu_style_ref_ptr);
+    }
+
+    wlmtk_menu_style_ref_release(old_menu_ref_ptr);
     wlmtk_window_style_ref_release(old_ref_ptr);
     return rv;
 }
@@ -1241,7 +1258,7 @@ static struct wlmtk_window_style_holder _wlmtk_window_test_style_holder = {
 };
 
 /** Menu style used as default for testing windows. */
-static const wlmtk_menu_style_t _wlmtk_window_test_menu_style = {
+static const struct wlmtk_menu_style _wlmtk_window_test_menu_style = {
     .item = {
         .height = 20,
         .width = 100
@@ -1252,10 +1269,16 @@ static const wlmtk_menu_style_t _wlmtk_window_test_menu_style = {
 wlmtk_window_t *wlmtk_test_window_create(
     wlmtk_element_t *content_element_ptr)
 {
-    return wlmtk_window_create(
+    struct wlmtk_menu_style *ms = wlmtk_menu_style_create();
+    if (NULL == ms) return NULL;
+    *ms = _wlmtk_window_test_menu_style;
+
+    wlmtk_window_t *window_ptr = wlmtk_window_create(
         content_element_ptr,
-        &_wlmtk_window_test_menu_style,
-        &_wlmtk_window_test_style_holder.wsr);
+        &_wlmtk_window_test_style_holder.wsr,
+        wlmtk_menu_style_to_ref(ms));
+    wlmtk_menu_style_ref_release(wlmtk_menu_style_to_ref(ms));
+    return window_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1998,8 +2021,7 @@ void test_menu(bs_test_t *test_ptr)
     wlmtk_window_t *w = wlmtk_test_window_create(NULL);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
 
-    wlmtk_menu_item_t *i = wlmtk_menu_item_create(
-        &_wlmtk_window_test_menu_style.item);
+    wlmtk_menu_item_t *i = wlmtk_menu_item_create(w->menu_style_ref_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, i);
     wlmtk_menu_add_item(wlmtk_window_menu(w), i);
 

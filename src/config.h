@@ -77,7 +77,9 @@ typedef struct {
     /** Presence flag for window style. */
     bool                      has_window_style;
     /** Menu style. */
-    wlmtk_menu_style_t        menu;
+    struct wlmtk_menu_style *menu_style_ptr;
+    /** Presence flag for menu style. */
+    bool                      has_menu_style;
     /** Clip style. */
     wlmaker_config_clip_style_t clip;
     /** Task list style. */
