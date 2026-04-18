@@ -287,6 +287,32 @@ bool _wlmtk_output_tracker_output_handle_change(
         false);
 }
 
+/* ------------------------------------------------------------------------- */
+void wlmtk_output_tracker_for_each(
+    wlmtk_output_tracker_t *tracker_ptr,
+    void (*callback)(struct wlr_output *wlr_output_ptr,
+                     void *ud_ptr,
+                     void *output_ptr,
+                     void *arg_ptr),
+    void *arg_ptr)
+{
+    bs_avltree_node_t *avlnode_ptr = bs_avltree_min(
+        tracker_ptr->output_tree_ptr);
+    while (NULL != avlnode_ptr) {
+        bs_avltree_node_t *next_avlnode_ptr = bs_avltree_node_next(
+            tracker_ptr->output_tree_ptr, avlnode_ptr);
+
+        wlmtk_output_tracker_output_t *output_ptr = BS_CONTAINER_OF(
+            avlnode_ptr, wlmtk_output_tracker_output_t, avlnode);
+        callback(output_ptr->wlr_output_ptr,
+                 tracker_ptr->userdata_ptr,
+                 output_ptr->create_fn_retval_ptr,
+                 arg_ptr);
+
+        avlnode_ptr = next_avlnode_ptr;
+    }
+}
+
 /* == Unit Tests =========================================================== */
 
 static void _wlmtk_output_tracker_test(bs_test_t *test_ptr);

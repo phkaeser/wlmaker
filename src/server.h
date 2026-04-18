@@ -174,6 +174,9 @@ struct _wlmaker_server_t {
     /** Listener for `unclaimed_button_event` signal raised by `wlmtk_root`. */
     struct wl_listener        unclaimed_button_event_listener;
 
+    /** From @ref wlmaker_background::dlnode. */
+    bs_dllist_t               backgrounds;
+
     /** The current configuration style. */
     wlmaker_config_style_t    *style_ptr;
 };

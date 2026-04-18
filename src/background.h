@@ -20,6 +20,7 @@
 #ifndef __BACKGROUND_H__
 #define __BACKGROUND_H__
 
+#include <libbase/libbase.h>
 #include <stdint.h>
 
 #include "toolkit/toolkit.h"
@@ -30,9 +31,6 @@ struct wlr_output_layout;
 extern "C" {
 #endif  // __cplusplus
 
-/** Forward declaration: Background state. */
-typedef struct _wlmaker_background_t wlmaker_background_t;
-
 /**
  * Creates a background, derived from a @ref wlmtk_panel_t.
  *
@@ -40,9 +38,9 @@ typedef struct _wlmaker_background_t wlmaker_background_t;
  * @param wlr_output_layout_ptr
  * @param color
  *
- * @return A handle for the background, or NULL on error.
+ * @return A list node acting as handle for the background, or NULL on error.
  */
-wlmaker_background_t *wlmaker_background_create(
+bs_dllist_node_t *wlmaker_background_create(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     uint32_t color);
@@ -50,9 +48,22 @@ wlmaker_background_t *wlmaker_background_create(
 /**
  * Destroys the background.
  *
- * @param background_ptr
+ * @param dlnode_ptr
+ * @param ud_ptr
  */
-void wlmaker_background_destroy(wlmaker_background_t *background_ptr);
+void wlmaker_background_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
+/**
+ * Sets the color for this workspace's background on each output.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr
+ */
+void wlmaker_background_dlnode_set_color(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
