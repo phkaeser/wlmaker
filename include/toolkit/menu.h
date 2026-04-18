@@ -23,9 +23,13 @@
 /** Forward declaration: Menu handle. */
 typedef struct _wlmtk_menu_t wlmtk_menu_t;
 
+/** Forward declaration: Reference to the menu's style. */
+typedef struct _wlmtk_menu_style_ref_t wlmtk_menu_style_ref_t;
+
 enum wlmtk_menu_mode;  // IWYU pragma: keep
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <wayland-server-core.h>
@@ -41,14 +45,14 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Style definition for the menu. */
-typedef struct  {
+struct wlmtk_menu_style  {
     /** Margin. */
     struct wlmtk_margin_style margin;
     /** Border. */
     struct wlmtk_margin_style border;
     /** Item's style. */
-    wlmtk_menu_item_style_t   item;
-} wlmtk_menu_style_t;
+    struct wlmtk_menu_item_style item;
+};
 
 /** Modes of the menu. */
 enum wlmtk_menu_mode {
@@ -77,12 +81,12 @@ typedef struct {
 /**
  * Creates a menu.
  *
- * @param style_ptr
+ * @param style_ref_ptr
  *
  * @return Pointer to the menu state or NULL on error.
  */
 wlmtk_menu_t *wlmtk_menu_create(
-    const wlmtk_menu_style_t *style_ptr);
+    wlmtk_menu_style_ref_t *style_ref_ptr);
 
 /**
  * Destroys the menu.
@@ -99,6 +103,18 @@ wlmtk_base_t *wlmtk_menu_base(wlmtk_menu_t *menu_ptr);
 
 /** @return a pointer to @ref wlmtk_menu_t::events. */
 wlmtk_menu_events_t *wlmtk_menu_events(wlmtk_menu_t *menu_ptr);
+
+/**
+ * Sets the menu's style.
+ *
+ * @param menu_ptr
+ * @param style_ref_ptr       Reference to the new style.
+ *
+ * @return true on success.
+ */
+bool wlmtk_menu_set_style(
+    wlmtk_menu_t *menu_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr);
 
 /**
  * Opens the menu: Makes it visible or invisible, and resets state
@@ -181,6 +197,33 @@ size_t wlmtk_menu_items_size(wlmtk_menu_t *menu_ptr);
  *     of bounds.
  */
 wlmtk_menu_item_t *wlmtk_menu_item_at(wlmtk_menu_t *menu_ptr, size_t i);
+
+/** Creates a holder for the menu style, with initialized reference.
+ *
+ * @return Pointer to @ref wlmtk_menu_style. To destroy, call
+ *     @ref wlmtk_menu_style_ref_release on @ref wlmtk_menu_style_to_ref.
+ */
+struct wlmtk_menu_style *wlmtk_menu_style_create(void);
+
+/** @return the @ref wlmtk_menu_style_ref_t for the style. */
+wlmtk_menu_style_ref_t *wlmtk_menu_style_to_ref(
+    struct wlmtk_menu_style *menu_style_ptr);
+
+/** Retains a reference. @return a read-only style. */
+const struct wlmtk_menu_style *wlmtk_menu_style_ref_retain(
+    wlmtk_menu_style_ref_t *ref_ptr);
+/** Releases a reference. */
+void wlmtk_menu_style_ref_release(wlmtk_menu_style_ref_t *ref_ptr);
+
+/** Decodes dict at `object_ptr` into @ref wlmtk_menu_style at `value_ptr` */
+bool wlmtk_menu_style_decode(
+    bspl_object_t *object_ptr,
+   const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr);
+/** Initializer. */
+bool wlmtk_menu_style_decode_init(void *dst_ptr);
+/** Fini. */
+void wlmtk_menu_style_decode_fini(void *dst_ptr);
 
 /** Unit test cases. */
 extern const bs_test_case_t wlmtk_menu_test_cases[];

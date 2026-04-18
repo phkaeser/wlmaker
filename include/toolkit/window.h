@@ -127,15 +127,15 @@ typedef enum {
  * Creates a window.
  *
  * @param content_element_ptr
- * @param menu_style_ptr
  * @param style_ref_ptr
+ * @param menu_style_ref_ptr
  *
  * @return The window handle, or NULL on error.
  */
 wlmtk_window_t *wlmtk_window_create(
     wlmtk_element_t *content_element_ptr,
-    const wlmtk_menu_style_t *menu_style_ptr,
-    wlmtk_window_style_ref_t *style_ref_ptr);
+    wlmtk_window_style_ref_t *style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr);
 
 /**
  * Destroys the window.
@@ -452,12 +452,14 @@ wlmtk_window_t *wlmtk_window_from_dlnode(bs_dllist_node_t *dlnode_ptr);
  *
  * @param window_ptr
  * @param style_ref_ptr
+ * @param menu_style_ref_ptr
  *
  * @return true on success.
  */
 bool wlmtk_window_set_style(
     wlmtk_window_t *window_ptr,
-    wlmtk_window_style_ref_t *style_ref_ptr);
+    wlmtk_window_style_ref_t *style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr);
 
 /** Creates a holder for the window style, with initialized reference.
  *

@@ -9,6 +9,7 @@ To run with these leak-checks suppressed:
 valgrind \
   --leak-check=full \
   --suppressions=./libdrm.supp \
+  --suppressions=./libgallium.supp \
   --suppressions=./libcairo-fontconfig.supp \
   build/src/wlmaker
 ```

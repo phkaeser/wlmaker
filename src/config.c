@@ -71,50 +71,6 @@ static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
     BSPL_DESC_SENTINEL()
 };
 
-/** Descriptor for decoding the "Item" dictionary. */
-static const bspl_desc_t _wlmaker_config_menu_item_style_desc[] = {
-    BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_menu_item_style_t, fill, fill,
-        wlmtk_style_decode_fill, NULL, NULL, NULL),
-    BSPL_DESC_CUSTOM(
-        "HighlightedFill", true, wlmtk_menu_item_style_t, highlighted_fill,
-        highlighted_fill, wlmtk_style_decode_fill, NULL, NULL, NULL),
-    BSPL_DESC_DICT(
-        "Font", true, wlmtk_menu_item_style_t, font, font,
-        wlmtk_style_font_desc),
-    BSPL_DESC_ARGB32(
-        "EnabledTextColor", true, wlmtk_menu_item_style_t,
-        enabled_text_color, enabled_text_color, 0),
-    BSPL_DESC_ARGB32(
-        "HighlightedTextColor", true, wlmtk_menu_item_style_t,
-        highlighted_text_color, highlighted_text_color, 0),
-    BSPL_DESC_ARGB32(
-        "DisabledTextColor", true, wlmtk_menu_item_style_t,
-        disabled_text_color, disabled_text_color, 0),
-    BSPL_DESC_UINT64(
-        "Height", true, wlmtk_menu_item_style_t, height, height, 20),
-    BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_menu_item_style_t,
-        bezel_width, bezel_width, 1),
-    BSPL_DESC_UINT64(
-        "Width", true, wlmtk_menu_item_style_t, width, width, 80),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Descriptor for decoding the "Menu" dictionary. */
-static const bspl_desc_t _wlmaker_config_menu_style_desc[] = {
-    BSPL_DESC_DICT(
-        "Item", true, wlmtk_menu_style_t, item, item,
-        _wlmaker_config_menu_item_style_desc),
-    BSPL_DESC_DICT(
-        "Margin", true, wlmtk_menu_style_t, margin, margin,
-        wlmtk_style_margin_desc),
-    BSPL_DESC_DICT(
-        "Border", true, wlmtk_menu_style_t, border, border,
-        wlmtk_style_margin_desc),
-    BSPL_DESC_SENTINEL()
-};
-
 /** Descriptor for decoding the "TaskList" dictionary. */
 static const bspl_desc_t _wlmaker_task_list_style_desc[] = {
     BSPL_DESC_CUSTOM(
@@ -162,13 +118,17 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
         "Dock", true, wlmaker_config_style_t, dock, dock,
         _wlmaker_config_dock_style_desc),
     BSPL_DESC_CUSTOM(
-        "Window", true, wlmaker_config_style_t, window_style_ptr, has_window_style,
+        "Window", true, wlmaker_config_style_t,
+        window_style_ptr, has_window_style,
         wlmtk_window_style_decode, NULL,
         wlmtk_window_style_decode_init,
         wlmtk_window_style_decode_fini),
-    BSPL_DESC_DICT(
-        "Menu", true, wlmaker_config_style_t, menu, menu,
-        _wlmaker_config_menu_style_desc),
+    BSPL_DESC_CUSTOM(
+        "Menu", true, wlmaker_config_style_t,
+        menu_style_ptr, has_menu_style,
+        wlmtk_menu_style_decode, NULL,
+        wlmtk_menu_style_decode_init,
+        wlmtk_menu_style_decode_fini),
     BSPL_DESC_DICT(
         "TaskList", true, wlmaker_config_style_t, task_list, task_list,
         _wlmaker_task_list_style_desc),

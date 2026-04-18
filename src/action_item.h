@@ -54,7 +54,7 @@ typedef struct {
  * Creates a menu item that triggers a @ref wlmaker_action_t.
  *
  * @param text_ptr
- * @param style_ptr
+ * @param style_ref_ptr
  * @param action
  * @param action_arg_ptr      Extra argument. Will be duplicated.
  * @param server_ptr
@@ -63,7 +63,7 @@ typedef struct {
  */
 wlmaker_action_item_t *wlmaker_action_item_create(
     const char *text_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     wlmaker_action_t action,
     const char *action_arg_ptr,
     wlmaker_server_t *server_ptr);
@@ -73,7 +73,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
  *
  * @param desc_ptr
  * @param dest_ptr
- * @param style_ptr
+ * @param style_ref_ptr
  * @param server_ptr
  *
  * @return Pointer to the item's handle or NULL on error.
@@ -81,7 +81,7 @@ wlmaker_action_item_t *wlmaker_action_item_create(
 wlmaker_action_item_t *wlmaker_action_item_create_from_desc(
     const wlmaker_action_item_desc_t *desc_ptr,
     void *dest_ptr,
-    const wlmtk_menu_item_style_t *style_ptr,
+    wlmtk_menu_style_ref_t *style_ref_ptr,
     wlmaker_server_t *server_ptr);
 
 /** @returns pointer to the superclass @ref wlmtk_menu_item_t. */

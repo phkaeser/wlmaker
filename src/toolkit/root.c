@@ -140,6 +140,14 @@ static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
     .keyboard_event = _wlmtk_root_element_keyboard_event,
 };
 
+/** Arg for iterators that are setting the style. */
+struct _wlmtk_root_set_style_arg {
+    /** Reference to the window's style. */
+    wlmtk_window_style_ref_t  *window_style_ref_ptr;
+    /** Reference to the menu's style. */
+    wlmtk_menu_style_ref_t    *menu_style_ref_ptr;
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -529,12 +537,18 @@ wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmtk_root_set_style(
     wlmtk_root_t *root_ptr,
-    wlmtk_window_style_ref_t *window_style_ref_ptr)
+    wlmtk_window_style_ref_t *window_style_ref_ptr,
+    wlmtk_menu_style_ref_t *menu_style_ref_ptr)
 {
+    struct _wlmtk_root_set_style_arg arg = {
+        .window_style_ref_ptr = window_style_ref_ptr,
+        .menu_style_ref_ptr = menu_style_ref_ptr
+    };
+
     return bs_dllist_all(
         &root_ptr->workspaces,
         _wlmtk_root_workspace_set_style,
-        window_style_ref_ptr);
+        &arg);
 }
 
 /* == Local (static) methods =============================================== */
@@ -775,10 +789,12 @@ bool _wlmtk_root_window_set_style(
     void *ud_ptr)
 {
     wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
-    wlmtk_window_style_ref_t *window_style_ref_ptr = ud_ptr;
+    struct _wlmtk_root_set_style_arg *arg_ptr = ud_ptr;
 
-    wlmtk_window_set_style(window_ptr, window_style_ref_ptr);
-    return true;
+    return wlmtk_window_set_style(
+        window_ptr,
+        arg_ptr->window_style_ref_ptr,
+        arg_ptr->menu_style_ref_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -788,11 +804,12 @@ bool _wlmtk_root_workspace_set_style(
     void *ud_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-    wlmtk_window_style_ref_t *window_style_ref_ptr = ud_ptr;
+    struct _wlmtk_root_set_style_arg *arg_ptr = ud_ptr;
+
     return bs_dllist_all(
         wlmtk_workspace_get_windows_dllist(workspace_ptr),
         _wlmtk_root_window_set_style,
-        window_style_ref_ptr);
+        arg_ptr);
 }
 
 /* == Unit tests =========================================================== */
