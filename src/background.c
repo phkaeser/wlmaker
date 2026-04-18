@@ -33,7 +33,9 @@ struct wlr_output;
 /* == Declarations ========================================================= */
 
 /** Background state. */
-struct _wlmaker_background_t {
+struct wlmaker_background {
+    /** List node, linked via @ref wlmaker_server_t::backgrounds. */
+    bs_dllist_node_t          dlnode;
     /** Links to layer. */
     wlmtk_layer_t             *layer_ptr;
     /** color of the background. */
@@ -64,6 +66,11 @@ static void _wlmaker_background_panel_destroy(
     void *output_ptr);
 static void _wlmaker_background_panel_element_destroy(
     wlmtk_element_t *element_ptr);
+static void _wlmaker_backgrund_panel_set_color(
+    struct wlr_output *wlr_output_ptr,
+    void *ud_ptr,
+    void *output_ptr,
+    void *arg_ptr);
 
 /* == Data ================================================================= */
 
@@ -87,36 +94,54 @@ static const wlmtk_panel_positioning_t _wlmaker_background_panel_position = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_background_t *wlmaker_background_create(
+bs_dllist_node_t *wlmaker_background_create(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     uint32_t color)
 {
-    wlmaker_background_t *background_ptr = logged_calloc(
-        1, sizeof(wlmaker_background_t));
-    if (NULL == background_ptr) return NULL;
-    background_ptr->layer_ptr = wlmtk_workspace_get_layer(
+    struct wlmaker_background *bg_ptr = logged_calloc(1, sizeof(*bg_ptr));
+    if (NULL == bg_ptr) return NULL;
+    bg_ptr->layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_BACKGROUND),
-    background_ptr->color = color;
+    bg_ptr->color = color;
 
-    background_ptr->output_tracker_ptr = wlmtk_output_tracker_create(
+    bg_ptr->output_tracker_ptr = wlmtk_output_tracker_create(
         wlr_output_layout_ptr,
-        background_ptr,
+        bg_ptr,
         _wlmaker_background_panel_create,
         NULL,
         _wlmaker_background_panel_destroy);
 
-    return background_ptr;
+    return &bg_ptr->dlnode;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_background_destroy(wlmaker_background_t *background_ptr)
+void wlmaker_background_dlnode_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
 {
-    if (NULL != background_ptr->output_tracker_ptr) {
-        wlmtk_output_tracker_destroy(background_ptr->output_tracker_ptr);
-        background_ptr->output_tracker_ptr = NULL;
+    struct wlmaker_background *bg_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, struct wlmaker_background, dlnode);
+
+    if (NULL != bg_ptr->output_tracker_ptr) {
+        wlmtk_output_tracker_destroy(bg_ptr->output_tracker_ptr);
+        bg_ptr->output_tracker_ptr = NULL;
     }
-    free(background_ptr);
+    free(bg_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmaker_background_dlnode_set_color(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    struct wlmaker_background *bg_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, struct wlmaker_background, dlnode);
+
+    wlmtk_output_tracker_for_each(
+        bg_ptr->output_tracker_ptr,
+        _wlmaker_backgrund_panel_set_color,
+        ud_ptr);
 }
 
 /* == Local (static) methods =============================================== */
@@ -145,7 +170,7 @@ void *_wlmaker_background_panel_create(
     struct wlr_output *wlr_output_ptr,
     void *ud_ptr)
 {
-    wlmaker_background_t *background_ptr = ud_ptr;
+    struct wlmaker_background *background_ptr = ud_ptr;
 
     wlmaker_background_panel_t *background_panel_ptr = logged_calloc(
         1, sizeof(wlmaker_background_panel_t));
@@ -229,6 +254,24 @@ void _wlmaker_background_panel_element_destroy(wlmtk_element_t *element_ptr)
     }
 
     wlmtk_panel_fini(&background_panel_ptr->super_panel);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Sets the background color for the panel on this output. */
+void _wlmaker_backgrund_panel_set_color(
+    __UNUSED__ struct wlr_output *wlr_output_ptr,
+    __UNUSED__ void *ud_ptr,
+    void *output_ptr,
+    void *arg_ptr)
+{
+    wlmaker_background_panel_t *background_panel_ptr = output_ptr;
+    uint32_t *color_ptr = arg_ptr;
+
+    if (NULL != background_panel_ptr->rectangle_ptr) {
+        wlmtk_rectangle_set_color(
+            background_panel_ptr->rectangle_ptr,
+            *color_ptr);
+    }
 }
 
 /* == End of background.c ================================================== */

@@ -119,6 +119,21 @@ void *wlmtk_output_tracker_get_output(
 struct wlr_output_layout *wlmtk_output_tracker_get_layout(
     wlmtk_output_tracker_t *tracker_ptr);
 
+/**
+ * Runs `callback` for all tracked outputs of the given tracker.
+ *
+ * @param tracker_ptr
+ * @param callback            Will be called for each output.
+ * @param arg_ptr
+ */
+void wlmtk_output_tracker_for_each(
+    wlmtk_output_tracker_t *tracker_ptr,
+    void (*callback)(struct wlr_output *wlr_output_ptr,
+                     void *ud_ptr,
+                     void *output_ptr,
+                     void *arg_ptr),
+    void *arg_ptr);
+
 /** Output tracker unit test. */
 extern const bs_test_case_t wlmtk_output_tracker_test_cases[];
 
