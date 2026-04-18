@@ -39,6 +39,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Cleanup the Debian menu so it works for personal use.
     * Adds theme "Name" plist entry.
     * Add menu entry and generator to load from `Themes/...` files.
+    * Fix: menu size when setting theme via menu.
 
 * Windows
   * Store and accept window state (fullscreen, maximize) before mapping.
