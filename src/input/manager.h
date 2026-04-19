@@ -135,6 +135,18 @@ void wlmim_input_manager_destroy(wlmim_t *input_manager_ptr);
 /** @return Pointer to wlmim_t::events. */
 struct wlmim_events *wlmim_events(wlmim_t *input_manager_ptr);
 
+/**
+ * Updates the cursor style of the input manager.
+ *
+ * @param input_manager_ptr
+ * @param style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmim_set_style(
+    wlmim_t *input_manager_ptr,
+    const struct wlmim_cursor_style *style_ptr);
+
 /** @return Pointer to struct wlr_cursor of @ref wlmim_t::cursor_ptr. */
 struct wlr_cursor *wlmim_wlr_cursor(wlmim_t *input_manager_ptr);
 

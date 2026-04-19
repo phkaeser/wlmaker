@@ -20,6 +20,7 @@
 #ifndef __WLMAKER_INPUT_CURSOR_H__
 #define __WLMAKER_INPUT_CURSOR_H__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "manager.h"
@@ -68,6 +69,18 @@ wlmim_cursor_t *wlmim_cursor_create(
  * @param cursor_ptr
  */
 void wlmim_cursor_destroy(wlmim_cursor_t *cursor_ptr);
+
+/**
+ * Updates the cursor's style.
+ *
+ * @param cursor_ptr
+ * @param style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmim_cursor_set_style(
+    wlmim_cursor_t *cursor_ptr,
+    const struct wlmim_cursor_style *style_ptr);
 
 /** @return @ref wlmim_cursor_t::wlr_cursor_ptr. */
 struct wlr_cursor *wlmim_cursor_wlr_cursor(wlmim_cursor_t *cursor_ptr);
