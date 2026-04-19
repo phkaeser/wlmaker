@@ -220,6 +220,19 @@ struct wlmim_events *wlmim_events(wlmim_t *input_manager_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+bool wlmim_set_style(
+    wlmim_t *input_manager_ptr,
+    const struct wlmim_cursor_style *style_ptr)
+{
+    if (NULL != input_manager_ptr->cursor_ptr) {
+        return wlmim_cursor_set_style(
+            input_manager_ptr->cursor_ptr,
+            style_ptr);
+    }
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_cursor *wlmim_wlr_cursor(wlmim_t *input_manager_ptr)
 {
     return wlmim_cursor_wlr_cursor(input_manager_ptr->cursor_ptr);

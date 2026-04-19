@@ -119,21 +119,7 @@ wlmim_cursor_t *wlmim_cursor_create(
     wlr_cursor_attach_output_layout(
         cursor_ptr->wlr_cursor_ptr, wlr_output_layout_ptr);
 
-    cursor_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_create(
-        style_ptr->name_ptr, style_ptr->size);
-    if (NULL == cursor_ptr->wlr_xcursor_manager_ptr) {
-        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_create(%s, %"PRIu64")",
-               style_ptr->name_ptr, style_ptr->size);
-        wlmim_cursor_destroy(cursor_ptr);
-        return NULL;
-    }
-    if (!wlr_xcursor_manager_load(cursor_ptr->wlr_xcursor_manager_ptr, 1.0)) {
-        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_load() for %s, %"PRIu64,
-               style_ptr->name_ptr, style_ptr->size);
-        wlmim_cursor_destroy(cursor_ptr);
-        return NULL;
-    }
-
+    wlmim_cursor_set_style(cursor_ptr, style_ptr);
     cursor_ptr->pointer_ptr = wlmtk_pointer_create(
         cursor_ptr->wlr_cursor_ptr,
         cursor_ptr->wlr_xcursor_manager_ptr);
@@ -209,6 +195,37 @@ void wlmim_cursor_destroy(wlmim_cursor_t *cursor_ptr)
     }
 
     free(cursor_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmim_cursor_set_style(
+    wlmim_cursor_t *cursor_ptr,
+    const struct wlmim_cursor_style *style_ptr)
+{
+    struct wlr_xcursor_manager *wxm_ptr = wlr_xcursor_manager_create(
+        style_ptr->name_ptr, style_ptr->size);
+    if (NULL == wxm_ptr) {
+        bs_log(BS_ERROR,
+               "Failed wlr_xcursor_manager_create(\"%s\", %"PRIu64")",
+               style_ptr->name_ptr, style_ptr->size);
+        return false;
+    }
+
+    if (!wlr_xcursor_manager_load(wxm_ptr, 1.0)) {
+        bs_log(BS_ERROR, "Failed wlr_xcursor_manager_load() for %s, %"PRIu64,
+               style_ptr->name_ptr, style_ptr->size);
+        wlr_xcursor_manager_destroy(wxm_ptr);
+        return false;
+    }
+
+    if (NULL != cursor_ptr->pointer_ptr) {
+        wlmtk_pointer_set_xcursor_manager(cursor_ptr->pointer_ptr, wxm_ptr);
+    }
+    if (NULL != cursor_ptr->wlr_xcursor_manager_ptr) {
+        wlr_xcursor_manager_destroy(cursor_ptr->wlr_xcursor_manager_ptr);
+    }
+    cursor_ptr->wlr_xcursor_manager_ptr = wxm_ptr;
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */

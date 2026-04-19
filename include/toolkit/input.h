@@ -102,6 +102,16 @@ wlmtk_pointer_t *wlmtk_pointer_create(
 void wlmtk_pointer_destroy(wlmtk_pointer_t *pointer_ptr);
 
 /**
+ * Updates the XCursor manager, and with that: The cursor theme.
+ *
+ * @param pointer_ptr
+ * @param wlr_xcursor_manager_ptr
+ */
+void wlmtk_pointer_set_xcursor_manager(
+    wlmtk_pointer_t *pointer_ptr,
+    struct wlr_xcursor_manager *wlr_xcursor_manager_ptr);
+
+/**
  * Sets the cursor for the pointer.
  */
 void wlmtk_pointer_set_cursor(

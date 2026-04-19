@@ -33,8 +33,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Add functions to change window's style while running.
     * [done] Add functions to change menu's style while running.
     * [done] Add function to change the background color while running.
+    * [done] Adds functions to change the cursor style while running.
     * Add function to change Dock and Clip style while running.
-    * Wire up changing Cursor Style while running.
     * Add function for changing tasklist style while running.
     * Cleanup the Debian menu so it works for personal use.
     * Adds theme "Name" plist entry.

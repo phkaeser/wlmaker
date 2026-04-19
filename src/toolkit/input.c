@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_xcursor_manager.h>
 #undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
@@ -34,6 +35,8 @@ struct _wlmtk_pointer_t {
     struct wlr_cursor         *wlr_cursor_ptr;
     /** Points to a `wlr_xcursor_manager`. */
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
+    /** Store the current pointer, to reset when we change style. */
+    wlmtk_pointer_cursor_t     cursor;
 };
 
 /** Lookup table for XCursor names. */
@@ -56,6 +59,7 @@ wlmtk_pointer_t *wlmtk_pointer_create(
 {
     wlmtk_pointer_t *pointer_ptr = logged_calloc(1, sizeof(wlmtk_pointer_t));
     if (NULL == pointer_ptr) return NULL;
+    pointer_ptr->cursor = WLMTK_POINTER_CURSOR_DEFAULT;
 
     pointer_ptr->wlr_cursor_ptr = wlr_cursor_ptr;
     pointer_ptr->wlr_xcursor_manager_ptr = wlr_xcursor_manager_ptr;
@@ -83,6 +87,19 @@ void wlmtk_pointer_set_cursor(
         pointer_ptr->wlr_cursor_ptr,
         pointer_ptr->wlr_xcursor_manager_ptr,
         _wlmtk_pointer_cursor_names[cursor]);
+    pointer_ptr->cursor = cursor;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_pointer_set_xcursor_manager(
+    wlmtk_pointer_t *pointer_ptr,
+    struct wlr_xcursor_manager *wxm_ptr)
+{
+    pointer_ptr->wlr_xcursor_manager_ptr = wxm_ptr;
+    wlr_cursor_set_xcursor(
+        pointer_ptr->wlr_cursor_ptr,
+        wxm_ptr,
+        _wlmtk_pointer_cursor_names[pointer_ptr->cursor]);
 }
 
 /* == End of input.c ======================================================= */

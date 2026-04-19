@@ -704,6 +704,10 @@ bool _wlmaker_action_theme_load_from_file(
         wlmaker_background_dlnode_set_color,
         &server_ptr->style_ptr->background_color);
 
+    rv &= wlmim_set_style(
+        server_ptr->input_manager_ptr,
+        &server_ptr->style_ptr->cursor);
+
     return rv;
 }
 
