@@ -42,6 +42,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Adds theme "Name" plist entry.
     * Add menu entry and generator to load from `Themes/...` files.
     * Fix: menu size when setting theme via menu.
+    * Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
+      or `/usr/share/icons/default/index.theme` (an INI file).
 
 * Windows
   * Store and accept window state (fullscreen, maximize) before mapping.
