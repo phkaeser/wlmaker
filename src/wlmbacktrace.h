@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file backtrace.h
+ * @file wlmbacktrace.h
  *
  * @copyright
  * Copyright 2025 Google LLC
@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __BACKTRACE_H__
-#define __BACKTRACE_H__
+#ifndef __WLMBACKTRACE_H__
+#define __WLMBACKTRACE_H__
 
 #include <stdbool.h>
 
@@ -42,5 +42,5 @@ bool wlmaker_backtrace_setup(const char *filename_ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __BACKTRACE_H__ */
-/* == End of backtrace.h =================================================== */
+#endif /* __WLMBACKTRACE_H__ */
+/* == End of wlmbacktrace.h ================================================ */

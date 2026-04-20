@@ -25,7 +25,7 @@
 /** Forward declaration: Idle monitor handle. */
 typedef struct _wlmaker_idle_monitor_t wlmaker_idle_monitor_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

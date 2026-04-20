@@ -26,6 +26,7 @@
 #include <cairo.h>
 #include <inttypes.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -40,6 +41,7 @@
 #undef WLR_USE_UNSTABLE
 
 #include "config.h"
+#include "server.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -65,24 +67,28 @@ struct _wlmaker_task_list_t {
     /** Listener for @ref wlmtk_root_events_t::window_unmapped. */
     struct wl_listener        window_unmapped_listener;
 
+    /** Listener for @ref wlmaker_server_t::theme_changed_event. */
+    struct wl_listener        theme_changed_listener;
+
     /** Whether the task list is currently enabled (mapped). */
     bool                      enabled;
     /** Visual style. */
-    wlmaker_config_task_list_style_t style;
+    struct wlmaker_task_list_style style;
 };
 
-static void _wlmaker_task_list_refresh(
-    wlmaker_task_list_t *task_list_ptr);
+static bool _wlmaker_task_list_refresh(
+    wlmaker_task_list_t *task_list_ptr,
+    const struct wlmaker_task_list_style *style_ptr);
 static struct wlr_buffer *create_wlr_buffer(
     wlmtk_workspace_t *workspace_ptr,
-    wlmaker_config_task_list_style_t *style_ptr);
+    const struct wlmaker_task_list_style *style_ptr);
 static void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
-    wlmaker_config_task_list_style_t *style_ptr,
+    const struct wlmaker_task_list_style *style_ptr,
     wlmtk_workspace_t *workspace_ptr);
 static void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
-    wlmtk_style_font_t *font_style_ptr,
+    const wlmtk_style_font_t *font_style_ptr,
     uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
@@ -101,6 +107,9 @@ static void _wlmaker_task_list_handle_task_list_enabled(
 static void _wlmaker_task_list_handle_task_list_disabled(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmaker_task_list_handle_theme_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmaker_task_list_handle_window_mapped(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -109,6 +118,19 @@ static void _wlmaker_task_list_handle_window_unmapped(
     void *data_ptr);
 
 /* == Data ================================================================= */
+
+const bspl_desc_t wlmaker_task_list_style_desc[] = {
+    BSPL_DESC_CUSTOM(
+        "Fill", true, struct wlmaker_task_list_style, fill, fill,
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
+    BSPL_DESC_DICT(
+        "Font", true, struct wlmaker_task_list_style, font, font,
+        wlmtk_style_font_desc),
+    BSPL_DESC_ARGB32(
+        "TextColor", true, struct wlmaker_task_list_style,
+        text_color, text_color, 0),
+    BSPL_DESC_SENTINEL()
+};
 
 /** Task list positioning: Fixed dimensions, at center of layer. */
 static const wlmtk_panel_positioning_t _wlmaker_task_list_positioning = {
@@ -127,12 +149,12 @@ static const wlmtk_panel_vmt_t _wlmaker_task_list_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmaker_task_list_t *wlmaker_task_list_create(
     wlmaker_server_t *server_ptr,
-    const wlmaker_config_style_t *style_ptr)
+    const struct wlmaker_task_list_style *style_ptr)
 {
     wlmaker_task_list_t *task_list_ptr = logged_calloc(
         1, sizeof(wlmaker_task_list_t));
     task_list_ptr->server_ptr = server_ptr;
-    task_list_ptr->style = style_ptr->task_list;
+    task_list_ptr->style = *style_ptr;
 
     if (!wlmtk_panel_init(&task_list_ptr->super_panel,
                           &_wlmaker_task_list_positioning)) {
@@ -162,6 +184,11 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         &server_ptr->task_list_disabled_event,
         &task_list_ptr->task_list_disabled_listener,
         _wlmaker_task_list_handle_task_list_disabled);
+
+    wlmtk_util_connect_listener_signal(
+        &server_ptr->theme_changed_event,
+        &task_list_ptr->theme_changed_listener,
+        _wlmaker_task_list_handle_theme_changed);
 
     wlmtk_util_connect_listener_signal(
         &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
@@ -201,16 +228,24 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
  * Refreshes the task list. Should be done whenever a list is mapped/unmapped.
  *
  * @param task_list_ptr
+ * @param style_ptr
+ *
+ * @return true on success.
  */
-void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
+bool _wlmaker_task_list_refresh(
+    wlmaker_task_list_t *task_list_ptr,
+    const struct wlmaker_task_list_style *style_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
         wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
-        workspace_ptr, &task_list_ptr->style);
+        workspace_ptr, style_ptr);
+    if (NULL == wlr_buffer_ptr) return false;
+
     wlmtk_buffer_set(&task_list_ptr->buffer, wlr_buffer_ptr);
     wlr_buffer_drop(wlr_buffer_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -225,7 +260,7 @@ void _wlmaker_task_list_refresh(wlmaker_task_list_t *task_list_ptr)
  */
 struct wlr_buffer *create_wlr_buffer(
     wlmtk_workspace_t *workspace_ptr,
-    wlmaker_config_task_list_style_t *style_ptr)
+    const struct wlmaker_task_list_style *style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         _wlmaker_task_list_positioning.desired_width,
@@ -253,7 +288,7 @@ struct wlr_buffer *create_wlr_buffer(
  */
 void _wlmaker_task_list_draw_into_cairo(
     cairo_t *cairo_ptr,
-    wlmaker_config_task_list_style_t *style_ptr,
+    const struct wlmaker_task_list_style *style_ptr,
     wlmtk_workspace_t *workspace_ptr)
 {
     wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
@@ -325,7 +360,7 @@ void _wlmaker_task_list_draw_into_cairo(
  */
 void _wlmaker_task_list_draw_window_into_cairo(
     cairo_t *cairo_ptr,
-    wlmtk_style_font_t *font_style_ptr,
+    const wlmtk_style_font_t *font_style_ptr,
     uint32_t color,
     wlmtk_window_t *window_ptr,
     bool active,
@@ -421,7 +456,7 @@ void _wlmaker_task_list_handle_task_list_enabled(
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, task_list_enabled_listener);
 
-    _wlmaker_task_list_refresh(task_list_ptr);
+    _wlmaker_task_list_refresh(task_list_ptr, &task_list_ptr->style);
 
     if (task_list_ptr->enabled) {
         BS_ASSERT(NULL != wlmtk_panel_get_layer(&task_list_ptr->super_panel));
@@ -462,6 +497,26 @@ void _wlmaker_task_list_handle_task_list_disabled(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Handler for the `theme_changed_listener`: Updates the style
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_task_list_handle_theme_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_task_list_t, theme_changed_listener);
+    wlmaker_config_style_t *style_ptr = data_ptr;
+
+    if (_wlmaker_task_list_refresh(task_list_ptr, &style_ptr->task_list)) {
+        task_list_ptr->style = style_ptr->task_list;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Handler for the `window_mapped_listener`: Refreshes the list (if enabled).
  *
  * @param listener_ptr
@@ -474,7 +529,7 @@ void _wlmaker_task_list_handle_window_mapped(
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, window_mapped_listener);
     if (task_list_ptr->enabled) {
-        _wlmaker_task_list_refresh(task_list_ptr);
+        _wlmaker_task_list_refresh(task_list_ptr, &task_list_ptr->style);
     }
 }
 
@@ -492,7 +547,7 @@ void _wlmaker_task_list_handle_window_unmapped(
     wlmaker_task_list_t *task_list_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_task_list_t, window_unmapped_listener);
     if (task_list_ptr->enabled) {
-        _wlmaker_task_list_refresh(task_list_ptr);
+        _wlmaker_task_list_refresh(task_list_ptr, &task_list_ptr->style);
     }
 }
 

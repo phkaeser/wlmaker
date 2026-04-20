@@ -20,11 +20,25 @@
 #ifndef __TASK_LIST_H__
 #define __TASK_LIST_H__
 
+#include <stdint.h>
+#include <libbase/plist.h>
+
 /** Forward definition: Task list handle. */
 typedef struct _wlmaker_task_list_t wlmaker_task_list_t;
+/** A handle for a wlmaker server. */
+typedef struct _wlmaker_server_t wlmaker_server_t;
 
-#include "config.h"
-#include "server.h"
+#include "toolkit/toolkit.h"
+
+/** Style of the task list overlay. */
+struct wlmaker_task_list_style {
+    /** Fill style. */
+    wlmtk_style_fill_t        fill;
+    /** Font to use. */
+    wlmtk_style_font_t        font;
+    /** Text color for tasks listed. */
+    uint32_t                  text_color;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,7 +84,7 @@ extern "C" {
  */
 wlmaker_task_list_t *wlmaker_task_list_create(
     wlmaker_server_t *server_ptr,
-    const wlmaker_config_style_t *style_ptr);
+    const struct wlmaker_task_list_style *style_ptr);
 
 /**
  * Destroys the task list, as created by @ref wlmaker_task_list_create.
@@ -79,6 +93,9 @@ wlmaker_task_list_t *wlmaker_task_list_create(
  */
 void wlmaker_task_list_destroy(
     wlmaker_task_list_t *task_list_ptr);
+
+/** Descriptor for decoding the "TaskList" dictionary. */
+extern const bspl_desc_t wlmaker_task_list_style_desc[];
 
 #ifdef __cplusplus
 }  // extern "C"

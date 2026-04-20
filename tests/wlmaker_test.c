@@ -23,7 +23,7 @@
 
 #include "action.h"
 #include "action_item.h"
-#include "backtrace.h"
+#include "wlmbacktrace.h"
 #include "clip.h"
 #include "config.h"
 #include "corner.h"

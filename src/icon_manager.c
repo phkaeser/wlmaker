@@ -32,6 +32,7 @@
 
 #include "toolkit/toolkit.h"
 #include "wlmaker-icon-unstable-v1-server-protocol.h"
+#include "server.h"
 #include "xdg_shell.h"
 
 struct wl_client;

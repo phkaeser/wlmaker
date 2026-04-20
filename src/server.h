@@ -148,6 +148,9 @@ struct _wlmaker_server_t {
     /** Signal: When the task list is disabled. (to be hidden) */
     struct wl_signal          task_list_disabled_event;
 
+    /** Called when the theme has changed. */
+    struct wl_signal          theme_changed_event;
+
     /** Clients for this server. */
     bs_dllist_t               clients;
 

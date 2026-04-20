@@ -75,6 +75,7 @@
 #include <xcb/xcb.h>
 
 #include "backend/backend.h"
+#include "server.h"
 #include "toolkit/toolkit.h"
 #include "xwl_surface.h"
 

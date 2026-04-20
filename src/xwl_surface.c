@@ -30,11 +30,11 @@
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
-#include <wlr/util/box.h>
 #include <wlr/version.h>
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
 
+#include "server.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */

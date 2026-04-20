@@ -708,6 +708,8 @@ bool _wlmaker_action_theme_load_from_file(
         server_ptr->input_manager_ptr,
         &server_ptr->style_ptr->cursor);
 
+    wl_signal_emit(&server_ptr->theme_changed_event, server_ptr->style_ptr);
+
     return rv;
 }
 

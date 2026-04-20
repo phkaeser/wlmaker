@@ -27,6 +27,7 @@
 
 #include "action.h"
 #include "action_item.h"
+#include "server.h"
 
 /* == Declarations ========================================================= */
 

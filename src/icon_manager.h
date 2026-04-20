@@ -28,7 +28,7 @@ typedef struct _wlmaker_icon_manager_t wlmaker_icon_manager_t;
 /** Forward declaration: Toplevel icon handle. */
 typedef struct _wlmaker_toplevel_icon_t wlmaker_toplevel_icon_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

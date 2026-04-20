@@ -32,6 +32,8 @@
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "toolkit/toolkit.h"
+
 struct wlr_backend;
 struct wlr_output_layout;
 struct wlr_seat;
@@ -44,8 +46,6 @@ struct wlmim_cursor_style;
 
 /** Forward declaration. */
 typedef struct _wlmim_t wlmim_t;
-/** Forward declaration. */
-typedef struct _wlmtk_root_t wlmtk_root_t;
 
 /** Events provided by the input manager. */
 struct wlmim_events {

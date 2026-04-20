@@ -23,7 +23,7 @@
 #include <libbase/libbase.h>
 #include <stdbool.h>
 
-#include "server.h"
+#include "task_list.h"
 
 struct wlr_xdg_toplevel;
 struct wlmaker_xdg_toplevel;

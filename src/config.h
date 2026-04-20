@@ -28,6 +28,7 @@
 
 #include "files.h"
 #include "input/cursor.h"
+#include "task_list.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -45,16 +46,6 @@ typedef enum {
     /** Will set all windows to SERVER, no matter what they requested. */
     WLMAKER_CONFIG_DECORATION_ENFORCE_SERVER
 } wlmaker_config_decoration_t;
-
-/** Style of the task list overlay. */
-typedef struct {
-    /** Fill style. */
-    wlmtk_style_fill_t        fill;
-    /** Font to use. */
-    wlmtk_style_font_t        font;
-    /** Text color for tasks listed. */
-    uint32_t                  text_color;
-} wlmaker_config_task_list_style_t;
 
 /** Style of the clip's configurables. */
 typedef struct {
@@ -83,7 +74,7 @@ typedef struct {
     /** Clip style. */
     wlmaker_config_clip_style_t clip;
     /** Task list style. */
-    wlmaker_config_task_list_style_t task_list;
+    struct wlmaker_task_list_style task_list;
     /** Cursor style. */
     struct wlmim_cursor_style cursor;
 } wlmaker_config_style_t;

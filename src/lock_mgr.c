@@ -33,10 +33,10 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_session_lock_v1.h>
-#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 
 #include "toolkit/toolkit.h"
+#include "server.h"
 
 /* == Declarations ========================================================= */
 

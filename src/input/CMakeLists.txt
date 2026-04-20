@@ -31,6 +31,10 @@ SET_TARGET_PROPERTIES(
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}"
 )
 
+ADD_DEPENDENCIES(
+  input
+  toolkit)
+
 TARGET_COMPILE_OPTIONS(
   input PRIVATE
   ${WAYLAND_SERVER_CFLAGS}
@@ -53,6 +57,7 @@ TARGET_INCLUDE_DIRECTORIES(
 TARGET_LINK_LIBRARIES(
   input
   PUBLIC
+  toolkit
   PRIVATE
   Libinput::Libinput
   PkgConfig::WAYLAND_SERVER
@@ -60,8 +65,7 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::XKBCOMMON
   inih
   libbase
-  libbase_plist
-  toolkit)
+  libbase_plist)
 
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(

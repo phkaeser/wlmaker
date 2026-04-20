@@ -35,6 +35,7 @@
 #include "toolkit/toolkit.h"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "xdg_popup.h"
+#include "server.h"
 
 /* == Declarations ========================================================= */
 

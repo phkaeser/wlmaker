@@ -30,7 +30,6 @@
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
-#include <wlr/util/box.h>
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 

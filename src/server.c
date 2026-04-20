@@ -41,6 +41,7 @@
 
 #include "background.h"
 #include "input/manager.h"
+#include "task_list.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -90,6 +91,7 @@ wlmaker_server_t *wlmaker_server_create(
 
     wl_signal_init(&server_ptr->window_created_event);
     wl_signal_init(&server_ptr->window_destroyed_event);
+    wl_signal_init(&server_ptr->theme_changed_event);
 
     // Prepare display and socket.
     server_ptr->wl_display_ptr = wl_display_create();
