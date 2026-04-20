@@ -25,6 +25,7 @@
 #include <wayland-server-protocol.h>
 #include <wayland-util.h>
 
+#include "server.h"
 #include "toolkit/toolkit.h"
 #include "xdg_popup.h"
 #include "xdg_toplevel.h"

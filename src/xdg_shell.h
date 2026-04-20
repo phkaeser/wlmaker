@@ -28,7 +28,7 @@
 /** Handle for XDG Shell server handler. */
 typedef struct _wlmaker_xdg_shell_t wlmaker_xdg_shell_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

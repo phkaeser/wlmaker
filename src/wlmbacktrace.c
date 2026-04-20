@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file wlmbacktrace.c
+ * @file backtrace.c
  *
  * @copyright
  * Copyright 2025 Google LLC
@@ -24,6 +24,7 @@
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #if defined(WLMAKER_HAVE_LIBBACKTRACE)
@@ -127,4 +128,4 @@ void _signal_backtrace(int signum)
 
 #endif // defined(WLMAKER_HAVE_LIBBACKTRACE)
 
-/* == End of wlmbacktrace.c ================================================ */
+/* == End of backtrace.c =================================================== */

@@ -29,6 +29,7 @@
 #include <wayland-util.h>
 
 #include "toolkit/toolkit.h"
+#include "server.h"
 
 struct wl_event_loop;
 struct wl_event_source;

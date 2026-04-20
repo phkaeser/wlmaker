@@ -25,7 +25,7 @@
 /** Handler for a layer panel. */
 typedef struct _wlmaker_layer_panel_t wlmaker_layer_panel_t;
 
-#include "server.h"
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

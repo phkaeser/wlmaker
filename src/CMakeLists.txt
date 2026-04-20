@@ -41,7 +41,7 @@ SET(PUBLIC_HEADER_FILES
   action.h
   action_item.h
   background.h
-  backtrace.h
+  wlmbacktrace.h
   clip.h
   config.h
   corner.h
@@ -71,7 +71,7 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   action.c
   action_item.c
   background.c
-  backtrace.c
+  wlmbacktrace.c
   clip.c
   config.c
   corner.c

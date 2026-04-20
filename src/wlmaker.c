@@ -41,7 +41,7 @@
 #include "action.h"
 #include "backend/backend.h"
 #include "background.h"
-#include "backtrace.h"
+#include "wlmbacktrace.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
@@ -442,7 +442,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         clip_ptr = wlmaker_clip_create(
             server_ptr, state_dict_ptr, &style);
         task_list_ptr = wlmaker_task_list_create(
-            server_ptr, &style);
+            server_ptr, &style.task_list);
         if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
             bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
         } else {

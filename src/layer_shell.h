@@ -23,7 +23,7 @@
 /** Handle for the layer shell. */
 typedef struct _wlmaker_layer_shell_t wlmaker_layer_shell_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

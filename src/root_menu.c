@@ -43,6 +43,7 @@
 #include "action_item.h"
 #include "config.h"
 #include "subprocess_monitor.h"
+#include "server.h"
 
 /* == Declarations ========================================================= */
 

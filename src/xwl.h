@@ -32,7 +32,7 @@ struct wlr_xwayland_surface;
 
 /** Forward declaration: XWayland interface. */
 typedef struct _wlmaker_xwl_t wlmaker_xwl_t;
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

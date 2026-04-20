@@ -25,7 +25,7 @@
 /** Forward declaration: State of the session lock manager. */
 typedef struct _wlmaker_lock_mgr_t wlmaker_lock_mgr_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 #ifdef __cplusplus
 extern "C" {

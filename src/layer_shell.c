@@ -30,7 +30,7 @@
 
 #include "layer_panel.h"
 #include "toolkit/toolkit.h"
-
+#include "server.h"
 
 /* == Declarations ========================================================= */
 

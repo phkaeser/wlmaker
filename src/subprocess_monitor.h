@@ -28,7 +28,7 @@ typedef struct _wlmaker_subprocess_monitor_t wlmaker_subprocess_monitor_t;
 /** Forward definition for a subprocess handle. */
 typedef struct _wlmaker_subprocess_handle_t wlmaker_subprocess_handle_t;
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus

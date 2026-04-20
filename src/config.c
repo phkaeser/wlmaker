@@ -71,20 +71,6 @@ static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
     BSPL_DESC_SENTINEL()
 };
 
-/** Descriptor for decoding the "TaskList" dictionary. */
-static const bspl_desc_t _wlmaker_task_list_style_desc[] = {
-    BSPL_DESC_CUSTOM(
-        "Fill", true, wlmaker_config_task_list_style_t, fill, fill,
-        wlmtk_style_decode_fill, NULL, NULL, NULL),
-    BSPL_DESC_DICT(
-        "Font", true, wlmaker_config_task_list_style_t, font, font,
-        wlmtk_style_font_desc),
-    BSPL_DESC_ARGB32(
-        "TextColor", true, wlmaker_config_task_list_style_t,
-        text_color, text_color, 0),
-    BSPL_DESC_SENTINEL()
-};
-
 /** Descriptor for decoding the "Clip" dictionary. */
 static const bspl_desc_t _wlmaker_clip_style_desc[] = {
     BSPL_DESC_DICT(
@@ -131,7 +117,7 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
         wlmtk_menu_style_decode_fini),
     BSPL_DESC_DICT(
         "TaskList", true, wlmaker_config_style_t, task_list, task_list,
-        _wlmaker_task_list_style_desc),
+        wlmaker_task_list_style_desc),
     BSPL_DESC_DICT(
         "Clip", true, wlmaker_config_style_t, clip, clip,
         _wlmaker_clip_style_desc),

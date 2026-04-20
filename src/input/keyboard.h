@@ -24,6 +24,7 @@
 #include <libbase/plist.h>
 
 #include "manager.h"
+#include "toolkit/toolkit.h"
 
 struct wlr_keyboard;
 struct wlr_seat;

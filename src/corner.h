@@ -26,7 +26,7 @@ typedef struct _wlmaker_corner_t wlmaker_corner_t;
 #include <libbase/plist.h>
 #include <libbase/libbase.h>
 
-#include "server.h"  // IWYU pragma: keep
+#include "task_list.h"
 
 struct wl_event_loop;
 struct wl_signal;

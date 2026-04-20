@@ -24,7 +24,7 @@
 
 #include <libbase/libbase.h>
 
-#include "server.h"
+#include "task_list.h"
 #include "xwl.h"
 
 #ifdef __cplusplus

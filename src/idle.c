@@ -33,6 +33,7 @@
 
 #include "subprocess_monitor.h"
 #include "toolkit/toolkit.h"
+#include "server.h"
 
 /* == Declarations ========================================================= */
 
