@@ -29,7 +29,6 @@
 
 #include "base.h"
 #include "buffer.h"
-#include "container.h"
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "input.h"
 #include "primitives.h"
@@ -299,10 +298,8 @@ bool wlmtk_menu_item_set_style(
     }
 
     wlmtk_menu_style_ref_release(old_ref_ptr);
-    if (NULL != wlmtk_menu_item_element(menu_item_ptr)->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            wlmtk_menu_item_element(menu_item_ptr)->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(
+        wlmtk_menu_item_element(menu_item_ptr));
     return rv;
 }
 

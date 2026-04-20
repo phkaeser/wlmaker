@@ -32,7 +32,6 @@
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
 
-#include "container.h"
 #include "test.h"  // IWYU pragma: keep
 
 /* == Declarations ========================================================= */
@@ -271,8 +270,8 @@ bool _wlmtk_resizebar_redraw(
         0 < right_corner_width);
 
     wlmtk_element_layout(wlmtk_box_element(&resizebar_ptr->super_box));
-    wlmtk_container_invalidate_layout(
-        &resizebar_ptr->super_box.super_container);
+    wlmtk_element_invalidate_parent_layout(
+        wlmtk_box_element(&resizebar_ptr->super_box));
     return true;
 }
 

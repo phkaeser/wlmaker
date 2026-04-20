@@ -1092,7 +1092,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_title);
     wl_signal_init(&td_ptr->wlr_xdg_toplevel.events.set_app_id);
 
-    static const wlmtk_tile_style_t ts = { .size = 64 };
+    static const struct wlmtk_tile_style ts = { .size = 64 };
     td_ptr->workspace_ptr = wlmtk_workspace_create(
         td_ptr->test_layout.wlr_output_layout_ptr, "test", &ts);
     if (NULL == td_ptr->workspace_ptr) goto error;

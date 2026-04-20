@@ -222,10 +222,17 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
     }
 
+    wlmtk_element_invalidate_parent_layout(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_element_invalidate_parent_layout(wlmtk_element_t *element_ptr)
+{
     if (NULL != element_ptr->parent_container_ptr) {
         wlmtk_container_invalidate_layout(element_ptr->parent_container_ptr);
     }
 }
+
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_element_get_position(
@@ -258,9 +265,7 @@ void wlmtk_element_set_position(
     element_ptr->x = x;
     element_ptr->y = y;
 
-    if (NULL != element_ptr->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(element_ptr->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(element_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -504,10 +509,7 @@ void wlmtk_fake_element_set_dimensions(
 {
     fake_element_ptr->dimensions.width = width;
     fake_element_ptr->dimensions.height = height;
-    if (NULL != fake_element_ptr->element.parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            fake_element_ptr->element.parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(&fake_element_ptr->element);
 }
 
 /* ------------------------------------------------------------------------- */

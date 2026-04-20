@@ -60,9 +60,9 @@ typedef struct {
     /** Background color, unless overriden in "Workspace" state. */
     uint32_t                  background_color;
     /** The tile. */
-    wlmtk_tile_style_t        tile;
+    struct wlmtk_tile_style   tile;
     /** Dock optics: Margin. */
-    wlmtk_dock_style_t        dock;
+    struct wlmtk_dock_style   dock;
     /** Window style. */
     struct wlmtk_window_style *window_style_ptr;
     /** Presence flag for window style. */

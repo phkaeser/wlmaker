@@ -396,10 +396,7 @@ void wlmtk_container_invalidate_layout(
 {
     container_ptr->invalidated_layout = true;
 
-    if (NULL != container_ptr->super_element.parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            container_ptr->super_element.parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(&container_ptr->super_element);
 }
 
 /* ------------------------------------------------------------------------- */

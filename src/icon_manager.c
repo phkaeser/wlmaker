@@ -131,6 +131,9 @@ static void handle_surface_destroy(
 
 static void _wlmaker_toplevel_icon_element_destroy(
     wlmtk_element_t *element_ptr);
+static bool _wlmaker_toplevel_icon_tile_set_content_size(
+    wlmtk_tile_t *tile_ptr,
+    uint64_t content_size);
 
 /* == Data ================================================================= */
 
@@ -151,6 +154,11 @@ toplevel_icon_v1_implementation = {
 /** The icon's extension to @ref wlmtk_element_t virtual method table. */
 static const wlmtk_element_vmt_t _wlmaker_toplevel_icon_element_vmt = {
     .destroy = _wlmaker_toplevel_icon_element_destroy,
+};
+
+/** Icon's extension to @ref wlmtk_tile_t virtual method table. */
+static const wlmtk_tile_vmt_t _wlmaker_toplevel_icon_tile_vmt = {
+    .set_content_size = _wlmaker_toplevel_icon_tile_set_content_size,
 };
 
 /* == Exported methods ===================================================== */
@@ -376,6 +384,9 @@ wlmaker_toplevel_icon_t *wlmaker_toplevel_icon_create(
     wlmtk_element_extend(
         wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
         &_wlmaker_toplevel_icon_element_vmt);
+    wlmtk_tile_extend(
+        &toplevel_icon_ptr->super_tile,
+        &_wlmaker_toplevel_icon_tile_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&toplevel_icon_ptr->super_tile),
         true);
@@ -515,6 +526,7 @@ void handle_surface_commit(
         return;
     }
 
+    // TODO(kaeser@gubbe.ch): Constrain image size to the content size.
     wlmtk_tile_set_content(
         &toplevel_icon_ptr->super_tile,
         wlmtk_surface_element(toplevel_icon_ptr->content_surface_ptr));
@@ -570,6 +582,19 @@ void _wlmaker_toplevel_icon_element_destroy(wlmtk_element_t *element_ptr)
             toplevel_icon_ptr->icon_manager_ptr->server_ptr->clip_dock_ptr,
             &toplevel_icon_ptr->super_tile);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Implements wlmtk_tile_vmt_t::set_content_size. Updates the content size. */
+bool _wlmaker_toplevel_icon_tile_set_content_size(
+    wlmtk_tile_t *tile_ptr,
+    __UNUSED__ uint64_t content_size)
+{
+    __UNUSED__ wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+        tile_ptr, wlmaker_toplevel_icon_t, super_tile);
+
+    // TODO(kaeser@gubbe.ch): Constrain image size to the content size.
+    return true;
 }
 
 /* == End of icon_manager.c ================================================ */

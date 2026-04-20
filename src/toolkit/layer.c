@@ -402,7 +402,7 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    static const wlmtk_tile_style_t ts = { .size = 64 };
+    static const struct wlmtk_tile_style ts = { .size = 64 };
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "test", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);

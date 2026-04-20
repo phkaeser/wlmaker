@@ -115,7 +115,7 @@ struct _wlmtk_workspace_t {
     wlmtk_layer_t             *overlay_layer_ptr;
 
     /** Copy of the tile's style, for dimensions; */
-    wlmtk_tile_style_t        tile_style;
+    struct wlmtk_tile_style   tile_style;
 
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
@@ -203,7 +203,7 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
 wlmtk_workspace_t *wlmtk_workspace_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     const char *name_ptr,
-    const wlmtk_tile_style_t *tile_style_ptr)
+    const struct wlmtk_tile_style *tile_style_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
         logged_calloc(1, sizeof(wlmtk_workspace_t));
@@ -1187,7 +1187,7 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
 };
 
 /** Tile style used in tests. */
-static const wlmtk_tile_style_t _wlmtk_workspace_test_tile_style = {
+static const struct wlmtk_tile_style _wlmtk_workspace_test_tile_style = {
     .size = 64
 };
 

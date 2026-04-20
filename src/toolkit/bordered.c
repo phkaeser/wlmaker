@@ -106,10 +106,8 @@ void wlmtk_bordered_set_style(wlmtk_bordered_t *bordered_ptr,
     bordered_ptr->style = *style_ptr;
 
     wlmtk_element_layout(wlmtk_bordered_element(bordered_ptr));
-    if (NULL != wlmtk_bordered_element(bordered_ptr)->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            wlmtk_bordered_element(bordered_ptr)->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(
+        wlmtk_bordered_element(bordered_ptr));
 
     // Guard clause. Actually, if *any* of the rectangles was not created.
     if (NULL == bordered_ptr->western_border_rectangle_ptr) return;

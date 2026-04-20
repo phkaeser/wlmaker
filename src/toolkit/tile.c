@@ -23,24 +23,42 @@
 #include <cairo.h>
 #include <inttypes.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <string.h>
 
 #include "gfxbuf.h"  // IWYU pragma: keep
 #include "primitives.h"
+#include "style.h"
 
 /* == Declarations ========================================================= */
 
 static struct wlr_buffer *_wlmtk_tile_create_buffer(
-    const wlmtk_tile_style_t *style_ptr);
+    const struct wlmtk_tile_style *style_ptr);
+static void _wlmtk_tile_align_content(wlmtk_tile_t *tile_ptr);
 
 /* == Data ================================================================= */
+
+const bspl_desc_t wlmtk_tile_style_desc[] = {
+    BSPL_DESC_UINT64(
+        "Size", true, struct wlmtk_tile_style, size, size, 64),
+    BSPL_DESC_UINT64(
+        "ContentSize", true, struct wlmtk_tile_style,
+        content_size, content_size, 48),
+    BSPL_DESC_UINT64(
+        "BezelWidth", true, struct wlmtk_tile_style,
+        bezel_width, bezel_width, 2),
+    BSPL_DESC_CUSTOM(
+        "Fill", true, struct wlmtk_tile_style, fill, fill,
+        wlmtk_style_decode_fill, NULL, NULL, NULL),
+    BSPL_DESC_SENTINEL()
+};
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
-    const wlmtk_tile_style_t *style_ptr)
+    const struct wlmtk_tile_style *style_ptr)
 {
     *tile_ptr = (wlmtk_tile_t){ .style = *style_ptr };
 
@@ -71,6 +89,19 @@ bool wlmtk_tile_init(
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_tile_vmt_t wlmtk_tile_extend(
+    wlmtk_tile_t *tile_ptr,
+    const wlmtk_tile_vmt_t *tile_vmt_ptr)
+{
+    wlmtk_tile_vmt_t orig_vmt = tile_ptr->vmt;
+
+    if (NULL != tile_vmt_ptr->set_content_size) {
+        tile_ptr->vmt.set_content_size = tile_vmt_ptr->set_content_size;
+    }
+    return orig_vmt;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
 {
     if (NULL != tile_ptr->background_wlr_buffer_ptr) {
@@ -86,6 +117,28 @@ void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr)
     }
 
     wlmtk_container_fini(&tile_ptr->super_container);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_tile_set_style(wlmtk_tile_t *tile_ptr,
+                          const struct wlmtk_tile_style *style_ptr)
+{
+    // Update buffer.
+    struct wlr_buffer *wlr_buffer_ptr = _wlmtk_tile_create_buffer(style_ptr);
+    if (NULL == wlr_buffer_ptr) return false;
+
+    tile_ptr->style = *style_ptr;
+    bool rv = wlmtk_tile_set_background_buffer(tile_ptr, wlr_buffer_ptr);
+    wlr_buffer_drop(wlr_buffer_ptr);
+    if (!rv) return false;
+
+    if (NULL != tile_ptr->vmt.set_content_size) {
+        tile_ptr->vmt.set_content_size(tile_ptr, style_ptr->content_size);
+    }
+
+    _wlmtk_tile_align_content(tile_ptr);
+    wlmtk_element_invalidate_parent_layout(wlmtk_tile_element(tile_ptr));
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -124,17 +177,7 @@ void wlmtk_tile_set_content(
             wlmtk_buffer_element(&tile_ptr->buffer),
             element_ptr);
         tile_ptr->content_element_ptr = element_ptr;
-
-        struct wlr_box box = wlmtk_element_get_dimensions_box(element_ptr);
-        if ((unsigned)box.width > tile_ptr->style.size ||
-            (unsigned)box.height > tile_ptr->style.size) {
-            bs_log(BS_WARNING, "Content size %d x %d > tile size %"PRIu64,
-                   box.width, box.height, tile_ptr->style.size);
-        }
-        wlmtk_element_set_position(
-            element_ptr,
-            ((int)tile_ptr->style.size - box.width) / 2,
-            ((int)tile_ptr->style.size - box.height) / 2);
+        _wlmtk_tile_align_content(tile_ptr);
     }
 }
 
@@ -175,12 +218,24 @@ wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr)
     return &tile_ptr->super_container.super_element;
 }
 
+/* ------------------------------------------------------------------------- */
+wlmtk_tile_t *wlmtk_tile_from_dlnode(bs_dllist_node_t *dlnode_ptr)
+{
+    return BS_CONTAINER_OF(dlnode_ptr, wlmtk_tile_t, dlnode);
+}
+
+/* ------------------------------------------------------------------------- */
+bs_dllist_node_t *wlmtk_dlnode_from_tile(wlmtk_tile_t *tile_ptr)
+{
+    return &tile_ptr->dlnode;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Crates a wlr_buffer with background, as described in `style_ptr`. */
 struct wlr_buffer *_wlmtk_tile_create_buffer(
-    const wlmtk_tile_style_t *style_ptr)
+    const struct wlmtk_tile_style *style_ptr)
 {
     struct wlr_buffer* wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
         style_ptr->size, style_ptr->size);
@@ -199,6 +254,25 @@ struct wlr_buffer *_wlmtk_tile_create_buffer(
     return wlr_buffer_ptr;
 }
 
+/* ------------------------------------------------------------------------- */
+/** (re)centers the content element. */
+void _wlmtk_tile_align_content(wlmtk_tile_t *tile_ptr)
+{
+    wlmtk_element_t *element_ptr = tile_ptr->content_element_ptr;
+    if (NULL == element_ptr) return;
+
+    struct wlr_box box = wlmtk_element_get_dimensions_box(element_ptr);
+    if ((unsigned)box.width > tile_ptr->style.size ||
+        (unsigned)box.height > tile_ptr->style.size) {
+        bs_log(BS_WARNING, "Content size %d x %d > tile size %"PRIu64,
+               box.width, box.height, tile_ptr->style.size);
+    }
+    wlmtk_element_set_position(
+        element_ptr,
+        ((int)tile_ptr->style.size - box.width) / 2,
+        ((int)tile_ptr->style.size - box.height) / 2);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_init_fini(bs_test_t *test_ptr);
@@ -213,7 +287,7 @@ const bs_test_case_t wlmtk_tile_test_cases[] = {
 static void test_init_fini(bs_test_t *test_ptr)
 {
     wlmtk_tile_t tile;
-    wlmtk_tile_style_t style = { .size = 64 };
+    struct wlmtk_tile_style style = { .size = 64 };
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_tile_init(&tile, &style));
     BS_TEST_VERIFY_EQ(

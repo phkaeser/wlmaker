@@ -310,6 +310,9 @@ void wlmtk_element_attach_to_scene_graph(
  */
 void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible);
 
+/** Calls @ref wlmtk_container_invalidate_layout on the parent container. */
+void wlmtk_element_invalidate_parent_layout(wlmtk_element_t *element_ptr);
+
 /**
  * Returns the position of the element.
  *

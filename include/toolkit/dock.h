@@ -21,6 +21,8 @@
 #define __WLMTK_DOCK_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
+#include <stdbool.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/util/edges.h>
 #undef WLR_USE_UNSTABLE
@@ -45,6 +47,12 @@ typedef struct {
     enum wlr_edges            anchor;
 } wlmtk_dock_positioning_t;
 
+/** Styling information for the dock. */
+struct wlmtk_dock_style {
+    /** The margin's style of the dock's box. */
+    struct wlmtk_margin_style margin;
+};
+
 /**
  * Creates a dock. A dock contains icons, launchers and the likes.
  *
@@ -58,7 +66,7 @@ typedef struct {
  */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
-    const wlmtk_dock_style_t *style_ptr);
+    const struct wlmtk_dock_style *style_ptr);
 
 /**
  * Destroys the dock.
@@ -66,6 +74,20 @@ wlmtk_dock_t *wlmtk_dock_create(
  * @param dock_ptr
  */
 void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr);
+
+/**
+ * Sets the style for the dock, including all contained tiles.
+ *
+ * @param dock_ptr
+ * @param style_ptr
+ * @param tile_style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_dock_set_style(
+    wlmtk_dock_t *dock_ptr,
+    const struct wlmtk_dock_style *style_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr);
 
 /**
  * Adds the tile to the dock.
@@ -92,6 +114,9 @@ wlmtk_panel_t *wlmtk_dock_panel(wlmtk_dock_t *dock_ptr);
 
 /** @return Pointer to the superclass @ref wlmtk_element_t of `dock_ptr`. */
 wlmtk_element_t *wlmtk_dock_element(wlmtk_dock_t *dock_ptr);
+
+/** Plist decoding descriptor of the dock's style. */
+extern const bspl_desc_t wlmtk_dock_style_desc[];
 
 /** Unit tests for @ref wlmtk_dock_t. */
 extern const bs_test_case_t wlmtk_dock_test_cases[];

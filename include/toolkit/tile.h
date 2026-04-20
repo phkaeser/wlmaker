@@ -22,8 +22,11 @@
 
 /** Forward declaration: State of a tile. */
 typedef struct _wlmtk_tile_t wlmtk_tile_t;
+/** Forward declaration: Tile virtual method table. */
+typedef struct _wlmtk_tile_vmt_t wlmtk_tile_vmt_t;
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -37,7 +40,7 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Style options for the tile. */
-typedef struct {
+struct wlmtk_tile_style {
     /** Fill style for the tile's background. */
     wlmtk_style_fill_t        fill;
     /** Size of the tile, in pixels. Tiles are of quadratic shape. */
@@ -46,18 +49,28 @@ typedef struct {
     uint64_t                  content_size;
     /** Width of the bezel. */
     uint64_t                  bezel_width;
-} wlmtk_tile_style_t;
+} ;
+
+/** Virtual method table for the tile. */
+struct _wlmtk_tile_vmt_t {
+    /** Updates the tile's content size. */
+    bool (*set_content_size)(wlmtk_tile_t *tile_ptr, uint64_t content_size);
+};
 
 /** State of a tile. */
 struct _wlmtk_tile_t {
     /** A tile is a container. Holds a background and contents. */
     wlmtk_container_t         super_container;
+    /** The tile's virtual method table. */
+    wlmtk_tile_vmt_t          vmt;
+    /** Element of @ref wlmtk_dock_t::tiles. */
+    bs_dllist_node_t          dlnode;
 
     /** The tile background is modelled as @ref wlmtk_buffer_t. */
     wlmtk_buffer_t            buffer;
 
     /** Style to be used for this tile. */
-    wlmtk_tile_style_t        style;
+    struct wlmtk_tile_style   style;
 
     /** Holds the tile's background, used in @ref wlmtk_tile_t::buffer. */
     struct wlr_buffer         *background_wlr_buffer_ptr;
@@ -78,7 +91,19 @@ struct _wlmtk_tile_t {
  */
 bool wlmtk_tile_init(
     wlmtk_tile_t *tile_ptr,
-    const wlmtk_tile_style_t *style_ptr);
+    const struct wlmtk_tile_style *style_ptr);
+
+/**
+ * Extends the tile's virtual methods.
+ *
+ * @param tile_ptr
+ * @param tile_vmt_ptr
+ *
+ * @return The previous virtual method table.
+ */
+wlmtk_tile_vmt_t wlmtk_tile_extend(
+    wlmtk_tile_t *tile_ptr,
+    const wlmtk_tile_vmt_t *tile_vmt_ptr);
 
 /**
  * Un-initializes the tile.
@@ -86,6 +111,18 @@ bool wlmtk_tile_init(
  * @param tile_ptr
  */
 void wlmtk_tile_fini(wlmtk_tile_t *tile_ptr);
+
+/**
+ * Updates the style for the tile.
+ *
+ * @param tile_ptr
+ * @param style_ptr
+ *
+ * @return true on success.
+ */
+bool wlmtk_tile_set_style(
+    wlmtk_tile_t *tile_ptr,
+    const struct wlmtk_tile_style *style_ptr);
 
 /**
  * Sets (overwrites) the default tile's background buffer.
@@ -133,6 +170,14 @@ void wlmtk_tile_set_overlay(
 
 /** @return the superclass' @ref wlmtk_element_t of `tile_ptr`. */
 wlmtk_element_t *wlmtk_tile_element(wlmtk_tile_t *tile_ptr);
+
+/** @return The @ref wlmtk_tile_t for `dlnode_ptr`. */
+wlmtk_tile_t *wlmtk_tile_from_dlnode(bs_dllist_node_t *dlnode_ptr);
+/** @return @ref wlmtk_tile_t::dlnode from `tile_ptr`. */
+bs_dllist_node_t *wlmtk_dlnode_from_tile(wlmtk_tile_t *tile_ptr);
+
+/** Plist decoding descriptor of a tile style. */
+extern const bspl_desc_t wlmtk_tile_style_desc[];
 
 /** Unit test cases for @ref wlmtk_tile_t. */
 extern const bs_test_case_t wlmtk_tile_test_cases[];
