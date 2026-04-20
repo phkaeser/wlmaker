@@ -308,7 +308,7 @@ void test_area(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);

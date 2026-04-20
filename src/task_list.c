@@ -207,6 +207,7 @@ void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 {
     wl_list_remove(&task_list_ptr->window_unmapped_listener.link);
     wl_list_remove(&task_list_ptr->window_mapped_listener.link);
+    wl_list_remove(&task_list_ptr->theme_changed_listener.link);
     wl_list_remove(&task_list_ptr->task_list_disabled_listener.link);
     wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
 

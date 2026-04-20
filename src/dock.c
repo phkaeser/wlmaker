@@ -58,6 +58,8 @@ struct _wlmaker_dock_t {
     struct wl_listener        workspace_changed_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
+    /** Listener for @ref wlmaker_server_t::theme_changed_event. */
+    struct wl_listener        theme_changed_listener;
 };
 
 static bool _wlmaker_dock_decode_launchers(
@@ -69,6 +71,9 @@ static void _wlmaker_dock_handle_workspace_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_dock_handle_output_layout_change(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_dock_handle_theme_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -198,6 +203,10 @@ wlmaker_dock_t *wlmaker_dock_create(
         &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &dock_ptr->workspace_changed_listener,
         _wlmaker_dock_handle_workspace_changed);
+    wlmtk_util_connect_listener_signal(
+        &server_ptr->theme_changed_event,
+        &dock_ptr->theme_changed_listener,
+        _wlmaker_dock_handle_theme_changed);
 
     // TODO(kaeser@gubbe.ch): This is a very hacky way of updating the output
     // before the layer's handler removes all associated panels. Should be
@@ -217,6 +226,7 @@ void wlmaker_dock_destroy(wlmaker_dock_t *dock_ptr)
 {
     wlmtk_util_disconnect_listener(&dock_ptr->output_layout_change_listener);
     wlmtk_util_disconnect_listener(&dock_ptr->workspace_changed_listener);
+    wlmtk_util_disconnect_listener(&dock_ptr->theme_changed_listener);
 
     if (NULL != dock_ptr->wlmtk_dock_ptr) {
         if (NULL != wlmtk_panel_get_layer(
@@ -306,6 +316,27 @@ void _wlmaker_dock_handle_output_layout_change(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for the `theme_changed_listener`: Updates the style
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmaker_dock_handle_theme_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+   wlmaker_dock_t *dock_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_dock_t, theme_changed_listener);
+   wlmaker_config_style_t *style_ptr = data_ptr;
+
+   wlmtk_dock_set_style(
+       dock_ptr->wlmtk_dock_ptr,
+       &style_ptr->dock,
+       &style_ptr->tile);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -334,6 +365,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.files_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
+    wl_signal_init(&server.theme_changed_event);
     server.wlr_output_layout_ptr = wlr_output_layout_create(
         server.wl_display_ptr);
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
@@ -351,7 +383,7 @@ void test_create_destroy(bs_test_t *test_ptr)
         server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "1", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);

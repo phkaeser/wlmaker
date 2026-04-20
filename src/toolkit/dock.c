@@ -18,11 +18,11 @@
  * limitations under the License.
  */
 
-
 #include "dock.h"
 
 #include <inttypes.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -41,10 +41,12 @@ struct _wlmtk_dock_t {
     /** Copy of the positioning information this dock was called from. */
     wlmtk_dock_positioning_t  dock_positioning;
     /** Styling info of the dock. */
-    wlmtk_dock_style_t        dock_style;
+    struct wlmtk_dock_style   style;
 
     /** Principal element of the dock is a box, holding tiles. */
     wlmtk_box_t               tile_box;
+    /** Extra holder for tiles, for direct access. */
+    bs_dllist_t               tiles;
 };
 
 static uint32_t _wlmtk_dock_panel_request_size(
@@ -56,8 +58,21 @@ static wlmtk_box_orientation_t _wlmtk_dock_orientation(wlmtk_dock_t *dock_ptr);
 static bool _wlmtk_dock_positioning(
     wlmtk_dock_t *dock_ptr,
     wlmtk_panel_positioning_t *panel_positioning_ptr);
+static bool _wlmtk_dock_tile_set_style(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+static void _wlmtk_dock_tile_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 /* == Data ================================================================= */
+
+const bspl_desc_t wlmtk_dock_style_desc[] = {
+    BSPL_DESC_DICT(
+        "Margin", true, struct wlmtk_dock_style, margin, margin,
+        wlmtk_style_margin_desc),
+    BSPL_DESC_SENTINEL()
+};
 
 /** Virtual method table of the panel. */
 static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
@@ -69,17 +84,17 @@ static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
 /* ------------------------------------------------------------------------- */
 wlmtk_dock_t *wlmtk_dock_create(
     const wlmtk_dock_positioning_t *dock_positioning_ptr,
-    const wlmtk_dock_style_t *style_ptr)
+    const struct wlmtk_dock_style *style_ptr)
 {
-    wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(wlmtk_dock_t));
+    wlmtk_dock_t *dock_ptr = logged_calloc(1, sizeof(*dock_ptr));
     if (NULL == dock_ptr) return NULL;
     dock_ptr->dock_positioning = *dock_positioning_ptr;
-    dock_ptr->dock_style = *style_ptr;
+    dock_ptr->style = *style_ptr;
 
     if (!wlmtk_box_init(
             &dock_ptr->tile_box,
             _wlmtk_dock_orientation(dock_ptr),
-            &dock_ptr->dock_style.margin)) {
+            &dock_ptr->style.margin)) {
         wlmtk_dock_destroy(dock_ptr);
         return NULL;
     }
@@ -111,6 +126,8 @@ wlmtk_dock_t *wlmtk_dock_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 {
+    bs_dllist_for_each(&dock_ptr->tiles, _wlmtk_dock_tile_destroy, dock_ptr);
+
     if (wlmtk_box_element(&dock_ptr->tile_box)->parent_container_ptr) {
         wlmtk_container_remove_element(
             &dock_ptr->super_panel.super_container,
@@ -120,6 +137,23 @@ void wlmtk_dock_destroy(wlmtk_dock_t *dock_ptr)
 
     wlmtk_panel_fini(&dock_ptr->super_panel);
     free(dock_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_dock_set_style(
+    wlmtk_dock_t *dock_ptr,
+    const struct wlmtk_dock_style *style_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr)
+{
+    wlmtk_box_set_style(&dock_ptr->tile_box, &style_ptr->margin);
+    bool rv = bs_dllist_all(
+        &dock_ptr->tiles,
+        _wlmtk_dock_tile_set_style,
+        (void*)tile_style_ptr);
+
+    wlmtk_element_layout(wlmtk_box_element(&dock_ptr->tile_box));
+    _wlmtk_dock_panel_request_size(&dock_ptr->super_panel, 0, 0);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -133,16 +167,19 @@ void wlmtk_dock_add_tile(
         wlmtk_box_add_element_back(
             &dock_ptr->tile_box,
             wlmtk_tile_element(tile_ptr));
+        bs_dllist_push_back(
+            &dock_ptr->tiles,
+            wlmtk_dlnode_from_tile(tile_ptr));
     } else {
         wlmtk_box_add_element_front(
             &dock_ptr->tile_box,
             wlmtk_tile_element(tile_ptr));
+        bs_dllist_push_front(
+            &dock_ptr->tiles,
+            wlmtk_dlnode_from_tile(tile_ptr));
     }
 
-    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(dock_ptr);
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_panel_element(panel_ptr));
-    wlmtk_panel_request_size(panel_ptr, box.width, box.height);
+    _wlmtk_dock_panel_request_size(&dock_ptr->super_panel, 0, 0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -156,11 +193,11 @@ void wlmtk_dock_remove_tile(
     wlmtk_box_remove_element(
         &dock_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
+    bs_dllist_remove(
+        &dock_ptr->tiles,
+        wlmtk_dlnode_from_tile(tile_ptr));
 
-    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(dock_ptr);
-    struct wlr_box box = wlmtk_element_get_dimensions_box(
-        wlmtk_panel_element(panel_ptr));
-    wlmtk_panel_request_size(panel_ptr, box.width, box.height);
+    _wlmtk_dock_panel_request_size(&dock_ptr->super_panel, 0, 0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -179,7 +216,7 @@ wlmtk_element_t *wlmtk_dock_element(wlmtk_dock_t *dock_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Returns the panel to change to the specified size.
+ * Recomputes the dock's size -- and also commits it.
  *
  * @param panel_ptr
  * @param width
@@ -286,6 +323,25 @@ bool _wlmtk_dock_positioning(
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Iterator to bs_dllist_all(): Sets style for a tile in the iterator. */
+bool _wlmtk_dock_tile_set_style(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_tile_t *tile_ptr = wlmtk_tile_from_dlnode(dlnode_ptr);
+    const struct wlmtk_tile_style *tile_style_ptr = ud_ptr;
+    return wlmtk_tile_set_style(tile_ptr, tile_style_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Iterator to bs_dllist_for_each(): Removes & destroys the tile at node. */
+void _wlmtk_dock_tile_destroy(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_tile_t *tile_ptr = wlmtk_tile_from_dlnode(dlnode_ptr);
+    wlmtk_dock_t *dock_ptr = ud_ptr;
+    wlmtk_dock_remove_tile(dock_ptr, tile_ptr);
+    wlmtk_element_destroy(wlmtk_tile_element(tile_ptr));
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -303,7 +359,7 @@ const bs_test_case_t wlmtk_dock_test_cases[] = {
         .edge = WLR_EDGE_LEFT,
         .anchor = WLR_EDGE_BOTTOM,
     };
-    wlmtk_dock_style_t style = {};
+    struct wlmtk_dock_style style = {};
 
     wlmtk_dock_t *dock_ptr = wlmtk_dock_create(&pos, &style);
     BS_TEST_VERIFY_EQ(

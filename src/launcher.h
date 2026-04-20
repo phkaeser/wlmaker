@@ -45,7 +45,7 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
  * @return Pointer to the launcher handle or NULL on error.
  */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
-    const wlmtk_tile_style_t *style_ptr,
+    const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
     wlmaker_subprocess_monitor_t *monitor_ptr,
     wlmaker_files_t *files_ptr);

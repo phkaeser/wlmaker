@@ -527,10 +527,7 @@ void wlmtk_window_commit_size(
     }
 
     wlmtk_element_layout(wlmtk_window_element(window_ptr));
-    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            wlmtk_window_element(window_ptr)->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(wlmtk_window_element(window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -722,10 +719,7 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
     wl_signal_emit(&window_ptr->events.state_changed, window_ptr);
 
     wlmtk_element_layout(wlmtk_window_element(window_ptr));
-    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            wlmtk_window_element(window_ptr)->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(wlmtk_window_element(window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1089,10 +1083,7 @@ void _wlmtk_window_apply_decoration(wlmtk_window_t *window_ptr)
     _wlmtk_window_set_decoration_width(window_ptr);
 
     wlmtk_element_layout(wlmtk_window_element(window_ptr));
-    if (NULL != wlmtk_window_element(window_ptr)->parent_container_ptr) {
-        wlmtk_container_invalidate_layout(
-            wlmtk_window_element(window_ptr)->parent_container_ptr);
-    }
+    wlmtk_element_invalidate_parent_layout(wlmtk_window_element(window_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1311,7 +1302,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
@@ -1536,7 +1527,7 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
@@ -1665,7 +1656,7 @@ void test_fullscreen_unmap(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
@@ -1746,7 +1737,7 @@ void test_maximized(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
@@ -1965,7 +1956,7 @@ void test_modifier_move(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
-    wlmtk_tile_style_t ts = {};
+    struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);

@@ -29,7 +29,6 @@
 #undef WLR_USE_UNSTABLE
 
 #include "box.h"
-#include "container.h"
 #include "primitives.h"
 #include "style.h"
 #include "titlebar_button.h"
@@ -462,8 +461,8 @@ bool _wlmtk_titlebar_redraw(
 
     // Don't forget to re-position the elements.
     wlmtk_element_layout(wlmtk_box_element(&titlebar_ptr->super_box));
-    wlmtk_container_invalidate_layout(
-        &titlebar_ptr->super_box.super_container);
+    wlmtk_element_invalidate_parent_layout(
+        wlmtk_box_element(&titlebar_ptr->super_box));
     return true;
 }
 

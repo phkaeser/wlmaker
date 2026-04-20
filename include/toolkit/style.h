@@ -119,12 +119,6 @@ struct wlmtk_margin_style {
     uint32_t                  color;
 };
 
-/** Styling information for the dock. */
-typedef struct {
-    /** The margin's style of the dock's box. */
-    struct wlmtk_margin_style margin;
-} wlmtk_dock_style_t;
-
 /** Style options for the titlebar. */
 struct wlmtk_titlebar_style {
     /** Fill style for when the titlebar is focussed (activated). */

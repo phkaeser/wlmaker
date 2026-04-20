@@ -65,6 +65,8 @@ struct _wlmaker_clip_t {
 
     /** Overlay buffer element: Contains the workspace's title and number. */
     wlmtk_buffer_t            overlay_buffer;
+    /** Path to the image file. */
+    char                      *image_path_ptr;
     /** Clip image. */
     wlmtk_image_t             *image_ptr;
 
@@ -88,6 +90,8 @@ struct _wlmaker_clip_t {
     struct wl_listener        pointer_motion_listener;
     /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
     struct wl_listener        pointer_leave_listener;
+    /** Listener for @ref wlmaker_server_t::theme_changed_event. */
+    struct wl_listener        theme_changed_listener;
 
     /** The clip's style. */
     wlmaker_config_clip_style_t style;
@@ -100,10 +104,19 @@ static bool _wlmaker_clip_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
-static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr);
-static void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr);
+static bool _wlmaker_clip_update_tiles(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr);
+static void _wlmaker_clip_apply_button_state(wlmaker_clip_t *clip_ptr);
+static bool _wlmaker_clip_update_overlay(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr,
+    const wlmaker_config_clip_style_t *clip_style_ptr);
+static bool _wlmaker_clip_update_image(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr);
 static struct wlr_buffer *_wlmaker_clip_create_tile(
-    const wlmtk_tile_style_t *style_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr,
     bool prev_pressed,
     bool next_pressed);
 
@@ -117,6 +130,9 @@ static void _wlmaker_clip_handle_pointer_motion(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 static void _wlmaker_clip_handle_pointer_leave(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmaker_clip_handle_theme_changed(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -167,19 +183,6 @@ wlmaker_clip_t *wlmaker_clip_create(
     clip_ptr->server_ptr = server_ptr;
     clip_ptr->style = style_ptr->clip;
 
-    clip_ptr->tile_buffer_ptr = _wlmaker_clip_create_tile(
-        &style_ptr->tile, false, false);
-    clip_ptr->prev_pressed_tile_buffer_ptr = _wlmaker_clip_create_tile(
-        &style_ptr->tile, true, false);
-    clip_ptr->next_pressed_tile_buffer_ptr = _wlmaker_clip_create_tile(
-        &style_ptr->tile, false, true);
-    if (NULL == clip_ptr->tile_buffer_ptr ||
-        NULL == clip_ptr->prev_pressed_tile_buffer_ptr ||
-        NULL == clip_ptr->next_pressed_tile_buffer_ptr) {
-        wlmaker_clip_destroy(clip_ptr);
-        return NULL;
-    }
-
     parse_args args = {};
     bspl_dict_t *dict_ptr = bspl_dict_get_dict(state_dict_ptr, "Clip");
     if (NULL == dict_ptr) {
@@ -221,6 +224,11 @@ wlmaker_clip_t *wlmaker_clip_create(
         &clip_ptr->pointer_leave_listener,
         _wlmaker_clip_handle_pointer_leave);
 
+    if (!_wlmaker_clip_update_tiles(clip_ptr, &style_ptr->tile)) {
+        wlmaker_clip_destroy(clip_ptr);
+        return NULL;
+    }
+
     wlmtk_element_set_visible(
         wlmtk_tile_element(&clip_ptr->super_tile), true);
     wlmtk_tile_set_background_buffer(
@@ -254,44 +262,41 @@ wlmaker_clip_t *wlmaker_clip_create(
     }
 
     // Resolves to a full path, and verifies the icon file exists.
-    char *path_ptr = wlmaker_files_xdg_data_find(
+    clip_ptr->image_path_ptr = wlmaker_files_xdg_data_find(
         server_ptr->files_ptr, "icons/clip-48x48.png", S_IFREG);
-    const char *p1 = path_ptr;
-    if (NULL == path_ptr) {
+    if (NULL == clip_ptr->image_path_ptr) {
         bs_log(
             BS_WARNING,
             "Failed to locate ${XDG_DATA_DIRS}/wlmaker/icons/clip-48x48.png");
-#ifndef WLMAKER_SOURCE_DIR
-        wlmaker_clip_destroy(clip_ptr);
-        return NULL;
-#else
-        p1 = WLMAKER_SOURCE_DIR "/share/wlmaker/icons/clip-48x48.png";
+#ifdef WLMAKER_SOURCE_DIR
+        clip_ptr->image_path_ptr = logged_strdup(
+            WLMAKER_SOURCE_DIR "/share/wlmaker/icons/clip-48x48.png");
 #endif
     }
-    clip_ptr->image_ptr = wlmtk_image_create_scaled(
-        p1,
-        clip_ptr->super_tile.style.content_size,
-        clip_ptr->super_tile.style.content_size);
-    free(path_ptr);
-    if (NULL == clip_ptr->image_ptr) {
+    if (NULL == clip_ptr->image_path_ptr) {
         wlmaker_clip_destroy(clip_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(
-        wlmtk_image_element(clip_ptr->image_ptr), true);
-    wlmtk_tile_set_content(
-        &clip_ptr->super_tile,
-        wlmtk_image_element(clip_ptr->image_ptr));
+    if (!_wlmaker_clip_update_image(clip_ptr, &style_ptr->tile)) {
+        wlmaker_clip_destroy(clip_ptr);
+        return NULL;
+    }
 
-    _wlmaker_clip_update_overlay(clip_ptr);
-    wlmtk_tile_set_overlay(
-        &clip_ptr->super_tile,
-        wlmtk_buffer_element(&clip_ptr->overlay_buffer));
+    if (!_wlmaker_clip_update_overlay(
+            clip_ptr, &clip_ptr->super_tile.style, &clip_ptr->style)) {
+        wlmaker_clip_destroy(clip_ptr);
+        return NULL;
+    };
 
     wlmtk_util_connect_listener_signal(
         &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
+    wlmtk_util_connect_listener_signal(
+        &server_ptr->theme_changed_event,
+        &clip_ptr->theme_changed_listener,
+        _wlmaker_clip_handle_theme_changed);
+
 
     // TODO(kaeser@gubbe.ch): This is a very hacky way of updating the output
     // before the layer's handler removes all associated panels. Should be
@@ -316,6 +321,7 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
 
     wlmtk_util_disconnect_listener(&clip_ptr->output_layout_change_listener);
     wlmtk_util_disconnect_listener(&clip_ptr->workspace_changed_listener);
+    wlmtk_util_disconnect_listener(&clip_ptr->theme_changed_listener);
 
     if (wlmtk_tile_element(&clip_ptr->super_tile)->parent_container_ptr) {
         wlmtk_tile_set_content(&clip_ptr->super_tile, NULL);
@@ -332,6 +338,10 @@ void wlmaker_clip_destroy(wlmaker_clip_t *clip_ptr)
     if (NULL != clip_ptr->image_ptr) {
         wlmtk_image_destroy(clip_ptr->image_ptr);
         clip_ptr->image_ptr = NULL;
+    }
+    if (NULL != clip_ptr->image_path_ptr) {
+        free(clip_ptr->image_path_ptr);
+        clip_ptr->image_path_ptr = NULL;
     }
 
     if (NULL != clip_ptr->wlmtk_dock_ptr) {
@@ -453,13 +463,13 @@ bool _wlmaker_clip_pointer_button(
         break;
     }
 
-    _wlmaker_clip_update_buttons(clip_ptr);
+    _wlmaker_clip_apply_button_state(clip_ptr);
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Updates the button textures, based on current state what's pressed. */
-static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr)
+static void _wlmaker_clip_apply_button_state(wlmaker_clip_t *clip_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = clip_ptr->tile_buffer_ptr;
     if ((clip_ptr->pointer_inside_next_button ||
@@ -476,11 +486,14 @@ static void _wlmaker_clip_update_buttons(wlmaker_clip_t *clip_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Updates the overlay buffer's content with workspace name and index. */
-void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
+bool _wlmaker_clip_update_overlay(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr,
+    const wlmaker_config_clip_style_t *clip_style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        clip_ptr->super_tile.style.size, clip_ptr->super_tile.style.size);
-    if (NULL == wlr_buffer_ptr) return;
+        tile_style_ptr->size, tile_style_ptr->size);
+    if (NULL == wlr_buffer_ptr) return false;
 
     int index = 0;
     const char *name_ptr = NULL;
@@ -491,26 +504,26 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
         wlr_buffer_drop(wlr_buffer_ptr);
-        return;
+        return false;
     }
 
     cairo_select_font_face(
         cairo_ptr,
-        clip_ptr->style.font.face,
+        clip_style_ptr->font.face,
         CAIRO_FONT_SLANT_NORMAL,
-        wlmtk_style_font_weight_cairo_from_wlmtk(clip_ptr->style.font.weight));
-    cairo_set_font_size(cairo_ptr, clip_ptr->style.font.size);
-    cairo_set_source_argb8888(cairo_ptr, clip_ptr->style.text_color);
+        wlmtk_style_font_weight_cairo_from_wlmtk(clip_style_ptr->font.weight));
+    cairo_set_font_size(cairo_ptr, clip_style_ptr->font.size);
+    cairo_set_source_argb8888(cairo_ptr, clip_style_ptr->text_color);
     cairo_move_to(
         cairo_ptr,
-        clip_ptr->style.font.size * 4 / 12,
-        clip_ptr->style.font.size * 2 / 12 + clip_ptr->style.font.size);
+        clip_style_ptr->font.size * 4 / 12,
+        clip_style_ptr->font.size * 2 / 12 + clip_style_ptr->font.size);
     cairo_show_text(cairo_ptr, name_ptr);
 
     cairo_move_to(
         cairo_ptr,
-        clip_ptr->super_tile.style.size - clip_ptr->style.font.size * 14 / 12,
-        clip_ptr->super_tile.style.size - clip_ptr->style.font.size * 8 / 12);
+        tile_style_ptr->size - clip_style_ptr->font.size * 14 / 12,
+        tile_style_ptr->size - clip_style_ptr->font.size * 8 / 12);
     char buf[10];
     snprintf(buf, sizeof(buf), "%d", index);
     cairo_show_text(cairo_ptr, buf);
@@ -519,6 +532,72 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
 
     wlmtk_buffer_set(&clip_ptr->overlay_buffer, wlr_buffer_ptr);
     wlr_buffer_drop(wlr_buffer_ptr);
+
+    wlmtk_tile_set_overlay(
+        &clip_ptr->super_tile,
+        wlmtk_buffer_element(&clip_ptr->overlay_buffer));
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Updates (reloads) the content image. */
+bool _wlmaker_clip_update_image(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr)
+{
+    wlmtk_image_t *i = wlmtk_image_create_scaled(
+        clip_ptr->image_path_ptr,
+        tile_style_ptr->content_size,
+        tile_style_ptr->content_size);
+    if (NULL == i) return false;
+
+    wlmtk_element_set_visible(wlmtk_image_element(i), true);
+    wlmtk_tile_set_content(&clip_ptr->super_tile, wlmtk_image_element(i));
+
+    if (NULL != clip_ptr->image_ptr) wlmtk_image_destroy(clip_ptr->image_ptr);
+    clip_ptr->image_ptr = i;
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Creates (or updates) the tile buffers for the button states.
+ *
+ * @param clip_ptr
+ * @param tile_style_ptr
+ *
+ * @return true on success
+ */
+bool _wlmaker_clip_update_tiles(
+    wlmaker_clip_t *clip_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr)
+{
+    struct wlr_buffer *tile, *tile_prev, *tile_next;
+    tile = _wlmaker_clip_create_tile(tile_style_ptr, false, false);
+    tile_prev = _wlmaker_clip_create_tile(tile_style_ptr, true, false);
+    tile_next = _wlmaker_clip_create_tile(tile_style_ptr, false, true);
+
+    if (NULL == tile || NULL == tile_prev || NULL == tile_next) {
+        if (tile) wlr_buffer_drop(tile);
+        if (tile_prev) wlr_buffer_drop(tile_prev);
+        if (tile_next) wlr_buffer_drop(tile_next);
+        return false;
+    }
+
+    if (NULL != clip_ptr->tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->tile_buffer_ptr);
+    }
+    if (NULL != clip_ptr->prev_pressed_tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->prev_pressed_tile_buffer_ptr);
+    }
+    if (NULL != clip_ptr->next_pressed_tile_buffer_ptr) {
+        wlr_buffer_drop(clip_ptr->next_pressed_tile_buffer_ptr);
+    }
+    clip_ptr->tile_buffer_ptr = tile;
+    clip_ptr->prev_pressed_tile_buffer_ptr = tile_prev;
+    clip_ptr->next_pressed_tile_buffer_ptr = tile_next;
+    _wlmaker_clip_apply_button_state(clip_ptr);
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -526,24 +605,24 @@ void _wlmaker_clip_update_overlay(wlmaker_clip_t *clip_ptr)
  * Creates a wlr_buffer with texture suitable to show the 'next' and 'prev'
  * buttons in each raised or pressed state.
  *
- * @param style_ptr
+ * @param tile_style_ptr
  * @param prev_pressed
  * @param next_pressed
  *
  * @return A wlr buffer.
  */
 struct wlr_buffer *_wlmaker_clip_create_tile(
-    const wlmtk_tile_style_t *style_ptr,
+    const struct wlmtk_tile_style *tile_style_ptr,
     bool prev_pressed,
     bool next_pressed)
 {
     struct wlr_buffer* wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        style_ptr->size, style_ptr->size);
+        tile_style_ptr->size, tile_style_ptr->size);
     if (NULL == wlr_buffer_ptr) return NULL;
 
-    double tsize = style_ptr->size;
-    double bsize = 22.0 / 64.0 * style_ptr->size;
-    double margin = style_ptr->bezel_width;
+    double tsize = tile_style_ptr->size;
+    double bsize = 22.0 / 64.0 * tile_style_ptr->size;
+    double margin = tile_style_ptr->bezel_width;
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
@@ -551,7 +630,7 @@ struct wlr_buffer *_wlmaker_clip_create_tile(
         return NULL;
     }
 
-    wlmaker_primitives_cairo_fill(cairo_ptr, &style_ptr->fill);
+    wlmaker_primitives_cairo_fill(cairo_ptr, &tile_style_ptr->fill);
 
     // Northern + Western sides. Drawn clock-wise.
     wlmaker_primitives_set_bezel_color(cairo_ptr, true);
@@ -743,7 +822,8 @@ void _wlmaker_clip_handle_workspace_changed(
                   wlmbe_primary_output(
                       clip_ptr->server_ptr->wlr_output_layout_ptr)));
 
-    _wlmaker_clip_update_overlay(clip_ptr);
+    _wlmaker_clip_update_overlay(
+        clip_ptr, &clip_ptr->super_tile.style, &clip_ptr->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -783,7 +863,7 @@ void _wlmaker_clip_handle_pointer_leave(
 
     clip_ptr->pointer_inside_prev_button = false;
     clip_ptr->pointer_inside_next_button = false;
-    _wlmaker_clip_update_buttons(clip_ptr);
+    _wlmaker_clip_apply_button_state(clip_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -815,7 +895,34 @@ void _wlmaker_clip_handle_pointer_motion(
         clip_ptr->pointer_inside_prev_button = true;
     }
 
-    _wlmaker_clip_update_buttons(clip_ptr);
+    _wlmaker_clip_apply_button_state(clip_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Event listener: The theme changed. Applies the new style to the clip. */
+void _wlmaker_clip_handle_theme_changed(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmaker_clip_t, theme_changed_listener);
+    wlmaker_config_style_t *style_ptr = data_ptr;
+
+    if (!_wlmaker_clip_update_tiles(clip_ptr, &style_ptr->tile)) return;
+    if (!_wlmaker_clip_update_overlay(
+            clip_ptr, &style_ptr->tile, &style_ptr->clip)) return;
+    if (!_wlmaker_clip_update_image(clip_ptr, &style_ptr->tile)) return;
+    clip_ptr->style = style_ptr->clip;
+
+    wlmtk_dock_set_style(
+        clip_ptr->wlmtk_dock_ptr,
+        &style_ptr->dock,
+        &style_ptr->tile);
+
+    // Need to apply the button state (again) after @ref wlmtk_dock_set_style,
+    // since the latter will apply the generic tile backend. Which the tile
+    // overwrites.
+    _wlmaker_clip_apply_button_state(clip_ptr);
 }
 
 /* == Unit tests =========================================================== */
@@ -835,7 +942,7 @@ const bs_test_set_t wlmaker_clip_test_set = BS_TEST_SET(
 /** Tests that the clip tile is drawn correctly. */
 void test_draw_tile(bs_test_t *test_ptr)
 {
-    static const wlmtk_tile_style_t style = {
+    static const struct wlmtk_tile_style style = {
         .fill = {
             .type = WLMTK_STYLE_COLOR_DGRADIENT,
             .param = { .dgradient = { .from = 0xffa6a6b6, .to = 0xff515561 } }

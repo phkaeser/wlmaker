@@ -26,6 +26,7 @@
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 #include "toolkit/toolkit.h"
@@ -51,6 +52,9 @@ struct _wlmaker_launcher_t {
     char                      *cmdline_ptr;
     /** Path to the icon. */
     char                      *icon_path_ptr;
+
+    /** Resolved icon path. */
+    char                      *resolved_icon_path_ptr;
 
     /** Windows that are running from subprocesses of this App (launcher). */
     bs_ptr_set_t              *created_windows_ptr;
@@ -103,6 +107,10 @@ static void _wlmaker_launcher_handle_window_destroyed(
     wlmaker_subprocess_handle_t *subprocess_handle_ptr,
     wlmtk_window_t *window_ptr);
 
+static bool _wlmaker_launcher_set_content_size(
+    wlmtk_tile_t *tile_ptr,
+    uint64_t content_size);
+
 /* == Data ================================================================= */
 
 /** The launcher's extension to @ref wlmtk_element_t virtual method table. */
@@ -111,11 +119,16 @@ static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
     .pointer_button = _wlmaker_launcher_pointer_button,
 };
 
+/** Launcher's extension to @ref wlmtk_tile_t virtual method table. */
+static const wlmtk_tile_vmt_t _wlmaker_launcher_tile_vmt = {
+    .set_content_size = _wlmaker_launcher_set_content_size,
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
-    const wlmtk_tile_style_t *style_ptr,
+    const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
     wlmaker_subprocess_monitor_t *monitor_ptr,
     wlmaker_files_t *files_ptr)
@@ -131,6 +144,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     launcher_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_tile_element(&launcher_ptr->super_tile),
         &_wlmaker_launcher_element_vmt);
+    wlmtk_tile_extend(&launcher_ptr->super_tile, &_wlmaker_launcher_tile_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
@@ -176,9 +190,10 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-    char *path_ptr = wlmaker_files_xdg_data_find(files_ptr, p, S_IFREG);
+    launcher_ptr->resolved_icon_path_ptr = wlmaker_files_xdg_data_find(
+        files_ptr, p, S_IFREG);
     free(p);
-    if (NULL == path_ptr) {
+    if (NULL == launcher_ptr->resolved_icon_path_ptr) {
         bs_log(BS_ERROR,
                "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
                launcher_ptr->icon_path_ptr);
@@ -186,19 +201,19 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
 #else
-        path_ptr = bs_strdupf(WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
-                              launcher_ptr->icon_path_ptr);
-        if (NULL == path_ptr) {
+        launcher_ptr->resolved_icon_path_ptr = bs_strdupf(
+            WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
+            launcher_ptr->icon_path_ptr);
+        if (NULL == launcher_ptr->resolved_icon_path_ptr) {
             wlmaker_launcher_destroy(launcher_ptr);
             return NULL;
         }
 #endif
     }
     launcher_ptr->image_ptr = wlmtk_image_create_scaled(
-        path_ptr,
+        launcher_ptr->resolved_icon_path_ptr,
         launcher_ptr->super_tile.style.content_size,
         launcher_ptr->super_tile.style.content_size);
-    free(path_ptr);
     if (NULL == launcher_ptr->image_ptr) {
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
@@ -245,6 +260,11 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
     if (NULL != launcher_ptr->created_windows_ptr) {
         bs_ptr_set_destroy(launcher_ptr->created_windows_ptr);
         launcher_ptr->created_windows_ptr = NULL;
+    }
+
+    if (NULL != launcher_ptr->resolved_icon_path_ptr) {
+        free(launcher_ptr->resolved_icon_path_ptr);
+        launcher_ptr->resolved_icon_path_ptr = NULL;
     }
 
     if (NULL != launcher_ptr->cmdline_ptr) {
@@ -550,6 +570,26 @@ void _wlmaker_launcher_handle_window_destroyed(
     _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
+/* ------------------------------------------------------------------------- */
+/** Implements @ref wlmtk_tile_vmt_t::set_content_size. Set the image size. */
+bool _wlmaker_launcher_set_content_size(
+    wlmtk_tile_t *tile_ptr,
+    uint64_t content_size)
+{
+    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        tile_ptr, wlmaker_launcher_t, super_tile);
+
+    wlmtk_image_t *image_ptr = wlmtk_image_create_scaled(
+        launcher_ptr->resolved_icon_path_ptr, content_size, content_size);
+    if (NULL == image_ptr) return false;
+
+    wlmtk_element_set_visible(wlmtk_image_element(image_ptr), true);
+    wlmtk_tile_set_content(tile_ptr, wlmtk_image_element(image_ptr));
+    wlmtk_image_destroy(launcher_ptr->image_ptr);
+    launcher_ptr->image_ptr = image_ptr;
+    return true;
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_from_plist(bs_test_t *test_ptr);
@@ -567,7 +607,7 @@ const bs_test_set_t wlmaker_launcher_test_set = BS_TEST_SET(
 /** Exercises plist parser. */
 void test_create_from_plist(bs_test_t *test_ptr)
 {
-    static const wlmtk_tile_style_t style = { .size = 96 };
+    static const struct wlmtk_tile_style style = { .size = 96 };
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
 

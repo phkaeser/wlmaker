@@ -872,7 +872,7 @@ void test_workspaces(bs_test_t *test_ptr)
     // Empty? A no-op.
     wlmtk_root_destroy_last_workspace(root_ptr);
 
-    static const wlmtk_tile_style_t tstyle = {};
+    static const struct wlmtk_tile_style tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "1", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
@@ -1030,7 +1030,7 @@ void test_pointer_move(bs_test_t *test_ptr)
         wlr_scene_ptr, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
 
-    static const wlmtk_tile_style_t tstyle = {};
+    static const struct wlmtk_tile_style tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "1", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);

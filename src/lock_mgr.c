@@ -826,7 +826,7 @@ void test_lock_unlock(bs_test_t *test_ptr)
     server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
-    wlmtk_tile_style_t tile_style = {};
+    struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
@@ -905,7 +905,7 @@ void test_lock_crash(bs_test_t *test_ptr)
     server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
-    wlmtk_tile_style_t tile_style = {};
+    struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
@@ -982,7 +982,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
 
-    wlmtk_tile_style_t tile_style = {};
+    struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);

@@ -49,28 +49,6 @@ static bspl_dict_t *_wlmaker_config_from_plist(const char *fname_ptr);
 
 /* == Data ================================================================= */
 
-/** Plist decoding descriptor of a tile style. */
-static const bspl_desc_t _wlmaker_config_tile_style_desc[] = {
-    BSPL_DESC_UINT64(
-        "Size", true, wlmtk_tile_style_t, size, size, 64),
-    BSPL_DESC_UINT64(
-        "ContentSize", true, wlmtk_tile_style_t, content_size, content_size, 48),
-    BSPL_DESC_UINT64(
-        "BezelWidth", true, wlmtk_tile_style_t, bezel_width, bezel_width, 2),
-    BSPL_DESC_CUSTOM(
-        "Fill", true, wlmtk_tile_style_t, fill, fill,
-        wlmtk_style_decode_fill, NULL, NULL, NULL),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Plist decoding descriptor of the dock's style. */
-static const bspl_desc_t _wlmaker_config_dock_style_desc[] = {
-    BSPL_DESC_DICT(
-        "Margin", true, wlmtk_dock_style_t, margin, margin,
-        wlmtk_style_margin_desc),
-    BSPL_DESC_SENTINEL()
-};
-
 /** Descriptor for decoding the "Clip" dictionary. */
 static const bspl_desc_t _wlmaker_clip_style_desc[] = {
     BSPL_DESC_DICT(
@@ -99,10 +77,10 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
         background_color, 0),
     BSPL_DESC_DICT(
         "Tile", true, wlmaker_config_style_t, tile, tile,
-        _wlmaker_config_tile_style_desc),
+        wlmtk_tile_style_desc),
     BSPL_DESC_DICT(
         "Dock", true, wlmaker_config_style_t, dock, dock,
-        _wlmaker_config_dock_style_desc),
+        wlmtk_dock_style_desc),
     BSPL_DESC_CUSTOM(
         "Window", true, wlmaker_config_style_t,
         window_style_ptr, has_window_style,
