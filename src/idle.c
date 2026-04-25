@@ -170,7 +170,7 @@ wlmaker_idle_monitor_t *wlmaker_idle_monitor_create(
 void wlmaker_idle_monitor_destroy(wlmaker_idle_monitor_t *idle_monitor_ptr)
 {
     if (NULL != idle_monitor_ptr->unlock_listener.link.prev) {
-        wl_list_remove(&idle_monitor_ptr->unlock_listener.link);
+        wlmtk_util_disconnect_listener(&idle_monitor_ptr->unlock_listener);
     }
 
     if (NULL != idle_monitor_ptr->timer_event_source_ptr) {
@@ -375,7 +375,7 @@ void _wlmaker_idle_monitor_handle_destroy_inhibitor(
         &idle_inhibitor_ptr->idle_monitor_ptr->idle_inhibitors,
         &idle_inhibitor_ptr->dlnode);
 
-    wl_list_remove(&idle_inhibitor_ptr->destroy_listener.link);
+    wlmtk_util_disconnect_listener(&idle_inhibitor_ptr->destroy_listener);
     free(idle_inhibitor_ptr);
 }
 
@@ -422,7 +422,7 @@ void _wlmaker_idle_monitor_handle_unlock(
     wlmaker_idle_monitor_t *idle_monitor_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_idle_monitor_t, unlock_listener);
 
-    wl_list_remove(&idle_monitor_ptr->unlock_listener.link);
+    wlmtk_util_disconnect_listener(&idle_monitor_ptr->unlock_listener);
     idle_monitor_ptr->locked = false;
     wlmaker_idle_monitor_reset(idle_monitor_ptr);
 }

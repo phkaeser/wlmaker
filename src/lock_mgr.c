@@ -352,9 +352,9 @@ void _wlmaker_lock_destroy(wlmaker_lock_t *lock_ptr)
         lock_ptr->output_tracker_ptr = NULL;
     }
 
-    wl_list_remove(&lock_ptr->destroy_listener.link);
-    wl_list_remove(&lock_ptr->unlock_listener.link);
-    wl_list_remove(&lock_ptr->new_surface_listener.link);
+    wlmtk_util_disconnect_listener(&lock_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&lock_ptr->unlock_listener);
+    wlmtk_util_disconnect_listener(&lock_ptr->new_surface_listener);
 
     wlmtk_root_lock_unreference(lock_ptr->root_ptr,
                                 _wlmaker_lock_element(lock_ptr));
@@ -669,8 +669,8 @@ void _wlmaker_lock_output_destroy_surface(
             &lock_output_ptr->lock_ptr->container,
             wlmtk_surface_element(lock_output_ptr->wlmtk_surface_ptr));
 
-        wl_list_remove(&lock_output_ptr->surface_commit_listener.link);
-        wl_list_remove(&lock_output_ptr->destroy_listener.link);
+        wlmtk_util_disconnect_listener(&lock_output_ptr->surface_commit_listener);
+        wlmtk_util_disconnect_listener(&lock_output_ptr->destroy_listener);
 
         wlmtk_surface_destroy(lock_output_ptr->wlmtk_surface_ptr);
         lock_output_ptr->wlmtk_surface_ptr =  NULL;

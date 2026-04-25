@@ -23,7 +23,6 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 #include <wayland-server-protocol.h>
-#include <wayland-util.h>
 
 #include "server.h"
 #include "toolkit/toolkit.h"
@@ -79,9 +78,9 @@ wlmaker_xdg_shell_t *wlmaker_xdg_shell_create(wlmaker_server_t *server_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmaker_xdg_shell_destroy(wlmaker_xdg_shell_t *xdg_shell_ptr)
 {
-    wl_list_remove(&xdg_shell_ptr->destroy_listener.link);
-    wl_list_remove(&xdg_shell_ptr->new_popup_listener.link);
-    wl_list_remove(&xdg_shell_ptr->new_toplevel_listener.link);
+    wlmtk_util_disconnect_listener(&xdg_shell_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&xdg_shell_ptr->new_popup_listener);
+    wlmtk_util_disconnect_listener(&xdg_shell_ptr->new_toplevel_listener);
     // Note: xdg_shell_ptr->wlr_xdg_shell_ptr is destroyed when the display
     // is destroyed.
     free(xdg_shell_ptr);

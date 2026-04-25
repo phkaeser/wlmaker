@@ -21,7 +21,6 @@
 #include "buffer.h"
 
 #include <string.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_buffer.h>
 #include <wlr/types/wlr_scene.h>
@@ -236,7 +235,7 @@ void _wlmtk_buffer_handle_wlr_scene_buffer_node_destroy(
         listener_ptr, wlmtk_buffer_t, wlr_scene_buffer_node_destroy_listener);
 
     buffer_ptr->wlr_scene_buffer_ptr = NULL;
-    wl_list_remove(&buffer_ptr->wlr_scene_buffer_node_destroy_listener.link);
+    wlmtk_util_disconnect_listener(&buffer_ptr->wlr_scene_buffer_node_destroy_listener);
 }
 
 /* ------------------------------------------------------------------------- */

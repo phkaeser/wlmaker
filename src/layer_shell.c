@@ -23,7 +23,6 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_layer_shell_v1.h>
 #undef WLR_USE_UNSTABLE
@@ -87,8 +86,8 @@ wlmaker_layer_shell_t *wlmaker_layer_shell_create(wlmaker_server_t *server_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmaker_layer_shell_destroy(wlmaker_layer_shell_t *layer_shell_ptr)
 {
-    wl_list_remove(&layer_shell_ptr->destroy_listener.link);
-    wl_list_remove(&layer_shell_ptr->new_surface_listener.link);
+    wlmtk_util_disconnect_listener(&layer_shell_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&layer_shell_ptr->new_surface_listener);
     free(layer_shell_ptr);
 }
 
