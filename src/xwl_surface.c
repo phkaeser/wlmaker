@@ -27,7 +27,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/version.h>
@@ -242,14 +241,14 @@ void wlmaker_xwl_surface_destroy(wlmaker_xwl_surface_t *xwl_surface_ptr)
 
     _xwl_surface_handle_dissociate(&xwl_surface_ptr->dissociate_listener, 0);
 
-    wl_list_remove(&xwl_surface_ptr->set_geometry_listener.link);
-    wl_list_remove(&xwl_surface_ptr->set_decorations_listener.link);
-    wl_list_remove(&xwl_surface_ptr->set_parent_listener.link);
-    wl_list_remove(&xwl_surface_ptr->set_title_listener.link);
-    wl_list_remove(&xwl_surface_ptr->dissociate_listener.link);
-    wl_list_remove(&xwl_surface_ptr->associate_listener.link);
-    wl_list_remove(&xwl_surface_ptr->request_configure_listener.link);
-    wl_list_remove(&xwl_surface_ptr->destroy_listener.link);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->set_geometry_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->set_decorations_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->set_parent_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->set_title_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->dissociate_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->associate_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->request_configure_listener);
+    wlmtk_util_disconnect_listener(&xwl_surface_ptr->destroy_listener);
 
     if (NULL != xwl_surface_ptr->title_ptr) {
         free(xwl_surface_ptr->title_ptr);

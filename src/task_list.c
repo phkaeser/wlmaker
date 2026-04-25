@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <wayland-server-core.h>
-#include <wayland-util.h>
 /// Include unstable interfaces of wlroots.
 #define WLR_USE_UNSTABLE
 #include <wlr/util/edges.h>
@@ -205,11 +204,11 @@ wlmaker_task_list_t *wlmaker_task_list_create(
 /* ------------------------------------------------------------------------- */
 void wlmaker_task_list_destroy(wlmaker_task_list_t *task_list_ptr)
 {
-    wl_list_remove(&task_list_ptr->window_unmapped_listener.link);
-    wl_list_remove(&task_list_ptr->window_mapped_listener.link);
-    wl_list_remove(&task_list_ptr->theme_changed_listener.link);
-    wl_list_remove(&task_list_ptr->task_list_disabled_listener.link);
-    wl_list_remove(&task_list_ptr->task_list_enabled_listener.link);
+    wlmtk_util_disconnect_listener(&task_list_ptr->window_unmapped_listener);
+    wlmtk_util_disconnect_listener(&task_list_ptr->window_mapped_listener);
+    wlmtk_util_disconnect_listener(&task_list_ptr->theme_changed_listener);
+    wlmtk_util_disconnect_listener(&task_list_ptr->task_list_disabled_listener);
+    wlmtk_util_disconnect_listener(&task_list_ptr->task_list_enabled_listener);
 
     if (wlmtk_buffer_element(&task_list_ptr->buffer)->parent_container_ptr) {
         wlmtk_container_remove_element(

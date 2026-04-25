@@ -276,9 +276,9 @@ void _wlmbe_output_handle_destroy(
     wlmbe_output_t *output_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmbe_output_t, output_destroy_listener);
 
-    wl_list_remove(&output_ptr->output_request_state_listener.link);
-    wl_list_remove(&output_ptr->output_frame_listener.link);
-    wl_list_remove(&output_ptr->output_destroy_listener.link);
+    wlmtk_util_disconnect_listener(&output_ptr->output_request_state_listener);
+    wlmtk_util_disconnect_listener(&output_ptr->output_frame_listener);
+    wlmtk_util_disconnect_listener(&output_ptr->output_destroy_listener);
     output_ptr->wlr_output_ptr = NULL;
 }
 

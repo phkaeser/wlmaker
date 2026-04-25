@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
@@ -278,7 +277,7 @@ void _wlmtk_rectangle_handle_wlr_scene_rect_node_destroy(
         listener_ptr, wlmtk_rectangle_t, wlr_scene_rect_node_destroy_listener);
 
     rectangle_ptr->wlr_scene_rect_ptr = NULL;
-    wl_list_remove(&rectangle_ptr->wlr_scene_rect_node_destroy_listener.link);
+    wlmtk_util_disconnect_listener(&rectangle_ptr->wlr_scene_rect_node_destroy_listener);
 }
 
 /* ------------------------------------------------------------------------- */

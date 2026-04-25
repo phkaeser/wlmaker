@@ -180,10 +180,8 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
 void wlmaker_xdg_decoration_manager_destroy(
     wlmaker_xdg_decoration_manager_t *decoration_manager_ptr)
 {
-    wl_list_remove(
-        &decoration_manager_ptr->new_toplevel_decoration_listener.link);
-    wl_list_remove(
-        &decoration_manager_ptr->destroy_listener.link);
+    wlmtk_util_disconnect_listener(&decoration_manager_ptr->new_toplevel_decoration_listener);
+    wlmtk_util_disconnect_listener(&decoration_manager_ptr->destroy_listener);
 
     free(decoration_manager_ptr);
 }
@@ -288,8 +286,8 @@ void wlmaker_xdg_decoration_destroy(wlmaker_xdg_decoration_t *decoration_ptr)
     _xdg_decoration_handle_surface_destroy(
         &decoration_ptr->surface_destroy_listener, NULL);
 
-    wl_list_remove(&decoration_ptr->destroy_listener.link);
-    wl_list_remove(&decoration_ptr->request_mode_listener.link);
+    wlmtk_util_disconnect_listener(&decoration_ptr->destroy_listener);
+    wlmtk_util_disconnect_listener(&decoration_ptr->request_mode_listener);
     free(decoration_ptr);
 }
 

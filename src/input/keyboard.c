@@ -30,7 +30,6 @@
 #include <string.h>
 #include <wayland-server-core.h>
 #include <wayland-server-protocol.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_seat.h>
@@ -190,8 +189,8 @@ wlmim_keyboard_t *wlmim_keyboard_create(
 /* ------------------------------------------------------------------------- */
 void wlmim_keyboard_destroy(wlmim_keyboard_t *keyboard_ptr)
 {
-    wl_list_remove(&keyboard_ptr->key_listener.link);
-    wl_list_remove(&keyboard_ptr->modifiers_listener.link);
+    wlmtk_util_disconnect_listener(&keyboard_ptr->key_listener);
+    wlmtk_util_disconnect_listener(&keyboard_ptr->modifiers_listener);
 
     if (NULL != keyboard_ptr->config_dict_ptr) {
         bspl_dict_unref(keyboard_ptr->config_dict_ptr);

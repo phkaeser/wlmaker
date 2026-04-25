@@ -803,7 +803,7 @@ void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
 
     // Since this is a callback from the tree node dtor, the tree is going to
     // be destroyed. We are using this to reset the container's reference.
-    wl_list_remove(&container_ptr->wlr_scene_tree_node_destroy_listener.link);
+    wlmtk_util_disconnect_listener(&container_ptr->wlr_scene_tree_node_destroy_listener);
 }
 
 /* ------------------------------------------------------------------------- */

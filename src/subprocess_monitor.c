@@ -26,7 +26,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
-#include <wayland-util.h>
 
 #include "toolkit/toolkit.h"
 #include "server.h"
@@ -220,10 +219,10 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
 void wlmaker_subprocess_monitor_destroy(
     wlmaker_subprocess_monitor_t *monitor_ptr)
 {
-    wl_list_remove(&monitor_ptr->window_destroyed_listener.link);
-    wl_list_remove(&monitor_ptr->window_created_listener.link);
-    wl_list_remove(&monitor_ptr->window_unmapped_listener.link);
-    wl_list_remove(&monitor_ptr->window_mapped_listener.link);
+    wlmtk_util_disconnect_listener(&monitor_ptr->window_destroyed_listener);
+    wlmtk_util_disconnect_listener(&monitor_ptr->window_created_listener);
+    wlmtk_util_disconnect_listener(&monitor_ptr->window_unmapped_listener);
+    wlmtk_util_disconnect_listener(&monitor_ptr->window_mapped_listener);
 
     if (NULL != monitor_ptr->sigchld_event_source_ptr) {
         wl_event_source_remove(monitor_ptr->sigchld_event_source_ptr);

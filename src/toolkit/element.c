@@ -25,7 +25,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_scene.h>
@@ -179,7 +178,7 @@ void wlmtk_element_attach_to_scene_graph(
 
     if (NULL == parent_wlr_scene_tree_ptr) {
         if (NULL != element_ptr->wlr_scene_node_ptr) {
-            wl_list_remove(&element_ptr->wlr_scene_node_destroy_listener.link);
+            wlmtk_util_disconnect_listener(&element_ptr->wlr_scene_node_destroy_listener);
             wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
             element_ptr->wlr_scene_node_ptr = NULL;
         }

@@ -650,7 +650,7 @@ void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_surface_t, wlr_scene_tree_node_destroy_listener);
     surface_ptr->wlr_scene_tree_ptr = NULL;
-    wl_list_remove(&surface_ptr->wlr_scene_tree_node_destroy_listener.link);
+    wlmtk_util_disconnect_listener(&surface_ptr->wlr_scene_tree_node_destroy_listener);
 }
 
 /* ------------------------------------------------------------------------- */
