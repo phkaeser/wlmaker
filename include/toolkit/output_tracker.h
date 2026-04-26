@@ -135,7 +135,7 @@ void wlmtk_output_tracker_for_each(
     void *arg_ptr);
 
 /** Output tracker unit test. */
-extern const bs_test_case_t wlmtk_output_tracker_test_cases[];
+extern const bs_test_set_t wlmtk_output_tracker_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

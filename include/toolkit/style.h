@@ -164,7 +164,7 @@ extern const bspl_desc_t wlmtk_style_margin_desc[];
 extern const bspl_desc_t wlmtk_style_font_desc[];
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_style_test_cases[];
+extern const bs_test_set_t wlmtk_style_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

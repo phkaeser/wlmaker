@@ -305,11 +305,15 @@ void _wlmtk_layer_output_destroy(
 static void test_multi_output(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_layer_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_layer_test_cases[] = {
     { 1, "multi_output", test_multi_output },
     { 1, "layout", test_layout },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_layer_test_set = BS_TEST_SET(
+    true, "layer", _wlmtk_layer_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests adding + removing outputs, and updates to panel positions. */

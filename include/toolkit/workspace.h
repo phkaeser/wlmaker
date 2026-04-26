@@ -313,7 +313,7 @@ wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
     bs_dllist_node_t *dlnode_ptr);
 
 /** Unit tests for the workspace. */
-extern const bs_test_case_t wlmtk_workspace_test_cases[];
+extern const bs_test_set_t wlmtk_workspace_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

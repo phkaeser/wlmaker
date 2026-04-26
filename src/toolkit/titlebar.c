@@ -471,11 +471,15 @@ bool _wlmtk_titlebar_redraw(
 static void test_variable_width(bs_test_t *test_ptr);
 static void test_properties(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_titlebar_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_titlebar_test_cases[] = {
     { 1, "variable_width", test_variable_width },
     { 1, "properties", test_properties },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_titlebar_test_set = BS_TEST_SET(
+    true, "titlebar", _wlmtk_titlebar_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests titlebar with variable width. */

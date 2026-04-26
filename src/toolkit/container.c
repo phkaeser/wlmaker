@@ -891,7 +891,8 @@ static void test_pointer_focus_with_parent(bs_test_t *test_ptr);
 static void test_pointer_focus_children(bs_test_t *test_ptr);
 static void test_pointer_focus_order(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_container_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_container_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "add_remove", test_add_remove },
     { 1, "add_remove_with_scene_graph", test_add_remove_with_scene_graph },
@@ -905,8 +906,11 @@ const bs_test_case_t wlmtk_container_test_cases[] = {
     { 1, "pointer_focus_with_parent", test_pointer_focus_with_parent },
     { 1, "pointer_focus_children", test_pointer_focus_children },
     { 1, "test_pointer_focus_order", test_pointer_focus_order },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_container_test_set = BS_TEST_SET(
+    true, "container", _wlmtk_container_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */

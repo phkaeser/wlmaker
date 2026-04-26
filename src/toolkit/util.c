@@ -165,11 +165,15 @@ void _wlmtk_util_test_wlr_box_listener_handler(
 static void test_wl_list_for_each(bs_test_t *test_ptr);
 static void test_listener(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_util_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_util_test_cases[] = {
     { 1, "wl_list_for_each", test_wl_list_for_each },
     { 1, "listener", test_listener },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_util_test_set = BS_TEST_SET(
+    true, "util", _wlmtk_util_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** For tests: a list item. */

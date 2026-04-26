@@ -180,7 +180,7 @@ bs_dllist_node_t *wlmtk_dlnode_from_tile(wlmtk_tile_t *tile_ptr);
 extern const bspl_desc_t wlmtk_tile_style_desc[];
 
 /** Unit test cases for @ref wlmtk_tile_t. */
-extern const bs_test_case_t wlmtk_tile_test_cases[];
+extern const bs_test_set_t wlmtk_tile_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

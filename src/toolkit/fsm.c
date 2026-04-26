@@ -61,10 +61,14 @@ bool wlmtk_fsm_event(
 
 static void test_event(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_fsm_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_fsm_test_cases[] = {
     { 1, "event", test_event },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_fsm_test_set = BS_TEST_SET(
+    true, "fsm", _wlmtk_fsm_test_cases);
 
 /** Test handler for the FSM unit test: Sets the bool to true. */
 static bool test_fsm_handler(__UNUSED__ wlmtk_fsm_t *fsm_ptr, void *ud_ptr) {

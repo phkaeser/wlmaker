@@ -217,7 +217,7 @@ wlmtk_element_t *wlmtk_menu_item_element(wlmtk_menu_item_t *menu_item_ptr);
 extern const bspl_desc_t wlmtk_menu_item_style_desc[];
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_menu_item_test_cases[];
+extern const bs_test_set_t wlmtk_menu_item_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

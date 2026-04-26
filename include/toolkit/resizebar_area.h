@@ -79,7 +79,7 @@ wlmtk_element_t *wlmtk_resizebar_area_element(
     wlmtk_resizebar_area_t *resizebar_area_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_resizebar_area_test_cases[];
+extern const bs_test_set_t wlmtk_resizebar_area_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

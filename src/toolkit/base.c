@@ -152,10 +152,14 @@ void _wlmtk_base_element_get_dimensions(
 
 static void test_init_fini(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_base_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_base_test_cases[] = {
     { 1, "init_fini", test_init_fini },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_base_test_set = BS_TEST_SET(
+    true, "base", _wlmtk_base_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown. */

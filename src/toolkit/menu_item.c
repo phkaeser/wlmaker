@@ -821,7 +821,8 @@ static void test_triggered(bs_test_t *test_ptr);
 static void test_right_click(bs_test_t *test_ptr);
 static void test_submenu_highlight(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_menu_item_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_menu_item_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why these fail on
     // Trixie when running as a github action.
@@ -830,8 +831,11 @@ const bs_test_case_t wlmtk_menu_item_test_cases[] = {
     { 1, "triggered", test_triggered },
     { 1, "right_click", test_right_click },
     { 1, "submenu_highlight", test_submenu_highlight },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_menu_item_test_set = BS_TEST_SET(
+    true, "menu_item", _wlmtk_menu_item_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises setup and teardown and a few accessors. */

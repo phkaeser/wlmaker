@@ -281,7 +281,8 @@ static void test_text(bs_test_t *test_ptr);
 static void test_window_title(bs_test_t *test_ptr);
 
 /** Unit tests. */
-const bs_test_case_t   wlmaker_primitives_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmaker_primitives_test_cases[] = {
     { 1, "fill", test_fill },
     { 1, "close", test_close },
     { 1, "close_large", test_close_large },
@@ -291,8 +292,11 @@ const bs_test_case_t   wlmaker_primitives_test_cases[] = {
     // Trixie when running as a github action.
     { 0, "text", test_text },
     { 0, "window_title", test_window_title },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmaker_primitives_test_set = BS_TEST_SET(
+    true, "primitives", _wlmaker_primitives_test_cases);
 
 /** Verifies the fill styles */
 void test_fill(bs_test_t *test_ptr)

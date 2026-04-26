@@ -122,7 +122,7 @@ void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
 
 
 /** Layer unit test. */
-extern const bs_test_case_t wlmtk_layer_test_cases[];
+extern const bs_test_set_t wlmtk_layer_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

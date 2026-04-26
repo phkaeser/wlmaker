@@ -295,12 +295,16 @@ static void test_create_destroy(bs_test_t *test_ptr);
 static void test_create_destroy_scene(bs_test_t *test_ptr);
 static void test_pointer_motion(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_rectangle_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_rectangle_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "create_destroy_scene", test_create_destroy_scene },
     { 1, "pointer_motion", test_pointer_motion },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_rectangle_test_set = BS_TEST_SET(
+    true, "rectangle", _wlmtk_rectangle_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests setup and teardown of rectangle. */

@@ -290,10 +290,14 @@ struct wlr_buffer *create_buffer(
 
 static void test_area(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_resizebar_area_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_resizebar_area_test_cases[] = {
     { 1, "area", test_area },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_resizebar_area_test_set = BS_TEST_SET(
+    true, "resizebar_area", _wlmtk_resizebar_area_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests the area behaviour: Must initiate resize, set the edges. */

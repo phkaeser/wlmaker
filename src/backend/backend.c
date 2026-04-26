@@ -652,7 +652,7 @@ static void _wlmbe_backend_test_encode_output_configs(bs_test_t *test_ptr);
 const bs_test_case_t          wlmbe_backend_test_cases[] = {
     { 1, "find", _wlmbe_backend_test_find },
     { 1, "encode_output_configs", _wlmbe_backend_test_encode_output_configs },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
 
 /* ------------------------------------------------------------------------- */

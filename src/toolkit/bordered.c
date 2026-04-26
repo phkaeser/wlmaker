@@ -236,10 +236,14 @@ void _wlmtk_bordered_set_positions(wlmtk_bordered_t *bordered_ptr)
 
 static void test_init_fini(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_bordered_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_bordered_test_cases[] = {
     { 1, "init_fini", test_init_fini },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_bordered_test_set = BS_TEST_SET(
+    true, "bordered", _wlmtk_bordered_test_cases);
 
 /** Style used for tests. */
 static const struct wlmtk_margin_style test_style = {

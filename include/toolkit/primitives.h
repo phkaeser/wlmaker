@@ -166,7 +166,7 @@ void wlmaker_primitives_draw_text(
     const char *text_ptr);
 
 /** Unit tests. */
-extern const bs_test_case_t   wlmaker_primitives_test_cases[];
+extern const bs_test_set_t wlmaker_primitives_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

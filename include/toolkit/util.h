@@ -151,7 +151,7 @@ void wlmtk_util_clear_test_wlr_box_listener(
     wlmtk_util_test_wlr_box_listener_t *test_wlr_box_listener_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_util_test_cases[];
+extern const bs_test_set_t wlmtk_util_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

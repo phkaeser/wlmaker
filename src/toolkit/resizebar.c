@@ -305,10 +305,14 @@ bool redraw_buffers(wlmtk_resizebar_t *resizebar_ptr,
 
 static void test_variable_width(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_resizebar_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_resizebar_test_cases[] = {
     { 1, "variable_width", test_variable_width },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_resizebar_test_set = BS_TEST_SET(
+    true, "resizebar", _wlmtk_resizebar_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Performs resizing and verifies the elements are shown as expected. */

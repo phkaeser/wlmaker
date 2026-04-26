@@ -654,13 +654,17 @@ static void test_set_mode(bs_test_t *test_ptr);
 static void test_keyboard_navigation(bs_test_t *test_ptr);
 static void test_keyboard_navigation_nested(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_menu_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_menu_test_cases[] = {
     { 1, "pointer_highlight", test_pointer_highlight },
     { 1, "set_mode", test_set_mode },
     { 1, "keyboard_navigation", test_keyboard_navigation },
     { 1, "keyboard_navigation_nested", test_keyboard_navigation_nested },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_menu_test_set = BS_TEST_SET(
+    true, "menu", _wlmtk_menu_test_cases);
 
 /** For tests: Meu style to apply. */
 static struct wlmtk_menu_style_holder _test_style_holder = {

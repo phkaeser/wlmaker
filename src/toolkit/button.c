@@ -241,13 +241,17 @@ static void test_press_release_outside(bs_test_t *test_ptr);
 static void test_press_right(bs_test_t *test_ptr);
 
 /** Test case definition. */
-const bs_test_case_t wlmtk_button_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_button_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "press_release", test_press_release },
     { 1, "press_release_outside", test_press_release_outside },
     { 1, "press_right", test_press_right },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_button_test_set = BS_TEST_SET(
+    true, "button", _wlmtk_button_test_cases);
 
 /** Test outcome: Whether 'clicked' was called. */
 static bool fake_button_got_clicked = false;

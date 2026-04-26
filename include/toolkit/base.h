@@ -90,7 +90,7 @@ void wlmtk_base_pop_element(
     wlmtk_element_t *element_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_base_test_cases[];
+extern const bs_test_set_t wlmtk_base_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

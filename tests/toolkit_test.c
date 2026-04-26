@@ -18,44 +18,43 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <libbase/libbase.h>
 
 #include "toolkit/toolkit.h"
 
 /** Toolkit unit tests. */
-const bs_test_set_t toolkit_tests[] = {
-    BS_TEST_SET(true, "base", wlmtk_base_test_cases),
-    BS_TEST_SET(true, "bordered", wlmtk_bordered_test_cases),
-    BS_TEST_SET(true, "box", wlmtk_box_test_cases),
-    BS_TEST_SET(true, "buffer", wlmtk_buffer_test_cases),
-    BS_TEST_SET(true, "button", wlmtk_button_test_cases),
-    BS_TEST_SET(true, "container", wlmtk_container_test_cases),
-    BS_TEST_SET(true, "dock", wlmtk_dock_test_cases),
-    BS_TEST_SET(true, "element", wlmtk_element_test_cases),
-    BS_TEST_SET(true, "fsm", wlmtk_fsm_test_cases),
-    BS_TEST_SET(true, "image", wlmtk_image_test_cases),
-    BS_TEST_SET(true, "layer", wlmtk_layer_test_cases),
-    BS_TEST_SET(true, "menu", wlmtk_menu_test_cases),
-    BS_TEST_SET(true, "menu_item", wlmtk_menu_item_test_cases),
-    BS_TEST_SET(true, "output_tracker", wlmtk_output_tracker_test_cases),
-    BS_TEST_SET(true, "panel", wlmtk_panel_test_cases),
-    BS_TEST_SET(true, "primitives", wlmaker_primitives_test_cases),
-    BS_TEST_SET(true, "rectangle", wlmtk_rectangle_test_cases),
-    BS_TEST_SET(true, "resizebar", wlmtk_resizebar_test_cases),
-    BS_TEST_SET(true, "resizebar_area", wlmtk_resizebar_area_test_cases),
-    BS_TEST_SET(true, "root", wlmtk_root_test_cases),
-    BS_TEST_SET(true, "style", wlmtk_style_test_cases),
-    BS_TEST_SET(true, "surface", wlmtk_surface_test_cases),
-    BS_TEST_SET(true, "tile", wlmtk_tile_test_cases),
-    BS_TEST_SET(true, "titlebar", wlmtk_titlebar_test_cases),
-    BS_TEST_SET(true, "titlebar_button", wlmtk_titlebar_button_test_cases),
-    BS_TEST_SET(true, "titlebar_title", wlmtk_titlebar_title_test_cases),
-    BS_TEST_SET(true, "util", wlmtk_util_test_cases),
-    BS_TEST_SET(true, "window", wlmtk_window_test_cases),
-    BS_TEST_SET(true, "workspace", wlmtk_workspace_test_cases),
-    BS_TEST_SET(0, NULL, NULL)
+const bs_test_set_t *toolkit_test_sets[] = {
+    &wlmtk_base_test_set,
+    &wlmtk_bordered_test_set,
+    &wlmtk_box_test_set,
+    &wlmtk_buffer_test_set,
+    &wlmtk_button_test_set,
+    &wlmtk_container_test_set,
+    &wlmtk_dock_test_set,
+    &wlmtk_element_test_set,
+    &wlmtk_fsm_test_set,
+    &wlmtk_image_test_set,
+    &wlmtk_layer_test_set,
+    &wlmtk_menu_test_set,
+    &wlmtk_menu_item_test_set,
+    &wlmtk_output_tracker_test_set,
+    &wlmtk_panel_test_set,
+    &wlmaker_primitives_test_set,
+    &wlmtk_rectangle_test_set,
+    &wlmtk_resizebar_test_set,
+    &wlmtk_resizebar_area_test_set,
+    &wlmtk_root_test_set,
+    &wlmtk_style_test_set,
+    &wlmtk_surface_test_set,
+    &wlmtk_tile_test_set,
+    &wlmtk_titlebar_test_set,
+    &wlmtk_titlebar_button_test_set,
+    &wlmtk_titlebar_title_test_set,
+    &wlmtk_util_test_set,
+    &wlmtk_window_test_set,
+    &wlmtk_workspace_test_set,
+    NULL
 };
 
 #if !defined(TEST_DATA_DIR)
@@ -69,7 +68,7 @@ int main(int argc, const char **argv)
     const bs_test_param_t params = {
         .test_data_dir_ptr   = TEST_DATA_DIR
     };
-    return bs_test(toolkit_tests, argc, argv, &params);
+    return bs_test_sets(toolkit_test_sets, argc, argv, &params);
 }
 
 /* == End of toolkit_test.c ================================================ */

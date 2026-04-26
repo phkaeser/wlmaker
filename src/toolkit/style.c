@@ -157,11 +157,15 @@ static void _wlmtk_style_test_decode_fill(bs_test_t *test_ptr);
 static void _wlmtk_style_test_decode_font(bs_test_t *test_ptr);
 
 /** Unit test cases. */
-const bs_test_case_t wlmtk_style_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_style_test_cases[] = {
     { true, "decode_fill", _wlmtk_style_test_decode_fill },
     { true, "decode_font", _wlmtk_style_test_decode_font },
     BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_style_test_set = BS_TEST_SET(
+    true, "style", _wlmtk_style_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests the decoder for the fill style. */

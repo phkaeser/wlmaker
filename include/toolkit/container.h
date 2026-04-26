@@ -249,7 +249,7 @@ struct wlr_scene_tree *wlmtk_container_wlr_scene_tree(
     wlmtk_container_t *container_ptr);
 
 /** Unit tests for the container. */
-extern const bs_test_case_t wlmtk_container_test_cases[];
+extern const bs_test_set_t wlmtk_container_test_set;
 
 /** Constructor for a fake container with a scene tree. */
 wlmtk_container_t *wlmtk_container_create_fake_parent(void);

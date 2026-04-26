@@ -493,7 +493,7 @@ static inline void wlmtk_element_destroy(
 }
 
 /** Unit tests for the element. */
-extern const bs_test_case_t wlmtk_element_test_cases[];
+extern const bs_test_set_t wlmtk_element_test_set;
 
 /** Fake element, useful for unit test. */
 typedef struct {
