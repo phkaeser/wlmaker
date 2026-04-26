@@ -609,7 +609,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
 {
     static const struct wlmtk_tile_style style = { .size = 96 };
     static const char *plist_ptr =
-        "{CommandLine = \"a\"; Icon = \"chrome-48x48.png\";}";
+        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
 
     bs_test_setenv(test_ptr, "XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share");
 
@@ -627,7 +627,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher_ptr->cmdline_ptr);
     BS_TEST_VERIFY_STREQ(
-        test_ptr, "chrome-48x48.png", launcher_ptr->icon_path_ptr);
+        test_ptr, "chrome-56x56.png", launcher_ptr->icon_path_ptr);
 
     wlmaker_launcher_destroy(launcher_ptr);
     wlmaker_files_destroy(files_ptr);

@@ -8,15 +8,15 @@
     Launchers = (
       {
         CommandLine = "/usr/bin/foot";
-        Icon = "terminal-48x48.png";
+        Icon = "terminal-56x56.png";
       },
       {
         CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland";
-        Icon = "chrome-48x48.png";
+        Icon = "chrome-56x56.png";
       },
       {
         CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";
-        Icon = "firefox-48x48.png";
+        Icon = "firefox-56x56.png";
       }
     );
   };

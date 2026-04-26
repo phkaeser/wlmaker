@@ -169,8 +169,8 @@ INSTALL(FILES
   RENAME wlmeyes.png)
 
 INSTALL(FILES
-  wlmaker/icons/chrome-48x48.png
-  wlmaker/icons/clip-48x48.png
-  wlmaker/icons/firefox-48x48.png
-  wlmaker/icons/terminal-48x48.png
+  wlmaker/icons/chrome-56x56.png
+  wlmaker/icons/clip-56x56.png
+  wlmaker/icons/firefox-56x56.png
+  wlmaker/icons/terminal-56x56.png
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/icons)
