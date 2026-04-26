@@ -109,7 +109,7 @@ void wlmbe_backend_reduce(wlmbe_backend_t *backend_ptr);
 bool wlmbe_backend_save_ephemeral_output_configs(wlmbe_backend_t *backend_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmbe_backend_test_cases[];
+extern const bs_test_set_t wlmbe_backend_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

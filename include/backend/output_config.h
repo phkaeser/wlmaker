@@ -241,7 +241,7 @@ struct wlr_output *wlmbe_output_description_first_fnmatch(
     struct wlr_output_layout *wlr_output_layout_ptr);
 
 /** Unit tests for the output module. */
-extern const bs_test_case_t wlmbe_output_config_test_cases[];
+extern const bs_test_set_t wlmbe_output_config_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
