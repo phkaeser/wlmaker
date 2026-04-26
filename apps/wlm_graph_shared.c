@@ -37,7 +37,7 @@
 /* == Internal definitions ================================================= */
 
 /** Base icon size for scaling calculations. */
-#define WLM_GRAPH_BASE_ICON_SIZE 64
+#define WLM_GRAPH_BASE_ICON_SIZE 56
 
 /** Base font size for label (at 64px icon size). */
 #define WLM_GRAPH_LABEL_FONT_SIZE_BASE 8
@@ -1146,7 +1146,7 @@ static int _wlm_graph_args_parse(
 {
     // Set defaults.
     prefs->interval_usec = 1000000;  // 1 second.
-    prefs->margin_logical_px = 5;
+    prefs->margin_logical_px = 2;
     prefs->color_mode = WLM_GRAPH_COLOR_MODE_HEAT;
     snprintf(prefs->font.face, sizeof(prefs->font.face), "%s", WLM_GRAPH_LABEL_FONT_FACE);
     prefs->font.size = WLM_GRAPH_LABEL_FONT_SIZE_BASE;

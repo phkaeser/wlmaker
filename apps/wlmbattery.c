@@ -615,10 +615,10 @@ bool icon_callback(
     BS_ASSERT(NULL != pattern_ptr);
     cairo_set_source(cairo_ptr, pattern_ptr);
     cairo_pattern_destroy(pattern_ptr);
-    cairo_rectangle(cairo_ptr, 4, 4, 56, 56);
+    cairo_rectangle(cairo_ptr, 0, 0, 56, 56);
     cairo_fill(cairo_ptr);
 
-    wlm_primitives_draw_bezel_at(cairo_ptr, 4, 4, 56, 56, 1.0, false);
+    wlm_primitives_draw_bezel_at(cairo_ptr, 0, 0, 56, 56, 1.0, false);
 
     wlm_power_supply_read(arg_ptr->ps);
 
@@ -634,11 +634,11 @@ bool icon_callback(
 
         char buf[16];
 
-        cairo_move_to(cairo_ptr, 12, 19);
+        cairo_move_to(cairo_ptr, 8, 15);
         snprintf(buf, sizeof(buf), "%3"PRIu64"%%", bat->capacity);
         cairo_show_text(cairo_ptr, buf);
 
-        cairo_move_to(cairo_ptr, 12, 31);
+        cairo_move_to(cairo_ptr, 8, 27);
         switch (bat->status) {
         case BATTERY_STATUS_CHARGING: cairo_show_text(cairo_ptr, "CHRG"); break;
         case BATTERY_STATUS_DISCHARGING: cairo_show_text(cairo_ptr, "DISC"); break;
@@ -647,7 +647,7 @@ bool icon_callback(
         default: cairo_show_text(cairo_ptr, "UNKN"); break;
         }
 
-        cairo_move_to(cairo_ptr, 12, 43);
+        cairo_move_to(cairo_ptr, 8, 39);
         if (0 <= bat->time_remaining_min) {
             snprintf(buf, sizeof(buf), "% 2d:%02d",
                      bat->time_remaining_min / 60,
@@ -656,7 +656,7 @@ bool icon_callback(
         }
     }
 
-    cairo_move_to(cairo_ptr, 12, 55);
+    cairo_move_to(cairo_ptr, 8, 51);
     if (wlm_power_supply_connected(arg_ptr->ps)) {
         cairo_show_text(cairo_ptr, " AC ");
     } else {

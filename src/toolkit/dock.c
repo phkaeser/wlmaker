@@ -35,6 +35,9 @@
 struct _wlmtk_dock_t {
     /** Parent class: The panel. */
     wlmtk_panel_t             super_panel;
+    /** Original virtual method table of the panel's @ref wlmtk_element_t. */
+    wlmtk_element_vmt_t       old_element_vmt;
+
     /** Positioning information for the panel. */
     wlmtk_panel_positioning_t panel_positioning;
 
@@ -53,6 +56,7 @@ static uint32_t _wlmtk_dock_panel_request_size(
     wlmtk_panel_t *panel_ptr,
     int width,
     int height);
+static void _wlmtk_dock_element_layout(wlmtk_element_t *element_ptr);
 
 static wlmtk_box_orientation_t _wlmtk_dock_orientation(wlmtk_dock_t *dock_ptr);
 static bool _wlmtk_dock_positioning(
@@ -77,6 +81,11 @@ const bspl_desc_t wlmtk_dock_style_desc[] = {
 /** Virtual method table of the panel. */
 static const wlmtk_panel_vmt_t _wlmtk_dock_panel_vmt = {
     .request_size = _wlmtk_dock_panel_request_size
+};
+
+/** Virtual method table of the panel's element. */
+static const wlmtk_element_vmt_t _wlmtk_dock_element_vmt = {
+    .layout = _wlmtk_dock_element_layout
 };
 
 /* == Exported methods ===================================================== */
@@ -115,6 +124,8 @@ wlmtk_dock_t *wlmtk_dock_create(
         return NULL;
     }
     wlmtk_panel_extend(&dock_ptr->super_panel, &_wlmtk_dock_panel_vmt);
+    dock_ptr->old_element_vmt = wlmtk_element_extend(
+        wlmtk_dock_element(dock_ptr), &_wlmtk_dock_element_vmt);
 
     wlmtk_container_add_element(
         &dock_ptr->super_panel.super_container,
@@ -240,6 +251,16 @@ uint32_t _wlmtk_dock_panel_request_size(
 
     wlmtk_panel_commit(panel_ptr, 0, &panel_positioning);
     return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Redraw the dock. We also (re)request size, ie. the positioning. */
+void _wlmtk_dock_element_layout(wlmtk_element_t *element_ptr)
+{
+    wlmtk_dock_t *dock_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_dock_t, super_panel.super_container.super_element);
+    dock_ptr->old_element_vmt.layout(element_ptr);
+    _wlmtk_dock_panel_request_size(&dock_ptr->super_panel, 0, 0);
 }
 
 /* ------------------------------------------------------------------------- */

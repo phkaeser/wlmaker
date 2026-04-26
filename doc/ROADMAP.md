@@ -38,7 +38,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Add function to change Dock and Clip style while running.
     * [done] Align tile's content size with dock app used size.
     * [done] Fix: menu size when setting theme via menu.
-    * Add function to change the docked application's size when style updates.
+    * [done] Add function to change the docked application's size when style updates.
     * Cleanup the Debian menu so it works for personal use.
     * Adds theme "Name" plist entry.
     * Add menu entry and generator to load from `Themes/...` files.

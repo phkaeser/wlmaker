@@ -162,23 +162,26 @@ void wlmtk_tile_set_content(
     wlmtk_tile_t *tile_ptr,
     wlmtk_element_t *element_ptr)
 {
-    if (element_ptr == tile_ptr->content_element_ptr) return;
+    if (element_ptr != tile_ptr->content_element_ptr) {
 
-    if (NULL != tile_ptr->content_element_ptr) {
-        wlmtk_container_remove_element(
-            &tile_ptr->super_container,
-            tile_ptr->content_element_ptr);
-        tile_ptr->content_element_ptr = NULL;
+        if (NULL != tile_ptr->content_element_ptr) {
+            wlmtk_container_remove_element(
+                &tile_ptr->super_container,
+                tile_ptr->content_element_ptr);
+            tile_ptr->content_element_ptr = NULL;
+        }
+
+        if (NULL != element_ptr) {
+            wlmtk_container_add_element_atop(
+                &tile_ptr->super_container,
+                wlmtk_buffer_element(&tile_ptr->buffer),
+                element_ptr);
+            tile_ptr->content_element_ptr = element_ptr;
+        }
     }
 
-    if (NULL != element_ptr) {
-        wlmtk_container_add_element_atop(
-            &tile_ptr->super_container,
-            wlmtk_buffer_element(&tile_ptr->buffer),
-            element_ptr);
-        tile_ptr->content_element_ptr = element_ptr;
-        _wlmtk_tile_align_content(tile_ptr);
-    }
+    _wlmtk_tile_align_content(tile_ptr);
+    wlmtk_element_invalidate_parent_layout(wlmtk_tile_element(tile_ptr));
 }
 
 /* ------------------------------------------------------------------------- */

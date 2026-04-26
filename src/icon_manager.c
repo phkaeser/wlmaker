@@ -511,8 +511,8 @@ void handle_surface_commit(
             toplevel_icon_ptr->icon_manager_ptr->wl_display_ptr);
         zwlmaker_toplevel_icon_v1_send_configure(
             toplevel_icon_ptr->wl_resource_ptr,
-            toplevel_icon_ptr->super_tile.style.size,
-            toplevel_icon_ptr->super_tile.style.size,
+            toplevel_icon_ptr->super_tile.style.content_size,
+            toplevel_icon_ptr->super_tile.style.content_size,
             toplevel_icon_ptr->pending_serial);
         return;
     }
@@ -588,10 +588,18 @@ void _wlmaker_toplevel_icon_element_destroy(wlmtk_element_t *element_ptr)
 /** Implements wlmtk_tile_vmt_t::set_content_size. Updates the content size. */
 bool _wlmaker_toplevel_icon_tile_set_content_size(
     wlmtk_tile_t *tile_ptr,
-    __UNUSED__ uint64_t content_size)
+    uint64_t content_size)
 {
-    __UNUSED__ wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
+    wlmaker_toplevel_icon_t *toplevel_icon_ptr = BS_CONTAINER_OF(
         tile_ptr, wlmaker_toplevel_icon_t, super_tile);
+
+    toplevel_icon_ptr->pending_serial = wl_display_next_serial(
+        toplevel_icon_ptr->icon_manager_ptr->wl_display_ptr);
+    zwlmaker_toplevel_icon_v1_send_configure(
+        toplevel_icon_ptr->wl_resource_ptr,
+        content_size,
+        content_size,
+        toplevel_icon_ptr->pending_serial);
 
     // TODO(kaeser@gubbe.ch): Constrain image size to the content size.
     return true;

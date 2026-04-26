@@ -238,8 +238,7 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     return dims;
 }
 
-/* == Local (static) methods =============================================== */
-
+/* == Methods for @ref wlmtk_fake_panel_t ================================== */
 static void _wlmtk_fake_panel_element_destroy(
     wlmtk_element_t *element_ptr);
 static uint32_t _wlmtk_fake_panel_request_size(
