@@ -19,24 +19,23 @@
  */
 
 #include <libbase/libbase.h>
-#include <stdbool.h>
 #include <stddef.h>
 
 #include "backend/backend.h"
 #include "backend/output_config.h"
 
 /** Backend unit tests. */
-const bs_test_set_t backend_tests[] = {
-    BS_TEST_SET(true, "backend", wlmbe_backend_test_cases),
-    BS_TEST_SET(true, "output_config", wlmbe_output_config_test_cases),
-    BS_TEST_SET(0, NULL, NULL),
+const bs_test_set_t *backend_test_sets[] = {
+    &wlmbe_backend_test_set,
+    &wlmbe_output_config_test_set,
+    NULL,
 };
 
 /** Main program, runs the unit tests. */
 int main(int argc, const char **argv)
 {
     const bs_test_param_t params = {};
-    return bs_test(backend_tests, argc, argv, &params);
+    return bs_test_sets(backend_test_sets, argc, argv, &params);
 }
 
 /* == End of backend_test.c ================================================ */

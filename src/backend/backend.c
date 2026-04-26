@@ -649,11 +649,15 @@ void _wlmbe_backend_config_dlnode_destroy(
 static void _wlmbe_backend_test_find(bs_test_t *test_ptr);
 static void _wlmbe_backend_test_encode_output_configs(bs_test_t *test_ptr);
 
-const bs_test_case_t          wlmbe_backend_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmbe_backend_test_cases[] = {
     { 1, "find", _wlmbe_backend_test_find },
     { 1, "encode_output_configs", _wlmbe_backend_test_encode_output_configs },
     BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmbe_backend_test_set = BS_TEST_SET(
+    true, "backend", _wlmbe_backend_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests that output configurations are found as desired. */

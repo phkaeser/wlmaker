@@ -585,7 +585,8 @@ static void _wlmbe_output_test_decode_mode(bs_test_t *test_ptr);
 static void _wlmbe_output_test_encode_mode(bs_test_t *test_ptr);
 static void _wlmbe_output_test_first_fnmatch(bs_test_t *test_ptr);
 
-const bs_test_case_t          wlmbe_output_config_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmbe_output_config_test_cases[] = {
     { 1, "config_parse", _wlmbe_output_test_config_parse },
     { 1, "decode_position", _wlmbe_output_test_decode_position },
     { 1, "encode_position", _wlmbe_output_test_encode_position },
@@ -594,6 +595,9 @@ const bs_test_case_t          wlmbe_output_config_test_cases[] = {
     { 1, "first_fnmatch", _wlmbe_output_test_first_fnmatch },
     BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmbe_output_config_test_set = BS_TEST_SET(
+    true, "output_config", _wlmbe_output_config_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Verifies parsing. */
