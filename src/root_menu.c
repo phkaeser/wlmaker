@@ -800,8 +800,8 @@ wlmtk_menu_item_t *_wlmaker_root_menu_create_item_from_array(
     return menu_item_ptr;
 
 error:
-wlmtk_menu_item_destroy(menu_item_ptr);
-return NULL;
+    wlmtk_menu_item_destroy(menu_item_ptr);
+    return NULL;
 }
 
 /* ------------------------------------------------------------------------- */

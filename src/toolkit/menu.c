@@ -220,6 +220,9 @@ bool wlmtk_menu_set_style(
         _wlmtk_menu_set_item_style,
         style_ref_ptr);
 
+    wlmtk_element_layout(wlmtk_menu_element(menu_ptr));
+    wlmtk_element_invalidate_parent_layout(wlmtk_menu_element(menu_ptr));
+
     wlmtk_menu_style_ref_release(old_ref_ptr);
     return rv;
 }
