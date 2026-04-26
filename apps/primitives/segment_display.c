@@ -23,6 +23,7 @@
 #include <libbase/libbase.h>
 
 #include <cairo.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 /* == Declarations ========================================================= */
@@ -236,12 +237,16 @@ static void test_6x8(bs_test_t *test_ptr);
 static void test_7x10(bs_test_t *test_ptr);
 static void test_16x24(bs_test_t *test_ptr);
 
-const bs_test_case_t          wlm_cairo_segment_display_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlm_cairo_segment_display_test_cases[] = {
     { 1, "6x8", test_6x8 },
     { 1, "7x10", test_7x10 },
     { 1, "16x24", test_16x24 },
-    { 0, NULL, NULL }  // sentinel.
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlm_cairo_segment_display_test_set = BS_TEST_SET(
+    true, "cairo_segment_display", _wlm_cairo_segment_display_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Test for the 6x8-sized digits. */
