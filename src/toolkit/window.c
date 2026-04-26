@@ -1220,7 +1220,8 @@ static void test_style_decode(bs_test_t *test_ptr);
 // TODO(kaeser@gubbe.ch): Add tests for ..
 // * storing organic_bounding_box
 
-const bs_test_case_t wlmtk_window_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_window_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "decoration", test_decoration },
     { 1, "events", test_events },
@@ -1234,8 +1235,11 @@ const bs_test_case_t wlmtk_window_test_cases[] = {
     { 1, "menu", test_menu },
     { 1, "style", test_style },
     { 1, "style_decode", test_style_decode },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_window_test_set = BS_TEST_SET(
+    true, "window", _wlmtk_window_test_cases);
 
 /** Window style used as default for testing, including a reference. */
 static struct wlmtk_window_style_holder _wlmtk_window_test_style_holder = {

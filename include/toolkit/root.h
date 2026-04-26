@@ -266,7 +266,7 @@ bool wlmtk_root_set_style(
     wlmtk_menu_style_ref_t *menu_style_ref_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_root_test_cases[];
+extern const bs_test_set_t wlmtk_root_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

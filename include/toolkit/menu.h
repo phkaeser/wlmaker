@@ -226,7 +226,7 @@ bool wlmtk_menu_style_decode_init(void *dst_ptr);
 void wlmtk_menu_style_decode_fini(void *dst_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_menu_test_cases[];
+extern const bs_test_set_t wlmtk_menu_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

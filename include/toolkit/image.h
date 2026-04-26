@@ -66,7 +66,7 @@ void wlmtk_image_destroy(wlmtk_image_t *image_ptr);
 wlmtk_element_t *wlmtk_image_element(wlmtk_image_t *image_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_image_test_cases[];
+extern const bs_test_set_t wlmtk_image_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

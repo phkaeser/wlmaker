@@ -86,7 +86,7 @@ void wlmtk_buffer_set(
 wlmtk_element_t *wlmtk_buffer_element(wlmtk_buffer_t *buffer_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_buffer_test_cases[];
+extern const bs_test_set_t wlmtk_buffer_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

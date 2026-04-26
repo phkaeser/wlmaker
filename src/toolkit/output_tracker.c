@@ -317,10 +317,14 @@ void wlmtk_output_tracker_for_each(
 
 static void _wlmtk_output_tracker_test(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_output_tracker_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_output_tracker_test_cases[] = {
     { 1, "test", _wlmtk_output_tracker_test },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_output_tracker_test_set = BS_TEST_SET(
+    true, "output_tracker", _wlmtk_output_tracker_test_cases);
 
 /** For tests: State of tracked outputs. */
 struct _wlmtk_output_tracker_test_state {

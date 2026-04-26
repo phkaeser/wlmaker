@@ -212,7 +212,7 @@ struct wlr_box wlmtk_panel_compute_dimensions(
     struct wlr_box *usable_area_ptr);
 
 /** Unit test cases of panel. */
-extern const bs_test_case_t wlmtk_panel_test_cases[];
+extern const bs_test_set_t wlmtk_panel_test_set;
 
 /** Forward declaration: Fake panel, for tests. */
 typedef struct _wlmtk_fake_panel_t wlmtk_fake_panel_t;

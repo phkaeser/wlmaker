@@ -104,7 +104,7 @@ void wlmtk_button_set(
     struct wlr_buffer *pressed_wlr_buffer_ptr);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_button_test_cases[];
+extern const bs_test_set_t wlmtk_button_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

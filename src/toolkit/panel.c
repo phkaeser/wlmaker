@@ -312,12 +312,16 @@ static void test_init_fini(bs_test_t *test_ptr);
 static void test_compute_dimensions(bs_test_t *test_ptr);
 static void test_compute_dimensions_exclusive(bs_test_t *test_ptr);
 
-const bs_test_case_t          wlmtk_panel_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_panel_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "compute_dimensions", test_compute_dimensions },
     { 1, "compute_dimensions_exclusive", test_compute_dimensions_exclusive },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_panel_test_set = BS_TEST_SET(
+    true, "panel", _wlmtk_panel_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests setup, teardown and some accessors. */

@@ -819,13 +819,17 @@ static void test_workspaces(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_move(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_root_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_root_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "pointer_button", test_pointer_button },
     { 1, "pointer_move", test_pointer_move },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_root_test_set = BS_TEST_SET(
+    true, "root", _wlmtk_root_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */

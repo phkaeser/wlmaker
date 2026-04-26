@@ -92,7 +92,7 @@ bool wlmtk_fsm_event(
     void *ud_ptr);
 
 /** Unit tests for the finite-state machine. */
-extern const bs_test_case_t wlmtk_fsm_test_cases[];
+extern const bs_test_set_t wlmtk_fsm_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

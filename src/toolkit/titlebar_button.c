@@ -275,10 +275,14 @@ struct wlr_buffer *create_buf(
 
 static void test_button(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_titlebar_button_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_titlebar_button_test_cases[] = {
     { 1, "button", test_button },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_titlebar_button_test_set = BS_TEST_SET(
+    true, "titlebar_button", _wlmtk_titlebar_button_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests button visualization. */

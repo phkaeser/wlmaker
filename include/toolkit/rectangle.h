@@ -90,7 +90,7 @@ wlmtk_element_t *wlmtk_rectangle_element(wlmtk_rectangle_t *rectangle_ptr);
 wlmtk_rectangle_t *wlmtk_rectangle_from_element(wlmtk_element_t *element_ptr);
 
 /** Unit tests. */
-extern const bs_test_case_t wlmtk_rectangle_test_cases[];
+extern const bs_test_set_t wlmtk_rectangle_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

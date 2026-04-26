@@ -489,7 +489,7 @@ bool wlmtk_window_style_decode_init(void *dst_ptr);
 void wlmtk_window_style_decode_fini(void *dst_ptr);
 
 /** Window unit test cases. */
-extern const bs_test_case_t wlmtk_window_test_cases[];
+extern const bs_test_set_t wlmtk_window_test_set;
 
 /**
  * Creates a window, with default styles, for testing.

@@ -253,10 +253,14 @@ void _wlmtk_buffer_handle_element_pointer_enter(
 
 static void test_pointer_motion(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_buffer_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_buffer_test_cases[] = {
     { 1, "pointer_motion", test_pointer_motion },
-    { 0, NULL, NULL },
+    BS_TEST_CASE_SENTINEL(),
 };
+
+const bs_test_set_t wlmtk_buffer_test_set = BS_TEST_SET(
+    true, "buffer", _wlmtk_buffer_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests behaviour of @ref _wlmtk_buffer_element_pointer_accepts_motion. */

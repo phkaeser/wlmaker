@@ -592,7 +592,7 @@ const bs_test_case_t          wlmbe_output_config_test_cases[] = {
     { 1, "decode_mode", _wlmbe_output_test_decode_mode },
     { 1, "encode_mode", _wlmbe_output_test_encode_mode },
     { 1, "first_fnmatch", _wlmbe_output_test_first_fnmatch },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
 
 /* ------------------------------------------------------------------------- */

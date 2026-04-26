@@ -319,13 +319,17 @@ struct wlr_buffer *title_create_buffer(
 static void test_title(bs_test_t *test_ptr);
 static void test_shade(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_titlebar_title_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_titlebar_title_test_cases[] = {
     // TODO(kaeser@gubbe.ch): Re-enable, once figuring out why this fails on
     // Trixie when running as a github action.
     { 0, "title", test_title },
     { 1, "shade", test_shade },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_titlebar_title_test_set = BS_TEST_SET(
+    true, "titlebar_title", _wlmtk_titlebar_title_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests title drawing. */

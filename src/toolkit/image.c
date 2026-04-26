@@ -187,10 +187,14 @@ void _wlmtk_image_element_destroy(wlmtk_element_t *element_ptr)
 /* == Unit tests =========================================================== */
 static void test_create_destroy(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_image_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_image_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_image_test_set = BS_TEST_SET(
+    true, "image", _wlmtk_image_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */

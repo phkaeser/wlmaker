@@ -119,7 +119,7 @@ wlmtk_element_t *wlmtk_dock_element(wlmtk_dock_t *dock_ptr);
 extern const bspl_desc_t wlmtk_dock_style_desc[];
 
 /** Unit tests for @ref wlmtk_dock_t. */
-extern const bs_test_case_t wlmtk_dock_test_cases[];
+extern const bs_test_set_t wlmtk_dock_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -346,10 +346,14 @@ void _wlmtk_dock_tile_destroy(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
 
 static void test_create_destroy(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_dock_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_dock_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_dock_test_set = BS_TEST_SET(
+    true, "dock", _wlmtk_dock_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */

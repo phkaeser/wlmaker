@@ -137,7 +137,7 @@ wlmtk_element_t *wlmtk_titlebar_element(wlmtk_titlebar_t *titlebar_ptr);
 extern const bspl_desc_t wlmtk_titlebar_style_desc[];
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_titlebar_test_cases[];
+extern const bs_test_set_t wlmtk_titlebar_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

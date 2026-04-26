@@ -122,7 +122,7 @@ void wlmtk_surface_connect_unmap_listener_signal(
     wl_notify_func_t handler);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlmtk_surface_test_cases[];
+extern const bs_test_set_t wlmtk_surface_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

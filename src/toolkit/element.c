@@ -674,7 +674,8 @@ static void test_keyboard_focus(bs_test_t *test_ptr);
 static void test_keyboard_activity(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_element_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_element_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "set_parent_container", test_set_parent_container },
     { 1, "set_get_position", test_set_get_position },
@@ -685,8 +686,11 @@ const bs_test_case_t wlmtk_element_test_cases[] = {
     { 1, "keyboard_focus", test_keyboard_focus },
     { 1, "keyboard_activity", test_keyboard_activity },
     { 1, "layout", test_layout },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_element_test_set = BS_TEST_SET(
+    true, "element", _wlmtk_element_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises init() and fini() methods, verifies dtor forwarding. */

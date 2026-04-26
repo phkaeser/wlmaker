@@ -1172,7 +1172,8 @@ static void test_activate_cycling(bs_test_t *test_ptr);
 static void test_multi_output_extents(bs_test_t *test_ptr);
 static void test_multi_output_reposition(bs_test_t *test_ptr);
 
-const bs_test_case_t wlmtk_workspace_test_cases[] = {
+/** Test cases */
+static const bs_test_case_t _wlmtk_workspace_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "map_unmap", test_map_unmap },
     { 1, "move", test_move },
@@ -1183,8 +1184,11 @@ const bs_test_case_t wlmtk_workspace_test_cases[] = {
     { 1, "activate_cycling", test_activate_cycling },
     { 1, "multi_output_extents", test_multi_output_extents },
     { 1, "multi_output_reposition", test_multi_output_reposition },
-    { 0, NULL, NULL }
+    BS_TEST_CASE_SENTINEL()
 };
+
+const bs_test_set_t wlmtk_workspace_test_set = BS_TEST_SET(
+    true, "workspace", _wlmtk_workspace_test_cases);
 
 /** Tile style used in tests. */
 static const struct wlmtk_tile_style _wlmtk_workspace_test_tile_style = {
