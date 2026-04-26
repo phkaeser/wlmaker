@@ -71,7 +71,7 @@ void wlm_cairo_7segment_display_digit(
     uint8_t digit);
 
 /** Unit test cases. */
-extern const bs_test_case_t wlm_cairo_segment_display_test_cases[];
+extern const bs_test_set_t wlm_cairo_segment_display_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"

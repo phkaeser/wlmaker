@@ -19,15 +19,14 @@
  */
 
 #include <libbase/libbase.h>
-#include <stdbool.h>
 #include <stddef.h>
 
 #include "segment_display.h"
 
 /** Unit tests. */
-const bs_test_set_t tests[] = {
-    BS_TEST_SET(true, "segment_dipslay", wlm_cairo_segment_display_test_cases),
-    BS_TEST_SET(false, NULL, NULL),
+const bs_test_set_t *test_sets[] = {
+    &wlm_cairo_segment_display_test_set,
+    NULL,
 };
 
 #if !defined(TEST_DATA_DIR)
@@ -41,7 +40,7 @@ int main(int argc, const char **argv)
     const bs_test_param_t params = {
         .test_data_dir_ptr   = TEST_DATA_DIR
     };
-    return bs_test(tests, argc, argv, &params);
+    return bs_test_sets(test_sets, argc, argv, &params);
 }
 
 /* == End of segment_display_test.c ======================================== */
