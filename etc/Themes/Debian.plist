@@ -1,5 +1,6 @@
 // Following the 'Debian' theme of Window Maker.
 {
+  Name = "Debian";
   BackgroundColor = "argb32:ff77aac4";
   Cursor = {
     Name = default;

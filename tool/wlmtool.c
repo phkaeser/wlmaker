@@ -29,12 +29,14 @@
 #include <string.h>
 
 #include "gen_menu.h"
+#include "menu.h"
 
 /* == Declarations ========================================================= */
 
 static bool print_version(int argc, const char **argv);
 static bool print_help(int argc, const char **argv);
 static bool generate_menu(int argc, const char **argv);
+static bool generate_themes_menu(int argc, const char **argv);
 
 #if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
 #eror "WLMAKER_VERSION_... not defined!"
@@ -77,6 +79,13 @@ static const struct command_desc commands[] = {
         .description_ptr =
         "Generates a root menu for Wayland Maker, in .plist text format.",
         .op = generate_menu
+    },
+    {
+        .command_ptr = "GenerateThemesMenu",
+        .description_ptr =
+        "Generates the \"Themes\" menu for Wayland Maker, in .plist text "
+        "format.",
+        .op = generate_themes_menu
     },
     {
         .command_ptr = "--help",
@@ -144,6 +153,29 @@ bool generate_menu(int argc, const char **argv)
         if (rv) fprintf(stdout, "%.*s", (int)buf.length, (char*)buf.data_ptr);
     }
     bspl_array_unref(menu_array_ptr);
+    bs_dynbuf_fini(&buf);
+    return rv;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Generates the the "Appearance" menu from Themes plist files. */
+bool generate_themes_menu(__UNUSED__ int argc, __UNUSED__ const char **argv)
+{
+    bspl_array_t *array_ptr = NULL;
+    if (1 >= argc) {
+        array_ptr = wlmtool_menu_generate_appearance(NULL);
+    } else {
+        array_ptr = wlmtool_menu_generate_appearance(argv[1]);
+    }
+    if (NULL == array_ptr) return false;
+
+    bs_dynbuf_t buf = {};
+    bool rv = bs_dynbuf_init(&buf, 1024, SIZE_MAX);
+    if (rv) {
+        rv = bspl_object_write(bspl_object_from_array(array_ptr), &buf);
+        if (rv) fprintf(stdout, "%.*s", (int)buf.length, (char*)buf.data_ptr);
+    }
+    bspl_array_unref(array_ptr);
     bs_dynbuf_fini(&buf);
     return rv;
 }

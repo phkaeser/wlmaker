@@ -14,15 +14,15 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-ADD_LIBRARY(wlmtools STATIC gen_menu.c)
+ADD_LIBRARY(libwlmtool STATIC gen_menu.c item.c menu.c)
 TARGET_INCLUDE_DIRECTORIES(
-  wlmtools
+  libwlmtool
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
   PRIVATE
   ${LIBXDGBASEDIR_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(
-  wlmtools
+  libwlmtool
   PRIVATE
   libbase_plist
   desktop-parser
@@ -31,7 +31,7 @@ TARGET_LINK_LIBRARIES(
 ADD_EXECUTABLE(wlmtool wlmtool.c)
 TARGET_LINK_LIBRARIES(
   wlmtool
-  wlmtools
+  libwlmtool
   libbase)
 TARGET_COMPILE_DEFINITIONS(
   wlmtool PRIVATE
@@ -46,6 +46,9 @@ INSTALL(
 IF(iwyu_path_and_options)
   SET_TARGET_PROPERTIES(
     wlmtool PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  SET_TARGET_PROPERTIES(
+    libwlmtool PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 ENDIF(iwyu_path_and_options)
 

@@ -20,6 +20,7 @@
 #ifndef __WLMAKER_GEN_MENU_H__
 #define __WLMAKER_GEN_MENU_H__
 
+#include <libbase/libbase.h>
 #include <libbase/plist.h>
 
 #ifdef __cplusplus

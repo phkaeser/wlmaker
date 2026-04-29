@@ -154,7 +154,9 @@ static const char *_wlmaker_root_menu_statement_generate = "GeneratePlistMenu";
  * Unit test injector: struct wl_display that will be terminated when
  * subprocess terminates. Must be NULL when not for in unit tests.
  */
-struct wl_display             *_wlmaker_root_menu_test_wl_display_ptr = NULL;
+static struct wl_display      *_wlmaker_root_menu_test_wl_display_ptr = NULL;
+/** Number of generators, used to terminate display in unit tests. */
+static size_t                 _wlmaker_root_menu_generators = 0;
 
 /* == Exported methods ===================================================== */
 
@@ -608,6 +610,7 @@ bool _wlmaker_root_menu_populate_menu_items_from_generator(
            (intmax_t)bs_subprocess_pid(subprocess_ptr),
            command_ptr);
 
+    _wlmaker_root_menu_generators++;
     generator_ptr->subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
         server_ptr->monitor_ptr,
         subprocess_ptr,
@@ -668,7 +671,7 @@ void _wlmaker_root_menu_generator_handle_menu_destroy(
 /** Handler for when the subprocess is terminated. */
 void _wlmaker_root_menu_generator_handle_terminated(
     void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
     int state,
     int code)
 {
@@ -735,10 +738,11 @@ void _wlmaker_root_menu_generator_handle_terminated(
     }
 
     generator_ptr->subprocess_handle_ptr = NULL;
+    _wlmaker_root_menu_generators--;
 
-    if (NULL != _wlmaker_root_menu_test_wl_display_ptr) {
-        wl_display_terminate(
-            _wlmaker_root_menu_test_wl_display_ptr);
+    if (NULL != _wlmaker_root_menu_test_wl_display_ptr &&
+        0 >= _wlmaker_root_menu_generators) {
+        wl_display_terminate(_wlmaker_root_menu_test_wl_display_ptr);
         _wlmaker_root_menu_test_wl_display_ptr = NULL;
     }
 }
@@ -750,6 +754,7 @@ void _wlmaker_root_menu_generator_handle_terminated(
  * The Plist array either defines a menu action item, where the array elements
  * are `(Title, ActionName, OptionalActionArg)`. Or, it defines a submenu, as
  * specified in @ref _wlmaker_root_menu_init_menu_from_array.
+ * Or, it has only a title, then it will be shown as disabled menu item.
  *
  * For the list of permitted `ActionName` values, see @ref wlmaker_action_desc.
 
@@ -772,30 +777,34 @@ wlmtk_menu_item_t *_wlmaker_root_menu_create_item_from_array(
             menu_item_ptr,
             bspl_array_string_value_at(item_array_ptr, 0))) goto error;
 
-    // If second element is a string that translates to an action: Bind it.
-    int action;
-    if (bspl_enum_name_to_value(
-            wlmaker_action_desc,
+    if (1 >= bspl_array_size(item_array_ptr)) {
+        wlmtk_menu_item_set_enabled(menu_item_ptr, false);
+    } else {
+        // If second element is a string that translates to an action: Bind it.
+        int action;
+        if (bspl_enum_name_to_value(
+                wlmaker_action_desc,
                 bspl_array_string_value_at(item_array_ptr, 1),
-            &action)) {
-        wlmaker_menu_item_bind_action(
-            menu_item_ptr,
-            action,
-            bspl_array_string_value_at(item_array_ptr, 2),
-            server_ptr);
-        return menu_item_ptr;
-    }
+                &action)) {
+            wlmaker_menu_item_bind_action(
+                menu_item_ptr,
+                action,
+                bspl_array_string_value_at(item_array_ptr, 2),
+                server_ptr);
+            return menu_item_ptr;
+        }
 
-    wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(menu_style_ref_ptr);
-    if (NULL == submenu_ptr) goto error;
-    wlmtk_menu_item_set_submenu(menu_item_ptr, submenu_ptr);
+        wlmtk_menu_t *submenu_ptr = wlmtk_menu_create(menu_style_ref_ptr);
+        if (NULL == submenu_ptr) goto error;
+        wlmtk_menu_item_set_submenu(menu_item_ptr, submenu_ptr);
 
-    if (!_wlmaker_root_menu_init_menu_from_array(
-            submenu_ptr,
-            item_array_ptr,
-            menu_style_ref_ptr,
-            server_ptr)) {
-        goto error;
+        if (!_wlmaker_root_menu_init_menu_from_array(
+                submenu_ptr,
+                item_array_ptr,
+                menu_style_ref_ptr,
+                server_ptr)) {
+            goto error;
+        }
     }
     return menu_item_ptr;
 
@@ -946,10 +955,12 @@ void test_generated_menu(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
 
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_at(menu_ptr, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     menu_ptr = wlmtk_menu_item_get_submenu(item_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, wlmtk_menu_items_size(menu_ptr));
     item_ptr = wlmtk_menu_item_at(menu_ptr, 0);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         WLMTK_MENU_ITEM_ENABLED,

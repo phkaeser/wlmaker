@@ -1,5 +1,6 @@
-// Style oriented on Window Maker's default.
+// Theme oriented on Window Maker's default.
 {
+  Name = "Default Theme";
   BackgroundColor = "argb32:ff777777";
   Cursor = {
     Name = default;
