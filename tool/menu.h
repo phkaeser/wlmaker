@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file wlmtool_test.c
+ * @file menu.h
  *
  * @copyright
  * Copyright (c) 2026 Google LLC and Philipp Kaeser
@@ -17,31 +17,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __WLMAKER_MENU_H__
+#define __WLMAKER_MENU_H__
 
 #include <libbase/libbase.h>
-#include <stddef.h>
+#include <libbase/plist.h>
 
-#include "gen_menu.h"
-#include "item.h"
-#include "menu.h"
+#ifdef __cplusplus
+extern "C" {
+#endif  // __cplusplus
 
-#if !defined(TEST_DATA_DIR)
-/** Directory root for looking up test data. See `bs_test_resolve_path`. */
-#define TEST_DATA_DIR "./"
-#endif  // TEST_DATA_DIR
+/**
+ * Generates a menu for the Themes files found at XDG data directories.
+ *
+ * @param path_ptr            Optional: Path to read from. If NULL, use the XDG
+ *                            data directories.
+ *
+ * @return A Plist array, or NULL on error.
+ */
+bspl_array_t *wlmtool_menu_generate_appearance(const char *path_ptr);
 
-/** Main program, runs the unit tests. */
-int main(int argc, const char **argv)
-{
-    const bs_test_param_t params = { .test_data_dir_ptr = TEST_DATA_DIR };
+/** Unit tests for the menu generator. */
+extern const bs_test_set_t wlmtool_menu_test_set;
 
-    const bs_test_set_t *sets[] = {
-        &wlmaker_menu_test_set,
-        &wlmtool_item_test_set,
-        &wlmtool_menu_test_set,
-        NULL
-    };
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-    return bs_test_sets(sets, argc, argv, &params);
-}
-/* == End of wlmtool_test.c ================================================ */
+#endif  // __WLMAKER_MENU_H__
+/* == End of menu.h ======================================================== */

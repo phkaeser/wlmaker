@@ -51,8 +51,8 @@ TARGET_COMPILE_DEFINITIONS(
   desktop_parser_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 
 ADD_EXECUTABLE(wlmtool_test wlmtool_test.c)
-ADD_DEPENDENCIES(wlmtool_test libbase wlmtools)
-TARGET_LINK_LIBRARIES(wlmtool_test libbase wlmtools)
+ADD_DEPENDENCIES(wlmtool_test libbase libwlmtool)
+TARGET_LINK_LIBRARIES(wlmtool_test libbase libwlmtool)
 TARGET_COMPILE_DEFINITIONS(
   wlmtool_test PUBLIC TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 
