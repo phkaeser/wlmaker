@@ -21,11 +21,6 @@ EmbedBinary_ADD_LIBRARY(
   "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
 
 EmbedBinary_ADD_LIBRARY(
-  embedded_theme
-  "theme"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
-
-EmbedBinary_ADD_LIBRARY(
   embedded_configuration
   "default_configuration"
   "${CMAKE_CURRENT_SOURCE_DIR}/Config.plist")
@@ -51,20 +46,6 @@ IF(PLDES)
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
   SET_PROPERTY(
     TEST root_menu_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
-    NAME theme_default_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
-  SET_PROPERTY(
-    TEST theme_default_plist_test
-    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
-    NAME theme_debian_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Debian.plist")
-  SET_PROPERTY(
-    TEST theme_debian_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
   ADD_TEST(
@@ -112,9 +93,3 @@ INSTALL(
   FILES
   ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
   DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR})
-
-INSTALL(
-  FILES
-  Themes/Default.plist
-  Themes/Debian.plist
-  DESTINATION ${WLMAKER_INSTALL_CONFIG_DIR}/Themes)

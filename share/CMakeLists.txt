@@ -13,6 +13,12 @@
 # limitations under the License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+INCLUDE(EmbedBinary)
+
+EmbedBinary_ADD_LIBRARY(
+  embedded_theme
+  "theme"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.desktop.in
@@ -130,6 +136,26 @@ ELSE()
   MESSAGE(STATUS "Skipping .desktop file validation -- `desktop-file-validate` not found")
 ENDIF()
 
+# Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
+# with what GNUstep expects. Optional.
+FIND_PROGRAM(PLDES pldes)
+IF(PLDES)
+  ADD_TEST(
+    NAME theme_default_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
+  SET_PROPERTY(
+    TEST theme_default_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
+    NAME theme_debian_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Debian.plist")
+  SET_PROPERTY(
+    TEST theme_debian_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+ENDIF(PLDES)
+
 INSTALL(FILES
   wlmaker.svg
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
@@ -174,3 +200,9 @@ INSTALL(FILES
   wlmaker/icons/firefox-56x56.png
   wlmaker/icons/terminal-56x56.png
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/icons)
+
+INSTALL(
+  FILES
+  Themes/Default.plist
+  Themes/Debian.plist
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/Themes)

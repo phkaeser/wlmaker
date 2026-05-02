@@ -37,7 +37,7 @@
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
 
-#include "../etc/theme.h"  // IWYU pragma: keep
+#include "../share/theme.h"  // IWYU pragma: keep
 #include "action.h"
 #include "backend/backend.h"
 #include "background.h"
