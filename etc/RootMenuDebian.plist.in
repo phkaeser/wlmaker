@@ -6,7 +6,7 @@
   "@PROJECT_BINARY_DIR@/tool/wlmtool genmenu @PROJECT_BINARY_DIR@/share"),
  ("Appearance...",
   GeneratePlistMenu,
-  "@PROJECT_BINARY_DIR@/tool/wlmtool GenerateThemesMenu @PROJECT_SOURCE_DIR@/etc/Themes"),
+  "@PROJECT_BINARY_DIR@/tool/wlmtool GenerateThemesMenu @PROJECT_SOURCE_DIR@/share/Themes"),
  //! [wlmtool]
  ("Workspaces...",
   ("New", WorkspaceAdd),

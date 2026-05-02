@@ -140,7 +140,8 @@ bspl_dict_t *wlmaker_state_load(
  *
  * @param files_ptr
  * @param fname_ptr           File to load from. If NULL, will load the defualt
- *                            style.
+ *                            style. Otherwise will try to locate the file
+ *                            relative to XDG Data directories.
  * @param style_ptr           Points to the style. If loading and decoding
  *                            succeeds, resources at `style_ptr` will be freed.
  *                            `style_ptr` is untouched on failure.

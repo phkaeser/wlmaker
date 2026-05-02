@@ -80,7 +80,7 @@ bspl_array_t *wlmtool_menu_generate_appearance(const char *path_ptr)
         }
 
         bs_ptr_set_t *dir_set_ptr = bs_ptr_set_create();
-        const char* const *dirs_ptr = xdgConfigDirectories(&xdg_handle);
+        const char* const *dirs_ptr = xdgDataDirectories(&xdg_handle);
         for (; NULL != dirs_ptr && NULL != *dirs_ptr; ++dirs_ptr) {
             bs_ptr_set_insert(dir_set_ptr, (void*)*dirs_ptr);
             char *p = bs_strdupf("%s/%s", *dirs_ptr, "wlmaker/Themes");
@@ -98,22 +98,32 @@ bspl_array_t *wlmtool_menu_generate_appearance(const char *path_ptr)
 
         menu_ptr = wlmtool_menu_get_or_create_submenu(
             root_menu_ptr, "User Themes");
-        dirs_ptr = xdgSearchableConfigDirectories(&xdg_handle);
-        for (; NULL != dirs_ptr && NULL != *dirs_ptr; ++dirs_ptr) {
-            if (bs_ptr_set_contains(dir_set_ptr, (void*)*dirs_ptr)) continue;
-
-            char *p = bs_strdupf("%s/%s", *dirs_ptr, "wlmaker/Themes");
-            if (NULL == p) {
-                wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
-                return NULL;
-            }
-            bool rv = _wlmtool_menu_add_themes_path(menu_ptr, p);
-            free(p);
-            if (!rv) {
-                wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
-                return NULL;
-            }
+        char *p = bs_strdupf("%s/%s", xdgDataHome(&xdg_handle), "wlmaker/Themes");
+        if (NULL == p) {
+            wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
+            return NULL;
         }
+        bool rv = _wlmtool_menu_add_themes_path(menu_ptr, p);
+        free(p);
+        if (!rv) {
+            wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
+            return NULL;
+        }
+
+        menu_ptr = wlmtool_menu_get_or_create_submenu(
+            root_menu_ptr, "User Themes");
+        p = bs_strdupf("%s/%s", xdgConfigHome(&xdg_handle), "wlmaker/Themes");
+        if (NULL == p) {
+            wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
+            return NULL;
+        }
+        rv = _wlmtool_menu_add_themes_path(menu_ptr, p);
+        free(p);
+        if (!rv) {
+            wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
+            return NULL;
+        }
+
         bs_ptr_set_destroy(dir_set_ptr);
         xdgWipeHandle(&xdg_handle);
     }

@@ -33,7 +33,7 @@
 #include <wlr/types/wlr_keyboard.h>
 #undef WLR_USE_UNSTABLE
 
-#include "../etc/theme.h"  // IWYU pragma: keep
+#include "../share/theme.h"  // IWYU pragma: keep
 #include "default_configuration.h"
 #include "default_state.h"
 #include "input/cursor.h"
@@ -166,18 +166,27 @@ bspl_dict_t *wlmaker_state_load(
 /* ------------------------------------------------------------------------- */
 bool wlmaker_theme_load(
     wlmaker_files_t *files_ptr,
-    const char *fname_ptr,
+    const char *arg_fname_ptr,
     wlmaker_config_style_t *style_ptr)
 {
-    bspl_dict_t *style_dict_ptr = bspl_dict_from_object(
-        wlmaker_config_object_load(
-            files_ptr,
-            "style",
-            fname_ptr,
-            "Themes/Default.plist",
-            embedded_binary_theme_data,
-            embedded_binary_theme_size));
-    if (NULL == style_dict_ptr) return NULL;
+    char *fname_ptr = NULL;
+    if (NULL != arg_fname_ptr && NULL != files_ptr) {
+        fname_ptr = wlmaker_files_xdg_data_find(
+            files_ptr, "Themes/default.plist", S_IFREG);
+    }
+
+    bspl_object_t *o = _wlmaker_plist_load(
+        "Theme",
+        NULL != arg_fname_ptr ? arg_fname_ptr : fname_ptr,
+        embedded_binary_theme_data,
+        embedded_binary_theme_size);
+    if (NULL != fname_ptr) free(fname_ptr);
+
+    bspl_dict_t *style_dict_ptr = bspl_dict_from_object(o);
+    if (NULL == style_dict_ptr) {
+        bspl_object_unref(o);
+        return NULL;
+    }
 
     wlmaker_config_style_t tmp_style = {};
     bool rv = bspl_decode_dict(
@@ -332,11 +341,11 @@ void test_style_file(bs_test_t *test_ptr)
 #error "Missing definition of WLMAKER_SOURCE_DIR!"
 #endif
 
-    const char *f = WLMAKER_SOURCE_DIR "/etc/Themes/Default.plist";
+    const char *f = WLMAKER_SOURCE_DIR "/share/Themes/Default.plist";
     BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_theme_load(NULL, f, &cs));
     bspl_decoded_destroy(wlmaker_config_style_desc, &cs);
 
-    f = WLMAKER_SOURCE_DIR "/etc/Themes/Debian.plist";
+    f = WLMAKER_SOURCE_DIR "/share/Themes/Debian.plist";
     BS_TEST_VERIFY_TRUE(test_ptr, wlmaker_theme_load(NULL, f, &cs));
     bspl_decoded_destroy(wlmaker_config_style_desc, &cs);
 }

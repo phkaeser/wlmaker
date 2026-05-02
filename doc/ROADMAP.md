@@ -41,8 +41,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Add function to change the docked application's size when style updates.
     * [done] Adds theme "Name" plist entry.
     * [done] Add menu entry and generator to load from `Themes/...` files.
-    * Move menu files to DATA directories, away from CONFIG.
-    * Cleanup the Debian menu so it works for personal use.
+    * [done] Move menu files to DATA directories, away from CONFIG.
+    * Cleanup the Debian theme so it works for personal use.
     * Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
       or `/usr/share/icons/default/index.theme` (an INI file).
 
