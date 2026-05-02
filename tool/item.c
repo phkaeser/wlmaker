@@ -35,6 +35,8 @@ struct wlmtool_item {
     bs_dllist_node_t          dlnode;
     /** Key used for @ref wlmtool_menu::tree_ptr. */
     const char                *key_ptr;
+    /** Item title, used for sorting in the double-linked list. */
+    const char                *title_ptr;
     /** Dtor for this item. */
     void (*destroy)(struct wlmtool_item *item_ptr);
     /** Constructs an array from this item. */
@@ -118,6 +120,7 @@ struct wlmtool_menu *wlmtool_menu_create(const char *title_ptr)
         return NULL;
     }
     menu_ptr->menu_item.key_ptr = bspl_string_value(menu_ptr->title_ptr);
+    menu_ptr->menu_item.title_ptr = bspl_string_value(menu_ptr->title_ptr);
 
     return menu_ptr;
 }
@@ -183,6 +186,7 @@ struct wlmtool_item *wlmtool_file_action_create(
     bspl_string_t *s = bspl_string_create(title_ptr);
     if (NULL == s) goto error;
     bspl_array_push_back(item_ptr->array_ptr, bspl_object_from_string(s));
+    item_ptr->menu_item.title_ptr = bspl_string_value(s);
     bspl_string_unref(s);
 
     s = bspl_string_create(action_ptr);
@@ -235,7 +239,7 @@ int _wlmtool_item_dlnode_cmp(
 {
     struct wlmtool_item *i1 = BS_CONTAINER_OF(n1, struct wlmtool_item, dlnode);
     struct wlmtool_item *i2 = BS_CONTAINER_OF(n2, struct wlmtool_item, dlnode);
-    return strcmp(i1->key_ptr, i2->key_ptr);
+    return strcmp(i1->title_ptr, i2->title_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

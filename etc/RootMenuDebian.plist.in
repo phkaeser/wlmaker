@@ -8,6 +8,13 @@
   GeneratePlistMenu,
   "@PROJECT_BINARY_DIR@/tool/wlmtool GenerateThemesMenu @PROJECT_SOURCE_DIR@/share/Themes"),
  //! [wlmtool]
+ ("Outputs...",
+  ("Magnify", OutputMagnify),
+  ("Reduce", OutputReduce),
+  ("Configure", Execute, "wdisplays"),
+  ("Save State", OutputSaveState),
+  ("Reduce brightness", ShellExecute, "brightnessctl set 5%-"),
+  ("Increase brightness", ShellExecute, "brightnessctl set +5%")),
  ("Workspaces...",
   ("New", WorkspaceAdd),
   ("Destroy Last", WorkspaceDestroyLast),
