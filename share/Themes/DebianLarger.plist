@@ -1,10 +1,10 @@
 // Inspired by the 'Debian' theme of Window Maker.
 {
-  Name = "Debian";
+  Name = "Debian (1.41x)";
   BackgroundColor = "argb32:ff77aac4";
   Cursor = {
     Name = default;
-    Size = 24;
+    Size = 34;
   };
   Dock = {
     Margin = {
@@ -13,9 +13,9 @@
     };
   };
   Tile = {
-    Size = 64;
-    ContentSize = 56;
-    BezelWidth = 2;
+    Size = 90;
+    ContentSize = 79;
+    BezelWidth = 3;
     Fill = {
       From = "argb32:ffa6a6b6";
       To = "argb32:ff515561";
@@ -26,7 +26,7 @@
     Font = {
       Face = Helvetica;
       Weight = Bold;
-      Size = 12;
+      Size = 17;
     };
     TextColor = "argb32:ff000000";
   };
@@ -44,7 +44,7 @@
         Type = DGRADIENT;
       };
       BlurredTextColor = "argb32:ff000000";
-      Height = 22;
+      Height = 31;
       BezelWidth = 1;
       Margin = {
         Width = 1;
@@ -53,7 +53,7 @@
       Font = {
         Face = Helvetica;
         Weight = Bold;
-        Size = 15;
+        Size = 21;
       };
     };
     ResizeBar = {
@@ -61,8 +61,8 @@
         Color = "argb32:ffc2c0c5";
         Type = SOLID;
       };
-      Height = 7;
-      CornerWidth = 29;
+      Height = 10;
+      CornerWidth = 41;
       BezelWidth = 1;
     };
     Border = {
@@ -96,14 +96,14 @@
       Font = {
         Face = Helvetica;
         Weight = Normal;
-        Size = 14;
+        Size = 20;
       };
       EnabledTextColor = "argb32:ff000000";
       HighlightedTextColor = "argb32:ff000000";
       DisabledTextColor = "argb32:ff808080";
-      Height = 22;
+      Height = 31;
       BezelWidth = 1;
-      Width = 150;
+      Width = 212;
     };
   };
   TaskList = {
@@ -114,7 +114,7 @@
     Font = {
       Face = Helvetica;
       Weight = Bold;
-      Size = 18;
+      Size = 25;
     };
     TextColor = "argb32:ffffffff";
   };
