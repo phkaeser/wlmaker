@@ -66,8 +66,6 @@ struct _wlmtk_menu_item_t {
 
     /** Text to be shown for the menu item. */
     char                      *text_ptr;
-    /** Width of the item element, in pixels. */
-    int                       width;
     /** Mode of the menu (and the item). */
     enum wlmtk_menu_mode      mode;
 
@@ -222,7 +220,6 @@ wlmtk_menu_item_t *wlmtk_menu_item_create(
         _wlmtk_menu_item_handle_pointer_motion);
 
     // TODO(kaeser@gubbe.ch): Should not be required!
-    menu_item_ptr->width = menu_item_ptr->style_ptr->item.width;
     menu_item_ptr->enabled = true;
     _wlmtk_menu_item_set_state(menu_item_ptr, WLMTK_MENU_ITEM_ENABLED);
     _wlmtk_menu_item_redraw(menu_item_ptr, &menu_item_ptr->style_ptr->item);
@@ -600,10 +597,11 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
     const struct wlmtk_menu_item_style *style_ptr)
 {
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(
-        menu_item_ptr->width, style_ptr->height);
+        style_ptr->width, style_ptr->height);
     if (NULL == wlr_buffer_ptr) {
-        bs_log(BS_ERROR, "Failed bs_gfxbuf_create_wlr_buffer(%d, %"PRIu64")",
-               menu_item_ptr->width, style_ptr->height);
+        bs_log(BS_ERROR,
+               "Failed bs_gfxbuf_create_wlr_buffer(%"PRIu64",, %"PRIu64")",
+               style_ptr->width, style_ptr->height);
         return NULL;
     }
 
@@ -635,7 +633,7 @@ struct wlr_buffer *_wlmtk_menu_item_create_buffer(
         _wlmtk_menu_item_draw_submenu_hint(
             cairo_ptr,
             style_ptr,
-            menu_item_ptr->width - style_ptr->height * 0.6,
+            style_ptr->width - style_ptr->height * 0.6,
             style_ptr->height * 0.3);
     }
 
@@ -874,11 +872,11 @@ void test_buffers(bs_test_t *test_ptr)
 {
     struct wlmtk_menu_style *s = wlmtk_menu_style_create();
     *s = _test_style;
+    s->item.width = 80;
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
         wlmtk_menu_style_to_ref(s));
     BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, item_ptr);
 
-    item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
     bs_gfxbuf_t *g;
@@ -922,6 +920,7 @@ void test_pointer(bs_test_t *test_ptr)
 {
     struct wlmtk_menu_style *s = wlmtk_menu_style_create();
     *s = _test_style;
+    s->item.width = 80;
     wlmtk_menu_style_ref_t *sr = wlmtk_menu_style_to_ref(s);
     wlmtk_menu_t *menu_ptr = wlmtk_menu_create(sr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, menu_ptr);
@@ -934,7 +933,6 @@ void test_pointer(bs_test_t *test_ptr)
     wlmtk_button_event_t lbtn_ev = {
         .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
 
-    item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
 
     // Initial state: enabled.
@@ -1011,13 +1009,13 @@ void test_triggered(bs_test_t *test_ptr)
 {
     struct wlmtk_menu_style *s = wlmtk_menu_style_create();
     *s = _test_style;
+    s->item.width = 80;
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
         wlmtk_menu_style_to_ref(s));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };
@@ -1076,13 +1074,13 @@ void test_right_click(bs_test_t *test_ptr)
 {
     struct wlmtk_menu_style *s = wlmtk_menu_style_create();
     *s = _test_style;
+    s->item.width = 80;
     wlmtk_menu_item_t *item_ptr = wlmtk_menu_item_create(
         wlmtk_menu_style_to_ref(s));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, item_ptr);
     wlmtk_util_test_listener_t tl;
     wlmtk_util_connect_test_listener(
         &wlmtk_menu_item_events(item_ptr)->triggered, &tl);
-    item_ptr->width = 80;
     wlmtk_menu_item_set_text(item_ptr, "Menu item");
     wlmtk_element_t *e = wlmtk_menu_item_element(item_ptr);
     wlmtk_button_event_t b = { .button = BTN_LEFT, .type = WLMTK_BUTTON_CLICK };

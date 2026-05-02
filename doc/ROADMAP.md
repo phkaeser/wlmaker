@@ -42,7 +42,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Adds theme "Name" plist entry.
     * [done] Add menu entry and generator to load from `Themes/...` files.
     * [done] Move menu files to DATA directories, away from CONFIG.
-    * Cleanup the Debian theme so it works for personal use.
+    * [done] Cleanup the Debian theme so it works for personal use.
     * Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
       or `/usr/share/icons/default/index.theme` (an INI file).
 
