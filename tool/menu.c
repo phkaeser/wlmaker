@@ -249,13 +249,13 @@ void _wlmtool_menu_test_generate_themes(bs_test_t *test_ptr)
 
     const char *load = _wlmtool_action_load_theme_from_file;
     bspl_array_t *aa = bspl_array_from_object(bspl_array_at(a, 1));
-        BS_TEST_VERIFY_STREQ(test_ptr, "Theme1", bspl_array_string_value_at(aa, 0));
+        BS_TEST_VERIFY_STREQ(test_ptr, "ThemeA", bspl_array_string_value_at(aa, 0));
     BS_TEST_VERIFY_STREQ(test_ptr, load, bspl_array_string_value_at(aa, 1));
     BS_TEST_VERIFY_EQ(test_ptr, 3, bspl_array_size(aa));
 
     aa = bspl_array_from_object(bspl_array_at(a, 2));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, aa);
-    BS_TEST_VERIFY_STREQ(test_ptr, "Theme2", bspl_array_string_value_at(aa, 0));
+    BS_TEST_VERIFY_STREQ(test_ptr, "ThemeB", bspl_array_string_value_at(aa, 0));
     BS_TEST_VERIFY_STREQ(test_ptr, load, bspl_array_string_value_at(aa, 1));
     BS_TEST_VERIFY_EQ(test_ptr, 3, bspl_array_size(aa));
 
