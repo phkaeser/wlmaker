@@ -154,6 +154,20 @@ IF(PLDES)
     TEST theme_debian_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 
+  ADD_TEST(
+    NAME theme_debian_larger_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/DebianLarger.plist")
+  SET_PROPERTY(
+    TEST theme_debian_larger_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
+  ADD_TEST(
+    NAME theme_debian_double_plist_test
+    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/DebianDouble.plist")
+  SET_PROPERTY(
+    TEST theme_debian_double_plist_test
+    PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
+
 ENDIF(PLDES)
 
 INSTALL(FILES
@@ -205,4 +219,6 @@ INSTALL(
   FILES
   Themes/Default.plist
   Themes/Debian.plist
+  Themes/DebianLarger.plist
+  Themes/DebianDouble.plist
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/Themes)
