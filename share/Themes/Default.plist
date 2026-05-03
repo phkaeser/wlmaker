@@ -3,6 +3,12 @@
   Name = "Default Theme";
   BackgroundColor = "argb32:ff777777";
   Cursor = {
+    // By default, wlmaker will use the cursor theme specified in the system's
+    // configuration. If no such configuration is found, it will fall back to
+    // the `Name` specified below.
+    OverrideSystemConfiguration = True;
+    // Cursor theme, will only take effect if `OverrideSystemConfiguration` is
+    // set, or if no system-wide configuration is found.
     Name = default;
     Size = 24;
   };

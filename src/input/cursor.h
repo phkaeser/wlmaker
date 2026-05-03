@@ -20,6 +20,8 @@
 #ifndef __WLMAKER_INPUT_CURSOR_H__
 #define __WLMAKER_INPUT_CURSOR_H__
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -39,6 +41,8 @@ extern "C" {
 
 /** Style of the cursor. */
 struct wlmim_cursor_style {
+    /** Whether to override the system-wide configuration. */
+    bool                      override_system_configuration;
     /** Name of the XCursor theme to use. */
     char                      *name_ptr;
     /** Size, when non-scaled. */
@@ -104,6 +108,12 @@ void wlmim_cursor_attach_input_device(
 void wlmim_cursor_detach_input_device(
     wlmim_cursor_t *cursor_ptr,
     struct wlr_input_device *wlr_input_device_ptr);
+
+/** Descriptor for decoding the "Cursor" dictionary. */
+extern const bspl_desc_t wlmim_cursor_style_desc[];
+
+/** Unit tests for cursor. */
+extern const bs_test_set_t wlmim_cursor_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
