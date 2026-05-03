@@ -20,9 +20,12 @@
 
 #include "cursor.h"
 
-#include <libbase/libbase.h>
+#include <ini.h>
 #include <inttypes.h>
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
@@ -91,6 +94,34 @@ static void _wlmim_cursor_handle_seat_request_set_cursor(
 static void _wlmim_cursor_process_motion(
     wlmim_cursor_t *cursor_ptr,
     uint32_t time_msec);
+
+char *_wlmim_cursor_get_theme_name(const struct wlmim_cursor_style *style_ptr);
+static int _wlmim_cursor_theme_handler(
+    void *ud_ptr,
+    const char *section_ptr,
+    const char *name_ptr,
+    const char *value_ptr);
+
+/* == Data ================================================================= */
+
+const bspl_desc_t             wlmim_cursor_style_desc[] = {
+    BSPL_DESC_BOOL(
+        "OverrideSystemConfiguration", false, struct wlmim_cursor_style,
+        override_system_configuration, override_system_configuration, false),
+    BSPL_DESC_STRING(
+        "Name", true, struct wlmim_cursor_style, name_ptr, name_ptr,
+        "default"),
+    BSPL_DESC_UINT64(
+        "Size", true, struct wlmim_cursor_style, size, size, 24),
+    BSPL_DESC_SENTINEL()
+};
+
+/** Name of the system-wide configuration file for cursor themes. */
+static const char *_wlmim_cursor_system_config_file =
+    "/usr/share/icons/default/index.theme";
+/** The debian specific versino of the system-wide cursor configuration. */
+static const char *_wlmim_cursor_system_config_alternative_file =
+    "/etc/alternatives/x-cursor-theme";
 
 /* == Exported methods ===================================================== */
 
@@ -202,21 +233,27 @@ bool wlmim_cursor_set_style(
     wlmim_cursor_t *cursor_ptr,
     const struct wlmim_cursor_style *style_ptr)
 {
+    char *theme_name_ptr = _wlmim_cursor_get_theme_name(style_ptr);
+    if (NULL == theme_name_ptr) return false;
+
     struct wlr_xcursor_manager *wxm_ptr = wlr_xcursor_manager_create(
-        style_ptr->name_ptr, style_ptr->size);
+        theme_name_ptr, style_ptr->size);
     if (NULL == wxm_ptr) {
         bs_log(BS_ERROR,
                "Failed wlr_xcursor_manager_create(\"%s\", %"PRIu64")",
-               style_ptr->name_ptr, style_ptr->size);
+               theme_name_ptr, style_ptr->size);
+        free(theme_name_ptr);
         return false;
     }
 
     if (!wlr_xcursor_manager_load(wxm_ptr, 1.0)) {
         bs_log(BS_ERROR, "Failed wlr_xcursor_manager_load() for %s, %"PRIu64,
-               style_ptr->name_ptr, style_ptr->size);
+               theme_name_ptr, style_ptr->size);
         wlr_xcursor_manager_destroy(wxm_ptr);
+        free(theme_name_ptr);
         return false;
     }
+    free(theme_name_ptr);
 
     if (NULL != cursor_ptr->pointer_ptr) {
         wlmtk_pointer_set_xcursor_manager(cursor_ptr->pointer_ptr, wxm_ptr);
@@ -441,6 +478,88 @@ void _wlmim_cursor_process_motion(
         cursor_ptr->wlr_cursor_ptr->y,
         time_msec,
         cursor_ptr->pointer_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Returns a copy of the cursor theme's name to use, from configured style.
+ *
+ * This will either be a copy of @ref wlmim_cursor_style::name_ptr, or what is
+ * described by the system-wide cursor theme files.
+ *
+ * @param style_ptr
+ *
+ * @return Cursor theme name, as string. Must be released via free().
+ */
+char *_wlmim_cursor_get_theme_name(const struct wlmim_cursor_style *style_ptr)
+{
+    char *theme_name_ptr;
+
+    if (!style_ptr->override_system_configuration) {
+        if (0 == ini_parse(_wlmim_cursor_system_config_file,
+                           _wlmim_cursor_theme_handler, &theme_name_ptr) ||
+            0 == ini_parse(_wlmim_cursor_system_config_alternative_file,
+                           _wlmim_cursor_theme_handler, &theme_name_ptr)) {
+            return theme_name_ptr;
+        }
+        bs_log(BS_WARNING, "System-wide cursor theme configuration not found, "
+               "neither in %s nor %s. Falling back...",
+               _wlmim_cursor_system_config_file,
+               _wlmim_cursor_system_config_alternative_file);
+    }
+    return logged_strdup(style_ptr->name_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** inih library parser callback for the system-wide cursor theme files. */
+int _wlmim_cursor_theme_handler(
+    void *ud_ptr,
+    const char *section_ptr,
+    const char *name_ptr,
+    const char *value_ptr)
+{
+    // Skip anything other than the "Inherits" key in "[Icon Theme]".
+    if (0 != strcmp(section_ptr, "Icon Theme") ||
+        0 != strcmp(name_ptr, "Inherits")) return 1;
+
+    char **theme_name_ptr_ptr = ud_ptr;
+    *theme_name_ptr_ptr = logged_strdup(value_ptr);
+    if (NULL == *theme_name_ptr_ptr) return 0;
+    return 1;
+}
+
+/* == Unit tests =========================================================== */
+
+static void _wlmim_cursor_test_theme_name(bs_test_t *test_ptr);
+
+/** Unit test cases. */
+static const bs_test_case_t _wlmim_cursor_test_cases[] = {
+    { 1, "theme_name", _wlmim_cursor_test_theme_name },
+    BS_TEST_CASE_SENTINEL()
+};
+
+const bs_test_set_t wlmim_cursor_test_set = BS_TEST_SET(
+    true, "cursor", _wlmim_cursor_test_cases);
+
+/* ------------------------------------------------------------------------- */
+/** Tests obtaining the theme name. */
+void _wlmim_cursor_test_theme_name(bs_test_t *test_ptr)
+{
+    char *theme_name_ptr;
+
+    int rv = ini_parse(bs_test_data_path(test_ptr, "input/cursor-index.theme"),
+                       _wlmim_cursor_theme_handler, &theme_name_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, rv);
+    BS_TEST_VERIFY_STREQ(test_ptr, "ThemeName", theme_name_ptr);
+    free(theme_name_ptr);
+
+    struct wlmim_cursor_style style = {
+        .override_system_configuration = true,
+        .name_ptr = "OverrideName"
+    };
+    theme_name_ptr = _wlmim_cursor_get_theme_name(&style);
+    BS_TEST_VERIFY_STREQ(test_ptr, "OverrideName", theme_name_ptr);
+    free(theme_name_ptr);
 }
 
 /* == End of cursor.c ====================================================== */

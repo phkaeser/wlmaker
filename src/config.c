@@ -60,16 +60,6 @@ static const bspl_desc_t _wlmaker_clip_style_desc[] = {
     BSPL_DESC_SENTINEL()
 };
 
-/** Descriptor for decoding the "Cursor" dictionary. */
-static const bspl_desc_t _wlmaker_cursor_style_desc[] = {
-    BSPL_DESC_STRING(
-        "Name", true, struct wlmim_cursor_style, name_ptr, name_ptr,
-        "default"),
-    BSPL_DESC_UINT64(
-        "Size", true, struct wlmim_cursor_style, size, size, 24),
-    BSPL_DESC_SENTINEL()
-};
-
 /** Desciptor for decoding the style information from a plist. */
 const bspl_desc_t wlmaker_config_style_desc[] = {
     BSPL_DESC_ARGB32(
@@ -101,7 +91,7 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
         _wlmaker_clip_style_desc),
     BSPL_DESC_DICT(
         "Cursor", true, wlmaker_config_style_t, cursor, cursor,
-        _wlmaker_cursor_style_desc),
+        wlmim_cursor_style_desc),
     BSPL_DESC_SENTINEL()
 };
 

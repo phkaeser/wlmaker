@@ -21,6 +21,7 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 
+#include "cursor.h"
 #include "manager.h"
 #include "pointer.h"
 #include "keyboard.h"
@@ -35,6 +36,7 @@ int main(int argc, const char **argv)
 {
     const bs_test_param_t params = { .test_data_dir_ptr = TEST_DATA_DIR };
     const bs_test_set_t* sets[] = {
+        &wlmim_cursor_test_set,
         &wlmim_keyboard_test_set,
         &wlmim_pointer_test_set,
         &wlmim_test_set,

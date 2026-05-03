@@ -27,9 +27,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 **Focus** Themes
 
-* Themes/Styles
+* [done] Themes/Styles
   * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
-  * Add means to change theme while running.
+  * [done] Add means to change theme while running.
     * [done] Add functions to change window's style while running.
     * [done] Add functions to change menu's style while running.
     * [done] Add function to change the background color while running.
@@ -43,7 +43,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Add menu entry and generator to load from `Themes/...` files.
     * [done] Move menu files to DATA directories, away from CONFIG.
     * [done] Cleanup the Debian theme so it works for personal use.
-    * Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
+    * [done] Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
       or `/usr/share/icons/default/index.theme` (an INI file).
 
 * Windows
