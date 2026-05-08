@@ -28,14 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gen_menu.h"
 #include "menu.h"
 
 /* == Declarations ========================================================= */
 
 static bool print_version(int argc, const char **argv);
 static bool print_help(int argc, const char **argv);
-static bool generate_menu(int argc, const char **argv);
+static bool generate_applications_menu(int argc, const char **argv);
 static bool generate_themes_menu(int argc, const char **argv);
 
 #if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
@@ -77,8 +76,16 @@ static const struct command_desc commands[] = {
     {
         .command_ptr = "genmenu",
         .description_ptr =
-        "Generates a root menu for Wayland Maker, in .plist text format.",
-        .op = generate_menu
+        "Generates the \"Applications\" menu for Wayland Maker, in .plist "
+        "text format. DEPRECATED. Use \"GenerateApplicationsMenu\" instead.",
+        .op = generate_applications_menu
+    },
+    {
+        .command_ptr = "GenerateApplicationsMenu",
+        .description_ptr =
+        "Generates the \"Applications\" menu for Wayland Maker, in .plist "
+        "text format.",
+        .op = generate_applications_menu
     },
     {
         .command_ptr = "GenerateThemesMenu",
@@ -131,28 +138,28 @@ bool print_help(__UNUSED__ int argc, __UNUSED__ const char **argv)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Generates the plist menu. */
-bool generate_menu(int argc, const char **argv)
+/** Generates the the "Applications" section for the root menu. */
+bool generate_applications_menu(int argc, const char **argv)
 {
     const char *path_ptr = NULL;
     if (1 > argc) {
-        fprintf(stderr, "Usage: wlmtool genmenu [PATH]\n");
+        fprintf(stderr, "Usage: wlmtool GenerateApplicationsMenu [PATH]\n");
         return false;
     } else if (2 <= argc) {
         path_ptr = argv[1];
     }
 
-    bspl_array_t *menu_array_ptr = wlmaker_menu_generate(
-        wlmtool_locale_ptr, path_ptr);
-    if (NULL == menu_array_ptr) return false;
+    bspl_array_t *array_ptr = wlmtool_menu_generate_applications(
+        path_ptr, wlmtool_locale_ptr);
+    if (NULL == array_ptr) return false;
 
     bs_dynbuf_t buf = {};
     bool rv = bs_dynbuf_init(&buf, 1024, SIZE_MAX);
     if (rv) {
-        rv = bspl_object_write(bspl_object_from_array(menu_array_ptr), &buf);
+        rv = bspl_object_write(bspl_object_from_array(array_ptr), &buf);
         if (rv) fprintf(stdout, "%.*s", (int)buf.length, (char*)buf.data_ptr);
     }
-    bspl_array_unref(menu_array_ptr);
+    bspl_array_unref(array_ptr);
     bs_dynbuf_fini(&buf);
     return rv;
 }

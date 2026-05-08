@@ -14,7 +14,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
-ADD_LIBRARY(libwlmtool STATIC gen_menu.c item.c menu.c)
+ADD_LIBRARY(libwlmtool STATIC item.c menu.c)
 TARGET_INCLUDE_DIRECTORIES(
   libwlmtool
   PUBLIC

@@ -3,7 +3,7 @@
  //! [wlmtool]
  ("Applications...",
   GeneratePlistMenu,
-  "@PROJECT_BINARY_DIR@/tool/wlmtool genmenu @PROJECT_BINARY_DIR@/share"),
+  "@PROJECT_BINARY_DIR@/tool/wlmtool GenerateApplicationsMenu @PROJECT_BINARY_DIR@/share"),
  ("Appearance...",
   GeneratePlistMenu,
   "@PROJECT_BINARY_DIR@/tool/wlmtool GenerateThemesMenu @PROJECT_SOURCE_DIR@/share/Themes"),

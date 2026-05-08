@@ -55,9 +55,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Adds configuration options (tap to click, scroll, ...) for touchpad.
   * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
   * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
+  * [done] Use bs_file_tree_walk() over ftw() in gen_menu.c.
   * Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
-  * Use bs_file_tree_walk() over ftw() in gen_menu.c.
 
 * Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
