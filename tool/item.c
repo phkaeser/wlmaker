@@ -55,12 +55,14 @@ struct wlmtool_menu {
     bspl_string_t             *title_ptr;
 };
 
-/** Menu item: An action bound to a file. */
-struct wlmtool_file_action {
+/** Menu item. */
+struct wlmtool_entry {
     /** Parent class: An item. */
     struct wlmtool_item       menu_item;
-    /** Plist array describing the action: (Title, Action, Path). */
+    /** Plist array describing the item: (Title, Action, ...). */
     bspl_array_t              *array_ptr;
+    /** Duplicate of the lookup key to use. To take ownership.*/
+    char                      *key_ptr;
 };
 
 static void _wlmtool_item_destroy_dlnode(
@@ -80,11 +82,9 @@ static void _wlmtool_menu_destroy_item(struct wlmtool_item *item_ptr);
 static bspl_array_t *_wlmtool_menu_create_array(
     struct wlmtool_item *item_ptr);
 
-static void _wlmtool_file_action_destroy(struct wlmtool_item *item_ptr);
-static bspl_array_t *_wlmtool_file_action_create_array(
+static void _wlmtool_entry_destroy(struct wlmtool_item *item_ptr);
+static bspl_array_t *_wlmtool_entry_create_array(
     struct wlmtool_item *item_ptr);
-
-/* == Data ================================================================= */
 
 /* == Exported methods ===================================================== */
 
@@ -175,35 +175,54 @@ struct wlmtool_item *wlmtool_file_action_create(
     const char *action_ptr,
     const char *resolved_path_ptr)
 {
-    struct wlmtool_file_action *item_ptr = logged_calloc(1, sizeof(*item_ptr));
-    if (NULL == item_ptr) return NULL;
-    item_ptr->menu_item.destroy = _wlmtool_file_action_destroy;
-    item_ptr->menu_item.create_array = _wlmtool_file_action_create_array;
+    const char *args[4] = {
+        [0] = title_ptr,
+        [1] = action_ptr,
+        [2] = resolved_path_ptr,
+        [3] = NULL
+    };
+    return wlmtool_entry_create(resolved_path_ptr, args);
+}
 
-    item_ptr->array_ptr = bspl_array_create();
-    if (NULL == item_ptr->array_ptr) goto error;
+/* ------------------------------------------------------------------------- */
+struct wlmtool_item *wlmtool_entry_create(
+    const char *key_ptr,
+    const char **args_ptr)
+{
+    if (NULL == args_ptr || NULL == *args_ptr) return NULL;
 
-    bspl_string_t *s = bspl_string_create(title_ptr);
-    if (NULL == s) goto error;
-    bspl_array_push_back(item_ptr->array_ptr, bspl_object_from_string(s));
-    item_ptr->menu_item.title_ptr = bspl_string_value(s);
-    bspl_string_unref(s);
+    struct wlmtool_entry *entry_ptr = logged_calloc(1, sizeof(*entry_ptr));
+    if (NULL == entry_ptr) return NULL;
+    entry_ptr->menu_item.destroy = _wlmtool_entry_destroy;
+    entry_ptr->menu_item.create_array = _wlmtool_entry_create_array;
 
-    s = bspl_string_create(action_ptr);
-    if (NULL == s) goto error;
-    bspl_array_push_back(item_ptr->array_ptr, bspl_object_from_string(s));
-    bspl_string_unref(s);
+    entry_ptr->array_ptr = bspl_array_create();
+    if (NULL == entry_ptr->array_ptr) goto error;
 
-    s = bspl_string_create(resolved_path_ptr);
-    if (NULL == s) goto error;
-    item_ptr->menu_item.key_ptr = bspl_string_value(s);
-    bspl_array_push_back(item_ptr->array_ptr, bspl_object_from_string(s));
-    bspl_string_unref(s);
+    for (const char **i_pp = args_ptr; NULL != *i_pp; ++i_pp) {
+        bspl_string_t *s = bspl_string_create(*i_pp);
+        if (NULL == s) goto error;
+        if (!bspl_array_push_back(entry_ptr->array_ptr,
+                                  bspl_object_from_string(s))) goto error;
+        if (*i_pp == *args_ptr) {
+            entry_ptr->menu_item.title_ptr = bspl_string_value(s);
+        }
+        if (key_ptr == *i_pp) {
+            entry_ptr->menu_item.key_ptr = bspl_string_value(s);
+        }
+        bspl_string_unref(s);
+    }
 
-    return &item_ptr->menu_item;
+    if (NULL == entry_ptr->menu_item.key_ptr) {
+        entry_ptr->key_ptr = logged_strdup(key_ptr);
+        if (NULL == entry_ptr->key_ptr) goto error;
+        entry_ptr->menu_item.key_ptr = entry_ptr->key_ptr;
+    }
+
+    return &entry_ptr->menu_item;
 
 error:
-    _wlmtool_file_action_destroy(&item_ptr->menu_item);
+    _wlmtool_entry_destroy(&entry_ptr->menu_item);
     return NULL;
 }
 
@@ -314,28 +333,33 @@ bspl_array_t *_wlmtool_menu_create_array(struct wlmtool_item *item_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Implements @ref wlmtool_item::destroy. Dtor for the file item. */
-void _wlmtool_file_action_destroy(struct wlmtool_item *item_ptr)
+/** Implements @ref wlmtool_item::destroy. Dtor for the entry. */
+void _wlmtool_entry_destroy(struct wlmtool_item *item_ptr)
 {
-    struct wlmtool_file_action *file_item_ptr = BS_CONTAINER_OF(
-        item_ptr, struct wlmtool_file_action, menu_item);
+    struct wlmtool_entry *entry_ptr = BS_CONTAINER_OF(
+        item_ptr, struct wlmtool_entry, menu_item);
 
-    if (NULL != file_item_ptr->array_ptr) {
-        bspl_array_unref(file_item_ptr->array_ptr);
-        file_item_ptr->array_ptr = NULL;
+    if (NULL != entry_ptr->array_ptr) {
+        bspl_array_unref(entry_ptr->array_ptr);
+        entry_ptr->array_ptr = NULL;
     }
 
-    free(file_item_ptr);
+    if (NULL != entry_ptr->key_ptr) {
+        free(entry_ptr->key_ptr);
+        entry_ptr->key_ptr = NULL;
+    }
+
+    free(entry_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-/** @return A plist array for the file action, or NULL on error. */
-bspl_array_t *_wlmtool_file_action_create_array(
+/** @return A plist array for the entry, or NULL on error. */
+bspl_array_t *_wlmtool_entry_create_array(
     struct wlmtool_item *item_ptr)
 {
-    struct wlmtool_file_action *file_item_ptr = BS_CONTAINER_OF(
-        item_ptr, struct wlmtool_file_action, menu_item);
-    return bspl_array_ref(file_item_ptr->array_ptr);
+    struct wlmtool_entry *entry_ptr = BS_CONTAINER_OF(
+        item_ptr, struct wlmtool_entry, menu_item);
+    return bspl_array_ref(entry_ptr->array_ptr);
 
 }
 

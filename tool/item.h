@@ -80,16 +80,28 @@ struct wlmtool_menu *wlmtool_menu_get_or_create_submenu(
 /**
  * Creates a "file action" menu item.
  *
- * @param title_ptr            Title to use for the menu entry.
+ * @param title_ptr           Title to use for the menu entry.
  * @param action_ptr          Action command to use.
  * @param resolved_path_ptr   Fully resolved path to the file to act on.
  *
- * @return Menu item, or NULL on return.
+ * @return Menu item, or NULL on error.
  */
 struct wlmtool_item *wlmtool_file_action_create(
     const char *title_ptr,
     const char *action_ptr,
     const char *resolved_path_ptr);
+
+/**
+ * Adds a menu entry.
+ *
+ * @param key_ptr             Key that is expected unique within the submenu.
+ * @param args_ptr            NULL-terminted array to build the entry from.
+ *
+ * @return Menu item, or NULL on error.
+ */
+struct wlmtool_item *wlmtool_entry_create(
+    const char *key_ptr,
+    const char **args_ptr);
 
 /** Unit tests for the menu item classes. */
 extern const bs_test_set_t wlmtool_item_test_set;

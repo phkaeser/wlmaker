@@ -37,6 +37,19 @@ extern "C" {
  */
 bspl_array_t *wlmtool_menu_generate_appearance(const char *path_ptr);
 
+/**
+ * Generates an Applications menu from parsed `.desktop` files.
+ *
+ * @param path_ptr            Optional: Path to read from. If NULL, use the XDG
+ *                            data directories.
+ * @param locale_ptr          The locale for LC_MESSAGES, or NULL.
+ *
+ * @return a Plist array, or NULL on error.
+ */
+bspl_array_t *wlmtool_menu_generate_applications(
+    const char *path_ptr,
+    const char *locale_ptr);
+
 /** Unit tests for the menu generator. */
 extern const bs_test_set_t wlmtool_menu_test_set;
 
