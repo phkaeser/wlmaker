@@ -73,7 +73,7 @@ Example:
 A dictionary, where each *key* and *value* define a binding of a key
 combination to a wlmaker action. The dictionary may be empty.
 
-See @ref _wlmaker_keybindings_modifiers for the supported modifiers.
+See @ref wlmim_keyboard_modifiers for the supported modifiers.
 
 See @ref wlmaker_action_desc for the list of permitted actions.
 

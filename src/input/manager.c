@@ -57,7 +57,9 @@ struct _wlmim_t {
     uint32_t                  last_keyboard_group_index;
 
     /** Pointer configuration. */
-    struct wlmim_pointer_param pointer_params;
+    struct wlmim_pointer_options pointer_options;
+    /** Cursor configuration. */
+    struct wlmim_cursor_options cursor_options;
 
     /** Cursor handle. */
     wlmim_cursor_t            *cursor_ptr;
@@ -140,6 +142,17 @@ const uint32_t wlmim_modifiers_default_mask = (
     WLR_MODIFIER_LOGO |
     WLR_MODIFIER_MOD5);
 
+/** Enum definition for input configuration sections. */
+static const bspl_desc_t _wlmim_manager_config[] = {
+    BSPL_DESC_DICT("Touchpad", false,
+                   wlmim_t, pointer_options, pointer_options,
+                   wlmim_pointer_config_touchpad),
+    BSPL_DESC_DICT("Cursor", false,
+                   wlmim_t, cursor_options, cursor_options,
+                   wlmim_cursor_options_desc),
+    BSPL_DESC_SENTINEL()
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -161,9 +174,10 @@ wlmim_t *wlmim_input_manager_create(
     wl_signal_init(&input_manager_ptr->events.activity);
     wl_signal_init(&input_manager_ptr->events.deactivate_task_list);
 
-    if (!wlmim_pointer_parse_config(
+    if (!bspl_decode_dict(
             config_dict_ptr,
-            &input_manager_ptr->pointer_params)) {
+            _wlmim_manager_config,
+            input_manager_ptr)) {
         wlmim_input_manager_destroy(input_manager_ptr);
         return NULL;
     }
@@ -172,6 +186,7 @@ wlmim_t *wlmim_input_manager_create(
         input_manager_ptr->cursor_ptr = wlmim_cursor_create(
             input_manager_ptr,
             cursor_style_ptr,
+            &input_manager_ptr->cursor_options,
             wlr_output_layout_ptr,
             wlr_seat_ptr,
             root_ptr);
@@ -351,7 +366,7 @@ void _wlmim_handle_new_input_device(
     case WLR_INPUT_DEVICE_POINTER:
         handle_ptr = wlmim_pointer_create(
             wlr_input_device_ptr,
-            &input_manager_ptr->pointer_params);
+            &input_manager_ptr->pointer_options);
         if (NULL != handle_ptr) {
             if (!_wlmim_device_register(
                     input_manager_ptr,

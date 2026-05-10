@@ -39,6 +39,7 @@
 #include "config.h"
 #include "default_configuration.h"
 #include "idle.h"
+#include "input/keyboard.h"
 #include "input/manager.h"
 #include "root_menu.h"
 #include "server.h"
@@ -94,19 +95,6 @@ static bool _wlmaker_action_theme_load_from_file(
 
 /** Key to lookup the dict from the config dictionary. */
 const char *wlmaker_action_config_dict_key = "KeyBindings";
-
-/** Supported modifiers for key bindings. */
-static const bspl_enum_desc_t _wlmaker_keybindings_modifiers[] = {
-    BSPL_ENUM("Shift", WLR_MODIFIER_SHIFT),
-    // Caps? Maybe not: BSPL_ENUM("Caps", WLR_MODIFIER_CAPS),
-    BSPL_ENUM("Ctrl", WLR_MODIFIER_CTRL),
-    BSPL_ENUM("Alt", WLR_MODIFIER_ALT),
-    BSPL_ENUM("Mod2", WLR_MODIFIER_MOD2),
-    BSPL_ENUM("Mod3", WLR_MODIFIER_MOD3),
-    BSPL_ENUM("Logo", WLR_MODIFIER_LOGO),
-    BSPL_ENUM("Mod5", WLR_MODIFIER_MOD5),
-    BSPL_ENUM_SENTINEL(),
-};
 
 /** The actions that can be bound. */
 const bspl_enum_desc_t wlmaker_action_desc[] = {
@@ -626,7 +614,7 @@ bool _wlmaker_keybindings_parse(
 
         int new_modifier;
         if (bspl_enum_name_to_value(
-                _wlmaker_keybindings_modifiers, token_ptr, &new_modifier)) {
+                wlmim_keyboard_modifiers, token_ptr, &new_modifier)) {
             *modifiers_ptr |= new_modifier;
         } else if (*keysym_ptr == XKB_KEY_NoSymbol) {
             *keysym_ptr = xkb_keysym_to_upper(

@@ -37,6 +37,13 @@
         NaturalScrolling = Enabled;
     };
 
+    Cursor = {
+        // Optional. If set: A keyboard modifier that will emulate a mouse
+        // right-button click, if the modifier is held while the left button
+        // is pressed.
+        EmulateRightButtonModifier = Logo;
+    };
+
     // Configuration for XDG decoration protocol: Server or client-side?
     Decoration = {
         Mode = SuggestServer;

@@ -60,26 +60,25 @@ static const bspl_enum_desc_t _wlmim_pointer_scroll_methods[] = {
     BSPL_ENUM_SENTINEL()
 };
 
-/** Plist descriptor for the "Touchpad" section. */
-static const bspl_desc_t _wlmim_pointer_config_touchpad[] = {
+const bspl_desc_t wlmim_pointer_config_touchpad[] = {
     BSPL_DESC_BOOL(
         "Enabled",
         false,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.enabled,
         touchpad.enabled,
         true),
     BSPL_DESC_BOOL(
         "DisableWhileTyping",
         false,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.disable_while_typing,
         touchpad.disable_while_typing,
         true),
     BSPL_DESC_ENUM(
         "ClickMethod",
         false,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.click_method,
         touchpad.click_method,
         LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER,
@@ -87,14 +86,14 @@ static const bspl_desc_t _wlmim_pointer_config_touchpad[] = {
     BSPL_DESC_BOOL(
         "TapToClick",
         false,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.tap_to_click,
         touchpad.tap_to_click,
         true),
     BSPL_DESC_ENUM(
         "ScrollMethod",
         false,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.scroll_method,
         touchpad.scroll_method,
         LIBINPUT_CONFIG_SCROLL_2FG,
@@ -102,22 +101,10 @@ static const bspl_desc_t _wlmim_pointer_config_touchpad[] = {
     BSPL_DESC_BOOL(
         "NaturalScrolling",
         true,
-        struct wlmim_pointer_param,
+        struct wlmim_pointer_options,
         touchpad.natural_scrolling,
         touchpad.natural_scrolling,
         true),
-    BSPL_DESC_SENTINEL()
-};
-
-/** Enum definition for pointer-related config section(s). */
-static const bspl_desc_t _wlmim_pointer_config[] = {
-    BSPL_DESC_DICT(
-        "Touchpad",
-        false,
-        struct wlmim_pointer_param,
-        touchpad,
-        touchpad,
-        _wlmim_pointer_config_touchpad),
     BSPL_DESC_SENTINEL()
 };
 
@@ -125,19 +112,19 @@ static const bspl_desc_t _wlmim_pointer_config[] = {
 
 void _wlmim_pointer_apply(
     wlmim_pointer_t *pointer_ptr,
-    const struct wlmim_pointer_param *param_ptr);
+    const struct wlmim_pointer_options *options_ptr);
 
 /* ------------------------------------------------------------------------- */
 wlmim_pointer_t *wlmim_pointer_create(
     struct wlr_input_device *wlr_input_device_ptr,
-    const struct wlmim_pointer_param *param_ptr)
+    const struct wlmim_pointer_options *options_ptr)
 {
     wlmim_pointer_t *pointer_ptr = logged_calloc(1, sizeof(*pointer_ptr));
     if (NULL == pointer_ptr) return NULL;
     pointer_ptr->enabled = true;
     pointer_ptr->wlr_input_device_ptr = wlr_input_device_ptr;
 
-    _wlmim_pointer_apply(pointer_ptr, param_ptr);
+    _wlmim_pointer_apply(pointer_ptr, options_ptr);
 
     return pointer_ptr;
 }
@@ -146,17 +133,6 @@ wlmim_pointer_t *wlmim_pointer_create(
 void wlmim_pointer_destroy(wlmim_pointer_t *pointer_ptr)
 {
     free(pointer_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmim_pointer_parse_config(
-    bspl_dict_t *config_dict_ptr,
-    struct wlmim_pointer_param *param_ptr)
-{
-    return bspl_decode_dict(
-        config_dict_ptr,
-        _wlmim_pointer_config,
-        param_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -174,11 +150,11 @@ bool wlmim_pointer_enabled(wlmim_pointer_t *pointer_ptr)
  * A no-op if the device is not a touchpad, ie. has zero 'tap fingers'.
  *
  * @param p
- * @param param_ptr
+ * @param options_ptr
  */
 void _wlmim_pointer_apply(
     wlmim_pointer_t *p,
-    const struct wlmim_pointer_param *param_ptr)
+    const struct wlmim_pointer_options *options_ptr)
 {
     enum libinput_config_status s;
     struct libinput_device *lid_ptr;
@@ -190,45 +166,45 @@ void _wlmim_pointer_apply(
     if (0 >= libinput_device_config_tap_get_finger_count(lid_ptr)) return;
 
     // (only) touchpads can be disabled.
-    p->enabled = param_ptr->touchpad.enabled;
+    p->enabled = options_ptr->touchpad.enabled;
 
     // Configure disable-while-typing.
     if (libinput_device_config_dwt_is_available(lid_ptr)) {
         s = libinput_device_config_dwt_set_enabled(
             lid_ptr,
-            param_ptr->touchpad.disable_while_typing ?
+            options_ptr->touchpad.disable_while_typing ?
             LIBINPUT_CONFIG_DWT_ENABLED :
             LIBINPUT_CONFIG_DWT_DISABLED);
         if (LIBINPUT_CONFIG_STATUS_SUCCESS != s) {
             bs_log(BS_WARNING,
                    "Failed libinput_device_config_dwt_set_enabled(%p, %d)",
                    lid_ptr,
-                   param_ptr->touchpad.disable_while_typing ?
+                   options_ptr->touchpad.disable_while_typing ?
                    LIBINPUT_CONFIG_DWT_ENABLED :
                    LIBINPUT_CONFIG_DWT_DISABLED);
         }
-    } else if (param_ptr->touchpad.disable_while_typing) {
+    } else if (options_ptr->touchpad.disable_while_typing) {
         bs_log(BS_WARNING, "disable-while-typing not supported on device %p",
                lid_ptr);
     }
 
     // Configure click method.
     uint32_t methods = libinput_device_config_click_get_methods(lid_ptr);
-    if ((methods & param_ptr->touchpad.click_method) ==
-        param_ptr->touchpad.click_method) {
+    if ((methods & options_ptr->touchpad.click_method) ==
+        options_ptr->touchpad.click_method) {
         s = libinput_device_config_click_set_method(
             lid_ptr,
-            param_ptr->touchpad.click_method);
+            options_ptr->touchpad.click_method);
         if (LIBINPUT_CONFIG_STATUS_SUCCESS != s) {
             bs_log(BS_WARNING,
                    "Failed libinput_device_config_click_set_method(%p, %u)",
-                   lid_ptr, param_ptr->touchpad.click_method);
+                   lid_ptr, options_ptr->touchpad.click_method);
         }
     } else if (LIBINPUT_CONFIG_CLICK_METHOD_NONE !=
-               param_ptr->touchpad.click_method) {
+               options_ptr->touchpad.click_method) {
         bs_log(BS_WARNING,
                "Click method %d not in supported set %"PRIx32" on device %p",
-               param_ptr->touchpad.click_method, methods, lid_ptr);
+               options_ptr->touchpad.click_method, methods, lid_ptr);
     }
 
     // Configure tap to click: Note - capability check isn't needed, since we
@@ -236,34 +212,34 @@ void _wlmim_pointer_apply(
     // finger count.
     s = libinput_device_config_tap_set_enabled(
         lid_ptr,
-        param_ptr->touchpad.tap_to_click ?
+        options_ptr->touchpad.tap_to_click ?
         LIBINPUT_CONFIG_TAP_ENABLED :
         LIBINPUT_CONFIG_TAP_DISABLED);
     if (LIBINPUT_CONFIG_STATUS_SUCCESS != s) {
         bs_log(BS_WARNING,
                "Failed libinput_device_config_tap_set_enabled(%p, %d)",
                lid_ptr,
-               param_ptr->touchpad.tap_to_click ?
+               options_ptr->touchpad.tap_to_click ?
                LIBINPUT_CONFIG_TAP_ENABLED :
                LIBINPUT_CONFIG_TAP_DISABLED);
     }
 
     // Configure scroll_method.
     methods = libinput_device_config_scroll_get_methods(lid_ptr);
-    if ((methods & param_ptr->touchpad.scroll_method) ==
-        param_ptr->touchpad.scroll_method) {
+    if ((methods & options_ptr->touchpad.scroll_method) ==
+        options_ptr->touchpad.scroll_method) {
         s = libinput_device_config_scroll_set_method(
-            lid_ptr, param_ptr->touchpad.scroll_method);
+            lid_ptr, options_ptr->touchpad.scroll_method);
         if (LIBINPUT_CONFIG_STATUS_SUCCESS != s) {
             bs_log(BS_WARNING,
                    "Failed libinput_device_config_scroll_set_method(%p, %d)",
-                   lid_ptr, param_ptr->touchpad.scroll_method);
+                   lid_ptr, options_ptr->touchpad.scroll_method);
         }
     } else if (LIBINPUT_CONFIG_SCROLL_NO_SCROLL !=
-               param_ptr->touchpad.scroll_method) {
+               options_ptr->touchpad.scroll_method) {
         bs_log(BS_WARNING,
                "Scroll method %d not in supported set %"PRIx32" on device %p",
-               param_ptr->touchpad.scroll_method, methods, lid_ptr);
+               options_ptr->touchpad.scroll_method, methods, lid_ptr);
     }
 
     // Configure natural_scrolling -- if set, the scrolled content moves in the
@@ -271,13 +247,13 @@ void _wlmim_pointer_apply(
     // (the scroll bar) that moves aligned with the finger movements.
     if (libinput_device_config_scroll_has_natural_scroll(lid_ptr)) {
         s = libinput_device_config_scroll_set_natural_scroll_enabled(
-            lid_ptr, param_ptr->touchpad.natural_scrolling);
+            lid_ptr, options_ptr->touchpad.natural_scrolling);
         if (LIBINPUT_CONFIG_STATUS_SUCCESS != s) {
             bs_log(BS_WARNING, "Failed libinput_device_config_scroll_set"
                    "_natural_scroll_enabled(%p, %d)",
-                   lid_ptr, param_ptr->touchpad.natural_scrolling);
+                   lid_ptr, options_ptr->touchpad.natural_scrolling);
         }
-    } else if (param_ptr->touchpad.natural_scrolling) {
+    } else if (options_ptr->touchpad.natural_scrolling) {
         bs_log(BS_WARNING, "NaturalScrolling not supported on device %p",
                lid_ptr);
     }
@@ -303,31 +279,34 @@ void _wlmim_pointer_test_parse(bs_test_t *test_ptr)
 {
     bspl_dict_t *d = bspl_dict_from_object(
         bspl_create_object_from_plist_string(
-            "{Touchpad={"
+            "{"
             "Enabled=Yes;"
             "DisableWhileTyping=False;"
             "ClickMethod=ButtonAreas;"
             "TapToClick=Disabled;"
             "ScrollMethod=OnButtonDown;"
             "NaturalScrolling=False;"
-            "};}"));
+            "}"));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
 
-    struct wlmim_pointer_param p = {};
-
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmim_pointer_parse_config(d, &p));
-    BS_TEST_VERIFY_TRUE(test_ptr, p.touchpad.enabled);
-    BS_TEST_VERIFY_FALSE(test_ptr, p.touchpad.disable_while_typing);
+    struct wlmim_pointer_options o = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bspl_decode_dict(d, wlmim_pointer_config_touchpad, &o));
+    BS_TEST_VERIFY_TRUE(test_ptr, o.touchpad.enabled);
+    BS_TEST_VERIFY_FALSE(test_ptr, o.touchpad.disable_while_typing);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS,
-        p.touchpad.click_method);
-    BS_TEST_VERIFY_FALSE(test_ptr, p.touchpad.tap_to_click);
+        o.touchpad.click_method);
+    BS_TEST_VERIFY_FALSE(test_ptr, o.touchpad.tap_to_click);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN,
-        p.touchpad.scroll_method);
-    BS_TEST_VERIFY_FALSE(test_ptr, p.touchpad.natural_scrolling);
+        o.touchpad.scroll_method);
+    BS_TEST_VERIFY_FALSE(test_ptr, o.touchpad.natural_scrolling);
+
+    bspl_dict_unref(d);
 }
 
 /* == End of pointer.c ===================================================== */

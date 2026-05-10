@@ -59,6 +59,9 @@ wlmim_keyboard_t *wlmim_keyboard_create(
  */
 void wlmim_keyboard_destroy(wlmim_keyboard_t *keyboard_ptr);
 
+/** Keyboard modifiers, as enum to lookup. */
+extern const bspl_enum_desc_t wlmim_keyboard_modifiers[];
+
 /** Unit test set for @ref wlmim_keyboard_t. */
 extern const bs_test_set_t wlmim_keyboard_test_set;
 
