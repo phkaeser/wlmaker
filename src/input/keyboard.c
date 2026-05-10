@@ -77,6 +77,20 @@ static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
                              void *data_ptr);
 
+/* == Data ================================================================= */
+
+const bspl_enum_desc_t wlmim_keyboard_modifiers[] = {
+    BSPL_ENUM("Shift", WLR_MODIFIER_SHIFT),
+    // Caps? Maybe not: BSPL_ENUM("Caps", WLR_MODIFIER_CAPS),
+    BSPL_ENUM("Ctrl", WLR_MODIFIER_CTRL),
+    BSPL_ENUM("Alt", WLR_MODIFIER_ALT),
+    BSPL_ENUM("Mod2", WLR_MODIFIER_MOD2),
+    BSPL_ENUM("Mod3", WLR_MODIFIER_MOD3),
+    BSPL_ENUM("Logo", WLR_MODIFIER_LOGO),
+    BSPL_ENUM("Mod5", WLR_MODIFIER_MOD5),
+    BSPL_ENUM_SENTINEL(),
+};
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */

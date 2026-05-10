@@ -24,9 +24,11 @@
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <linux/input-event-codes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
+#include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
@@ -35,6 +37,7 @@
 #include <wlr/types/wlr_xcursor_manager.h>
 #undef WLR_USE_UNSTABLE
 
+#include "keyboard.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -45,6 +48,8 @@ struct _wlmim_cursor_t {
     struct wlr_cursor         *wlr_cursor_ptr;
     /** Points to a `wlr_xcursor_manager`. */
     struct wlr_xcursor_manager *wlr_xcursor_manager_ptr;
+    /** Cursor options. */
+    struct wlmim_cursor_options options;
 
     /** The toolkit wrapper for above. */
     wlmtk_pointer_t           *pointer_ptr;
@@ -69,6 +74,9 @@ struct _wlmim_cursor_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** Root of the compositor. */
     wlmtk_root_t              *root_ptr;
+
+    /** Whether the current left-button press emulates a right button. */
+    bool                      left_button_emulates_right;
 };
 
 static void _wlmim_cursor_handle_motion(
@@ -116,6 +124,14 @@ const bspl_desc_t             wlmim_cursor_style_desc[] = {
     BSPL_DESC_SENTINEL()
 };
 
+const bspl_desc_t            wlmim_cursor_options_desc[] = {
+    BSPL_DESC_ENUM("EmulateRightButtonModifier", false,
+                   struct wlmim_cursor_options, emulate_right_button_modifier,
+                   emulate_right_button_modifier, 0,
+                   wlmim_keyboard_modifiers),
+    BSPL_DESC_SENTINEL(),
+};
+
 /** Name of the system-wide configuration file for cursor themes. */
 static const char *_wlmim_cursor_system_config_file =
     "/usr/share/icons/default/index.theme";
@@ -129,6 +145,7 @@ static const char *_wlmim_cursor_system_config_alternative_file =
 wlmim_cursor_t *wlmim_cursor_create(
     wlmim_t *input_manager_ptr,
     const struct wlmim_cursor_style *style_ptr,
+    const struct wlmim_cursor_options *options_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
     wlmtk_root_t *root_ptr)
@@ -138,6 +155,7 @@ wlmim_cursor_t *wlmim_cursor_create(
     cursor_ptr->input_manager_ptr = input_manager_ptr;
     cursor_ptr->wlr_seat_ptr = wlr_seat_ptr;
     cursor_ptr->root_ptr = root_ptr;
+    cursor_ptr->options = *options_ptr;
 
     // tinywl: wlr_cursor is a utility tracking the cursor image shown on
     // screen.
@@ -374,10 +392,22 @@ void _wlmim_cursor_handle_button(
         modifiers = wlr_keyboard_get_modifiers(wlr_keyboard_ptr);
     }
 
-    wlmtk_root_pointer_button(
-        cursor_ptr->root_ptr,
-        wlr_pointer_button_event_ptr,
-        modifiers);
+    // TODO(kaeser@gubbe.ch): This deserves unit testing.
+    uint32_t mod_mask = cursor_ptr->options.emulate_right_button_modifier;
+    struct wlr_pointer_button_event ev = *wlr_pointer_button_event_ptr;
+    if (0 != mod_mask && ev.button == BTN_LEFT) {
+        if (ev.state == WL_POINTER_BUTTON_STATE_PRESSED &&
+            (modifiers & mod_mask) == mod_mask) {
+            ev.button = BTN_RIGHT;
+            cursor_ptr->left_button_emulates_right = true;
+        } else if (ev.state == WL_POINTER_BUTTON_STATE_RELEASED &&
+                   cursor_ptr->left_button_emulates_right) {
+            ev.button = BTN_RIGHT;
+            cursor_ptr->left_button_emulates_right = false;
+        }
+    }
+
+    wlmtk_root_pointer_button(cursor_ptr->root_ptr, &ev, modifiers);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -531,10 +561,12 @@ int _wlmim_cursor_theme_handler(
 /* == Unit tests =========================================================== */
 
 static void _wlmim_cursor_test_theme_name(bs_test_t *test_ptr);
+static void _wlmim_cursor_test_config(bs_test_t *test_ptr);
 
 /** Unit test cases. */
 static const bs_test_case_t _wlmim_cursor_test_cases[] = {
     { 1, "theme_name", _wlmim_cursor_test_theme_name },
+    { 1, "config", _wlmim_cursor_test_config },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -560,6 +592,27 @@ void _wlmim_cursor_test_theme_name(bs_test_t *test_ptr)
     theme_name_ptr = _wlmim_cursor_get_theme_name(&style);
     BS_TEST_VERIFY_STREQ(test_ptr, "OverrideName", theme_name_ptr);
     free(theme_name_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests that parsing the configuration populates the options. */
+void _wlmim_cursor_test_config(bs_test_t *test_ptr)
+{
+    bspl_object_t *o = bspl_create_object_from_plist_string(
+        "{EmulateRightButtonModifier=Logo}");
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
+    bspl_dict_t *d = bspl_dict_from_object(o);
+
+    struct wlmim_cursor_options opt = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bspl_decode_dict(d, wlmim_cursor_options_desc, &opt));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_MODIFIER_LOGO,
+        opt.emulate_right_button_modifier);
+
+    bspl_object_unref(o);
 }
 
 /* == End of cursor.c ====================================================== */

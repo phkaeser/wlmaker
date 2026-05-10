@@ -49,11 +49,18 @@ struct wlmim_cursor_style {
     uint64_t                  size;
 };
 
+/** Options that configure cursor behaviour. */
+struct wlmim_cursor_options {
+    /** Keyboard modifier to change a left button into right button action. */
+    uint32_t                  emulate_right_button_modifier;
+};
+
 /**
  * Creates the cursor handlers.
  *
  * @param input_manager_ptr
  * @param style_ptr
+ * @param options_ptr
  * @param wlr_output_layout_ptr
  * @param wlr_seat_ptr
  * @param root_ptr
@@ -63,6 +70,7 @@ struct wlmim_cursor_style {
 wlmim_cursor_t *wlmim_cursor_create(
     wlmim_t *input_manager_ptr,
     const struct wlmim_cursor_style *style_ptr,
+    const struct wlmim_cursor_options *options_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
     wlmtk_root_t *root_ptr);
@@ -109,8 +117,11 @@ void wlmim_cursor_detach_input_device(
     wlmim_cursor_t *cursor_ptr,
     struct wlr_input_device *wlr_input_device_ptr);
 
-/** Descriptor for decoding the "Cursor" dictionary. */
+/** Descriptor for decoding the "Cursor" style dictionary. */
 extern const bspl_desc_t wlmim_cursor_style_desc[];
+
+/** Descriptor for decoding Cursor-relevant config dictionary. */
+extern const bspl_desc_t wlmim_cursor_options_desc[];
 
 /** Unit tests for cursor. */
 extern const bs_test_set_t wlmim_cursor_test_set;

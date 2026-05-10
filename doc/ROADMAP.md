@@ -56,7 +56,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
   * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
   * [done] Use bs_file_tree_walk() over ftw() in gen_menu.c.
-  * Support configurable means (eg. Alt+) to emulate right-click on laptop.
+  * [done] Support configurable means (eg. Alt+) to emulate right-click on laptop.
   * Write log to logfile (vs. stderr).
 
 * Bug fixes

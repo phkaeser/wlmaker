@@ -31,8 +31,8 @@ struct wlr_input_device;
 extern "C" {
 #endif  // __cplusplus
 
-/** Parameters to a pointer. */
-struct wlmim_pointer_param {
+/** Options to a pointer. */
+struct wlmim_pointer_options {
     /** Configuration for pointers directed by touchpads. */
     struct {
         /** Whether to enable touchpads. True by default. */
@@ -57,13 +57,13 @@ typedef struct _wlmim_pointer_t wlmim_pointer_t;
  * Creates a pointer, and configures it as specified.
  *
  * @param wlr_input_device_ptr
- * @param param_ptr
+ * @param options_ptr
  *
  * @return A pointer handle or NULL on error.
  */
 wlmim_pointer_t *wlmim_pointer_create(
     struct wlr_input_device *wlr_input_device_ptr,
-    const struct wlmim_pointer_param *param_ptr);
+    const struct wlmim_pointer_options *options_ptr);
 
 /**
  * Destroys the pointer.
@@ -75,17 +75,8 @@ void wlmim_pointer_destroy(wlmim_pointer_t *pointer_ptr);
 /** @return @ref wlmim_pointer_t::enabled. */
 bool wlmim_pointer_enabled(wlmim_pointer_t *pointer_ptr);
 
-/**
- * Parses the pointer-specific parts of the config dict.
- *
- * @param config_dict_ptr
- * @param param_ptr
- *
- * @return true on success
- */
-bool wlmim_pointer_parse_config(
-    bspl_dict_t *config_dict_ptr,
-    struct wlmim_pointer_param *param_ptr);
+/** Plist descriptor for the "Touchpad" section. */
+extern const bspl_desc_t wlmim_pointer_config_touchpad[];
 
 /** Unit test set for pointers. */
 extern const bs_test_set_t wlmim_pointer_test_set;
