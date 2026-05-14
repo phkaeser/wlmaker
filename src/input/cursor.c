@@ -400,10 +400,12 @@ void _wlmim_cursor_handle_button(
             (modifiers & mod_mask) == mod_mask) {
             ev.button = BTN_RIGHT;
             cursor_ptr->left_button_emulates_right = true;
+            modifiers &= ~mod_mask;
         } else if (ev.state == WL_POINTER_BUTTON_STATE_RELEASED &&
                    cursor_ptr->left_button_emulates_right) {
             ev.button = BTN_RIGHT;
             cursor_ptr->left_button_emulates_right = false;
+            modifiers &= ~mod_mask;
         }
     }
 
