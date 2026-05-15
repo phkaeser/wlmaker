@@ -94,7 +94,7 @@ TBD: Raise/Lower.
 * [x] :white_check_mark: Left-dragging the title bar moves the window.
 * [x] :white_check_mark: Holding Alt and left-dragging while anywhere on the window
   moves the window.
-* [ ] The modifier key for left-dragging anywhere on the content is configurable.
+* [x] :white_check_mark: The modifier key for left-dragging anywhere on the content is configurable.
 * [ ] Drag resizebar while holding Meta: Moves the window.
 * [ ] Drag titlebar with middle mouse button: Moves window without changing stacking order.
 * [ ] Drag titlebar while holding Control: Moves window without focussing.

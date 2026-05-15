@@ -33,6 +33,8 @@
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
 
+#include "input/cursor.h"
+#include "input/manager.h"
 #include "server.h"
 #include "toolkit/toolkit.h"
 
@@ -419,6 +421,10 @@ void _xwl_surface_handle_associate(
             return;
         }
         _xwl_surface_apply_decorations(xwl_surface_ptr);
+        wlmtk_window_set_options(
+            xwl_surface_ptr->window_ptr,
+            wlmim_cursor_options(xwl_surface_ptr->server_ptr->input_manager_ptr
+                )->move_window_modifier);
         wlmtk_window_set_properties(
             xwl_surface_ptr->window_ptr,
             WLMTK_WINDOW_PROPERTY_RESIZABLE |

@@ -23,6 +23,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
 
+* Infrastructure
+  * Write log to logfile (vs. stderr).
+
 ## Plan for 0.8
 
 **Focus** Themes
@@ -47,19 +50,19 @@ See the [Detailed Feature List](FEATURES.md) for details.
       or `/usr/share/icons/default/index.theme` (an INI file).
 
 * Windows
+  * [done] Make the modifier for move-dragging a window configurable ([#437](https://github.com/phkaeser/wlmaker/issues/437)).
   * Store and accept window state (fullscreen, maximize) before mapping.
   * Initial placement algorithm.
 
-* Infrastructure
+* [done] Infrastructure
   * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.
   * [done] Adds configuration options (tap to click, scroll, ...) for touchpad.
   * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
   * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
   * [done] Use bs_file_tree_walk() over ftw() in gen_menu.c.
   * [done] Support configurable means (eg. Alt+) to emulate right-click on laptop.
-  * Write log to logfile (vs. stderr).
 
-* Bug fixes
+* [done] Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
   * [done] Fixes mouse-click after task-switch going to previous toplevel ([#475](https://github.com/phkaeser/wlmaker/issues/475)).
 
