@@ -780,6 +780,10 @@ void _wlmtk_root_output_handle_frame(
     struct wlmtk_root_output *root_output_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmtk_root_output, frame_listener);
     wlmtk_element_layout(wlmtk_root_element(root_output_ptr->root_ptr));
+    // Once redrawn, recompute pointer focus.
+    wlmtk_element_pointer_motion(
+        &root_output_ptr->root_ptr->container.super_element,
+        &root_output_ptr->root_ptr->mev);
 }
 
 /* ------------------------------------------------------------------------- */
