@@ -42,6 +42,10 @@
         // right-button click, if the modifier is held while the left button
         // is pressed.
         EmulateRightButtonModifier = Logo;
+
+        // Optional. If set: Start moving the window, When pressing that
+        // modifier while starting to drag the left mouse button.
+        MoveWindowModifier = Alt;
     };
 
     // Configuration for XDG decoration protocol: Server or client-side?

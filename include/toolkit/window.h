@@ -428,6 +428,16 @@ void wlmtk_window_set_server_side_decorated(
     bool decorated);
 
 /**
+ * Sets window options (currently: the modifier to move when dragging).
+ *
+ * @param window_ptr
+ * @param move_modifier
+ */
+void wlmtk_window_set_options(
+    wlmtk_window_t *window_ptr,
+    uint32_t move_modifier);
+
+/**
  * Sets @ref wlmtk_window_t::workspace_ptr.
  *
  * Protected method, to be called only from @ref wlmtk_workspace_t.

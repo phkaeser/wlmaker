@@ -203,6 +203,10 @@ bool wlmim_process_key(
     xkb_keysym_t keysym,
     uint32_t modifiers);
 
+/** @return A pointer to @ref _wlmim_t::cursor_options. */
+const struct wlmim_cursor_options *wlmim_cursor_options(
+    wlmim_t *input_manager_ptr);
+
 /** All modifiers to use by default. */
 extern const uint32_t wlmim_modifiers_default_mask;
 

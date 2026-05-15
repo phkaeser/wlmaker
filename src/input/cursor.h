@@ -53,6 +53,9 @@ struct wlmim_cursor_style {
 struct wlmim_cursor_options {
     /** Keyboard modifier to change a left button into right button action. */
     uint32_t                  emulate_right_button_modifier;
+
+    /** Keyboard modifier for moving a window when left-dragging. */
+    uint32_t                  move_window_modifier;
 };
 
 /**

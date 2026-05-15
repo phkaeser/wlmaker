@@ -320,6 +320,13 @@ bool wlmim_process_key(
     return bs_dllist_any(&im_ptr->keybindings, _wlmim_process_keybinding, &a);
 }
 
+/* ------------------------------------------------------------------------- */
+const struct wlmim_cursor_options *wlmim_cursor_options(
+    wlmim_t *input_manager_ptr)
+{
+    return &input_manager_ptr->cursor_options;
+}
+
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */

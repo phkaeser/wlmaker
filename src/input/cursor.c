@@ -129,6 +129,10 @@ const bspl_desc_t            wlmim_cursor_options_desc[] = {
                    struct wlmim_cursor_options, emulate_right_button_modifier,
                    emulate_right_button_modifier, 0,
                    wlmim_keyboard_modifiers),
+    BSPL_DESC_ENUM("MoveWindowModifier", false,
+                   struct wlmim_cursor_options, move_window_modifier,
+                   move_window_modifier, 0,
+                   wlmim_keyboard_modifiers),
     BSPL_DESC_SENTINEL(),
 };
 
@@ -600,10 +604,13 @@ void _wlmim_cursor_test_theme_name(bs_test_t *test_ptr)
 /** Tests that parsing the configuration populates the options. */
 void _wlmim_cursor_test_config(bs_test_t *test_ptr)
 {
-    bspl_object_t *o = bspl_create_object_from_plist_string(
-        "{EmulateRightButtonModifier=Logo}");
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, o);
-    bspl_dict_t *d = bspl_dict_from_object(o);
+    bspl_dict_t *d = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{"
+            "EmulateRightButtonModifier=Logo;"
+            "MoveWindowModifier = Ctrl;"
+            "}"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
 
     struct wlmim_cursor_options opt = {};
     BS_TEST_VERIFY_TRUE(
@@ -613,8 +620,12 @@ void _wlmim_cursor_test_config(bs_test_t *test_ptr)
         test_ptr,
         WLR_MODIFIER_LOGO,
         opt.emulate_right_button_modifier);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        WLR_MODIFIER_CTRL,
+        opt.move_window_modifier);
 
-    bspl_object_unref(o);
+    bspl_dict_unref(d);
 }
 
 /* == End of cursor.c ====================================================== */

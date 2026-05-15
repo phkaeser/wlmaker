@@ -37,6 +37,8 @@
 #undef WLR_USE_UNSTABLE
 
 #include "config.h"
+#include "input/cursor.h"
+#include "input/manager.h"
 #include "server.h"
 #include "tl_menu.h"
 #include "toolkit/toolkit.h"
@@ -351,6 +353,12 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
         wlmtk_menu_style_to_ref(
             wlmaker_xdg_toplevel_ptr->server_ptr->style_ptr->menu_style_ptr));
     if (NULL == wlmaker_xdg_toplevel_ptr->window_ptr) goto error;
+    if (NULL != server_ptr->input_manager_ptr) {
+        wlmtk_window_set_options(
+            wlmaker_xdg_toplevel_ptr->window_ptr,
+            wlmim_cursor_options(
+                server_ptr->input_manager_ptr)->move_window_modifier);
+    }
     wlmtk_window_set_properties(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         WLMTK_WINDOW_PROPERTY_RESIZABLE |
