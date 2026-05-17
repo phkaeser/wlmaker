@@ -51,8 +51,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Windows
   * [done] Make the modifier for move-dragging a window configurable ([#437](https://github.com/phkaeser/wlmaker/issues/437)).
+  * [done] Initial placement algorithm.
   * Store and accept window state (fullscreen, maximize) before mapping.
-  * Initial placement algorithm.
 
 * [done] Infrastructure
   * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.

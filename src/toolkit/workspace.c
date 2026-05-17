@@ -32,6 +32,7 @@
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/edges.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "container.h"
@@ -105,6 +106,9 @@ struct _wlmtk_workspace_t {
     /** Bottom right Y coordinate of workspace. */
     int                       y2;
 
+    /** Window placement: Counter for stacking windows. OK to overflow. */
+    uint32_t                  position_counter;
+
     /** Background layer. */
     wlmtk_layer_t             *background_layer_ptr;
     /** Bottom layer. */
@@ -152,6 +156,12 @@ static void _wlmtk_workspace_handle_element_pointer_motion(
 static void _wlmtk_window_reposition_window(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static bool _wlmtk_workspace_window_overlaps(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+static void _wlmtk_workspace_place_window(
+    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_window_t *window_ptr);
 
 static bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
@@ -196,6 +206,9 @@ static const wlmtk_fsm_transition_t pfsm_transitions[] = {
     { PFSMS_RESIZE, PFSME_RESET, PFSMS_PASSTHROUGH, pfsm_reset },
     WLMTK_FSM_TRANSITION_SENTINEL,
 };
+
+/** For window placement: Pixel distance between each stacked position. */
+static const int _wlmtk_workspace_placement_step = 24;
 
 /* == Exported methods ===================================================== */
 
@@ -535,9 +548,11 @@ bool wlmtk_workspace_enabled(wlmtk_workspace_t *workspace_ptr)
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
-                                 wlmtk_window_t *window_ptr)
+                                wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(NULL == wlmtk_window_get_workspace(window_ptr));
+
+    _wlmtk_workspace_place_window(workspace_ptr, window_ptr);
 
     wlmtk_element_set_visible(wlmtk_window_element(window_ptr), true);
     wlmtk_container_add_element(
@@ -546,8 +561,6 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
     bs_dllist_push_front(&workspace_ptr->windows,
                          wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, workspace_ptr);
-
-    wlmtk_workspace_confine_within(workspace_ptr, window_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 
     if (NULL != workspace_ptr->root_ptr) {
@@ -1026,6 +1039,86 @@ void _wlmtk_window_reposition_window(
     wlmtk_window_request_size(window_ptr, &wbox);
 }
 
+// wlr_box_contains_box only available from wlroots >= 0.19.0.
+#if WLR_VERSION_NUM < (19 << 8)
+/** Whether `smaller` is fully contained in `bigger`. */
+static bool wlr_box_contains_box(
+    const struct wlr_box *parent_box_ptr,
+    const struct wlr_box *child_box_ptr)
+{
+    if (wlr_box_empty(parent_box_ptr) || wlr_box_empty(child_box_ptr)) {
+        return false;
+    }
+
+    return (
+        child_box_ptr->x >= parent_box_ptr->x &&
+        child_box_ptr->x + child_box_ptr->width <=
+        parent_box_ptr->x + parent_box_ptr->width &&
+        child_box_ptr->y >= parent_box_ptr->y &&
+        child_box_ptr->y + child_box_ptr->height <=
+        parent_box_ptr->y + parent_box_ptr->height);
+}
+#endif  // WLR_VERSION_NUM < (19 << 8)
+
+/* ------------------------------------------------------------------------- */
+/** Iterator for `bs_dllist_any`: Does window at `dlnode_ptr` overlap? */
+bool _wlmtk_workspace_window_overlaps(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    struct wlr_box *window_box_ptr = ud_ptr;
+
+    wlmtk_window_t *iter_window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
+    struct wlr_box iter_box = wlmtk_window_get_bounding_box(iter_window_ptr);
+
+    struct wlr_box intersection_box;
+    return wlr_box_intersection(&intersection_box, window_box_ptr, &iter_box);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Window placement: Finds a place for the window.
+ *
+ * Looks for a non-overlapping space at the current position of `window_ptr`,
+ * and then for tiles right or below it. If none is found, build a stacking
+ * order, at @ref _wlmtk_workspace_placement_step pixels apart.
+ *
+ * @param workspace_ptr
+ * @param window_ptr
+ */
+void _wlmtk_workspace_place_window(wlmtk_workspace_t *workspace_ptr,
+                                   wlmtk_window_t *window_ptr)
+{
+    wlmtk_workspace_confine_within(workspace_ptr, window_ptr);
+    struct wlr_box wbox = wlmtk_window_get_bounding_box(window_ptr);
+    if (0 >= wbox.width || 0 >= wbox.height) return;
+
+    struct wlr_box extents = wlmtk_workspace_get_maximize_extents(
+        workspace_ptr, wlmtk_window_get_wlr_output(window_ptr));
+
+    int x = wbox.x;
+    for (; wbox.y + 1 < extents.height; wbox.y += wbox.height) {
+        for (wbox.x = x; wbox.x + 1 < extents.width; wbox.x += wbox.width) {
+            if (!wlr_box_contains_box(&extents, &wbox)) continue;
+            if (!bs_dllist_any(&workspace_ptr->windows,
+                               _wlmtk_workspace_window_overlaps,
+                               &wbox)) {
+                wlmtk_element_set_position(
+                    wlmtk_window_element(window_ptr), wbox.x, wbox.y);
+                wlmtk_window_position_changed(window_ptr);
+                return;
+            }
+        }
+    }
+
+    const unsigned n = _wlmtk_workspace_placement_step;
+    unsigned max_steps = BS_MAX(
+        1u, BS_MIN(extents.width / n - 2, extents.height / n - 2));
+    unsigned steps = workspace_ptr->position_counter++ % max_steps + 1;
+    wlmtk_element_set_position(
+        wlmtk_window_element(window_ptr),
+        steps * n, steps * n);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Initiates a move. */
@@ -1171,6 +1264,12 @@ static void test_activate(bs_test_t *test_ptr);
 static void test_activate_cycling(bs_test_t *test_ptr);
 static void test_multi_output_extents(bs_test_t *test_ptr);
 static void test_multi_output_reposition(bs_test_t *test_ptr);
+static void test_window_position(bs_test_t *test_ptr);
+
+static void *_wlmtk_workspace_test_setup(void);
+static void _wlmtk_workspace_test_teardown(void *setup_context_ptr);
+static void _wlmtk_workspace_test_unmap_and_destroy_window(
+    bs_dllist_node_t *dlnode_ptr, void *ud_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_workspace_test_cases[] = {
@@ -1184,16 +1283,90 @@ static const bs_test_case_t _wlmtk_workspace_test_cases[] = {
     { 1, "activate_cycling", test_activate_cycling },
     { 1, "multi_output_extents", test_multi_output_extents },
     { 1, "multi_output_reposition", test_multi_output_reposition },
+    { 1, "window_position", test_window_position },
     BS_TEST_CASE_SENTINEL()
 };
-
-const bs_test_set_t wlmtk_workspace_test_set = BS_TEST_SET(
-    true, "workspace", _wlmtk_workspace_test_cases);
 
 /** Tile style used in tests. */
 static const struct wlmtk_tile_style _wlmtk_workspace_test_tile_style = {
     .size = 64
 };
+
+/** Context for workspace tests. */
+struct _wlmtk_workspace_test_context {
+    /** Display. */
+    struct wl_display         *wl_display_ptr;
+    /** The output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
+    /** Workspace for the output layout. */
+    wlmtk_workspace_t         *workspace_ptr;
+};
+
+const bs_test_set_t wlmtk_workspace_test_set = BS_TEST_SET_CONTEXT(
+    true, "workspace", _wlmtk_workspace_test_cases,
+    _wlmtk_workspace_test_setup, _wlmtk_workspace_test_teardown);
+
+/* ------------------------------------------------------------------------- */
+/** Context setup for workspace tests. */
+void *_wlmtk_workspace_test_setup(void)
+{
+    struct _wlmtk_workspace_test_context *c_ptr = calloc(1, sizeof(*c_ptr));
+    if (NULL == c_ptr) return NULL;
+
+    c_ptr->wl_display_ptr = wl_display_create();
+    if (NULL == c_ptr->wl_display_ptr) goto error;
+
+    c_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        c_ptr->wl_display_ptr);
+    if (NULL == c_ptr->wlr_output_layout_ptr) goto error;
+
+    c_ptr->workspace_ptr = wlmtk_workspace_create(
+        c_ptr->wlr_output_layout_ptr,
+        "t",
+        &_wlmtk_workspace_test_tile_style);
+    if (NULL == c_ptr->workspace_ptr) goto error;
+
+    return c_ptr;
+
+error:
+    _wlmtk_workspace_test_teardown(c_ptr);
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Context teardown for workspace tests. */
+void _wlmtk_workspace_test_teardown(void *setup_context_ptr)
+{
+    struct _wlmtk_workspace_test_context *c_ptr = setup_context_ptr;
+
+    if (NULL != c_ptr->workspace_ptr) {
+        bs_dllist_for_each(
+            &c_ptr->workspace_ptr->windows,
+            _wlmtk_workspace_test_unmap_and_destroy_window,
+            c_ptr->workspace_ptr);
+        wlmtk_workspace_destroy(c_ptr->workspace_ptr);
+    }
+
+    if (NULL != c_ptr->wlr_output_layout_ptr) {
+        wlr_output_layout_destroy(c_ptr->wlr_output_layout_ptr);
+    }
+    if (NULL != c_ptr->wl_display_ptr) {
+        wl_display_destroy(c_ptr->wl_display_ptr);
+    }
+    free(c_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Iterator for `bs_dllist_for_each`: Unmaps and destroys any window. */
+void _wlmtk_workspace_test_unmap_and_destroy_window(
+    bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
+    wlmtk_workspace_t *workspace_ptr = ud_ptr;
+
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+    wlmtk_window_destroy(window_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Exercises workspace create & destroy methods. */
@@ -1290,8 +1463,8 @@ void test_map_unmap(bs_test_t *test_ptr)
 
     int x, y;
     wlmtk_element_get_position(wlmtk_window_element(w), &x, &y);
-    BS_TEST_VERIFY_EQ(test_ptr, 20, x);
-    BS_TEST_VERIFY_EQ(test_ptr, 10, y);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, x);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, y);
 
     wlmtk_workspace_unmap_window(workspace_ptr, w);
     BS_TEST_VERIFY_EQ(
@@ -1940,4 +2113,54 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     wlr_output_layout_destroy(wlr_output_layout_ptr);
     wl_display_destroy(display_ptr);
 }
+
+/* ------------------------------------------------------------------------- */
+/** Tests window placement. */
+void test_window_position(bs_test_t *test_ptr)
+{
+    struct _wlmtk_workspace_test_context *c_ptr = bs_test_context(test_ptr);
+
+    struct wlr_output o1 = { .width = 800, .height = 600, .scale = 1 };
+    wlmtk_test_wlr_output_init(&o1);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(
+        test_ptr,
+        NULL,
+        wlr_output_layout_add(c_ptr->wlr_output_layout_ptr, &o1, 0, 0));
+
+    wlmtk_fake_element_t *fe[5] = {};
+    wlmtk_window_t *w[5] = {};
+    for (int i = 0; i < 5; ++i) {
+        fe[i] = wlmtk_fake_element_create();
+        BS_TEST_VERIFY_NEQ(test_ptr, NULL, fe[i]);
+        if (bs_test_failed(test_ptr)) break;
+        wlmtk_fake_element_set_dimensions(fe[i], 360, 240);
+
+        w[i] = wlmtk_test_window_create(&fe[i]->element);
+        BS_TEST_VERIFY_NEQ(test_ptr, NULL, w[i]);
+        if (bs_test_failed(test_ptr)) break;
+        wlmtk_workspace_map_window(c_ptr->workspace_ptr, w[i]);
+    }
+
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 360, 240, wlmtk_window_get_bounding_box(w[0]));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 360, 0, 360, 240, wlmtk_window_get_bounding_box(w[1]));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 240, 360, 240, wlmtk_window_get_bounding_box(w[2]));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 360, 240, 360, 240, wlmtk_window_get_bounding_box(w[3]));
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 24, 24, 360, 240, wlmtk_window_get_bounding_box(w[4]));
+
+    for (int i = 0; i < 5; ++i) {
+        if (NULL != w[i]) {
+            wlmtk_workspace_unmap_window(c_ptr->workspace_ptr, w[i]);
+            wlmtk_window_destroy(w[i]);
+        }
+        if (NULL != fe[i]) wlmtk_element_destroy(&fe[i]->element);
+    }
+
+    wlr_output_layout_remove(c_ptr->wlr_output_layout_ptr, &o1);
+}
+
 /* == End of workspace.c =================================================== */
