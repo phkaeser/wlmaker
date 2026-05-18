@@ -3,7 +3,7 @@
  * @file `(file-name-nondirectory (buffer-file-name))`
  *
  * @copyright
- * Copyright (c) `(format-time-string "%Y")` Google LLC and `user-full-name`
+ * Copyright (c) `(format-time-string "%Y")` `user-mail-address`
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

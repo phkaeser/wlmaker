@@ -3,6 +3,7 @@
  * @file desktop-parser.c
  *
  * @copyright
+ * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
  * Copyright (c) 2025 Google LLC and Philipp Kaeser
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

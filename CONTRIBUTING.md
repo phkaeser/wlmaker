@@ -4,29 +4,28 @@ We would love to accept your patches and contributions to this project.
 
 ## Before you begin
 
-### Sign our Contributor License Agreement
+### Developer Certificate of Origin (DCO)
 
-Contributions to this project must be accompanied by a
-[Contributor License Agreement](https://cla.developers.google.com/about) (CLA).
-You (or your employer) retain the copyright to your contribution; this simply
-gives us permission to use and redistribute your contributions as part of the
-project.
+To ensure that all contributions can be safely integrated into the project, we
+require that you sign off on your commits. This is done by adding a
+`Signed-off-by:` line to commit messages. By doing so, you agree to the
+[Developer Certificate of Origin (DCO)](https://developercertificate.org/).
 
-If you or your current employer have already signed the Google CLA (even if it
-was for a different project), you probably don't need to do it again.
+You can sign off on your commits by using the `-s` or `--signoff` flag when
+running `git commit`:
 
-Visit <https://cla.developers.google.com/> to see your current agreements or to
-sign a new one.
+```bash
+git commit -s -m "Your commit message"
+```
 
 ### Review our Community Guidelines
 
-This project follows [Google's Open Source Community
-Guidelines](https://opensource.google/conduct/).
+This project follows [Google's Open Source Community Guidelines](https://opensource.google/conduct/).
 
 ## Contribution process
 
 ### Code Reviews
 
-All submissions, including submissions by project members, require review. We 
+All submissions, including submissions by project members, require review. We
 use [GitHub pull requests](https://docs.github.com/articles/about-pull-requests)
 for this purpose.
