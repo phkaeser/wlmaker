@@ -3,6 +3,7 @@
  * @file base.h
  *
  * @copyright
+ * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
  * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

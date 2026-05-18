@@ -1,8 +1,11 @@
 wlmaker
-Copyright 2026 Google LLC & Philipp Käser (kaeser@gubbe.ch).
+Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
+
+The copyright held by Google LLC before and until 2026-05-18 was waived and
+transferred to Philipp Kaeser by 2026-05-15.
 
 This product includes software copyrighted by Google LLC
-(https://github.com/phkaeser/wlmaker).
+(https://github.com/phkaeser/libbase).
 
 This product bundles the inih library, which is available under a "New BSD"
 (3-Clause) license.  For details, see the original license and copyright 
