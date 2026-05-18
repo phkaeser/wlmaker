@@ -12,68 +12,99 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-ADD_SUBDIRECTORY(libwlclient)
-ADD_SUBDIRECTORY(primitives)
-
-ADD_LIBRARY(wlm_graph_shared STATIC wlm_graph_shared.c)
-TARGET_INCLUDE_DIRECTORIES(wlm_graph_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlm_graph_shared libwlclient primitives)
-
-ADD_EXECUTABLE(example_toplevel example_toplevel.c)
-TARGET_INCLUDE_DIRECTORIES(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(example_toplevel m libwlclient)
-
-ADD_EXECUTABLE(wlmclock wlmclock.c)
-TARGET_INCLUDE_DIRECTORIES(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmclock libwlclient primitives m)
-
-ADD_EXECUTABLE(wlmeyes wlmeyes.c)
-TARGET_INCLUDE_DIRECTORIES(wlmeyes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmeyes m libwlclient)
-
-ADD_EXECUTABLE(wlmcpugraph wlmcpugraph.c)
-TARGET_INCLUDE_DIRECTORIES(wlmcpugraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmcpugraph wlm_graph_shared libwlclient primitives)
-
-ADD_EXECUTABLE(wlmmemgraph wlmmemgraph.c)
-TARGET_INCLUDE_DIRECTORIES(wlmmemgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmmemgraph wlm_graph_shared libwlclient primitives)
-
-ADD_EXECUTABLE(wlmnetgraph wlmnetgraph.c)
-TARGET_INCLUDE_DIRECTORIES(wlmnetgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmnetgraph wlm_graph_shared libwlclient primitives)
-
-ADD_EXECUTABLE(wlmbattery wlmbattery.c)
-TARGET_INCLUDE_DIRECTORIES(wlmbattery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(wlmbattery libbase libwlclient primitives)
-
-INSTALL(
+cmake_minimum_required(VERSION 3.13)
+add_subdirectory(libwlclient)
+add_subdirectory(primitives)
+add_library(wlm_graph_shared STATIC wlm_graph_shared.c)
+target_include_directories(wlm_graph_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlm_graph_shared
+  libwlclient
+  primitives)
+add_executable(
+  example_toplevel
+  example_toplevel.c)
+target_include_directories(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  example_toplevel
+  m
+  libwlclient)
+add_executable(
+  wlmclock
+  wlmclock.c)
+target_include_directories(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmclock
+  libwlclient
+  primitives
+  m)
+add_executable(
+  wlmeyes
+  wlmeyes.c)
+target_include_directories(wlmeyes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmeyes
+  m
+  libwlclient)
+add_executable(
+  wlmcpugraph
+  wlmcpugraph.c)
+target_include_directories(wlmcpugraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmcpugraph
+  wlm_graph_shared
+  libwlclient
+  primitives)
+add_executable(
+  wlmmemgraph
+  wlmmemgraph.c)
+target_include_directories(wlmmemgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmmemgraph
+  wlm_graph_shared
+  libwlclient
+  primitives)
+add_executable(
+  wlmnetgraph
+  wlmnetgraph.c)
+target_include_directories(wlmnetgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmnetgraph
+  wlm_graph_shared
+  libwlclient
+  primitives)
+add_executable(
+  wlmbattery
+  wlmbattery.c)
+target_include_directories(wlmbattery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+  wlmbattery
+  libbase
+  libwlclient
+  primitives)
+install(
   TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph wlmbattery
-  DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+  DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(iwyu_path_and_options)
+  set_target_properties(
     wlm_graph_shared PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     example_toplevel PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     wlmclock PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     wlmeyes PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     wlmcpugraph PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     wlmmemgraph PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     wlmnetgraph PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+endif()

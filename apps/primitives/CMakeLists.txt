@@ -12,43 +12,39 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-ADD_LIBRARY(primitives STATIC)
-TARGET_SOURCES(
+cmake_minimum_required(VERSION 3.13)
+add_library(primitives STATIC)
+target_sources(
   primitives PRIVATE
   primitives.h primitives.c
   segment_display.h segment_display.c)
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   primitives PRIVATE)
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   primitives
   libbase)
-
-ADD_EXECUTABLE(segment_display_test
+add_executable(segment_display_test
   segment_display_test.c
   segment_display.c
   segment_display.h)
-TARGET_COMPILE_DEFINITIONS(
+target_compile_definitions(
   segment_display_test PRIVATE
   TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   segment_display_test PRIVATE
   ${CAIRO_INCLUDE_DIRS})
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   segment_display_test PRIVATE
   libbase
   PkgConfig::CAIRO)
-ADD_TEST(
+add_test(
   NAME segment_display_test
   COMMAND segment_display_test)
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+if(iwyu_path_and_options)
+  set_target_properties(
     primitives PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     segment_display_test PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+endif()

@@ -12,214 +12,195 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-INCLUDE(EmbedBinary)
-
-EmbedBinary_ADD_LIBRARY(
+cmake_minimum_required(VERSION 3.13)
+include(EmbedBinary)
+embedbinary_add_library(
   embedded_theme
   "theme"
   "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
-
-CONFIGURE_FILE(
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
   @ONLY)
 # Install to both wayland-sessions/ and applications/ -- it can run in windowed
 # mode.
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-INSTALL(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmbattery.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmclock.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmcpugraph.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmnetgraph.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmmemgraph.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-CONFIGURE_FILE(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmeyes.desktop.in
   ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop
   @ONLY)
-INSTALL(
+install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-
-FIND_PROGRAM(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
-IF(DESKTOP_FILE_VALIDATOR)
-  ADD_TEST(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+find_program(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
+if(DESKTOP_FILE_VALIDATOR)
+  add_test(
     NAME wlmaker_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmaker_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmbattery_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmbattery_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmclock_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmclock_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmcpugraph_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmcpugraph_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmnetgraph_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmnetgraph_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmmemgraph_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmmemgraph_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-  ADD_TEST(
+  add_test(
     NAME wlmeyes_desktop_test
     COMMAND ${DESKTOP_FILE_VALIDATOR} "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop")
   # We also want to report errors that are not "fatal" yet.
-  SET_PROPERTY(
+  set_property(
     TEST wlmeyes_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
-ELSE()
-  MESSAGE(STATUS "Skipping .desktop file validation -- `desktop-file-validate` not found")
-ENDIF()
+else()
+  message(STATUS "Skipping .desktop file validation -- `desktop-file-validate` not found")
+endif()
 
 # Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
 # with what GNUstep expects. Optional.
-FIND_PROGRAM(PLDES pldes)
-IF(PLDES)
-  ADD_TEST(
+find_program(PLDES pldes)
+if(PLDES)
+  add_test(
     NAME theme_default_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Default.plist")
-  SET_PROPERTY(
+  set_property(
     TEST theme_default_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
+  add_test(
     NAME theme_debian_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/Debian.plist")
-  SET_PROPERTY(
+  set_property(
     TEST theme_debian_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
+  add_test(
     NAME theme_debian_larger_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/DebianLarger.plist")
-  SET_PROPERTY(
+  set_property(
     TEST theme_debian_larger_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-  ADD_TEST(
+  add_test(
     NAME theme_debian_double_plist_test
     COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Themes/DebianDouble.plist")
-  SET_PROPERTY(
+  set_property(
     TEST theme_debian_double_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
-
-ENDIF(PLDES)
-
-INSTALL(FILES
+endif()
+install(FILES
   wlmaker.svg
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
-INSTALL(FILES
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps")
+install(FILES
   wlmaker-48x48.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/48x48/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/48x48/apps"
   RENAME wlmaker.png)
-INSTALL(FILES
+install(FILES
   wlmaker-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmaker.png)
-
-INSTALL(FILES
+install(FILES
   wlmbattery-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmbattery.png)
-INSTALL(FILES
+install(FILES
   wlmclock-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmclock.png)
-INSTALL(FILES
+install(FILES
   wlmcpugraph-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmcpugraph.png)
-INSTALL(FILES
+install(FILES
   wlmmemgraph-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmmemgraph.png)
-INSTALL(FILES
+install(FILES
   wlmnetgraph-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmnetgraph.png)
-
-INSTALL(FILES
+install(FILES
   wlmeyes-64x64.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME wlmeyes.png)
-
-INSTALL(FILES
+install(FILES
   wlmaker/icons/chrome-56x56.png
   wlmaker/icons/clip-56x56.png
   wlmaker/icons/firefox-56x56.png
   wlmaker/icons/terminal-56x56.png
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/icons)
-
-INSTALL(
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/icons")
+install(
   FILES
   Themes/Default.plist
   Themes/Debian.plist
   Themes/DebianLarger.plist
   Themes/DebianDouble.plist
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/Themes)
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/Themes")

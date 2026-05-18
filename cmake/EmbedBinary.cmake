@@ -12,12 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+cmake_minimum_required(VERSION 3.13)
 
 # During the INCLUDE() call, CMAKE_CURRENT_LIST_DIR is this file's path.
 # Store it for later, during the FUNCTION() call it'll be the caller's path.
-SET(EMBED_BINARY_TEMPLATE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(EMBED_BINARY_TEMPLATE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 # Adds a static C library to embed the binary file with the specified prefix.
 #
@@ -30,38 +29,32 @@ SET(EMBED_BINARY_TEMPLATE_DIR ${CMAKE_CURRENT_LIST_DIR})
 #
 #    * uint8_t embedded_binary_<prefix>_data[];
 #    * const size_t embedded_binary_<prefix>_size;
-FUNCTION(EmbedBinary_ADD_LIBRARY library_target prefix binary_file)
-
-  SET(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
-  SET(output_source "${output_basename}.c")
-  SET(output_header "${output_basename}.h")
-  SET(generated_cmake "${output_basename}.cmake")
-
-  SET(template_header "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.h.in")
-  SET(template_source "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.c.in")
-
-  CONFIGURE_FILE(
+function(EmbedBinary_ADD_LIBRARY library_target prefix binary_file)
+  set(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
+  set(output_source "${output_basename}.c")
+  set(output_header "${output_basename}.h")
+  set(generated_cmake "${output_basename}.cmake")
+  set(template_header "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.h.in")
+  set(template_source "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.c.in")
+  configure_file(
     "${EMBED_BINARY_TEMPLATE_DIR}/embed.cmake.in"
     "${generated_cmake}"
     @ONLY)
-
-  ADD_CUSTOM_COMMAND(
+  add_custom_command(
     OUTPUT "${output_source}" "${output_header}"
     COMMAND ${CMAKE_COMMAND} -P "${generated_cmake}"
     MAIN_DEPENDENCY "${binary_file}"
     DEPENDS "${generated_cmake}" "${template_header}" "${template_source}"
   )
-
-  ADD_LIBRARY(${library_target} STATIC)
-  TARGET_SOURCES(
+  add_library(${library_target} STATIC)
+  target_sources(
     ${library_target} PRIVATE
     "${output_source}"
     "${output_header}")
-  TARGET_INCLUDE_DIRECTORIES(
+  target_include_directories(
     ${library_target} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     ${library_target}
     PROPERTIES VERSION 1.0
     PUBLIC_HEADER "${output_header}")
-
-ENDFUNCTION()
+endfunction()

@@ -12,22 +12,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-ADD_LIBRARY(desktop-parser STATIC desktop-parser.c)
-TARGET_LINK_LIBRARIES(desktop-parser PRIVATE libbase inih)
-TARGET_INCLUDE_DIRECTORIES(
+cmake_minimum_required(VERSION 3.13)
+add_library(desktop-parser STATIC desktop-parser.c)
+target_link_libraries(
+  desktop-parser
+  PRIVATE
+  libbase
+  inih)
+target_include_directories(
   desktop-parser
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..)
-SET_TARGET_PROPERTIES(
+set_target_properties(
   desktop-parser PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER desktop-parser.h)
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+if(iwyu_path_and_options)
+  set_target_properties(
     desktop-parser PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+endif()

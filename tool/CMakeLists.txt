@@ -12,45 +12,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-ADD_LIBRARY(libwlmtool STATIC item.c menu.c)
-TARGET_INCLUDE_DIRECTORIES(
+cmake_minimum_required(VERSION 3.13)
+add_library(libwlmtool STATIC item.c menu.c)
+target_include_directories(
   libwlmtool
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
   PRIVATE
   ${LIBXDGBASEDIR_INCLUDE_DIRS})
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   libwlmtool
   PRIVATE
   libbase_plist
   desktop-parser
   PkgConfig::LIBXDGBASEDIR)
-
-ADD_EXECUTABLE(wlmtool wlmtool.c)
-TARGET_LINK_LIBRARIES(
+add_executable(
+  wlmtool
+  wlmtool.c)
+target_link_libraries(
   wlmtool
   libwlmtool
   libbase)
-TARGET_COMPILE_DEFINITIONS(
+target_compile_definitions(
   wlmtool PRIVATE
   WLMAKER_VERSION_MAJOR="${WLMAKER_VERSION_MAJOR}"
   WLMAKER_VERSION_MINOR="${WLMAKER_VERSION_MINOR}"
   WLMAKER_VERSION_FULL="${WLMAKER_VERSION_FULL}")
-
-INSTALL(
+install(
   TARGETS wlmtool
-  DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+  DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(iwyu_path_and_options)
+  set_target_properties(
     wlmtool PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  SET_TARGET_PROPERTIES(
+  set_target_properties(
     libwlmtool PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
-
-ADD_SUBDIRECTORY(desktop-parser)
+endif()
+add_subdirectory(desktop-parser)

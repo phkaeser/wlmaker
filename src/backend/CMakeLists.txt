@@ -12,22 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-SET(PUBLIC_HEADER_FILES
+cmake_minimum_required(VERSION 3.13)
+set(PUBLIC_HEADER_FILES
   backend.h
   output.h
   output_config.h
   output_manager.h)
-
-ADD_LIBRARY(backend STATIC
+add_library(backend STATIC
   backend.c
   output.c
   output_config.c
   output_manager.c)
-
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   backend
   PUBLIC
   ${PROJECT_SOURCE_DIR}/include
@@ -36,25 +32,22 @@ TARGET_INCLUDE_DIRECTORIES(
   ${WLROOTS_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
 )
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   backend
   PRIVATE
   ${PROJECT_SOURCE_DIR}/include/backend
 )
-
-SET_TARGET_PROPERTIES(
+set_target_properties(
   backend PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}"
 )
-
-TARGET_COMPILE_OPTIONS(
+target_compile_options(
   backend PRIVATE
   ${WAYLAND_SERVER_CFLAGS}
   ${WAYLAND_SERVER_CFLAGS_OTHER}
 )
-
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   backend
   PUBLIC
   libbase
@@ -63,9 +56,8 @@ TARGET_LINK_LIBRARIES(
   PRIVATE
   toolkit
   PkgConfig::WLROOTS)
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+if(iwyu_path_and_options)
+  set_target_properties(
     backend PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+endif()

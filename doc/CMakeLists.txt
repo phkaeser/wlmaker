@@ -12,13 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-FIND_PACKAGE(Doxygen)
-IF(DOXYGEN_FOUND)
-
-  FIND_FILE(PLANTUML_JAR
+cmake_minimum_required(VERSION 3.13)
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  find_file(PLANTUML_JAR
     NAMES plantuml.jar
     HINTS ENV{PLANTUML_JAR_PATH}
     PATHS
@@ -27,47 +24,43 @@ IF(DOXYGEN_FOUND)
     /usr/share/java/
     /usr/local/share/java/
     /usr/share/plantuml/)
-  IF(PLANTUML_JAR)
-    SET(DOXYGEN_PLANTUML_JAR_FILE ${PLANTUML_JAR})
-  ELSE()
-    SET(DOXYGEN_PLANTUML_JAR_FILE "")
-    MESSAGE(
+  if(PLANTUML_JAR)
+    set(DOXYGEN_PLANTUML_JAR_FILE ${PLANTUML_JAR})
+  else()
+    set(DOXYGEN_PLANTUML_JAR_FILE "")
+    message(
       NOTICE
       "Did not find plantuml.jar -- Will not generate class diagrams.")
-  ENDIF(PLANTUML_JAR)
-
-  IF(config_DOXYGEN_CRITICAL)
-    SET(DOXYGEN_WARN_AS_ERROR "YES")
-  ELSE(config_DOXYGEN_CRITICAL)
-    SET(DOXYGEN_WARN_AS_ERROR "NO")
-  ENDIF(config_DOXYGEN_CRITICAL)
+  endif()
+  if(config_DOXYGEN_CRITICAL)
+    set(DOXYGEN_WARN_AS_ERROR "YES")
+  else()
+    set(DOXYGEN_WARN_AS_ERROR "NO")
+  endif()
 
   # set input and output files
-  SET(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-  SET(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+  set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+  set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
   # request to configure the file
-  CONFIGURE_FILE(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-  MESSAGE(NOTICE "Doxygen available, adding 'doc' target.")
-
-  ADD_CUSTOM_TARGET(
+  configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+  message(NOTICE "Doxygen available, adding 'doc' target.")
+  add_custom_target(
     doc
     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
     DEPENDS ${DOXYGEN_OUT} ${PROJECT_BINARY_DIR}/etc/RootMenuDebian.plist
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen."
     VERBATIM)
-
-  FILE(
+  file(
     COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_close_icon.png
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
-  FILE(
+    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
+  file(
     COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_minimize_icon.png
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
-  FILE(
+    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
+  file(
     COPY ${PROJECT_SOURCE_DIR}/share/wlmaker.svg
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/html)
-
-ELSE()
-  MESSAGE(NOTICE "Doxygen not found. Not adding 'doc' target to generate API documentation.")
-ENDIF(DOXYGEN_FOUND)
+    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
+else()
+  message(NOTICE "Doxygen not found. Not adding 'doc' target to generate API documentation.")
+endif()
