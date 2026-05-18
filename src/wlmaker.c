@@ -379,8 +379,13 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
+    const char *theme_file_ptr = wlmaker_arg_theme_file_ptr;
+    if (NULL == theme_file_ptr) {
+        theme_file_ptr = bspl_dict_get_string_value(
+            config_dict_ptr, "ThemeFile");
+    }
     wlmaker_config_style_t style = {};
-    if (!wlmaker_theme_load(files_ptr, wlmaker_arg_theme_file_ptr, &style)) {
+    if (!wlmaker_theme_load(files_ptr, theme_file_ptr, &style)) {
         fprintf(stderr, "Failed to load & initialize theme.\n");
         return EXIT_FAILURE;
     }

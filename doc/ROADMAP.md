@@ -48,10 +48,12 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Cleanup the Debian theme so it works for personal use.
     * [done] Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
       or `/usr/share/icons/default/index.theme` (an INI file).
+    * [done] Permit configuring the startup theme in the config file.
 
 * Windows
   * [done] Make the modifier for move-dragging a window configurable ([#437](https://github.com/phkaeser/wlmaker/issues/437)).
   * [done] Initial placement algorithm.
+  * Make initial placement algorithm work with decoration.
   * Store and accept window state (fullscreen, maximize) before mapping.
 
 * [done] Infrastructure

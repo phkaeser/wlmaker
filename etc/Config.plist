@@ -48,6 +48,9 @@
         MoveWindowModifier = Alt;
     };
 
+    // Optional. Full path to a Theme file.
+    // ThemeFile = "/usr/share/wlmaker/wlmaker/Themes/Other.plist";
+
     // Configuration for XDG decoration protocol: Server or client-side?
     Decoration = {
         Mode = SuggestServer;

@@ -161,9 +161,9 @@ bool wlmaker_theme_load(
     wlmaker_config_style_t *style_ptr)
 {
     char *fname_ptr = NULL;
-    if (NULL != arg_fname_ptr && NULL != files_ptr) {
+    if (NULL != files_ptr) {
         fname_ptr = wlmaker_files_xdg_data_find(
-            files_ptr, "Themes/default.plist", S_IFREG);
+            files_ptr, "Themes/Default.plist", S_IFREG);
     }
 
     bspl_object_t *o = _wlmaker_plist_load(
