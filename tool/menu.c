@@ -168,6 +168,7 @@ bspl_array_t *wlmtool_menu_generate_appearance(const char *path_ptr)
         }
         bool rv = _wlmtool_menu_add_themes_path(menu_ptr, p);
         free(p);
+        p = NULL;
         if (!rv) {
             wlmtool_item_destroy(wlmtool_item_from_menu(root_menu_ptr));
             return NULL;
@@ -369,6 +370,7 @@ bool _wlmtool_menu_add_desktop_file(
     }
 
     free(cmd_ptr);
+    cmd_ptr = NULL;
     desktop_parser_entry_release(&de);
     return true;
 
