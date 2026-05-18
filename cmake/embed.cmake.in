@@ -13,34 +13,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-FILE(READ "@binary_file@" binary_content HEX)
-
-STRING(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" separated_content ${binary_content})
-
-SET(prefix "@prefix@")
-STRING(TOUPPER "@prefix@" prefix_uppercase)
-SET(binary_file "@binary_file@")
-SET(output_header "@output_header@")
-SET(output_source "@output_source@")
-SET(output_data "")
-
-SET(bytes 0)
-FOREACH(token IN LISTS separated_content)
-  IF(NOT bytes EQUAL 0)
-    STRING(APPEND output_data ", ")
-  ENDIF()
-  MATH(EXPR line_pos "${bytes} & 0xF")
-  IF(line_pos EQUAL 0)
-    STRING(APPEND output_data "\n    ")
-  ENDIF()
-
-  STRING(APPEND output_data "0x${token}")
-
-  MATH(EXPR bytes "${bytes} + 1")
-ENDFOREACH()
-
-CONFIGURE_FILE("@template_header@" "@output_header@" @ONLY)
-CONFIGURE_FILE("@template_source@" "@output_source@" @ONLY)
-
-FILE(WRITE @OUTPUT_BASENAME@.c "${output}")
+file(READ "@binary_file@" binary_content HEX)
+string(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" separated_content ${binary_content})
+set(prefix "@prefix@")
+string(TOUPPER "@prefix@" prefix_uppercase)
+set(binary_file "@binary_file@")
+set(output_header "@output_header@")
+set(output_source "@output_source@")
+set(output_data "")
+set(bytes 0)
+foreach(token IN LISTS separated_content)
+  if(NOT bytes EQUAL 0)
+    string(APPEND output_data ", ")
+  endif()
+  math(EXPR line_pos "${bytes} & 0xF")
+  if(line_pos EQUAL 0)
+    string(APPEND output_data "\n    ")
+  endif()
+  string(APPEND output_data "0x${token}")
+  math(EXPR bytes "${bytes} + 1")
+endforeach()
+configure_file("@template_header@" "@output_header@" @ONLY)
+configure_file("@template_source@" "@output_source@" @ONLY)
+file(WRITE @OUTPUT_BASENAME@.c "${output}")

@@ -12,10 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-
-SET(PUBLIC_HEADER_FILES
+cmake_minimum_required(VERSION 3.13)
+set(PUBLIC_HEADER_FILES
   base.h
   bordered.h
   box.h
@@ -51,9 +49,8 @@ SET(PUBLIC_HEADER_FILES
   window.h
   workspace.h
 )
-
-ADD_LIBRARY(toolkit STATIC)
-TARGET_SOURCES(toolkit PRIVATE
+add_library(toolkit STATIC)
+target_sources(toolkit PRIVATE
   base.c
   bordered.c
   box.c
@@ -88,40 +85,37 @@ TARGET_SOURCES(toolkit PRIVATE
   window.c
   workspace.c
 )
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   toolkit PUBLIC
   ${WLROOTS_INCLUDE_DIRS}
   ${CAIRO_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_BINARY_DIR}/third_party/protocols
 )
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   toolkit PRIVATE
   ${PROJECT_SOURCE_DIR}/include/toolkit
 )
-SET_TARGET_PROPERTIES(
+set_target_properties(
   toolkit PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}"
 )
-ADD_DEPENDENCIES(
+add_dependencies(
   toolkit
   protocol_headers)
-
-TARGET_COMPILE_OPTIONS(
+target_compile_options(
   toolkit PRIVATE
   ${WAYLAND_SERVER_CFLAGS}
   ${WAYLAND_SERVER_CFLAGS_OTHER}
 )
-
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   toolkit
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND_SERVER libbase_plist
 )
-
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+if(iwyu_path_and_options)
+  set_target_properties(
     toolkit PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
+endif()

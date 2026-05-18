@@ -12,33 +12,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+cmake_minimum_required(VERSION 3.13)
 
 # Further dependency versions, as submodules:
 # * drm at libdrm-2.4.117
 # * hwdata at v0.371
 # * libdisplay-info at 0.2.0
 # * pixman at pixman-0.43.0
-
-PKG_CHECK_MODULES(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
+pkg_check_modules(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
 # We build for wlroots 0.18, 0.19 and (preparing for) 0.20.
-PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.20>=0.20)
-IF(NOT WLROOTS_FOUND)
-  PKG_CHECK_MODULES(WLROOTS IMPORTED_TARGET wlroots-0.19>=0.19)
-  IF(NOT WLROOTS_FOUND)
-    PKG_CHECK_MODULES(WLROOTS REQUIRED IMPORTED_TARGET wlroots-0.18>=0.18)
-  ENDIF(NOT WLROOTS_FOUND)
-ENDIF(NOT WLROOTS_FOUND)
-PKG_CHECK_MODULES(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
+pkg_check_modules(WLROOTS IMPORTED_TARGET wlroots-0.20>=0.20)
+if(NOT WLROOTS_FOUND)
+  pkg_check_modules(WLROOTS IMPORTED_TARGET wlroots-0.19>=0.19)
+  if(NOT WLROOTS_FOUND)
+    pkg_check_modules(WLROOTS REQUIRED IMPORTED_TARGET wlroots-0.18>=0.18)
+  endif()
+endif()
+pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 # XWayland considered optional.
-PKG_CHECK_MODULES(XWAYLAND xwayland>=22.1.9)
-
-ADD_SUBDIRECTORY(backend)
-ADD_SUBDIRECTORY(input)
-ADD_SUBDIRECTORY(toolkit)
-
-SET(PUBLIC_HEADER_FILES
+pkg_check_modules(XWAYLAND xwayland>=22.1.9)
+add_subdirectory(backend)
+add_subdirectory(input)
+add_subdirectory(toolkit)
+set(PUBLIC_HEADER_FILES
   action.h
   action_item.h
   background.h
@@ -66,9 +62,8 @@ SET(PUBLIC_HEADER_FILES
   xdg_toplevel.h
   xwl.h
   xwl_surface.h)
-
-ADD_LIBRARY(wlmaker_lib STATIC)
-TARGET_SOURCES(wlmaker_lib PRIVATE
+add_library(wlmaker_lib STATIC)
+target_sources(wlmaker_lib PRIVATE
   action.c
   action_item.c
   background.c
@@ -98,17 +93,16 @@ TARGET_SOURCES(wlmaker_lib PRIVATE
   xwl.c
   xwl_surface.c
 )
-SET_TARGET_PROPERTIES(
+set_target_properties(
   wlmaker_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+if(iwyu_path_and_options)
+  set_target_properties(
     wlmaker_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
-
-ADD_DEPENDENCIES(
+endif()
+add_dependencies(
   wlmaker_lib
   backend
   embedded_configuration
@@ -121,8 +115,7 @@ ADD_DEPENDENCIES(
   protocol_headers
   toolkit
   wlmaker_lib)
-
-TARGET_LINK_LIBRARIES(
+target_link_libraries(
   wlmaker_lib
   backend
   embedded_configuration
@@ -140,7 +133,7 @@ TARGET_LINK_LIBRARIES(
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
   PkgConfig::XCB)
-TARGET_INCLUDE_DIRECTORIES(
+target_include_directories(
   wlmaker_lib PUBLIC
   # Keep wlroots first -- multiple versions may interfere (#117).
   ${WLROOTS_INCLUDE_DIRS}
@@ -152,37 +145,42 @@ TARGET_INCLUDE_DIRECTORIES(
   ${WAYLAND_SERVER_INCLUDE_DIRS}
   ${XCB_INCLUDE_DIRS}
 )
-TARGET_COMPILE_DEFINITIONS(
+target_compile_definitions(
   wlmaker_lib PRIVATE WLMAKER_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
-TARGET_COMPILE_DEFINITIONS(
+target_compile_definitions(
   wlmaker_lib PRIVATE WLMAKER_BINARY_DIR="${PROJECT_BINARY_DIR}")
-IF(wmmenugen_executable)
-  TARGET_COMPILE_DEFINITIONS(
+if(wmmenugen_executable)
+  target_compile_definitions(
     wlmaker_lib PRIVATE WLMAKER_WMMENUGEN_PATH="${wmmenugen_executable}")
-ENDIF(wmmenugen_executable)
-IF(XWAYLAND_FOUND)
-  TARGET_COMPILE_DEFINITIONS(wlmaker_lib PUBLIC WLMAKER_HAVE_XWAYLAND)
-ENDIF(XWAYLAND_FOUND)
-IF(LIBBACKTRACE)
-  TARGET_COMPILE_DEFINITIONS(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
-ENDIF()
-
-ADD_EXECUTABLE(wlmaker wlmaker.c)
-ADD_DEPENDENCIES(wlmaker wlmaker_lib)
-TARGET_COMPILE_OPTIONS(
+endif()
+if(XWAYLAND_FOUND)
+  target_compile_definitions(wlmaker_lib PUBLIC WLMAKER_HAVE_XWAYLAND)
+endif()
+if(LIBBACKTRACE)
+  target_compile_definitions(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
+endif()
+add_executable(
+  wlmaker
+  wlmaker.c)
+add_dependencies(wlmaker wlmaker_lib)
+target_compile_options(
   wlmaker PRIVATE
   ${WAYLAND_SERVER_CFLAGS}
   ${WAYLAND_SERVER_CFLAGS_OTHER})
-TARGEt_COMPILE_DEFINITIONS(
+target_compile_definitions(
   wlmaker PRIVATE
   WLMAKER_VERSION_MAJOR="${WLMAKER_VERSION_MAJOR}"
   WLMAKER_VERSION_MINOR="${WLMAKER_VERSION_MINOR}"
   WLMAKER_VERSION_FULL="${WLMAKER_VERSION_FULL}")
-TARGET_LINK_LIBRARIES(wlmaker PRIVATE libbase libbase_plist wlmaker_lib)
-IF(iwyu_path_and_options)
-  SET_TARGET_PROPERTIES(
+target_link_libraries(
+  wlmaker
+  PRIVATE
+  libbase
+  libbase_plist
+  wlmaker_lib)
+if(iwyu_path_and_options)
+  set_target_properties(
     wlmaker PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-ENDIF(iwyu_path_and_options)
-
-INSTALL(TARGETS wlmaker DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+install(TARGETS wlmaker DESTINATION "${CMAKE_INSTALL_BINDIR}")
