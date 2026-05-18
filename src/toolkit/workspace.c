@@ -1073,7 +1073,12 @@ bool _wlmtk_workspace_window_overlaps(
     struct wlr_box iter_box = wlmtk_window_get_bounding_box(iter_window_ptr);
 
     struct wlr_box intersection_box;
-    return wlr_box_intersection(&intersection_box, window_box_ptr, &iter_box);
+    bool rv = wlr_box_intersection(&intersection_box, window_box_ptr, &iter_box);
+
+    bs_log(BS_ERROR, "FIXME: iter %p %d, %d (%d x %d) vs new %d, %d (%d x %d) is %d",
+           iter_window_ptr, iter_box.x, iter_box.y, iter_box.width, iter_box.height,
+           window_box_ptr->x, window_box_ptr->y, window_box_ptr->width, window_box_ptr->height, rv);
+    return rv;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1100,7 +1105,14 @@ void _wlmtk_workspace_place_window(wlmtk_workspace_t *workspace_ptr,
     int x = wbox.x;
     for (; wbox.y + 1 < extents.height; wbox.y += wbox.height) {
         for (wbox.x = x; wbox.x + 1 < extents.width; wbox.x += wbox.width) {
-            if (!wlr_box_contains_box(&extents, &wbox)) continue;
+
+            bs_log(BS_ERROR, "FIXME - Trying %d, %d", wbox.x, wbox.y);
+
+            if (!wlr_box_contains_box(&extents, &wbox)) {
+                bs_log(BS_ERROR, "FIXME: not contained in %d,%d (%d x %d)",
+                       extents.x, extents.y, extents.width, extents.height);
+                continue;
+            }
             if (!bs_dllist_any(&workspace_ptr->windows,
                                _wlmtk_workspace_window_overlaps,
                                &wbox)) {
