@@ -50,11 +50,10 @@ See the [Detailed Feature List](FEATURES.md) for details.
       or `/usr/share/icons/default/index.theme` (an INI file).
     * [done] Permit configuring the startup theme in the config file.
 
-* Windows
+* [done] Windows
   * [done] Make the modifier for move-dragging a window configurable ([#437](https://github.com/phkaeser/wlmaker/issues/437)).
   * [done] Initial placement algorithm.
-  * Make initial placement algorithm work with decoration.
-  * Store and accept window state (fullscreen, maximize) before mapping.
+  * [done] Store and accept window state (fullscreen, maximize) before mapping.
 
 * [done] Infrastructure
   * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.

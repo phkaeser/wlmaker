@@ -557,6 +557,12 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
+    // Use current output, or pick the center output if nothing was indicated.
+    if (NULL == wlmtk_window_get_wlr_output(wxt_ptr->window_ptr)) {
+        struct wlr_output *wlr_output_ptr = wlr_output_layout_get_center_output(
+            wxt_ptr->server_ptr->wlr_output_layout_ptr);
+        wlmtk_window_set_wlr_output(wxt_ptr->window_ptr, wlr_output_ptr);
+    }
     wlmtk_window_request_maximized(
         wxt_ptr->window_ptr,
         wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
@@ -573,11 +579,15 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
         struct wlmaker_xdg_toplevel,
         request_fullscreen_listener);
 
-    // Sets the requested output. Or NULL, if no preference indicated.
-    wlmtk_window_set_wlr_output(
-        wxt_ptr->window_ptr,
-        wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output);
-
+    // Sets the requested output, or pick the center output if nothing
+    // was indicated.
+    struct wlr_output *wlr_output_ptr =
+        wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output;
+    if (NULL == wlr_output_ptr) {
+        wlr_output_ptr = wlr_output_layout_get_center_output(
+            wxt_ptr->server_ptr->wlr_output_layout_ptr);
+    }
+    wlmtk_window_set_wlr_output(wxt_ptr->window_ptr, wlr_output_ptr);
     wlmtk_window_request_fullscreen(
         wxt_ptr->window_ptr,
         wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);
@@ -764,6 +774,16 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
     wlmtk_window_commit_size(
         wxt_ptr->window_ptr, geo.width - geo.x, geo.height - geo.y);
 
+    if (0 != wxt_ptr->pending.properties) {
+        _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
+    } else if (wlr_xdg_surface_ptr->initial_commit) {
+        wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
+    }
+
+    wxt_ptr->committed_serial =
+        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.configure_serial;
+    _wlmaker_xdg_toplevel_try_map(wxt_ptr);
+
     if (wxt_ptr->wlr_xdg_toplevel_ptr->current.fullscreen !=
         wlmtk_window_is_fullscreen(wxt_ptr->window_ptr)) {
         wlmtk_window_commit_fullscreen(
@@ -775,16 +795,6 @@ void _wlmaker_xdg_toplevel_handle_surface_commit(
             wxt_ptr->window_ptr,
             wxt_ptr->wlr_xdg_toplevel_ptr->current.maximized);
     }
-
-    if (0 != wxt_ptr->pending.properties) {
-        _wlmaker_xdg_toplevel_flush_properties(wxt_ptr);
-    } else if (wlr_xdg_surface_ptr->initial_commit) {
-        wlr_xdg_surface_schedule_configure(wlr_xdg_surface_ptr);
-    }
-
-    wxt_ptr->committed_serial =
-        wxt_ptr->wlr_xdg_toplevel_ptr->base->current.configure_serial;
-    _wlmaker_xdg_toplevel_try_map(wxt_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1068,6 +1078,8 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
         td_ptr->test_layout.wlr_output_layout_ptr,
         &td_ptr->test_layout.wlr_output);
 
+    td_ptr->server.wlr_output_layout_ptr =
+        td_ptr->test_layout.wlr_output_layout_ptr;
     td_ptr->server.style_ptr = &td_ptr->style;
     td_ptr->server.wlr_scene_ptr = wlr_scene_create();
     if (NULL == td_ptr->server.wlr_scene_ptr) goto error;
