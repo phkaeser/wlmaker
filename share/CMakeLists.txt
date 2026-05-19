@@ -127,6 +127,15 @@ else()
   message(STATUS "Skipping .desktop file validation -- `desktop-file-validate` not found")
 endif()
 
+find_program(APPSTREAMCLI NAMES appstreamcli OPTIONAL)
+if(APPSTREAMCLI)
+  add_test(
+    NAME wlmaker_metainfo_test
+    COMMAND ${APPSTREAMCLI} validate "${CMAKE_CURRENT_SOURCE_DIR}/org.wlmaker.wlmaker.metainfo.xml")
+else()
+  message(STATUS "Skipping AppStream metadata validation -- `appstreamcli` not found")
+endif()
+
 # Found in Debian's gnustep-base-runtime. Using to keep plist format consistent
 # with what GNUstep expects. Optional.
 find_program(PLDES pldes)
@@ -204,3 +213,8 @@ install(
   Themes/DebianLarger.plist
   Themes/DebianDouble.plist
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wlmaker/Themes")
+
+install(
+  FILES org.wlmaker.wlmaker.metainfo.xml
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
+

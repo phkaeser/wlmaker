@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Philipp Kaeser <kaeser@gubbe.ch> -->
+<component type="desktop-application">
+  <id>org.wlmaker.wlmaker</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <name>WaylandMaker</name>
+  <summary>A Wayland compositor inspired by Window Maker</summary>
+  <description>
+    <p>
+      WaylandMaker is a Wayland compositor inspired by the classic Window Maker
+      window manager. It aims to reproduce Window Maker's look and feel, providing
+      a retro desktop experience with modern Wayland features.
+    </p>
+  </description>
+  <launchable type="desktop-id">wlmaker.desktop</launchable>
+  <url type="homepage">https://github.com/phkaeser/wlmaker</url>
+  <url type="bugtracker">https://github.com/phkaeser/wlmaker/issues</url>
+  <url type="vcs-browser">https://github.com/phkaeser/wlmaker</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The default desktop layout of WaylandMaker</caption>
+      <image>https://raw.githubusercontent.com/phkaeser/wlmaker/main/doc/wlmaker-default-screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>windowmaker</keyword>
+    <keyword>wayland</keyword>
+    <keyword>compositor</keyword>
+    <keyword>desktop</keyword>
+    <keyword>wm</keyword>
+  </keywords>
+  <developer id="org.wlmaker">
+    <name>Philipp Kaeser</name>
+  </developer>
+  <update_contact>kaeser@gubbe.ch</update_contact>
+</component>
