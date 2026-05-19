@@ -25,7 +25,7 @@ add_subdirectory(libbase)
 #
 # For wlmaker, the library is configured to permit much longer lines, and use
 # the heap for dynamic sizing.
-add_library(inih STATIC ${CMAKE_CURRENT_SOURCE_DIR}/inih/ini.c)
+add_library(inih STATIC "${CMAKE_CURRENT_SOURCE_DIR}/inih/ini.c")
 target_compile_definitions(
   inih PUBLIC
   INI_MAX_LINE=65536
@@ -34,7 +34,7 @@ target_compile_definitions(
 target_include_directories(
   inih
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/inih)
+  "${CMAKE_CURRENT_SOURCE_DIR}/inih")
 set_target_properties(
   inih PROPERTIES
   VERSION 62

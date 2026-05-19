@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
-set(PUBLIC_HEADER_FILES
+set(public_header_files
   base.h
   bordered.h
   box.h
@@ -87,27 +87,27 @@ target_sources(toolkit PRIVATE
 )
 target_include_directories(
   toolkit PUBLIC
-  ${WLROOTS_INCLUDE_DIRS}
-  ${CAIRO_INCLUDE_DIRS}
-  ${PROJECT_SOURCE_DIR}/include
-  ${PROJECT_BINARY_DIR}/third_party/protocols
+  "${WLROOTS_INCLUDE_DIRS}"
+  "${CAIRO_INCLUDE_DIRS}"
+  "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_BINARY_DIR}/third_party/protocols"
 )
 target_include_directories(
   toolkit PRIVATE
-  ${PROJECT_SOURCE_DIR}/include/toolkit
+  "${PROJECT_SOURCE_DIR}/include/toolkit"
 )
 set_target_properties(
   toolkit PROPERTIES
   VERSION 1.0
-  PUBLIC_HEADER "${PUBLIC_HEADER_FILES}"
+  PUBLIC_HEADER "${public_header_files}"
 )
 add_dependencies(
   toolkit
   protocol_headers)
 target_compile_options(
   toolkit PRIVATE
-  ${WAYLAND_SERVER_CFLAGS}
-  ${WAYLAND_SERVER_CFLAGS_OTHER}
+  "${WAYLAND_SERVER_CFLAGS}"
+  "${WAYLAND_SERVER_CFLAGS_OTHER}"
 )
 target_link_libraries(
   toolkit

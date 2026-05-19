@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.13)
 add_subdirectory(libwlclient)
 add_subdirectory(primitives)
 add_library(wlm_graph_shared STATIC wlm_graph_shared.c)
-target_include_directories(wlm_graph_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlm_graph_shared PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlm_graph_shared
   libwlclient
@@ -24,7 +24,7 @@ target_link_libraries(
 add_executable(
   example_toplevel
   example_toplevel.c)
-target_include_directories(example_toplevel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(example_toplevel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   example_toplevel
   m
@@ -32,7 +32,7 @@ target_link_libraries(
 add_executable(
   wlmclock
   wlmclock.c)
-target_include_directories(wlmclock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmclock PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmclock
   libwlclient
@@ -41,7 +41,7 @@ target_link_libraries(
 add_executable(
   wlmeyes
   wlmeyes.c)
-target_include_directories(wlmeyes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmeyes PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmeyes
   m
@@ -49,7 +49,7 @@ target_link_libraries(
 add_executable(
   wlmcpugraph
   wlmcpugraph.c)
-target_include_directories(wlmcpugraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmcpugraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmcpugraph
   wlm_graph_shared
@@ -58,7 +58,7 @@ target_link_libraries(
 add_executable(
   wlmmemgraph
   wlmmemgraph.c)
-target_include_directories(wlmmemgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmmemgraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmmemgraph
   wlm_graph_shared
@@ -67,7 +67,7 @@ target_link_libraries(
 add_executable(
   wlmnetgraph
   wlmnetgraph.c)
-target_include_directories(wlmnetgraph PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmnetgraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmnetgraph
   wlm_graph_shared
@@ -76,7 +76,7 @@ target_link_libraries(
 add_executable(
   wlmbattery
   wlmbattery.c)
-target_include_directories(wlmbattery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(wlmbattery PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlmbattery
   libbase

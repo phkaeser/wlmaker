@@ -23,68 +23,68 @@ find_package_handle_standard_args(
 
 # -----------------------------------------------------------------------------
 # Builds a library for the protocol, and adds as dependency to target_var.
-function(WaylandProtocol_ADD target_var)
+function(waylandprotocol_add target_var)
   if(NOT WaylandScanner_EXECUTABLE)
     message(FATAL_ERROR "'wayland-scanner' executable required, not found.")
   endif()
 
   # Parse and verify arguments.
-  set(oneValueArgs PROTOCOL_FILE BASE_NAME SIDE)
-  cmake_parse_arguments(ARGS "" "${oneValueArgs}" "" ${ARGN})
-  if(NOT ${ARGS_SIDE} STREQUAL "client" AND NOT ${ARGS_SIDE} STREQUAL "server")
+  set(one_value_args PROTOCOL_FILE BASE_NAME SIDE)
+  cmake_parse_arguments(args "" "${one_value_args}" "" ${ARGN})
+  if(NOT "${args_SIDE}" STREQUAL "client" AND NOT "${args_SIDE}" STREQUAL "server")
     message(FATAL_ERROR "SIDE arg must be \"client\" or \"server\".")
   endif()
-  if(ARGS_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unknown args passed to _wayland_protocol_add: \"${ARGS_UNPARSED_ARGUMENTS}\"")
+  if(args_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unknown args passed to _wayland_protocol_add: \"${args_UNPARSED_ARGUMENTS}\"")
   endif()
-  get_filename_component(_protocol_file ${ARGS_PROTOCOL_FILE} ABSOLUTE)
+  get_filename_component(_protocol_file "${args_PROTOCOL_FILE}" ABSOLUTE)
 
   # Generate the client header.
-  set(_header "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_BASE_NAME}-${ARGS_SIDE}-protocol.h")
-  set_source_files_properties(${_header} GENERATED)
+  set(_header "${CMAKE_CURRENT_BINARY_DIR}/${args_BASE_NAME}-${args_SIDE}-protocol.h")
+  set_source_files_properties("${_header}" GENERATED)
   add_custom_command(
-    OUTPUT ${_header}
-    COMMAND ${WaylandScanner_EXECUTABLE} "${ARGS_SIDE}-header" ${_protocol_file} ${_header}
-    DEPENDS ${WaylandScanner_EXECUTABLE} ${_protocol_file}
+    OUTPUT "${_header}"
+    COMMAND "${WaylandScanner_EXECUTABLE}" "${args_SIDE}-header" "${_protocol_file}" "${_header}"
+    DEPENDS "${WaylandScanner_EXECUTABLE}" "${_protocol_file}"
     VERBATIM)
 
   # Generate the glue code.
-  set(_glue_code "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_BASE_NAME}-protocol.c")
-  set_source_files_properties(${_glue_code} GENERATED)
+  set(_glue_code "${CMAKE_CURRENT_BINARY_DIR}/${args_BASE_NAME}-protocol.c")
+  set_source_files_properties("${_glue_code}" GENERATED)
   add_custom_command(
-    OUTPUT ${_glue_code}
-    COMMAND ${WaylandScanner_EXECUTABLE} private-code ${_protocol_file} ${_glue_code}
-    DEPENDS ${WaylandScanner_EXECUTABLE} ${_protocol_file}
+    OUTPUT "${_glue_code}"
+    COMMAND "${WaylandScanner_EXECUTABLE}" private-code "${_protocol_file}" "${_glue_code}"
+    DEPENDS "${WaylandScanner_EXECUTABLE}" "${_protocol_file}"
     VERBATIM)
-  set(libName "lib-${ARGS_BASE_NAME}-${ARGS_SIDE}")
-  add_library("${libName}" STATIC)
-  add_dependencies(${target_var} "${libName}")
-  target_sources("${libName}" PRIVATE "${_glue_code}" "${_header}")
-  set_target_properties("${libName}" PROPERTIES VERSION 1.0 PUBLIC_HEADER "${_header}")
+  set(lib_name "lib-${args_BASE_NAME}-${args_SIDE}")
+  add_library("${lib_name}" STATIC)
+  add_dependencies("${target_var}" "${lib_name}")
+  target_sources("${lib_name}" PRIVATE "${_glue_code}" "${_header}")
+  set_target_properties("${lib_name}" PROPERTIES VERSION 1.0 PUBLIC_HEADER "${_header}")
 
   # Add dependencies.
-  if(${ARGS_SIDE} STREQUAL "client")
+  if("${args_SIDE}" STREQUAL "client")
     pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
     target_include_directories(
-      "${libName}" PRIVATE
-      ${WAYLAND_CLIENT_INCLUDE_DIRS})
+      "${lib_name}" PRIVATE
+      "${WAYLAND_CLIENT_INCLUDE_DIRS}")
   else()
     pkg_check_modules(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
     target_include_directories(
-      "${libName}" PRIVATE
-      ${WAYLAND_SERVER_INCLUDE_DIRS})
+      "${lib_name}" PRIVATE
+      "${WAYLAND_SERVER_INCLUDE_DIRS}")
   endif()
 
   # The target may be an INTERFACE library. That needs INTERFACE linking.
-  get_property(target_type TARGET ${target_var} PROPERTY TYPE)
+  get_property(target_type TARGET "${target_var}" PROPERTY TYPE)
   if(target_type STREQUAL "INTERFACE_LIBRARY")
     target_link_libraries(
-      ${target_var}
+      "${target_var}"
       INTERFACE
-      "${libName}")
+      "${lib_name}")
   else()
     target_link_libraries(
-      ${target_var}
-      "${libName}")
+      "${target_var}"
+      "${lib_name}")
   endif()
 endfunction()

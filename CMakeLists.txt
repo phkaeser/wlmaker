@@ -27,8 +27,8 @@ project(
   LANGUAGES C)
 
 # Requires out-of-source builds.
-file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOCATION_PATH)
-if(EXISTS "${LOCATION_PATH}")
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" location_path)
+if(EXISTS "${location_path}")
   message(
     FATAL_ERROR
     "You cannot build into a source directory (containing a CMakeLists.txt file).\n"
@@ -36,31 +36,31 @@ if(EXISTS "${LOCATION_PATH}")
     "cmake -B build\n"
     "(cd build && make)")
 endif()
-set(WLMAKER_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-set(WLMAKER_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set(WLMAKER_VERSION_FULL ${PROJECT_VERSION})
+set(WLMAKER_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(WLMAKER_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(WLMAKER_VERSION_FULL "${PROJECT_VERSION}")
 # PROJECT version check: When on a git repository, we verify that the PROJECT
 # version is equal-or-larger than the git version.
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_SOURCE_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E chdir "${CMAKE_SOURCE_DIR}"
     git describe --always --tags --dirty
     OUTPUT_VARIABLE git_version
     OUTPUT_STRIP_TRAILING_WHITESPACE
     RESULT_VARIABLE git_result)
   if(git_result EQUAL 0)
-    string(REGEX MATCH "^v([0-9]+)\\.([0-9]+)" DUMMY_VAR ${git_version})
+    string(REGEX MATCH "^v([0-9]+)\\.([0-9]+)" dummy_var "${git_version}")
     if(NOT CMAKE_MATCH_COUNT EQUAL 2)
       message(FATAL_ERROR "Not a v<MAJOR>.<MINOR> version \"${git_version}\"")
     endif()
-    if(${PROJECT_VERSION_MAJOR} LESS ${CMAKE_MATCH_1} OR
-        ${PROJECT_VERSION_MINOR} LESS ${CMAKE_MATCH_2})
+    if("${PROJECT_VERSION_MAJOR}" LESS "${CMAKE_MATCH_1}" OR
+        "${PROJECT_VERSION_MINOR}" LESS "${CMAKE_MATCH_2}")
       message(FATAL_ERROR "Git ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} >= "
         "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
     endif()
-    set(WLMAKER_VERSION_MAJOR ${CMAKE_MATCH_1})
-    set(WLMAKER_VERSION_MINOR ${CMAKE_MATCH_2})
-    set(WLMAKER_VERSION_FULL ${git_version})
+    set(WLMAKER_VERSION_MAJOR "${CMAKE_MATCH_1}")
+    set(WLMAKER_VERSION_MINOR "${CMAKE_MATCH_2}")
+    set(WLMAKER_VERSION_FULL "${git_version}")
   endif()
 endif()
 
@@ -113,7 +113,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 
   # CMake provides absolute paths to GCC, hence the __FILE__ macro includes the
   # full path. This option resets it to a path relative to project source.
-  add_compile_options(-fmacro-prefix-map=${PROJECT_SOURCE_DIR}=.)
+  add_compile_options("-fmacro-prefix-map=${PROJECT_SOURCE_DIR}=.")
 
   # Run iwyu when available.
   if((IWYU_MODE STREQUAL "WARN") OR (IWYU_MODE STREQUAL "FAIL"))
@@ -125,8 +125,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     endif()
     if(iwyu_executable)
       set(iwyu_path_and_options
-        ${iwyu_executable}
-        -Xiwyu --error=${iwyu_error} -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
+        "${iwyu_executable}"
+        "-Xiwyu --error=${iwyu_error} -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp")
     endif()
     message(STATUS "Configured iwyu (${iwyu_executable}) to run in mode \"${IWYU_MODE}\"")
   elseif(IWYU_MODE STREQUAL "OFF")

@@ -29,10 +29,10 @@ add_executable(segment_display_test
   segment_display.h)
 target_compile_definitions(
   segment_display_test PRIVATE
-  TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+  "TEST_DATA_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
 target_include_directories(
   segment_display_test PRIVATE
-  ${CAIRO_INCLUDE_DIRS})
+  "${CAIRO_INCLUDE_DIRS}")
 target_link_libraries(
   segment_display_test PRIVATE
   libbase

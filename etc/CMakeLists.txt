@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 cmake_minimum_required(VERSION 3.13)
 include(EmbedBinary)
 embedbinary_add_library(
@@ -39,46 +40,46 @@ if(PLDES)
   set(pldes_failure_regex ".*at\ line.*char")
   add_test(
     NAME root_menu_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
+    COMMAND "${PLDES}" "${CMAKE_CURRENT_SOURCE_DIR}/RootMenu.plist")
   set_property(
     TEST root_menu_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
   add_test(
     NAME wlmaker_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/Config.plist")
+    COMMAND "${PLDES}" "${CMAKE_CURRENT_SOURCE_DIR}/Config.plist")
   set_property(
     TEST wlmaker_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
   add_test(
     NAME wlmaker_example_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/ExampleConfig.plist")
+    COMMAND "${PLDES}" "${CMAKE_CURRENT_SOURCE_DIR}/ExampleConfig.plist")
   set_property(
     TEST wlmaker_example_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
   add_test(
     NAME wlmaker_home_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/HomeConfig.plist")
+    COMMAND "${PLDES}" "${CMAKE_CURRENT_SOURCE_DIR}/HomeConfig.plist")
   set_property(
     TEST wlmaker_home_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
   add_test(
     NAME wlmaker_state_plist_test
-    COMMAND pldes "${CMAKE_CURRENT_SOURCE_DIR}/State.plist")
+    COMMAND "${PLDES}" "${CMAKE_CURRENT_SOURCE_DIR}/State.plist")
   set_property(
     TEST wlmaker_state_plist_test
     PROPERTY FAIL_REGULAR_EXPRESSION "${pldes_failure_regex}")
 endif()
 install(
   FILES
-  RootMenu.plist
-  State.plist
-  Config.plist
+  "RootMenu.plist"
+  "State.plist"
+  "Config.plist"
   DESTINATION "${WLMAKER_INSTALL_CONFIG_DIR}")
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/RootMenuDebian.plist.in
-  ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
+  "${CMAKE_CURRENT_SOURCE_DIR}/RootMenuDebian.plist.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist"
   @ONLY)
 install(
   FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist
+  "${CMAKE_CURRENT_BINARY_DIR}/RootMenuDebian.plist"
   DESTINATION "${WLMAKER_INSTALL_CONFIG_DIR}")

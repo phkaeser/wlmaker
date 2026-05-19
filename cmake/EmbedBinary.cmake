@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.13)
 
 # During the INCLUDE() call, CMAKE_CURRENT_LIST_DIR is this file's path.
 # Store it for later, during the FUNCTION() call it'll be the caller's path.
-set(EMBED_BINARY_TEMPLATE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(embed_binary_template_dir "${CMAKE_CURRENT_LIST_DIR}")
 
 # Adds a static C library to embed the binary file with the specified prefix.
 #
@@ -29,20 +29,22 @@ set(EMBED_BINARY_TEMPLATE_DIR ${CMAKE_CURRENT_LIST_DIR})
 #
 #    * uint8_t embedded_binary_<prefix>_data[];
 #    * const size_t embedded_binary_<prefix>_size;
-function(EmbedBinary_ADD_LIBRARY library_target prefix binary_file)
+#
+# Declared with lowercase name according to coding style.
+function(embedbinary_add_library library_target prefix binary_file)
   set(output_basename "${CMAKE_CURRENT_BINARY_DIR}/${prefix}")
   set(output_source "${output_basename}.c")
   set(output_header "${output_basename}.h")
   set(generated_cmake "${output_basename}.cmake")
-  set(template_header "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.h.in")
-  set(template_source "${EMBED_BINARY_TEMPLATE_DIR}/embed_binary.c.in")
+  set(template_header "${embed_binary_template_dir}/embed_binary.h.in")
+  set(template_source "${embed_binary_template_dir}/embed_binary.c.in")
   configure_file(
-    "${EMBED_BINARY_TEMPLATE_DIR}/embed.cmake.in"
+    "${embed_binary_template_dir}/embed.cmake.in"
     "${generated_cmake}"
     @ONLY)
   add_custom_command(
     OUTPUT "${output_source}" "${output_header}"
-    COMMAND ${CMAKE_COMMAND} -P "${generated_cmake}"
+    COMMAND "${CMAKE_COMMAND}" -P "${generated_cmake}"
     MAIN_DEPENDENCY "${binary_file}"
     DEPENDS "${generated_cmake}" "${template_header}" "${template_source}"
   )
