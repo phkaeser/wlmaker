@@ -13,35 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
+cmake_minimum_required(VERSION 3.13)
 
-FIND_PROGRAM(
+find_program(
   WAYLAND_SCANNER_EXECUTABLE
   NAMES wayland-scanner
   REQUIRED)
-IF(NOT WAYLAND_SCANNER_EXECUTABLE)
-  MESSAGE(FATAL_ERROR "'wayland-scanner' executable not found.")
-ENDIF()
+if(NOT WAYLAND_SCANNER_EXECUTABLE)
+  message(FATAL_ERROR "'wayland-scanner' executable not found.")
+endif()
 
-PKG_GET_VARIABLE(PROTOCOL_DIR wayland-protocols pkgdatadir)
+pkg_get_variable(protocol_dir wayland-protocols pkgdatadir)
 
-ADD_CUSTOM_COMMAND(
+add_custom_command(
   OUTPUT wlr-layer-shell-unstable-v1-protocol.h
-  COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol.h
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml
+  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml" "wlr-layer-shell-unstable-v1-protocol.h"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml"
   VERBATIM)
 
-ADD_CUSTOM_COMMAND(
+add_custom_command(
   OUTPUT xdg-shell-protocol.h
-  COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header ${PROTOCOL_DIR}/stable/xdg-shell/xdg-shell.xml xdg-shell-protocol.h
-  DEPENDS ${PROTOCOL_DIR}/stable/xdg-shell/xdg-shell.xml
+  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${protocol_dir}/stable/xdg-shell/xdg-shell.xml" "xdg-shell-protocol.h"
+  DEPENDS "${protocol_dir}/stable/xdg-shell/xdg-shell.xml"
   VERBATIM)
 
-ADD_LIBRARY(
+add_library(
   protocol_headers
   OBJECT
   wlr-layer-shell-unstable-v1-protocol.h
   xdg-shell-protocol.h)
-SET_TARGET_PROPERTIES(
+set_target_properties(
   protocol_headers PROPERTIES
   LINKER_LANGUAGE C)

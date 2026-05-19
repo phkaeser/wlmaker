@@ -16,26 +16,26 @@
 # Default arguments:
 # cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local . -B build
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
-PROJECT(wlmaker VERSION 0.1
+cmake_minimum_required(VERSION 3.13)
+project(wlmaker VERSION 0.1
   DESCRIPTION "Wayland Maker - Examples & Tools")
 
 # Requires out-of-source builds.
-FILE(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOCATION_PATH)
-IF(EXISTS "${LOCATION_PATH}")
-  MESSAGE(
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" location_path)
+if(EXISTS "${location_path}")
+  message(
     FATAL_ERROR
     "You cannot build into a source directory (containing a CMakeLists.txt file).\n"
     "Please make a build subdirectory, for example:\n"
     "cmake -B build\n"
     "(cd build && make)")
-ENDIF()
+endif()
 
 # If not found: Try 'pip3 install --user meson'
-FIND_PROGRAM(MESON_EXECUTABLE NAMES meson REQUIRED)
-FIND_PROGRAM(NINJA_EXECUTABLE NAMES ninja REQUIRED)
+find_program(MESON_EXECUTABLE NAMES meson REQUIRED)
+find_program(NINJA_EXECUTABLE NAMES ninja REQUIRED)
 
-INCLUDE(ExternalProject)
+include(ExternalProject)
 
 # Extra packages required on Debian:
 #
@@ -47,8 +47,8 @@ INCLUDE(ExternalProject)
 # Also, there is https://github.com/wmww/gtk4-layer-shell.
 ExternalProject_Add(gtk_layer_shell
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gtk-layer-shell"
-  INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
-  CONFIGURE_COMMAND ${MESON_EXECUTABLE} --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true
-  BUILD_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR>
-  INSTALL_COMMAND ${NINJA_EXECUTABLE} -C <BINARY_DIR> install
+  INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
+  CONFIGURE_COMMAND "${MESON_EXECUTABLE}" --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true
+  BUILD_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR>
+  INSTALL_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR> install
 )

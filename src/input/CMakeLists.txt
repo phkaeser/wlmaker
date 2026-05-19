@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
-set(PUBLIC_HEADER_FILES
+set(public_header_files
   cursor.h
   keyboard.h
   manager.h)
@@ -25,28 +25,28 @@ add_library(input STATIC
 set_target_properties(
   input PROPERTIES
   VERSION 1.0
-  PUBLIC_HEADER "${PUBLIC_HEADER_FILES}"
+  PUBLIC_HEADER "${public_header_files}"
 )
 add_dependencies(
   input
   toolkit)
 target_compile_options(
   input PRIVATE
-  ${WAYLAND_SERVER_CFLAGS}
-  ${WAYLAND_SERVER_CFLAGS_OTHER}
+  "${WAYLAND_SERVER_CFLAGS}"
+  "${WAYLAND_SERVER_CFLAGS_OTHER}"
 )
 target_include_directories(
   input
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${Libinput_INCLUDE_DIRS}
-  ${WAYLAND_SERVER_INCLUDE_DIRS}
-  ${XKBCOMMON_INCLUDE_DIRS}
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${Libinput_INCLUDE_DIRS}"
+  "${WAYLAND_SERVER_INCLUDE_DIRS}"
+  "${XKBCOMMON_INCLUDE_DIRS}"
 )
 target_include_directories(
   input
   PRIVATE
-  ${WLROOTS_INCLUDE_DIRS}
+  "${WLROOTS_INCLUDE_DIRS}"
 )
 target_link_libraries(
   input

@@ -34,7 +34,7 @@ pkg_check_modules(XWAYLAND xwayland>=22.1.9)
 add_subdirectory(backend)
 add_subdirectory(input)
 add_subdirectory(toolkit)
-set(PUBLIC_HEADER_FILES
+set(public_header_files
   action.h
   action_item.h
   background.h
@@ -96,7 +96,7 @@ target_sources(wlmaker_lib PRIVATE
 set_target_properties(
   wlmaker_lib PROPERTIES
   VERSION 1.0
-  PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
+  PUBLIC_HEADER "${public_header_files}")
 if(iwyu_path_and_options)
   set_target_properties(
     wlmaker_lib PROPERTIES
@@ -136,22 +136,22 @@ target_link_libraries(
 target_include_directories(
   wlmaker_lib PUBLIC
   # Keep wlroots first -- multiple versions may interfere (#117).
-  ${WLROOTS_INCLUDE_DIRS}
-  ${PROJECT_SOURCE_DIR}/include
-  ${PROJECT_BINARY_DIR}/third_party/protocols
-  ${PROJECT_BINARY_DIR}/protocols
-  ${CAIRO_INCLUDE_DIRS}
-  ${LIBXDGBASEDIR_INCLUDE_DIRS}
-  ${WAYLAND_SERVER_INCLUDE_DIRS}
-  ${XCB_INCLUDE_DIRS}
+  "${WLROOTS_INCLUDE_DIRS}"
+  "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_BINARY_DIR}/third_party/protocols"
+  "${PROJECT_BINARY_DIR}/protocols"
+  "${CAIRO_INCLUDE_DIRS}"
+  "${LIBXDGBASEDIR_INCLUDE_DIRS}"
+  "${WAYLAND_SERVER_INCLUDE_DIRS}"
+  "${XCB_INCLUDE_DIRS}"
 )
 target_compile_definitions(
-  wlmaker_lib PRIVATE WLMAKER_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+  wlmaker_lib PRIVATE "WLMAKER_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\"")
 target_compile_definitions(
-  wlmaker_lib PRIVATE WLMAKER_BINARY_DIR="${PROJECT_BINARY_DIR}")
+  wlmaker_lib PRIVATE "WLMAKER_BINARY_DIR=\"${PROJECT_BINARY_DIR}\"")
 if(wmmenugen_executable)
   target_compile_definitions(
-    wlmaker_lib PRIVATE WLMAKER_WMMENUGEN_PATH="${wmmenugen_executable}")
+    wlmaker_lib PRIVATE "WLMAKER_WMMENUGEN_PATH=\"${wmmenugen_executable}\"")
 endif()
 if(XWAYLAND_FOUND)
   target_compile_definitions(wlmaker_lib PUBLIC WLMAKER_HAVE_XWAYLAND)
@@ -165,13 +165,13 @@ add_executable(
 add_dependencies(wlmaker wlmaker_lib)
 target_compile_options(
   wlmaker PRIVATE
-  ${WAYLAND_SERVER_CFLAGS}
-  ${WAYLAND_SERVER_CFLAGS_OTHER})
+  "${WAYLAND_SERVER_CFLAGS}"
+  "${WAYLAND_SERVER_CFLAGS_OTHER}")
 target_compile_definitions(
   wlmaker PRIVATE
-  WLMAKER_VERSION_MAJOR="${WLMAKER_VERSION_MAJOR}"
-  WLMAKER_VERSION_MINOR="${WLMAKER_VERSION_MINOR}"
-  WLMAKER_VERSION_FULL="${WLMAKER_VERSION_FULL}")
+  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
+  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
+  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
 target_link_libraries(
   wlmaker
   PRIVATE

@@ -828,7 +828,7 @@ WARN_NO_PARAMDOC       = NO
 # Possible values are: NO, YES and FAIL_ON_WARNINGS.
 # The default value is: NO.
 
-WARN_AS_ERROR          = @DOXYGEN_WARN_AS_ERROR@
+WARN_AS_ERROR          = @doxygen_warn_as_error@
 
 # The WARN_FORMAT tag determines the format of the warning messages that doxygen
 # can produce. The string should contain the $file, $line, and $text tags, which
@@ -2559,7 +2559,7 @@ DIAFILE_DIRS           =
 # generate a warning when it encounters a \startuml command in this case and
 # will not generate output for the diagram.
 
-PLANTUML_JAR_PATH      = @DOXYGEN_PLANTUML_JAR_FILE@
+PLANTUML_JAR_PATH      = @doxygen_plantuml_jar_file@
 
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
 # configuration file for plantuml.

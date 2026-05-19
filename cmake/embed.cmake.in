@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 file(READ "@binary_file@" binary_content HEX)
-string(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" separated_content ${binary_content})
+string(REGEX MATCHALL "([A-Fa-f0-9][A-Fa-f0-9])" separated_content "${binary_content}")
 set(prefix "@prefix@")
 string(TOUPPER "@prefix@" prefix_uppercase)
 set(binary_file "@binary_file@")
@@ -35,4 +35,4 @@ foreach(token IN LISTS separated_content)
 endforeach()
 configure_file("@template_header@" "@output_header@" @ONLY)
 configure_file("@template_source@" "@output_source@" @ONLY)
-file(WRITE @OUTPUT_BASENAME@.c "${output}")
+file(WRITE "@OUTPUT_BASENAME@.c" "${output}")

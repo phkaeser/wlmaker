@@ -25,41 +25,41 @@ if(DOXYGEN_FOUND)
     /usr/local/share/java/
     /usr/share/plantuml/)
   if(PLANTUML_JAR)
-    set(DOXYGEN_PLANTUML_JAR_FILE ${PLANTUML_JAR})
+    set(doxygen_plantuml_jar_file "${PLANTUML_JAR}")
   else()
-    set(DOXYGEN_PLANTUML_JAR_FILE "")
+    set(doxygen_plantuml_jar_file "")
     message(
       NOTICE
       "Did not find plantuml.jar -- Will not generate class diagrams.")
   endif()
   if(config_DOXYGEN_CRITICAL)
-    set(DOXYGEN_WARN_AS_ERROR "YES")
+    set(doxygen_warn_as_error "YES")
   else()
-    set(DOXYGEN_WARN_AS_ERROR "NO")
+    set(doxygen_warn_as_error "NO")
   endif()
 
   # set input and output files
-  set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-  set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+  set(doxygen_in "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in")
+  set(doxygen_out "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile")
 
   # request to configure the file
-  configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+  configure_file("${doxygen_in}" "${doxygen_out}" @ONLY)
   message(NOTICE "Doxygen available, adding 'doc' target.")
   add_custom_target(
     doc
-    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-    DEPENDS ${DOXYGEN_OUT} ${PROJECT_BINARY_DIR}/etc/RootMenuDebian.plist
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND "${DOXYGEN_EXECUTABLE}" "${doxygen_out}"
+    DEPENDS "${doxygen_out}" "${PROJECT_BINARY_DIR}/etc/RootMenuDebian.plist"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     COMMENT "Generating API documentation with Doxygen."
     VERBATIM)
   file(
-    COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_close_icon.png
+    COPY "${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_close_icon.png"
     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
   file(
-    COPY ${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_minimize_icon.png
+    COPY "${PROJECT_SOURCE_DIR}/tests/data/toolkit/primitive_minimize_icon.png"
     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
   file(
-    COPY ${PROJECT_SOURCE_DIR}/share/wlmaker.svg
+    COPY "${PROJECT_SOURCE_DIR}/share/wlmaker.svg"
     DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/html")
 else()
   message(NOTICE "Doxygen not found. Not adding 'doc' target to generate API documentation.")

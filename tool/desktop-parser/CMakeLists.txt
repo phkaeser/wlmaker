@@ -22,7 +22,7 @@ target_link_libraries(
 target_include_directories(
   desktop-parser
   PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set_target_properties(
   desktop-parser PROPERTIES
   VERSION 1.0

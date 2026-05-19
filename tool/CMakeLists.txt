@@ -19,10 +19,11 @@ target_include_directories(
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
   PRIVATE
-  ${LIBXDGBASEDIR_INCLUDE_DIRS})
+  "${LIBXDGBASEDIR_INCLUDE_DIRS}")
 target_link_libraries(
   libwlmtool
   PRIVATE
+  libbase
   libbase_plist
   desktop-parser
   PkgConfig::LIBXDGBASEDIR)
@@ -35,9 +36,9 @@ target_link_libraries(
   libbase)
 target_compile_definitions(
   wlmtool PRIVATE
-  WLMAKER_VERSION_MAJOR="${WLMAKER_VERSION_MAJOR}"
-  WLMAKER_VERSION_MINOR="${WLMAKER_VERSION_MINOR}"
-  WLMAKER_VERSION_FULL="${WLMAKER_VERSION_FULL}")
+  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
+  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
+  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
 install(
   TARGETS wlmtool
   DESTINATION "${CMAKE_INSTALL_BINDIR}")
