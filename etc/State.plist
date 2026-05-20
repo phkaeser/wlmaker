@@ -11,8 +11,8 @@
         Icon = "terminal-56x56.png";
       },
       {
-        CommandLine = "/usr/bin/google-chrome --enable-features=UseOzonePlatform --ozone-platform=wayland";
-        Icon = "chrome-56x56.png";
+        CommandLine = "/usr/bin/chromium --enable-features=UseOzonePlatform --ozone-platform=wayland";
+        Icon = "chromium-56x56.png";
       },
       {
         CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";

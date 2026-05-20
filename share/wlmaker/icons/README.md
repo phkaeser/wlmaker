@@ -5,6 +5,11 @@ licenses below:
   * https://raw.githubusercontent.com/edent/SuperTinyIcons/master/images/svg/chrome.svg
   * Resized using gimp.
 
+* chromium-56x56.png: MIT License  [SuperTinyIcons](https://github.com/edent/SuperTinyIcons/blob/master/LICENSE))
+  * https://github.com/edent/SuperTinyIcons/blob/master/images/svg/chromium.svg
+  * Edited to remove background, resized using gimp.
+
+
 * firefox-56x56.png : MIT License [SuperTinyIcons](https://github.com/edent/SuperTinyIcons/blob/master/LICENSE))
   * https://raw.githubusercontent.com/edent/SuperTinyIcons/master/images/svg/firefox.svg
   * Edited to remove background, resized using gimp.
