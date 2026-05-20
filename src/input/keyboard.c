@@ -240,12 +240,13 @@ bspl_dict_t *_wlmim_keyboard_populate_rules(
                 fname_ptr,
                 _wlmim_keyboard_config_ini_handler,
                 rmlvo)) {
-            bs_log(BS_ERROR, "Failed to parse \"XkbConfigurationFile\" at %s",
-                   fname_ptr);
+            bs_log(BS_WARNING, "Failed to parse \"XkbConfigurationFile\" at "
+                   "%s, falling back to \"XkbRMLVO\" section.", fname_ptr);
             bspl_dict_unref(rmlvo);
-            return NULL;
+            rmlvo = NULL;
         }
-    } else {
+    }
+    if (NULL == rmlvo) {
         rmlvo = bspl_dict_ref(bspl_dict_get_dict(dict_ptr, "XkbRMLVO"));
     }
 

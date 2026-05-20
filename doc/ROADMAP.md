@@ -67,6 +67,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * [done] Bug fixes
   * [done] Fixes lost keyboard layout group when switching to VT and back ([#449](https://github.com/phkaeser/wlmaker/issues/449)).
   * [done] Fixes mouse-click after task-switch going to previous toplevel ([#475](https://github.com/phkaeser/wlmaker/issues/475)).
+  * [done] Fixes crash on distributions without `XkbConfigurationFile` ([495](https://github.com/phkaeser/wlmaker/issues/495)).
 
 ## [0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)
 

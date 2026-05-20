@@ -354,14 +354,18 @@ void _wlmim_handle_new_input_device(
             wlr_keyboard_from_input_device(wlr_input_device_ptr),
             input_manager_ptr->wlr_seat_ptr,
             wlmtk_root_element(input_manager_ptr->root_ptr));
-        if (NULL != handle_ptr) {
-            if (!_wlmim_device_register(
-                    input_manager_ptr,
-                    wlr_input_device_ptr,
-                    handle_ptr)) {
-                bs_log(BS_ERROR, "Failed _wlim_device_register()");
-                wlmim_keyboard_destroy(handle_ptr);
-            }
+        if (NULL == handle_ptr) {
+            // Abort if we cannot create the keyboard for the device.
+            bs_log(BS_FATAL, "Failed wlmim_keyboard_create()");
+            break;
+        }
+
+        if (!_wlmim_device_register(
+                input_manager_ptr,
+                wlr_input_device_ptr,
+                handle_ptr)) {
+            bs_log(BS_FATAL, "Failed _wlim_device_register()");
+            wlmim_keyboard_destroy(handle_ptr);
         }
         break;
 
@@ -375,19 +379,23 @@ void _wlmim_handle_new_input_device(
         handle_ptr = wlmim_pointer_create(
             wlr_input_device_ptr,
             &input_manager_ptr->pointer_options);
-        if (NULL != handle_ptr) {
-            if (!_wlmim_device_register(
-                    input_manager_ptr,
-                    wlr_input_device_ptr,
-                    handle_ptr)) {
-                bs_log(BS_ERROR, "Failed _wlim_device_register()");
-                wlmim_keyboard_destroy(handle_ptr);
-            } else if (wlmim_pointer_enabled(handle_ptr) &&
-                       NULL != input_manager_ptr->cursor_ptr) {
-                wlmim_cursor_attach_input_device(
-                    input_manager_ptr->cursor_ptr,
-                    wlr_input_device_ptr);
-            }
+        if (NULL == handle_ptr) {
+            // Abort if we cannot create the keyboard for the device.
+            bs_log(BS_FATAL, "Failed wlmim_pointer_create()");
+            break;
+        }
+
+        if (!_wlmim_device_register(
+                input_manager_ptr,
+                wlr_input_device_ptr,
+                handle_ptr)) {
+            bs_log(BS_ERROR, "Failed _wlim_device_register()");
+            wlmim_keyboard_destroy(handle_ptr);
+        } else if (wlmim_pointer_enabled(handle_ptr) &&
+                   NULL != input_manager_ptr->cursor_ptr) {
+            wlmim_cursor_attach_input_device(
+                input_manager_ptr->cursor_ptr,
+                wlr_input_device_ptr);
         }
         break;
 

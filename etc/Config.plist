@@ -4,17 +4,18 @@
 // Base configuration for wlmaker: Keyboard and autostarted applications.
 {
     Keyboard = {
-        // Use system-wide configuration. See keyboard(5).
-        XkbConfigurationFile = "/etc/default/keyboard";
+        // Use system-wide configuration. See keyboard(5). Takes precedence
+        // over `XkbRMLVO`.
+        XkbConfigurationFile = "/etc/default/keyboardFIXME";
 
         // Alternatively: Specify the keyboard properties directly.
-        // XkbRMLVO = {
-        //     Rules = "evdev";
-        //     Model = "pc105";
-        //     Layout = "us";
-        //     Variant = "intl";
-        //     Options = "";
-        // };
+        XkbRMLVO = {
+            Rules = "evdev";
+            Model = "pc105";
+            Layout = "us";
+            Variant = "intl";
+            Options = "";
+        };
 
         Repeat = {
             // Delay before initiating repeats, in milliseconds.
