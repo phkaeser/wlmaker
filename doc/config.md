@@ -26,7 +26,9 @@ keys:
 ## Keyboard {#config_keyboard}
 
 This dictionary configures the keyboard layout and properties. It must contain
-either `XkbConfigurationFile` or `XkbRMLVO`.
+`XkbConfigurationFile` and/or `XkbRMLVO`. If the `XkbConfigurationFile` setting
+is present, and the keyboard configuration file is found and can be parsed, it
+will take precedence over the `XkbRMLVO` configuration.
 
 * `XkbConfigurationFile`: Path to the sytem's keyboard configuration file. See
   `keyboard(5)` for that file's format.
