@@ -202,6 +202,7 @@ install(FILES
   RENAME "wlmeyes.png")
 install(FILES
   "wlmaker/icons/chrome-56x56.png"
+  "wlmaker/icons/chromium-56x56.png"
   "wlmaker/icons/clip-56x56.png"
   "wlmaker/icons/firefox-56x56.png"
   "wlmaker/icons/terminal-56x56.png"
@@ -217,4 +218,3 @@ install(
 install(
   FILES "org.wlmaker.wlmaker.metainfo.xml"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
-
