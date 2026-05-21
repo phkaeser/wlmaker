@@ -28,6 +28,7 @@
 
 #include "dblbuf.h"
 #include "ext-input-observation-v1-client-protocol.h"
+#include "libwlclient.h"
 #include "xdg-decoration-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 

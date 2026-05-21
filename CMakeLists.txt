@@ -125,8 +125,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     endif()
     if(iwyu_executable)
       set(iwyu_path_and_options
-        "${iwyu_executable}"
-        "-Xiwyu --error=${iwyu_error} -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp")
+        ${iwyu_executable}
+        -Xiwyu --error=${iwyu_error} -Xiwyu --transitive_includes_only -Xiwyu --mapping_file=${PROJECT_SOURCE_DIR}/iwyu-mappings.imp)
     endif()
     message(STATUS "Configured iwyu (${iwyu_executable}) to run in mode \"${IWYU_MODE}\"")
   elseif(IWYU_MODE STREQUAL "OFF")
