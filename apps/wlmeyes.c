@@ -32,13 +32,18 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "wlclient/xdg_toplevel.h"
-#include "wlclient/libwlclient.h"
+#include "wlclient/wlclient.h"
 #include "wlclient/icon.h"
+#include "wlclient/dblbuf.h"
 
 /* == Data ================================================================= */
 
 /** State of the client. */
-wlclient_t                    *wlclient_ptr;
+wlmcl_client_t                    *wlclient_ptr;
+/** Double buffer for toplevel. */
+static wlmcl_dblbuf_t             *toplevel_dblbuf_ptr;
+/** Double buffer for icon. */
+static wlmcl_dblbuf_t             *icon_dblbuf_ptr;
 /** Listener for key events. */
 static struct wl_listener     _key_listener;
 /** Most recent X position of the pointer. */
@@ -81,7 +86,7 @@ static const bs_arg_t _wlmeyes_args[] = {
 static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
                         void *data_ptr)
 {
-    wlclient_key_event_t *event_ptr = data_ptr;
+    struct wlmcl_client_key_event *event_ptr = data_ptr;
 
     if (!event_ptr->pressed) return;
     char name[128];
@@ -92,7 +97,7 @@ static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
     if (XKB_KEY_Escape == event_ptr->keysym ||
         XKB_KEY_q == event_ptr->keysym ||
         XKB_KEY_Q == event_ptr->keysym) {
-        wlclient_request_terminate(wlclient_ptr);
+        wlmcl_client_request_terminate(wlclient_ptr);
     }
 }
 
@@ -201,14 +206,14 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, __UNUSED__ void *ud_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Updates pointer position. */
-static void _position_callback(double x, double y, void *ud_ptr)
+static void _position_callback(double x, double y, __UNUSED__ void *ud_ptr)
 {
-    wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
-
     pointer_x = x;
     pointer_y = y;
-    wlclient_xdg_toplevel_register_ready_callback(
-        toplevel_ptr, _callback, toplevel_ptr);
+    if (NULL != toplevel_dblbuf_ptr) {
+        wlmcl_dblbuf_register_ready_callback(
+            toplevel_dblbuf_ptr, _callback, NULL);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -238,14 +243,58 @@ static bool _icon_callback(bs_gfxbuf_t *gfxbuf_ptr, __UNUSED__ void *ud_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Updates pointer position for the icon. */
-static void _icon_position_callback(double x, double y, void *ud_ptr)
+static void _icon_position_callback(double x, double y, __UNUSED__ void *ud_ptr)
 {
-    wlclient_icon_t *icon_ptr = ud_ptr;
-
     icon_pointer_x = x;
     icon_pointer_y = y;
-    wlclient_icon_register_ready_callback(
-        icon_ptr, _icon_callback, icon_ptr);
+    if (NULL != icon_dblbuf_ptr) {
+        wlmcl_dblbuf_register_ready_callback(
+            icon_dblbuf_ptr, _icon_callback, NULL);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles configure events for the toplevel. */
+static void _handle_toplevel_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    wlmcl_xdg_toplevel_t *toplevel_ptr = ud_ptr;
+    if (NULL != toplevel_dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(toplevel_dblbuf_ptr);
+    }
+    toplevel_dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+        wlmcl_xdg_toplevel_wl_surface(toplevel_ptr),
+        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == toplevel_dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create for toplevel.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(
+        toplevel_dblbuf_ptr, _callback, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles configure events for the icon. */
+static void _handle_icon_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    wlmcl_icon_t *icon_ptr = ud_ptr;
+    if (NULL != icon_dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(icon_dblbuf_ptr);
+    }
+    icon_dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+        wlmcl_icon_wl_surface(icon_ptr),
+        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == icon_dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create for icon.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(
+        icon_dblbuf_ptr, _icon_callback, NULL);
 }
 
 /* == Main program ========================================================= */
@@ -259,46 +308,57 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlclient_ptr = wlclient_create("wlmaker.wlmeyes");
+    wlclient_ptr = wlmcl_client_create("wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     _key_listener.notify = _handle_key;
-    wl_signal_add(&wlclient_events(wlclient_ptr)->key, &_key_listener);
+    wl_signal_add(&wlmcl_client_events(wlclient_ptr)->key, &_key_listener);
 
-    if (wlclient_xdg_supported(wlclient_ptr)) {
-        wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
+    if (wlmcl_xdg_supported(wlclient_ptr)) {
+        wlmcl_xdg_toplevel_t *toplevel_ptr = wlmcl_xdg_toplevel_create(
             wlclient_ptr,
             "wlmaker Toplevel Example",
             toplevel_width,
             toplevel_height);
         if (NULL == toplevel_ptr) {
-            bs_log(BS_ERROR, "Failed wlclient_xdg_toplevel_create(%p)",
+            bs_log(BS_ERROR, "Failed wlmcl_xdg_toplevel_create(%p)",
                    wlclient_ptr);
         } else {
 
-            wlclient_xdg_decoration_set_server_side(toplevel_ptr, false);
-            wlclient_xdg_toplevel_register_ready_callback(
-                toplevel_ptr, _callback, toplevel_ptr);
-            wlclient_xdg_toplevel_register_position_callback(
+            wlmcl_xdg_decoration_set_server_side(toplevel_ptr, false);
+            wlmcl_xdg_toplevel_register_configure_callback(
+                toplevel_ptr, _handle_toplevel_configure, toplevel_ptr);
+            wlmcl_xdg_toplevel_register_position_callback(
                 toplevel_ptr, _position_callback, toplevel_ptr);
 
-            wlclient_icon_t *icon_ptr = wlclient_icon_create(wlclient_ptr);
+            wlmcl_icon_t *icon_ptr = wlmcl_icon_create(wlclient_ptr);
             if (NULL != icon_ptr) {
-                wlclient_icon_register_ready_callback(
-                    icon_ptr, _icon_callback, icon_ptr);
-                wlclient_icon_register_position_callback(
+                wlmcl_icon_register_configure_callback(
+                    icon_ptr, _handle_icon_configure, icon_ptr);
+                wlmcl_icon_register_position_callback(
                     icon_ptr, _icon_position_callback, icon_ptr);
             }
 
-            wlclient_run(wlclient_ptr);
-            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            wlmcl_client_run(wlclient_ptr);
+            wlmcl_xdg_toplevel_destroy(toplevel_ptr);
+            if (NULL != icon_ptr) {
+                wlmcl_icon_destroy(icon_ptr);
+            }
+            if (NULL != toplevel_dblbuf_ptr) {
+                wlmcl_dblbuf_destroy(toplevel_dblbuf_ptr);
+                toplevel_dblbuf_ptr = NULL;
+            }
+            if (NULL != icon_dblbuf_ptr) {
+                wlmcl_dblbuf_destroy(icon_dblbuf_ptr);
+                icon_dblbuf_ptr = NULL;
+            }
         }
     } else {
         bs_log(BS_ERROR, "XDG shell is not supported.");
     }
 
     wl_list_remove(&_key_listener.link);
-    wlclient_destroy(wlclient_ptr);
+    wlmcl_client_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
 

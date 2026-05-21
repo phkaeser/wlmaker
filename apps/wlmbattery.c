@@ -27,15 +27,25 @@
  * limitations under the License.
  */
 
+#include <cairo.h>
 #include <dirent.h>
+#include <inttypes.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <primitives/primitives.h>
-#include <wlclient/libwlclient.h>
+#include <wlclient/wlclient.h>
+#include <wlclient/icon.h>
+#include <wlclient/dblbuf.h>
 
 #include <libbase/libbase.h>
+
+/** Wayland client state. */
+static wlmcl_client_t *wlclient_ptr;
+/** Double buffer pointer. */
+static wlmcl_dblbuf_t *dblbuf_ptr;
 
 /* == Declarations ========================================================= */
 
@@ -584,7 +594,7 @@ static enum battery_status parse_battery_status(const char *status_str)
 /** Argument to @ref icon_callback and @ref timer_callback. */
 struct callback_arg {
     /** The icon handle */
-    wlclient_icon_t           *icon_ptr;
+    wlmcl_icon_t           *icon_ptr;
     /** Power supply handle */
     struct wlm_power_supply   *ps;
 };
@@ -672,15 +682,38 @@ bool icon_callback(
 
 /* ------------------------------------------------------------------------- */
 /** Called once per second. */
-void timer_callback(wlclient_t *client_ptr, void *ud_ptr)
+void timer_callback(wlmcl_client_t *client_ptr, void *ud_ptr)
 {
     struct callback_arg *arg_ptr = ud_ptr;
 
-    wlclient_icon_register_ready_callback(
-        arg_ptr->icon_ptr, icon_callback, arg_ptr);
-    wlclient_register_timer(
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_register_ready_callback(
+            dblbuf_ptr, icon_callback, arg_ptr);
+    }
+    wlmcl_client_register_timer(
         client_ptr, bs_usec() + 1000000, timer_callback,
         arg_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles configure events. */
+static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    struct callback_arg *arg_ptr = ud_ptr;
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(dblbuf_ptr);
+    }
+    dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+        wlmcl_icon_wl_surface(arg_ptr->icon_ptr),
+        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(dblbuf_ptr, icon_callback, arg_ptr);
 }
 
 /* == Main program ========================================================= */
@@ -692,31 +725,35 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    wlclient_t *wlclient_ptr = wlclient_create("wlmaker.wlmbattery");
+    wlclient_ptr = wlmcl_client_create("wlmaker.wlmbattery");
     if (NULL == wlclient_ptr) {
         wlm_power_supply_destroy(ps);
         return EXIT_FAILURE;
     }
 
-    if (wlclient_icon_supported(wlclient_ptr)) {
-        wlclient_icon_t *icon_ptr = wlclient_icon_create(wlclient_ptr);
+    if (wlmcl_icon_supported(wlclient_ptr)) {
+        wlmcl_icon_t *icon_ptr = wlmcl_icon_create(wlclient_ptr);
         struct callback_arg arg = { .ps = ps, .icon_ptr = icon_ptr };
         if (NULL == icon_ptr) {
-            bs_log(BS_ERROR, "Failed wlclient_icon_create(%p)", wlclient_ptr);
+            bs_log(BS_ERROR, "Failed wlmcl_icon_create(%p)", wlclient_ptr);
         } else {
-            wlclient_icon_register_ready_callback(
-                icon_ptr, icon_callback, &arg);
-            wlclient_register_timer(
+            wlmcl_icon_register_configure_callback(
+                icon_ptr, _handle_configure, &arg);
+            wlmcl_client_register_timer(
                 wlclient_ptr, bs_usec() + 1000000, timer_callback, &arg);
 
-            wlclient_run(wlclient_ptr);
-            wlclient_icon_destroy(icon_ptr);
+            wlmcl_client_run(wlclient_ptr);
+            wlmcl_icon_destroy(icon_ptr);
+            if (NULL != dblbuf_ptr) {
+                wlmcl_dblbuf_destroy(dblbuf_ptr);
+                dblbuf_ptr = NULL;
+            }
         }
     } else {
         bs_log(BS_ERROR, "icon protocol is not supported.");
     }
 
-    wlclient_destroy(wlclient_ptr);
+    wlmcl_client_destroy(wlclient_ptr);
 
     wlm_power_supply_destroy(ps);
     return EXIT_SUCCESS;

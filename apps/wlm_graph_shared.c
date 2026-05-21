@@ -26,7 +26,7 @@
 #include <cairo.h>
 #include <errno.h>
 #include <libbase/libbase.h>
-#include <wlclient/libwlclient.h>
+#include <wlclient/wlclient.h>
 #include <primitives/primitives.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "wlclient/icon.h"
+#include "wlclient/dblbuf.h"
 
 /* == Internal definitions ================================================= */
 
@@ -164,9 +165,13 @@ typedef struct {
     /** User preferences (immutable). */
     const wlm_graph_prefs_t *prefs;
     /** Icon handle. */
-    wlclient_icon_t *icon_ptr;
+    wlmcl_icon_t *icon_ptr;
     /** Application configuration. */
     const wlm_graph_app_config_t *config;
+    /** Wayland client pointer. */
+    wlmcl_client_t *wlclient_ptr;
+    /** Double buffer pointer. */
+    wlmcl_dblbuf_t *dblbuf_ptr;
 } wlm_graph_handle_t;
 
 /* == Forward declarations ================================================= */
@@ -215,7 +220,7 @@ static void _wlm_graph_update_with_sample(
 static uint64_t _wlm_graph_time_next_update(const uint64_t interval_usec);
 static bool _wlm_graph_icon_render_callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr);
 static void _wlm_graph_sample_update(wlm_graph_handle_t *handle);
-static void _wlm_graph_timer_callback(wlclient_t *client_ptr, void *ud_ptr);
+static void _wlm_graph_timer_callback(wlmcl_client_t *client_ptr, void *ud_ptr);
 
 /* == Utility functions ==================================================== */
 
@@ -1353,21 +1358,45 @@ static void _wlm_graph_sample_update(wlm_graph_handle_t *handle)
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles configure events. */
+static void _handle_icon_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    wlm_graph_handle_t *handle = ud_ptr;
+    if (NULL != handle->dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(handle->dblbuf_ptr);
+    }
+    handle->dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(handle->wlclient_ptr)->app_id_ptr,
+        wlmcl_icon_wl_surface(handle->icon_ptr),
+        wlmcl_client_attributes(handle->wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == handle->dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(
+        handle->dblbuf_ptr, _wlm_graph_icon_render_callback, handle);
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Timer callback for periodic graph updates.
  *
  * @param client_ptr        Wayland client instance.
  * @param ud_ptr            User data pointer (wlm_graph_handle_t).
  */
-static void _wlm_graph_timer_callback(wlclient_t *client_ptr, void *ud_ptr)
+static void _wlm_graph_timer_callback(wlmcl_client_t *client_ptr, void *ud_ptr)
 {
     wlm_graph_handle_t * const handle = ud_ptr;
 
     _wlm_graph_sample_update(handle);
 
-    wlclient_icon_register_ready_callback(
-        handle->icon_ptr, _wlm_graph_icon_render_callback, handle);
-    wlclient_register_timer(
+    if (NULL != handle->dblbuf_ptr) {
+        wlmcl_dblbuf_register_ready_callback(
+            handle->dblbuf_ptr, _wlm_graph_icon_render_callback, handle);
+    }
+    wlmcl_client_register_timer(
         client_ptr, _wlm_graph_time_next_update(handle->prefs->interval_usec),
         _wlm_graph_timer_callback, handle);
 }
@@ -1441,27 +1470,27 @@ int wlm_graph_app_run(
     char wlclient_app_id[64];
     snprintf(wlclient_app_id, sizeof(wlclient_app_id), "wlmaker.%s", config->app_name);
 
-    wlclient_t * const wlclient_ptr = wlclient_create(wlclient_app_id);
+    wlmcl_client_t * const wlclient_ptr = wlmcl_client_create(wlclient_app_id);
     if (NULL == wlclient_ptr) {
         _wlm_graph_state_free(graph_state);
         config->state_free_fn(config->app_state);
         return EXIT_FAILURE;
     }
 
-    if (!wlclient_icon_supported(wlclient_ptr)) {
+    if (!wlmcl_icon_supported(wlclient_ptr)) {
         bs_log(BS_ERROR, "Icon protocol is not supported.");
         _wlm_graph_state_free(graph_state);
         config->state_free_fn(config->app_state);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return EXIT_FAILURE;
     }
 
-    wlclient_icon_t * const icon_ptr = wlclient_icon_create(wlclient_ptr);
+    wlmcl_icon_t * const icon_ptr = wlmcl_icon_create(wlclient_ptr);
     if (NULL == icon_ptr) {
         bs_log(BS_ERROR, "Failed to create icon.");
         _wlm_graph_state_free(graph_state);
         config->state_free_fn(config->app_state);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return EXIT_FAILURE;
     }
 
@@ -1471,20 +1500,26 @@ int wlm_graph_app_run(
         .prefs = &prefs,
         .icon_ptr = icon_ptr,
         .config = config,
+        .wlclient_ptr = wlclient_ptr,
+        .dblbuf_ptr = NULL,
     };
 
-    wlclient_icon_register_ready_callback(
-        icon_ptr, _wlm_graph_icon_render_callback, &handle);
-    wlclient_register_timer(
+    wlmcl_icon_register_configure_callback(
+        icon_ptr, _handle_icon_configure, &handle);
+    wlmcl_client_register_timer(
         wlclient_ptr, _wlm_graph_time_next_update(prefs.interval_usec),
         _wlm_graph_timer_callback, &handle);
 
-    wlclient_run(wlclient_ptr);
-    wlclient_icon_destroy(icon_ptr);
+    wlmcl_client_run(wlclient_ptr);
+    wlmcl_icon_destroy(icon_ptr);
+    if (NULL != handle.dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(handle.dblbuf_ptr);
+        handle.dblbuf_ptr = NULL;
+    }
 
     _wlm_graph_state_free(graph_state);
     config->state_free_fn(config->app_state);
-    wlclient_destroy(wlclient_ptr);
+    wlmcl_client_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
 

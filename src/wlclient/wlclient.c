@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file client.c
+ * @file wlclient.c
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-#include "libwlclient.h"
+#include "wlclient.h"
 
 #include <errno.h>
 #include <inttypes.h>
@@ -45,6 +45,7 @@
 #include "ext-input-observation-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 struct wl_keyboard;
 struct wl_pointer;
@@ -55,12 +56,12 @@ struct wl_surface;
 /* == Declarations ========================================================= */
 
 /** State of the wayland client. */
-struct _wlclient_t {
+struct _wlmcl_client_t {
     /** Shareable attributes. */
-    wlclient_attributes_t     attributes;
+    struct wlmcl_client_attributes     attributes;
 
     /** Events. */
-    wlclient_events_t         events;
+    struct wlmcl_client_events         events;
 
     /** XKB context. */
     struct xkb_context        *xkb_context_ptr;
@@ -88,15 +89,15 @@ struct _wlclient_t {
 
 /** State of a registered timer. */
 typedef struct {
-    /** Node within the list of timers, see `wlclient_t.timers`. */
+    /** Node within the list of timers, see `wlmcl_client_t.timers`. */
     bs_dllist_node_t          dlnode;
     /** Target time, in usec since epoch. */
     uint64_t                  target_usec;
     /** Callback once the timer is triggered. */
-    wlclient_callback_t       callback;
+    wlmcl_client_callback_t       callback;
     /** Argument to the callback. */
     void                      *callback_ud_ptr;
-} wlclient_timer_t;
+} wlmcl_client_timer_t;
 
 /** Descriptor for a wayland object to bind to. */
 typedef struct {
@@ -104,10 +105,10 @@ typedef struct {
     const struct wl_interface *wl_interface_ptr;
     /** Version desired to bind to. */
     uint32_t                  desired_version;
-    /** Offset of the bound interface, relative to `wlclient_t`. */
+    /** Offset of the bound interface, relative to `wlmcl_client_t`. */
     size_t                    bound_ptr_offset;
     /** Additional setup for this wayland object. */
-    void (*setup)(wlclient_t *client_ptr);
+    void (*setup)(wlmcl_client_t *client_ptr);
 } object_t;
 
 static void wl_to_bs_log(
@@ -125,98 +126,98 @@ static void handle_global_remove(
     struct wl_registry *registry,
     uint32_t name);
 
-static wlclient_timer_t *wlc_timer_create(
-    wlclient_t *client_ptr,
+static wlmcl_client_timer_t *wlmcl_client_timer_create(
+    wlmcl_client_t *client_ptr,
     uint64_t target_usec,
-    wlclient_callback_t callback,
+    wlmcl_client_callback_t callback,
     void *callback_ud_ptr);
-static void wlc_timer_destroy(
-    wlclient_timer_t *timer_ptr);
+static void wlmcl_client_timer_destroy(
+    wlmcl_client_timer_t *timer_ptr);
 
-static void wlc_seat_setup(wlclient_t *client_ptr);
-static void wlc_seat_handle_capabilities(
+static void wlmcl_client_seat_setup(wlmcl_client_t *client_ptr);
+static void wlmcl_client_seat_handle_capabilities(
     void *data_ptr,
     struct wl_seat *wl_seat_ptr,
     uint32_t capabilities);
-static void wlc_seat_handle_name(
+static void wlmcl_client_seat_handle_name(
     void *data_ptr,
     struct wl_seat *wl_seat_ptr,
     const char *name_ptr);
 
-static void wlc_pointer_handle_enter(
+static void wlmcl_client_pointer_handle_enter(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t serial,
     struct wl_surface *surface,
     wl_fixed_t surface_x,
     wl_fixed_t surface_y);
-static void wlc_pointer_handle_leave(
+static void wlmcl_client_pointer_handle_leave(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t serial,
     struct wl_surface *surface);
-static void wlc_pointer_handle_motion(
+static void wlmcl_client_pointer_handle_motion(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t time,
     wl_fixed_t surface_x,
     wl_fixed_t surface_y);
-static void wlc_pointer_handle_button(
+static void wlmcl_client_pointer_handle_button(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t serial,
     uint32_t time,
     uint32_t button,
     uint32_t state);
-static void wlc_pointer_handle_axis(
+static void wlmcl_client_pointer_handle_axis(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t time,
     uint32_t axis,
     wl_fixed_t value);
-static void wlc_pointer_handle_frame(
+static void wlmcl_client_pointer_handle_frame(
     void *data,
     struct wl_pointer *wl_pointer);
-static void wlc_pointer_handle_axis_source(
+static void wlmcl_client_pointer_handle_axis_source(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t axis_source);
-static void wlc_pointer_handle_axis_stop(
+static void wlmcl_client_pointer_handle_axis_stop(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t time,
     uint32_t axis);
-static void wlc_pointer_handle_axis_discrete(
+static void wlmcl_client_pointer_handle_axis_discrete(
     void *data,
     struct wl_pointer *wl_pointer,
     uint32_t axis,
     int32_t discrete);
 
-static void _wlc_keyboard_handle_keymap(
+static void _wlmcl_client_keyboard_handle_keymap(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t format,
     int32_t fd,
     uint32_t size);
-static void _wlc_keyboard_handle_enter(
+static void _wlmcl_client_keyboard_handle_enter(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t serial,
     struct wl_surface *wl_surface_ptr,
     struct wl_array *keys);
-static void _wlc_keyboard_handle_leave(
+static void _wlmcl_client_keyboard_handle_leave(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t serial,
     struct wl_surface *wl_surface_ptr);
-static void _wlc_keyboard_handle_key(
+static void _wlmcl_client_keyboard_handle_key(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t serial,
     uint32_t time,
     uint32_t key,
     uint32_t state);
-static void _wlc_keyboard_handle_modifiers(
+static void _wlmcl_client_keyboard_handle_modifiers(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t serial,
@@ -224,7 +225,7 @@ static void _wlc_keyboard_handle_modifiers(
     uint32_t mods_latched,
     uint32_t mods_locked,
     uint32_t group);
-static void _wlc_keyboard_handle_repeat_info(
+static void _wlmcl_client_keyboard_handle_repeat_info(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     int32_t rate,
@@ -239,50 +240,52 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 /** Listeners for the seat. */
-static const struct wl_seat_listener wlc_seat_listener = {
-    .capabilities = wlc_seat_handle_capabilities,
-    .name = wlc_seat_handle_name,
+static const struct wl_seat_listener wlmcl_client_seat_listener = {
+    .capabilities = wlmcl_client_seat_handle_capabilities,
+    .name = wlmcl_client_seat_handle_name,
 };
 
 /** Listeners for the pointer. */
-static const struct wl_pointer_listener wlc_pointer_listener = {
-    .enter = wlc_pointer_handle_enter,
-    .leave = wlc_pointer_handle_leave,
-    .motion = wlc_pointer_handle_motion,
-    .button = wlc_pointer_handle_button,
-    .axis = wlc_pointer_handle_axis,
-    .frame = wlc_pointer_handle_frame,
-    .axis_source = wlc_pointer_handle_axis_source,
-    .axis_stop = wlc_pointer_handle_axis_stop,
-    .axis_discrete = wlc_pointer_handle_axis_discrete,
+static const struct wl_pointer_listener wlmcl_client_pointer_listener = {
+    .enter = wlmcl_client_pointer_handle_enter,
+    .leave = wlmcl_client_pointer_handle_leave,
+    .motion = wlmcl_client_pointer_handle_motion,
+    .button = wlmcl_client_pointer_handle_button,
+    .axis = wlmcl_client_pointer_handle_axis,
+    .frame = wlmcl_client_pointer_handle_frame,
+    .axis_source = wlmcl_client_pointer_handle_axis_source,
+    .axis_stop = wlmcl_client_pointer_handle_axis_stop,
+    .axis_discrete = wlmcl_client_pointer_handle_axis_discrete,
 };
 
 /** Listeners for the keyboard. */
-static const struct wl_keyboard_listener wlc_keyboard_listener = {
-    .keymap = _wlc_keyboard_handle_keymap,
-    .enter = _wlc_keyboard_handle_enter,
-    .leave = _wlc_keyboard_handle_leave,
-    .key = _wlc_keyboard_handle_key,
-    .modifiers = _wlc_keyboard_handle_modifiers,
-    .repeat_info = _wlc_keyboard_handle_repeat_info
+static const struct wl_keyboard_listener wlmcl_client_keyboard_listener = {
+    .keymap = _wlmcl_client_keyboard_handle_keymap,
+    .enter = _wlmcl_client_keyboard_handle_enter,
+    .leave = _wlmcl_client_keyboard_handle_leave,
+    .key = _wlmcl_client_keyboard_handle_key,
+    .modifiers = _wlmcl_client_keyboard_handle_modifiers,
+    .repeat_info = _wlmcl_client_keyboard_handle_repeat_info
 };
 
 /** List of wayland objects we want to bind to. */
 static const object_t objects[] = {
     { &wl_compositor_interface, 4,
-      offsetof(wlclient_attributes_t, wl_compositor_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, wl_compositor_ptr), NULL },
     { &wl_shm_interface, 1,
-      offsetof(wlclient_attributes_t, wl_shm_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, wl_shm_ptr), NULL },
     { &xdg_wm_base_interface, 1,
-      offsetof(wlclient_attributes_t, xdg_wm_base_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, xdg_wm_base_ptr), NULL },
     { &wl_seat_interface, 5,
-      offsetof(wlclient_attributes_t, wl_seat_ptr), wlc_seat_setup },
+      offsetof(struct wlmcl_client_attributes, wl_seat_ptr), wlmcl_client_seat_setup },
     { &zwlmaker_icon_manager_v1_interface, 1,
-      offsetof(wlclient_attributes_t, icon_manager_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, icon_manager_ptr), NULL },
     { &zxdg_decoration_manager_v1_interface, 1,
-      offsetof(wlclient_attributes_t, xdg_decoration_manager_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, xdg_decoration_manager_ptr), NULL },
     { &ext_input_observation_manager_v1_interface, 1,
-      offsetof(wlclient_attributes_t, input_observation_manager_ptr), NULL },
+      offsetof(struct wlmcl_client_attributes, input_observation_manager_ptr), NULL },
+    { &zwlr_layer_shell_v1_interface, 4,
+      offsetof(struct wlmcl_client_attributes, layer_shell_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
 
 };
@@ -290,9 +293,9 @@ static const object_t objects[] = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlclient_t *wlclient_create(const char *app_id_ptr)
+wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr)
 {
-    wlclient_t *wlclient_ptr = logged_calloc(1, sizeof(wlclient_t));
+    wlmcl_client_t *wlclient_ptr = logged_calloc(1, sizeof(wlmcl_client_t));
     if (NULL == wlclient_ptr) return NULL;
     wl_log_set_handler_client(wl_to_bs_log);
 
@@ -301,7 +304,7 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
     if (NULL != app_id_ptr) {
         wlclient_ptr->attributes.app_id_ptr = logged_strdup(app_id_ptr);
         if (NULL == wlclient_ptr->attributes.app_id_ptr) {
-            wlclient_destroy(wlclient_ptr);
+            wlmcl_client_destroy(wlclient_ptr);
             return NULL;
         }
     }
@@ -309,40 +312,40 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
     sigset_t signal_set;
     if (sigemptyset(&signal_set)) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed sigemptyset(%p)", &signal_set);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     if (sigaddset(&signal_set, SIGINT)) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed sigemptyset(%p, %d)",
                &signal_set, SIGINT);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     if (sigprocmask(SIG_BLOCK, &signal_set, NULL) == -1) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed sigprocmask(SIG_BLOCK, %p, NULL)",
                &signal_set);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     wlclient_ptr->signal_fd = signalfd(-1, &signal_set, SFD_NONBLOCK);
     if (0 >= wlclient_ptr->signal_fd) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed signalfd(-1, %p, SFD_NONBLOCK)",
                &signal_set);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
 
     wlclient_ptr->xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     if (NULL == wlclient_ptr->xkb_context_ptr) {
         bs_log(BS_ERROR, "Failex xkb_context_new(XKB_CONTEXT_NO_FLAGS)");
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
 
     wlclient_ptr->attributes.wl_display_ptr = wl_display_connect(NULL);
     if (NULL == wlclient_ptr->attributes.wl_display_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_connect(NULL).");
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
 
@@ -351,7 +354,7 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
     if (NULL == wlclient_ptr->wl_registry_ptr) {
         bs_log(BS_ERROR, "Failed wl_display_get_registry(%p).",
                wlclient_ptr->wl_registry_ptr);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
 
@@ -363,24 +366,24 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
                wlclient_ptr->wl_registry_ptr,
                &registry_listener,
                &wlclient_ptr->attributes);
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
 
     if (NULL == wlclient_ptr->attributes.wl_compositor_ptr) {
         bs_log(BS_ERROR, "'wl_compositor' interface not found on Wayland.");
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     if (NULL == wlclient_ptr->attributes.wl_shm_ptr) {
         bs_log(BS_ERROR, "'wl_shm' interface not found on Wayland.");
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
     if (NULL == wlclient_ptr->attributes.xdg_wm_base_ptr) {
         bs_log(BS_ERROR, "'xdg_wm_base' interface not found on Wayland.");
-        wlclient_destroy(wlclient_ptr);
+        wlmcl_client_destroy(wlclient_ptr);
         return NULL;
     }
 
@@ -394,11 +397,11 @@ wlclient_t *wlclient_create(const char *app_id_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlclient_destroy(wlclient_t *wlclient_ptr)
+void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
 {
     bs_dllist_node_t *dlnode_ptr;
     while (NULL != (dlnode_ptr = bs_dllist_pop_front(&wlclient_ptr->timers))) {
-        wlc_timer_destroy((wlclient_timer_t*)dlnode_ptr);
+        wlmcl_client_timer_destroy((wlmcl_client_timer_t*)dlnode_ptr);
     }
 
     if (NULL != wlclient_ptr->wl_registry_ptr) {
@@ -439,21 +442,21 @@ void wlclient_destroy(wlclient_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-const wlclient_attributes_t *wlclient_attributes(
-    const wlclient_t *wlclient_ptr)
+const struct wlmcl_client_attributes *wlmcl_client_attributes(
+    const wlmcl_client_t *wlclient_ptr)
 {
     return &wlclient_ptr->attributes;
 }
 
 /* ------------------------------------------------------------------------- */
-wlclient_events_t *wlclient_events(wlclient_t *wlclient_ptr)
+struct wlmcl_client_events *wlmcl_client_events(wlmcl_client_t *wlclient_ptr)
 {
     return &wlclient_ptr->events;
 }
 
 /* ------------------------------------------------------------------------- */
 // TODO(kaeser@gubbe.ch): Clean up.
-void wlclient_run(wlclient_t *wlclient_ptr)
+void wlmcl_client_run(wlmcl_client_t *wlclient_ptr)
 {
     wlclient_ptr->keep_running = true;
     do {
@@ -543,31 +546,31 @@ void wlclient_run(wlclient_t *wlclient_ptr)
         uint64_t current_usec = bs_usec();
         bs_dllist_node_t *dlnode_ptr;
         while (NULL != (dlnode_ptr = wlclient_ptr->timers.head_ptr) &&
-               ((wlclient_timer_t*)dlnode_ptr)->target_usec <= current_usec) {
+               ((wlmcl_client_timer_t*)dlnode_ptr)->target_usec <= current_usec) {
             bs_dllist_pop_front(&wlclient_ptr->timers);
 
-            wlclient_timer_t *timer_ptr = (wlclient_timer_t*)dlnode_ptr;
+            wlmcl_client_timer_t *timer_ptr = (wlmcl_client_timer_t*)dlnode_ptr;
             timer_ptr->callback(wlclient_ptr, timer_ptr->callback_ud_ptr);
-            wlc_timer_destroy(timer_ptr);
+            wlmcl_client_timer_destroy(timer_ptr);
         }
 
     } while (wlclient_ptr->keep_running);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlclient_request_terminate(wlclient_t *wlclient_ptr)
+void wlmcl_client_request_terminate(wlmcl_client_t *wlclient_ptr)
 {
     wlclient_ptr->keep_running = false;
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlclient_register_timer(
-    wlclient_t *wlclient_ptr,
+bool wlmcl_client_register_timer(
+    wlmcl_client_t *wlclient_ptr,
     uint64_t target_usec,
-    wlclient_callback_t callback,
+    wlmcl_client_callback_t callback,
     void *callback_ud_ptr)
 {
-    wlclient_timer_t *timer_ptr = wlc_timer_create(
+    wlmcl_client_timer_t *timer_ptr = wlmcl_client_timer_create(
         wlclient_ptr, target_usec, callback, callback_ud_ptr);
     return (timer_ptr != NULL);
 }
@@ -595,7 +598,7 @@ void wl_to_bs_log(
  * Called by `struct wl_registry_listener` `global` callback, invoked to notify
  * clients of global objects.
  *
- * @param data_ptr            Points to a @ref wlclient_t.
+ * @param data_ptr            Points to a @ref wlmcl_client_t.
  * @param wl_registry_ptr     The `struct wl_registry` this is invoked for.
  * @param name                Numeric name of the global object.
  * @param interface_name_ptr  Name of the interface implemented by the object.
@@ -648,7 +651,7 @@ void handle_global_announce(
  * Called by `struct wl_registry_listener` `global_remove`, invoked to notify
  * clients of removed global objects.
  *
- * @param data_ptr            Points to a @ref wlclient_t.
+ * @param data_ptr            Points to a @ref wlmcl_client_t.
  * @param wl_registry_ptr     The `struct wl_registry` this is invoked for.
  * @param name                Numeric name of the global object.
  */
@@ -672,15 +675,15 @@ void handle_global_remove(
  * @param callback_ud_ptr
  *
  * @return A pointer to the created timer, or NULL on error. The pointer must
- *     be destroyed by @ref wlc_timer_destroy.
+ *     be destroyed by @ref wlmcl_client_timer_destroy.
  */
-wlclient_timer_t *wlc_timer_create(
-    wlclient_t *client_ptr,
+wlmcl_client_timer_t *wlmcl_client_timer_create(
+    wlmcl_client_t *client_ptr,
     uint64_t target_usec,
-    wlclient_callback_t callback,
+    wlmcl_client_callback_t callback,
     void *callback_ud_ptr)
 {
-    wlclient_timer_t *timer_ptr = logged_calloc(1, sizeof(wlclient_timer_t));
+    wlmcl_client_timer_t *timer_ptr = logged_calloc(1, sizeof(wlmcl_client_timer_t));
     if (NULL == timer_ptr) return NULL;
 
     timer_ptr->target_usec = target_usec;
@@ -690,7 +693,7 @@ wlclient_timer_t *wlc_timer_create(
     // TODO(kaeser@gubbe.ch): This should be a HEAP.
     bs_dllist_node_t *dlnode_ptr = client_ptr->timers.head_ptr;
     for (; dlnode_ptr != NULL; dlnode_ptr = dlnode_ptr->next_ptr) {
-        wlclient_timer_t *ref_timer_ptr = (wlclient_timer_t *)dlnode_ptr;
+        wlmcl_client_timer_t *ref_timer_ptr = (wlmcl_client_timer_t *)dlnode_ptr;
         if (timer_ptr->target_usec > ref_timer_ptr->target_usec) continue;
         bs_dllist_insert_node_before(
             &client_ptr->timers, dlnode_ptr, &timer_ptr->dlnode);
@@ -708,18 +711,18 @@ wlclient_timer_t *wlc_timer_create(
  *
  * @param timer_ptr
  */
-void wlc_timer_destroy(wlclient_timer_t *timer_ptr)
+void wlmcl_client_timer_destroy(wlmcl_client_timer_t *timer_ptr)
 {
     free(timer_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Set up the seat: Registers the client's seat listeners. */
-void wlc_seat_setup(wlclient_t *client_ptr)
+void wlmcl_client_seat_setup(wlmcl_client_t *client_ptr)
 {
     wl_seat_add_listener(
         client_ptr->attributes.wl_seat_ptr,
-        &wlc_seat_listener,
+        &wlmcl_client_seat_listener,
         client_ptr);
 }
 
@@ -733,12 +736,12 @@ void wlc_seat_setup(wlclient_t *client_ptr)
  * @param wl_seat_ptr
  * @param capabilities
  */
-void wlc_seat_handle_capabilities(
+void wlmcl_client_seat_handle_capabilities(
     void *data_ptr,
     struct wl_seat *wl_seat_ptr,
     uint32_t capabilities)
 {
-    wlclient_t *client_ptr = data_ptr;
+    wlmcl_client_t *client_ptr = data_ptr;
 
     bool supports_pointer = capabilities & WL_SEAT_CAPABILITY_POINTER;
     if (supports_pointer && NULL == client_ptr->attributes.wl_pointer_ptr) {
@@ -746,7 +749,7 @@ void wlc_seat_handle_capabilities(
             wl_seat_get_pointer(wl_seat_ptr);
         wl_pointer_add_listener(
             client_ptr->attributes.wl_pointer_ptr,
-            &wlc_pointer_listener,
+            &wlmcl_client_pointer_listener,
             client_ptr);
     } else if (!supports_pointer &&
                NULL != client_ptr->attributes.wl_pointer_ptr) {
@@ -759,7 +762,7 @@ void wlc_seat_handle_capabilities(
         client_ptr->wl_keyboard_ptr = wl_seat_get_keyboard(wl_seat_ptr);
         wl_keyboard_add_listener(
             client_ptr->wl_keyboard_ptr,
-            &wlc_keyboard_listener,
+            &wlmcl_client_keyboard_listener,
             client_ptr);
     } else if (!supports_keyboard && NULL != client_ptr->wl_pointer_ptr) {
         wl_keyboard_release(client_ptr->wl_keyboard_ptr);
@@ -769,7 +772,7 @@ void wlc_seat_handle_capabilities(
 
 /* ------------------------------------------------------------------------- */
 /** Handles the unique identifier callback. */
-void wlc_seat_handle_name(
+void wlmcl_client_seat_handle_name(
     void *data_ptr,
     struct wl_seat *wl_seat_ptr,
     const char *name_ptr)
@@ -780,7 +783,7 @@ void wlc_seat_handle_name(
 
 /* ------------------------------------------------------------------------- */
 /** Called when the client obtains pointer focus. */
-void wlc_pointer_handle_enter(
+void wlmcl_client_pointer_handle_enter(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t serial,
@@ -793,7 +796,7 @@ void wlc_pointer_handle_enter(
 
 /* ------------------------------------------------------------------------- */
 /** Called when the client looses pointer focus. */
-void wlc_pointer_handle_leave(
+void wlmcl_client_pointer_handle_leave(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t serial,
@@ -804,7 +807,7 @@ void wlc_pointer_handle_leave(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon pointer motion. */
-void wlc_pointer_handle_motion(
+void wlmcl_client_pointer_handle_motion(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t time,
@@ -816,7 +819,7 @@ void wlc_pointer_handle_motion(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon pointer button events. */
-void wlc_pointer_handle_button(
+void wlmcl_client_pointer_handle_button(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t serial,
@@ -829,7 +832,7 @@ void wlc_pointer_handle_button(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon axis events. */
-void wlc_pointer_handle_axis(
+void wlmcl_client_pointer_handle_axis(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t time,
@@ -841,7 +844,7 @@ void wlc_pointer_handle_axis(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon frame events. */
-void wlc_pointer_handle_frame(
+void wlmcl_client_pointer_handle_frame(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer)
 {
@@ -850,7 +853,7 @@ void wlc_pointer_handle_frame(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon axis source events. */
-void wlc_pointer_handle_axis_source(
+void wlmcl_client_pointer_handle_axis_source(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t axis_source)
@@ -860,7 +863,7 @@ void wlc_pointer_handle_axis_source(
 
 /* ------------------------------------------------------------------------- */
 /** Axis stop events. */
-void wlc_pointer_handle_axis_stop(
+void wlmcl_client_pointer_handle_axis_stop(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t time,
@@ -871,7 +874,7 @@ void wlc_pointer_handle_axis_stop(
 
 /* ------------------------------------------------------------------------- */
 /** Called upon axis click events. */
-void wlc_pointer_handle_axis_discrete(
+void wlmcl_client_pointer_handle_axis_discrete(
     __UNUSED__ void *data,
     __UNUSED__ struct wl_pointer *wl_pointer,
     __UNUSED__ uint32_t axis,
@@ -882,7 +885,7 @@ void wlc_pointer_handle_axis_discrete(
 
 /* ------------------------------------------------------------------------- */
 /** Called when compositor provides a keymap to memory-map. */
-void _wlc_keyboard_handle_keymap(
+void _wlmcl_client_keyboard_handle_keymap(
     void *data_ptr,
     struct wl_keyboard *wl_keyboard_ptr,
     uint32_t format,
@@ -895,7 +898,7 @@ void _wlc_keyboard_handle_keymap(
         return;
     }
 
-    wlclient_t *client_ptr = BS_ASSERT_NOTNULL(data_ptr);
+    wlmcl_client_t *client_ptr = BS_ASSERT_NOTNULL(data_ptr);
 
     void *desc_ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (MAP_FAILED == desc_ptr) {
@@ -937,7 +940,7 @@ void _wlc_keyboard_handle_keymap(
 
 /* ------------------------------------------------------------------------- */
 /** Called when the given surface gained keyboard focus. */
-void _wlc_keyboard_handle_enter(
+void _wlmcl_client_keyboard_handle_enter(
     __UNUSED__ void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
     __UNUSED__ uint32_t serial,
@@ -949,7 +952,7 @@ void _wlc_keyboard_handle_enter(
 
 /* ------------------------------------------------------------------------- */
 /** Called when the given surface lost keyboard focus. */
-void _wlc_keyboard_handle_leave(
+void _wlmcl_client_keyboard_handle_leave(
     __UNUSED__ void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
     __UNUSED__ uint32_t serial,
@@ -960,7 +963,7 @@ void _wlc_keyboard_handle_leave(
 
 /* ------------------------------------------------------------------------- */
 /** Called when a key was pressed or released. */
-void _wlc_keyboard_handle_key(
+void _wlmcl_client_keyboard_handle_key(
     void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
     __UNUSED__ uint32_t serial,
@@ -968,13 +971,13 @@ void _wlc_keyboard_handle_key(
     uint32_t key,
     uint32_t state)
 {
-    wlclient_t *client_ptr = data_ptr;
+    wlmcl_client_t *client_ptr = data_ptr;
 
     const xkb_keysym_t *key_syms;
     int key_syms_count = xkb_state_key_get_syms(
         client_ptr->xkb_state_ptr, key + 8, &key_syms);
     for (int i = 0; i < key_syms_count; ++i) {
-        wlclient_key_event_t event = {
+        struct wlmcl_client_key_event event = {
             .keysym = key_syms[i],
             .pressed = state == WL_KEYBOARD_KEY_STATE_PRESSED
         };
@@ -991,7 +994,7 @@ void _wlc_keyboard_handle_key(
 
 /* ------------------------------------------------------------------------- */
 /** Called when the modifier or group state has changed. */
-void _wlc_keyboard_handle_modifiers(
+void _wlmcl_client_keyboard_handle_modifiers(
     void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
     __UNUSED__ uint32_t serial,
@@ -1000,7 +1003,7 @@ void _wlc_keyboard_handle_modifiers(
     uint32_t mods_locked,
     uint32_t group)
 {
-    wlclient_t *client_ptr = data_ptr;
+    wlmcl_client_t *client_ptr = data_ptr;
     xkb_state_update_mask(
         client_ptr->xkb_state_ptr,
         mods_depressed,
@@ -1013,7 +1016,7 @@ void _wlc_keyboard_handle_modifiers(
 
 /* ------------------------------------------------------------------------- */
 /** Called to configure repeat and delay settings. */
-void _wlc_keyboard_handle_repeat_info(
+void _wlmcl_client_keyboard_handle_repeat_info(
     __UNUSED__ void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
     __UNUSED__ int32_t rate,
@@ -1022,4 +1025,4 @@ void _wlc_keyboard_handle_repeat_info(
     // Currently unused.
 }
 
-/* == End of client.c ====================================================== */
+/* == End of wlclient.c ==================================================== */

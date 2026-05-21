@@ -20,8 +20,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLCL_DBLBUF_H__
-#define __WLCL_DBLBUF_H__
+#ifndef __WLMAKER_WLCLIENT_DBLBUF_H__
+#define __WLMAKER_WLCLIENT_DBLBUF_H__
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
@@ -34,26 +34,27 @@ struct wl_shm;
 struct wl_surface;
 
 /** Forward declaration: Double buffer state. */
-typedef struct _wlcl_dblbuf_t wlcl_dblbuf_t;
+typedef struct _wlmcl_dblbuf_t wlmcl_dblbuf_t;
 
 /** Callback that indicates the buffer is ready to draw into. */
-typedef bool (*wlcl_dblbuf_ready_callback_t)(
+typedef bool (*wlmcl_dblbuf_ready_callback_t)(
     bs_gfxbuf_t *gfxbuf_ptr,
     void *ud_ptr);
 
 /**
  * Creates a double buffer for the surface with provided dimensions.
  *
- * @param app_id_ptr
+ * @param app_id_ptr          Application ID, used to prefix the name of the
+ *                            shared memory object. Can be NULL.
  * @param wl_surface_ptr
  * @param wl_shm_ptr
  * @param width
  * @param height
  *
  * @return Pointer to state of the double buffer, or NULL on error. Call
- *     @ref wlcl_dblbuf_destroy for freeing up the associated resources.
+ *     @ref wlmcl_dblbuf_destroy for freeing up the associated resources.
  */
-wlcl_dblbuf_t *wlcl_dblbuf_create(
+wlmcl_dblbuf_t *wlmcl_dblbuf_create(
     const char *app_id_ptr,
     struct wl_surface *wl_surface_ptr,
     struct wl_shm *wl_shm_ptr,
@@ -61,7 +62,7 @@ wlcl_dblbuf_t *wlcl_dblbuf_create(
     unsigned height);
 
 /** Destroys the double buffer. */
-void wlcl_dblbuf_destroy(wlcl_dblbuf_t *dblbuf_ptr);
+void wlmcl_dblbuf_destroy(wlmcl_dblbuf_t *dblbuf_ptr);
 
 /**
  * Registers a callback for when a frame can be drawn into the buffer.
@@ -72,7 +73,7 @@ void wlcl_dblbuf_destroy(wlcl_dblbuf_t *dblbuf_ptr);
  * these conditions are fulfilled.
  *
  * The callback will be called only once. If the client wishes further
- * notifications, they must call @ref wlcl_dblbuf_register_ready_callback
+ * notifications, they must call @ref wlmcl_dblbuf_register_ready_callback
  * again.
  *
  * The callback must be registered only after the surface is ready. Eg. for
@@ -83,14 +84,14 @@ void wlcl_dblbuf_destroy(wlcl_dblbuf_t *dblbuf_ptr);
  *                            callback.
  * @param callback_ud_ptr     Argument to use for `callback`.
  */
-void wlcl_dblbuf_register_ready_callback(
-    wlcl_dblbuf_t *dblbuf_ptr,
-    wlcl_dblbuf_ready_callback_t callback,
+void wlmcl_dblbuf_register_ready_callback(
+    wlmcl_dblbuf_t *dblbuf_ptr,
+    wlmcl_dblbuf_ready_callback_t callback,
     void *callback_ud_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLCL_DBLBUF_H__ */
-/* == End of dblbuf_buffer.h =============================================== */
+#endif /* __WLMAKER_WLCLIENT_DBLBUF_H__ */
+/* == End of dblbuf.h ====================================================== */

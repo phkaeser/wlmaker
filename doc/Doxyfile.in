@@ -858,6 +858,7 @@ WARN_LOGFILE           =
 
 INPUT                  = \
                          @PROJECT_SOURCE_DIR@/apps/ \
+                         @PROJECT_SOURCE_DIR@/examples/ \
                          @PROJECT_SOURCE_DIR@/src/wlclient \
                          @PROJECT_SOURCE_DIR@/doc/commandline.md \
                          @PROJECT_SOURCE_DIR@/doc/config.md \

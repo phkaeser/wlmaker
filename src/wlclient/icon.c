@@ -26,9 +26,8 @@
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
 
-#include "dblbuf.h"
 #include "ext-input-observation-v1-client-protocol.h"
-#include "libwlclient.h"
+#include "wlclient.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 
 struct ext_input_position_observer_v1;
@@ -38,9 +37,9 @@ struct zwlmaker_toplevel_icon_v1;
 /* == Declarations ========================================================= */
 
 /** State of the icon. */
-typedef struct _wlclient_icon_t {
+struct _wlmcl_icon_t {
     /** Back-link to the client. */
-    wlclient_t                *wlclient_ptr;
+    wlmcl_client_t                *wlclient_ptr;
 
     /** Surface. */
     struct wl_surface         *wl_surface_ptr;
@@ -52,17 +51,14 @@ typedef struct _wlclient_icon_t {
     /** Height of the icon, once suggested by the server. */
     unsigned                  height;
 
-    /** Callback for when the icon's buffer is ready to be drawn into. */
-    wlcl_dblbuf_ready_callback_t ready_callback;
-    /** Argument to that callback. */
-    void                      *ready_callback_ud_ptr;
-
-    /** Double-buffered state of the surface. */
-    wlcl_dblbuf_t             *dblbuf_ptr;
+    /** Callback for input configure. */
+    void                      (*configure_callback)(void *ud_ptr, uint32_t width, uint32_t height);
+    /** Client-provided argument to configure_callback. */
+    void                      *configure_callback_ud_ptr;
 
     /** Callback for input position observation. */
     void (*position_callback)(double x, double y, void *ud_ptr);
-    /** Client-provided argument to @ref wlclient_xdg_toplevel_t::position_callback. */
+    /** Client-provided argument to @ref wlmcl_xdg_toplevel_t::position_callback. */
     void                      *position_callback_ud_ptr;
     /** Whether any position update had been received already. */
     bool                      position_received;
@@ -72,7 +68,7 @@ typedef struct _wlclient_icon_t {
     int32_t                   last_position_y;
     /** Input observer. */
     struct ext_input_position_observer_v1 *input_position_observer_ptr;
-} wlclient_icon_t;
+};
 
 static void handle_toplevel_icon_configure(
     void *data_ptr,
@@ -81,7 +77,7 @@ static void handle_toplevel_icon_configure(
     int32_t height,
     uint32_t serial);
 
-static void _wlclient_icon_input_position_observer_position(
+static void _wlmcl_icon_input_position_observer_position(
     void *data_ptr,
     struct ext_input_position_observer_v1 *input_position_observer_ptr,
     struct wl_surface *wl_surface_ptr,
@@ -98,43 +94,43 @@ static const struct zwlmaker_toplevel_icon_v1_listener toplevel_icon_listener={
 
 /** Listeners for the icon's surface's pointer position Tracker. */
 static const struct ext_input_position_observer_v1_listener
-_wlclient_icon_tracker_listener = {
-    .position = _wlclient_icon_input_position_observer_position,
+_wlmcl_icon_tracker_listener = {
+    .position = _wlmcl_icon_input_position_observer_position,
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlclient_icon_t *wlclient_icon_create(wlclient_t *wlclient_ptr)
+wlmcl_icon_t *wlmcl_icon_create(wlmcl_client_t *wlclient_ptr)
 {
-    if (!wlclient_icon_supported(wlclient_ptr)) {
+    if (!wlmcl_icon_supported(wlclient_ptr)) {
         bs_log(BS_ERROR, "Icon manager is not supported.");
         return NULL;
     }
 
-    wlclient_icon_t *icon_ptr = logged_calloc(1, sizeof(wlclient_icon_t));
+    wlmcl_icon_t *icon_ptr = logged_calloc(1, sizeof(wlmcl_icon_t));
     if (NULL == icon_ptr) return NULL;
     icon_ptr->wlclient_ptr = wlclient_ptr;
 
     icon_ptr->wl_surface_ptr = wl_compositor_create_surface(
-        wlclient_attributes(wlclient_ptr)->wl_compositor_ptr);
+        wlmcl_client_attributes(wlclient_ptr)->wl_compositor_ptr);
     if (NULL == icon_ptr->wl_surface_ptr) {
         bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p).",
-               wlclient_attributes(wlclient_ptr)->wl_compositor_ptr);
-        wlclient_icon_destroy(icon_ptr);
+               wlmcl_client_attributes(wlclient_ptr)->wl_compositor_ptr);
+        wlmcl_icon_destroy(icon_ptr);
         return NULL;
     }
 
     icon_ptr->toplevel_icon_ptr = zwlmaker_icon_manager_v1_get_toplevel_icon(
-        wlclient_attributes(wlclient_ptr)->icon_manager_ptr,
+        wlmcl_client_attributes(wlclient_ptr)->icon_manager_ptr,
         NULL,
         icon_ptr->wl_surface_ptr);
     if (NULL == icon_ptr->toplevel_icon_ptr) {
         bs_log(BS_ERROR, "Failed  zwlmaker_icon_manager_v1_get_toplevel_icon"
                "(%p, NULL, %p).",
-               wlclient_attributes(wlclient_ptr)->icon_manager_ptr,
+               wlmcl_client_attributes(wlclient_ptr)->icon_manager_ptr,
                icon_ptr->wl_surface_ptr);
-        wlclient_icon_destroy(icon_ptr);
+        wlmcl_icon_destroy(icon_ptr);
         return NULL;
     }
 
@@ -144,23 +140,23 @@ wlclient_icon_t *wlclient_icon_create(wlclient_t *wlclient_ptr)
         icon_ptr);
     wl_surface_commit(icon_ptr->wl_surface_ptr);
 
-    if (NULL != wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr) {
+    if (NULL != wlmcl_client_attributes(wlclient_ptr)->input_observation_manager_ptr) {
         icon_ptr->input_position_observer_ptr =
             ext_input_observation_manager_v1_create_pointer_observer(
-                wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr,
-                wlclient_attributes(wlclient_ptr)->wl_pointer_ptr,
+                wlmcl_client_attributes(wlclient_ptr)->input_observation_manager_ptr,
+                wlmcl_client_attributes(wlclient_ptr)->wl_pointer_ptr,
                 icon_ptr->wl_surface_ptr);
         if (NULL == icon_ptr->input_position_observer_ptr) {
             bs_log(BS_ERROR,
                    "Failed ext_input_observation_v1_pointer_position(%p, %p)",
-                   wlclient_attributes(wlclient_ptr)->input_observation_manager_ptr,
+                   wlmcl_client_attributes(wlclient_ptr)->input_observation_manager_ptr,
                    icon_ptr->wl_surface_ptr);
-            wlclient_icon_destroy(icon_ptr);
+            wlmcl_icon_destroy(icon_ptr);
             return NULL;
         }
         ext_input_position_observer_v1_add_listener(
             icon_ptr->input_position_observer_ptr,
-            &_wlclient_icon_tracker_listener,
+            &_wlmcl_icon_tracker_listener,
             icon_ptr);
         bs_log(BS_INFO, "Created pointer tracker %p for wl_surface %p",
                icon_ptr->input_position_observer_ptr, icon_ptr->wl_surface_ptr);
@@ -170,7 +166,7 @@ wlclient_icon_t *wlclient_icon_create(wlclient_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlclient_icon_destroy(wlclient_icon_t *icon_ptr)
+void wlmcl_icon_destroy(wlmcl_icon_t *icon_ptr)
 {
     if (NULL != icon_ptr->input_position_observer_ptr) {
         ext_input_position_observer_v1_destroy(
@@ -183,11 +179,6 @@ void wlclient_icon_destroy(wlclient_icon_t *icon_ptr)
         icon_ptr->toplevel_icon_ptr = NULL;
     }
 
-    if (NULL != icon_ptr->dblbuf_ptr) {
-        wlcl_dblbuf_destroy(icon_ptr->dblbuf_ptr);
-        icon_ptr->dblbuf_ptr = NULL;
-    }
-
     if (NULL != icon_ptr->wl_surface_ptr) {
         wl_surface_destroy(icon_ptr->wl_surface_ptr);
         icon_ptr->wl_surface_ptr = NULL;
@@ -197,30 +188,34 @@ void wlclient_icon_destroy(wlclient_icon_t *icon_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-bool wlclient_icon_supported(
-    wlclient_t *wlclient_ptr)
+bool wlmcl_icon_supported(
+    wlmcl_client_t *wlclient_ptr)
 {
-    return (NULL != wlclient_attributes(wlclient_ptr)->icon_manager_ptr);
+    return (NULL != wlmcl_client_attributes(wlclient_ptr)->icon_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------ */
-void wlclient_icon_register_ready_callback(
-    wlclient_icon_t *icon_ptr,
-    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
+struct wl_surface *wlmcl_icon_wl_surface(wlmcl_icon_t *icon_ptr)
+{
+    return icon_ptr->wl_surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmcl_icon_register_configure_callback(
+    wlmcl_icon_t *icon_ptr,
+    void (*callback)(void *ud_ptr, uint32_t width, uint32_t height),
     void *ud_ptr)
 {
-    if (NULL != icon_ptr->dblbuf_ptr) {
-        wlcl_dblbuf_register_ready_callback(
-            icon_ptr->dblbuf_ptr, callback, ud_ptr);
-    } else {
-        icon_ptr->ready_callback = callback;
-        icon_ptr->ready_callback_ud_ptr = ud_ptr;
+    icon_ptr->configure_callback = callback;
+    icon_ptr->configure_callback_ud_ptr = ud_ptr;
+    if (icon_ptr->width > 0 && icon_ptr->height > 0 && NULL != callback) {
+        callback(ud_ptr, icon_ptr->width, icon_ptr->height);
     }
 }
 
 /* ------------------------------------------------------------------------- */
-void wlclient_icon_register_position_callback(
-    wlclient_icon_t *icon_ptr,
+void wlmcl_icon_register_position_callback(
+    wlmcl_icon_t *icon_ptr,
     void (*callback)(double x, double y, void *ud_ptr),
     void *callback_ud_ptr)
 {
@@ -254,43 +249,24 @@ void handle_toplevel_icon_configure(
     int32_t height,
     uint32_t serial)
 {
-    wlclient_icon_t *icon_ptr = data_ptr;
+    wlmcl_icon_t *icon_ptr = data_ptr;
     icon_ptr->width = width;
     icon_ptr->height = height;
     bs_log(BS_DEBUG, "Configured icon to %"PRId32" x %"PRId32, width, height);
     zwlmaker_toplevel_icon_v1_ack_configure(
         zwlmaker_toplevel_icon_v1_ptr, serial);
 
-    wlclient_t *wlclient_ptr = icon_ptr->wlclient_ptr;
-
-    icon_ptr->dblbuf_ptr = wlcl_dblbuf_create(
-        wlclient_attributes(wlclient_ptr)->app_id_ptr,
-        icon_ptr->wl_surface_ptr,
-        wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
-        icon_ptr->width,
-        icon_ptr->height);
-    if (NULL == icon_ptr->dblbuf_ptr) {
-        bs_log(BS_FATAL, "Failed wlcl_dblbuf_create(%p, %p, %u, %u)",
-               icon_ptr->wl_surface_ptr,
-               wlclient_attributes(wlclient_ptr)->wl_shm_ptr,
-               icon_ptr->width,
-               icon_ptr->height);
-        // TODO(kaeser@gubbe.ch): Error handling.
-    }
-
-    wlcl_dblbuf_ready_callback_t callback = icon_ptr->ready_callback;
-    if (NULL != callback) {
-        icon_ptr->ready_callback = NULL;
-        wlcl_dblbuf_register_ready_callback(
-            icon_ptr->dblbuf_ptr,
-            callback,
-            icon_ptr->ready_callback_ud_ptr);
+    if (NULL != icon_ptr->configure_callback) {
+        icon_ptr->configure_callback(
+            icon_ptr->configure_callback_ud_ptr,
+            icon_ptr->width,
+            icon_ptr->height);
     }
 }
 
 /* ------------------------------------------------------------------------- */
 /** Callback for when a `position` event is received. */
-void _wlclient_icon_input_position_observer_position(
+void _wlmcl_icon_input_position_observer_position(
     void *data_ptr,
     __UNUSED__ struct ext_input_position_observer_v1 *input_position_observer_ptr,
     __UNUSED__ struct wl_surface *wl_surface_ptr,
@@ -298,7 +274,7 @@ void _wlclient_icon_input_position_observer_position(
     int32_t relative_x,
     int32_t relative_y)
 {
-    wlclient_icon_t *icon_ptr = data_ptr;
+    wlmcl_icon_t *icon_ptr = data_ptr;
 
     if (!icon_ptr->position_received ||
         icon_ptr->last_position_x != relative_x ||

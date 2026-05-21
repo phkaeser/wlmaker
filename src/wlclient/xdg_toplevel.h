@@ -18,20 +18,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LIBWLCLIENT_XDG_TOPLEVEL_H__
-#define __LIBWLCLIENT_XDG_TOPLEVEL_H__
+#ifndef __WLMAKER_WLCLIENT_XDG_TOPLEVEL_H__
+#define __WLMAKER_WLCLIENT_XDG_TOPLEVEL_H__
 
-#include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#include "libwlclient.h"  // IWYU pragma: keep
+#include "wlclient.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 /** Forward declaration: State of the toplevel. */
-typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
+typedef struct _wlmcl_xdg_toplevel_t wlmcl_xdg_toplevel_t;
 
 /**
  * Creates a XDG toplevel.
@@ -43,8 +43,8 @@ typedef struct _wlclient_xdg_toplevel_t wlclient_xdg_toplevel_t;
  *
  * @return State of the toplevel or NULL on error.
  */
-wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
-    wlclient_t *wlclient_ptr,
+wlmcl_xdg_toplevel_t *wlmcl_xdg_toplevel_create(
+    wlmcl_client_t *wlclient_ptr,
     const char *title_ptr,
     unsigned width,
     unsigned height);
@@ -54,14 +54,14 @@ wlclient_xdg_toplevel_t *wlclient_xdg_toplevel_create(
  *
  * @param toplevel_ptr
  */
-void wlclient_xdg_toplevel_destroy(wlclient_xdg_toplevel_t *toplevel_ptr);
+void wlmcl_xdg_toplevel_destroy(wlmcl_xdg_toplevel_t *toplevel_ptr);
 
 /**
  * Returns whether the XDG shell protocol is supported on the client.
  *
  * @param wlclient_ptr
  */
-bool wlclient_xdg_supported(wlclient_t *wlclient_ptr);
+bool wlmcl_xdg_supported(wlmcl_client_t *wlclient_ptr);
 
 /**
  * Sets XDG decoration mode to "server side".
@@ -72,21 +72,31 @@ bool wlclient_xdg_supported(wlclient_t *wlclient_ptr);
  *
  * @return true if the XDG decoration protocol is supported.
  */
-bool wlclient_xdg_decoration_set_server_side(
-    wlclient_xdg_toplevel_t *toplevel_ptr,
+bool wlmcl_xdg_decoration_set_server_side(
+    wlmcl_xdg_toplevel_t *toplevel_ptr,
     bool enabled);
 
 /**
- * Registers the callback to notify when the buffer is ready to draw into.
+ * Returns the underlying Wayland surface of the XDG toplevel.
+ *
+ * @param toplevel_ptr
+ *
+ * @return The wl_surface pointer.
+ */
+struct wl_surface *wlmcl_xdg_toplevel_wl_surface(
+    wlmcl_xdg_toplevel_t *toplevel_ptr);
+
+/**
+ * Registers the callback to notify when the toplevel's layout/size changes.
  *
  * @param toplevel_ptr
  * @param callback
- * @param callback_ud_ptr
+ * @param ud_ptr
  */
-void wlclient_xdg_toplevel_register_ready_callback(
-    wlclient_xdg_toplevel_t *toplevel_ptr,
-    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
-    void *callback_ud_ptr);
+void wlmcl_xdg_toplevel_register_configure_callback(
+    wlmcl_xdg_toplevel_t *toplevel_ptr,
+    void (*callback)(void *ud_ptr, uint32_t width, uint32_t height),
+    void *ud_ptr);
 
 /**
  * Registers the callback to notify the pointer position relative to the
@@ -96,8 +106,8 @@ void wlclient_xdg_toplevel_register_ready_callback(
  * @param callback
  * @param callback_ud_ptr
  */
-void wlclient_xdg_toplevel_register_position_callback(
-    wlclient_xdg_toplevel_t *toplevel_ptr,
+void wlmcl_xdg_toplevel_register_position_callback(
+    wlmcl_xdg_toplevel_t *toplevel_ptr,
     void (*callback)(double x, double y, void *ud_ptr),
     void *callback_ud_ptr);
 
@@ -105,5 +115,5 @@ void wlclient_xdg_toplevel_register_position_callback(
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __LIBWLCLIENT_XDG_TOPLEVEL_H__ */
+#endif /* __WLMAKER_WLCLIENT_XDG_TOPLEVEL_H__ */
 /* == End of xdg_toplevel.h ================================================== */
