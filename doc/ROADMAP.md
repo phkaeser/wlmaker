@@ -12,12 +12,14 @@ See the [Detailed Feature List](FEATURES.md) for details.
 **Focus** Dock & Mini-Windows
 
 * Clip & Dock handling
+  * Move into a separate process.
+  * Icons are loaded according to `.desktop` specification.
   * Add option to save Dock & Clip state.
     * Document the state file.
     * Save state for Clip, Dock.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
-  * Support window minimize
+  * Support window minimize.
 
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.
@@ -26,41 +28,25 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Infrastructure
   * Write log to logfile (vs. stderr).
 
-## Plan for 0.8
+## [0.8]*(https://github.com/phkaeser/wlmaker/releases/tag/v0.8)
 
-**Focus** Themes
-
-* [done] Themes/Styles
-  * [done] Settle on whether to use 'Themes' or 'Styles'. Update files & references.
-  * [done] Add means to change theme while running.
-    * [done] Add functions to change window's style while running.
-    * [done] Add functions to change menu's style while running.
-    * [done] Add function to change the background color while running.
-    * [done] Adds functions to change the cursor style while running.
-    * [done] Add function for changing tasklist style while running.
-    * [done] Add function to change Dock and Clip style while running.
-    * [done] Align tile's content size with dock app used size.
-    * [done] Fix: menu size when setting theme via menu.
-    * [done] Add function to change the docked application's size when style updates.
-    * [done] Adds theme "Name" plist entry.
-    * [done] Add menu entry and generator to load from `Themes/...` files.
-    * [done] Move menu files to DATA directories, away from CONFIG.
-    * [done] Cleanup the Debian theme so it works for personal use.
-    * [done] Add option to load cursor theme from `/etc/alternatives/x-cursor-theme`,
-      or `/usr/share/icons/default/index.theme` (an INI file).
-    * [done] Permit configuring the startup theme in the config file.
+* [done] Themes
+  * [done] Adds means to change the theme while running.
+  * [done] Extends wlmtool to search for theme files, and populate root menu.
+  * [done] Loads cursor theme from `/etc/alternatives/x-cursor-theme`,
+      or `/usr/share/icons/default/index.theme`.
+  * [done] Adds option in `Config.plist` to select startup Theme.
 
 * [done] Windows
   * [done] Make the modifier for move-dragging a window configurable ([#437](https://github.com/phkaeser/wlmaker/issues/437)).
-  * [done] Initial placement algorithm.
   * [done] Store and accept window state (fullscreen, maximize) before mapping.
+  * [done] Add an initial algorithm for window placement.
 
 * [done] Infrastructure
-  * [done] Backlight controls through `brightnessctl` via hotkeyas and root menu.
+  * [done] Backlight controls through `brightnessctl` via hotkeys and root menu.
   * [done] Adds configuration options (tap to click, scroll, ...) for touchpad.
   * [done] wlmtool: Adds terminal command prefix for desktop applications with a `Terminal` flag.
   * [done] dockapp: Adds `wlmbattery` for showing battery and power adapter status.
-  * [done] Use bs_file_tree_walk() over ftw() in gen_menu.c.
   * [done] Support configurable means (eg. Alt+) to emulate right-click on laptop.
 
 * [done] Bug fixes

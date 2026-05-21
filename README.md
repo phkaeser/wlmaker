@@ -23,27 +23,27 @@ See [here](doc/FEATURES.md) for a detailed list of implemented or planned
 features, or the [roadmap](doc/ROADMAP.md) for what's planned for the upcoming
 versions.
 
-Highlights for current version ([0.7.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.7.1)):
+Highlights for current version ([0.8](https://github.com/phkaeser/wlmaker/releases/tag/v0.8)):
 
-* *new* Support for copy-paste and middle-click paste.
-* *new* Read keyboard configuration from `/etc/default/keyboard`.
-* *new* DockApps for monitoring CPU, Memory and Network.
-* *new* `wlmtool`, eliminating the need for depending on `wmmenugen`.
-* *new* Various bug fixes ([#438](https://github.com/phkaeser/wlmaker/issues/438), [#439](https://github.com/phkaeser/wlmaker/issues/439), [#444](https://github.com/phkaeser/wlmaker/issues/444)).
-* *new* Builds with [wlroots 0.18, 0.19 and 0.20](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
+* *new* Support to change Theme while running, shown in the root menu.
+* *new* Window placement.
+* *new* DockApp (`wlmbattery`) to show laptop battery and power status.
+* *new* Improved Touchpad support: Configuration options, and right-click emulation.
+* *new* Variouis bug fixes ([#449](https://github.com/phkaeser/wlmaker/issues/449), [#475](https://github.com/phkaeser/wlmaker/issues/475), [495](https://github.com/phkaeser/wlmaker/issues/495)).
+* Builds with [wlroots 0.18, 0.19 and 0.20](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
 * Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
-* [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wmmenugen`), and can be navigated by keyboard.
+* [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wlmtool` or `wmmenugen`), and can be navigated by keyboard.
 * Screen saver support, through `ext-session-lock-v1` and `idle-inhibit-unstable-v1` protocols.
 * Hot corners with configurable actions, default to 'lock' or 'inhibit' locking.
-* Configurable through plist text files: [base configuration](etc/wlmaker.plist),
-  [style](etc/style.plist), [root menu](etc/root-menu.plist) and
-  [docks & workspaces](etc/wlmaker-state.plist).
+* Configurable through plist text files: [base configuration](etc/Config.plist),
+  [style](share/Themes/Default.plist), [root menu](etc/RootMenu.plist) and
+  [docks & workspaces](etc/State.plist).
 * wlr layer shell support (`wlr-layer-shell-unstable-v1`), fully implemented & tested.
 * Appearance matches Window Maker: Decorations, dock, clip.
 * Support for Wayland XDG shell (mostly complete. Bug reports welcome).
 * Initial support for X11 applications (positioning and specific modes are missing).
   Use `--start_xwayland` argument to enable XWayland, it's off by default.
-* Prototype DockApps (`apps/wlmclock`, `apps/wlmeyes`).
+* DockApps (`apps/wlmclock`, `apps/wlmbattery`, `apps/wlmcpugraph`, ...).
 
 ### All the details?
 
