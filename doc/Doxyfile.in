@@ -858,7 +858,7 @@ WARN_LOGFILE           =
 
 INPUT                  = \
                          @PROJECT_SOURCE_DIR@/apps/ \
-                         @PROJECT_SOURCE_DIR@/apps/libwlclient \
+                         @PROJECT_SOURCE_DIR@/src/wlclient \
                          @PROJECT_SOURCE_DIR@/doc/commandline.md \
                          @PROJECT_SOURCE_DIR@/doc/config.md \
                          @PROJECT_SOURCE_DIR@/doc/manual.md \

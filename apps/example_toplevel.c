@@ -32,8 +32,8 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "libwlclient/xdg_toplevel.h"
-#include "libwlclient/libwlclient.h"
+#include "wlclient/xdg_toplevel.h"
+#include "wlclient/libwlclient.h"
 
 /** State of the client. */
 wlclient_t                    *wlclient_ptr;

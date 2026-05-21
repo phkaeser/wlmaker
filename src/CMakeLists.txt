@@ -34,6 +34,7 @@ pkg_check_modules(XWAYLAND xwayland>=22.1.9)
 add_subdirectory(backend)
 add_subdirectory(input)
 add_subdirectory(toolkit)
+add_subdirectory(wlclient)
 set(public_header_files
   action.h
   action_item.h

@@ -23,7 +23,7 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
-#include <libwlclient/libwlclient.h>
+#include <wlclient/libwlclient.h>
 #include <math.h>
 #include <primitives/primitives.h>
 #include <primitives/segment_display.h>
@@ -35,7 +35,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "libwlclient/icon.h"
+#include "wlclient/icon.h"
 
 /** Foreground color of a LED in the VFD-style display. */
 static const uint32_t color_led = 0xff55ffff;
