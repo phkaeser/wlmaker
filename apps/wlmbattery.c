@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <primitives/primitives.h>
-#include <libwlclient/libwlclient.h>
+#include <wlclient/libwlclient.h>
 
 #include <libbase/libbase.h>
 

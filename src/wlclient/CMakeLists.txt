@@ -70,7 +70,10 @@ waylandprotocol_add(
 target_sources(libwlclient PRIVATE "${sources}")
 
 target_include_directories(
-  libwlclient PRIVATE
+  libwlclient
+  PUBLIC
+  "${PROJECT_SOURCE_DIR}/src"
+  PRIVATE
   "${WAYLAND_CLIENT_INCLUDE_DIRS}"
   "${XKBCOMMON_INCLUDE_DIRS}"
   "${CMAKE_CURRENT_BINARY_DIR}")

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
-add_subdirectory(libwlclient)
 add_subdirectory(primitives)
 add_library(wlm_graph_shared STATIC wlm_graph_shared.c)
 target_include_directories(wlm_graph_shared PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

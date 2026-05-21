@@ -31,9 +31,9 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "libwlclient/xdg_toplevel.h"
-#include "libwlclient/libwlclient.h"
-#include "libwlclient/icon.h"
+#include "wlclient/xdg_toplevel.h"
+#include "wlclient/libwlclient.h"
+#include "wlclient/icon.h"
 
 /* == Data ================================================================= */
 

@@ -26,14 +26,14 @@
 #include <cairo.h>
 #include <errno.h>
 #include <libbase/libbase.h>
-#include <libwlclient/libwlclient.h>
+#include <wlclient/libwlclient.h>
 #include <primitives/primitives.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "libwlclient/icon.h"
+#include "wlclient/icon.h"
 
 /* == Internal definitions ================================================= */
 
