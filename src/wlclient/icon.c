@@ -28,6 +28,7 @@
 
 #include "dblbuf.h"
 #include "ext-input-observation-v1-client-protocol.h"
+#include "libwlclient.h"
 #include "wlmaker-icon-unstable-v1-client-protocol.h"
 
 struct ext_input_position_observer_v1;
