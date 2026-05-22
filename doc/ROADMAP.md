@@ -11,8 +11,16 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 **Focus** Dock & Mini-Windows
 
+* Root/Workspace/Layer separation
+  * Refactor root element so it can be used in wlmdock.
+  * Move the layer & screen lock elements into a separate element (`desktop`?
+    `screen`? ...?)
+  * Update layers so they remain fixed when workspace changes.
+
 * Clip & Dock handling
   * Move into a separate process.
+    * Figure out how to use the compositor's keyboard configuration, and not
+      duplicate config_dict.
   * Icons are loaded according to `.desktop` specification.
   * Add option to save Dock & Clip state.
     * Document the state file.
@@ -20,6 +28,9 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Toplevel windows show an icon, unless started from dock.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
   * Support window minimize.
+  * Configuration
+    * Permit specifying output, layer and anchor for the dock, clip and icon
+      area elements.
 
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.

@@ -510,7 +510,10 @@ void _wlmim_cursor_handle_button(
         }
     }
 
-    wlmtk_root_pointer_button(cursor_ptr->root_ptr, &ev, modifiers);
+    if (NULL != cursor_ptr->root_ptr) {
+        // TODO(kaeser@gubbe.ch): Remove NULL check when root_ptr is guaranteed to be non-NULL.
+        wlmtk_root_pointer_button(cursor_ptr->root_ptr, &ev, modifiers);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -530,9 +533,12 @@ void _wlmim_cursor_handle_axis(
 
     wlmim_report_activity(cursor_ptr->input_manager_ptr);
 
-    wlmtk_root_pointer_axis(
-        cursor_ptr->root_ptr,
-        wlr_pointer_axis_event_ptr);
+    if (NULL != cursor_ptr->root_ptr) {
+        // TODO(kaeser@gubbe.ch): Remove NULL check when root_ptr is guaranteed to be non-NULL.
+        wlmtk_root_pointer_axis(
+            cursor_ptr->root_ptr,
+            wlr_pointer_axis_event_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -604,13 +610,15 @@ void _wlmim_cursor_process_motion(
         &wlmim_events(cursor_ptr->input_manager_ptr)->cursor_position_updated,
         cursor_ptr->wlr_cursor_ptr);
 
-    // TODO(kaeser@gubbe.ch): also make this an event-based callback.
-    wlmtk_root_pointer_motion(
-        cursor_ptr->root_ptr,
-        cursor_ptr->wlr_cursor_ptr->x,
-        cursor_ptr->wlr_cursor_ptr->y,
-        time_msec,
-        cursor_ptr->pointer_ptr);
+    if (NULL != cursor_ptr->root_ptr) {
+        // TODO(kaeser@gubbe.ch): Remove NULL check when root_ptr is guaranteed to be non-NULL.
+        wlmtk_root_pointer_motion(
+            cursor_ptr->root_ptr,
+            cursor_ptr->wlr_cursor_ptr->x,
+            cursor_ptr->wlr_cursor_ptr->y,
+            time_msec,
+            cursor_ptr->pointer_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

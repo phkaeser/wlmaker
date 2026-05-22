@@ -143,6 +143,9 @@ const struct wlmcl_client_attributes *wlmcl_client_attributes(
 /** @return A pointer to @ref wlmcl_client_t::events. */
 struct wlmcl_client_events *wlmcl_client_events(wlmcl_client_t *wlmcl_client_ptr);
 
+/** @return The signal file descriptor monitored by the client. */
+int wlmcl_client_signal_fd(wlmcl_client_t *wlmcl_client_ptr);
+
 /**
  * Runs the client's mainloop.
  *

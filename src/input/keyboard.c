@@ -406,7 +406,8 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
                               key_syms[i],
                               modifiers)) {
             processed |= true;
-        } else {
+        } else if (NULL != keyboard_ptr->root_element_ptr) {
+            // TODO(kaeser@gubbe.ch): Remove NULL check when root_element_ptr is guaranteed to be non-NULL.
             processed |= wlmtk_element_keyboard_sym(
                 keyboard_ptr->root_element_ptr,
                 key_syms[i],
@@ -417,9 +418,12 @@ void handle_key(struct wl_listener *listener_ptr, void *data_ptr)
 
     if (processed) return;
 
-    wlmtk_element_keyboard_event(
-        keyboard_ptr->root_element_ptr,
-        wlr_keyboard_key_event_ptr);
+    if (NULL != keyboard_ptr->root_element_ptr) {
+        // TODO(kaeser@gubbe.ch): Remove NULL check when root_element_ptr is guaranteed to be non-NULL.
+        wlmtk_element_keyboard_event(
+            keyboard_ptr->root_element_ptr,
+            wlr_keyboard_key_event_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

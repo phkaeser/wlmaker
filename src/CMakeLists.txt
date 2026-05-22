@@ -36,6 +36,7 @@ add_subdirectory(input)
 add_subdirectory(toolkit)
 add_subdirectory(util)
 add_subdirectory(wlclient)
+add_subdirectory(dock)
 set(public_header_files
   action.h
   action_item.h
