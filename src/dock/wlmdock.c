@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/signalfd.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
@@ -44,6 +45,7 @@
 
 #include "input/cursor.h"
 #include "input/manager.h"
+#include "toolkit/toolkit.h"
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
 #include <libbase/libbase.h>
@@ -76,8 +78,12 @@ typedef struct {
     struct wlr_output         *wlr_output_ptr;
     /** Node in the scene graph backing the output. */
     struct wlr_scene_output   *wlr_scene_output_ptr;
-    /** Pink background rectangle. */
-    struct wlr_scene_rect     *wlr_scene_rect_ptr;
+    /** Pink background rectangle element. */
+    wlmtk_rectangle_t         *rectangle_ptr;
+    /** Root wrapper. */
+    wlmtk_root_t              *root_ptr;
+    /** Container to attach rectangle. */
+    wlmtk_container_t         container;
 
     /** Local input manager. */
     wlmim_t                   *input_manager_ptr;
@@ -188,6 +194,36 @@ wlmdock_t *_wlmdock_create(void)
         return NULL;
     }
 
+    if (!wlmtk_container_init_attached(
+            &dock_ptr->container,
+            &dock_ptr->wlr_scene_ptr->tree)) {
+        bs_log(BS_ERROR, "Failed to initialize attached container.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
+    dock_ptr->rectangle_ptr = wlmtk_rectangle_create(0, 0, 0xffc0cb);
+    if (NULL == dock_ptr->rectangle_ptr) {
+        bs_log(BS_ERROR, "Failed to create pink background rectangle.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+    wlmtk_container_add_element(
+        &dock_ptr->container,
+        wlmtk_rectangle_element(dock_ptr->rectangle_ptr));
+    wlmtk_element_set_visible(
+        wlmtk_rectangle_element(dock_ptr->rectangle_ptr),
+        true);
+
+    dock_ptr->root_ptr = wlmtk_root_create(
+        wlmtk_rectangle_element(dock_ptr->rectangle_ptr),
+        dock_ptr->wlr_output_layout_ptr);
+    if (NULL == dock_ptr->root_ptr) {
+        bs_log(BS_ERROR, "Failed to create root element wrapper.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
     // 4. Set up helper config dict for input keyboard creation.
     bspl_dict_t *config_dict_ptr = bspl_dict_create();
     bspl_dict_t *kbd_dict_ptr = bspl_dict_create();
@@ -288,20 +324,7 @@ wlmdock_t *_wlmdock_create(void)
         return NULL;
     }
 
-    // 6. Create solid pink background rectangle in scene graph.
-    float pink_color[4] = { 1.0f, 192.0f / 255.0f, 203.0f / 255.0f, 1.0f };
-    dock_ptr->wlr_scene_rect_ptr = wlr_scene_rect_create(
-        &dock_ptr->wlr_scene_ptr->tree,
-        0, 0,
-        pink_color);
-    if (NULL == dock_ptr->wlr_scene_rect_ptr) {
-        bs_log(BS_ERROR, "Failed to create pink background scene rect.");
-        bspl_dict_unref(config_dict_ptr);
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    // 7. Create input seat and input manager (configured with root = NULL).
+    // 7. Create input seat and input manager.
     struct wlr_seat *wlr_seat_ptr = wlr_seat_create(
         dock_ptr->local_display_ptr, "default");
     if (NULL == wlr_seat_ptr) {
@@ -323,7 +346,7 @@ wlmdock_t *_wlmdock_create(void)
         wlr_seat_ptr,
         config_dict_ptr,
         &cursor_style,
-        NULL);
+        dock_ptr->root_ptr);
     bspl_dict_unref(config_dict_ptr);
     if (NULL == dock_ptr->input_manager_ptr) {
         bs_log(BS_ERROR, "Failed to initialize input manager.");
@@ -370,6 +393,19 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
 
     if (NULL != dock_ptr->input_manager_ptr) {
         wlmim_input_manager_destroy(dock_ptr->input_manager_ptr);
+    }
+
+    if (NULL != dock_ptr->root_ptr) {
+        wlmtk_root_destroy(dock_ptr->root_ptr);
+        dock_ptr->root_ptr = NULL;
+    }
+    if (NULL != dock_ptr->rectangle_ptr) {
+        wlmtk_container_remove_element(
+            &dock_ptr->container,
+            wlmtk_rectangle_element(dock_ptr->rectangle_ptr));
+        wlmtk_rectangle_destroy(dock_ptr->rectangle_ptr);
+        dock_ptr->rectangle_ptr = NULL;
+        wlmtk_container_fini(&dock_ptr->container);
     }
     if (NULL != dock_ptr->wlr_output_ptr) {
         wlr_output_destroy(dock_ptr->wlr_output_ptr);
@@ -473,9 +509,9 @@ void handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
     }
     wlr_output_state_finish(&state);
 
-    if (NULL != dock_ptr->wlr_scene_rect_ptr) {
-        wlr_scene_rect_set_size(
-            dock_ptr->wlr_scene_rect_ptr,
+    if (NULL != dock_ptr->rectangle_ptr) {
+        wlmtk_rectangle_set_size(
+            dock_ptr->rectangle_ptr,
             (int)width, (int)height);
     }
 
