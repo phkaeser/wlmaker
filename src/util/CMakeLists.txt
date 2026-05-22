@@ -22,7 +22,6 @@ target_sources(
   files.c
   subprocess_monitor.c
 )
-
 target_include_directories(
   wlm_util_lib
   PRIVATE

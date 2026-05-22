@@ -32,6 +32,7 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 # XWayland considered optional.
 pkg_check_modules(XWAYLAND xwayland>=22.1.9)
 add_subdirectory(backend)
+add_subdirectory(dock)
 add_subdirectory(input)
 add_subdirectory(toolkit)
 add_subdirectory(util)
@@ -123,8 +124,8 @@ target_link_libraries(
   libbase_plist
   input
   toolkit
-  wlmaker_protocols
   wlm_util_lib
+  wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
