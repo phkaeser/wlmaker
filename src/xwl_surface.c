@@ -653,8 +653,8 @@ void _xwl_surface_handle_surface_map(
     if (NULL == xwl_surface_ptr->window_ptr) return;
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(
-            xwl_surface_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(
+            xwl_surface_ptr->server_ptr->desktop_ptr);
     wlmtk_workspace_map_window(workspace_ptr, xwl_surface_ptr->window_ptr);
 }
 

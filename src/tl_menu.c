@@ -49,7 +49,7 @@ struct _wlmaker_tl_menu_t {
 
     /** Listener for @ref wlmtk_window_events_t::state_changed. */
     struct wl_listener        window_state_changed_listener;
-    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
+    /** Listener for @ref wlmtk_desktop_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
 
     /** Action item for 'Maximize'. */
@@ -215,7 +215,7 @@ wlmaker_tl_menu_t *wlmaker_tl_menu_create(
         window_ptr);
 
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
+        &wlmtk_desktop_events(server_ptr->desktop_ptr)->workspace_changed,
         &tl_menu_ptr->workspace_changed_listener,
         _wlmaker_tl_menu_handle_workspace_changed);
     _wlmaker_tl_menu_handle_workspace_changed(
@@ -289,8 +289,8 @@ void _wlmaker_tl_menu_handle_workspace_changed(
             tl_menu_ptr->workspaces_submenu_ptr,
             wlmtk_menu_item_at(tl_menu_ptr->workspaces_submenu_ptr, 0));
     }
-    wlmtk_root_for_each_workspace(
-        tl_menu_ptr->server_ptr->root_ptr,
+    wlmtk_desktop_for_each_workspace(
+        tl_menu_ptr->server_ptr->desktop_ptr,
         _wlmaker_tl_menu_workspace_iterator_create_item,
         tl_menu_ptr);
 

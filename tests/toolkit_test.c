@@ -32,6 +32,7 @@ const bs_test_set_t *toolkit_test_sets[] = {
     &wlmtk_buffer_test_set,
     &wlmtk_button_test_set,
     &wlmtk_container_test_set,
+    &wlmtk_desktop_test_set,
     &wlmtk_dock_test_set,
     &wlmtk_element_test_set,
     &wlmtk_fsm_test_set,

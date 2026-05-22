@@ -30,6 +30,7 @@
 #include "buffer.h"
 #include "button.h"
 #include "container.h"
+#include "desktop.h"
 #include "dock.h"
 #include "element.h"
 #include "fsm.h"

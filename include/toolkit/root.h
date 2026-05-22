@@ -21,25 +21,21 @@
 #ifndef __WLMTK_ROOT_H__
 #define __WLMTK_ROOT_H__
 
-/** Forward declaration: Root element (technically: container). */
+/** Forward declaration: Root element wrapper. */
 typedef struct _wlmtk_root_t wlmtk_root_t;
-/** Forward declaration: wlr output layout. */
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_pointer.h>
+#undef WLR_USE_UNSTABLE
 
 #include "element.h"
 #include "input.h"
-#include "menu.h"
-#include "surface.h"  // IWYU pragma: keep
-#include "window.h"  // IWYU pragma: keep
-#include "workspace.h"  // IWYU pragma: keep
 
 struct wlr_output_layout;
-/** Forward declaration: Wlroots scene. */
-struct wlr_scene;
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,59 +43,55 @@ extern "C" {
 
 /** Signals available for the @ref wlmtk_root_t class. */
 typedef struct {
-    /**
-     * Signal: Raised when the current workspace is changed.
-     * Data: Pointer to the new `wlmaker_workspace_t`, or NULL.
-     */
-    struct wl_signal          workspace_changed;
-
-    /** Triggers whenever @ref wlmtk_root_unlock succeeds. */
-    struct wl_signal          unlock_event;
-    /** Triggers when a window is mapped to a workspace. */
-    struct wl_signal          window_mapped;
-    /** Triggers when a window is unmapped from a workspace. */
-    struct wl_signal          window_unmapped;
-
-    /** An unclaimed pointer event. Arg: @ref wlmtk_button_event_t. */
+    /** An unclaimed button event. Arg: @ref wlmtk_button_event_t. */
     struct wl_signal          unclaimed_button_event;
 } wlmtk_root_events_t;
 
 /**
- * Creates the root element.
+ * Creates the root element wrapper.
  *
- * @param wlr_scene_ptr
- * @param wlr_output_layout_ptr
+ * @param element_ptr         The wrapped element.
+ * @param wlr_output_layout_ptr wlroots output layout to track output frames on.
  *
- * @return Handle of the root element or NULL on error.
+ * @return Handle of the root wrapper or NULL on error.
  */
 wlmtk_root_t *wlmtk_root_create(
-    struct wlr_scene *wlr_scene_ptr,
+    wlmtk_element_t *element_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
- * Destroys the root element.
+ * Destroys the root wrapper.
  *
- * @param root_ptr
+ * @param root_ptr            Root wrapper handle.
  */
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr);
 
 /**
- * Gets the set of events available in root. To bind listeners to.
+ * Gets the set of events available in root.
  *
- * @param root_ptr
+ * @param root_ptr            Root wrapper handle.
  *
- * @return Pointer to @ref wlmtk_root_t::events.
+ * @return Pointer to @ref wlmtk_root_events_t.
  */
 wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr);
 
 /**
+ * Gets the wrapped element.
+ *
+ * @param root_ptr            Root wrapper handle.
+ *
+ * @return Pointer to the wrapped @ref wlmtk_element_t.
+ */
+wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
+
+/**
  * Handles a pointer motion event.
  *
- * @param root_ptr
- * @param x
- * @param y
- * @param time_msec
- * @param pointer_ptr
+ * @param root_ptr            Root wrapper handle.
+ * @param x                   X coordinate of the motion event.
+ * @param y                   Y coordinate of the motion event.
+ * @param time_msec           Timestamp of the motion event.
+ * @param pointer_ptr         Pointer state reference.
  *
  * @return Whether there was an element under the pointer.
  */
@@ -122,11 +114,11 @@ bool wlmtk_root_pointer_motion(
  * TODO(kaeser@gubbe.ch): Implement DOUBLE_CLICK and DRAG events, and make it
  * well tested.
  *
- * @param root_ptr
- * @param event_ptr
- * @param modifiers
+ * @param root_ptr            Root wrapper handle.
+ * @param event_ptr           Wayland button event pointer.
+ * @param modifiers           Keyboard modifiers state.
  *
- * @return Whether the button was consumed.
+ * @return Whether the button event was consumed.
  */
 bool wlmtk_root_pointer_button(
     wlmtk_root_t *root_ptr,
@@ -136,135 +128,14 @@ bool wlmtk_root_pointer_button(
 /**
  * Handles a pointer axis event.
  *
- * @param root_ptr
- * @param wlr_pointer_axis_event_ptr
+ * @param root_ptr            Root wrapper handle.
+ * @param wlr_pointer_axis_event_ptr wlroots axis event pointer.
  *
  * @return Whether the axis event was consumed.
  */
 bool wlmtk_root_pointer_axis(
     wlmtk_root_t *root_ptr,
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
-
-/**
- * Adds a workspace.
- *
- * @param root_ptr
- * @param workspace_ptr
- */
-void wlmtk_root_add_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr);
-
-/**
- * Removes the workspace.
- *
- * @param root_ptr
- * @param workspace_ptr
- */
-void wlmtk_root_remove_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr);
-
-/**
- * Returns a pointer to the currently-active workspace.
- *
- * @param root_ptr
- */
-wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr);
-
-/**
- * Destroys the last workspace -- if it's not the only remaining workspace, not
- * the current workspace, and if there's no windows contained in it.
- *
- * @param root_ptr
- */
-void wlmtk_root_destroy_last_workspace(wlmtk_root_t *root_ptr);
-
-/**
- * Switches to the next workspace.
- *
- * @param root_ptr
- */
-void wlmtk_root_switch_to_next_workspace(wlmtk_root_t *root_ptr);
-
-/**
- * Switches to the previous workspace.
- *
- * @param root_ptr
- */
-void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr);
-
-/**
- * Runs |func()| for each workspace.
- *
- * @param root_ptr
- * @param func
- * @param ud_ptr
- */
-void wlmtk_root_for_each_workspace(
-    wlmtk_root_t *root_ptr,
-    void (*func)(bs_dllist_node_t *dlnode_ptr, void *ud_ptr),
-    void *ud_ptr);
-
-/**
- * Locks the root, using the provided element.
- *
- * The root must not be locked already. If locked successfully, the root will
- * keep a reference to `element_ptr`. The lock must call @ref wlmtk_root_unlock
- * to unlock root, and for releasing the reference.
- *
- * @param root_ptr
- * @param element_ptr
- *
- * @return Whether the lock was established.
- */
-bool wlmtk_root_lock(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr);
-
-/**
- * Unlocks the root, and releases the reference from @ref wlmtk_root_lock.
- *
- * Unlocking can only be done with `element_ptr` matching the `element_ptr`
- * argument from @ref wlmtk_root_lock.
- *
- * @param root_ptr
- * @param element_ptr
- *
- * @return Whether the lock was lifted.
- */
-bool wlmtk_root_unlock(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr);
-
-/** @return Whether root is locked. */
-bool wlmtk_root_locked(wlmtk_root_t *root_ptr);
-
-/**
- * Releases the lock reference, but keeps the root locked.
- *
- * This is in accordance with the session lock protocol specification [1],
- * stating the session should remain locked if the client dies.
- * This call is a no-op if `element_ptr` is not currently the lock of
- * `root_ptr`.
- *
- * [1] https://wayland.app/protocols/ext-session-lock-v1
- *
- * @param root_ptr
- * @param element_ptr
- */
-void wlmtk_root_lock_unreference(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr);
-
-/** @returns pointer to the root's @ref wlmtk_element_t. (Temporary) */
-wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr);
-
-/** Updates the style for all windows contained in root. */
-bool wlmtk_root_set_style(
-    wlmtk_root_t *root_ptr,
-    wlmtk_window_style_ref_t *window_style_ref_ptr,
-    wlmtk_menu_style_ref_t *menu_style_ref_ptr);
 
 /** Unit test cases. */
 extern const bs_test_set_t wlmtk_root_test_set;

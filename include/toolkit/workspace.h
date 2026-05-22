@@ -31,9 +31,9 @@ typedef struct _wlmtk_workspace_t wlmtk_workspace_t;
 
 struct wlmtk_tile_style;
 
+#include "desktop.h"  // IWYU pragma: keep
 #include "element.h"
 #include "layer.h"  // IWYU pragma: keep
-#include "root.h"  // IWYU pragma: keep
 #include "window.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
@@ -290,20 +290,20 @@ void wlmtk_workspace_raise_window(
 /** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
 wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);
 
-/** @return pointer to the anchor @ref wlmtk_root_t of `workspace_ptr`. */
-wlmtk_root_t *wlmtk_workspace_get_root(wlmtk_workspace_t *workspace_ptr);
+/** @return pointer to the anchor @ref wlmtk_desktop_t of `workspace_ptr`. */
+wlmtk_desktop_t *wlmtk_workspace_get_desktop(wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Sets the anchor @ref wlmtk_root_t of `workspace_ptr`.
+ * Sets the anchor @ref wlmtk_desktop_t of `workspace_ptr`.
  *
- * @protected Must only be called from @ref wlmtk_root_t.
+ * @protected Must only be called from @ref wlmtk_desktop_t.
  *
  * @param workspace_ptr
- * @param root_ptr
+ * @param desktop_ptr
  */
-void wlmtk_workspace_set_root(
+void wlmtk_workspace_set_desktop(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_root_t *root_ptr);
+    wlmtk_desktop_t *desktop_ptr);
 
 /** @return Pointer to @ref wlmtk_workspace_t::dlnode. */
 bs_dllist_node_t *wlmtk_dlnode_from_workspace(

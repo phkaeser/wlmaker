@@ -172,9 +172,18 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    // Root element.
-    server_ptr->root_ptr = wlmtk_root_create(
+    // desktop element.
+    server_ptr->desktop_ptr = wlmtk_desktop_create(
         server_ptr->wlr_scene_ptr,
+        server_ptr->wlr_output_layout_ptr);
+    if (NULL == server_ptr->desktop_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    // root element wrapper.
+    server_ptr->root_ptr = wlmtk_root_create(
+        wlmtk_desktop_element(server_ptr->desktop_ptr),
         server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->root_ptr) {
         wlmaker_server_destroy(server_ptr);
@@ -428,6 +437,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
         server_ptr->root_ptr = NULL;
     }
 
+    if (NULL != server_ptr->desktop_ptr) {
+        wlmtk_desktop_destroy(server_ptr->desktop_ptr);
+        server_ptr->desktop_ptr = NULL;
+    }
+
     if (NULL != server_ptr->backend_ptr) {
         wlmbe_backend_destroy(server_ptr->backend_ptr);
         server_ptr->backend_ptr = NULL;
@@ -487,15 +501,15 @@ void _wlmaker_server_unclaimed_button_event_handler(
         !wlmtk_menu_is_open(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr))) {
         wlmtk_workspace_map_window(
-            wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+            wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr));
         wlmtk_workspace_set_window_position(
-            wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+            wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr),
             wlmim_wlr_cursor(server_ptr->input_manager_ptr)->x,
             wlmim_wlr_cursor(server_ptr->input_manager_ptr)->y);
         wlmtk_workspace_confine_within(
-            wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+            wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
             wlmaker_root_menu_window(server_ptr->root_menu_ptr));
         wlmtk_menu_set_mode(
             wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
@@ -532,7 +546,7 @@ static void _wlmaker_server_handle_deactivate_task_list(
     wl_signal_emit(&server_ptr->task_list_disabled_event, NULL);
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr);
     wlmtk_window_t *window_ptr =
         wlmtk_workspace_get_activated_window(workspace_ptr);
     if (NULL != window_ptr) {

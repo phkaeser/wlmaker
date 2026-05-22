@@ -203,13 +203,13 @@ wlmaker_subprocess_monitor_t* wlmaker_subprocess_monitor_create(
         &monitor_ptr->window_destroyed_listener,
         _wlmaker_subprocess_monitor_handle_window_destroyed);
 
-    if (NULL != server_ptr->root_ptr) {
+    if (NULL != server_ptr->desktop_ptr) {
         wlmtk_util_connect_listener_signal(
-            &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
+            &wlmtk_desktop_events(server_ptr->desktop_ptr)->window_mapped,
             &monitor_ptr->window_mapped_listener,
             _wlmaker_subprocess_monitor_handle_window_mapped);
         wlmtk_util_connect_listener_signal(
-            &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
+            &wlmtk_desktop_events(server_ptr->desktop_ptr)->window_unmapped,
             &monitor_ptr->window_unmapped_listener,
             _wlmaker_subprocess_monitor_handle_window_unmapped);
     }
