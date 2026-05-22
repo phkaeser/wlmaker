@@ -483,6 +483,13 @@ struct wlmcl_client_events *wlmcl_client_events(wlmcl_client_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+int wlmcl_client_signal_fd(wlmcl_client_t *wlclient_ptr)
+{
+    return wlclient_ptr->signal_fd;
+}
+
+
+/* ------------------------------------------------------------------------- */
 // TODO(kaeser@gubbe.ch): Clean up.
 void wlmcl_client_run(wlmcl_client_t *wlclient_ptr)
 {

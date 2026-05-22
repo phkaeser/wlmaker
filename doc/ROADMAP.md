@@ -11,22 +11,37 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 **Focus** Dock & Mini-Windows
 
+* Root/Workspace/Layer separation
+  * [done] Move lock elements into `wlmtk_desktop_t`, off `wlmtk_root_t`.
+  * Update layers so they remain fixed when workspace changes.
+
 * Clip & Dock handling
-  * Move into a separate process.
-  * Icons are loaded according to `.desktop` specification.
-  * Add option to save Dock & Clip state.
-    * Document the state file.
-    * Save state for Clip, Dock.
-  * Toplevel windows show an icon, unless started from dock.
+  * Dock: Move into separate process.
+    * [done] New binary added, with tile-box and launchers.
+    * [done] Use keymap from compositor, and use cursor shape extension.
+    * Move config and theme loading into shared library.
+    * Loads icons according to the `.desktop` specification for apps.
+  * Clip: Move functionality into separate process.
+    * Add support for a protocol to show and switch workspaces.
+  * Icon Area: Add functionality to that separate process.
+    * Show minimized windows in icon area, no matter their other state.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
-  * Support window minimize.
+  * Configuration
+    * Settings to specify output, layer and anchor for dock, clip and icon area.
+  * Behaviour
+    * Fix issue of `wlmdock` not updating contents initially and automatically.
+    * Use exclusive zone + width to not overlap with other layer elements.
+  * `wlmaker` respects exclusive zone from dock(s) when determining maximizing extents.
+  * Fixes
+    * Resolve leaks, as reported by valgrind.
+    * Fix crash on shutdown observed on `wlroots-0.20`.
 
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
 
 * Infrastructure
-  * Adds support for `cursor-shape-v1` protocol.
+  * [done] Adds support for `cursor-shape-v1` protocol.
   * Write log to logfile (vs. stderr).
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)

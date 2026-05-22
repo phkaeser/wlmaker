@@ -604,7 +604,6 @@ void _wlmim_cursor_process_motion(
         &wlmim_events(cursor_ptr->input_manager_ptr)->cursor_position_updated,
         cursor_ptr->wlr_cursor_ptr);
 
-    // TODO(kaeser@gubbe.ch): also make this an event-based callback.
     wlmtk_root_pointer_motion(
         cursor_ptr->root_ptr,
         cursor_ptr->wlr_cursor_ptr->x,
