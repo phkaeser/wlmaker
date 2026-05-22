@@ -62,9 +62,9 @@ struct _wlmaker_task_list_t {
     /** Listener for the `task_list_disabled` signal by `wlmaker_server_t`. */
     struct wl_listener        task_list_disabled_listener;
 
-    /** Listener for @ref wlmtk_root_events_t::window_mapped. */
+    /** Listener for @ref wlmtk_desktop_events_t::window_mapped. */
     struct wl_listener        window_mapped_listener;
-    /** Listener for @ref wlmtk_root_events_t::window_unmapped. */
+    /** Listener for @ref wlmtk_desktop_events_t::window_unmapped. */
     struct wl_listener        window_unmapped_listener;
 
     /** Listener for @ref wlmaker_server_t::theme_changed_event. */
@@ -191,11 +191,11 @@ wlmaker_task_list_t *wlmaker_task_list_create(
         _wlmaker_task_list_handle_theme_changed);
 
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->window_mapped,
+        &wlmtk_desktop_events(server_ptr->desktop_ptr)->window_mapped,
         &task_list_ptr->window_mapped_listener,
         _wlmaker_task_list_handle_window_mapped);
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->window_unmapped,
+        &wlmtk_desktop_events(server_ptr->desktop_ptr)->window_unmapped,
         &task_list_ptr->window_unmapped_listener,
         _wlmaker_task_list_handle_window_unmapped);
 
@@ -238,7 +238,7 @@ bool _wlmaker_task_list_refresh(
     const struct wlmaker_task_list_style *style_ptr)
 {
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(task_list_ptr->server_ptr->desktop_ptr);
 
     struct wlr_buffer *wlr_buffer_ptr = create_wlr_buffer(
         workspace_ptr, style_ptr);
@@ -465,7 +465,7 @@ void _wlmaker_task_list_handle_task_list_enabled(
     }
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(task_list_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(task_list_ptr->server_ptr->desktop_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_OVERLAY);
     wlmtk_layer_add_panel(

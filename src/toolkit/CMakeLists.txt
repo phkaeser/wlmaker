@@ -20,6 +20,7 @@ set(public_header_files
   buffer.h
   button.h
   container.h
+  desktop.h
   dock.h
   element.h
   fsm.h
@@ -57,6 +58,7 @@ target_sources(toolkit PRIVATE
   buffer.c
   button.c
   container.c
+  desktop.c
   dock.c
   element.c
   fsm.c

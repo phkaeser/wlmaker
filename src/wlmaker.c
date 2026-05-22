@@ -299,7 +299,7 @@ bool create_workspaces(
             break;
         }
         bs_dllist_push_back(&server_ptr->backgrounds, bg_dlnode_ptr);
-        wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
+        wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
     }
 
     return rv;

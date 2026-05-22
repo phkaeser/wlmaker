@@ -83,7 +83,7 @@ struct _wlmaker_clip_t {
     /** Whether the 'next' button had been pressed. */
     bool                      next_button_pressed;
 
-    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
+    /** Listener for @ref wlmtk_desktop_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
@@ -251,7 +251,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     }
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     if (!wlmtk_layer_add_panel(
@@ -290,7 +290,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     };
 
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
+        &wlmtk_desktop_events(server_ptr->desktop_ptr)->workspace_changed,
         &clip_ptr->workspace_changed_listener,
         _wlmaker_clip_handle_workspace_changed);
     wlmtk_util_connect_listener_signal(
@@ -397,10 +397,10 @@ bool _wlmaker_clip_pointer_axis(
 
     if (0 > wlr_pointer_axis_event_ptr->delta) {
         // Scroll wheel "up" -> next.
-        wlmtk_root_switch_to_next_workspace(clip_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_switch_to_next_workspace(clip_ptr->server_ptr->desktop_ptr);
     } else if (0 < wlr_pointer_axis_event_ptr->delta) {
         // Scroll wheel "down" -> next.
-        wlmtk_root_switch_to_previous_workspace(clip_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_switch_to_previous_workspace(clip_ptr->server_ptr->desktop_ptr);
     }
     return true;
 }
@@ -448,14 +448,14 @@ bool _wlmaker_clip_pointer_button(
              clip_ptr->pointer_inside_next_button) &&
             clip_ptr->next_button_pressed) {
             clip_ptr->next_button_pressed = false;
-            wlmtk_root_switch_to_next_workspace(
-                clip_ptr->server_ptr->root_ptr);
+            wlmtk_desktop_switch_to_next_workspace(
+                clip_ptr->server_ptr->desktop_ptr);
         } else if ((clip_ptr->pointer_inside_prev_button ||
                     clip_ptr->pointer_inside_prev_button) &&
                    clip_ptr->prev_button_pressed) {
             clip_ptr->prev_button_pressed = false;
-            wlmtk_root_switch_to_previous_workspace(
-                clip_ptr->server_ptr->root_ptr);
+            wlmtk_desktop_switch_to_previous_workspace(
+                clip_ptr->server_ptr->desktop_ptr);
         }
         break;
 
@@ -499,7 +499,7 @@ bool _wlmaker_clip_update_overlay(
     int index = 0;
     const char *name_ptr = NULL;
     wlmtk_workspace_get_details(
-        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr),
+        wlmtk_desktop_get_current_workspace(clip_ptr->server_ptr->desktop_ptr),
         &name_ptr, &index);
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
@@ -808,7 +808,7 @@ void _wlmaker_clip_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(clip_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(clip_ptr->server_ptr->desktop_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 

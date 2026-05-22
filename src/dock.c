@@ -55,7 +55,7 @@ struct _wlmaker_dock_t {
     /** Description of the desired output, if any. */
     wlmbe_output_description_t output_description;
 
-    /** Listener for @ref wlmtk_root_events_t::workspace_changed. */
+    /** Listener for @ref wlmtk_desktop_events_t::workspace_changed. */
     struct wl_listener        workspace_changed_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
@@ -161,7 +161,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
 
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr);
     wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
     if (!wlmtk_layer_add_panel(
@@ -201,7 +201,7 @@ wlmaker_dock_t *wlmaker_dock_create(
     }
 
     wlmtk_util_connect_listener_signal(
-        &wlmtk_root_events(server_ptr->root_ptr)->workspace_changed,
+        &wlmtk_desktop_events(server_ptr->desktop_ptr)->workspace_changed,
         &dock_ptr->workspace_changed_listener,
         _wlmaker_dock_handle_workspace_changed);
     wlmtk_util_connect_listener_signal(
@@ -275,7 +275,7 @@ void _wlmaker_dock_handle_workspace_changed(
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
     wlmtk_workspace_t *workspace_ptr =
-        wlmtk_root_get_current_workspace(dock_ptr->server_ptr->root_ptr);
+        wlmtk_desktop_get_current_workspace(dock_ptr->server_ptr->desktop_ptr);
     wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
         workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
 
@@ -379,16 +379,16 @@ void test_create_destroy(bs_test_t *test_ptr)
             embedded_binary_default_state_size));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
-    server.root_ptr = wlmtk_root_create(
+    server.desktop_ptr = wlmtk_desktop_create(
         server.wlr_scene_ptr,
         server.wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "1", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_root_add_workspace(server.root_ptr, ws_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, ws_ptr);
 
     wlmaker_config_style_t style = {};
 
@@ -398,9 +398,9 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmaker_dock_destroy(dock_ptr);
 
     bspl_dict_unref(dict_ptr);
-    wlmtk_root_remove_workspace(server.root_ptr, ws_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, ws_ptr);
     wlmtk_workspace_destroy(ws_ptr);
-    wlmtk_root_destroy(server.root_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
     wlmaker_files_destroy(server.files_ptr);

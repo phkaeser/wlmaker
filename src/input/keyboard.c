@@ -57,7 +57,7 @@ struct _wlmim_keyboard_t {
     struct wlr_keyboard       *wlr_keyboard_ptr;
     /** The wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
-    /** Root element, for forwarding events. */
+    /** desktop element, for forwarding events. */
     wlmtk_element_t           *root_element_ptr;
 };
 

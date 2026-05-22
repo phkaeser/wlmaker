@@ -73,7 +73,7 @@ struct _wlmim_cursor_t {
     wlmim_t                   *input_manager_ptr;
     /** WLR seat. */
     struct wlr_seat           *wlr_seat_ptr;
-    /** Root of the compositor. */
+    /** Root wrapper of the compositor. */
     wlmtk_root_t              *root_ptr;
 
     /** Whether the current left-button press emulates a right button. */

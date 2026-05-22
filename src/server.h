@@ -140,7 +140,9 @@ struct _wlmaker_server_t {
      */
     wlmaker_xwl_t             *xwl_ptr;
 
-    /** The root element. */
+    /** The desktop element. */
+    wlmtk_desktop_t           *desktop_ptr;
+    /** The root element wrapper. */
     wlmtk_root_t              *root_ptr;
     /** Whether the task list is currently shown. */
     bool                      task_list_enabled;

@@ -17,7 +17,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #include "root.h"
 
@@ -30,135 +30,67 @@
 #include <wlr/types/wlr_scene.h>
 #undef WLR_USE_UNSTABLE
 
-#include "container.h"
+#include "desktop.h"
+#include "element.h"
 #include "input.h"
 #include "output_tracker.h"
-#include "rectangle.h"
 #include "test.h"  // IWYU pragma: keep
 #include "tile.h"
 #include "util.h"
 #include "window.h"
 #include "workspace.h"
 
-struct wlr_keyboard_key_event;
-
 /* == Declarations ========================================================= */
 
-/** State of the root element. */
+/** State of the root wrapper. */
 struct _wlmtk_root_t {
-    /** The root's container: Holds workspaces and the curtain. */
-    wlmtk_container_t         container;
-    /** Overwritten virtual method table before extending ig. */
-    wlmtk_element_vmt_t       orig_super_element_vmt;
-    /** Extents to be used by root. */
-    struct wlr_box            extents;
-
-    /** Events availabe of the root. */
+    /** The wrapped element. */
+    wlmtk_element_t           *element_ptr;
+    /** Last pointer motion event context. */
+    wlmtk_pointer_motion_event_t mev;
+    /** Events available from the root wrapper. */
     wlmtk_root_events_t       events;
 
-    /** Whether the root is currently locked. */
-    bool                      locked;
-    /**
-     * The lock's element. Shown on top of
-     * @ref wlmtk_root_t::curtain_rectangle_ptr.
-     */
-    wlmtk_element_t           *lock_element_ptr;
-
-    /** Curtain element: Permit dimming or hiding everything. */
-    wlmtk_rectangle_t         *curtain_rectangle_ptr;
-
-    /** List of workspaces attached to root. @see wlmtk_workspace_t::dlnode. */
-    bs_dllist_t               workspaces;
-    /** Currently-active workspace. */
-    wlmtk_workspace_t         *current_workspace_ptr;
-
-    /** Listener for wlr_output_layout::events.change. */
-    struct wl_listener        output_layout_change_listener;
-    /** Output layout tracker. */
-    wlmtk_output_tracker_t    *output_tracker_ptr;
-
-    // Elements below not owned by wlmtk_root_t.
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
-
-    /** Last recorded pointer movement. */
-    wlmtk_pointer_motion_event_t mev;
+    /** Output tracker. */
+    wlmtk_output_tracker_t    *output_tracker_ptr;
 };
 
-/** Listeners for a specific output. */
-struct wlmtk_root_output {
-    /** Indicates this output is ready to render a frame. */
-    struct wl_listener        frame_listener;
-    /** Back-link to root. */
+/** Listeners for a specific output tracked by root. */
+typedef struct {
+    /** Backlink. */
     wlmtk_root_t              *root_ptr;
-};
+    /** Frame listener. */
+    struct wl_listener        frame_listener;
+} wlmtk_root_output_t;
 
-static void _wlmtk_root_switch_to_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr);
-static void _wlmtk_root_enumerate_workspaces(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static void _wlmtk_root_destroy_workspace(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-
-static bool _wlmtk_root_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr);
-static bool _wlmtk_root_element_pointer_axis(
-    wlmtk_element_t *element_ptr,
-    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr);
-static bool _wlmtk_root_element_keyboard_event(
-    wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
-
-static void _wlmtk_root_handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
-static void *_wlmtk_root_output_tracker_create(
-    struct wlr_output *wlr_output_ptr,
-    void *ud_ptr);
-static void _wlmtk_root_output_tracker_destroy(
-    struct wlr_output *wlr_output_ptr,
-    void *ud_ptr,
-    void *output_ptr);
 static void _wlmtk_root_output_handle_frame(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static bool _wlmtk_root_window_set_style(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static bool _wlmtk_root_workspace_set_style(
-    bs_dllist_node_t *dlnode_ptr,
+static void *_wlmtk_root_output_tracker_create(
+    struct wlr_output *wlr_output_ptr,
     void *ud_ptr);
 
-/** Virtual method table for the container's super class: Element. */
-static const wlmtk_element_vmt_t _wlmtk_root_element_vmt = {
-    .pointer_button = _wlmtk_root_element_pointer_button,
-    .pointer_axis = _wlmtk_root_element_pointer_axis,
-    .keyboard_event = _wlmtk_root_element_keyboard_event,
-};
-
-/** Arg for iterators that are setting the style. */
-struct _wlmtk_root_set_style_arg {
-    /** Reference to the window's style. */
-    wlmtk_window_style_ref_t  *window_style_ref_ptr;
-    /** Reference to the menu's style. */
-    wlmtk_menu_style_ref_t    *menu_style_ref_ptr;
-};
+static void _wlmtk_root_output_tracker_destroy(
+    struct wlr_output *wlr_output_ptr,
+    void *ud_ptr,
+    void *output_ptr);
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmtk_root_t *wlmtk_root_create(
-    struct wlr_scene *wlr_scene_ptr,
+    wlmtk_element_t *element_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmtk_root_t *root_ptr = logged_calloc(1, sizeof(wlmtk_root_t));
     if (NULL == root_ptr) return NULL;
+    root_ptr->element_ptr = element_ptr;
     root_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
+
+    wl_signal_init(&root_ptr->events.unclaimed_button_event);
 
     root_ptr->output_tracker_ptr = wlmtk_output_tracker_create(
         wlr_output_layout_ptr,
@@ -171,77 +103,16 @@ wlmtk_root_t *wlmtk_root_create(
         return NULL;
     }
 
-    if (NULL != wlr_scene_ptr) {
-        if (!wlmtk_container_init_attached(
-                &root_ptr->container,
-                &wlr_scene_ptr->tree)) {
-            wlmtk_root_destroy(root_ptr);
-            return NULL;
-        }
-    } else {
-        if (!wlmtk_container_init(&root_ptr->container)) {
-            wlmtk_root_destroy(root_ptr);
-            return NULL;
-        }
-    }
-    wlmtk_element_set_visible(&root_ptr->container.super_element, true);
-    root_ptr->orig_super_element_vmt = wlmtk_element_extend(
-        &root_ptr->container.super_element,
-        &_wlmtk_root_element_vmt);
-
-    root_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
-        root_ptr->extents.width, root_ptr->extents.height, 0xff000020);
-    if (NULL == root_ptr->curtain_rectangle_ptr) {
-        wlmtk_root_destroy(root_ptr);
-        return NULL;
-    }
-    wlmtk_container_add_element(
-        &root_ptr->container,
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
-
-    wlmtk_util_connect_listener_signal(
-        &wlr_output_layout_ptr->events.change,
-        &root_ptr->output_layout_change_listener,
-        _wlmtk_root_handle_output_layout_change);
-    _wlmtk_root_handle_output_layout_change(
-        &root_ptr->output_layout_change_listener,
-        wlr_output_layout_ptr);
-
-    wl_signal_init(&root_ptr->events.workspace_changed);
-    wl_signal_init(&root_ptr->events.unlock_event);
-    wl_signal_init(&root_ptr->events.window_mapped);
-    wl_signal_init(&root_ptr->events.window_unmapped);
-    wl_signal_init(&root_ptr->events.unclaimed_button_event);
     return root_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 {
-    wlmtk_util_disconnect_listener(
-        &root_ptr->output_layout_change_listener);
-
-    bs_dllist_for_each(
-        &root_ptr->workspaces,
-        _wlmtk_root_destroy_workspace,
-        root_ptr);
-
-    if (NULL != root_ptr->curtain_rectangle_ptr) {
-        wlmtk_container_remove_element(
-            &root_ptr->container,
-            wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
-
-        wlmtk_rectangle_destroy(root_ptr->curtain_rectangle_ptr);
-        root_ptr->curtain_rectangle_ptr = NULL;
-    }
-
-    wlmtk_container_fini(&root_ptr->container);
-
     if (NULL != root_ptr->output_tracker_ptr) {
         wlmtk_output_tracker_destroy(root_ptr->output_tracker_ptr);
         root_ptr->output_tracker_ptr = NULL;
     }
-
     free(root_ptr);
 }
 
@@ -249,6 +120,12 @@ void wlmtk_root_destroy(wlmtk_root_t *root_ptr)
 wlmtk_root_events_t *wlmtk_root_events(wlmtk_root_t *root_ptr)
 {
     return &root_ptr->events;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
+{
+    return root_ptr->element_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -263,13 +140,10 @@ bool wlmtk_root_pointer_motion(
         .x = x, .y = y, .time_msec = time_msec, .pointer_ptr = pointer_ptr
     };
 
-    return wlmtk_element_pointer_motion(
-        &root_ptr->container.super_element, &root_ptr->mev);
+    return wlmtk_element_pointer_motion(root_ptr->element_ptr, &root_ptr->mev);
 }
 
 /* ------------------------------------------------------------------------- */
-// TODO(kaeser@gubbe.ch): Improve this, has multiple bugs: It won't keep
-// different buttons apart, and there's currently no test associated.
 bool wlmtk_root_pointer_button(
     wlmtk_root_t *root_ptr,
     const struct wlr_pointer_button_event *event_ptr,
@@ -278,33 +152,27 @@ bool wlmtk_root_pointer_button(
     wlmtk_button_event_t event;
     bool rv;
 
-    // Guard clause: nothing to pass on if no element has the focus.
     event.button = event_ptr->button;
     event.time_msec = event_ptr->time_msec;
     event.keyboard_modifiers = modifiers;
     switch (event_ptr->state) {
     case WL_POINTER_BUTTON_STATE_PRESSED:
         event.type = WLMTK_BUTTON_DOWN;
-        rv = wlmtk_element_pointer_button(
-            &root_ptr->container.super_element, &event);
+        rv = wlmtk_element_pointer_button(root_ptr->element_ptr, &event);
         break;
 
     case WL_POINTER_BUTTON_STATE_RELEASED:
         event.type = WLMTK_BUTTON_UP;
-        wlmtk_element_pointer_button(
-            &root_ptr->container.super_element, &event);
+        wlmtk_element_pointer_button(root_ptr->element_ptr, &event);
         event.type = WLMTK_BUTTON_CLICK;
-        rv = wlmtk_element_pointer_button(
-            &root_ptr->container.super_element, &event);
+        rv = wlmtk_element_pointer_button(root_ptr->element_ptr, &event);
 
         // Hack: Fix lost focus when a menu releases the pointer grab. This
         // should not be needed here, but needs a better means of updating
         // the pointer focus.
         // TODO(kaeser@gubbe.ch): Have a test for this with a window + menu,
         // and ensure focus computation is done well there.
-        wlmtk_element_pointer_motion(
-            &root_ptr->container.super_element,
-            &root_ptr->mev);
+        wlmtk_element_pointer_motion(root_ptr->element_ptr, &root_ptr->mev);
         break;
 
     default:
@@ -326,422 +194,11 @@ bool wlmtk_root_pointer_axis(
     struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
 {
     return wlmtk_element_pointer_axis(
-        &root_ptr->container.super_element,
+        root_ptr->element_ptr,
         wlr_pointer_axis_event_ptr);
 }
 
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_add_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr)
-{
-    BS_ASSERT(NULL == wlmtk_workspace_get_root(workspace_ptr));
-
-    wlmtk_container_add_element(
-        &root_ptr->container,
-        wlmtk_workspace_element(workspace_ptr));
-
-    // Keep the curtain on top.
-    wlmtk_container_raise_element_to_top(
-        &root_ptr->container,
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr));
-
-    bs_dllist_push_back(
-        &root_ptr->workspaces,
-        wlmtk_dlnode_from_workspace(workspace_ptr));
-    wlmtk_workspace_set_details(
-        workspace_ptr, bs_dllist_size(&root_ptr->workspaces));
-    wlmtk_workspace_set_root(workspace_ptr, root_ptr);
-
-    if (NULL == root_ptr->current_workspace_ptr) {
-        _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
-    } else {
-        wl_signal_emit(&root_ptr->events.workspace_changed, workspace_ptr);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_remove_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr)
-{
-    BS_ASSERT(root_ptr == wlmtk_workspace_get_root(workspace_ptr));
-    wlmtk_workspace_set_root(workspace_ptr, NULL);
-    bs_dllist_remove(
-        &root_ptr->workspaces,
-        wlmtk_dlnode_from_workspace(workspace_ptr));
-    wlmtk_container_remove_element(
-        &root_ptr->container,
-        wlmtk_workspace_element(workspace_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_workspace_element(workspace_ptr), false);
-
-    int index = 1;
-    bs_dllist_for_each(
-        &root_ptr->workspaces,
-        _wlmtk_root_enumerate_workspaces,
-        &index);
-
-    if (root_ptr->current_workspace_ptr == workspace_ptr) {
-        _wlmtk_root_switch_to_workspace(
-            root_ptr,
-            wlmtk_workspace_from_dlnode(root_ptr->workspaces.head_ptr));
-    } else {
-        wl_signal_emit(&root_ptr->events.workspace_changed, NULL);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_workspace_t *wlmtk_root_get_current_workspace(wlmtk_root_t *root_ptr)
-{
-    return root_ptr->current_workspace_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_destroy_last_workspace(wlmtk_root_t *root_ptr)
-{
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(
-        root_ptr->workspaces.tail_ptr);
-
-    // Guard clause: Must have further workspaces, not be current workspace,
-    // and not have windows on that workspace.
-    if (1 >= bs_dllist_size(&root_ptr->workspaces) ||
-        ws_ptr == root_ptr->current_workspace_ptr ||
-        !bs_dllist_empty(wlmtk_workspace_get_windows_dllist(ws_ptr))) return;
-
-    wlmtk_root_remove_workspace(root_ptr, ws_ptr);
-    wlmtk_workspace_destroy(ws_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_switch_to_next_workspace(wlmtk_root_t *root_ptr)
-{
-    if (NULL == root_ptr->current_workspace_ptr) return;
-
-    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_workspace(
-        root_ptr->current_workspace_ptr);
-    if (NULL == dlnode_ptr->next_ptr) {
-        dlnode_ptr = root_ptr->workspaces.head_ptr;
-    } else {
-        dlnode_ptr = dlnode_ptr->next_ptr;
-    }
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-
-    _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_switch_to_previous_workspace(wlmtk_root_t *root_ptr)
-{
-    if (NULL == root_ptr->current_workspace_ptr) return;
-    bs_dllist_node_t *dlnode_ptr = wlmtk_dlnode_from_workspace(
-        root_ptr->current_workspace_ptr);
-    if (NULL == dlnode_ptr->prev_ptr) {
-        dlnode_ptr = root_ptr->workspaces.tail_ptr;
-    } else {
-        dlnode_ptr = dlnode_ptr->prev_ptr;
-    }
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-
-    _wlmtk_root_switch_to_workspace(root_ptr, workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_for_each_workspace(
-    wlmtk_root_t *root_ptr,
-    void (*func)(bs_dllist_node_t *dlnode_ptr, void *ud_ptr),
-    void *ud_ptr)
-{
-    bs_dllist_for_each(&root_ptr->workspaces, func, ud_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmtk_root_lock(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr)
-{
-    if (root_ptr->locked) {
-        bs_log(BS_WARNING, "Root already locked by element %p",
-               root_ptr->lock_element_ptr);
-        return false;
-    }
-    root_ptr->lock_element_ptr = element_ptr;
-
-    wlmtk_workspace_enable(root_ptr->current_workspace_ptr, false);
-
-    wlmtk_rectangle_set_size(
-        root_ptr->curtain_rectangle_ptr,
-        root_ptr->extents.width, root_ptr->extents.height);
-    wlmtk_element_set_visible(
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
-        true);
-
-    wlmtk_container_add_element(
-        &root_ptr->container,
-        root_ptr->lock_element_ptr);
-
-    root_ptr->locked = true;
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmtk_root_unlock(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr)
-{
-    // Guard clause: Not locked => nothing to do.
-    if (!root_ptr->locked) return false;
-    if (element_ptr != root_ptr->lock_element_ptr) {
-        bs_log(BS_ERROR, "Lock held by element %p, attempted to unlock by %p",
-               root_ptr->lock_element_ptr, element_ptr);
-        return false;
-    }
-
-    wlmtk_root_lock_unreference(root_ptr, element_ptr);
-    root_ptr->locked = false;
-
-    wlmtk_element_set_visible(
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
-        false);
-
-    wl_signal_emit(&root_ptr->events.unlock_event, NULL);
-
-    wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
-    return true;
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmtk_root_locked(wlmtk_root_t *root_ptr)
-{
-    return root_ptr->locked;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_root_lock_unreference(
-    wlmtk_root_t *root_ptr,
-    wlmtk_element_t *element_ptr)
-{
-    if (element_ptr != root_ptr->lock_element_ptr) return;
-
-    wlmtk_container_remove_element(
-        &root_ptr->container,
-        root_ptr->lock_element_ptr);
-    root_ptr->lock_element_ptr = NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_root_element(wlmtk_root_t *root_ptr)
-{
-    return &root_ptr->container.super_element;
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmtk_root_set_style(
-    wlmtk_root_t *root_ptr,
-    wlmtk_window_style_ref_t *window_style_ref_ptr,
-    wlmtk_menu_style_ref_t *menu_style_ref_ptr)
-{
-    struct _wlmtk_root_set_style_arg arg = {
-        .window_style_ref_ptr = window_style_ref_ptr,
-        .menu_style_ref_ptr = menu_style_ref_ptr
-    };
-
-    return bs_dllist_all(
-        &root_ptr->workspaces,
-        _wlmtk_root_workspace_set_style,
-        &arg);
-}
-
 /* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Switches to `workspace_ptr` as the current workspace.
- *
- * @param root_ptr
- * @param workspace_ptr
- */
-void _wlmtk_root_switch_to_workspace(
-    wlmtk_root_t *root_ptr,
-    wlmtk_workspace_t *workspace_ptr)
-{
-    if (root_ptr->current_workspace_ptr == workspace_ptr) return;
-
-    if (NULL == workspace_ptr) {
-        root_ptr->current_workspace_ptr = NULL;
-    } else {
-        BS_ASSERT(root_ptr = wlmtk_workspace_get_root(workspace_ptr));
-
-        wlmtk_element_set_visible(
-            wlmtk_workspace_element(workspace_ptr), true);
-        if (NULL != root_ptr->current_workspace_ptr) {
-            wlmtk_element_set_visible(
-                wlmtk_workspace_element(root_ptr->current_workspace_ptr),
-                false);
-            wlmtk_workspace_enable(root_ptr->current_workspace_ptr, false);
-        }
-        root_ptr->current_workspace_ptr = workspace_ptr;
-        wlmtk_workspace_enable(root_ptr->current_workspace_ptr, true);
-    }
-
-    wl_signal_emit(
-        &root_ptr->events.workspace_changed,
-        root_ptr->current_workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Callback for bs_dllist_for_each: Destroys the workspace. */
-void _wlmtk_root_destroy_workspace(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
-{
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-    wlmtk_root_remove_workspace(ud_ptr, workspace_ptr);
-    wlmtk_workspace_destroy(workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Callback for bs_dllist_for_each: Enumerates the workspace. */
-void _wlmtk_root_enumerate_workspaces(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    int *index_ptr = ud_ptr;
-    wlmtk_workspace_set_details(
-        wlmtk_workspace_from_dlnode(dlnode_ptr),
-        *index_ptr);
-    *index_ptr += 1;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_button. Handle button events.
- *
- * When locked, the root container will forward the events strictly only to
- * the lock container.
- *
- * @param element_ptr
- * @param button_event_ptr
- *
- * @return true if the button was handled.
- */
-bool _wlmtk_root_element_pointer_button(
-    wlmtk_element_t *element_ptr,
-    const wlmtk_button_event_t *button_event_ptr)
-{
-    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_root_t, container.super_element);
-
-    if (!root_ptr->locked) {
-        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
-        // elements only.
-        return root_ptr->orig_super_element_vmt.pointer_button(
-            element_ptr, button_event_ptr);
-    } else if (NULL != root_ptr->lock_element_ptr) {
-        return wlmtk_element_pointer_button(
-            root_ptr->lock_element_ptr,
-            button_event_ptr);
-    }
-
-    // Fall-through.
-    return false;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::pointer_axis. Handle axis events.
- *
- * When locked, the root container will forward the events strictly only to
- * the lock container.
- *
- * @param element_ptr
- * @param wlr_pointer_axis_event_ptr
- *
- * @return true if the axis event was handled.
- */
-bool _wlmtk_root_element_pointer_axis(
-    wlmtk_element_t *element_ptr,
-    struct wlr_pointer_axis_event *wlr_pointer_axis_event_ptr)
-{
-    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_root_t, container.super_element);
-
-    if (!root_ptr->locked) {
-        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
-        // elements only.
-        return root_ptr->orig_super_element_vmt.pointer_axis(
-            element_ptr, wlr_pointer_axis_event_ptr);
-    } else if (NULL != root_ptr->lock_element_ptr) {
-        return wlmtk_element_pointer_axis(
-            root_ptr->lock_element_ptr,
-            wlr_pointer_axis_event_ptr);
-    }
-
-    // Fall-through.
-    return false;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Implements @ref wlmtk_element_vmt_t::keyboard_event. Handle keyboard events.
- *
- * When locked, the root container will forward the events strictly only to
- * the lock container.
- *
- * @param element_ptr
- * @param wlr_keyboard_key_event_ptr
- *
- * @return true if the axis event was handled.
- */
-bool _wlmtk_root_element_keyboard_event(
-    wlmtk_element_t *element_ptr,
-    struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr)
-{
-    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_root_t, container.super_element);
-
-    if (!root_ptr->locked) {
-        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
-        // elements only.
-        return root_ptr->orig_super_element_vmt.keyboard_event(
-            element_ptr,
-            wlr_keyboard_key_event_ptr);
-    } else if (NULL != root_ptr->lock_element_ptr) {
-        return wlmtk_element_keyboard_event(
-            root_ptr->lock_element_ptr,
-            wlr_keyboard_key_event_ptr);
-    }
-
-    // Fall-through: Too bad -- the screen is locked, but the lock element
-    // disappeared (crashed?). No more handling of keys here...
-    return false;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Handles wlr_output_layout::events::change. Triggers when the output layout
- * changes, and we use this for updating the curtain and the layout in each
- * workspace.
- *
- * @param listener_ptr
- * @param data_ptr
- */
-void _wlmtk_root_handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    wlmtk_root_t *root_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_root_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
-
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &root_ptr->extents);
-    wlmtk_rectangle_set_size(
-        root_ptr->curtain_rectangle_ptr,
-        root_ptr->extents.width,
-        root_ptr->extents.height);
-    wlmtk_element_set_position(
-        wlmtk_rectangle_element(root_ptr->curtain_rectangle_ptr),
-        root_ptr->extents.x,
-        root_ptr->extents.y);
-}
 
 /* ------------------------------------------------------------------------- */
 /** Ctor for struct wlmtk_root_output. */
@@ -749,8 +206,8 @@ void *_wlmtk_root_output_tracker_create(
     struct wlr_output *wlr_output_ptr,
     void *ud_ptr)
 {
-    struct wlmtk_root_output *root_output_ptr = logged_calloc(
-        1, sizeof(struct wlmtk_root_output));
+    wlmtk_root_output_t *root_output_ptr = logged_calloc(
+        1, sizeof(wlmtk_root_output_t));
     if (NULL == root_output_ptr) return NULL;
     root_output_ptr->root_ptr = ud_ptr;
     wlmtk_util_connect_listener_signal(
@@ -767,7 +224,7 @@ void _wlmtk_root_output_tracker_destroy(
     __UNUSED__ void *ud_ptr,
     void *output_ptr)
 {
-    struct wlmtk_root_output *root_output_ptr = output_ptr;
+    wlmtk_root_output_t *root_output_ptr = output_ptr;
     wlmtk_util_disconnect_listener(&root_output_ptr->frame_listener);
     free(root_output_ptr);
 }
@@ -778,181 +235,29 @@ void _wlmtk_root_output_handle_frame(
     struct wl_listener *listener_ptr,
     __UNUSED__ void *data_ptr)
 {
-    struct wlmtk_root_output *root_output_ptr = BS_CONTAINER_OF(
-        listener_ptr, struct wlmtk_root_output, frame_listener);
-    wlmtk_element_layout(wlmtk_root_element(root_output_ptr->root_ptr));
+    wlmtk_root_output_t *root_output_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_root_output_t, frame_listener);
+    wlmtk_element_layout(root_output_ptr->root_ptr->element_ptr);
     // Once redrawn, recompute pointer focus.
     wlmtk_element_pointer_motion(
-        &root_output_ptr->root_ptr->container.super_element,
+        root_output_ptr->root_ptr->element_ptr,
         &root_output_ptr->root_ptr->mev);
 }
 
-/* ------------------------------------------------------------------------- */
-/** Calls @ref wlmtk_window_set_style for the window at `dlnode_ptr`. */
-bool _wlmtk_root_window_set_style(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(dlnode_ptr);
-    struct _wlmtk_root_set_style_arg *arg_ptr = ud_ptr;
+/* == Unit Tests =========================================================== */
 
-    return wlmtk_window_set_style(
-        window_ptr,
-        arg_ptr->window_style_ref_ptr,
-        arg_ptr->menu_style_ref_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Sets the style for each window of the workspace. */
-bool _wlmtk_root_workspace_set_style(
-    bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr)
-{
-    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
-    struct _wlmtk_root_set_style_arg *arg_ptr = ud_ptr;
-
-    return bs_dllist_all(
-        wlmtk_workspace_get_windows_dllist(workspace_ptr),
-        _wlmtk_root_window_set_style,
-        arg_ptr);
-}
-
-/* == Unit tests =========================================================== */
-
-static void test_create_destroy(bs_test_t *test_ptr);
-static void test_workspaces(bs_test_t *test_ptr);
 static void test_pointer_button(bs_test_t *test_ptr);
 static void test_pointer_move(bs_test_t *test_ptr);
 
-/** Test cases */
-static const bs_test_case_t _wlmtk_root_test_cases[] = {
-    { 1, "create_destroy", test_create_destroy },
-    { 1, "workspaces", test_workspaces },
-    { 1, "pointer_button", test_pointer_button },
-    { 1, "pointer_move", test_pointer_move },
+/** Test cases for the root wrapper. */
+static const bs_test_case_t   _wlmtk_root_test_cases[] = {
+    { true, "pointer_button", test_pointer_button },
+    { true, "pointer_move", test_pointer_move },
     BS_TEST_CASE_SENTINEL()
 };
 
 const bs_test_set_t wlmtk_root_test_set = BS_TEST_SET(
     true, "root", _wlmtk_root_test_cases);
-
-/* ------------------------------------------------------------------------- */
-/** Exercises ctor and dtor. */
-void test_create_destroy(bs_test_t *test_ptr)
-{
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        wl_display_ptr);
-
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-
-    BS_TEST_VERIFY_EQ(
-        test_ptr, &root_ptr->events, wlmtk_root_events(root_ptr));
-
-    wlmtk_root_destroy(root_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
-}
-
-/* ------------------------------------------------------------------------- */
-/** Exercises workspace adding and removal. */
-void test_workspaces(bs_test_t *test_ptr)
-{
-    wlmtk_util_test_listener_t l;
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr =
-        wlr_output_layout_create(wl_display_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
-
-    wlmtk_util_connect_test_listener(
-        &wlmtk_root_events(root_ptr)->workspace_changed, &l);
-    // Empty? A no-op.
-    wlmtk_root_destroy_last_workspace(root_ptr);
-
-    static const struct wlmtk_tile_style tstyle = {};
-    wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "1", &tstyle);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_workspace_element(ws1_ptr)->visible);
-    BS_TEST_VERIFY_EQ(test_ptr, ws1_ptr, l.last_data_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    wlmtk_util_clear_test_listener(&l);
-    // Will not destroy the last workspace.
-    wlmtk_root_destroy_last_workspace(root_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
-    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
-
-    wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "2", &tstyle);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws2_ptr);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, ws1_ptr, wlmtk_root_get_current_workspace(root_ptr));
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        wlmtk_workspace_element(ws2_ptr)->visible);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, ws2_ptr, l.last_data_ptr);
-    wlmtk_util_clear_test_listener(&l);
-
-    wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    wlmtk_util_clear_test_listener(&l);
-    BS_TEST_VERIFY_FALSE(
-        test_ptr,
-        wlmtk_workspace_element(ws1_ptr)->visible);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, ws2_ptr, wlmtk_root_get_current_workspace(root_ptr));
-    BS_TEST_VERIFY_TRUE(
-        test_ptr,
-        wlmtk_workspace_element(ws2_ptr)->visible);
-    // Again: not destroying the workspace.
-    wlmtk_root_destroy_last_workspace(root_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
-    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
-
-    // Now add ws1 again. Deleting last workspace
-    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    wlmtk_util_clear_test_listener(&l);
-    BS_TEST_VERIFY_EQ(test_ptr, 2, bs_dllist_size(&root_ptr->workspaces));
-    wlmtk_root_destroy_last_workspace(root_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&root_ptr->workspaces));
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    wlmtk_util_clear_test_listener(&l);
-
-    wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
-    wlmtk_util_clear_test_listener(&l);
-    wlmtk_workspace_destroy(ws2_ptr);
-    BS_TEST_VERIFY_EQ(
-        test_ptr, NULL, wlmtk_root_get_current_workspace(root_ptr));
-    BS_TEST_VERIFY_EQ(test_ptr, NULL, l.last_data_ptr);
-    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
-
-    wlmtk_util_disconnect_test_listener(&l);
-    wlmtk_root_destroy(root_ptr);
-    wlr_output_layout_destroy(wlr_output_layout_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
-}
 
 /* ------------------------------------------------------------------------- */
 /** Tests wlmtk_root_pointer_button. */
@@ -962,17 +267,14 @@ void test_pointer_button(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
     wlmtk_element_set_visible(&fake_element_ptr->element, true);
 
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
     struct wl_display *wl_display_ptr = wl_display_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
     struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
         wl_display_ptr);
+
     wlmtk_root_t *root_ptr = wlmtk_root_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
+        &fake_element_ptr->element, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
-    wlmtk_container_add_element(
-        &root_ptr->container, &fake_element_ptr->element);
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
@@ -1013,13 +315,10 @@ void test_pointer_button(bs_test_t *test_ptr)
         &fake_element_ptr->pointer_button_event,
         sizeof(wlmtk_button_event_t));
 
-    wlmtk_container_remove_element(
-        &root_ptr->container, &fake_element_ptr->element);
+    wlmtk_root_destroy(root_ptr);
     wlmtk_element_destroy(&fake_element_ptr->element);
 
-    wlmtk_root_destroy(root_ptr);
     wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1035,19 +334,23 @@ void test_pointer_move(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(wlr_output_layout_ptr, &output);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
+    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
         wlr_scene_ptr, wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
+
+    wlmtk_root_t *root_ptr = wlmtk_root_create(
+        wlmtk_desktop_element(desktop_ptr), wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
 
     static const struct wlmtk_tile_style tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "1", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws1_ptr);
+    wlmtk_desktop_add_workspace(desktop_ptr, ws1_ptr);
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "2", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
-    wlmtk_root_add_workspace(root_ptr, ws2_ptr);
+    wlmtk_desktop_add_workspace(desktop_ptr, ws2_ptr);
 
     wlmtk_fake_element_t *fe1 = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1);
@@ -1066,13 +369,13 @@ void test_pointer_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_root_pointer_motion(root_ptr, 5, 10, 42, NULL));
-    wlmtk_root_switch_to_next_workspace(root_ptr);
+    wlmtk_desktop_switch_to_next_workspace(desktop_ptr);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_root_pointer_motion(root_ptr, 6, 11, 42, NULL));
 
-    wlmtk_root_remove_workspace(root_ptr, ws2_ptr);
-    wlmtk_root_remove_workspace(root_ptr, ws1_ptr);
+    wlmtk_desktop_remove_workspace(desktop_ptr, ws2_ptr);
+    wlmtk_desktop_remove_workspace(desktop_ptr, ws1_ptr);
 
     wlmtk_workspace_unmap_window(ws2_ptr, w2);
     wlmtk_window_destroy(w2);
@@ -1085,6 +388,7 @@ void test_pointer_move(bs_test_t *test_ptr)
     wlmtk_workspace_destroy(ws1_ptr);
 
     wlmtk_root_destroy(root_ptr);
+    wlmtk_desktop_destroy(desktop_ptr);
     wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }

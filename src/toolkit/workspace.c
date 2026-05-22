@@ -53,9 +53,9 @@ struct _wlmtk_workspace_t {
     /** Original virtual method table. We're overwriting parts. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
 
-    /** Link to the @ref wlmtk_root_t this workspace is attached to. */
-    wlmtk_root_t              *root_ptr;
-    /** An element of @ref wlmtk_root_t::workspaces. */
+    /** Link to the @ref wlmtk_desktop_t this workspace is attached to. */
+    wlmtk_desktop_t           *desktop_ptr;
+    /** An element of @ref wlmtk_desktop_t::workspaces. */
     bs_dllist_node_t          dlnode;
 
     /** Name of the workspace. */
@@ -564,9 +564,9 @@ void wlmtk_workspace_map_window(wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_set_workspace(window_ptr, workspace_ptr);
     wlmtk_workspace_activate_window(workspace_ptr, window_ptr);
 
-    if (NULL != workspace_ptr->root_ptr) {
+    if (NULL != workspace_ptr->desktop_ptr) {
         wl_signal_emit(
-            &wlmtk_root_events(workspace_ptr->root_ptr)->window_mapped,
+            &wlmtk_desktop_events(workspace_ptr->desktop_ptr)->window_mapped,
             window_ptr);
     }
 }
@@ -607,9 +607,9 @@ void wlmtk_workspace_unmap_window(wlmtk_workspace_t *workspace_ptr,
     bs_dllist_remove(&workspace_ptr->windows,
                      wlmtk_dlnode_from_window(window_ptr));
     wlmtk_window_set_workspace(window_ptr, NULL);
-    if (NULL != workspace_ptr->root_ptr) {
+    if (NULL != workspace_ptr->desktop_ptr) {
         wl_signal_emit(
-            &wlmtk_root_events(workspace_ptr->root_ptr)->window_unmapped,
+            &wlmtk_desktop_events(workspace_ptr->desktop_ptr)->window_unmapped,
             window_ptr);
     }
 
@@ -839,17 +839,17 @@ wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_root_t *wlmtk_workspace_get_root(wlmtk_workspace_t *workspace_ptr)
+wlmtk_desktop_t *wlmtk_workspace_get_desktop(wlmtk_workspace_t *workspace_ptr)
 {
-    return workspace_ptr->root_ptr;
+    return workspace_ptr->desktop_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_set_root(
+void wlmtk_workspace_set_desktop(
     wlmtk_workspace_t *workspace_ptr,
-    wlmtk_root_t *root_ptr)
+    wlmtk_desktop_t *desktop_ptr)
 {
-    workspace_ptr->root_ptr = root_ptr;
+    workspace_ptr->desktop_ptr = desktop_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1430,22 +1430,22 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(wl_display_ptr);
-    wlmtk_root_t *root_ptr = wlmtk_root_create(
+    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
         wlr_scene_ptr, wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, root_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
-    wlmtk_root_add_workspace(root_ptr, workspace_ptr);
+    wlmtk_desktop_add_workspace(desktop_ptr, workspace_ptr);
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 20, 10);
 
     wlmtk_util_test_listener_t mapped, unmapped;
     wlmtk_util_connect_test_listener(
-        &wlmtk_root_events(root_ptr)->window_mapped, &mapped);
+        &wlmtk_desktop_events(desktop_ptr)->window_mapped, &mapped);
     wlmtk_util_connect_test_listener(
-        &wlmtk_root_events(root_ptr)->window_unmapped, &unmapped);
+        &wlmtk_desktop_events(desktop_ptr)->window_unmapped, &unmapped);
 
     bs_dllist_t *wdl_ptr = wlmtk_workspace_get_windows_dllist(workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, bs_dllist_size(wdl_ptr));
@@ -1478,9 +1478,9 @@ void test_map_unmap(bs_test_t *test_ptr)
     wlmtk_util_disconnect_test_listener(&mapped);
     wlmtk_util_disconnect_test_listener(&unmapped);
     wlmtk_window_destroy(w);
-    wlmtk_root_remove_workspace(root_ptr, workspace_ptr);
+    wlmtk_desktop_remove_workspace(desktop_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_root_destroy(root_ptr);
+    wlmtk_desktop_destroy(desktop_ptr);
     wl_display_destroy(wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }

@@ -532,8 +532,8 @@ void _wlmaker_xdg_toplevel_try_map(struct wlmaker_xdg_toplevel *wxt_ptr)
 
     if (NULL != wlmtk_window_get_workspace(wxt_ptr->window_ptr)) return;
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_root_get_current_workspace(
-        wxt_ptr->server_ptr->root_ptr);
+    wlmtk_workspace_t *workspace_ptr = wlmtk_desktop_get_current_workspace(
+        wxt_ptr->server_ptr->desktop_ptr);
     wlmtk_workspace_map_window(workspace_ptr, wxt_ptr->window_ptr);
 }
 
@@ -1084,10 +1084,10 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     td_ptr->server.wlr_scene_ptr = wlr_scene_create();
     if (NULL == td_ptr->server.wlr_scene_ptr) goto error;
 
-    td_ptr->server.root_ptr = wlmtk_root_create(
+    td_ptr->server.desktop_ptr = wlmtk_desktop_create(
         td_ptr->server.wlr_scene_ptr,
         td_ptr->test_layout.wlr_output_layout_ptr);
-    if (NULL == td_ptr->server.root_ptr) goto error;
+    if (NULL == td_ptr->server.desktop_ptr) goto error;
 
     wl_signal_init(&td_ptr->server.window_created_event);
     wl_signal_init(&td_ptr->server.window_destroyed_event);
@@ -1117,7 +1117,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     td_ptr->workspace_ptr = wlmtk_workspace_create(
         td_ptr->test_layout.wlr_output_layout_ptr, "test", &ts);
     if (NULL == td_ptr->workspace_ptr) goto error;
-    wlmtk_root_add_workspace(td_ptr->server.root_ptr, td_ptr->workspace_ptr);
+    wlmtk_desktop_add_workspace(td_ptr->server.desktop_ptr, td_ptr->workspace_ptr);
 
     return td_ptr;
 
@@ -1132,9 +1132,9 @@ void _wlmaker_xdg_toplevel_test_teardown(void *test_context_ptr)
 {
     struct _xdg_toplevel_test_data *td_ptr = test_context_ptr;
 
-    if (NULL != td_ptr->server.root_ptr) {
-        wlmtk_root_destroy(td_ptr->server.root_ptr);
-        td_ptr->server.root_ptr = NULL;
+    if (NULL != td_ptr->server.desktop_ptr) {
+        wlmtk_desktop_destroy(td_ptr->server.desktop_ptr);
+        td_ptr->server.desktop_ptr = NULL;
     }
 
     wlr_scene_node_destroy(&td_ptr->server.wlr_scene_ptr->tree.node);

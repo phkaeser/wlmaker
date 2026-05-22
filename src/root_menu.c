@@ -900,10 +900,10 @@ void test_generated_menu(bs_test_t *test_ptr)
     server.wlr_output_layout_ptr = wlr_output_layout_create(
         server.wl_display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
-    server.root_ptr = wlmtk_root_create(
+    server.desktop_ptr = wlmtk_desktop_create(
         server.wlr_scene_ptr,
         server.wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
     server.monitor_ptr = wlmaker_subprocess_monitor_create(
         &server);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.monitor_ptr);
@@ -970,7 +970,7 @@ void test_generated_menu(bs_test_t *test_ptr)
     wlmaker_root_menu_destroy(root_menu_ptr);
 
     wlmaker_subprocess_monitor_destroy(server.monitor_ptr);
-    wlmtk_root_destroy(server.root_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&server.wlr_scene_ptr->tree.node);
     wlmtk_window_style_ref_release(wsr);

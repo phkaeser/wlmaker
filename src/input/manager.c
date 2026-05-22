@@ -69,7 +69,7 @@ struct _wlmim_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** Reference to the config dict. */
     bspl_dict_t               *config_dict_ptr;
-    /** The compositor's root. */
+    /** The compositor's root wrapper. */
     wlmtk_root_t              *root_ptr;
 };
 
@@ -274,7 +274,6 @@ uint32_t wlmim_get_keyboard_group_index(
 {
     return input_manager_ptr->last_keyboard_group_index;
 }
-
 
 /* ------------------------------------------------------------------------- */
 wlmim_keybinding_t *wlmim_bind_key(

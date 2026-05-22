@@ -75,7 +75,7 @@ struct _wlmaker_lock_t {
     /** Seat for the session. */
     struct wlr_seat           *wlr_seat_ptr;
     /** The root this lock is applied for. */
-    wlmtk_root_t              *root_ptr;
+    wlmtk_desktop_t           *desktop_ptr;
 
     /** The output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
@@ -135,7 +135,7 @@ static wlmaker_lock_t *_wlmaker_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
-    wlmtk_root_t *root_ptr,
+    wlmtk_desktop_t *desktop_ptr,
     _wlmaker_lock_surface_configure_t injected_surface_configure,
     _wlmaker_lock_send_locked_t injected_send_locked);
 static void _wlmaker_lock_destroy(wlmaker_lock_t *lock_ptr);
@@ -244,7 +244,7 @@ void _wlmaker_lock_mgr_handle_new_lock(
         wlr_session_lock_v1_ptr,
         lock_mgr_ptr->server_ptr->wlr_output_layout_ptr,
         lock_mgr_ptr->server_ptr->wlr_seat_ptr,
-        lock_mgr_ptr->server_ptr->root_ptr,
+        lock_mgr_ptr->server_ptr->desktop_ptr,
         wlr_session_lock_surface_v1_configure,
         wlr_session_lock_v1_send_locked);
     if (NULL == lock_ptr) {
@@ -253,10 +253,10 @@ void _wlmaker_lock_mgr_handle_new_lock(
             WL_DISPLAY_ERROR_NO_MEMORY,
             "Failed wlmt_lock_create(%p, %p)",
             wlr_session_lock_v1_ptr,
-            lock_mgr_ptr->server_ptr->root_ptr);
+            lock_mgr_ptr->server_ptr->desktop_ptr);
         bs_log(BS_WARNING, "Failed wlmt_lock_create(%p, %p)",
                wlr_session_lock_v1_ptr,
-               lock_mgr_ptr->server_ptr->root_ptr);
+               lock_mgr_ptr->server_ptr->desktop_ptr);
         return;
     }
 
@@ -289,7 +289,7 @@ void _wlmaker_lock_mgr_handle_destroy(
  * @param wlr_session_lock_v1_ptr
  * @param wlr_output_layout_ptr
  * @param wlr_seat_ptr
- * @param root_ptr
+ * @param desktop_ptr
  * @param injected_surface_configure
  * @param injected_send_locked
  *
@@ -299,7 +299,7 @@ wlmaker_lock_t *_wlmaker_lock_create(
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
-    wlmtk_root_t *root_ptr,
+    wlmtk_desktop_t *desktop_ptr,
     _wlmaker_lock_surface_configure_t injected_surface_configure,
     _wlmaker_lock_send_locked_t injected_send_locked)
 {
@@ -308,7 +308,7 @@ wlmaker_lock_t *_wlmaker_lock_create(
     lock_ptr->wlr_session_lock_v1_ptr = wlr_session_lock_v1_ptr;
     lock_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
     lock_ptr->wlr_seat_ptr = wlr_seat_ptr;
-    lock_ptr->root_ptr = root_ptr;
+    lock_ptr->desktop_ptr = desktop_ptr;
     lock_ptr->injected_surface_configure = injected_surface_configure;
     lock_ptr->injected_send_locked = injected_send_locked;
 
@@ -357,7 +357,7 @@ void _wlmaker_lock_destroy(wlmaker_lock_t *lock_ptr)
     wlmtk_util_disconnect_listener(&lock_ptr->unlock_listener);
     wlmtk_util_disconnect_listener(&lock_ptr->new_surface_listener);
 
-    wlmtk_root_lock_unreference(lock_ptr->root_ptr,
+    wlmtk_desktop_lock_unreference(lock_ptr->desktop_ptr,
                                 _wlmaker_lock_element(lock_ptr));
     wlmtk_container_fini(&lock_ptr->container);
 
@@ -381,15 +381,15 @@ void _wlmaker_lock_if_ready(wlmaker_lock_t *lock_ptr)
     if (!bs_dllist_all(&lock_ptr->outputs,
                        _wlmaker_lock_output_surface_is_committed,
                        NULL)) return;
-    if (wlmtk_root_locked(lock_ptr->root_ptr)) return;
+    if (wlmtk_desktop_locked(lock_ptr->desktop_ptr)) return;
 
-    if (!wlmtk_root_lock(lock_ptr->root_ptr, _wlmaker_lock_element(lock_ptr))) {
+    if (!wlmtk_desktop_lock(lock_ptr->desktop_ptr, _wlmaker_lock_element(lock_ptr))) {
         if (NULL != lock_ptr->wlr_session_lock_v1_ptr->resource) {
             wl_resource_post_error(
                 lock_ptr->wlr_session_lock_v1_ptr->resource,
                 WL_DISPLAY_ERROR_INVALID_METHOD,
-                "Failed wlmtk_root_lock(%p, %p): Already locked?",
-                lock_ptr->root_ptr, _wlmaker_lock_element(lock_ptr));
+                "Failed wlmtk_desktop_lock(%p, %p): Already locked?",
+                lock_ptr->desktop_ptr, _wlmaker_lock_element(lock_ptr));
         }
         return;
     }
@@ -405,7 +405,7 @@ void _wlmaker_lock_if_ready(wlmaker_lock_t *lock_ptr)
         dlnode_ptr, wlmaker_lock_output_t, dlnode);
     wlmtk_surface_set_activated(lock_output_ptr->wlmtk_surface_ptr, true);
 
-    // Root is locked. Send confirmation to the client.
+    // Desktop is locked. Send confirmation to the client.
     lock_ptr->injected_send_locked(lock_ptr->wlr_session_lock_v1_ptr);
 }
 
@@ -490,7 +490,7 @@ void _wlmaker_lock_handle_unlock(
         listener_ptr, wlmaker_lock_t, unlock_listener);
 
     wlmtk_element_set_visible(&lock_ptr->container.super_element, false);
-    wlmtk_root_unlock(lock_ptr->root_ptr, _wlmaker_lock_element(lock_ptr));
+    wlmtk_desktop_unlock(lock_ptr->desktop_ptr, _wlmaker_lock_element(lock_ptr));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -824,17 +824,17 @@ void test_lock_unlock(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
-    server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
-    wlmtk_root_add_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, workspace_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     struct wlr_session_lock_v1 wlr_session_lock_v1 = {};
     _init_test_session_lock(&wlr_session_lock_v1);
@@ -843,7 +843,7 @@ void test_lock_unlock(bs_test_t *test_ptr)
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
         NULL,
-        server.root_ptr,
+        server.desktop_ptr,
         _mock_wlr_session_lock_surface_v1_configure,
         _mock_wlr_session_lock_v1_send_locked);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lock_ptr);
@@ -869,7 +869,7 @@ void test_lock_unlock(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     // Another commit, with matching serial. Will mark as locked.
     wlr_surface.current.width = 1024;
@@ -878,17 +878,17 @@ void test_lock_unlock(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, &wlr_session_lock_v1, _mock_send_locked_lock);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     // Client unlocks.
     wl_signal_emit(&wlr_session_lock_v1.events.unlock, NULL);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     _wlmaker_lock_destroy(lock_ptr);
-    wlmtk_root_remove_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_root_destroy(server.root_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
 }
 
@@ -903,17 +903,17 @@ void test_lock_crash(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
-    server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
-    wlmtk_root_add_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, workspace_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     struct wlr_session_lock_v1 wlr_session_lock_v1 = {};
     _init_test_session_lock(&wlr_session_lock_v1);
@@ -922,7 +922,7 @@ void test_lock_crash(bs_test_t *test_ptr)
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
         NULL,
-        server.root_ptr,
+        server.desktop_ptr,
         _mock_wlr_session_lock_surface_v1_configure,
         _mock_wlr_session_lock_v1_send_locked);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lock_ptr);
@@ -950,16 +950,16 @@ void test_lock_crash(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, &wlr_session_lock_v1, _mock_send_locked_lock);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     // No unlock. If the session lock is destroyed without: Lock remains.
     _wlmaker_lock_destroy(lock_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
-    wlmtk_root_remove_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_root_destroy(server.root_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
 }
 
@@ -980,17 +980,17 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o1);
     // But not: o2.
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o3);
-    server.root_ptr = wlmtk_root_create(NULL, server.wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.root_ptr);
+    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         server.wlr_output_layout_ptr, "name", &tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
-    wlmtk_root_add_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, workspace_ptr);
 
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     struct wlr_session_lock_v1 wlr_session_lock_v1 = {};
     _init_test_session_lock(&wlr_session_lock_v1);
@@ -999,7 +999,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
         &wlr_session_lock_v1,
         server.wlr_output_layout_ptr,
         NULL,
-        server.root_ptr,
+        server.desktop_ptr,
         _mock_wlr_session_lock_surface_v1_configure,
         _mock_wlr_session_lock_v1_send_locked);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lock_ptr);
@@ -1040,7 +1040,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface1.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     wlmtk_surface_t *surface_ptr = wlr_surface1.data;
     int x, y;
@@ -1060,7 +1060,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface2.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     wl_signal_emit(&lock_surface2.events.destroy, NULL);
 
@@ -1078,7 +1078,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface3.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, &wlr_session_lock_v1, _mock_send_locked_lock);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     surface_ptr = wlr_surface3.data;
     wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
@@ -1105,7 +1105,7 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wl_signal_emit(&wlr_surface3.events.commit, NULL);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_send_locked_lock);
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     surface_ptr = wlr_surface1.data;
     wlmtk_element_get_position(wlmtk_surface_element(surface_ptr), &x, &y);
@@ -1136,12 +1136,12 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     // Unlock correctly.
     wl_signal_emit(&wlr_session_lock_v1.events.unlock, NULL);
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
-    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_root_locked(server.root_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     _wlmaker_lock_destroy(lock_ptr);
-    wlmtk_root_remove_workspace(server.root_ptr, workspace_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
-    wlmtk_root_destroy(server.root_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
 }
 

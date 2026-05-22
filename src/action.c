@@ -254,11 +254,11 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WORKSPACE_TO_PREVIOUS:
-        wlmtk_root_switch_to_previous_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_switch_to_previous_workspace(server_ptr->desktop_ptr);
         break;
 
     case WLMAKER_ACTION_WORKSPACE_TO_NEXT:
-        wlmtk_root_switch_to_next_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_switch_to_next_workspace(server_ptr->desktop_ptr);
         break;
 
     case WLMAKER_ACTION_WORKSPACE_ADD:
@@ -273,7 +273,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
                 server_ptr->style_ptr->background_color);
             if (NULL != bg_ptr) {
                 bs_dllist_push_back(&server_ptr->backgrounds, bg_ptr);
-                wlmtk_root_add_workspace(server_ptr->root_ptr, workspace_ptr);
+                wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
             } else {
                 wlmtk_workspace_destroy(workspace_ptr);
             }
@@ -284,18 +284,18 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         // TODO(kaeser@gubbe.ch): This leaks the corresponding background. The
         // workspace dtor will remove the associated element via the
         // panel dtor, but it remains in @ref wlmaker_server_t::backgrounds.
-        wlmtk_root_destroy_last_workspace(server_ptr->root_ptr);
+        wlmtk_desktop_destroy_last_workspace(server_ptr->desktop_ptr);
         break;
 
     case WLMAKER_ACTION_TASK_TO_PREVIOUS:
         wlmtk_workspace_activate_previous_window(
-            wlmtk_root_get_current_workspace(server_ptr->root_ptr));
+            wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr));
         wlmaker_server_activate_task_list(server_ptr);
         break;
 
     case WLMAKER_ACTION_TASK_TO_NEXT:
         wlmtk_workspace_activate_next_window(
-            wlmtk_root_get_current_workspace(server_ptr->root_ptr));
+            wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr));
         wlmaker_server_activate_task_list(server_ptr);
         break;
 
@@ -310,8 +310,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_FULLSCREEN:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_fullscreen(
@@ -320,8 +320,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TOGGLE_MAXIMIZED:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(
@@ -330,8 +330,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_MAXIMIZE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(window_ptr, true);
@@ -339,8 +339,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_UNMAXIMIZE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_maximized(window_ptr, false);
@@ -348,8 +348,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_FULLSCREEN:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_fullscreen(window_ptr, true);
@@ -357,8 +357,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_SHADE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_shaded(window_ptr, true);
@@ -366,8 +366,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_UNSHADE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_shaded(window_ptr, false);
@@ -375,8 +375,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TO_NEXT_WORKSPACE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         next_workspace_ptr = wlmtk_workspace_from_dlnode(
             wlmtk_dlnode_from_workspace(workspace_ptr)->next_ptr);
@@ -388,8 +388,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_TO_PREVIOUS_WORKSPACE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         next_workspace_ptr = wlmtk_workspace_from_dlnode(
             wlmtk_dlnode_from_workspace(workspace_ptr)->prev_ptr);
@@ -401,8 +401,8 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
         break;
 
     case WLMAKER_ACTION_WINDOW_CLOSE:
-        workspace_ptr = wlmtk_root_get_current_workspace(
-            server_ptr->root_ptr);
+        workspace_ptr = wlmtk_desktop_get_current_workspace(
+            server_ptr->desktop_ptr);
         window_ptr = wlmtk_workspace_get_activated_window(workspace_ptr);
         if (NULL != window_ptr) {
             wlmtk_window_request_close(window_ptr);
@@ -415,15 +415,15 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             NULL == wlmtk_window_get_workspace(
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr))) {
             wlmtk_workspace_map_window(
-                wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+                wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
             wlmtk_workspace_set_window_position(
-                wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+                wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr),
                 wlmim_wlr_cursor(server_ptr->input_manager_ptr)->x,
                 wlmim_wlr_cursor(server_ptr->input_manager_ptr)->y);
             wlmtk_workspace_confine_within(
-                wlmtk_root_get_current_workspace(server_ptr->root_ptr),
+                wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr),
                 wlmaker_root_menu_window(server_ptr->root_menu_ptr));
             wlmtk_menu_set_mode(
                 wlmaker_root_menu_menu(server_ptr->root_menu_ptr),
@@ -672,8 +672,8 @@ bool _wlmaker_action_theme_load_from_file(
     // - Tasklist
 
     bool rv = true;
-    rv &= wlmtk_root_set_style(
-        server_ptr->root_ptr,
+    rv &= wlmtk_desktop_set_style(
+        server_ptr->desktop_ptr,
         wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr),
         wlmtk_menu_style_to_ref(server_ptr->style_ptr->menu_style_ptr));
 
