@@ -18,20 +18,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LIBWLCLIENT_ICON_H__
-#define __LIBWLCLIENT_ICON_H__
+#ifndef __WLMAKER_WLCLIENT_ICON_H__
+#define __WLMAKER_WLCLIENT_ICON_H__
 
-#include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#include "libwlclient.h"  // IWYU pragma: keep
+#include "wlclient.h"  // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 /** Forward declaration of an icon's state. */
-typedef struct _wlclient_icon_t wlclient_icon_t;
+typedef struct _wlmcl_icon_t wlmcl_icon_t;
 
 /**
  * Creates an icon.
@@ -39,38 +39,47 @@ typedef struct _wlclient_icon_t wlclient_icon_t;
  * @param wlclient_ptr
  *
  * @return An icon state or NULL on error. The state must be free'd by calling
- *     @ref wlclient_icon_destroy.
+ *     @ref wlmcl_icon_destroy.
  */
-wlclient_icon_t *wlclient_icon_create(
-    wlclient_t *wlclient_ptr);
+wlmcl_icon_t *wlmcl_icon_create(
+    wlmcl_client_t *wlclient_ptr);
 
 /**
  * Destroys the icon.
  *
  * @param icon_ptr
  */
-void wlclient_icon_destroy(
-    wlclient_icon_t *icon_ptr);
+void wlmcl_icon_destroy(
+    wlmcl_icon_t *icon_ptr);
 
 /**
  * Returns whether the icon protocol is supported on the client.
  *
  * @param wlclient_ptr
  */
-bool wlclient_icon_supported(wlclient_t *wlclient_ptr);
+bool wlmcl_icon_supported(wlmcl_client_t *wlclient_ptr);
+
 
 /**
- * Sets a callback to invoke when the background buffer is ready for drawing.
+ * Returns the underlying Wayland surface of the icon.
  *
- * @see wlcl_dblbuf_register_ready_callback.
+ * @param icon_ptr
+ *
+ * @return The wl_surface pointer.
+ */
+struct wl_surface *wlmcl_icon_wl_surface(
+    wlmcl_icon_t *icon_ptr);
+
+/**
+ * Registers the callback to notify when the icon size is determined or updated.
  *
  * @param icon_ptr
  * @param callback
  * @param ud_ptr
  */
-void wlclient_icon_register_ready_callback(
-    wlclient_icon_t *icon_ptr,
-    bool (*callback)(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr),
+void wlmcl_icon_register_configure_callback(
+    wlmcl_icon_t *icon_ptr,
+    void (*callback)(void *ud_ptr, uint32_t width, uint32_t height),
     void *ud_ptr);
 
 /**
@@ -81,8 +90,8 @@ void wlclient_icon_register_ready_callback(
  * @param callback
  * @param callback_ud_ptr
  */
-void wlclient_icon_register_position_callback(
-    wlclient_icon_t *icon_ptr,
+void wlmcl_icon_register_position_callback(
+    wlmcl_icon_t *icon_ptr,
     void (*callback)(double x, double y, void *ud_ptr),
     void *callback_ud_ptr);
 
@@ -90,5 +99,5 @@ void wlclient_icon_register_position_callback(
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __LIBWLCLIENT_ICON_H__ */
+#endif /* __WLMAKER_WLCLIENT_ICON_H__ */
 /* == End of icon.h ======================================================== */

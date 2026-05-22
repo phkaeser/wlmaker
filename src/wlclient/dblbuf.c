@@ -42,55 +42,55 @@ struct wl_shm_pool;
 #define _WLCL_DBLBUF_NUM 2
 
 /** A single buffer. Two of these are backing the double-buffer. */
-typedef struct {
+struct wlmcl_buffer {
     /** The wayland buffer structure. */
     struct wl_buffer          *wl_buffer_ptr;
     /** Pixel buffer we're using for clients. */
     bs_gfxbuf_t               *gfxbuf_ptr;
     /** Back-link to the double-buffer. */
-    wlcl_dblbuf_t             *dblbuf_ptr;
-} wlcl_buffer_t;
+    wlmcl_dblbuf_t             *dblbuf_ptr;
+};
 
 /** State of double-buffered shared memory. */
-struct _wlcl_dblbuf_t {
+struct _wlmcl_dblbuf_t {
     /** With of the buffer, in pixels. */
     unsigned                  width;
     /** Height of the buffer, in pixels. */
     unsigned                  height;
 
-    /** Holds the two @ref wlcl_buffer_t backing this double buffer. */
-    wlcl_buffer_t             buffers[_WLCL_DBLBUF_NUM];
+    /** Holds the two @ref wlmcl_buffer backing this double buffer. */
+    struct wlmcl_buffer       buffers[_WLCL_DBLBUF_NUM];
 
-    /** Holds @ref wlcl_dblbuf_t::buffers items that are released. */
-    wlcl_buffer_t             *released_buffer_ptrs[_WLCL_DBLBUF_NUM];
-    /** Number of items in @ref wlcl_dblbuf_t::released_buffer_ptrs. */
+    /** Holds @ref wlmcl_dblbuf_t::buffers items that are released. */
+    struct wlmcl_buffer       *released_buffer_ptrs[_WLCL_DBLBUF_NUM];
+    /** Number of items in @ref wlmcl_dblbuf_t::released_buffer_ptrs. */
     int                       released;
     /** Indicates that a frame is due to be drawn. */
     bool                      frame_is_due;
 
     /** Blob of memory-mapped buffer data. */
     void                      *data_ptr;
-    /** Size of @ref wlcl_dblbuf_t::data_ptr. */
+    /** Size of @ref wlmcl_dblbuf_t::data_ptr. */
     size_t                    data_size;
 
     /** Will be called when the buffer is ready to draw into. */
-    wlcl_dblbuf_ready_callback_t callback;
-    /** Argument to @ref wlcl_dblbuf_t::callback. */
+    wlmcl_dblbuf_ready_callback_t callback;
+    /** Argument to @ref wlmcl_dblbuf_t::callback. */
     void                      *callback_ud_ptr;
 
     /** Surface that this double buffer is operating on. */
     struct wl_surface         *wl_surface_ptr;
 };
 
-static void _wlcl_dblbuf_callback_if_ready(wlcl_dblbuf_t *dblbuf_ptr);
+static void _wlcl_dblbuf_callback_if_ready(wlmcl_dblbuf_t *dblbuf_ptr);
 static void _wlcl_dblbuf_handle_frame_done(
     void *data_ptr,
     struct wl_callback *callback,
     __UNUSED__ uint32_t time);
 
 static bool _wlcl_dblbuf_create_buffer(
-    wlcl_buffer_t *buffer_ptr,
-    wlcl_dblbuf_t *dblbuf_ptr,
+    struct wlmcl_buffer *buffer_ptr,
+    wlmcl_dblbuf_t *dblbuf_ptr,
     struct wl_shm_pool *wl_shm_pool_ptr,
     unsigned page,
     unsigned width,
@@ -119,14 +119,14 @@ static const struct wl_callback_listener _wlcl_dblbuf_frame_listener = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlcl_dblbuf_t *wlcl_dblbuf_create(
+wlmcl_dblbuf_t *wlmcl_dblbuf_create(
     const char *app_id_ptr,
     struct wl_surface *wl_surface_ptr,
     struct wl_shm *wl_shm_ptr,
     unsigned width,
     unsigned height)
 {
-    wlcl_dblbuf_t *dblbuf_ptr = logged_calloc(1, sizeof(wlcl_dblbuf_t));
+    wlmcl_dblbuf_t *dblbuf_ptr = logged_calloc(1, sizeof(wlmcl_dblbuf_t));
     if (NULL == dblbuf_ptr) return NULL;
     dblbuf_ptr->width = width;
     dblbuf_ptr->height = height;
@@ -170,15 +170,15 @@ wlcl_dblbuf_t *wlcl_dblbuf_create(
     return dblbuf_ptr;
 
 error:
-    wlcl_dblbuf_destroy(dblbuf_ptr);
+    wlmcl_dblbuf_destroy(dblbuf_ptr);
     return NULL;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlcl_dblbuf_destroy(wlcl_dblbuf_t *dblbuf_ptr)
+void wlmcl_dblbuf_destroy(wlmcl_dblbuf_t *dblbuf_ptr)
 {
     for (int i = 0; i < _WLCL_DBLBUF_NUM; ++i) {
-        wlcl_buffer_t *buffer_ptr = &dblbuf_ptr->buffers[i];
+        struct wlmcl_buffer *buffer_ptr = &dblbuf_ptr->buffers[i];
         if (NULL != buffer_ptr->wl_buffer_ptr) {
             wl_buffer_destroy(buffer_ptr->wl_buffer_ptr);
             buffer_ptr->wl_buffer_ptr = NULL;
@@ -197,9 +197,9 @@ void wlcl_dblbuf_destroy(wlcl_dblbuf_t *dblbuf_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlcl_dblbuf_register_ready_callback(
-    wlcl_dblbuf_t *dblbuf_ptr,
-    wlcl_dblbuf_ready_callback_t callback,
+void wlmcl_dblbuf_register_ready_callback(
+    wlmcl_dblbuf_t *dblbuf_ptr,
+    wlmcl_dblbuf_ready_callback_t callback,
     void *callback_ud_ptr)
 {
     dblbuf_ptr->callback = callback;
@@ -212,24 +212,24 @@ void wlcl_dblbuf_register_ready_callback(
 
 /* ------------------------------------------------------------------------- */
 /**
- * Calls @ref wlcl_dblbuf_t::callback, if it is registered, a frame is due,
+ * Calls @ref wlmcl_dblbuf_t::callback, if it is registered, a frame is due,
  * and if there are available buffers. If so, and if the callback returns
  * true, the corresponding buffer will be attached to the surface and the
  * surface is committed.
  *
  * @param dblbuf_ptr
  */
-void _wlcl_dblbuf_callback_if_ready(wlcl_dblbuf_t *dblbuf_ptr)
+void _wlcl_dblbuf_callback_if_ready(wlmcl_dblbuf_t *dblbuf_ptr)
 {
     // Only proceed a frame is due, the client asked, and we have a buffer.
     if (!dblbuf_ptr->callback ||
         !dblbuf_ptr->frame_is_due ||
         0 >= dblbuf_ptr->released) return;
 
-    wlcl_buffer_t *buffer_ptr =
+    struct wlmcl_buffer *buffer_ptr =
         dblbuf_ptr->released_buffer_ptrs[--dblbuf_ptr->released];
     dblbuf_ptr->frame_is_due = false;
-    wlcl_dblbuf_ready_callback_t callback = dblbuf_ptr->callback;
+    wlmcl_dblbuf_ready_callback_t callback = dblbuf_ptr->callback;
     dblbuf_ptr->callback = NULL;
     if (!callback(
             buffer_ptr->gfxbuf_ptr,
@@ -266,7 +266,7 @@ void _wlcl_dblbuf_handle_frame_done(
 {
     wl_callback_destroy(callback);
 
-    wlcl_dblbuf_t *dblbuf_ptr = data_ptr;
+    wlmcl_dblbuf_t *dblbuf_ptr = data_ptr;
     dblbuf_ptr->frame_is_due = true;
     _wlcl_dblbuf_callback_if_ready(dblbuf_ptr);
 }
@@ -286,8 +286,8 @@ void _wlcl_dblbuf_handle_frame_done(
  * @return true on success.
  */
 bool _wlcl_dblbuf_create_buffer(
-    wlcl_buffer_t *buffer_ptr,
-    wlcl_dblbuf_t *dblbuf_ptr,
+    struct wlmcl_buffer *buffer_ptr,
+    wlmcl_dblbuf_t *dblbuf_ptr,
     struct wl_shm_pool *wl_shm_pool_ptr,
     unsigned page,
     unsigned width,
@@ -335,9 +335,9 @@ static void _wlcl_dblbuf_handle_wl_buffer_release(
     void *data_ptr,
     struct wl_buffer *wl_buffer_ptr)
 {
-    wlcl_buffer_t *buffer_ptr = data_ptr;
+    struct wlmcl_buffer *buffer_ptr = data_ptr;
     BS_ASSERT(buffer_ptr->wl_buffer_ptr == wl_buffer_ptr);
-    wlcl_dblbuf_t *dblbuf_ptr = buffer_ptr->dblbuf_ptr;
+    wlmcl_dblbuf_t *dblbuf_ptr = buffer_ptr->dblbuf_ptr;
     dblbuf_ptr->released_buffer_ptrs[dblbuf_ptr->released++] = buffer_ptr;
 
     _wlcl_dblbuf_callback_if_ready(dblbuf_ptr);

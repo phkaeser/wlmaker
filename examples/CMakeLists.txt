@@ -17,38 +17,57 @@
 # cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME}/.local . -B build
 
 cmake_minimum_required(VERSION 3.13)
-project(wlmaker VERSION 0.1
-  DESCRIPTION "Wayland Maker - Examples & Tools")
 
-# Requires out-of-source builds.
-file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" location_path)
-if(EXISTS "${location_path}")
-  message(
-    FATAL_ERROR
-    "You cannot build into a source directory (containing a CMakeLists.txt file).\n"
-    "Please make a build subdirectory, for example:\n"
-    "cmake -B build\n"
-    "(cd build && make)")
+# Conditional build for subdirectories: only build submodules/subdirectories
+# if cmake is run directly in this examples directory, rather than from root.
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+
+  # If not found: Try 'pip3 install --user meson'
+  find_program(MESON_EXECUTABLE NAMES meson REQUIRED)
+  find_program(NINJA_EXECUTABLE NAMES ninja REQUIRED)
+
+  include(ExternalProject)
+
+  # Extra packages required on Debian:
+  #
+  # libgtk-3-dev
+  # libgirepository1.0-dev
+  # valac
+  #
+  # Hm. Could also have installed gtk-layer-shell-examples ?
+  # Also, there is https://github.com/wmww/gtk4-layer-shell.
+  ExternalProject_Add(gtk_layer_shell
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gtk-layer-shell"
+    INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
+    CONFIGURE_COMMAND "${MESON_EXECUTABLE}" --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true
+    BUILD_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR>
+    INSTALL_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR> install
+  )
 endif()
 
-# If not found: Try 'pip3 install --user meson'
-find_program(MESON_EXECUTABLE NAMES meson REQUIRED)
-find_program(NINJA_EXECUTABLE NAMES ninja REQUIRED)
+add_executable(
+  example_toplevel
+  example_toplevel.c)
+target_include_directories(example_toplevel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(
+  example_toplevel
+  m
+  libwlclient)
 
-include(ExternalProject)
+add_executable(
+  example_layer_surface
+  example_layer_surface.c)
+target_include_directories(example_layer_surface PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(
+  example_layer_surface
+  m
+  libwlclient)
 
-# Extra packages required on Debian:
-#
-# libgtk-3-dev
-# libgirepository1.0-dev
-# valac
-#
-# Hm. Could also have installed gtk-layer-shell-examples ?
-# Also, there is https://github.com/wmww/gtk4-layer-shell.
-ExternalProject_Add(gtk_layer_shell
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gtk-layer-shell"
-  INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
-  CONFIGURE_COMMAND "${MESON_EXECUTABLE}" --prefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR> -Dexamples=true
-  BUILD_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR>
-  INSTALL_COMMAND "${NINJA_EXECUTABLE}" -C <BINARY_DIR> install
-)
+if(iwyu_path_and_options)
+  set_target_properties(
+    example_toplevel PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  set_target_properties(
+    example_layer_surface PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+endif()

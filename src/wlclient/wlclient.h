@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file libwlclient.h
+ * @file wlclient.h
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
@@ -18,38 +18,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LIBWLCLIENT_H__
-#define __LIBWLCLIENT_H__
+#ifndef __WLMAKER_WLCLIENT_H__
+#define __WLMAKER_WLCLIENT_H__
 
 #include <inttypes.h>
 #include <stdbool.h>
-#include <libbase/libbase.h>
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
 
 /** Forward declaration: Wayland client handle. */
-typedef struct _wlclient_t wlclient_t;
-struct zxdg_toplevel_decoration_v1;
-
-#include "icon.h"
-#include "xdg_toplevel.h"
+typedef struct _wlmcl_client_t wlmcl_client_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
 /**
- * A client's callback, as used in @ref wlclient_register_timer.
+ * A client's callback, as used in @ref wlmcl_client_register_timer.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  * @param ud_ptr
  */
-typedef void (*wlclient_callback_t)(
-    wlclient_t *wlclient_ptr,
+typedef void (*wlmcl_client_callback_t)(
+    wlmcl_client_t *wlmcl_client_ptr,
     void *ud_ptr);
 
 /** Accessor to 'public' client attributes. */
-typedef struct {
+struct wlmcl_client_attributes {
     /** Wayland display connection. */
     struct wl_display         *wl_display_ptr;
     /** The bound compositor interface. */
@@ -68,24 +63,26 @@ typedef struct {
     struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
     /** The bound Input Observation. */
     struct ext_input_observation_manager_v1 *input_observation_manager_ptr;
+    /** The bound layer shell interface. Will be NULL if not supported. */
+    struct zwlr_layer_shell_v1 *layer_shell_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
-} wlclient_attributes_t;
+};
 
 /** Events of the client. */
-typedef struct {
+struct wlmcl_client_events {
     /** A key was pressed. */
     struct wl_signal          key;
-} wlclient_events_t;
+};
 
 /** Key event. */
-typedef struct{
+struct wlmcl_client_key_event {
     /** The key. */
     xkb_keysym_t              keysym;
     /** Wheter it was pressed (true) or released. */
     bool                      pressed;
-} wlclient_key_event_t;
+};
 
 /**
  * Creates a wayland client for simple buffer interactions.
@@ -93,44 +90,44 @@ typedef struct{
  * @param app_id_ptr          Application ID or NULL if not set.
  *
  * @return The client state, or NULL on error. The state needs to be free'd
- *     via @ref wlclient_destroy.
+ *     via @ref wlmcl_client_destroy.
  */
-wlclient_t *wlclient_create(const char *app_id_ptr);
+wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr);
 
 /**
- * Destroys the wayland client, as created by @ref wlclient_create.
+ * Destroys the wayland client, as created by @ref wlmcl_client_create.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  */
-void wlclient_destroy(wlclient_t *wlclient_ptr);
+void wlmcl_client_destroy(wlmcl_client_t *wlmcl_client_ptr);
 
 /**
  * Gets the client attributes.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  *
  * @return A pointer to the attributes.
  */
-const wlclient_attributes_t *wlclient_attributes(
-    const wlclient_t *wlclient_ptr);
+const struct wlmcl_client_attributes *wlmcl_client_attributes(
+    const wlmcl_client_t *wlmcl_client_ptr);
 
-/** @return A pointer to @ref wlclient_t::events. */
-wlclient_events_t *wlclient_events(wlclient_t *wlclient_ptr);
+/** @return A pointer to @ref wlmcl_client_t::events. */
+struct wlmcl_client_events *wlmcl_client_events(wlmcl_client_t *wlmcl_client_ptr);
 
 /**
  * Runs the client's mainloop.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  */
-void wlclient_run(wlclient_t *wlclient_ptr);
+void wlmcl_client_run(wlmcl_client_t *wlmcl_client_ptr);
 
 /**
  * Requests termination of the client-s mainloop. This takes effect only once
  * the mainloop wraps up an iteration.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  */
-void wlclient_request_terminate(wlclient_t *wlclient_ptr);
+void wlmcl_client_request_terminate(wlmcl_client_t *wlmcl_client_ptr);
 
 /**
  * Registers a timer with the client.
@@ -139,22 +136,22 @@ void wlclient_request_terminate(wlclient_t *wlclient_ptr);
  * be called with the provided arguments. This is a one-time registration. For
  * repeated calls, clients need to re-register.
  *
- * @param wlclient_ptr
+ * @param wlmcl_client_ptr
  * @param target_usec
  * @param callback
  * @param callback_ud_ptr
  *
  * @return true on success.
  */
-bool wlclient_register_timer(
-    wlclient_t *wlclient_ptr,
+bool wlmcl_client_register_timer(
+    wlmcl_client_t *wlmcl_client_ptr,
     uint64_t target_usec,
-    wlclient_callback_t callback,
+    wlmcl_client_callback_t callback,
     void *callback_ud_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __LIBWLCLIENT_H__ */
-/* == End of libwlclient.h ================================================= */
+#endif /* __WLMAKER_WLCLIENT_H__ */
+/* == End of wlclient.h ==================================================== */

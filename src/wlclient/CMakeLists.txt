@@ -27,7 +27,8 @@ add_library(libwlclient STATIC)
 set(public_header_files
   dblbuf.h
   icon.h
-  libwlclient.h
+  layer_surface.h
+  wlclient.h
   xdg_toplevel.h
 )
 
@@ -37,9 +38,10 @@ set_target_properties(
   PUBLIC_HEADER "${public_header_files}")
 
 set(sources
-  client.c
+  wlclient.c
   dblbuf.c
   icon.c
+  layer_surface.c
   xdg_toplevel.c
 )
 
@@ -67,16 +69,22 @@ waylandprotocol_add(
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
   SIDE client)
 
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME wlr-layer-shell-unstable-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/third_party/protocols/wlr-layer-shell-unstable-v1.xml"
+  SIDE client)
+
 target_sources(libwlclient PRIVATE "${sources}")
 
 target_include_directories(
   libwlclient
   PUBLIC
   "${PROJECT_SOURCE_DIR}/src"
+  "${CMAKE_CURRENT_BINARY_DIR}"
   PRIVATE
   "${WAYLAND_CLIENT_INCLUDE_DIRS}"
-  "${XKBCOMMON_INCLUDE_DIRS}"
-  "${CMAKE_CURRENT_BINARY_DIR}")
+  "${XKBCOMMON_INCLUDE_DIRS}")
 
 target_link_libraries(
   libwlclient

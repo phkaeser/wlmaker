@@ -14,96 +14,47 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
 add_subdirectory(primitives)
+
+# add_wlm_app
+#
+# Helper function to define wayland-maker application targets.
+# Creates an executable using the source file '${name}.c', configures it with
+# private include directories, links it with the specified libraries, and sets up
+# include-what-you-use configurations if enabled.
+#
+# Arguments:
+#   name: Name of the application target and source file (excluding '.c' extension).
+#   ARGN: List of libraries to link against.
+function(add_wlm_app name)
+  add_executable(${name} ${name}.c)
+  target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  target_link_libraries(${name} ${ARGN})
+  if(iwyu_path_and_options)
+    set_target_properties(
+      ${name} PROPERTIES
+      C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  endif()
+endfunction()
+
 add_library(wlm_graph_shared STATIC wlm_graph_shared.c)
 target_include_directories(wlm_graph_shared PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlm_graph_shared
   libwlclient
   primitives)
-add_executable(
-  example_toplevel
-  example_toplevel.c)
-target_include_directories(example_toplevel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  example_toplevel
-  m
-  libwlclient)
-add_executable(
-  wlmclock
-  wlmclock.c)
-target_include_directories(wlmclock PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmclock
-  libwlclient
-  primitives
-  m)
-add_executable(
-  wlmeyes
-  wlmeyes.c)
-target_include_directories(wlmeyes PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmeyes
-  m
-  libwlclient)
-add_executable(
-  wlmcpugraph
-  wlmcpugraph.c)
-target_include_directories(wlmcpugraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmcpugraph
-  wlm_graph_shared
-  libwlclient
-  primitives)
-add_executable(
-  wlmmemgraph
-  wlmmemgraph.c)
-target_include_directories(wlmmemgraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmmemgraph
-  wlm_graph_shared
-  libwlclient
-  primitives)
-add_executable(
-  wlmnetgraph
-  wlmnetgraph.c)
-target_include_directories(wlmnetgraph PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmnetgraph
-  wlm_graph_shared
-  libwlclient
-  primitives)
-add_executable(
-  wlmbattery
-  wlmbattery.c)
-target_include_directories(wlmbattery PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(
-  wlmbattery
-  libbase
-  libwlclient
-  primitives)
-install(
-  TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph wlmbattery
-  DESTINATION "${CMAKE_INSTALL_BINDIR}")
 if(iwyu_path_and_options)
   set_target_properties(
     wlm_graph_shared PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    example_toplevel PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmclock PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmeyes PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmcpugraph PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmmemgraph PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmnetgraph PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()
+
+add_wlm_app(wlmclock libwlclient primitives m)
+add_wlm_app(wlmeyes m libwlclient)
+add_wlm_app(wlmcpugraph wlm_graph_shared libwlclient primitives)
+add_wlm_app(wlmmemgraph wlm_graph_shared libwlclient primitives)
+add_wlm_app(wlmnetgraph wlm_graph_shared libwlclient primitives)
+add_wlm_app(wlmbattery libbase libwlclient primitives)
+
+install(
+  TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph wlmbattery
+  DESTINATION "${CMAKE_INSTALL_BINDIR}")

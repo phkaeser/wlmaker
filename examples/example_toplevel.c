@@ -33,21 +33,24 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "wlclient/xdg_toplevel.h"
-#include "wlclient/libwlclient.h"
+#include "wlclient/wlclient.h"
+#include "wlclient/dblbuf.h"
 
 /** State of the client. */
-wlclient_t                    *wlclient_ptr;
+wlmcl_client_t                    *wlclient_ptr;
 /** Listener for key events. */
 static struct wl_listener     _key_listener;
 /** A colorful background. */
 static bs_gfxbuf_t            *background_colors;
+/** Double buffer. */
+static wlmcl_dblbuf_t         *dblbuf_ptr;
 
 /* ------------------------------------------------------------------------- */
 /** Handles key events. */
 static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
                         void *data_ptr)
 {
-    wlclient_key_event_t *event_ptr = data_ptr;
+    struct wlmcl_client_key_event *event_ptr = data_ptr;
 
     if (!event_ptr->pressed) return;
     char name[128];
@@ -58,7 +61,7 @@ static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
     if (XKB_KEY_Escape == event_ptr->keysym ||
         XKB_KEY_q == event_ptr->keysym ||
         XKB_KEY_Q == event_ptr->keysym) {
-        wlclient_request_terminate(wlclient_ptr);
+        wlmcl_client_request_terminate(wlclient_ptr);
     }
 }
 
@@ -67,7 +70,7 @@ static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
 static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 {
     static uint64_t ns_base = 0;
-    wlclient_xdg_toplevel_t *toplevel_ptr = ud_ptr;
+    wlmcl_xdg_toplevel_t *toplevel_ptr = ud_ptr;
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
 
     bs_gfxbuf_copy(gfxbuf_ptr, background_colors);
@@ -90,9 +93,31 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 
     cairo_destroy(cairo_ptr);
 
-    wlclient_xdg_toplevel_register_ready_callback(
-        toplevel_ptr, _callback, toplevel_ptr);
+    wlmcl_dblbuf_register_ready_callback(
+        dblbuf_ptr, _callback, toplevel_ptr);
     return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles layout configure events. */
+static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    wlmcl_xdg_toplevel_t *toplevel_ptr = ud_ptr;
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(dblbuf_ptr);
+    }
+    dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+        wlmcl_xdg_toplevel_wl_surface(toplevel_ptr),
+        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(
+        dblbuf_ptr, _callback, toplevel_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -135,25 +160,29 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     background_colors = _create_background(640, 400);
     if (NULL == background_colors) return EXIT_FAILURE;
 
-    wlclient_ptr = wlclient_create("example_toplevel");
+    wlclient_ptr = wlmcl_client_create("example_toplevel");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     _key_listener.notify = _handle_key;
-    wl_signal_add(&wlclient_events(wlclient_ptr)->key, &_key_listener);
+    wl_signal_add(&wlmcl_client_events(wlclient_ptr)->key, &_key_listener);
 
-    if (wlclient_xdg_supported(wlclient_ptr)) {
-        wlclient_xdg_toplevel_t *toplevel_ptr = wlclient_xdg_toplevel_create(
+    if (wlmcl_xdg_supported(wlclient_ptr)) {
+        wlmcl_xdg_toplevel_t *toplevel_ptr = wlmcl_xdg_toplevel_create(
             wlclient_ptr, "wlmaker Toplevel Example", 640, 400);
-        wlclient_xdg_decoration_set_server_side(toplevel_ptr, true);
+        wlmcl_xdg_decoration_set_server_side(toplevel_ptr, true);
 
-        wlclient_xdg_toplevel_register_ready_callback(
-            toplevel_ptr, _callback, toplevel_ptr);
+        wlmcl_xdg_toplevel_register_configure_callback(
+            toplevel_ptr, _handle_configure, toplevel_ptr);
 
         if (NULL != toplevel_ptr) {
-            wlclient_run(wlclient_ptr);
-            wlclient_xdg_toplevel_destroy(toplevel_ptr);
+            wlmcl_client_run(wlclient_ptr);
+            wlmcl_xdg_toplevel_destroy(toplevel_ptr);
+            if (NULL != dblbuf_ptr) {
+                wlmcl_dblbuf_destroy(dblbuf_ptr);
+                dblbuf_ptr = NULL;
+            }
         } else {
-            bs_log(BS_ERROR, "Failed wlclient_xdg_toplevel_create(%p)",
+            bs_log(BS_ERROR, "Failed wlmcl_xdg_toplevel_create(%p)",
                    wlclient_ptr);
         }
     } else {
@@ -161,7 +190,7 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     }
 
     wl_list_remove(&_key_listener.link);
-    wlclient_destroy(wlclient_ptr);
+    wlmcl_client_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
 /* == End of example_toplevel.c ============================================ */

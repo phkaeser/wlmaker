@@ -23,7 +23,7 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
-#include <wlclient/libwlclient.h>
+#include <wlclient/wlclient.h>
 #include <math.h>
 #include <primitives/primitives.h>
 #include <primitives/segment_display.h>
@@ -36,6 +36,12 @@
 #include <time.h>
 
 #include "wlclient/icon.h"
+#include "wlclient/dblbuf.h"
+
+/** State of the client. */
+static wlmcl_client_t *wlclient_ptr;
+/** Double buffer. */
+static wlmcl_dblbuf_t *dblbuf_ptr;
 
 /** Foreground color of a LED in the VFD-style display. */
 static const uint32_t color_led = 0xff55ffff;
@@ -186,13 +192,36 @@ bool icon_callback(
 
 /* ------------------------------------------------------------------------- */
 /** Called once per second. */
-void timer_callback(wlclient_t *client_ptr, void *ud_ptr)
+void timer_callback(wlmcl_client_t *client_ptr, void *ud_ptr)
 {
-    wlclient_icon_t *icon_ptr = ud_ptr;
+    wlmcl_icon_t *icon_ptr = ud_ptr;
 
-    wlclient_icon_register_ready_callback(icon_ptr, icon_callback, NULL);
-    wlclient_register_timer(
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_register_ready_callback(dblbuf_ptr, icon_callback, NULL);
+    }
+    wlmcl_client_register_timer(
         client_ptr, next_draw_time(), timer_callback, icon_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles configure events. */
+static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
+{
+    wlmcl_icon_t *icon_ptr = ud_ptr;
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(dblbuf_ptr);
+    }
+    dblbuf_ptr = wlmcl_dblbuf_create(
+        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+        wlmcl_icon_wl_surface(icon_ptr),
+        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+        width,
+        height);
+    if (NULL == dblbuf_ptr) {
+        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
+        return;
+    }
+    wlmcl_dblbuf_register_ready_callback(dblbuf_ptr, icon_callback, NULL);
 }
 
 /* == Main program ========================================================= */
@@ -201,28 +230,32 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
     bs_log_severity = BS_DEBUG;
 
-    wlclient_t *wlclient_ptr = wlclient_create("wlmaker.wlmeyes");
+    wlclient_ptr = wlmcl_client_create("wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
-    if (wlclient_icon_supported(wlclient_ptr)) {
-        wlclient_icon_t *icon_ptr = wlclient_icon_create(wlclient_ptr);
+    if (wlmcl_icon_supported(wlclient_ptr)) {
+        wlmcl_icon_t *icon_ptr = wlmcl_icon_create(wlclient_ptr);
         if (NULL == icon_ptr) {
-            bs_log(BS_ERROR, "Failed wlclient_icon_create(%p)", wlclient_ptr);
+            bs_log(BS_ERROR, "Failed wlmcl_icon_create(%p)", wlclient_ptr);
         } else {
-            wlclient_icon_register_ready_callback(
-                icon_ptr, icon_callback, NULL);
+            wlmcl_icon_register_configure_callback(
+                icon_ptr, _handle_configure, icon_ptr);
 
-            wlclient_register_timer(
+            wlmcl_client_register_timer(
                 wlclient_ptr, next_draw_time(), timer_callback, icon_ptr);
 
-            wlclient_run(wlclient_ptr);
-            wlclient_icon_destroy(icon_ptr);
+            wlmcl_client_run(wlclient_ptr);
+            wlmcl_icon_destroy(icon_ptr);
+            if (NULL != dblbuf_ptr) {
+                wlmcl_dblbuf_destroy(dblbuf_ptr);
+                dblbuf_ptr = NULL;
+            }
         }
     } else {
         bs_log(BS_ERROR, "icon protocol is not supported.");
     }
 
-    wlclient_destroy(wlclient_ptr);
+    wlmcl_client_destroy(wlclient_ptr);
     return EXIT_SUCCESS;
 }
 /* == End of wlmclock.c ==================================================== */
