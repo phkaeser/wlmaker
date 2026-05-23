@@ -13,6 +13,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Root/Workspace/Layer separation
   * Refactor root element so it can be used in wlmdock.
+  * Change wlmtk_root_t so it includes the container_init_attached.
   * Move the layer & screen lock elements into a separate element (`desktop`?
     `screen`? ...?)
   * Update layers so they remain fixed when workspace changes.

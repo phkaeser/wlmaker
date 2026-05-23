@@ -40,6 +40,7 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/util/box.h>
 #undef WLR_USE_UNSTABLE
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
@@ -160,9 +161,9 @@ wlmdock_t *_wlmdock_create(void)
         dock_ptr->client_ptr,
         ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         "wlmdock",
-        ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
-        100,
-        300);
+        ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+        64,
+        64);
     if (NULL == dock_ptr->layer_surface_ptr) {
         bs_log(BS_ERROR, "Failed to create client layer surface.");
         _wlmdock_destroy(dock_ptr);
@@ -202,7 +203,7 @@ wlmdock_t *_wlmdock_create(void)
         return NULL;
     }
 
-    dock_ptr->rectangle_ptr = wlmtk_rectangle_create(0, 0, 0xffc0cb);
+    dock_ptr->rectangle_ptr = wlmtk_rectangle_create(64, 64, 0xffffc0cb);
     if (NULL == dock_ptr->rectangle_ptr) {
         bs_log(BS_ERROR, "Failed to create pink background rectangle.");
         _wlmdock_destroy(dock_ptr);
@@ -216,7 +217,7 @@ wlmdock_t *_wlmdock_create(void)
         true);
 
     dock_ptr->root_ptr = wlmtk_root_create(
-        wlmtk_rectangle_element(dock_ptr->rectangle_ptr),
+        &dock_ptr->container.super_element,
         dock_ptr->wlr_output_layout_ptr);
     if (NULL == dock_ptr->root_ptr) {
         bs_log(BS_ERROR, "Failed to create root element wrapper.");
@@ -494,7 +495,15 @@ void handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
                       &dock_ptr->output_destroy_listener);
     }
 
-    if (0 == width || 0 == height) return;
+    struct wlr_box box = wlmtk_element_get_dimensions_box(
+        &dock_ptr->container.super_element);
+
+    if ((int)width != box.width || (int)height != box.height) {
+        wlmcl_layer_surface_request_size(
+            dock_ptr->layer_surface_ptr,
+            box.width, box.height);
+        return;
+    }
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
@@ -508,12 +517,6 @@ void handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
         return;
     }
     wlr_output_state_finish(&state);
-
-    if (NULL != dock_ptr->rectangle_ptr) {
-        wlmtk_rectangle_set_size(
-            dock_ptr->rectangle_ptr,
-            (int)width, (int)height);
-    }
 
     if (!wlr_scene_output_commit(dock_ptr->wlr_scene_output_ptr, NULL)) {
         bs_log(BS_WARNING, "First wlr_scene_output_commit() failed.");
