@@ -20,8 +20,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Clip & Dock handling
   * Move into a separate process.
-    * Figure out how to use the compositor's keyboard configuration, and not
-      duplicate config_dict.
+    * Create keyboard from `keyboard` listener in `wl_keyboard`. Update input manager
+      to accept a keymap or use the Config dict. (but: how?)
   * Icons are loaded according to `.desktop` specification.
   * Add option to save Dock & Clip state.
     * Document the state file.
