@@ -31,6 +31,43 @@
 
 /* == Declarations ========================================================= */
 
+/** State for the DFA automaton. */
+enum _dfa_state {
+    /** Normal mode. */
+    _DFA_STATE_NORMAL,
+    /** Escape mode, after a \ character. */
+    _DFA_STATE_ESCAPED,
+    /** Terminate. */
+    _DFA_STATE_HALT
+};
+
+/** Character classes for the DFA automaton. */
+enum _dfa_class {
+    /** Backslash. */
+    _DFA_CLASS_BACKSLASH = 0,
+    /** Semicolon. */
+    _DFA_CLASS_SEMICOLON = 1,
+    /** NUL character. */
+    _DFA_CLASS_NUL = 2,
+    /** Anything else. */
+    _DFA_CLASS_REGULAR = 3,
+    };
+
+/** Transition for the DFA automaton. */
+struct _dfa_transition {
+    /** Next state. */
+    enum _dfa_state           next_state;
+    /**
+     * Function to apply for the current input character.
+     *
+     * @param dest_ptr        Current position in output string.
+     * @param dest_ptr        Current input character.
+     *
+     * @return New position in output string.
+     */
+    char *(*process)(char *dest_ptr, const char c);
+};
+
 /** Encapsulates both parser and entry as argument to the inih handler. */
 struct _desktop_parser_handler_arg {
     /** Parser. */
@@ -46,17 +83,11 @@ static int _desktop_parser_handler(
     const char *value_ptr);
 static char *_create_locale_key(const char *l, const char *t, const char *m);
 
-/* == Data ================================================================= */
-
-/** Group name for the application details in a `.desktop` file. */
-static const char *desktop_entry_group_name = "Desktop Entry";
-
-/** Regular expression describing a (possibly localized) key. */
-static const char *key_regex_str =
-    "^"
-    "([A-Za-z0-9-]+)"
-    "(\\[[a-z]{2,3}[a-zA-Z0-9_@\\.-]*\\])?"
-    "$";
+static char *_dfa_next_strings_element(const char **word_ptr);
+static char *_dfa_append_char(char *dest_ptr, const char c);
+static char *_dfa_append_escaped(char *dest_ptr, const char c);
+static char *_dfa_append_nul(char *dest_ptr, const char c);
+static char *_dfa_append_bslash_nul(char *dest_ptr, const char c);
 
 /** Parser handle. */
 struct desktop_parser {
@@ -108,6 +139,43 @@ struct key_descriptor {
     /** Dtor. */
     void (*destroy)(void *dest_ptr);
 };
+
+/* == Data ================================================================= */
+
+/** Regular expression describing a (possibly localized) key. */
+static const char *key_regex_str =
+    "^"
+    "([A-Za-z0-9-]+)"
+    "(\\[[a-z]{2,3}[a-zA-Z0-9_@\\.-]*\\])?"
+    "$";
+
+/** Actual transition table for extracting one string from "string(s)". */
+static const struct _dfa_transition _dfa_transition_table[3][4] = {
+    // Normal state.
+    {
+        { _DFA_STATE_ESCAPED, NULL },
+        { _DFA_STATE_HALT, _dfa_append_nul },
+        { _DFA_STATE_HALT, _dfa_append_char },
+        { _DFA_STATE_NORMAL, _dfa_append_char },
+    },
+    // Escaped state.
+    {
+        { _DFA_STATE_NORMAL, _dfa_append_char },
+        { _DFA_STATE_NORMAL, _dfa_append_char },
+        { _DFA_STATE_HALT, _dfa_append_bslash_nul },
+        { _DFA_STATE_NORMAL, _dfa_append_escaped },
+    },
+    // Halt. Nothing to do.
+    {
+        { _DFA_STATE_HALT, NULL },
+        { _DFA_STATE_HALT, NULL },
+        { _DFA_STATE_HALT, NULL },
+        { _DFA_STATE_HALT, NULL }
+    }
+};
+
+/** Group name for the application details in a `.desktop` file. */
+static const char *desktop_entry_group_name = "Desktop Entry";
 
 /** Supported keys. */
 struct key_descriptor keys[] = {
@@ -309,7 +377,7 @@ int _desktop_parser_handler(
     const struct desktop_parser *parser = arg->parser;
     struct desktop_entry *entry_ptr = arg->entry_ptr;
 
-    // FIXME: Skip groups other than the main entry. Remove type?
+    // Skip groups other than the main entry. Remove type?
     if (0 != strcmp(section_ptr, desktop_entry_group_name)) return 1;
 
     // Verify that the key is valid, with optional locale index.
@@ -341,7 +409,8 @@ int _desktop_parser_handler(
         // Don't overwrite higher priority or earlier values for same priority.
         if (kd->priority_ofs != kd->ofs) {
             int8_t stored_priority = ((int8_t*)entry_ptr)[kd->priority_ofs];
-            if (stored_priority & (1 << priority)) return 0;  // Duplicate.
+            if (stored_priority & (1 << priority)) return 0;
+
             ((int8_t*)entry_ptr)[kd->priority_ofs] |= 1 << priority;
             if (stored_priority > (1 << priority)) return 1;  // Higher prio.
         }
@@ -412,6 +481,10 @@ bool _desktop_parser_translate_type(
 /**
  * Translates a boolean-typed value into a bool at *dest_ptr.
  *
+ * Accepts also "True" and "False", since there are `.desktop` files with mis-
+ * spelling. The specification restricts it to "true" and "false", though.
+ * https://specifications.freedesktop.org/desktop-entry/latest/value-types.htm.
+ *
  * @param value_ptr           Must either be "false" or "true".
  * @param dest_ptr            Pointer to a bool.
  *
@@ -423,10 +496,12 @@ bool _desktop_parser_translate_boolean(
 {
     bool *bool_ptr = dest_ptr;
 
-    if (0 == strcmp("true", value_ptr)) {
+    if (0 == strcmp("true", value_ptr) ||
+        0 == strcmp("True", value_ptr)) {
         *bool_ptr = true;
         return true;
-    } else if (0 == strcmp("false", value_ptr)) {
+    } else if (0 == strcmp("false", value_ptr) ||
+               0 == strcmp("False", value_ptr)) {
         *bool_ptr = false;
         return true;
     }
@@ -478,6 +553,9 @@ bool _desktop_parser_translate_string(
 /**
  * Translates multiple strings, separated by semicolon; as for "Categories".
  *
+ * The plural version of "string", as defined at
+ * https://specifications.freedesktop.org/desktop-entry/latest/value-types.html.
+ *
  * @param value_ptr
  * @param dest_ptr
  *
@@ -487,41 +565,30 @@ bool _desktop_parser_translate_strings(
     const char *value_ptr,
     void *dest_ptr)
 {
-    char *translated_ptr = NULL;
-    bool rv = _desktop_parser_translate_string(value_ptr, &translated_ptr);
-    if (!rv) goto error;
-
-    char ***category_ptrs_ptr = dest_ptr;
-    *category_ptrs_ptr = calloc( 1, sizeof(char*));
-    if (NULL == *category_ptrs_ptr) goto error;
-
+    char **ptrs = calloc(1, sizeof(char*));
+    if (NULL == ptrs) return false;
     size_t cat_idx = 0;
-    for (char *cat_ptr = translated_ptr; *cat_ptr != '\0'; ++cat_ptr) {
-        // Unescape the semicolon and terminate this category string.
-        char *s = cat_ptr, *d = cat_ptr;
-        for (; *s != ';' && *s != '\0'; ++s, ++d) {
-            if (*s == '\\') ++s;
-            *d = *s;
+
+    do {
+        char *token_ptr = _dfa_next_strings_element(&value_ptr);
+        if ((NULL != token_ptr) && (0 < strlen(token_ptr))) {
+            char **new_ptrs = realloc(ptrs, (cat_idx + 2) * sizeof(char*));
+            if (NULL == new_ptrs) {
+                _desktop_parser_destroy_strings(&ptrs);
+                free(token_ptr);
+                return false;
+            }
+            ptrs = new_ptrs;
+            ptrs[cat_idx++] = token_ptr;
+            ptrs[cat_idx] = NULL;
+            token_ptr = NULL;
         }
-        *d = '\0';
+        if (NULL != token_ptr) free(token_ptr);
+        while (';' == *value_ptr) ++value_ptr;
+    } while (*value_ptr);
 
-        *category_ptrs_ptr = realloc(
-            *category_ptrs_ptr,
-            (cat_idx + 2) * sizeof(char*));
-        if (NULL == *category_ptrs_ptr) goto error;
-        (*category_ptrs_ptr)[cat_idx + 1] = NULL;
-
-        (*category_ptrs_ptr)[cat_idx] = strdup(cat_ptr);
-        if (NULL == (*category_ptrs_ptr)[cat_idx]) goto error;
-        cat_ptr = s;
-        ++cat_idx;
-    }
-    free(translated_ptr);
+    *(char***)dest_ptr = ptrs;
     return true;
-
-error:
-    if (translated_ptr) free(translated_ptr);
-    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -596,15 +663,83 @@ void _desktop_parser_destroy_string(void *dest_ptr)
 /** Frees the memory associated with the NULL-terminated string array. */
 void _desktop_parser_destroy_strings(void *dest_ptr)
 {
-    char ***str_ptr_ptr = (char***)dest_ptr;
-    if (NULL == *str_ptr_ptr) return;
+    char **str_ptrs = *(char***)dest_ptr;
+    if (NULL == str_ptrs) return;
 
-    for (char **s = *str_ptr_ptr; *s != NULL; ++s) {
-        free(*s);
+    for (char **s = str_ptrs; NULL != *s; ++s) free(*s);
+    free(str_ptrs);
+    *(char***)dest_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Returns the next element of a "string(s)" string. */
+char *_dfa_next_strings_element(const char **word_ptr)
+{
+    char *copied_ptr = strdup(*word_ptr);
+    if (NULL == copied_ptr) return NULL;
+
+    char *dest_ptr = copied_ptr;
+    enum _dfa_state state = _DFA_STATE_NORMAL;
+    while (true) {
+        enum _dfa_class class;
+        switch (**word_ptr) {
+        case '\\': class = _DFA_CLASS_BACKSLASH; break;
+        case ';':  class = _DFA_CLASS_SEMICOLON; break;
+        case '\0': class = _DFA_CLASS_NUL; break;
+        default: class = _DFA_CLASS_REGULAR; break;
+        }
+
+        const struct _dfa_transition *t = &_dfa_transition_table[state][class];
+        if (NULL != t->process) dest_ptr = t->process(dest_ptr, **word_ptr);
+        state = t->next_state;
+
+        if (_DFA_STATE_HALT == state) break;
+        ++*word_ptr;
     }
 
-    free(*str_ptr_ptr);
-    *(void**)dest_ptr = NULL;
+    char *result_ptr = strdup(copied_ptr);
+    free(copied_ptr);
+    return result_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Appends the character to the output. */
+char *_dfa_append_char(char *dest_ptr, const char c)
+{
+    *dest_ptr = c;
+    return ++dest_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Appends the corresponnding escaped code to the output. */
+char *_dfa_append_escaped(char *dest_ptr, const char c)
+{
+    switch (c) {
+    case 'n': *dest_ptr++ = '\n'; break;
+    case 's': *dest_ptr++ = ' '; break;
+    case 't': *dest_ptr++ = '\t'; break;
+    case 'r': *dest_ptr++ = '\r'; break;
+    case '\\': *dest_ptr++ = '\\'; break;
+    default: *dest_ptr++ = c;
+    }
+    return dest_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Appends a NUL to the output. */
+char *_dfa_append_nul(char *dest_ptr, __UNUSED__ const char c)
+{
+    *dest_ptr = '\0';
+    return ++dest_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Appends a backlsash followed by NUL to the output. */
+char *_dfa_append_bslash_nul(char *dest_ptr, __UNUSED__ const char c)
+{
+    *dest_ptr++ = '\\';
+    *dest_ptr = '\0';
+    return ++dest_ptr;
 }
 
 /* == Unit tests =========================================================== */
@@ -613,6 +748,7 @@ static void _desktop_parser_test_ini_string(bs_test_t *test_ptr);
 static void _desktop_parser_test_ini_file(bs_test_t *test_ptr);
 static void _desktop_parser_test_locale_string(bs_test_t *test_ptr);
 static void _desktop_parser_test_translate(bs_test_t *test_ptr);
+static void _desktop_parser_test_translate_strings(bs_test_t *test_ptr);
 
 /** Test cases for action items. */
 static const bs_test_case_t   _desktop_parser_test_cases[] = {
@@ -620,6 +756,7 @@ static const bs_test_case_t   _desktop_parser_test_cases[] = {
     { true, "ini_file", _desktop_parser_test_ini_file },
     { true, "locale_string", _desktop_parser_test_locale_string },
     { true, "translate", _desktop_parser_test_translate },
+    { true, "translate_strings", _desktop_parser_test_translate_strings },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -637,6 +774,7 @@ void _desktop_parser_test_ini_string(bs_test_t *test_ptr)
     static const char *i = "\
 [Desktop Entry]\n\
 Exec=TheBinary\n\
+Categories=System;Compositor\n\
 Name[en]=Name1\n\
 Name[en_US@euro]=Name2\n\
 Name[en_US]=Name3\n\
@@ -646,6 +784,10 @@ Name[de]=DerName";
     BS_TEST_VERIFY_STREQ(test_ptr, "TheBinary", e.exec_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "Name2", e.name_ptr);
     BS_TEST_VERIFY_NEQ(test_ptr, 0, e.name_priority & (1 << 4));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, e.category_ptrs);
+    BS_TEST_VERIFY_STREQ(test_ptr, "System", e.category_ptrs[0]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "Compositor", e.category_ptrs[1]);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, e.category_ptrs[2]);
 
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);
@@ -755,8 +897,67 @@ void _desktop_parser_test_translate(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
     BS_TEST_VERIFY_STREQ(test_ptr, "a   a ` \" $ \\ ", e.exec_ptr);
 
+    i = "[Desktop Entry]\nTerminal=true";
+    BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
+    BS_TEST_VERIFY_TRUE(test_ptr, e.terminal);
+    i = "[Desktop Entry]\nTerminal=True";
+    BS_TEST_VERIFY_EQ(test_ptr, 0, desktop_parser_string_to_entry(p, i, &e));
+    BS_TEST_VERIFY_TRUE(test_ptr, e.terminal);
+
     desktop_parser_entry_release(&e);
     desktop_parser_destroy(p);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests translation of multi-strings. */
+void _desktop_parser_test_translate_strings(bs_test_t *test_ptr)
+{
+    // First: Some test cases for the escaper + tokenizer.
+    struct _test_data {
+        const char *input_ptr;
+        const char *expected_ptr ;
+        const char next_input;
+    } test_data[] = {
+        { "token", "token", '\0' },
+        { "token;", "token", ';' },
+        { "to;ken;", "to", ';' },
+        { "to\\;ken", "to;ken", '\0' },
+        { "token\\", "token\\", '\0' },
+        { "E\\nS\\sC\\tA\\rP\\\\E", "E\nS C\tA\rP\\E", '\0' },
+        { NULL, NULL, '\0' }
+    };
+
+    for (const struct _test_data *t = test_data; t->input_ptr; t++) {
+        const char *arg = t->input_ptr;
+        char *result_ptr = _dfa_next_strings_element(&arg);
+        BS_TEST_VERIFY_STREQ(test_ptr, t->expected_ptr, result_ptr);
+        BS_TEST_VERIFY_EQ(test_ptr, t->next_input, *arg);
+        free(result_ptr);
+    }
+
+    // Then: Test the actual translator, ensuring it returns the array.
+    char **spp = NULL;
+    const char *s = "simple";
+    BS_TEST_VERIFY_TRUE(test_ptr, _desktop_parser_translate_strings(s, &spp));
+    BS_TEST_VERIFY_STREQ(test_ptr, "simple", spp[0]);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, spp[1]);
+    _desktop_parser_destroy_strings(&spp);
+
+    s = "semi;colon;;";
+    BS_TEST_VERIFY_TRUE(test_ptr, _desktop_parser_translate_strings(s, &spp));
+    BS_TEST_VERIFY_STREQ(test_ptr, "semi", spp[0]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "colon", spp[1]);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, spp[2]);
+    _desktop_parser_destroy_strings(&spp);
+
+    s = "one;two;th\\;ree;;;four";
+    BS_TEST_VERIFY_TRUE(test_ptr, _desktop_parser_translate_strings(s, &spp));
+    BS_TEST_VERIFY_STREQ(test_ptr, "one", spp[0]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "two", spp[1]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "th;ree", spp[2]);
+    BS_TEST_VERIFY_STREQ(test_ptr, "four", spp[3]);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, spp[4]);
+    _desktop_parser_destroy_strings(&spp);
 }
 
 /* == End of parse.c ======================================================= */
