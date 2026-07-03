@@ -53,6 +53,13 @@ enum battery_status {
     BATTERY_STATUS_FULL
 };
 
+/** Connection status of power adapter. */
+enum adapter_status {
+    ADAPTER_STATUS_UNKNOWN = 0,
+    ADAPTER_STATUS_ONLINE,
+    ADAPTER_STATUS_OFFLINE
+};
+
 /** Power supply state container. */
 struct wlm_power_supply {
     /** List of batteries. Elements are @ref wlm_battery::dlnode. */
@@ -70,7 +77,7 @@ struct wlm_power_adapter {
     /** Absolute sysfs path. */
     char *sysfs_path;
     /** Whether the power adapter is online. */
-    bool online;
+    enum adapter_status status;
 };
 
 /** Battery state container. */
@@ -82,32 +89,21 @@ struct wlm_battery {
     /** Absolute sysfs path. */
     char *sysfs_path;
 
-    /** Loaded battery properties */
+    /** Capacity (percent) of the batter. UINT64_MAX if not present. */
     uint64_t capacity;
     /** Current battery status. */
     enum battery_status status;
 
-    /** Current energy. */
-    uint64_t energy_now;
-    /** Energy when full */
-    uint64_t energy_full;
-    /** power being added currently. */
-    uint64_t power_now;
-
-    /** Current charge. */
-    uint64_t charge_now;
-    /** Full charge. */
-    uint64_t charge_full;
-    /** current adding charge currently. */
-    uint64_t current_now;
-
-    /** Precalculated remaining time in minutes, based on availability of energy/charge records (-1 if unavailable). */
-    int time_remaining_min;
+    /**
+     * Remaining time in minutes until either full (when charging) or empty
+     * (when discharging). -1 if unavailable.
+     */
+    int remaining_min;
 };
 
 static struct wlm_power_supply *wlm_power_supply_create(void);
 static void wlm_power_supply_destroy(struct wlm_power_supply *ps);
-static bool wlm_power_supply_read(struct wlm_power_supply *ps);
+static void wlm_power_supply_read(struct wlm_power_supply *ps);
 static size_t wlm_power_supply_num_batteries(struct wlm_power_supply *ps);
 static struct wlm_battery *wlm_power_supply_battery(
     struct wlm_power_supply *ps,
@@ -120,7 +116,7 @@ static struct wlm_battery *wlm_battery_create(
 static void wlm_battery_destroy(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
-static bool wlm_battery_read(struct wlm_battery *bat);
+static void wlm_battery_read(struct wlm_battery *bat);
 
 static struct wlm_power_adapter *wlm_power_adapter_create(
     const char *name_ptr,
@@ -131,7 +127,7 @@ static void wlm_power_adapter_destroy(
 static bool wlm_power_adapter_connected(
     bs_dllist_node_t *node_ptr,
     void *ud_ptr);
-static bool wlm_power_adapter_read(struct wlm_power_adapter *adapter);
+static void wlm_power_adapter_read(struct wlm_power_adapter *adapter);
 
 static bool wlm_vread_buffer(
     char *v, size_t v_size, const char *fmt_ptr, va_list ap);
@@ -171,12 +167,14 @@ struct wlm_power_supply *wlm_power_supply_create(void)
         }
 
         if (bs_str_startswith(ent->d_name, "BAT")) {
-            struct wlm_battery *bat = wlm_battery_create(ent->d_name, power_supply_dir);
+            struct wlm_battery *bat = wlm_battery_create(
+                ent->d_name, power_supply_dir);
             if (bat) {
                 bs_dllist_push_back(&ps->batteries, &bat->dlnode);
             }
         } else {
-            struct wlm_power_adapter *adapter = wlm_power_adapter_create(ent->d_name, power_supply_dir);
+            struct wlm_power_adapter *adapter = wlm_power_adapter_create(
+                ent->d_name, power_supply_dir);
             if (adapter) {
                 bs_dllist_push_back(&ps->adapters, &adapter->dlnode);
             }
@@ -206,20 +204,16 @@ void wlm_power_supply_destroy(struct wlm_power_supply *ps)
  * Reads current state of the power supply (batteries and adapters).
  *
  * @param ps
- *
- * @return true on success.
  */
-bool wlm_power_supply_read(struct wlm_power_supply *ps)
+void wlm_power_supply_read(struct wlm_power_supply *ps)
 {
     bs_dllist_node_t *dlnode_ptr;
-    bool failure = false;
-
     for (dlnode_ptr = ps->batteries.head_ptr;
          NULL != dlnode_ptr;
          dlnode_ptr = bs_dllist_node_iterator_forward(dlnode_ptr)) {
         struct wlm_battery *bat = BS_CONTAINER_OF(
             dlnode_ptr, struct wlm_battery, dlnode);
-        failure |= !(wlm_battery_read(bat));
+        wlm_battery_read(bat);
     }
 
     for (dlnode_ptr = ps->adapters.head_ptr;
@@ -227,10 +221,8 @@ bool wlm_power_supply_read(struct wlm_power_supply *ps)
          dlnode_ptr = bs_dllist_node_iterator_forward(dlnode_ptr)) {
         struct wlm_power_adapter *a = BS_CONTAINER_OF(
             dlnode_ptr, struct wlm_power_adapter, dlnode);
-        failure |= !(wlm_power_adapter_read(a));
+        wlm_power_adapter_read(a);
     }
-
-    return !failure;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -273,7 +265,7 @@ struct wlm_battery *wlm_power_supply_battery(
  *
  * @param ps Pointer to the target power supply.
  *
- * @return True if at least one adapter is connected and online, otherwise false.
+ * @return True if at least one adapter is connected and online.
  */
 bool wlm_power_supply_connected(struct wlm_power_supply *ps)
 {
@@ -336,65 +328,39 @@ void wlm_battery_destroy(
  * Helper to pull all readings into the structural cache representation.
  *
  * @param bat Pointer to the target battery object tracking the metric states.
- *
- * @return True on success.
  */
-bool wlm_battery_read(struct wlm_battery *bat)
+void wlm_battery_read(struct wlm_battery *bat)
 {
-    // Capacity
+    // The battery's capacity, in percent. Not guaranteed to be there.
     if (!wlm_read_uint64(&bat->capacity, "%s/capacity", bat->sysfs_path)) {
-        return false;
+        bat->capacity = UINT64_MAX;
     }
 
-    // Status
+    // Battery status. Also not guaranteed.
     char buf[VAL_BUF_LEN];
-    if (!wlm_read_buffer(buf, sizeof(buf), "%s/status", bat->sysfs_path)) {
-        return false;
-    } else {
+    if (wlm_read_buffer(buf, sizeof(buf), "%s/status", bat->sysfs_path)) {
         size_t len = strlen(buf);
-        if (len > 0 && buf[len - 1] == '\n') {
-            buf[len - 1] = '\0';
-        }
-    }
-    bat->status = parse_battery_status(buf);
-
-    // Advanced hardware stats gathering
-    bat->time_remaining_min = -1;
-    bat->charge_now = bat->charge_full = bat->current_now = 0;
-    bat->energy_now = bat->energy_full = bat->power_now = 0;
-
-    uint64_t val_now = 0, val_full = 0, rate = 0;
-
-    /*
-     * Linux power_supply exposes either charge-based (µAh) or energy-based (µWh)
-     * parameters depending on the specific hardware controller. Reading charge_now
-     * will naturally fail on systems utilizing energy parameters.
-     */
-    if (wlm_read_uint64(&bat->charge_now, "%s/charge_now", bat->sysfs_path)) {
-        val_now = bat->charge_now;
-
-        if (wlm_read_uint64(&bat->charge_full, "%s/charge_full", bat->sysfs_path)) {
-            val_full = bat->charge_full;
-        }
-
-        if (wlm_read_uint64(&bat->current_now, "%s/current_now", bat->sysfs_path)) {
-            rate = bat->current_now;
-        }
+        if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
+        bat->status = parse_battery_status(buf);
     } else {
-        if (wlm_read_uint64(&bat->energy_now, "%s/energy_now", bat->sysfs_path)) {
-            val_now = bat->energy_now;
+        bat->status = BATTERY_STATUS_UNKNOWN;
+    }
 
-            if (wlm_read_uint64(&bat->energy_full, "%s/energy_full", bat->sysfs_path)) {
-                val_full = bat->energy_full;
-            }
-
-            if (wlm_read_uint64(&bat->power_now, "%s/power_now", bat->sysfs_path)) {
-                rate = bat->power_now;
-            }
+    // Linux power_supply may expose charge-based [µAh] or energy-based [µWh]
+    // parameters, depending on the specific hardware controller. Reading
+    // charge_now will naturally fail on systems utilizing energy parameters.
+    uint64_t val_now = 0, val_full = 0, rate = 0;
+    if (!wlm_read_uint64(&val_now, "%s/charge_now", bat->sysfs_path) ||
+        !wlm_read_uint64(&val_full, "%s/charge_full", bat->sysfs_path) ||
+        !wlm_read_uint64(&rate, "%s/current_now", bat->sysfs_path)) {
+        if (!wlm_read_uint64(&val_now, "%s/energy_now", bat->sysfs_path) ||
+            !wlm_read_uint64(&val_full, "%s/energy_full", bat->sysfs_path) ||
+            !wlm_read_uint64(&rate, "%s/power_now", bat->sysfs_path)) {
+            rate = 0;
         }
     }
 
-    if (rate > 0 && (bat->status == BATTERY_STATUS_CHARGING ||
+    if (0 < rate && (bat->status == BATTERY_STATUS_CHARGING ||
                      bat->status == BATTERY_STATUS_DISCHARGING)) {
         double hours = 0;
         if (bat->status == BATTERY_STATUS_DISCHARGING) {
@@ -402,10 +368,10 @@ bool wlm_battery_read(struct wlm_battery *bat)
         } else if (bat->status == BATTERY_STATUS_CHARGING) {
             hours = (double)(val_full > val_now ? val_full - val_now : 0) / rate;
         }
-        bat->time_remaining_min = (int)(hours * 60.0);
+        bat->remaining_min = (int)(hours * 60.0);
+    } else {
+        bat->remaining_min = -1;
     }
-
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -471,8 +437,9 @@ bool wlm_power_adapter_connected(
     bs_dllist_node_t *node_ptr,
     __UNUSED__ void *ud_ptr)
 {
-    struct wlm_power_adapter *adapter = BS_CONTAINER_OF(node_ptr, struct wlm_power_adapter, dlnode);
-    return adapter->online;
+    struct wlm_power_adapter *adapter = BS_CONTAINER_OF(
+        node_ptr, struct wlm_power_adapter, dlnode);
+    return adapter->status == ADAPTER_STATUS_ONLINE;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -480,18 +447,15 @@ bool wlm_power_adapter_connected(
  * Reads power adapter properties into the structural cache representation.
  *
  * @param adapter Pointer to the target power adapter object.
- *
- * @return True on success.
  */
-bool wlm_power_adapter_read(struct wlm_power_adapter *adapter)
+void wlm_power_adapter_read(struct wlm_power_adapter *adapter)
 {
     uint64_t v;
-    if (!wlm_read_uint64(&v, "%s/online", adapter->sysfs_path)) {
-        return false;
+    if (wlm_read_uint64(&v, "%s/online", adapter->sysfs_path)) {
+        adapter->status = (v) ? ADAPTER_STATUS_ONLINE : ADAPTER_STATUS_OFFLINE;
+    } else {
+        adapter->status = ADAPTER_STATUS_UNKNOWN;
     }
-
-    adapter->online = (v != 0);
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -636,7 +600,11 @@ bool icon_callback(
         char buf[16];
 
         cairo_move_to(cairo_ptr, 8, 15);
-        snprintf(buf, sizeof(buf), "%3"PRIu64"%%", bat->capacity);
+        if (bat->capacity <= 100) {
+            snprintf(buf, sizeof(buf), "%3"PRIu64"%%", bat->capacity);
+        } else {
+            snprintf(buf, sizeof(buf), "???%%");
+        }
         cairo_show_text(cairo_ptr, buf);
 
         cairo_move_to(cairo_ptr, 8, 27);
@@ -649,10 +617,10 @@ bool icon_callback(
         }
 
         cairo_move_to(cairo_ptr, 8, 39);
-        if (0 <= bat->time_remaining_min) {
+        if (0 <= bat->remaining_min) {
             snprintf(buf, sizeof(buf), "% 2d:%02d",
-                     bat->time_remaining_min / 60,
-                     bat->time_remaining_min % 60);
+                     bat->remaining_min / 60,
+                     bat->remaining_min % 60);
             cairo_show_text(cairo_ptr, buf);
         }
     }
