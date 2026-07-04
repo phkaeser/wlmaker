@@ -31,7 +31,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 ## 0.8.1
 
 * Bug fixes
-
+  * [#509](https://github.com/phkaeser/wlmaker/issues/509) Fixes output identification when requesting fullscreen or maximization. Also fixes XWayland maximizing.
   * [#508](https://github.com/phkaeser/wlmaker/issues/508) Fixes bad handling of missing optional semicolon in `.desktop` files, and accepts `True` and `False` for booleans.
   * [#504](https://github.com/phkaeser/wlmaker/issues/504) Fixes wlmbattery handling of optional sysfs files.
 
