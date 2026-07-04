@@ -23,13 +23,14 @@ See [here](doc/FEATURES.md) for a detailed list of implemented or planned
 features, or the [roadmap](doc/ROADMAP.md) for what's planned for the upcoming
 versions.
 
-Highlights for current version ([0.8](https://github.com/phkaeser/wlmaker/releases/tag/v0.8)):
+Highlights for current version ([0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)):
 
-* *new* Support to change Theme while running, shown in the root menu.
-* *new* Window placement.
-* *new* DockApp (`wlmbattery`) to show laptop battery and power status.
-* *new* Improved Touchpad support: Configuration options, and right-click emulation.
-* *new* Variouis bug fixes ([#449](https://github.com/phkaeser/wlmaker/issues/449), [#475](https://github.com/phkaeser/wlmaker/issues/475), [495](https://github.com/phkaeser/wlmaker/issues/495)).
+* *new* Bugfixes ([#509](https://github.com/phkaeser/wlmaker/issues/509), [#508](https://github.com/phkaeser/wlmaker/issues/508), [#504](https://github.com/phkaeser/wlmaker/issues/504))
+* Support to change Theme while running, shown in the root menu.
+* Window placement.
+* DockApp (`wlmbattery`) to show laptop battery and power status.
+* Improved Touchpad support: Configuration options, and right-click emulation.
+* Various bug fixes ([#449](https://github.com/phkaeser/wlmaker/issues/449), [#475](https://github.com/phkaeser/wlmaker/issues/475), [495](https://github.com/phkaeser/wlmaker/issues/495)).
 * Builds with [wlroots 0.18, 0.19 and 0.20](https://gitlab.freedesktop.org/wlroots/wlroots/-/tags).
 * Support for multiple outputs, configuable through `wlr-output-management-unstable-v1` protocol (eg. `wlr-randr`, `wdisplays`).
 * [Root menu](https://phkaeser.github.io/wlmaker/root_menu.html) can be generated from XDG repository ([#90](https://github.com/phkaeser/wlmaker/issues/90), eg. `wlmtool` or `wmmenugen`), and can be navigated by keyboard.
