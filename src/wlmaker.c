@@ -64,8 +64,14 @@ static char *wlmaker_arg_root_menu_file_ptr = NULL;
 #if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
 #eror "WLMAKER_VERSION_... not defined!"
 #else
-static const char *wlmaker_version_major = WLMAKER_VERSION_MAJOR;
-static const char *wlmaker_version_minor = WLMAKER_VERSION_MINOR;
+// Patch level is optional.
+#if defined(WLMAKER_VERSION_PATCH)
+static const char *wlmaker_version_string =
+    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR "." WLMAKER_VERSION_PATCH;
+#else
+static const char *wlmaker_version_string =
+    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR;
+#endif
 static const char *wlmaker_version_full = WLMAKER_VERSION_FULL;
 #endif
 
@@ -342,19 +348,16 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             bs_arg_print_usage(stdout, wlmaker_args);
             return EXIT_SUCCESS;
         } else if (0 == strcmp(argv[i], "--version")) {
-            fprintf(stdout, "wlmaker version %s.%s (%s)\n",
-                    wlmaker_version_major,
-                    wlmaker_version_minor,
-                    wlmaker_version_full);
+            fprintf(stdout, "wlmaker version %s (%s)\n",
+                    wlmaker_version_string, wlmaker_version_full);
             return EXIT_SUCCESS;
         } else {
             bs_log(BS_ERROR, "Unhandled extra argument \"%s\"", argv[i]);
             return EXIT_FAILURE;
         }
     }
-    bs_log(BS_INFO, "Starting wlmaker %s.%s (%s)",
-           wlmaker_version_major,
-           wlmaker_version_minor,
+    bs_log(BS_INFO, "Starting wlmaker %s (%s)",
+           wlmaker_version_string,
            wlmaker_version_full);
 
     wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");

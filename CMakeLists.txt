@@ -38,10 +38,11 @@ if(EXISTS "${location_path}")
 endif()
 set(WLMAKER_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(WLMAKER_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(WLMAKER_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(WLMAKER_VERSION_FULL "${PROJECT_VERSION}")
 # PROJECT version check: When on a git repository, we verify that the PROJECT
 # version is equal-or-larger than the git version.
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+if(EXISTS "${PROJECT_SOURCE_DIR}/.git")
   execute_process(
     COMMAND "${CMAKE_COMMAND}" -E chdir "${CMAKE_SOURCE_DIR}"
     git describe --always --tags --dirty
@@ -49,17 +50,27 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     OUTPUT_STRIP_TRAILING_WHITESPACE
     RESULT_VARIABLE git_result)
   if(git_result EQUAL 0)
-    string(REGEX MATCH "^v([0-9]+)\\.([0-9]+)" dummy_var "${git_version}")
-    if(NOT CMAKE_MATCH_COUNT EQUAL 2)
-      message(FATAL_ERROR "Not a v<MAJOR>.<MINOR> version \"${git_version}\"")
+    string(REGEX MATCH "^v([0-9]+)\\.([0-9]+)(\\.[0-9]+)?" dummy_var "${git_version}")
+    if(NOT CMAKE_MATCH_COUNT EQUAL 3)
+      set(CMAKE_MATCH_3 "")
+      if(NOT CMAKE_MATCH_COUNT EQUAL 2)
+        message(FATAL_ERROR "Not a v<MAJOR>.<MINOR>[.<PATCH>] version \"${git_version}\"")
+      endif()
+    else()
+      string(SUBSTRING "${CMAKE_MATCH_3}" 1 -1 CMAKE_MATCH_3)
     endif()
+
     if("${PROJECT_VERSION_MAJOR}" LESS "${CMAKE_MATCH_1}" OR
-        "${PROJECT_VERSION_MINOR}" LESS "${CMAKE_MATCH_2}")
+        "${PROJECT_VERSION_MINOR}" LESS "${CMAKE_MATCH_2}" OR
+        (NOT "${CMAKE_MATCH_3}" STREQUAL "" AND
+          "${PROJECT_VERSION_MINOR}" LESS "${CMAKE_MATCH_3}"))
       message(FATAL_ERROR "Git ${CMAKE_MATCH_1}.${CMAKE_MATCH_2} >= "
         "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
     endif()
+
     set(WLMAKER_VERSION_MAJOR "${CMAKE_MATCH_1}")
     set(WLMAKER_VERSION_MINOR "${CMAKE_MATCH_2}")
+    set(WLMAKER_VERSION_PATCH "${CMAKE_MATCH_3}")
     set(WLMAKER_VERSION_FULL "${git_version}")
   endif()
 endif()
