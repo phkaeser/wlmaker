@@ -75,8 +75,8 @@ struct _wlmtk_window_t {
     /** The workspace, when mapped to a workspace. NULL otherwise. */
     wlmtk_workspace_t         *workspace_ptr;
 
-    /** Preferred output. See @ref wlmtk_window_set_wlr_output. */
-    struct wlr_output         *wlr_output_ptr;
+    /** Preferred output. See @ref wlmtk_window_set_preferred_wlr_output. */
+    struct wlr_output         *preferred_wlr_output_ptr;
 
     /** Reference to the menu's style. */
     wlmtk_menu_style_ref_t    *menu_style_ref_ptr;
@@ -409,34 +409,34 @@ const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_window_set_wlr_output(
+void wlmtk_window_set_preferred_wlr_output(
     wlmtk_window_t *window_ptr,
     struct wlr_output *wlr_output_ptr)
 {
-    window_ptr->wlr_output_ptr = wlr_output_ptr;
+    window_ptr->preferred_wlr_output_ptr = wlr_output_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 struct wlr_output *wlmtk_window_get_wlr_output(wlmtk_window_t *window_ptr)
 {
-    if (NULL != window_ptr->wlr_output_ptr) return window_ptr->wlr_output_ptr;
+    // Preference had been indicated earlier. Use that.
+    if (NULL != window_ptr->preferred_wlr_output_ptr)  {
+        return window_ptr->preferred_wlr_output_ptr;
+    }
 
-    wlmtk_workspace_t *workspace_ptr = wlmtk_window_get_workspace(window_ptr);
-    if (NULL == workspace_ptr) return NULL;
-    struct wlr_output_layout *wlr_output_layout_ptr =
-        wlmtk_workspace_get_wlr_output_layout(workspace_ptr);
-    if (NULL == wlr_output_layout_ptr) return NULL;
+    wlmtk_workspace_t *ws = wlmtk_window_get_workspace(window_ptr);
+    if (NULL == ws) return NULL;
+    struct wlr_output_layout *ol = wlmtk_workspace_get_wlr_output_layout(ws);
+    if (NULL == ol) return NULL;
 
     struct wlr_box wbox = wlmtk_window_get_bounding_box(window_ptr);
-    double dest_x, dest_y;
+    double layout_x, layout_y;
     wlr_output_layout_closest_point(
-        wlmtk_workspace_get_wlr_output_layout(workspace_ptr),
+        ol,
         NULL,  // struct wlr_output* reference. We don't need a reference.
         wbox.x + wbox.width / 2, wbox.y + wbox.height / 2,
-        &dest_x, &dest_y);
-    return wlr_output_layout_output_at(
-        wlmtk_workspace_get_wlr_output_layout(workspace_ptr),
-        dest_x, dest_y);
+        &layout_x, &layout_y);
+    return wlr_output_layout_output_at(ol, layout_x, layout_y);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -585,8 +585,8 @@ void wlmtk_window_request_fullscreen(
 
     // If a window is not mapped, nor does have an output, we cannot make it
     // fullscreen. We wouldn't have the dimensions needed.
-    if (NULL == window_ptr->workspace_ptr &&
-        NULL == window_ptr->wlr_output_ptr) {
+    struct wlr_output *wlr_o = wlmtk_window_get_wlr_output(window_ptr);
+    if (NULL == wlr_o) {
         static bool not_fullscreen = false;
         wl_signal_emit(&window_ptr->events.request_fullscreen,
                        &not_fullscreen);
@@ -641,9 +641,8 @@ void wlmtk_window_request_maximized(
     // Guard clause: Maximizing is refused if on fullscreen or neither mapped
     // nor having an output. Signal the window that it shall not be maximized.
     if (window_ptr->fullscreen ||
-        (NULL == window_ptr->workspace_ptr &&
-         NULL == window_ptr->wlr_output_ptr)) {
-        bool not_maximized = false;
+        NULL == wlmtk_window_get_wlr_output(window_ptr)) {
+        static bool not_maximized = false;
         wl_signal_emit(&window_ptr->events.request_maximized, &not_maximized);
         return;
     }
@@ -1212,7 +1211,7 @@ void _wlmtk_window_request_maximized_size(
         struct wlr_box cbox = wlmtk_element_get_dimensions_box(
             window_ptr->content_element_ptr);
 
-        struct wlr_output *wo_ptr = window_ptr->wlr_output_ptr;
+        struct wlr_output *wo_ptr = wlmtk_window_get_wlr_output(window_ptr);
         if (NULL != window_ptr->workspace_ptr) {
             desired_size = wlmtk_workspace_get_maximize_extents(
                 window_ptr->workspace_ptr, wo_ptr);
@@ -1240,11 +1239,11 @@ void _wlmtk_window_request_fullscreen_size(wlmtk_window_t *window_ptr,
     desired_size.y = 0;
 
     if (fullscreen) {
-        struct wlr_output *wo_ptr = window_ptr->wlr_output_ptr;
+        struct wlr_output *wo_ptr = wlmtk_window_get_wlr_output(window_ptr);
         if (NULL != window_ptr->workspace_ptr) {
             desired_size = wlmtk_workspace_get_fullscreen_extents(
                 window_ptr->workspace_ptr, wo_ptr);
-        } else if (NULL != window_ptr->wlr_output_ptr) {
+        } else if (NULL != wo_ptr) {
             desired_size = (struct wlr_box){
                 .width = wo_ptr->width,
                 .height = wo_ptr->height
@@ -1266,6 +1265,7 @@ static void test_events(bs_test_t *test_ptr);
 static void test_set_activated(bs_test_t *test_ptr);
 static void test_resize(bs_test_t *test_ptr);
 static void test_fullscreen(bs_test_t *test_ptr);
+static void test_fullscreen_preferred_output(bs_test_t *test_ptr);
 static void test_fullscreen_unmap(bs_test_t *test_ptr);
 static void test_maximized(bs_test_t *test_ptr);
 static void test_shaded(bs_test_t *test_ptr);
@@ -1285,6 +1285,7 @@ static const bs_test_case_t _wlmtk_window_test_cases[] = {
     { 1, "set_activated", test_set_activated },
     { 1, "resize", test_resize },
     { 1, "fullscreen", test_fullscreen },
+    { 1, "fullscreen_preferred_output", test_fullscreen_preferred_output },
     { 1, "fullscreen_unmap", test_fullscreen_unmap },
     { 1, "maximized", test_maximized },
     { 1, "shaded", test_shaded },
@@ -1383,6 +1384,11 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_util_clear_test_listener(&l);
     wlmtk_window_set_workspace(w, workspace_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_wlr_output(w));
+    struct wlr_output empty = {};
+    wlmtk_window_set_preferred_wlr_output(w, &empty);
+    BS_TEST_VERIFY_EQ(test_ptr, &empty, wlmtk_window_get_wlr_output(w));
 
     wlmtk_workspace_destroy(workspace_ptr);
     wl_display_destroy(display_ptr);
@@ -1730,6 +1736,85 @@ void test_fullscreen(bs_test_t *test_ptr)
     wlmtk_util_disconnect_test_listener(&request_maximized_listener);
     wlmtk_util_disconnect_test_listener(&request_fullscreen_listener);
     wlmtk_util_disconnect_test_listener(&state_changed_listener);
+    wlmtk_window_destroy(w);
+    wlmtk_element_destroy(&fe_ptr->element);
+    wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests fullscreen mode of a window onto preferred output . */
+void test_fullscreen_preferred_output(bs_test_t *test_ptr)
+{
+    struct wl_display *display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(display_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_output_layout_ptr);
+    struct wlr_output output1 = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output1);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output1, 0, 0);
+    struct wlr_output output2 = { .width = 800, .height = 600, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output2);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output2, 1024, 0);
+
+    struct wlmtk_tile_style ts = {};
+    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
+        wlr_output_layout_ptr, "t", &ts);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
+    wlmtk_workspace_enable(ws_ptr, true);
+
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    wlmtk_window_set_properties(w, WLMTK_WINDOW_PROPERTY_RESIZABLE);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_workspace_map_window(ws_ptr, w);
+
+    wlmtk_util_test_wlr_box_listener_t request_size_listener;
+    wlmtk_util_connect_test_wlr_box_listener(
+        &wlmtk_window_events(w)->request_size,
+        &request_size_listener);
+
+    // Setup initial size and position. Verify.
+    wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_window_commit_size(w, 200, 100);
+    wlmtk_workspace_set_window_position(ws_ptr, w, 1400, 10);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 1400, 10, 200, 100,
+        wlmtk_window_get_bounding_box(w));
+
+    // Enable fullscreen. Must happen on output2.
+    BS_TEST_VERIFY_EQ(test_ptr, &output2, wlmtk_window_get_wlr_output(w));
+    wlmtk_window_request_fullscreen(w, true);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 1024, 0, 800, 600, request_size_listener.box);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 800, 600);
+    wlmtk_window_commit_fullscreen(w, true);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 1024, 0, 800, 600,
+        wlmtk_window_get_bounding_box(w));
+
+    // Disable fullscreen.
+    wlmtk_window_request_fullscreen(w, false);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 200, 100);
+    wlmtk_window_commit_fullscreen(w, false);
+
+    // Enable fullscreen, with preference for output1.
+    BS_TEST_VERIFY_EQ(test_ptr, &output2, wlmtk_window_get_wlr_output(w));
+    wlmtk_window_set_preferred_wlr_output(w, &output1);
+    BS_TEST_VERIFY_EQ(test_ptr, &output1, wlmtk_window_get_wlr_output(w));
+    wlmtk_window_request_fullscreen(w, true);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1024, 768, request_size_listener.box);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 1024, 768);
+    wlmtk_window_commit_fullscreen(w, true);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, 0, 0, 1024, 768,
+        wlmtk_window_get_bounding_box(w));
+
+    wlmtk_util_disconnect_listener(&request_size_listener.listener);
+    wlmtk_workspace_unmap_window(ws_ptr, w);
     wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
     wlmtk_workspace_destroy(ws_ptr);
