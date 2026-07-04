@@ -173,6 +173,11 @@ target_compile_definitions(
   "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
   "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
   "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
+if("${WLMAKER_VERSION_PATCH}")
+  target_compile_definitions(
+    wlmaker PRIVATE
+    "WLMAKER_VERSION_PATCH=\"${WLMAKER_VERSION_PATCH}\"")
+endif()
 target_link_libraries(
   wlmaker
   PRIVATE
