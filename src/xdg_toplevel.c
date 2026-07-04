@@ -557,12 +557,6 @@ void _wlmaker_xdg_toplevel_handle_request_maximize(
     struct wlmaker_xdg_toplevel *wxt_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, request_maximize_listener);
 
-    // Use current output, or pick the center output if nothing was indicated.
-    if (NULL == wlmtk_window_get_wlr_output(wxt_ptr->window_ptr)) {
-        struct wlr_output *wlr_output_ptr = wlr_output_layout_get_center_output(
-            wxt_ptr->server_ptr->wlr_output_layout_ptr);
-        wlmtk_window_set_wlr_output(wxt_ptr->window_ptr, wlr_output_ptr);
-    }
     wlmtk_window_request_maximized(
         wxt_ptr->window_ptr,
         wxt_ptr->wlr_xdg_toplevel_ptr->requested.maximized);
@@ -579,15 +573,13 @@ void _wlmaker_xdg_toplevel_handle_request_fullscreen(
         struct wlmaker_xdg_toplevel,
         request_fullscreen_listener);
 
-    // Sets the requested output, or pick the center output if nothing
-    // was indicated.
-    struct wlr_output *wlr_output_ptr =
-        wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output;
-    if (NULL == wlr_output_ptr) {
-        wlr_output_ptr = wlr_output_layout_get_center_output(
-            wxt_ptr->server_ptr->wlr_output_layout_ptr);
-    }
-    wlmtk_window_set_wlr_output(wxt_ptr->window_ptr, wlr_output_ptr);
+    // If the request is to enable fullscreen: Set the requested output.
+    // Otherwise clear it, to prevent lingering references.
+    wlmtk_window_set_preferred_wlr_output(
+        wxt_ptr->window_ptr,
+        wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen ?
+        wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen_output :
+        NULL);
     wlmtk_window_request_fullscreen(
         wxt_ptr->window_ptr,
         wxt_ptr->wlr_xdg_toplevel_ptr->requested.fullscreen);

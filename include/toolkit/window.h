@@ -219,21 +219,26 @@ const wlmtk_util_client_t *wlmtk_window_get_client_ptr(
 /**
  * Sets the WLR output for the window. Used for fullscreen requests.
  *
+ * See also @ref wlmtk_window_get_wlr_output.
+ *
  * @param window_ptr
  * @param wlr_output_ptr      Output to consider when requesting a window as
  *                            fullscreen. Can be NULL to indicate no preference.
  */
-void wlmtk_window_set_wlr_output(
+void wlmtk_window_set_preferred_wlr_output(
     wlmtk_window_t *window_ptr,
     struct wlr_output *wlr_output_ptr);
 
 /**
- * Gets the struct wlr_output that the window prefers, or is on.
+ * Gets the struct wlr_output that the window is on, or it prefers.
+ *
  *
  * @param window_ptr
  *
- * @return Pointer to the struct wlr_output the center of the window is placed
- *     on, or NULL if none is available or the window is not mapped.
+ * @return The preferred output, if @ref wlmtk_window_set_preferred_wlr_output
+ *     was called with `wlr_output_ptr` other than NULL. Otherwise, returns a
+ *     pointer to the `struct wlr_output` the window is currently placed on, or
+ *     NULL if the window is not mapped or there are no outputs.
  */
 struct wlr_output *wlmtk_window_get_wlr_output(
     wlmtk_window_t *window_ptr);
