@@ -10,8 +10,11 @@
   * Update section with highlights for the current version.
   * Remove the `*new*` prefix from the earlier version's highlights.
 
+* Issue `git tag -e vMAJOR.MINOR.PATCH <commit>`
+  * `git push origin vMAJOR.MINOR.PATCH`
+
 * On https://github.com/phkaeser/wlmaker/releases, *Draft a new release*
-  * Create a new version tag, in format `v<major>.<minor>`
+  * Use the tag that was just created.
   * Update the release title to `v<major>.<minor> - <description>`
 
 Pending: Generate release notes.
