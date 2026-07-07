@@ -176,13 +176,26 @@ struct wlm_power_supply *wlm_power_supply_create(void)
             continue;
         }
 
-        if (bs_str_startswith(ent->d_name, "BAT")) {
+        char buf[VAL_BUF_LEN];
+        if (!wlm_read_buffer(buf, sizeof(buf), "%s/%s/type",
+                             power_supply_dir, ent->d_name)) {
+            bs_log(BS_INFO, "Skipping device, did not find %s/%s/type",
+                   power_supply_dir, ent->d_name);
+            continue;
+        }
+        buf[VAL_BUF_LEN-1] = '\0';
+        size_t len = strlen(buf);
+        if (0 < len && buf[len - 1] == '\n') buf[len - 1] = '\0';
+
+        if (0 == strcmp(buf, "Battery")) {
+            // Battery.
             struct wlm_battery *bat = wlm_battery_create(
                 ent->d_name, power_supply_dir);
             if (bat) {
                 bs_dllist_push_back(&ps->batteries, &bat->dlnode);
             }
         } else {
+            // Otherwise we will try to see if it works as power adapter.
             struct wlm_power_adapter *adapter = wlm_power_adapter_create(
                 ent->d_name, power_supply_dir);
             if (adapter) {
@@ -349,6 +362,7 @@ void wlm_battery_read(struct wlm_battery *bat)
     // Battery status. Also not guaranteed.
     char buf[VAL_BUF_LEN];
     if (wlm_read_buffer(buf, sizeof(buf), "%s/status", bat->sysfs_path)) {
+        buf[VAL_BUF_LEN-1] = '\0';
         size_t len = strlen(buf);
         if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
         bat->status = parse_battery_status(buf);
