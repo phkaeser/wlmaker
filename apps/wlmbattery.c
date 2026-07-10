@@ -56,8 +56,8 @@ enum battery_status {
 /** Connection status of power adapter. */
 enum adapter_status {
     ADAPTER_STATUS_UNKNOWN = 0,
+    ADAPTER_STATUS_OFFLINE,
     ADAPTER_STATUS_ONLINE,
-    ADAPTER_STATUS_OFFLINE
 };
 
 /** Power supply state container. */
@@ -108,7 +108,6 @@ static size_t wlm_power_supply_num_batteries(struct wlm_power_supply *ps);
 static struct wlm_battery *wlm_power_supply_battery(
     struct wlm_power_supply *ps,
     size_t index);
-static bool wlm_power_supply_connected(struct wlm_power_supply *ps);
 
 static struct wlm_battery *wlm_battery_create(
     const char *name_ptr,
@@ -123,9 +122,6 @@ static struct wlm_power_adapter *wlm_power_adapter_create(
     const char *power_supply_dir);
 static void wlm_power_adapter_destroy(
     bs_dllist_node_t *dlnode_ptr,
-    void *ud_ptr);
-static bool wlm_power_adapter_connected(
-    bs_dllist_node_t *node_ptr,
     void *ud_ptr);
 static void wlm_power_adapter_read(struct wlm_power_adapter *adapter);
 
@@ -273,16 +269,18 @@ struct wlm_battery *wlm_power_supply_battery(
 }
 
 /* ------------------------------------------------------------------------- */
-/**
- * Indicates if any of the power adapters is online.
- *
- * @param ps Pointer to the target power supply.
- *
- * @return True if at least one adapter is connected and online.
- */
-bool wlm_power_supply_connected(struct wlm_power_supply *ps)
+/** @return The aggregate status of power supply connection. */
+enum adapter_status wlm_power_supply_status(struct wlm_power_supply *ps)
 {
-    return bs_dllist_any(&ps->adapters, wlm_power_adapter_connected, NULL);
+    enum adapter_status status = ADAPTER_STATUS_UNKNOWN;
+    for (bs_dllist_node_t *node = ps->adapters.head_ptr;
+         NULL != node;
+         node = bs_dllist_node_iterator_forward(node)) {
+        struct wlm_power_adapter *adapter = BS_CONTAINER_OF(
+            node, struct wlm_power_adapter, dlnode);
+        status = BS_MAX(status, adapter->status);
+    }
+    return status;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -439,23 +437,6 @@ void wlm_power_adapter_destroy(
     free(adapter);
 }
 
-/**
- * Iterator function to verify whether a power adapter node is connected.
- *
- * @param node_ptr The doubly-linked list node embedded in a wlm_power_adapter.
- * @param ud_ptr Ignored user data.
- *
- * @return True if the adapter is online.
- */
-bool wlm_power_adapter_connected(
-    bs_dllist_node_t *node_ptr,
-    __UNUSED__ void *ud_ptr)
-{
-    struct wlm_power_adapter *adapter = BS_CONTAINER_OF(
-        node_ptr, struct wlm_power_adapter, dlnode);
-    return adapter->status == ADAPTER_STATUS_ONLINE;
-}
-
 /* ------------------------------------------------------------------------- */
 /**
  * Reads power adapter properties into the structural cache representation.
@@ -607,7 +588,7 @@ bool icon_callback(
     cairo_set_font_size(cairo_ptr, 12);
     cairo_set_source_argb8888(cairo_ptr, 0xffffffff);
 
-
+    enum adapter_status derived_status = ADAPTER_STATUS_UNKNOWN;
     if (0 < wlm_power_supply_num_batteries(arg_ptr->ps)) {
         struct wlm_battery *bat = wlm_power_supply_battery(arg_ptr->ps, 0);
 
@@ -623,11 +604,24 @@ bool icon_callback(
 
         cairo_move_to(cairo_ptr, 8, 27);
         switch (bat->status) {
-        case BATTERY_STATUS_CHARGING: cairo_show_text(cairo_ptr, "CHRG"); break;
-        case BATTERY_STATUS_DISCHARGING: cairo_show_text(cairo_ptr, "DISC"); break;
-        case BATTERY_STATUS_NOT_CHARGING: cairo_show_text(cairo_ptr, "----"); break;
-        case BATTERY_STATUS_FULL: cairo_show_text(cairo_ptr, "FULL"); break;
-        default: cairo_show_text(cairo_ptr, "UNKN"); break;
+        case BATTERY_STATUS_CHARGING:
+            cairo_show_text(cairo_ptr, "CHRG");
+            derived_status = ADAPTER_STATUS_ONLINE;
+            break;
+        case BATTERY_STATUS_DISCHARGING:
+            cairo_show_text(cairo_ptr, "DISC");
+            derived_status = ADAPTER_STATUS_OFFLINE;
+            break;
+        case BATTERY_STATUS_NOT_CHARGING:
+            cairo_show_text(cairo_ptr, "----");
+            break;
+        case BATTERY_STATUS_FULL:
+            cairo_show_text(cairo_ptr, "FULL");
+            derived_status = ADAPTER_STATUS_ONLINE;
+            break;
+        default:
+            cairo_show_text(cairo_ptr, "UNKN");
+            break;
         }
 
         cairo_move_to(cairo_ptr, 8, 39);
@@ -640,15 +634,15 @@ bool icon_callback(
     }
 
     cairo_move_to(cairo_ptr, 8, 51);
-    if (wlm_power_supply_connected(arg_ptr->ps)) {
-        cairo_show_text(cairo_ptr, " AC ");
-    } else {
-        cairo_show_text(cairo_ptr, "no pwr");
+    enum adapter_status status = wlm_power_supply_status(arg_ptr->ps);
+    if (ADAPTER_STATUS_UNKNOWN == status) status = derived_status;
+    switch (status) {
+    case ADAPTER_STATUS_UNKNOWN: cairo_show_text(cairo_ptr, "? pwr ?"); break;
+    case ADAPTER_STATUS_OFFLINE: cairo_show_text(cairo_ptr, "no pwr"); break;
+    case ADAPTER_STATUS_ONLINE: cairo_show_text(cairo_ptr, " AC "); break;
     }
 
-
     cairo_destroy(cairo_ptr);
-
     return true;
 }
 
