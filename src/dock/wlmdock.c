@@ -54,6 +54,8 @@
 #include "util/backtrace.h"
 #include "util/files.h"
 
+#include "launcher.h"
+
 /* == Declarations ========================================================= */
 
 /** State of the nested client-backed dock. */
@@ -104,7 +106,7 @@ static void handle_frame(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_output_destroy(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_configure(void *ud_ptr, uint32_t width, uint32_t height);
 static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
-static wlmdock_t *_wlmdock_create(void);
+static wlmdock_t *_wlmdock_create(wlm_util_files_t *files_ptr);
 static void _wlmdock_destroy(wlmdock_t *dock_ptr);
 
 /* == Exported methods ===================================================== */
@@ -127,7 +129,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmdock_t *dock_ptr = _wlmdock_create();
+    wlmdock_t *dock_ptr = _wlmdock_create(files_ptr);
     if (NULL == dock_ptr) {
         bs_log(BS_ERROR, "Failed to create wlmdock.");
         return EXIT_FAILURE;
@@ -152,7 +154,7 @@ int main(int argc, char **argv)
 
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
-wlmdock_t *_wlmdock_create(void)
+wlmdock_t *_wlmdock_create(wlm_util_files_t *files_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
     if (NULL == dock_ptr) return NULL;
@@ -200,7 +202,8 @@ wlmdock_t *_wlmdock_create(void)
         return NULL;
     }
 
-    dock_ptr->wlr_output_layout_ptr = wlr_output_layout_create(dock_ptr->local_display_ptr);
+    dock_ptr->wlr_output_layout_ptr = wlr_output_layout_create(
+        dock_ptr->local_display_ptr);
     if (NULL == dock_ptr->wlr_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed to create output layout.");
         _wlmdock_destroy(dock_ptr);
@@ -215,6 +218,7 @@ wlmdock_t *_wlmdock_create(void)
         return NULL;
     }
 
+#if 0
     dock_ptr->rectangle_ptr = wlmtk_rectangle_create(64, 64, 0xffffc0cb);
     if (NULL == dock_ptr->rectangle_ptr) {
         bs_log(BS_ERROR, "Failed to create pink background rectangle.");
@@ -227,6 +231,36 @@ wlmdock_t *_wlmdock_create(void)
     wlmtk_element_set_visible(
         wlmtk_rectangle_element(dock_ptr->rectangle_ptr),
         true);
+#else
+
+    // FIXME
+
+    struct wlmtk_tile_style style = {
+        .size = 64,
+        .content_size = 48,
+        .bezel_width = 4,
+        .fill = {
+            .type = WLMTK_STYLE_COLOR_SOLID,
+            .param = { .solid = { .color = 0xff80c040 } }
+        }
+    };
+
+    static const char *plist_ptr =
+        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(plist_ptr));
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+        &style, dict_ptr, files_ptr);
+
+    wlmtk_container_add_element(
+        &dock_ptr->container,
+        wlmtk_tile_element(wlmdock_launcher_tile(launcher_ptr)));
+    wlmtk_element_set_visible(
+        wlmtk_tile_element(wlmdock_launcher_tile(launcher_ptr)),
+        true);
+
+#endif
+
 
     dock_ptr->root_ptr = wlmtk_root_create(
         &dock_ptr->container.super_element,
