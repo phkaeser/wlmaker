@@ -27,10 +27,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "util/files.h"
 #include "input/cursor.h"
 #include "task_list.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
+#include "util/files.h"
 
 #ifdef __cplusplus
 extern "C" {

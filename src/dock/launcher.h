@@ -18,8 +18,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __LAUNCHER_H__
-#define __LAUNCHER_H__
+#ifndef __WLMAKER_DOCK_LAUNCHER_H__
+#define __WLMAKER_DOCK_LAUNCHER_H__
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
@@ -33,7 +33,7 @@ extern "C" {
 #endif  // __cplusplus
 
 /** Forward declaration: Launcher handle. */
-typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
+typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
 
 /**
  * Creates an application launcher, configured from a plist dict.
@@ -45,10 +45,10 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
  *
  * @return Pointer to the launcher handle or NULL on error.
  */
-wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
+wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlm_util_subprocess_monitor_t *monitor_ptr,
+// FIXME    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr);
 
 /**
@@ -56,17 +56,17 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
  *
  * @param launcher_ptr
  */
-void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr);
+void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr);
 
 /** @return A pointer to the @ref wlmtk_tile_t superclass of `launcher_ptr`. */
-wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr);
+wlmtk_tile_t *wlmdock_launcher_tile(wlmdock_launcher_t *launcher_ptr);
 
 /** Unit test set. */
-extern const bs_test_set_t wlmaker_launcher_test_set;
+extern const bs_test_set_t wlmdock_launcher_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __LAUNCHER_H__ */
+#endif /* __WLMAKER_DOCK_LAUNCHER_H__ */
 /* == End of launcher.h ==================================================== */

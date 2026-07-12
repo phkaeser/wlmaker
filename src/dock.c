@@ -38,7 +38,6 @@
 #include "backend/output_config.h"
 #include "config.h"
 #include "default_state.h"
-#include "launcher.h"
 #include "toolkit/toolkit.h"
 #include "util/files.h"
 
@@ -182,6 +181,8 @@ wlmaker_dock_t *wlmaker_dock_create(
             wlmaker_dock_destroy(dock_ptr);
             return NULL;
         }
+#if 0
+        // FIXME
         wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
             &style_ptr->tile, dict_ptr,
             server_ptr->monitor_ptr,
@@ -193,6 +194,7 @@ wlmaker_dock_t *wlmaker_dock_create(
         wlmtk_dock_add_tile(
             dock_ptr->wlmtk_dock_ptr,
             wlmaker_launcher_tile(launcher_ptr));
+#endif
     }
     // FIXME: This is leaky.
     if (NULL != args.launchers_array_ptr) {

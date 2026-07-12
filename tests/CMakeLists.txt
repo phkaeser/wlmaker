@@ -42,6 +42,15 @@ target_compile_definitions(
   wlmaker_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
 add_test(NAME wlmaker_test COMMAND wlmaker_test)
 
+add_executable(wlmdock_test wlmdock_test.c)
+add_dependencies(wlmdock_test wlmdock_lib)
+target_include_directories(
+  wlmdock_test PRIVATE "${PROJECT_SOURCE_DIR}/src")
+target_link_libraries(wlmdock_test PRIVATE libbase wlmdock_lib)
+target_compile_definitions(
+  wlmdock_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
+add_test(NAME wlmdock_test COMMAND wlmdock_test)
+
 add_executable(util_test util_test.c)
 add_dependencies(util_test wlm_util_lib)
 target_include_directories(
@@ -78,6 +87,9 @@ if(iwyu_path_and_options)
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   set_target_properties(
     wlmaker_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  set_target_properties(
+    wlmdock_test PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   set_target_properties(
     util_test PROPERTIES

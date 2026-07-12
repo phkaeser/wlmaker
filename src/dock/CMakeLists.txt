@@ -15,25 +15,44 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-add_executable(wlmdock wlmdock.c dock.c)
-
-
+add_library(wlmdock_lib STATIC)
+target_compile_definitions(
+  wlmdock_lib PRIVATE "WLMAKER_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\"")
+target_sources(
+  wlmdock_lib
+  PRIVATE
+  dock.c
+  launcher.c)
 target_include_directories(
-  wlmdock
+  wlmdock_lib
   PRIVATE
   "${PROJECT_SOURCE_DIR}/src"
   "${PROJECT_SOURCE_DIR}/include"
 )
+target_link_libraries(
+  wlmdock_lib
+  PRIVATE
+  libbase
+  wlmaker_lib
+)
+target_link_libraries(
+  wlmdock_lib
+  PUBLIC
+  toolkit)
 
+add_executable(wlmdock wlmdock.c)
 target_link_libraries(
   wlmdock
   PRIVATE
   libbase
   libwlclient
-  wlmaker_lib
-)
+  wlmdock_lib
+  wlmaker_lib)
 
 if(iwyu_path_and_options)
+  set_target_properties(
+    wlmdock_lib PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   set_target_properties(
     wlmdock PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")

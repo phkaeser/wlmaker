@@ -28,7 +28,6 @@
 #include "config.h"
 #include "corner.h"
 #include "dock.h"
-#include "launcher.h"
 #include "layer_panel.h"
 #include "lock_mgr.h"
 #include "root_menu.h"
@@ -38,6 +37,7 @@
 #if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
+#include "util/backtrace.h"
 
 #if !defined(TEST_DATA_DIR)
 /** Directory root for looking up test data. See `bs_test_resolve_path`. */
@@ -57,7 +57,6 @@ int main(int argc, const char **argv)
         &wlmaker_config_test_set,
         &wlmaker_corner_test_set,
         &wlmaker_dock_test_set,
-        &wlmaker_launcher_test_set,
         &wlmaker_layer_panel_test_set,
         &wlmaker_lock_mgr_test_set,
         &wlmaker_root_menu_test_set,

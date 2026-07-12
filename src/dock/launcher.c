@@ -37,19 +37,19 @@ struct wlm_util_subprocess;
 /* == Declarations ========================================================= */
 
 /** State of a launcher. */
-struct _wlmaker_launcher_t {
+struct _wlmdock_launcher_t {
     /** The launcher is derived from a @ref wlmtk_tile_t. */
     wlmtk_tile_t              super_tile;
     /** Original virtual method table fo the element. */
     wlmtk_element_vmt_t       orig_element_vmt;
 
-    /** Image element. One element of @ref wlmaker_launcher_t::super_tile. */
+    /** Image element. One element of @ref wlmdock_launcher_t::super_tile. */
     wlmtk_image_t             *image_ptr;
     /** Overlay element. Atop on the tile. */
     wlmtk_buffer_t            overlay_buffer;
 
     /** Subprocess monitor to register launched processes to. */
-    wlm_util_subprocess_monitor_t *monitor_ptr;
+// FIXME    wlm_util_subprocess_monitor_t *monitor_ptr;
 
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
@@ -68,104 +68,104 @@ struct _wlmaker_launcher_t {
 };
 
 /** Plist descroptor for a launcher. */
-static const bspl_desc_t _wlmaker_launcher_plist_desc[] = {
+static const bspl_desc_t _wlmdock_launcher_plist_desc[] = {
     BSPL_DESC_STRING(
-        "CommandLine", true, wlmaker_launcher_t, cmdline_ptr, cmdline_ptr, ""),
+        "CommandLine", true, wlmdock_launcher_t, cmdline_ptr, cmdline_ptr, ""),
     BSPL_DESC_STRING(
-        "Icon", true, wlmaker_launcher_t, icon_path_ptr, icon_path_ptr, ""),
+        "Icon", true, wlmdock_launcher_t, icon_path_ptr, icon_path_ptr, ""),
     BSPL_DESC_SENTINEL(),
 };
 
-static void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr);
-static struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
-    wlmaker_launcher_t *launcher_ptr);
+static void _wlmdock_launcher_update_overlay(wlmdock_launcher_t *launcher_ptr);
+static struct wlr_buffer *_wlmdock_launcher_create_overlay_buffer(
+    wlmdock_launcher_t *launcher_ptr);
 
-static void _wlmaker_launcher_element_destroy(
+static void _wlmdock_launcher_element_destroy(
     wlmtk_element_t *element_ptr);
-static bool _wlmaker_launcher_pointer_button(
+static bool _wlmdock_launcher_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
-static void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr);
+static void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr);
 
-static void _wlmaker_launcher_handle_terminated(
+// FIXME
+void _wlmdock_launcher_handle_terminated(
     void *userdata_ptr,
     struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
     int code);
 
-static bool _wlmaker_launcher_set_content_size(
+static bool _wlmdock_launcher_set_content_size(
     wlmtk_tile_t *tile_ptr,
     uint64_t content_size);
 
 /* == Data ================================================================= */
 
 /** The launcher's extension to @ref wlmtk_element_t virtual method table. */
-static const wlmtk_element_vmt_t _wlmaker_launcher_element_vmt = {
-    .destroy = _wlmaker_launcher_element_destroy,
-    .pointer_button = _wlmaker_launcher_pointer_button,
+static const wlmtk_element_vmt_t _wlmdock_launcher_element_vmt = {
+    .destroy = _wlmdock_launcher_element_destroy,
+    .pointer_button = _wlmdock_launcher_pointer_button,
 };
 
 /** Launcher's extension to @ref wlmtk_tile_t virtual method table. */
-static const wlmtk_tile_vmt_t _wlmaker_launcher_tile_vmt = {
-    .set_content_size = _wlmaker_launcher_set_content_size,
+static const wlmtk_tile_vmt_t _wlmdock_launcher_tile_vmt = {
+    .set_content_size = _wlmdock_launcher_set_content_size,
 };
 
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
+wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlm_util_subprocess_monitor_t *monitor_ptr,
+//    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr)
 {
-    wlmaker_launcher_t *launcher_ptr = logged_calloc(
-        1, sizeof(wlmaker_launcher_t));
+    wlmdock_launcher_t *launcher_ptr = logged_calloc(
+        1, sizeof(wlmdock_launcher_t));
     if (NULL == launcher_ptr) return NULL;
-    launcher_ptr->monitor_ptr = monitor_ptr;
 
      if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr)) {
          return NULL;
     }
     launcher_ptr->orig_element_vmt = wlmtk_element_extend(
         wlmtk_tile_element(&launcher_ptr->super_tile),
-        &_wlmaker_launcher_element_vmt);
-    wlmtk_tile_extend(&launcher_ptr->super_tile, &_wlmaker_launcher_tile_vmt);
+        &_wlmdock_launcher_element_vmt);
+    wlmtk_tile_extend(&launcher_ptr->super_tile, &_wlmdock_launcher_tile_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
     launcher_ptr->created_windows_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->created_windows_ptr) {
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
     launcher_ptr->mapped_windows_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->mapped_windows_ptr) {
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
     launcher_ptr->subprocesses_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->subprocesses_ptr) {
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
 
     if (!wlmtk_buffer_init(&launcher_ptr->overlay_buffer)) {
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
     wlmtk_element_set_visible(
         wlmtk_buffer_element(&launcher_ptr->overlay_buffer), true);
-    _wlmaker_launcher_update_overlay(launcher_ptr);
+    _wlmdock_launcher_update_overlay(launcher_ptr);
     wlmtk_tile_set_overlay(
         &launcher_ptr->super_tile,
         wlmtk_buffer_element(&launcher_ptr->overlay_buffer));
 
     if (!bspl_decode_dict(
-            dict_ptr, _wlmaker_launcher_plist_desc, launcher_ptr)) {
+            dict_ptr, _wlmdock_launcher_plist_desc, launcher_ptr)) {
         bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
 
@@ -174,7 +174,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     if (NULL == p) {
         bs_log(BS_ERROR | BS_ERRNO, "Failed bs_strdupf(\"icons/%s\")",
                launcher_ptr->icon_path_ptr);
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
     launcher_ptr->resolved_icon_path_ptr = wlm_util_files_xdg_data_find(
@@ -185,14 +185,14 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
                "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
                launcher_ptr->icon_path_ptr);
 #ifndef WLMAKER_SOURCE_DIR
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
 #else
         launcher_ptr->resolved_icon_path_ptr = bs_strdupf(
             WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
             launcher_ptr->icon_path_ptr);
         if (NULL == launcher_ptr->resolved_icon_path_ptr) {
-            wlmaker_launcher_destroy(launcher_ptr);
+            wlmdock_launcher_destroy(launcher_ptr);
             return NULL;
         }
 #endif
@@ -202,7 +202,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         launcher_ptr->super_tile.style.content_size,
         launcher_ptr->super_tile.style.content_size);
     if (NULL == launcher_ptr->image_ptr) {
-        wlmaker_launcher_destroy(launcher_ptr);
+        wlmdock_launcher_destroy(launcher_ptr);
         return NULL;
     }
     wlmtk_element_set_visible(
@@ -215,7 +215,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
+void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr)
 {
     if (NULL != launcher_ptr->image_ptr) {
         wlmtk_tile_set_content(&launcher_ptr->super_tile, NULL);
@@ -226,6 +226,8 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
     wlmtk_tile_set_overlay(&launcher_ptr->super_tile, NULL);
     wlmtk_buffer_fini(&launcher_ptr->overlay_buffer);
 
+#if 0
+    // FIXME
     if (NULL != launcher_ptr->subprocesses_ptr) {
         struct wlm_util_subprocess *subprocess_handle_ptr;
         while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
@@ -239,6 +241,7 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
         bs_ptr_set_destroy(launcher_ptr->subprocesses_ptr);
         launcher_ptr->subprocesses_ptr = NULL;
     }
+#endif
 
     if (NULL != launcher_ptr->mapped_windows_ptr) {
         bs_ptr_set_destroy(launcher_ptr->mapped_windows_ptr);
@@ -269,7 +272,7 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr)
+wlmtk_tile_t *wlmdock_launcher_tile(wlmdock_launcher_t *launcher_ptr)
 {
     return &launcher_ptr->super_tile;
 }
@@ -278,9 +281,9 @@ wlmtk_tile_t *wlmaker_launcher_tile(wlmaker_launcher_t *launcher_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Redraws the overlay element. */
-void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr)
+void _wlmdock_launcher_update_overlay(wlmdock_launcher_t *launcher_ptr)
 {
-    struct wlr_buffer *wlr_buffer_ptr = _wlmaker_launcher_create_overlay_buffer(
+    struct wlr_buffer *wlr_buffer_ptr = _wlmdock_launcher_create_overlay_buffer(
         launcher_ptr);
     if (NULL == wlr_buffer_ptr) return;
     wlmtk_buffer_set(&launcher_ptr->overlay_buffer, wlr_buffer_ptr);
@@ -289,8 +292,8 @@ void _wlmaker_launcher_update_overlay(wlmaker_launcher_t *launcher_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Creates an overlay wlr_buffer. */
-struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
-    wlmaker_launcher_t *launcher_ptr)
+struct wlr_buffer *_wlmdock_launcher_create_overlay_buffer(
+    wlmdock_launcher_t *launcher_ptr)
 {
     int s = launcher_ptr->super_tile.style.size;
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(s, s);
@@ -335,17 +338,17 @@ struct wlr_buffer *_wlmaker_launcher_create_overlay_buffer(
 /* ------------------------------------------------------------------------- */
 /**
  * Implements @ref wlmtk_element_vmt_t::destroy. Calls
- * @ref wlmaker_launcher_destroy.
+ * @ref wlmdock_launcher_destroy.
  *
  * @param element_ptr
  */
-void _wlmaker_launcher_element_destroy(
+void _wlmdock_launcher_element_destroy(
     wlmtk_element_t *element_ptr)
 {
-    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_launcher_t,
+    wlmdock_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmdock_launcher_t,
         super_tile.super_container.super_element);
-    wlmaker_launcher_destroy(launcher_ptr);
+    wlmdock_launcher_destroy(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -357,18 +360,18 @@ void _wlmaker_launcher_element_destroy(
  *
  * @return true always.
  */
-bool _wlmaker_launcher_pointer_button(
+bool _wlmdock_launcher_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
-    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmaker_launcher_t,
+    wlmdock_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmdock_launcher_t,
         super_tile.super_container.super_element);
 
     if (BTN_LEFT != button_event_ptr->button) return true;
     if (WLMTK_BUTTON_CLICK != button_event_ptr->type) return true;
 
-    _wlmaker_launcher_start(launcher_ptr);
+    _wlmdock_launcher_start(launcher_ptr);
     return true;
 }
 
@@ -378,7 +381,7 @@ bool _wlmaker_launcher_pointer_button(
  *
  * @param launcher_ptr
  */
-void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
+void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr)
 {
     bs_subprocess_t *subprocess_ptr = bs_subprocess_create_cmdline(
         launcher_ptr->cmdline_ptr);
@@ -395,11 +398,13 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
         return;
     }
 
+#if 0
+    // FIXME
     struct wlm_util_subprocess *subprocess_handle_ptr;
     subprocess_handle_ptr = wlm_util_subprocess_monitor_entrust(
         launcher_ptr->monitor_ptr,
         subprocess_ptr,
-        _wlmaker_launcher_handle_terminated,
+        _wlmdock_launcher_handle_terminated,
         launcher_ptr,
         NULL);
 
@@ -413,24 +418,25 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
             launcher_ptr->monitor_ptr,
             subprocess_handle_ptr);
     }
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
 /**
  * Callback handler for when the registered subprocess terminates.
  *
- * @param userdata_ptr        Points to @ref wlmaker_launcher_t.
+ * @param userdata_ptr        Points to @ref wlmdock_launcher_t.
  * @param subprocess_handle_ptr
  * @param exit_status
  * @param signal_number
  */
-void _wlmaker_launcher_handle_terminated(
+void _wlmdock_launcher_handle_terminated(
     void *userdata_ptr,
-    struct wlm_util_subprocess *subprocess_handle_ptr,
+    __UNUSED__ struct wlm_util_subprocess *subprocess_handle_ptr,
     int exit_status,
     int signal_number)
 {
-    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
+    wlmdock_launcher_t *launcher_ptr = userdata_ptr;
     const char *format_ptr;
     int code;
 
@@ -448,21 +454,25 @@ void _wlmaker_launcher_handle_terminated(
            code);
     // TODO(kaeser@gubbe.ch): Keep exit status and latest output available
     // for visualization.
+#if 0
+    // FIXME
     wlm_util_subprocess_monitor_cede(
         launcher_ptr->monitor_ptr,
         subprocess_handle_ptr);
     bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
                      subprocess_handle_ptr);
+
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_tile_vmt_t::set_content_size. Set the image size. */
-bool _wlmaker_launcher_set_content_size(
+bool _wlmdock_launcher_set_content_size(
     wlmtk_tile_t *tile_ptr,
     uint64_t content_size)
 {
-    wlmaker_launcher_t *launcher_ptr = BS_CONTAINER_OF(
-        tile_ptr, wlmaker_launcher_t, super_tile);
+    wlmdock_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        tile_ptr, wlmdock_launcher_t, super_tile);
 
     wlmtk_image_t *image_ptr = wlmtk_image_create_scaled(
         launcher_ptr->resolved_icon_path_ptr, content_size, content_size);
@@ -480,13 +490,13 @@ bool _wlmaker_launcher_set_content_size(
 static void test_create_from_plist(bs_test_t *test_ptr);
 
 /** Unit test cases. */
-static const bs_test_case_t wlmaker_launcher_test_cases[] = {
+static const bs_test_case_t wlmdock_launcher_test_cases[] = {
     { true, "create_from_plist", test_create_from_plist },
     BS_TEST_CASE_SENTINEL()
 };
 
-const bs_test_set_t wlmaker_launcher_test_set = BS_TEST_SET(
-    true, "launcher", wlmaker_launcher_test_cases);
+const bs_test_set_t wlmdock_launcher_test_set = BS_TEST_SET(
+    true, "launcher", wlmdock_launcher_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Exercises plist parser. */
@@ -505,8 +515,8 @@ void test_create_from_plist(bs_test_t *test_ptr)
     wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
-    wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
-        &style, dict_ptr, NULL, files_ptr);
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+        &style, dict_ptr, files_ptr);
     bspl_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, launcher_ptr);
 
@@ -514,7 +524,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
     BS_TEST_VERIFY_STREQ(
         test_ptr, "chrome-56x56.png", launcher_ptr->icon_path_ptr);
 
-    wlmaker_launcher_destroy(launcher_ptr);
+    wlmdock_launcher_destroy(launcher_ptr);
     wlm_util_files_destroy(files_ptr);
 }
 

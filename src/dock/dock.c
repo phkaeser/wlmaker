@@ -20,6 +20,10 @@
 
 #include "dock.h"
 
+#include <stdlib.h>
+#include "libbase/libbase.h"
+#include "toolkit/toolkit.h"
+
 /* == Declarations ========================================================= */
 
 struct _wlmdk_dock {

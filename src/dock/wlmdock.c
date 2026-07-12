@@ -19,6 +19,8 @@
  * limitations under the License.
  */
 
+#include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -49,8 +51,8 @@
 #include "toolkit/toolkit.h"
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
-#include <libbase/libbase.h>
-#include <libbase/plist.h>
+#include "util/backtrace.h"
+#include "util/files.h"
 
 /* == Declarations ========================================================= */
 
@@ -110,12 +112,20 @@ static void _wlmdock_destroy(wlmdock_t *dock_ptr);
 /* ------------------------------------------------------------------------- */
 int main(int argc, char **argv)
 {
+    if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
+
     bs_log_severity = BS_DEBUG;
 
     (void)argc;
     (void)argv;
 
     bs_log(BS_INFO, "wlmdock: starting.");
+
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
+    if (NULL == files_ptr) {
+        bs_log(BS_ERROR, "Failed wlm_util_files_create(\"wlmaker\")");
+        return EXIT_FAILURE;
+    }
 
     wlmdock_t *dock_ptr = _wlmdock_create();
     if (NULL == dock_ptr) {
@@ -134,6 +144,8 @@ int main(int argc, char **argv)
     bs_log(BS_INFO, "wlmdock: event loop exited.");
 
     _wlmdock_destroy(dock_ptr);
+
+    if (NULL != files_ptr) wlm_util_files_destroy(files_ptr);
 
     return EXIT_SUCCESS;
 }
@@ -342,6 +354,7 @@ wlmdock_t *_wlmdock_create(void)
     };
 
     dock_ptr->input_manager_ptr = wlmim_input_manager_create(
+        dock_ptr->local_display_ptr,
         dock_ptr->wlr_backend_ptr,
         dock_ptr->wlr_output_layout_ptr,
         wlr_seat_ptr,

@@ -32,11 +32,11 @@ pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 # XWayland considered optional.
 pkg_check_modules(XWAYLAND xwayland>=22.1.9)
 add_subdirectory(backend)
+add_subdirectory(dock)
 add_subdirectory(input)
 add_subdirectory(toolkit)
 add_subdirectory(util)
 add_subdirectory(wlclient)
-add_subdirectory(dock)
 set(public_header_files
   action.h
   action_item.h
@@ -48,7 +48,6 @@ set(public_header_files
   icon_manager.h
   idle.h
   input_observation.h
-  launcher.h
   layer_panel.h
   layer_shell.h
   lock_mgr.h
@@ -74,7 +73,6 @@ target_sources(wlmaker_lib PRIVATE
   icon_manager.c
   idle.c
   input_observation.c
-  launcher.c
   layer_panel.c
   layer_shell.c
   lock_mgr.c
@@ -124,8 +122,8 @@ target_link_libraries(
   libbase_plist
   input
   toolkit
-  wlmaker_protocols
   wlm_util_lib
+  wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
