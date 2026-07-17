@@ -89,9 +89,7 @@ typedef struct {
     struct wlr_scene_output   *wlr_scene_output_ptr;
     /** Root wrapper. */
     wlmtk_root_t              *root_ptr;
-    /** Container to attach rectangle. */
-    wlmtk_container_t         container;
-
+    /** Box holding the tiles. */
     wlmdock_tilebox_t         *tilebox_ptr;
 
     /** Local input manager. */
@@ -306,43 +304,32 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    if (!wlmtk_container_init_attached(
-            &dock_ptr->container,
-            &dock_ptr->wlr_scene_ptr->tree)) {
-        bs_log(BS_ERROR, "Failed to initialize attached container.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
     dock_ptr->tilebox_ptr = wlmdock_tilebox_create(
-        WLMTK_BOX_VERTICAL, &style_ptr->dock);
+        &dock_ptr->wlr_scene_ptr->tree,
+        WLMTK_BOX_VERTICAL,
+        &style_ptr->dock);
     if (NULL == dock_ptr->tilebox_ptr) {
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
-    wlmtk_container_add_element(
-        &dock_ptr->container,
-        wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
-
-    static const char *plist_ptr =
-        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(
-        bspl_create_object_from_plist_string(plist_ptr));
-    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-        &style_ptr->tile, dict_ptr, files_ptr);
-
-    wlmdock_tilebox_add_tile(
-        dock_ptr->tilebox_ptr,
-        wlmdock_launcher_tile(launcher_ptr));
-
     dock_ptr->root_ptr = wlmtk_root_create(
-        &dock_ptr->container.super_element,
+        wlmdock_tilebox_element(dock_ptr->tilebox_ptr),
         dock_ptr->wlr_output_layout_ptr);
     if (NULL == dock_ptr->root_ptr) {
         bs_log(BS_ERROR, "Failed to create root element wrapper.");
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
+
+    static const char *plist_ptr =
+        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(plist_ptr));
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+            &style_ptr->tile, dict_ptr, files_ptr);
+    wlmdock_tilebox_add_tile(
+        dock_ptr->tilebox_ptr,
+        wlmdock_launcher_tile(launcher_ptr));
 
     // 4. Set up helper config dict for input keyboard creation.
     bspl_dict_t *config_dict_ptr = bspl_dict_create();
@@ -520,15 +507,10 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
         wlmtk_root_destroy(dock_ptr->root_ptr);
         dock_ptr->root_ptr = NULL;
     }
-
     if (NULL != dock_ptr->tilebox_ptr) {
-        wlmtk_container_remove_element(
-            &dock_ptr->container,
-            wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
         wlmdock_tilebox_destroy(dock_ptr->tilebox_ptr);
         dock_ptr->tilebox_ptr = NULL;
     }
-    wlmtk_container_fini(&dock_ptr->container);
 
     if (NULL != dock_ptr->wlr_output_ptr) {
         wlr_output_destroy(dock_ptr->wlr_output_ptr);
@@ -619,7 +601,7 @@ void handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
     }
 
     struct wlr_box box = wlmtk_element_get_dimensions_box(
-        &dock_ptr->container.super_element);
+        wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
 
     if ((int)width != box.width || (int)height != box.height) {
         wlmcl_layer_surface_request_size(

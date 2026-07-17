@@ -27,8 +27,10 @@ extern "C" {
 #endif  // __cplusplus
 
 typedef struct _wlmdock_tilebox wlmdock_tilebox_t;
+struct wlr_scene_tree;
 
 wlmdock_tilebox_t *wlmdock_tilebox_create(
+    struct wlr_scene_tree *wlr_scene_tree_ptr,
     wlmtk_box_orientation_t orientation,
     const struct wlmtk_dock_style *style_ptr);
 

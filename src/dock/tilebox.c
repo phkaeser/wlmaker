@@ -27,13 +27,11 @@
 /* == Declarations ========================================================= */
 
 struct _wlmdock_tilebox {
-
+    wlmtk_container_t         container;
 
     wlmtk_box_t               tile_box;
 
     bs_dllist_t               tiles;
-
-
 };
 
 /* == Data ================================================================= */
@@ -42,6 +40,7 @@ struct _wlmdock_tilebox {
 
 /* ------------------------------------------------------------------------- */
 wlmdock_tilebox_t *wlmdock_tilebox_create(
+    struct wlr_scene_tree *wlr_scene_tree_ptr,
     wlmtk_box_orientation_t orientation,
     const struct wlmtk_dock_style *style_ptr)
 {
@@ -55,7 +54,18 @@ wlmdock_tilebox_t *wlmdock_tilebox_create(
         wlmdock_tilebox_destroy(tilebox_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(wlmdock_tilebox_element(tilebox_ptr), true);
+    wlmtk_element_set_visible(wlmtk_box_element(&tilebox_ptr->tile_box), true);
+
+    if (!wlmtk_container_init_attached(
+            &tilebox_ptr->container,
+            wlr_scene_tree_ptr)) {
+        wlmdock_tilebox_destroy(tilebox_ptr);
+        return NULL;
+    }
+    wlmtk_container_add_element(
+        &tilebox_ptr->container,
+        wlmtk_box_element(&tilebox_ptr->tile_box));
+    wlmtk_element_set_visible(&tilebox_ptr->container.super_element, true);
 
     return tilebox_ptr;
 }
@@ -63,14 +73,21 @@ wlmdock_tilebox_t *wlmdock_tilebox_create(
 /* ------------------------------------------------------------------------- */
 void wlmdock_tilebox_destroy(wlmdock_tilebox_t *tilebox_ptr)
 {
+    if (wlmtk_box_element(&tilebox_ptr->tile_box)->parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &tilebox_ptr->container,
+            wlmtk_box_element(&tilebox_ptr->tile_box));
+    }
+    wlmtk_container_fini(&tilebox_ptr->container);
     wlmtk_box_fini(&tilebox_ptr->tile_box);
+
     free(tilebox_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr)
 {
-    return wlmtk_box_element(&tilebox_ptr->tile_box);
+    return &tilebox_ptr->container.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
