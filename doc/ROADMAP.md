@@ -22,6 +22,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Move into a separate process.
     * Create keyboard from `keyboard` listener in `wl_keyboard`. Update input manager
       to accept a keymap or use the Config dict. (but: how?)
+    * Make sure a cursor is set.
+    * Move config and theme loading into shared library.
   * Icons are loaded according to `.desktop` specification.
   * Add option to save Dock & Clip state.
     * Document the state file.

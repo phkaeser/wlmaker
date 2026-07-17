@@ -21,8 +21,8 @@ target_compile_definitions(
 target_sources(
   wlmdock_lib
   PRIVATE
-  dock.c
-  launcher.c)
+  launcher.c
+  tilebox.c)
 target_include_directories(
   wlmdock_lib
   PRIVATE

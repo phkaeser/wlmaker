@@ -211,6 +211,10 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
         &launcher_ptr->super_tile,
         wlmtk_image_element(launcher_ptr->image_ptr));
 
+    wlmtk_element_set_visible(
+        wlmtk_tile_element(&launcher_ptr->super_tile), true);
+
+
     return launcher_ptr;
 }
 

@@ -55,6 +55,7 @@
 #include "util/files.h"
 
 #include "launcher.h"
+#include "tilebox.h"
 
 // TODO(kaeser@gubbe.ch): Move into a shared directory.
 #include "../config.h"
@@ -86,12 +87,12 @@ typedef struct {
     struct wlr_output         *wlr_output_ptr;
     /** Node in the scene graph backing the output. */
     struct wlr_scene_output   *wlr_scene_output_ptr;
-    /** Pink background rectangle element. */
-    wlmtk_rectangle_t         *rectangle_ptr;
     /** Root wrapper. */
     wlmtk_root_t              *root_ptr;
     /** Container to attach rectangle. */
     wlmtk_container_t         container;
+
+    wlmdock_tilebox_t         *tilebox_ptr;
 
     /** Local input manager. */
     wlmim_t                   *input_manager_ptr;
@@ -194,7 +195,8 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    bs_log(BS_INFO, "wlmdock: starting.");
+    bs_log(BS_INFO, "Starting wlmdock %s (%s)",
+           wlmdock_version_string, wlmdock_version_full);
 
     wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     if (NULL == files_ptr) {
@@ -312,22 +314,15 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-#if 0
-    dock_ptr->rectangle_ptr = wlmtk_rectangle_create(64, 64, 0xffffc0cb);
-    if (NULL == dock_ptr->rectangle_ptr) {
-        bs_log(BS_ERROR, "Failed to create pink background rectangle.");
+    dock_ptr->tilebox_ptr = wlmdock_tilebox_create(
+        WLMTK_BOX_VERTICAL, &style_ptr->dock);
+    if (NULL == dock_ptr->tilebox_ptr) {
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
     wlmtk_container_add_element(
         &dock_ptr->container,
-        wlmtk_rectangle_element(dock_ptr->rectangle_ptr));
-    wlmtk_element_set_visible(
-        wlmtk_rectangle_element(dock_ptr->rectangle_ptr),
-        true);
-#else
-
-    // FIXME
+        wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
 
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
@@ -336,15 +331,9 @@ wlmdock_t *_wlmdock_create(
     wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
         &style_ptr->tile, dict_ptr, files_ptr);
 
-    wlmtk_container_add_element(
-        &dock_ptr->container,
-        wlmtk_tile_element(wlmdock_launcher_tile(launcher_ptr)));
-    wlmtk_element_set_visible(
-        wlmtk_tile_element(wlmdock_launcher_tile(launcher_ptr)),
-        true);
-
-#endif
-
+    wlmdock_tilebox_add_tile(
+        dock_ptr->tilebox_ptr,
+        wlmdock_launcher_tile(launcher_ptr));
 
     dock_ptr->root_ptr = wlmtk_root_create(
         &dock_ptr->container.super_element,
@@ -531,16 +520,19 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
         wlmtk_root_destroy(dock_ptr->root_ptr);
         dock_ptr->root_ptr = NULL;
     }
-    if (NULL != dock_ptr->rectangle_ptr) {
+
+    if (NULL != dock_ptr->tilebox_ptr) {
         wlmtk_container_remove_element(
             &dock_ptr->container,
-            wlmtk_rectangle_element(dock_ptr->rectangle_ptr));
-        wlmtk_rectangle_destroy(dock_ptr->rectangle_ptr);
-        dock_ptr->rectangle_ptr = NULL;
-        wlmtk_container_fini(&dock_ptr->container);
+            wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
+        wlmdock_tilebox_destroy(dock_ptr->tilebox_ptr);
+        dock_ptr->tilebox_ptr = NULL;
     }
+    wlmtk_container_fini(&dock_ptr->container);
+
     if (NULL != dock_ptr->wlr_output_ptr) {
         wlr_output_destroy(dock_ptr->wlr_output_ptr);
+        dock_ptr->wlr_output_ptr = NULL;
     }
     if (NULL != dock_ptr->wlr_allocator_ptr) {
         wlr_allocator_destroy(dock_ptr->wlr_allocator_ptr);

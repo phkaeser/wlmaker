@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file dock.c
+ * @file tilebox.c
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser <kaeser@gubbe.ch>
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "dock.h"
+#include "tilebox.h"
 
 #include <stdlib.h>
 #include "libbase/libbase.h"
@@ -26,7 +26,7 @@
 
 /* == Declarations ========================================================= */
 
-struct _wlmdk_dock {
+struct _wlmdock_tilebox {
 
 
     wlmtk_box_t               tile_box;
@@ -41,62 +41,66 @@ struct _wlmdk_dock {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmdk_dock_t *wlmdk_dock_create(
+wlmdock_tilebox_t *wlmdock_tilebox_create(
     wlmtk_box_orientation_t orientation,
     const struct wlmtk_dock_style *style_ptr)
 {
-    wlmdk_dock_t *dock_ptr = logged_calloc(1, sizeof(*dock_ptr));
-    if (NULL == dock_ptr) return NULL;
+    wlmdock_tilebox_t *tilebox_ptr = logged_calloc(1, sizeof(*tilebox_ptr));
+    if (NULL == tilebox_ptr) return NULL;
 
     if (!wlmtk_box_init(
-            &dock_ptr->tile_box,
+            &tilebox_ptr->tile_box,
             orientation,
             &style_ptr->margin)) {
-        wlmdk_dock_destroy(dock_ptr);
+        wlmdock_tilebox_destroy(tilebox_ptr);
         return NULL;
     }
+    wlmtk_element_set_visible(wlmdock_tilebox_element(tilebox_ptr), true);
 
-    return dock_ptr;
+    return tilebox_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmdk_dock_destroy(wlmdk_dock_t *dock_ptr)
+void wlmdock_tilebox_destroy(wlmdock_tilebox_t *tilebox_ptr)
 {
-    wlmtk_box_fini(&dock_ptr->tile_box);
-    free(dock_ptr);
+    wlmtk_box_fini(&tilebox_ptr->tile_box);
+    free(tilebox_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmdk_dock_element(wlmdk_dock_t *dock_ptr);
+wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr)
+{
+    return wlmtk_box_element(&tilebox_ptr->tile_box);
+}
 
 /* ------------------------------------------------------------------------- */
-void wlmdk_dock_add_tile(wlmdk_dock_t *dock_ptr,
-                         wlmtk_tile_t *tile_ptr)
+void wlmdock_tilebox_add_tile(wlmdock_tilebox_t *tilebox_ptr,
+                              wlmtk_tile_t *tile_ptr)
 {
     // FIXME: Define growth orientation.
     BS_ASSERT(NULL == wlmtk_tile_element(tile_ptr)->parent_container_ptr);
     wlmtk_box_add_element_back(
-        &dock_ptr->tile_box,
+        &tilebox_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
     bs_dllist_push_back(
-        &dock_ptr->tiles,
+        &tilebox_ptr->tiles,
         wlmtk_dlnode_from_tile(tile_ptr));
 
     // FIXME: size update?
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmdk_dock_remove_tile(wlmdk_dock_t *dock_ptr,
-                            wlmtk_tile_t *tile_ptr)
+void wlmdock_tilebox_remove_tile(wlmdock_tilebox_t *tilebox_ptr,
+                                 wlmtk_tile_t *tile_ptr)
 {
     BS_ASSERT(
-        &dock_ptr->tile_box.element_container ==
+        &tilebox_ptr->tile_box.element_container ==
         wlmtk_tile_element(tile_ptr)->parent_container_ptr);
     wlmtk_box_remove_element(
-        &dock_ptr->tile_box,
+        &tilebox_ptr->tile_box,
         wlmtk_tile_element(tile_ptr));
     bs_dllist_remove(
-        &dock_ptr->tiles,
+        &tilebox_ptr->tiles,
         wlmtk_dlnode_from_tile(tile_ptr));
 
     // FIXME: size update?
@@ -106,4 +110,4 @@ void wlmdk_dock_remove_tile(wlmdk_dock_t *dock_ptr,
 
 /* == Unit Tests =========================================================== */
 
-/* == End of dock.c ================= */
+/* == End of tilebox.c ===================================================== */

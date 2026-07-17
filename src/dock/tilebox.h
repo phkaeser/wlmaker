@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file dock.h
+ * @file tilebox.h
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser <kaeser@gubbe.ch>
@@ -17,8 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_DOCK_DOCK_H__
-#define __WLMAKER_DOCK_DOCK_H__
+#ifndef __WLMAKER_DOCK_TILEBOX_H__
+#define __WLMAKER_DOCK_TILEBOX_H__
 
 #include <toolkit/toolkit.h>
 
@@ -26,25 +26,25 @@
 extern "C" {
 #endif  // __cplusplus
 
-typedef struct _wlmdk_dock wlmdk_dock_t;
+typedef struct _wlmdock_tilebox wlmdock_tilebox_t;
 
-wlmdk_dock_t *wlmdk_dock_create(
+wlmdock_tilebox_t *wlmdock_tilebox_create(
     wlmtk_box_orientation_t orientation,
     const struct wlmtk_dock_style *style_ptr);
 
-wlmtk_element_t *wlmdk_dock_element(wlmdk_dock_t *dock_ptr);
+wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr);
 
-void wlmdk_dock_destroy(wlmdk_dock_t *dock_ptr);
+void wlmdock_tilebox_destroy(wlmdock_tilebox_t *tilebox_ptr);
 
-void wlmdk_dock_add_tile(wlmdk_dock_t *dock_ptr,
-                         wlmtk_tile_t *tile_ptr);
+void wlmdock_tilebox_add_tile(wlmdock_tilebox_t *tilebox_ptr,
+                              wlmtk_tile_t *tile_ptr);
 
-void wlmdk_dock_remove_tile(wlmdk_dock_t *dock_ptr,
-                            wlmtk_tile_t *tile_ptr);
+void wlmdock_tilebox_remove_tile(wlmdock_tilebox_t *tilebox_ptr,
+                                 wlmtk_tile_t *tile_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // __WLMAKER_DOCK_DOCK_H__
-/* == End of dock.h ====================================================== */
+#endif  // __WLMAKER_DOCK_TILEBOX_H__
+/* == End of tilebox.h ===================================================== */
