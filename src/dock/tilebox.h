@@ -22,27 +22,65 @@
 
 #include <toolkit/toolkit.h>
 
+struct wlr_scene_tree;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
+/** State of the tile box. */
 typedef struct _wlmdock_tilebox wlmdock_tilebox_t;
-struct wlr_scene_tree;
 
+/**
+ * Creates a tile box.
+ *
+ * @param wlr_scene_tree_ptr
+ * @param orientation
+ * @param style_ptr
+ *
+ * @return Handle to the tile box' state, or NULL on error.
+ */
 wlmdock_tilebox_t *wlmdock_tilebox_create(
     struct wlr_scene_tree *wlr_scene_tree_ptr,
     wlmtk_box_orientation_t orientation,
     const struct wlmtk_dock_style *style_ptr);
 
-wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr);
-
+/**
+ * Destroys the tile box.
+ *
+ * @param tilebox_ptr
+ */
 void wlmdock_tilebox_destroy(wlmdock_tilebox_t *tilebox_ptr);
 
-void wlmdock_tilebox_add_tile(wlmdock_tilebox_t *tilebox_ptr,
-                              wlmtk_tile_t *tile_ptr);
+/**
+ * Returns the tilebox' root @ref wlmtk_element_t.
+ *
+ * @param tilebox_ptr
+ *
+ * @return Pointer to the super element of @ref wlmdock_tilebox_t::container.
+ */
+wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr);
 
-void wlmdock_tilebox_remove_tile(wlmdock_tilebox_t *tilebox_ptr,
-                                 wlmtk_tile_t *tile_ptr);
+/**
+ * Adds the tile to the tile box.
+ *
+ * @param tilebox_ptr
+ * @param tile_ptr
+ */
+void wlmdock_tilebox_add_tile(
+    wlmdock_tilebox_t *tilebox_ptr,
+    wlmtk_tile_t *tile_ptr);
+
+/**
+ * Removes the tile from the tilebox.
+ *
+ * @param tilebox_ptr
+ * @param tile_ptr            Tile to remove. Must have been added to the tile
+ *                            box before.
+ */
+void wlmdock_tilebox_remove_tile(
+    wlmdock_tilebox_t *tilebox_ptr,
+    wlmtk_tile_t *tile_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

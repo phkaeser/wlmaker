@@ -40,7 +40,6 @@ typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
  *
  * @param style_ptr
  * @param dict_ptr
- * @param monitor_ptr
  * @param files_ptr
  *
  * @return Pointer to the launcher handle or NULL on error.

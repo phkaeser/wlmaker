@@ -26,11 +26,14 @@
 
 /* == Declarations ========================================================= */
 
+/** State of the tile box. */
 struct _wlmdock_tilebox {
+    /** Root container. */
     wlmtk_container_t         container;
-
+    /** Box holding the tiles. */
     wlmtk_box_t               tile_box;
 
+    /** List of tiles, via @ref wlmtk_dlnode_from_tile. */
     bs_dllist_t               tiles;
 };
 

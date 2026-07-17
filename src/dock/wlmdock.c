@@ -167,7 +167,8 @@ static const bs_arg_t wlmdock_args[] = {
     BS_ARG_SENTINEL()
 };
 
-/* ------------------------------------------------------------------------- */
+/* == Main program ========================================================= */
+/** The dock's main program. */
 int main(int argc, const char **argv)
 {
     if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
