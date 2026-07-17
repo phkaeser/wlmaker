@@ -33,11 +33,25 @@ struct _wlmdock_tilebox {
     /** Box holding the tiles. */
     wlmtk_box_t               tile_box;
 
+    wlmtk_element_vmt_t       orig_element_vmt;
+
     /** List of tiles, via @ref wlmtk_dlnode_from_tile. */
     bs_dllist_t               tiles;
 };
 
 /* == Data ================================================================= */
+
+static bool _wlmdock_tilebox_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr);
+static bool _wlmdock_tilebox_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
+
+static const wlmtk_element_vmt_t _wlmdock_tilebox_element_vmt = {
+    .pointer_button = _wlmdock_tilebox_pointer_button,
+    .pointer_accepts_motion = _wlmdock_tilebox_pointer_accepts_motion
+};
 
 /* == Exported methods ===================================================== */
 
@@ -69,6 +83,9 @@ wlmdock_tilebox_t *wlmdock_tilebox_create(
         &tilebox_ptr->container,
         wlmtk_box_element(&tilebox_ptr->tile_box));
     wlmtk_element_set_visible(&tilebox_ptr->container.super_element, true);
+    wlmtk_element_extend(
+        &tilebox_ptr->container.super_element,
+        &_wlmdock_tilebox_element_vmt);
 
     return tilebox_ptr;
 }
@@ -127,6 +144,26 @@ void wlmdock_tilebox_remove_tile(wlmdock_tilebox_t *tilebox_ptr,
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+bool _wlmdock_tilebox_pointer_button(
+    wlmtk_element_t *element_ptr,
+    const wlmtk_button_event_t *button_event_ptr)
+{
+    bs_log(BS_WARNING, "FIXME: element %p, button event %p",
+           element_ptr, button_event_ptr);
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+bool _wlmdock_tilebox_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
+{
+    bs_log(BS_WARNING, "FIXME: element %p, accepts motion %p",
+           element_ptr, motion_event_ptr);
+    return true;
+}
 
 /* == Unit Tests =========================================================== */
 
