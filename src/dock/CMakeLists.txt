@@ -48,6 +48,11 @@ target_link_libraries(
   libwlclient
   wlmdock_lib
   wlmaker_lib)
+target_compile_definitions(
+  wlmdock PRIVATE
+  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
+  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
+  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
 
 if(iwyu_path_and_options)
   set_target_properties(

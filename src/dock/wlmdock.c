@@ -56,6 +56,9 @@
 
 #include "launcher.h"
 
+// TODO(kaeser@gubbe.ch): Move into a shared directory.
+#include "../config.h"
+
 /* == Declarations ========================================================= */
 
 /** State of the nested client-backed dock. */
@@ -106,20 +109,90 @@ static void handle_frame(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_output_destroy(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_configure(void *ud_ptr, uint32_t width, uint32_t height);
 static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
-static wlmdock_t *_wlmdock_create(wlm_util_files_t *files_ptr);
+static wlmdock_t *_wlmdock_create(
+    wlm_util_files_t *files_ptr,
+    wlmaker_config_style_t *style_ptr);
 static void _wlmdock_destroy(wlmdock_t *dock_ptr);
 
-/* == Exported methods ===================================================== */
+/* == Data ================================================================= */
+
+#if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
+#error "WLMAKER_VERSION_... not defined!"
+#else
+// Patch level is optional.
+#if defined(WLMAKER_VERSION_PATCH)
+static const char *wlmdock_version_string =
+    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR "." WLMAKER_VERSION_PATCH;
+#else
+static const char *wlmdock_version_string =
+    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR;
+#endif
+static const char *wlmdock_version_full = WLMAKER_VERSION_FULL;
+#endif
+
+/** Will hold the value of --config_file. */
+static char *wlmdock_arg_config_file_ptr = NULL;
+/** Will hold the value of --theme_file. */
+static char *wlmdock_arg_theme_file_ptr = NULL;
+
+/** Log levels. */
+static const bs_arg_enum_table_t wlmdock_log_levels[] = {
+    { .name_ptr = "DEBUG", BS_DEBUG },
+    { .name_ptr = "INFO", BS_INFO },
+    { .name_ptr = "WARNING", BS_WARNING },
+    { .name_ptr = "ERROR", BS_ERROR },
+    { .name_ptr = NULL },
+};
+
+/** Definition of commandline arguments. */
+static const bs_arg_t wlmdock_args[] = {
+    BS_ARG_STRING(
+        "config_file",
+        "Optional: Path to a configuration file. If not provided, wlmaker "
+        "will scan default paths for a configuration file, or fall back to "
+        "a built-in configuration.",
+        NULL,
+        &wlmdock_arg_config_file_ptr),
+    BS_ARG_STRING(
+        "theme_file",
+        "Optional: Path to a \"theme\" file, configuring the visual style for "
+        "elements. If not provided, wlmaker will use a built-in default theme.",
+        NULL,
+        &wlmdock_arg_theme_file_ptr),
+    BS_ARG_ENUM(
+        "log_level",
+        "Log level to apply. One of DEBUG, INFO, WARNING, ERROR.",
+        "INFO",
+        &wlmdock_log_levels[0],
+        (int*)&bs_log_severity),
+    BS_ARG_SENTINEL()
+};
 
 /* ------------------------------------------------------------------------- */
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
     if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
 
-    bs_log_severity = BS_DEBUG;
+    for (int i = 1; i < argc; ++i) {
+        if (0 == strcmp(argv[i], "--help")) {
+            bs_arg_print_usage(stdout, wlmdock_args);
+            return EXIT_SUCCESS;
+        } else if (0 == strcmp(argv[i], "--version")) {
+            fprintf(stdout, "wlmdock version %s (%s)\n",
+                    wlmdock_version_string, wlmdock_version_full);
+            return EXIT_SUCCESS;
+        } else {
+            bs_log(BS_ERROR, "Unhandled extra argument \"%s\"", argv[i]);
+            return EXIT_FAILURE;
+        }
+    }
 
-    (void)argc;
-    (void)argv;
+    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
+    if (!bs_arg_parse(wlmdock_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
+        fprintf(stderr, "Failed to parse commandline arguments.\n");
+        bs_arg_print_usage(stderr, wlmdock_args);
+        return EXIT_FAILURE;
+    }
 
     bs_log(BS_INFO, "wlmdock: starting.");
 
@@ -129,7 +202,26 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmdock_t *dock_ptr = _wlmdock_create(files_ptr);
+    bspl_dict_t *config_dict_ptr = wlmaker_config_load(
+        files_ptr, wlmdock_arg_config_file_ptr);
+    if (NULL != wlmdock_arg_config_file_ptr) free(wlmdock_arg_config_file_ptr);
+    if (NULL == config_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize configuration.\n");
+        return EXIT_FAILURE;
+    }
+
+    const char *theme_file_ptr = wlmdock_arg_theme_file_ptr;
+    if (NULL == theme_file_ptr) {
+        theme_file_ptr = bspl_dict_get_string_value(
+            config_dict_ptr, "ThemeFile");
+    }
+    wlmaker_config_style_t style = {};
+    if (!wlmaker_theme_load(files_ptr, theme_file_ptr, &style)) {
+        fprintf(stderr, "Failed to load & initialize theme.\n");
+        return EXIT_FAILURE;
+    }
+
+    wlmdock_t *dock_ptr = _wlmdock_create(files_ptr, &style);
     if (NULL == dock_ptr) {
         bs_log(BS_ERROR, "Failed to create wlmdock.");
         return EXIT_FAILURE;
@@ -154,7 +246,9 @@ int main(int argc, char **argv)
 
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
-wlmdock_t *_wlmdock_create(wlm_util_files_t *files_ptr)
+wlmdock_t *_wlmdock_create(
+    wlm_util_files_t *files_ptr,
+    wlmaker_config_style_t *style_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
     if (NULL == dock_ptr) return NULL;
@@ -235,22 +329,12 @@ wlmdock_t *_wlmdock_create(wlm_util_files_t *files_ptr)
 
     // FIXME
 
-    struct wlmtk_tile_style style = {
-        .size = 64,
-        .content_size = 48,
-        .bezel_width = 4,
-        .fill = {
-            .type = WLMTK_STYLE_COLOR_SOLID,
-            .param = { .solid = { .color = 0xff80c040 } }
-        }
-    };
-
     static const char *plist_ptr =
         "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
     bspl_dict_t *dict_ptr = bspl_dict_from_object(
         bspl_create_object_from_plist_string(plist_ptr));
     wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-        &style, dict_ptr, files_ptr);
+        &style_ptr->tile, dict_ptr, files_ptr);
 
     wlmtk_container_add_element(
         &dock_ptr->container,

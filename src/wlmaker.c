@@ -62,7 +62,7 @@ static char *wlmaker_arg_theme_file_ptr = NULL;
 static char *wlmaker_arg_root_menu_file_ptr = NULL;
 
 #if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
-#eror "WLMAKER_VERSION_... not defined!"
+#ertor "WLMAKER_VERSION_... not defined!"
 #else
 // Patch level is optional.
 #if defined(WLMAKER_VERSION_PATCH)
