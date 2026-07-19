@@ -26,6 +26,12 @@ endif()
 pkg_get_variable(protocol_dir wayland-protocols pkgdatadir)
 
 add_custom_command(
+  OUTPUT cursor-shape-v1-protocol.h
+  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml" "cursor-shape-v1-protocol.h"
+  DEPENDS "${protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
+  VERBATIM)
+
+add_custom_command(
   OUTPUT wlr-layer-shell-unstable-v1-protocol.h
   COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml" "wlr-layer-shell-unstable-v1-protocol.h"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml"
@@ -40,6 +46,7 @@ add_custom_command(
 add_library(
   protocol_headers
   OBJECT
+  cursor-shape-v1-protocol.h
   wlr-layer-shell-unstable-v1-protocol.h
   xdg-shell-protocol.h)
 set_target_properties(

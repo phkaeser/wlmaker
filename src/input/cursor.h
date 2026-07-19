@@ -32,6 +32,7 @@
 /** Forward declaration of wlmaker cursor state. */
 typedef struct _wlmim_cursor_t wlmim_cursor_t;
 
+struct wl_display;
 struct wlr_input_device;
 struct wlr_output_layout;
 struct wlr_seat;
@@ -62,6 +63,7 @@ struct wlmim_cursor_options {
 /**
  * Creates the cursor handlers.
  *
+ * @param wl_display_ptr
  * @param input_manager_ptr
  * @param style_ptr
  * @param options_ptr
@@ -72,6 +74,7 @@ struct wlmim_cursor_options {
  * @return The cursor handler or NULL on error.
  */
 wlmim_cursor_t *wlmim_cursor_create(
+    struct wl_display *wl_display_ptr,
     wlmim_t *input_manager_ptr,
     const struct wlmim_cursor_style *style_ptr,
     const struct wlmim_cursor_options *options_ptr,

@@ -26,6 +26,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Look whether to expand to use XDG_STATE_HOME
 
 * Infrastructure
+  * Adds support for `cursor-shape-v1` protocol.
   * Write log to logfile (vs. stderr).
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)

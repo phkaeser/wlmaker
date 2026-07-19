@@ -763,7 +763,7 @@ void test_default_keybindings(bs_test_t *test_ptr)
     bspl_dict_t *d = bspl_dict_create();
     wlmaker_server_t server = {
         .input_manager_ptr = wlmim_input_manager_create(
-            NULL, NULL, NULL, d, NULL, NULL)
+            NULL, NULL, NULL, NULL, d, NULL, NULL)
     };
     bspl_object_t *obj_ptr = bspl_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
@@ -791,7 +791,7 @@ void test_keybindings_formats(bs_test_t *test_ptr)
     bspl_dict_t *d = bspl_dict_create();
     wlmaker_server_t server = {
         .input_manager_ptr = wlmim_input_manager_create(
-            NULL, NULL, NULL, d, NULL, NULL)
+            NULL, NULL, NULL, NULL, d, NULL, NULL)
     };
     bspl_object_t *obj_ptr;
     bspl_dict_t *dict_ptr;

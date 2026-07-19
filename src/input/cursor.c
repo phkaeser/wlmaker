@@ -32,6 +32,7 @@
 #include <wayland-server-protocol.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_cursor_shape_v1.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_seat.h>
@@ -55,6 +56,11 @@ struct _wlmim_cursor_t {
     /** The toolkit wrapper for above. */
     wlmtk_pointer_t           *pointer_ptr;
 
+    /** `destroy` signal by `wlr_cursor_shape_manager_v1::events`. */
+    struct wl_listener        cursor_shape_manager_v1_destroy_listener;
+    /** `request_set_shape` by `wlr_cursor_shape_manager_v1::events`. */
+    struct wl_listener        cursor_shape_manager_v1_set_shape_listener;
+
     /** Listener for the `motion` event of `wlr_cursor`. */
     struct wl_listener        motion_listener;
     /** Listener for the `motion_absolute` event of `wlr_cursor`. */
@@ -75,10 +81,19 @@ struct _wlmim_cursor_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** Root wrapper of the compositor. */
     wlmtk_root_t              *root_ptr;
+    /** The cursor shape manager. */
+    struct wlr_cursor_shape_manager_v1 *wlr_cursor_shape_manager_v1_ptr;
 
     /** Whether the current left-button press emulates a right button. */
     bool                      left_button_emulates_right;
 };
+
+static void _wlmim_cursor_handle_cursor_shape_manager_v1_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmim_cursor_handle_cursor_shape_manager_v1_set_shape(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmim_cursor_handle_motion(
     struct wl_listener *listener_ptr,
@@ -148,6 +163,7 @@ static const char *_wlmim_cursor_system_config_alternative_file =
 
 /* ------------------------------------------------------------------------- */
 wlmim_cursor_t *wlmim_cursor_create(
+    struct wl_display *wl_display_ptr,
     wlmim_t *input_manager_ptr,
     const struct wlmim_cursor_style *style_ptr,
     const struct wlmim_cursor_options *options_ptr,
@@ -180,6 +196,26 @@ wlmim_cursor_t *wlmim_cursor_create(
     if (NULL == cursor_ptr->pointer_ptr) {
         wlmim_cursor_destroy(cursor_ptr);
         return NULL;
+    }
+
+    if (NULL != wl_display_ptr) {
+        cursor_ptr->wlr_cursor_shape_manager_v1_ptr =
+            wlr_cursor_shape_manager_v1_create(wl_display_ptr, 1);
+        if (NULL == cursor_ptr->wlr_cursor_shape_manager_v1_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed wlr_cursor_shape_manager_v1_create(%p, 1)",
+                   wl_display_ptr);
+            wlmim_cursor_destroy(cursor_ptr);
+            return NULL;
+        }
+        wlmtk_util_connect_listener_signal(
+            &cursor_ptr->wlr_cursor_shape_manager_v1_ptr->events.destroy,
+            &cursor_ptr->cursor_shape_manager_v1_destroy_listener,
+            _wlmim_cursor_handle_cursor_shape_manager_v1_destroy);
+        wlmtk_util_connect_listener_signal(
+            &cursor_ptr->wlr_cursor_shape_manager_v1_ptr->events.request_set_shape,
+            &cursor_ptr->cursor_shape_manager_v1_set_shape_listener,
+            _wlmim_cursor_handle_cursor_shape_manager_v1_set_shape);
     }
 
     // tinywl: wlr_cursor *only* displays an image on screen. It does not move
@@ -231,6 +267,12 @@ void wlmim_cursor_destroy(wlmim_cursor_t *cursor_ptr)
         wlmtk_util_disconnect_listener(&cursor_ptr->button_listener);
         wlmtk_util_disconnect_listener(&cursor_ptr->motion_absolute_listener);
         wlmtk_util_disconnect_listener(&cursor_ptr->motion_listener);
+    }
+
+    if (NULL != cursor_ptr->wlr_cursor_shape_manager_v1_ptr) {
+        _wlmim_cursor_handle_cursor_shape_manager_v1_destroy(
+            &cursor_ptr->cursor_shape_manager_v1_destroy_listener,
+            NULL);
     }
 
     if (NULL != cursor_ptr->pointer_ptr) {
@@ -315,6 +357,60 @@ void wlmim_cursor_detach_input_device(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for `destroy` signal by `wlr_cursor_shape_manager_v1::events`.
+ *
+ * Called when the cursor shape manager is destroyed. This makes us clear the
+ * reference in @ref wlmim_cursor_t::wlr_cursor_shape_manager_v1_ptr.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmim_cursor_handle_cursor_shape_manager_v1_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmim_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmim_cursor_t,
+        cursor_shape_manager_v1_destroy_listener);
+    if (NULL == cursor_ptr->wlr_cursor_shape_manager_v1_ptr) return;
+
+    wlmtk_util_disconnect_listener(
+        &cursor_ptr->cursor_shape_manager_v1_set_shape_listener);
+    wlmtk_util_disconnect_listener(
+        &cursor_ptr->cursor_shape_manager_v1_destroy_listener);
+    cursor_ptr->wlr_cursor_shape_manager_v1_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Handler for `set_shape` signal by `wlr_cursor_shape_manager_v1::events`.
+ *
+ * @param listener_ptr
+ * @param data_ptr
+ */
+void _wlmim_cursor_handle_cursor_shape_manager_v1_set_shape(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmim_cursor_t *cursor_ptr = BS_CONTAINER_OF(
+        listener_ptr,
+        wlmim_cursor_t,
+        cursor_shape_manager_v1_set_shape_listener);
+    struct wlr_cursor_shape_manager_v1_request_set_shape_event *e = data_ptr;
+
+    if (NULL != wlr_cursor_shape_v1_name(e->shape)) {
+        wlr_cursor_set_xcursor(
+            cursor_ptr->wlr_cursor_ptr,
+            cursor_ptr->wlr_xcursor_manager_ptr,
+            wlr_cursor_shape_v1_name(e->shape));
+    } else {
+        bs_log(BS_WARNING, "Cannot resolve shape name for %d", e->shape);
+    }
+}
 
 /* ------------------------------------------------------------------------- */
 /**

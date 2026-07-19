@@ -195,6 +195,7 @@ wlmaker_server_t *wlmaker_server_create(
         _wlmaker_server_unclaimed_button_event_handler);
 
     server_ptr->input_manager_ptr = wlmim_input_manager_create(
+        server_ptr->wl_display_ptr,
         wlmbe_backend_wlr(server_ptr->backend_ptr),
         server_ptr->wlr_output_layout_ptr,
         server_ptr->wlr_seat_ptr,
