@@ -200,6 +200,10 @@ TBD: Raise/Lower.
 
 ## Wayland protocol support
 
+### `cursor-shape-v1`
+
+* [x] :white_check_mark: Implemented, verified.
+
 ### `ext-idle-notify-v1`
 
 * [ ] Implement.

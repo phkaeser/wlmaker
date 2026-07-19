@@ -71,6 +71,7 @@ struct _wlmim_t {
     bspl_dict_t               *config_dict_ptr;
     /** The compositor's root wrapper. */
     wlmtk_root_t              *root_ptr;
+
 };
 
 /** Wraps an input device. */
@@ -113,7 +114,6 @@ static void _wlmim_handle_new_input_device(
 static void _wlmim_handle_destroy_input_device(
     struct wl_listener *listener_ptr,
     void *data_ptr);
-
 static bool _wlmim_device_register(
     wlmim_t *input_manager_ptr,
     struct wlr_input_device *wlr_input_device_ptr,
@@ -158,6 +158,7 @@ static const bspl_desc_t _wlmim_manager_config[] = {
 
 /* ------------------------------------------------------------------------- */
 wlmim_t *wlmim_input_manager_create(
+    struct wl_display *wl_display_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
@@ -185,6 +186,7 @@ wlmim_t *wlmim_input_manager_create(
 
     if (NULL != wlr_seat_ptr && NULL != wlr_output_layout_ptr) {
         input_manager_ptr->cursor_ptr = wlmim_cursor_create(
+            wl_display_ptr,
             input_manager_ptr,
             cursor_style_ptr,
             &input_manager_ptr->cursor_options,

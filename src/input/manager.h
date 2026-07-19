@@ -35,6 +35,7 @@
 
 #include "toolkit/toolkit.h"
 
+struct wl_display;
 struct wlr_backend;
 struct wlr_output_layout;
 struct wlr_seat;
@@ -109,6 +110,7 @@ typedef bool (*wlmim_keybinding_callback_t)(
  * Creates an input manager: Registers input devices and ensures event routing
  * will be set up as desired.
  *
+ * @param wl_display_ptr
  * @param wlr_backend_ptr
  * @param wlr_output_layout_ptr
  * @param wlr_seat_ptr
@@ -119,6 +121,7 @@ typedef bool (*wlmim_keybinding_callback_t)(
  * @return Pointer to the input manager handle.
  */
 wlmim_t *wlmim_input_manager_create(
+    struct wl_display *wl_display_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_seat *wlr_seat_ptr,
