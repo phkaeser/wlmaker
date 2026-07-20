@@ -45,26 +45,28 @@ typedef void (*wlmcl_client_callback_t)(
 
 /** Accessor to 'public' client attributes. */
 struct wlmcl_client_attributes {
+    /** The bound Input Observation. */
+    struct ext_input_observation_manager_v1 *input_observation_manager_ptr;
     /** Wayland display connection. */
     struct wl_display         *wl_display_ptr;
     /** The bound compositor interface. */
     struct wl_compositor      *wl_compositor_ptr;
-    /** The bound SHM interface. */
-    struct wl_shm             *wl_shm_ptr;
-    /** The bound XDG wm_base interface. */
-    struct xdg_wm_base        *xdg_wm_base_ptr;
-    /** The bound seat. */
-    struct wl_seat            *wl_seat_ptr;
     /** Pointer state, if & when the seat has the capability. */
     struct wl_pointer         *wl_pointer_ptr;
+    /** The bound seat. */
+    struct wl_seat            *wl_seat_ptr;
+    /** The bound SHM interface. */
+    struct wl_shm             *wl_shm_ptr;
+    /** The bound cursor shape manager. Will be NULL if not supported. */
+    struct wp_cursor_shape_manager_v1 *cursor_shape_manager_ptr;
+    /** The bound XDG wm_base interface. */
+    struct xdg_wm_base        *xdg_wm_base_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
-    /** The bound XDG decoration manager. NULL if not supported. */
-    struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
-    /** The bound Input Observation. */
-    struct ext_input_observation_manager_v1 *input_observation_manager_ptr;
     /** The bound layer shell interface. Will be NULL if not supported. */
     struct zwlr_layer_shell_v1 *layer_shell_ptr;
+    /** The bound XDG decoration manager. NULL if not supported. */
+    struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
 
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
