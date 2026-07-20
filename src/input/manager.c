@@ -57,18 +57,21 @@ struct _wlmim_t {
     /** The last-used group of the keyboard layout. Used when using groups. */
     uint32_t                  last_keyboard_group_index;
 
-    /** Pointer configuration. */
-    struct wlmim_pointer_options pointer_options;
     /** Cursor configuration. */
     struct wlmim_cursor_options cursor_options;
+    /** Keyboard configuration. */
+    struct wlmim_keyboard_options keyboard_options;
+    /** Pointer configuration. */
+    struct wlmim_pointer_options pointer_options;
 
     /** Cursor handle. */
     wlmim_cursor_t            *cursor_ptr;
 
+    /** Active XKB keymap (if dynamically set). */
+    struct xkb_keymap         *xkb_keymap_ptr;
+
     /** wlroots seat. */
     struct wlr_seat           *wlr_seat_ptr;
-    /** Reference to the config dict. */
-    bspl_dict_t               *config_dict_ptr;
     /** The compositor's root wrapper. */
     wlmtk_root_t              *root_ptr;
 
@@ -124,6 +127,9 @@ static void _wlmim_device_unregister(
 static void _wlmim_device_update_capabilities(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
+static void _wlmim_device_configure_keyboard(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 static bool _wlmim_process_keybinding(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -145,9 +151,12 @@ const uint32_t wlmim_modifiers_default_mask = (
 
 /** Enum definition for input configuration sections. */
 static const bspl_desc_t _wlmim_manager_config[] = {
+    BSPL_DESC_DICT("Keyboard", false,
+                   wlmim_t, keyboard_options, keyboard_options,
+                   wlmim_keyboard_options_desc),
     BSPL_DESC_DICT("Touchpad", false,
                    wlmim_t, pointer_options, pointer_options,
-                   wlmim_pointer_config_touchpad),
+                   wlmim_pointer_options_desc),
     BSPL_DESC_DICT("Cursor", false,
                    wlmim_t, cursor_options, cursor_options,
                    wlmim_cursor_options_desc),
@@ -169,12 +178,18 @@ wlmim_t *wlmim_input_manager_create(
     wlmim_t *input_manager_ptr = logged_calloc(1, sizeof(*input_manager_ptr));
     if (NULL == input_manager_ptr) return NULL;
     input_manager_ptr->wlr_seat_ptr = wlr_seat_ptr;
-    input_manager_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
-        bspl_dict_ref(config_dict_ptr));
     input_manager_ptr->root_ptr = root_ptr;
     wl_signal_init(&input_manager_ptr->events.cursor_position_updated);
     wl_signal_init(&input_manager_ptr->events.activity);
     wl_signal_init(&input_manager_ptr->events.deactivate_task_list);
+
+    // Retrieve configuration, if given.
+    input_manager_ptr->xkb_keymap_ptr = wlmim_keyboard_xkb_from_config(
+        config_dict_ptr);
+    if (NULL != config_dict_ptr && NULL == input_manager_ptr->xkb_keymap_ptr) {
+        wlmim_input_manager_destroy(input_manager_ptr);
+        return NULL;
+    }
 
     if (!bspl_decode_dict(
             config_dict_ptr,
@@ -227,7 +242,11 @@ void wlmim_input_manager_destroy(wlmim_t *input_manager_ptr)
         input_manager_ptr->cursor_ptr = NULL;
     }
 
-    bspl_dict_unref(input_manager_ptr->config_dict_ptr);
+    if (NULL != input_manager_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(input_manager_ptr->xkb_keymap_ptr);
+        input_manager_ptr->xkb_keymap_ptr = NULL;
+    }
+
     free(input_manager_ptr);
 }
 
@@ -275,6 +294,40 @@ uint32_t wlmim_get_keyboard_group_index(
     wlmim_t *input_manager_ptr)
 {
     return input_manager_ptr->last_keyboard_group_index;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmim_input_manager_set_keymap(
+    wlmim_t *input_manager_ptr,
+    struct xkb_keymap *xkb_keymap_ptr)
+{
+    if (input_manager_ptr->xkb_keymap_ptr == xkb_keymap_ptr ||
+        NULL == xkb_keymap_ptr) return;
+
+    if (NULL != input_manager_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(input_manager_ptr->xkb_keymap_ptr);
+    }
+    input_manager_ptr->xkb_keymap_ptr = xkb_keymap_ptr;
+    xkb_keymap_ref(input_manager_ptr->xkb_keymap_ptr);
+
+    bs_dllist_for_each(
+        &input_manager_ptr->devices,
+        _wlmim_device_configure_keyboard,
+        input_manager_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmim_input_manager_set_repeat_info(
+    wlmim_t *input_manager_ptr,
+    int32_t rate,
+    int32_t delay)
+{
+    input_manager_ptr->keyboard_options.repeat.rate = rate;
+    input_manager_ptr->keyboard_options.repeat.delay = delay;
+    bs_dllist_for_each(
+        &input_manager_ptr->devices,
+        _wlmim_device_configure_keyboard,
+        input_manager_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -351,7 +404,8 @@ void _wlmim_handle_new_input_device(
     case WLR_INPUT_DEVICE_KEYBOARD:
         handle_ptr = wlmim_keyboard_create(
             input_manager_ptr,
-            input_manager_ptr->config_dict_ptr,
+            input_manager_ptr->xkb_keymap_ptr,
+            &input_manager_ptr->keyboard_options,
             wlr_keyboard_from_input_device(wlr_input_device_ptr),
             input_manager_ptr->wlr_seat_ptr,
             wlmtk_root_element(input_manager_ptr->root_ptr));
@@ -529,6 +583,29 @@ void _wlmim_device_update_capabilities(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Configures devices of type keyboard. Iterator for `bs_dllist_for_each`.
+ *
+ * @param dlnode_ptr
+ * @param ud_ptr              Points to a @ref wlmim_t.
+ */
+void _wlmim_device_configure_keyboard(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr)
+{
+    struct wlmim_device *device_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, struct wlmim_device, dlnode);
+    wlmim_t *input_manager_ptr = ud_ptr;
+
+    if (device_ptr->wlr_input_device_ptr->type == WLR_INPUT_DEVICE_KEYBOARD) {
+        wlmim_keyboard_configure(
+            device_ptr->handle_ptr,
+            input_manager_ptr->xkb_keymap_ptr,
+            &input_manager_ptr->keyboard_options);
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Process one keybinding, as iterator to `bs_dllist_all`.
  *
  * @param dlnode_ptr
@@ -583,7 +660,7 @@ static const bs_test_case_t   _wlmim_test_cases[] = {
 };
 
 const bs_test_set_t wlmim_test_set = BS_TEST_SET(
-    true, "server", _wlmim_test_cases);
+    true, "manager", _wlmim_test_cases);
 
 /** Test helper: Callback for a keybinding. */
 bool _wlmim_test_binding_callback(

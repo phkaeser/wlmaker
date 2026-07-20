@@ -43,9 +43,6 @@
 
 /** Keyboard handle. */
 struct _wlmim_keyboard_t {
-    /** Configuration dictionnary, just the "Keyboard" section. */
-    bspl_dict_t             *config_dict_ptr;
-
     /** Listener for the `modifiers` signal of `wl_keyboard`. */
     struct wl_listener        modifiers_listener;
     /** Listener for the `key` signal of `wl_keyboard`. */
@@ -59,20 +56,20 @@ struct _wlmim_keyboard_t {
     struct wlr_seat           *wlr_seat_ptr;
     /** desktop element, for forwarding events. */
     wlmtk_element_t           *root_element_ptr;
+
+    /** Points to the keymap, or NULL if not configured. */
+    struct xkb_keymap         *xkb_keymap_ptr;
 };
 
 static bspl_dict_t *_wlmim_keyboard_populate_rules(
     bspl_dict_t *dict_ptr,
     struct xkb_rule_names *rules_ptr);
-static bool _wlmim_keyboard_populate_repeat(
-    bspl_dict_t *dict_ptr,
-    int32_t *rate_ptr,
-    int32_t *delay_ptr);
 static int _wlmim_keyboard_config_ini_handler(
     void *user_ptr,
     const char *section_ptr,
     const char *name_ptr,
     const char *value_ptr);
+
 
 static void handle_key(struct wl_listener *listener_ptr, void *data_ptr);
 static void handle_modifiers(struct wl_listener *listener_ptr,
@@ -92,12 +89,32 @@ const bspl_enum_desc_t wlmim_keyboard_modifiers[] = {
     BSPL_ENUM_SENTINEL(),
 };
 
+/** Plist descriptor for the "Repat" dict within the "Keyboard" dict. */
+static const bspl_desc_t _wlmim_keyboard_repeat_options_desc[] = {
+    BSPL_DESC_UINT64(
+        "Delay", true, struct wlmim_keyboard_options,
+        repeat.delay, repeat.delay, 300),
+    BSPL_DESC_UINT64(
+        "Rate", true, struct wlmim_keyboard_options,
+        repeat.rate, repeat.rate, 25),
+    BSPL_DESC_SENTINEL()
+};
+
+const bspl_desc_t wlmim_keyboard_options_desc[] = {
+    BSPL_DESC_DICT("Repeat", false,
+                   struct wlmim_keyboard_options, repeat, repeat,
+                   _wlmim_keyboard_repeat_options_desc),
+    BSPL_DESC_SENTINEL()
+ };
+
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
 wlmim_keyboard_t *wlmim_keyboard_create(
     wlmim_t *input_manager_ptr,
-    bspl_dict_t *wlmaker_config_dict_ptr,
+    struct xkb_keymap *xkb_keymap_ptr,
+    const struct wlmim_keyboard_options *options_ptr,
     struct wlr_keyboard *wlr_keyboard_ptr,
     struct wlr_seat *wlr_seat_ptr,
     wlmtk_element_t *root_element_ptr)
@@ -110,58 +127,7 @@ wlmim_keyboard_t *wlmim_keyboard_create(
     keyboard_ptr->wlr_seat_ptr = wlr_seat_ptr;
     keyboard_ptr->root_element_ptr = root_element_ptr;
 
-    // Retrieve configuration.
-    bspl_dict_t *config_dict_ptr = bspl_dict_get_dict(
-        wlmaker_config_dict_ptr, "Keyboard");
-    if (NULL == config_dict_ptr) {
-        bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
-        wlmim_keyboard_destroy(keyboard_ptr);
-        return NULL;
-    }
-    keyboard_ptr->config_dict_ptr = BS_ASSERT_NOTNULL(
-        bspl_dict_ref(config_dict_ptr));
-
-    struct xkb_rule_names xkb_rule;
-    bspl_dict_t *rmlvo_dict_ptr = _wlmim_keyboard_populate_rules(
-        keyboard_ptr->config_dict_ptr, &xkb_rule);
-    if (NULL == rmlvo_dict_ptr) {
-        bs_log(BS_ERROR, "No rule data found in 'Keyboard' dict.");
-        wlmim_keyboard_destroy(keyboard_ptr);
-        return NULL;
-    }
-
-    // Set keyboard layout.
-    struct xkb_context *xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-    struct xkb_keymap *xkb_keymap_ptr = xkb_keymap_new_from_names(
-        xkb_context_ptr, &xkb_rule, XKB_KEYMAP_COMPILE_NO_FLAGS);
-    if (NULL == xkb_keymap_ptr) {
-        bs_log(BS_ERROR, "Failed xkb_keymap_new_from_names(%p, { .rules = %s, "
-               ".model = %s, .layout = %s, variant = %s, .options = %s }, "
-               "XKB_KEYMAP_COMPILE_NO_NO_FLAGS)",
-               xkb_context_ptr,
-               xkb_rule.rules,
-               xkb_rule.model,
-               xkb_rule.layout,
-               xkb_rule.variant,
-               xkb_rule.options);
-        bspl_dict_unref(rmlvo_dict_ptr);
-        wlmim_keyboard_destroy(keyboard_ptr);
-        return NULL;
-    }
-    bspl_dict_unref(rmlvo_dict_ptr);
-    wlr_keyboard_set_keymap(keyboard_ptr->wlr_keyboard_ptr, xkb_keymap_ptr);
-    xkb_keymap_unref(xkb_keymap_ptr);
-    xkb_context_unref(xkb_context_ptr);
-
-    // Repeat rate and delay.
-    int32_t rate, delay;
-    if (!_wlmim_keyboard_populate_repeat(
-            keyboard_ptr->config_dict_ptr, &rate, &delay)) {
-        bs_log(BS_ERROR, "No repeat data found in 'Keyboard' dict.");
-        wlmim_keyboard_destroy(keyboard_ptr);
-        return NULL;
-    }
-    wlr_keyboard_set_repeat_info(keyboard_ptr->wlr_keyboard_ptr, rate, delay);
+    wlmim_keyboard_configure(keyboard_ptr, xkb_keymap_ptr, options_ptr);
 
     wlmtk_util_connect_listener_signal(
         &keyboard_ptr->wlr_keyboard_ptr->events.key,
@@ -199,114 +165,6 @@ wlmim_keyboard_t *wlmim_keyboard_create(
 
     wlr_seat_set_keyboard(wlr_seat_ptr, keyboard_ptr->wlr_keyboard_ptr);
     return keyboard_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmim_keyboard_destroy(wlmim_keyboard_t *keyboard_ptr)
-{
-    wlmtk_util_disconnect_listener(&keyboard_ptr->key_listener);
-    wlmtk_util_disconnect_listener(&keyboard_ptr->modifiers_listener);
-
-    if (NULL != keyboard_ptr->config_dict_ptr) {
-        bspl_dict_unref(keyboard_ptr->config_dict_ptr);
-        keyboard_ptr->config_dict_ptr = NULL;
-    }
-
-    free(keyboard_ptr);
-}
-
-/* == Local (static) methods =============================================== */
-
-/* ------------------------------------------------------------------------- */
-/**
- * Populates the XKB rules struct from the config dict.
- *
- * @param dict_ptr
- * @param rules_ptr
- *
- * @return A referenced bspl_dict_t holding rules details, or NULL on error.
- */
-bspl_dict_t *_wlmim_keyboard_populate_rules(
-    bspl_dict_t *dict_ptr,
-    struct xkb_rule_names *rules_ptr)
-{
-    bspl_dict_t *rmlvo = NULL;
-
-    const char *fname_ptr = bspl_dict_get_string_value(
-        dict_ptr, "XkbConfigurationFile");
-    if (NULL != fname_ptr) {
-        rmlvo = bspl_dict_create();
-        if (0 != ini_parse(
-                fname_ptr,
-                _wlmim_keyboard_config_ini_handler,
-                rmlvo)) {
-            bs_log(BS_WARNING, "Failed to parse \"XkbConfigurationFile\" at "
-                   "%s, falling back to \"XkbRMLVO\" section.", fname_ptr);
-            bspl_dict_unref(rmlvo);
-            rmlvo = NULL;
-        }
-    }
-    if (NULL == rmlvo) {
-        rmlvo = bspl_dict_ref(bspl_dict_get_dict(dict_ptr, "XkbRMLVO"));
-    }
-
-    if (NULL == rmlvo) {
-        bs_log(BS_ERROR, "No \"XkbConfigurationFile\" nor \"XkbRMLVO\" dict "
-               "found in \"Keyboard\" dict.");
-        return NULL;
-    }
-
-    rules_ptr->rules = bspl_dict_get_string_value(rmlvo, "Rules");
-    rules_ptr->model = bspl_dict_get_string_value(rmlvo, "Model");
-    rules_ptr->layout = bspl_dict_get_string_value(rmlvo, "Layout");
-    rules_ptr->variant = bspl_dict_get_string_value(rmlvo, "Variant");
-    rules_ptr->options = bspl_dict_get_string_value(rmlvo, "Options");
-    return rmlvo;
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Retrieves and converts the 'Repeat' parameters from the config dict.
- *
- * @param dict_ptr
- * @param rate_ptr
- * @param delay_ptr
- *
- * @return true on success.
- */
-bool _wlmim_keyboard_populate_repeat(
-    bspl_dict_t *dict_ptr,
-    int32_t *rate_ptr,
-    int32_t *delay_ptr)
-{
-    dict_ptr = bspl_dict_get_dict(dict_ptr, "Repeat");
-    if (NULL == dict_ptr) {
-        bs_log(BS_ERROR, "No 'Repeat' dict in 'Keyboard' dict.");
-        return false;
-    }
-
-    uint64_t value;
-    if (!bs_strconvert_uint64(
-            bspl_dict_get_string_value(dict_ptr, "Delay"),
-            &value, 10) ||
-        value > INT32_MAX) {
-        bs_log(BS_ERROR, "Invalid value for 'Delay': %s",
-               bspl_dict_get_string_value(dict_ptr, "Delay"));
-        return false;
-    }
-    *delay_ptr = value;
-
-    if (!bs_strconvert_uint64(
-            bspl_dict_get_string_value(dict_ptr, "Rate"),
-            &value, 10) ||
-        value > INT32_MAX) {
-        bs_log(BS_ERROR, "Invalid value for 'Rate': %s",
-               bspl_dict_get_string_value(dict_ptr, "Rate"));
-        return false;
-    }
-    *rate_ptr = value;
-
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -368,6 +226,135 @@ int _wlmim_keyboard_config_ini_handler(
 
     bs_log(BS_WARNING, "Unknown name: \"%s\"", name_ptr);
     return 1;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmim_keyboard_destroy(wlmim_keyboard_t *keyboard_ptr)
+{
+    wlmtk_util_disconnect_listener(&keyboard_ptr->key_listener);
+    wlmtk_util_disconnect_listener(&keyboard_ptr->modifiers_listener);
+
+    if (NULL != keyboard_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(keyboard_ptr->xkb_keymap_ptr);
+        keyboard_ptr->xkb_keymap_ptr = NULL;
+    }
+
+    free(keyboard_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmim_keyboard_configure(
+    wlmim_keyboard_t *keyboard_ptr,
+    struct xkb_keymap *xkb_keymap_ptr,
+    const struct wlmim_keyboard_options *options_ptr)
+{
+    if (keyboard_ptr->xkb_keymap_ptr != xkb_keymap_ptr) {
+        if (NULL != keyboard_ptr->xkb_keymap_ptr) {
+            xkb_keymap_unref(keyboard_ptr->xkb_keymap_ptr);
+        }
+        keyboard_ptr->xkb_keymap_ptr = xkb_keymap_ptr;
+        xkb_keymap_ref(keyboard_ptr->xkb_keymap_ptr);
+        wlr_keyboard_set_keymap(
+            keyboard_ptr->wlr_keyboard_ptr,
+            keyboard_ptr->xkb_keymap_ptr);
+    }
+
+    wlr_keyboard_set_repeat_info(
+        keyboard_ptr->wlr_keyboard_ptr,
+        options_ptr->repeat.rate,
+        options_ptr->repeat.delay);
+}
+
+/* ------------------------------------------------------------------------- */
+struct xkb_keymap *wlmim_keyboard_xkb_from_config(bspl_dict_t *dict_ptr)
+{
+    if (NULL == dict_ptr) return NULL;
+    bspl_dict_t *config_dict_ptr = bspl_dict_get_dict(dict_ptr, "Keyboard");
+    if (NULL == config_dict_ptr) {
+        bs_log(BS_ERROR, "Failed to retrieve \"Keyboard\" dict from config.");
+        return NULL;
+    }
+
+    struct xkb_rule_names xkb_rule;
+    bspl_dict_t *rmlvo_dict_ptr = _wlmim_keyboard_populate_rules(
+        config_dict_ptr, &xkb_rule);
+    if (NULL == rmlvo_dict_ptr) {
+        bs_log(BS_ERROR, "No rule data found in \"Keyboard\" dict.");
+        return NULL;
+    }
+
+    // Create keyboard layout.
+    struct xkb_keymap *xkb_keymap_ptr = NULL;
+    struct xkb_context *xkb_context_ptr = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (NULL == xkb_context_ptr) {
+        bs_log(BS_ERROR, "Failed xkb_context_new(XKB_CONTEXT_NO_FLAGS)");
+    } else {
+        xkb_keymap_ptr = xkb_keymap_new_from_names(
+            xkb_context_ptr, &xkb_rule, XKB_KEYMAP_COMPILE_NO_FLAGS);
+        if (NULL == xkb_keymap_ptr) {
+            bs_log(BS_ERROR, "Failed xkb_keymap_new_from_names(%p, { .rules = %s, "
+                   ".model = %s, .layout = %s, variant = %s, .options = %s }, "
+                   "XKB_KEYMAP_COMPILE_NO_NO_FLAGS)",
+                   xkb_context_ptr,
+                   xkb_rule.rules,
+                   xkb_rule.model,
+                   xkb_rule.layout,
+                   xkb_rule.variant,
+                   xkb_rule.options);
+        }
+        xkb_context_unref(xkb_context_ptr);
+    }
+    bspl_dict_unref(rmlvo_dict_ptr);
+    return xkb_keymap_ptr;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Populates the XKB rules struct from the config dict.
+ *
+ * @param dict_ptr
+ * @param rules_ptr
+ *
+ * @return A referenced bspl_dict_t holding rules details, or NULL on error.
+ */
+bspl_dict_t *_wlmim_keyboard_populate_rules(
+    bspl_dict_t *dict_ptr,
+    struct xkb_rule_names *rules_ptr)
+{
+    bspl_dict_t *rmlvo = NULL;
+
+    const char *fname_ptr = bspl_dict_get_string_value(
+        dict_ptr, "XkbConfigurationFile");
+    if (NULL != fname_ptr) {
+        rmlvo = bspl_dict_create();
+        if (0 != ini_parse(
+                fname_ptr,
+                _wlmim_keyboard_config_ini_handler,
+                rmlvo)) {
+            bs_log(BS_WARNING, "Failed to parse \"XkbConfigurationFile\" at "
+                   "%s, falling back to \"XkbRMLVO\" section.", fname_ptr);
+            bspl_dict_unref(rmlvo);
+            rmlvo = NULL;
+        }
+    }
+    if (NULL == rmlvo) {
+        rmlvo = bspl_dict_ref(bspl_dict_get_dict(dict_ptr, "XkbRMLVO"));
+    }
+
+    if (NULL == rmlvo) {
+        bs_log(BS_ERROR, "No \"XkbConfigurationFile\" nor \"XkbRMLVO\" dict "
+               "found in \"Keyboard\" dict.");
+        return NULL;
+    }
+
+    rules_ptr->rules = bspl_dict_get_string_value(rmlvo, "Rules");
+    rules_ptr->model = bspl_dict_get_string_value(rmlvo, "Model");
+    rules_ptr->layout = bspl_dict_get_string_value(rmlvo, "Layout");
+    rules_ptr->variant = bspl_dict_get_string_value(rmlvo, "Variant");
+    rules_ptr->options = bspl_dict_get_string_value(rmlvo, "Options");
+    return rmlvo;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -473,18 +460,39 @@ void handle_modifiers(struct wl_listener *listener_ptr,
 
 /* == Unit tests =========================================================== */
 
+static void _wlmim_keyboard_test_parse(bs_test_t *test_ptr);
 static void _wlmim_keyboard_test_rmlvo(bs_test_t *test_ptr);
-static void _wlmim_keyboard_test_keyboard_file(bs_test_t *test_ptr);
+static void _wlmim_keyboard_test_file(bs_test_t *test_ptr);
 
-/** Unit test cases. */
-static const bs_test_case_t wlmim_keyboard_test_cases[] = {
+/** Test cases for the keyboard. */
+static const bs_test_case_t   _wlmim_keyboard_test_cases[] = {
+    { true, "parse", _wlmim_keyboard_test_parse },
     { true, "rmlvo", _wlmim_keyboard_test_rmlvo },
-    { true, "keyboard_file", _wlmim_keyboard_test_keyboard_file },
+    { true, "file", _wlmim_keyboard_test_file },
     BS_TEST_CASE_SENTINEL()
 };
 
 const bs_test_set_t wlmim_keyboard_test_set = BS_TEST_SET(
-    true, "keyboard", wlmim_keyboard_test_cases);
+    true, "keyboard", _wlmim_keyboard_test_cases);
+
+/* ------------------------------------------------------------------------- */
+/** Tests parsing the dict. */
+void _wlmim_keyboard_test_parse(bs_test_t *test_ptr)
+{
+    bspl_dict_t *d = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{Repeat={Delay=123;Rate=45;};}"));
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    struct wlmim_keyboard_options o = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        bspl_decode_dict(d, wlmim_keyboard_options_desc, &o));
+
+    BS_TEST_VERIFY_EQ(test_ptr, 123, o.repeat.delay);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, o.repeat.rate);
+    bspl_dict_unref(d);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Tests keyboard rules are loaded from a given RMLVO dict. */
@@ -509,7 +517,7 @@ void _wlmim_keyboard_test_rmlvo(bs_test_t *test_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Tests keyboard rules are loaded from XKB configuration file. */
-void _wlmim_keyboard_test_keyboard_file(bs_test_t *test_ptr)
+void _wlmim_keyboard_test_file(bs_test_t *test_ptr)
 {
     struct xkb_rule_names r = {};
     bspl_dict_t *d = bspl_dict_create();
