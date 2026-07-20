@@ -46,6 +46,7 @@
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "cursor-shape-v1-client-protocol.h"
 
 struct wl_keyboard;
 struct wl_pointer;
@@ -58,10 +59,10 @@ struct wl_surface;
 /** State of the wayland client. */
 struct _wlmcl_client_t {
     /** Shareable attributes. */
-    struct wlmcl_client_attributes     attributes;
+    struct wlmcl_client_attributes attributes;
 
     /** Events. */
-    struct wlmcl_client_events         events;
+    struct wlmcl_client_events events;
 
     /** XKB context. */
     struct xkb_context        *xkb_context_ptr;
@@ -145,7 +146,7 @@ static void wlmcl_client_seat_handle_name(
     const char *name_ptr);
 
 static void wlmcl_client_pointer_handle_enter(
-    void *data,
+    void *data_ptr,
     struct wl_pointer *wl_pointer,
     uint32_t serial,
     struct wl_surface *surface,
@@ -270,24 +271,25 @@ static const struct wl_keyboard_listener wlmcl_client_keyboard_listener = {
 
 /** List of wayland objects we want to bind to. */
 static const object_t objects[] = {
-    { &wl_compositor_interface, 4,
-      offsetof(struct wlmcl_client_attributes, wl_compositor_ptr), NULL },
-    { &wl_shm_interface, 1,
-      offsetof(struct wlmcl_client_attributes, wl_shm_ptr), NULL },
-    { &xdg_wm_base_interface, 1,
-      offsetof(struct wlmcl_client_attributes, xdg_wm_base_ptr), NULL },
-    { &wl_seat_interface, 5,
-      offsetof(struct wlmcl_client_attributes, wl_seat_ptr), wlmcl_client_seat_setup },
+    { &wp_cursor_shape_manager_v1_interface, 1,
+      offsetof(struct wlmcl_client_attributes, cursor_shape_manager_ptr), NULL },
     { &zwlmaker_icon_manager_v1_interface, 1,
       offsetof(struct wlmcl_client_attributes, icon_manager_ptr), NULL },
-    { &zxdg_decoration_manager_v1_interface, 1,
-      offsetof(struct wlmcl_client_attributes, xdg_decoration_manager_ptr), NULL },
     { &ext_input_observation_manager_v1_interface, 1,
       offsetof(struct wlmcl_client_attributes, input_observation_manager_ptr), NULL },
     { &zwlr_layer_shell_v1_interface, 4,
       offsetof(struct wlmcl_client_attributes, layer_shell_ptr), NULL },
+    { &wl_compositor_interface, 4,
+      offsetof(struct wlmcl_client_attributes, wl_compositor_ptr), NULL },
+    { &wl_seat_interface, 5,
+      offsetof(struct wlmcl_client_attributes, wl_seat_ptr), wlmcl_client_seat_setup },
+    { &wl_shm_interface, 1,
+      offsetof(struct wlmcl_client_attributes, wl_shm_ptr), NULL },
+    { &zxdg_decoration_manager_v1_interface, 1,
+      offsetof(struct wlmcl_client_attributes, xdg_decoration_manager_ptr), NULL },
+    { &xdg_wm_base_interface, 1,
+      offsetof(struct wlmcl_client_attributes, xdg_wm_base_ptr), NULL },
     { NULL, 0, 0, NULL }  // sentinel.
-
 };
 
 /* == Exported methods ===================================================== */
@@ -784,14 +786,27 @@ void wlmcl_client_seat_handle_name(
 /* ------------------------------------------------------------------------- */
 /** Called when the client obtains pointer focus. */
 void wlmcl_client_pointer_handle_enter(
-    __UNUSED__ void *data,
-    __UNUSED__ struct wl_pointer *wl_pointer,
-    __UNUSED__ uint32_t serial,
+    void *data_ptr,
+    struct wl_pointer *wl_pointer,
+    uint32_t serial,
     __UNUSED__ struct wl_surface *surface,
     __UNUSED__ wl_fixed_t surface_x,
     __UNUSED__ wl_fixed_t surface_y)
 {
-    /* Currently nothing done. */
+    wlmcl_client_t *client_ptr = data_ptr;
+    if (NULL == client_ptr->attributes.cursor_shape_manager_ptr) return;
+
+    struct wp_cursor_shape_device_v1 *shape_device_ptr =
+        wp_cursor_shape_manager_v1_get_pointer(
+            client_ptr->attributes.cursor_shape_manager_ptr,
+            wl_pointer);
+    if (NULL != shape_device_ptr) {
+        wp_cursor_shape_device_v1_set_shape(
+            shape_device_ptr,
+            serial,
+            WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+        wp_cursor_shape_device_v1_destroy(shape_device_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

@@ -37,13 +37,44 @@ set_target_properties(
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}")
 
-set(sources
-  wlclient.c
+target_sources(
+  libwlclient PRIVATE
   dblbuf.c
   icon.c
   layer_surface.c
+  wlclient.c
   xdg_toplevel.c
 )
+
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME cursor-shape-v1
+  PROTOCOL_FILE "${wayland_protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
+  SIDE client)
+
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME ext-input-observation-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
+  SIDE client)
+
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME tablet-v2
+  PROTOCOL_FILE "${wayland_protocol_dir}/stable/tablet/tablet-v2.xml"
+  SIDE client)
+
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME wlmaker-icon-unstable-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
+  SIDE client)
+
+waylandprotocol_add(
+  libwlclient
+  BASE_NAME wlr-layer-shell-unstable-v1
+  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/third_party/protocols/wlr-layer-shell-unstable-v1.xml"
+  SIDE client)
 
 waylandprotocol_add(
   libwlclient
@@ -56,26 +87,6 @@ waylandprotocol_add(
   BASE_NAME xdg-shell
   PROTOCOL_FILE "${wayland_protocol_dir}/stable/xdg-shell/xdg-shell.xml"
   SIDE client)
-
-waylandprotocol_add(
-  libwlclient
-  BASE_NAME wlmaker-icon-unstable-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  libwlclient
-  BASE_NAME ext-input-observation-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  libwlclient
-  BASE_NAME wlr-layer-shell-unstable-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/third_party/protocols/wlr-layer-shell-unstable-v1.xml"
-  SIDE client)
-
-target_sources(libwlclient PRIVATE "${sources}")
 
 target_include_directories(
   libwlclient
