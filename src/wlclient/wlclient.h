@@ -76,6 +76,10 @@ struct wlmcl_client_attributes {
 struct wlmcl_client_events {
     /** A key was pressed. */
     struct wl_signal          key;
+    /** Keymap was updated. Provides struct xkb_keymap*. */
+    struct wl_signal          keymap;
+    /** Keyboard repeat information was updated. No argument. */
+    struct wl_signal          keyboard_repeat_info;
 };
 
 /** Key event. */
@@ -102,6 +106,29 @@ wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr);
  * @param wlmcl_client_ptr
  */
 void wlmcl_client_destroy(wlmcl_client_t *wlmcl_client_ptr);
+
+/**
+ * Gets the active keymap of the client.
+ *
+ * @param wlmcl_client_ptr
+ *
+ * @return Pointer to struct xkb_keymap or NULL if not set.
+ */
+struct xkb_keymap *wlmcl_client_get_keymap(wlmcl_client_t *wlmcl_client_ptr);
+
+/**
+ * Gets keyboard repeat information.
+ *
+ * @param wlmcl_client_ptr
+ * @param rate_ptr
+ * @param delay_ptr
+ *
+ * @return false, if repat_info has not been set by the compositor yet.
+ */
+bool wlmcl_client_get_repeat_info(
+    wlmcl_client_t *wlmcl_client_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr);
 
 /**
  * Gets the client attributes.

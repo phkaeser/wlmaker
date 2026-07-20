@@ -71,6 +71,13 @@ struct _wlmcl_client_t {
     /** XKB state. */
     struct xkb_state          *xkb_state_ptr;
 
+    /** Repeat rate, if given. */
+    int32_t                   keyboard_repeat_rate;
+    /** Repeat delay, if given. */
+    int32_t                   keyboard_repeat_delay;
+    /** Whether repeat info was set by the compositor. */
+    bool                      keyboard_repeat_set;
+
     /** Registry singleton for the above connection. */
     struct wl_registry        *wl_registry_ptr;
     /** Pointer state, if & when the seat has the capability. */
@@ -297,11 +304,13 @@ static const object_t objects[] = {
 /* ------------------------------------------------------------------------- */
 wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr)
 {
-    wlmcl_client_t *wlclient_ptr = logged_calloc(1, sizeof(wlmcl_client_t));
+    wlmcl_client_t *wlclient_ptr = logged_calloc(1, sizeof(*wlclient_ptr));
     if (NULL == wlclient_ptr) return NULL;
     wl_log_set_handler_client(wl_to_bs_log);
 
     wl_signal_init(&wlclient_ptr->events.key);
+    wl_signal_init(&wlclient_ptr->events.keymap);
+    wl_signal_init(&wlclient_ptr->events.keyboard_repeat_info);
 
     if (NULL != app_id_ptr) {
         wlclient_ptr->attributes.app_id_ptr = logged_strdup(app_id_ptr);
@@ -441,6 +450,23 @@ void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
     }
 
     free(wlclient_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+struct xkb_keymap *wlmcl_client_get_keymap(wlmcl_client_t *wlmcl_client_ptr)
+{
+    return wlmcl_client_ptr->xkb_keymap_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmcl_client_get_repeat_info(
+    wlmcl_client_t *client_ptr,
+    int32_t *rate_ptr,
+    int32_t *delay_ptr)
+{
+    if (NULL != rate_ptr) *rate_ptr = client_ptr->keyboard_repeat_rate;
+    if (NULL != delay_ptr) *delay_ptr = client_ptr->keyboard_repeat_delay;
+    return client_ptr->keyboard_repeat_set;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -907,14 +933,13 @@ void _wlmcl_client_keyboard_handle_keymap(
     int32_t fd,
     uint32_t size)
 {
-    // Guard clause. So far, we only understand xkb maps.
+    // Guard clause: We only understand XKB V1 maps.
     if (WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1 != format) {
-        bs_log(BS_FATAL, "Unsupported keymap: %"PRIu32, format);
+        bs_log(BS_ERROR, "Unsupported keymap: %"PRIu32". Ignoring.", format);
         return;
     }
 
     wlmcl_client_t *client_ptr = BS_ASSERT_NOTNULL(data_ptr);
-
     void *desc_ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (MAP_FAILED == desc_ptr) {
         bs_log(BS_ERROR | BS_ERRNO,
@@ -924,33 +949,40 @@ void _wlmcl_client_keyboard_handle_keymap(
         return;
     }
 
-    if (NULL != client_ptr->xkb_keymap_ptr) {
-        xkb_keymap_unref(client_ptr->xkb_keymap_ptr);
-    }
-    client_ptr->xkb_keymap_ptr = xkb_keymap_new_from_string(
+    struct xkb_keymap *new_xkb_keymap_ptr = xkb_keymap_new_from_string(
         client_ptr->xkb_context_ptr,
         desc_ptr,
         XKB_KEYMAP_FORMAT_TEXT_V1,
         XKB_KEYMAP_COMPILE_NO_FLAGS);
     munmap(desc_ptr, size);
     close(fd);
-    if (NULL == client_ptr->xkb_keymap_ptr) {
-        bs_log(BS_FATAL, "Failed xkb_keymap_new_from_string()");
+    if (NULL == new_xkb_keymap_ptr) {
+        bs_log(BS_ERROR, "Failed xkb_keymap_new_from_string(%p, %p, "
+               "XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS)",
+               client_ptr->xkb_context_ptr, desc_ptr);
         return;
     }
+
+    if (NULL != client_ptr->xkb_keymap_ptr) {
+        xkb_keymap_unref(client_ptr->xkb_keymap_ptr);
+    }
+    client_ptr->xkb_keymap_ptr = new_xkb_keymap_ptr;
 
     if (NULL != client_ptr->xkb_state_ptr) {
         xkb_state_unref(client_ptr->xkb_state_ptr);
     }
     client_ptr->xkb_state_ptr = xkb_state_new(client_ptr->xkb_keymap_ptr);
     if (NULL == client_ptr->xkb_state_ptr) {
-        bs_log(BS_FATAL, "Failed xkb_state_new()");
+        bs_log(BS_ERROR, "Failed xkb_state_new(%p)",
+               client_ptr->xkb_keymap_ptr);
         return;
     }
 
     bs_log(BS_DEBUG, "Keyboard %p with keymap \"%s\"",
            wl_keyboard_ptr,
            xkb_keymap_layout_get_name(client_ptr->xkb_keymap_ptr, 0));
+
+    wl_signal_emit(&client_ptr->events.keymap, client_ptr->xkb_keymap_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1030,14 +1062,19 @@ void _wlmcl_client_keyboard_handle_modifiers(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Called to configure repeat and delay settings. */
+/** Called to configure repeat and delay settings. Raises signal. */
 void _wlmcl_client_keyboard_handle_repeat_info(
-    __UNUSED__ void *data_ptr,
+    void *data_ptr,
     __UNUSED__ struct wl_keyboard *wl_keyboard_ptr,
-    __UNUSED__ int32_t rate,
-    __UNUSED__ int32_t delay)
+    int32_t rate,
+    int32_t delay)
 {
-    // Currently unused.
+    wlmcl_client_t *client_ptr = BS_ASSERT_NOTNULL(data_ptr);
+
+    client_ptr->keyboard_repeat_rate = rate;
+    client_ptr->keyboard_repeat_delay = delay;
+    client_ptr->keyboard_repeat_set = true;
+    wl_signal_emit(&client_ptr->events.keyboard_repeat_info, NULL);
 }
 
 /* == End of wlclient.c ==================================================== */
