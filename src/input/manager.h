@@ -39,6 +39,7 @@ struct wl_display;
 struct wlr_backend;
 struct wlr_output_layout;
 struct wlr_seat;
+struct xkb_keymap;
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,7 +115,7 @@ typedef bool (*wlmim_keybinding_callback_t)(
  * @param wlr_backend_ptr
  * @param wlr_output_layout_ptr
  * @param wlr_seat_ptr
- * @param config_dict_ptr
+ * @param config_dict_ptr     May be NULL, would indicate an empty dict.
  * @param cursor_style_ptr
  * @param root_ptr
  *
@@ -168,6 +169,28 @@ void wlmim_set_keyboard_group_index(
 /** @return @ref wlmim_t::last_keyboard_group_index. */
 uint32_t wlmim_get_keyboard_group_index(
     wlmim_t *input_manager_ptr);
+
+/**
+ * Sets the active xkb_keymap and applies it to all keyboards.
+ *
+ * @param input_manager_ptr
+ * @param xkb_keymap_ptr      Takes a reference to `xkb_keymap_ptr`.
+ */
+void wlmim_input_manager_set_keymap(
+    wlmim_t *input_manager_ptr,
+    struct xkb_keymap *xkb_keymap_ptr);
+
+/**
+ * Sets repeat information for all keyboards of the input manager.
+ *
+ * @param input_manager_ptr
+ * @param rate
+ * @param delay
+ */
+void wlmim_input_manager_set_repeat_info(
+    wlmim_t *input_manager_ptr,
+    int32_t rate,
+    int32_t delay);
 
 /**
  * Binds a particular key combination to a callback.

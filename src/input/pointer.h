@@ -77,7 +77,7 @@ void wlmim_pointer_destroy(wlmim_pointer_t *pointer_ptr);
 bool wlmim_pointer_enabled(wlmim_pointer_t *pointer_ptr);
 
 /** Plist descriptor for the "Touchpad" section. */
-extern const bspl_desc_t wlmim_pointer_config_touchpad[];
+extern const bspl_desc_t wlmim_pointer_options_desc[];
 
 /** Unit test set for pointers. */
 extern const bs_test_set_t wlmim_pointer_test_set;

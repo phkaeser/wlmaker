@@ -61,7 +61,7 @@ static const bspl_enum_desc_t _wlmim_pointer_scroll_methods[] = {
     BSPL_ENUM_SENTINEL()
 };
 
-const bspl_desc_t wlmim_pointer_config_touchpad[] = {
+const bspl_desc_t wlmim_pointer_options_desc[] = {
     BSPL_DESC_BOOL(
         "Enabled",
         false,
@@ -293,7 +293,7 @@ void _wlmim_pointer_test_parse(bs_test_t *test_ptr)
     struct wlmim_pointer_options o = {};
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        bspl_decode_dict(d, wlmim_pointer_config_touchpad, &o));
+        bspl_decode_dict(d, wlmim_pointer_options_desc, &o));
     BS_TEST_VERIFY_TRUE(test_ptr, o.touchpad.enabled);
     BS_TEST_VERIFY_FALSE(test_ptr, o.touchpad.disable_while_typing);
     BS_TEST_VERIFY_EQ(

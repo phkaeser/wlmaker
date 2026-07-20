@@ -760,11 +760,11 @@ void test_keybindings_parse(bs_test_t *test_ptr)
 /** Tests the default configuration's 'KeyBindings' section. */
 void test_default_keybindings(bs_test_t *test_ptr)
 {
-    bspl_dict_t *d = bspl_dict_create();
     wlmaker_server_t server = {
         .input_manager_ptr = wlmim_input_manager_create(
-            NULL, NULL, NULL, NULL, d, NULL, NULL)
+            NULL, NULL, NULL, NULL, NULL, NULL, NULL)
     };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.input_manager_ptr);
     bspl_object_t *obj_ptr = bspl_create_object_from_plist_data(
         embedded_binary_default_configuration_data,
         embedded_binary_default_configuration_size);
@@ -780,7 +780,6 @@ void test_default_keybindings(bs_test_t *test_ptr)
     bspl_object_unref(obj_ptr);
     wlmaker_action_unbind_keys(handle_ptr);
 
-    bspl_dict_unref(d);
     wlmim_input_manager_destroy(server.input_manager_ptr);
 }
 
@@ -788,11 +787,11 @@ void test_default_keybindings(bs_test_t *test_ptr)
 /** Tests string and array format keybindings. */
 void test_keybindings_formats(bs_test_t *test_ptr)
 {
-    bspl_dict_t *d = bspl_dict_create();
     wlmaker_server_t server = {
         .input_manager_ptr = wlmim_input_manager_create(
-            NULL, NULL, NULL, NULL, d, NULL, NULL)
+            NULL, NULL, NULL, NULL, NULL, NULL, NULL)
     };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.input_manager_ptr);
     bspl_object_t *obj_ptr;
     bspl_dict_t *dict_ptr;
     wlmaker_action_handle_t *handle_ptr;
@@ -870,7 +869,6 @@ void test_keybindings_formats(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, NULL, handle_ptr);
     bspl_object_unref(obj_ptr);
 
-    bspl_dict_unref(d);
     wlmim_input_manager_destroy(server.input_manager_ptr);
 }
 
