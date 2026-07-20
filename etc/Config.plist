@@ -6,7 +6,7 @@
     Keyboard = {
         // Use system-wide configuration. See keyboard(5). Takes precedence
         // over `XkbRMLVO`.
-        XkbConfigurationFile = "/etc/default/keyboardFIXME";
+        XkbConfigurationFile = "/etc/default/keyboard";
 
         // Alternatively: Specify the keyboard properties directly.
         XkbRMLVO = {
