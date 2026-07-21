@@ -1,4 +1,4 @@
-name: Build for Free BSD 14.2
+name: Build for Free BSD 15.1
 
 on:
   push:
@@ -16,10 +16,10 @@ jobs:
         submodules: true
 
     - name: Configure, build and test wlmaker through CMake.
-      uses: cross-platform-actions/action@v0.26.0
+      uses: cross-platform-actions/action@v1.3.0
       with:
         operating_system: freebsd
-        version: '14.2'
+        version: '15.1'
         run: |
           sudo sed -i '' 's/quarterly/latest/' /etc/pkg/FreeBSD.conf
           sudo pkg install -y \
