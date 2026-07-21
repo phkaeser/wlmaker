@@ -138,29 +138,32 @@ wlmim_keyboard_t *wlmim_keyboard_create(
         &keyboard_ptr->modifiers_listener,
         handle_modifiers);
 
-    // Set (or restore) keyboard layout group in XKB state, and update modifiers.
-    xkb_state_update_mask(
-        keyboard_ptr->wlr_keyboard_ptr->xkb_state,
-        0,  // depressed_mods
-        0,  // latched_mods
-        0,  // locked_mods
-        0,  // depressed_layout
-        0,  // latched_layout
-        // locked_layout
-        wlmim_get_keyboard_group_index(keyboard_ptr->input_manager_ptr));
-    wlr_keyboard_ptr->modifiers.group = wlmim_get_keyboard_group_index(
-        keyboard_ptr->input_manager_ptr);
-    wlr_seat_keyboard_notify_modifiers(
-        wlr_seat_ptr,
-        &wlr_keyboard_ptr->modifiers);
-    // Also, re-trigger client's XKB state machine by an explicit "Enter".
-    if (NULL != wlr_seat_ptr->keyboard_state.focused_surface) {
-        wlr_seat_keyboard_enter(
+    if (NULL != keyboard_ptr->xkb_keymap_ptr) {
+        // Set (or restore) keyboard layout group in XKB state and update
+        // modifiers. This won't work if no keymap is given.
+        xkb_state_update_mask(
+            keyboard_ptr->wlr_keyboard_ptr->xkb_state,
+            0,  // depressed_mods
+            0,  // latched_mods
+            0,  // locked_mods
+            0,  // depressed_layout
+            0,  // latched_layout
+            // locked_layout
+            wlmim_get_keyboard_group_index(keyboard_ptr->input_manager_ptr));
+        wlr_keyboard_ptr->modifiers.group = wlmim_get_keyboard_group_index(
+            keyboard_ptr->input_manager_ptr);
+        wlr_seat_keyboard_notify_modifiers(
             wlr_seat_ptr,
-            wlr_seat_ptr->keyboard_state.focused_surface,
-            wlr_keyboard_ptr->keycodes,
-            wlr_keyboard_ptr->num_keycodes,
             &wlr_keyboard_ptr->modifiers);
+        // Also, re-trigger client's XKB state machine by an explicit "Enter".
+        if (NULL != wlr_seat_ptr->keyboard_state.focused_surface) {
+            wlr_seat_keyboard_enter(
+                wlr_seat_ptr,
+                wlr_seat_ptr->keyboard_state.focused_surface,
+                wlr_keyboard_ptr->keycodes,
+                wlr_keyboard_ptr->num_keycodes,
+                &wlr_keyboard_ptr->modifiers);
+        }
     }
 
     wlr_seat_set_keyboard(wlr_seat_ptr, keyboard_ptr->wlr_keyboard_ptr);
