@@ -443,6 +443,37 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
+    // 6. Create input seat and input manager before starting the backend
+    // and before creating the output, so we don't miss the new_input events.
+    struct wlr_seat *wlr_seat_ptr = wlr_seat_create(
+        dock_ptr->local_display_ptr, "default");
+    if (NULL == wlr_seat_ptr) {
+        bs_log(BS_ERROR, "Failed to create wlr_seat.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
+    // FIXME -- eliminate.
+    struct wlmim_cursor_style cursor_style = {
+        .override_system_configuration = false,
+        .name_ptr = "default",
+        .size = 24
+    };
+
+    dock_ptr->input_manager_ptr = wlmim_input_manager_create(
+        dock_ptr->local_display_ptr,
+        dock_ptr->wlr_backend_ptr,
+        dock_ptr->wlr_output_layout_ptr,
+        wlr_seat_ptr,
+        NULL,
+        &cursor_style,
+        dock_ptr->root_ptr);
+    if (NULL == dock_ptr->input_manager_ptr) {
+        bs_log(BS_ERROR, "Failed to initialize input manager.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
     dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(dock_ptr->wlr_backend_ptr);
     if (NULL == dock_ptr->wlr_renderer_ptr) {
         bs_log(BS_ERROR, "Failed to create renderer.");
@@ -493,35 +524,6 @@ wlmdock_t *_wlmdock_create(
         wlr_scene_attach_output_layout(dock_ptr->wlr_scene_ptr, dock_ptr->wlr_output_layout_ptr);
     if (NULL == wlr_scene_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed to attach output layout to scene.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    // 7. Create input seat and input manager.
-    struct wlr_seat *wlr_seat_ptr = wlr_seat_create(
-        dock_ptr->local_display_ptr, "default");
-    if (NULL == wlr_seat_ptr) {
-        bs_log(BS_ERROR, "Failed to create wlr_seat.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    struct wlmim_cursor_style cursor_style = {
-        .override_system_configuration = false,
-        .name_ptr = "default",
-        .size = 24
-    };
-
-    dock_ptr->input_manager_ptr = wlmim_input_manager_create(
-        dock_ptr->local_display_ptr,
-        dock_ptr->wlr_backend_ptr,
-        dock_ptr->wlr_output_layout_ptr,
-        wlr_seat_ptr,
-        NULL,
-        &cursor_style,
-        dock_ptr->root_ptr);
-    if (NULL == dock_ptr->input_manager_ptr) {
-        bs_log(BS_ERROR, "Failed to initialize input manager.");
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
