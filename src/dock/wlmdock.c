@@ -453,20 +453,15 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    // FIXME -- eliminate.
-    struct wlmim_cursor_style cursor_style = {
-        .override_system_configuration = false,
-        .name_ptr = "default",
-        .size = 24
-    };
-
     dock_ptr->input_manager_ptr = wlmim_input_manager_create(
         dock_ptr->local_display_ptr,
         dock_ptr->wlr_backend_ptr,
         dock_ptr->wlr_output_layout_ptr,
         wlr_seat_ptr,
         NULL,
-        &cursor_style,
+        // TODO(kaeser@gubbe.ch): Find a way to not provide a cursor style,
+        // when using the cursor shape extension.
+        &style_ptr->cursor,
         dock_ptr->root_ptr);
     if (NULL == dock_ptr->input_manager_ptr) {
         bs_log(BS_ERROR, "Failed to initialize input manager.");
