@@ -21,6 +21,7 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,6 +44,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/box.h>
+#include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
@@ -167,6 +169,62 @@ static const bs_arg_t wlmdock_args[] = {
     BS_ARG_SENTINEL()
 };
 
+/** Compiled regular expression for extracting file & line no. from wlr_log. */
+static regex_t                wlmdock_wlr_log_regex;
+/** Regular expression string for extracting file & line no. from wlr_log. */
+static const char             *wlmdock_wlr_log_regex_string =
+    "^\\[([^\\:]+)\\:([0-9]+)\\]\\ ";
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Wraps the wlr_log calls on bs_log.
+ *
+ * @param importance
+ * @param fmt
+ * @param args
+ */
+static void wlr_to_bs_log(
+    enum wlr_log_importance importance,
+    const char *fmt,
+    va_list args)
+{
+    bs_log_severity_t severity = BS_DEBUG;
+
+    switch (importance) {
+    case WLR_SILENT:  // Fall-through to DEBUG severity.
+    case WLR_DEBUG: severity = BS_DEBUG; break;
+    case WLR_INFO: severity = BS_INFO; break;
+    case WLR_ERROR: severity = BS_ERROR; break;
+    default: severity = BS_INFO; break;
+    }
+
+    if (!bs_will_log(severity)) return;
+
+    // Log to buffer. Ignores overflows.
+    char buf[BS_LOG_MAX_BUF_SIZE];
+    vsnprintf(buf, sizeof(buf), fmt, args);
+
+    regmatch_t matches[4];
+    if (0 != regexec(&wlmdock_wlr_log_regex, buf, 4, &matches[0], 0) ||
+        matches[0].rm_so != 0 ||
+        !(matches[0].rm_eo >= 6) ||  // Minimum "[x:1] ".
+        matches[1].rm_so != 1 ||
+        !(matches[2].rm_so > 2) ||
+        matches[3].rm_so != -1) {
+        bs_log(severity, "%s (wlr_log unexpected format!)", buf);
+        return;
+    }
+
+    buf[matches[1].rm_eo] = '\0';
+    buf[matches[2].rm_eo] = '\0';
+    uint64_t line_no = 0;
+    bs_strconvert_uint64(&buf[matches[2].rm_so], &line_no, 10);
+    line_no = BS_MIN((uint64_t)INT_MAX, line_no);
+
+    bs_log_write(severity, &buf[matches[1].rm_so], (int)line_no, "%s",
+        &buf[matches[0].rm_eo]);
+}
+
 /* == Main program ========================================================= */
 /** The dock's main program. */
 int main(int argc, const char **argv)
@@ -186,6 +244,18 @@ int main(int argc, const char **argv)
             return EXIT_FAILURE;
         }
     }
+
+    int rv = regcomp(
+        &wlmdock_wlr_log_regex,
+        wlmdock_wlr_log_regex_string,
+        REG_EXTENDED);
+    if (0 != rv) {
+        char err_buf[512];
+        regerror(rv, &wlmdock_wlr_log_regex, err_buf, sizeof(err_buf));
+        bs_log(BS_ERROR, "Failed compiling regular expression: %s", err_buf);
+        return EXIT_FAILURE;
+    }
+    wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
 
     bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
     if (!bs_arg_parse(wlmdock_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
