@@ -22,9 +22,13 @@
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <limits.h>
+#include <regex.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/signalfd.h>
 #include <sys/types.h>
 #include <time.h>
@@ -97,6 +101,11 @@ typedef struct {
     /** Local input manager. */
     wlmim_t                   *input_manager_ptr;
 
+    /** Listener for @ref wlmcl_client_events::keymap. */
+    struct wl_listener        wlclient_keymap_listener;
+    /** Listener for @ref wlmcl_client_events::keyboard_repeat_info. */
+    struct wl_listener        wlclient_keyboard_repeat_info_listener;
+
     /** Listener for output frame callback. */
     struct wl_listener         frame_listener;
     /** Listener for output destruction. */
@@ -106,8 +115,20 @@ typedef struct {
     struct wl_event_source    *client_signal_event_source_ptr;
 } wlmdock_t;
 
-static void handle_frame(struct wl_listener *listener_ptr, void *data_ptr);
-static void handle_output_destroy(struct wl_listener *listener_ptr, void *data_ptr);
+static void _wlmdock_handle_wlclient_keymap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmdock_handle_wlclient_keyboard_repeat_info(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
+static void handle_frame(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void handle_output_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+
 static void handle_configure(void *ud_ptr, uint32_t width, uint32_t height);
 static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
 static wlmdock_t *_wlmdock_create(
@@ -287,7 +308,9 @@ int main(int argc, const char **argv)
             config_dict_ptr, "ThemeFile");
     }
     wlmaker_config_style_t style = {};
-    if (!wlmaker_theme_load(files_ptr, theme_file_ptr, &style)) {
+    bool theme_loaded = wlmaker_theme_load(files_ptr, theme_file_ptr, &style);
+    bspl_dict_unref(config_dict_ptr);
+    if (!theme_loaded) {
         fprintf(stderr, "Failed to load & initialize theme.\n");
         return EXIT_FAILURE;
     }
@@ -334,6 +357,14 @@ wlmdock_t *_wlmdock_create(
     const struct wlmcl_client_attributes *attrs =
         wlmcl_client_attributes(dock_ptr->client_ptr);
     dock_ptr->remote_display_ptr = attrs->wl_display_ptr;
+    wlmtk_util_connect_listener_signal(
+        &wlmcl_client_events(dock_ptr->client_ptr)->keymap,
+        &dock_ptr->wlclient_keymap_listener,
+        _wlmdock_handle_wlclient_keymap);
+    wlmtk_util_connect_listener_signal(
+        &wlmcl_client_events(dock_ptr->client_ptr)->keyboard_repeat_info,
+        &dock_ptr->wlclient_keyboard_repeat_info_listener,
+        _wlmdock_handle_wlclient_keyboard_repeat_info);
 
     // 2. Create the client-side layer shell surface.
     dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
@@ -393,7 +424,7 @@ wlmdock_t *_wlmdock_create(
     }
 
     static const char *plist_ptr =
-        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
+        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
     bspl_dict_t *dict_ptr = bspl_dict_from_object(
         bspl_create_object_from_plist_string(plist_ptr));
     wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
@@ -402,41 +433,12 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->tilebox_ptr,
         wlmdock_launcher_tile(launcher_ptr));
 
-    // 4. Set up helper config dict for input keyboard creation.
-    bspl_dict_t *config_dict_ptr = bspl_dict_create();
-    bspl_dict_t *kbd_dict_ptr = bspl_dict_create();
-    bspl_dict_t *rmlvo_dict_ptr = bspl_dict_create();
-    bspl_dict_add(rmlvo_dict_ptr, "Rules",
-                  bspl_object_from_string(bspl_string_create("evdev")));
-    bspl_dict_add(rmlvo_dict_ptr, "Model",
-                  bspl_object_from_string(bspl_string_create("pc105")));
-    bspl_dict_add(rmlvo_dict_ptr, "Layout",
-                  bspl_object_from_string(bspl_string_create("us")));
-    bspl_dict_add(kbd_dict_ptr, "XkbRMLVO",
-                  bspl_object_from_dict(rmlvo_dict_ptr));
-
-    bspl_dict_t *repeat_dict_ptr = bspl_dict_create();
-    bspl_dict_add(repeat_dict_ptr, "Delay",
-                  bspl_object_from_string(bspl_string_create("600")));
-    bspl_dict_add(repeat_dict_ptr, "Rate",
-                  bspl_object_from_string(bspl_string_create("25")));
-    bspl_dict_add(kbd_dict_ptr, "Repeat",
-                  bspl_object_from_dict(repeat_dict_ptr));
-
-    bspl_dict_add(config_dict_ptr, "Keyboard",
-                  bspl_object_from_dict(kbd_dict_ptr));
-
-    bspl_dict_unref(rmlvo_dict_ptr);
-    bspl_dict_unref(repeat_dict_ptr);
-    bspl_dict_unref(kbd_dict_ptr);
-
     // 5. Initialize wlroots backend, renderer, allocator and nested output.
     dock_ptr->wlr_backend_ptr = wlr_wl_backend_create(
         wl_display_get_event_loop(dock_ptr->local_display_ptr),
         dock_ptr->remote_display_ptr);
     if (NULL == dock_ptr->wlr_backend_ptr) {
         bs_log(BS_ERROR, "Failed to create nested Wayland backend.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -444,7 +446,6 @@ wlmdock_t *_wlmdock_create(
     dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(dock_ptr->wlr_backend_ptr);
     if (NULL == dock_ptr->wlr_renderer_ptr) {
         bs_log(BS_ERROR, "Failed to create renderer.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -454,7 +455,6 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->wlr_backend_ptr, dock_ptr->wlr_renderer_ptr);
     if (NULL == dock_ptr->wlr_allocator_ptr) {
         bs_log(BS_ERROR, "Failed to create allocator.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -463,14 +463,12 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->local_display_ptr, 5, dock_ptr->wlr_renderer_ptr);
     if (NULL == wlr_compositor_ptr) {
         bs_log(BS_ERROR, "Failed to create compositor.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
 
     if (!wlr_backend_start(dock_ptr->wlr_backend_ptr)) {
         bs_log(BS_ERROR, "Failed to start wlroots backend.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -479,14 +477,12 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->wlr_backend_ptr, wl_surface_ptr);
     if (NULL == dock_ptr->wlr_output_ptr) {
         bs_log(BS_ERROR, "Failed to create nested output from surface.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
 
     if (!wlr_output_init_render(dock_ptr->wlr_output_ptr, dock_ptr->wlr_allocator_ptr, dock_ptr->wlr_renderer_ptr)) {
         bs_log(BS_ERROR, "Failed to initialize output render.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -497,7 +493,6 @@ wlmdock_t *_wlmdock_create(
         wlr_scene_attach_output_layout(dock_ptr->wlr_scene_ptr, dock_ptr->wlr_output_layout_ptr);
     if (NULL == wlr_scene_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed to attach output layout to scene.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -507,7 +502,6 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->local_display_ptr, "default");
     if (NULL == wlr_seat_ptr) {
         bs_log(BS_ERROR, "Failed to create wlr_seat.");
-        bspl_dict_unref(config_dict_ptr);
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -523,10 +517,9 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->wlr_backend_ptr,
         dock_ptr->wlr_output_layout_ptr,
         wlr_seat_ptr,
-        config_dict_ptr,
+        NULL,
         &cursor_style,
         dock_ptr->root_ptr);
-    bspl_dict_unref(config_dict_ptr);
     if (NULL == dock_ptr->input_manager_ptr) {
         bs_log(BS_ERROR, "Failed to initialize input manager.");
         _wlmdock_destroy(dock_ptr);
@@ -606,6 +599,10 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
         wlmcl_layer_surface_destroy(dock_ptr->layer_surface_ptr);
     }
     if (NULL != dock_ptr->client_ptr) {
+        wlmtk_util_disconnect_listener(
+            &dock_ptr->wlclient_keymap_listener);
+        wlmtk_util_disconnect_listener(
+            &dock_ptr->wlclient_keyboard_repeat_info_listener);
         wlmcl_client_destroy(dock_ptr->client_ptr);
     }
 
@@ -613,6 +610,38 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Forwards the keymap to the input manager. */
+static void _wlmdock_handle_wlclient_keymap(
+    struct wl_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmdock_t *dock_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmdock_t, wlclient_keymap_listener);
+    struct xkb_keymap *xkb_keymap_ptr = data_ptr;
+
+    if (NULL == dock_ptr->input_manager_ptr) return;
+    wlmim_input_manager_set_keymap(
+        dock_ptr->input_manager_ptr,
+        xkb_keymap_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Forwards the keyboard repeat info to the input manager. */
+static void _wlmdock_handle_wlclient_keyboard_repeat_info(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmdock_t *dock_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmdock_t, wlclient_keyboard_repeat_info_listener);
+
+    if (NULL == dock_ptr->input_manager_ptr) return;
+    int32_t r, d;
+    if (wlmcl_client_get_repeat_info(dock_ptr->client_ptr, &r, &d)) {
+        wlmim_input_manager_set_repeat_info(dock_ptr->input_manager_ptr, r, d);
+    }
+}
 
 /* ------------------------------------------------------------------------- */
 /** Handles `wlr_output.events.frame`: commits scene passes and sends frame_done. */
