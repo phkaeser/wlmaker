@@ -30,7 +30,7 @@
 /* == Declarations ========================================================= */
 
 /** State of the files module. */
-struct _wlmaker_files_t {
+struct _wlm_util_files_t {
     /** Handle for libxdg-basedir. */
     xdgHandle                 xdg_handle;
 
@@ -41,9 +41,9 @@ struct _wlmaker_files_t {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-wlmaker_files_t *wlmaker_files_create(const char *dirname_ptr)
+wlm_util_files_t *wlm_util_files_create(const char *dirname_ptr)
 {
-    wlmaker_files_t *files_ptr = logged_calloc(1, sizeof(wlmaker_files_t));
+    wlm_util_files_t *files_ptr = logged_calloc(1, sizeof(wlm_util_files_t));
     if (NULL == files_ptr) return NULL;
 
     files_ptr->dirname_ptr = logged_strdup(dirname_ptr);
@@ -54,13 +54,13 @@ wlmaker_files_t *wlmaker_files_create(const char *dirname_ptr)
     return files_ptr;
 
 error:
-    wlmaker_files_destroy(files_ptr);
+    wlm_util_files_destroy(files_ptr);
     return NULL;
 
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_files_destroy(wlmaker_files_t *files_ptr)
+void wlm_util_files_destroy(wlm_util_files_t *files_ptr)
 {
     if (NULL != files_ptr->dirname_ptr) {
         free(files_ptr->dirname_ptr);
@@ -72,8 +72,8 @@ void wlmaker_files_destroy(wlmaker_files_t *files_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-char *wlmaker_files_xdg_config_fname(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_config_fname(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr)
 {
     const char *config_home_ptr = xdgConfigHome(&files_ptr->xdg_handle);
@@ -84,8 +84,8 @@ char *wlmaker_files_xdg_config_fname(
 }
 
 /* ------------------------------------------------------------------------- */
-char *wlmaker_files_xdg_config_find(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_config_find(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr,
     int mode_type)
 {
@@ -107,8 +107,8 @@ char *wlmaker_files_xdg_config_find(
 }
 
 /* ------------------------------------------------------------------------- */
-char *wlmaker_files_xdg_data_find(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_data_find(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr,
     int mode_type)
 {
@@ -131,72 +131,72 @@ char *wlmaker_files_xdg_data_find(
 
 /* == Unit Tests =========================================================== */
 
-static void _wlmaker_files_test_builders(bs_test_t *test_ptr);
-static void _wlmaker_files_test_config_find(bs_test_t *test_ptr);
-static void _wlmaker_files_test_data_find(bs_test_t *test_ptr);
+static void _wlm_util_files_test_builders(bs_test_t *test_ptr);
+static void _wlm_util_files_test_config_find(bs_test_t *test_ptr);
+static void _wlm_util_files_test_data_find(bs_test_t *test_ptr);
 
 /** Unit test cases. */
-static const bs_test_case_t wlmaker_files_test_cases[] = {
-    { true, "builders", _wlmaker_files_test_builders },
-    { true, "config_find", _wlmaker_files_test_config_find },
-    { true, "data_find", _wlmaker_files_test_data_find },
+static const bs_test_case_t wlm_util_files_test_cases[] = {
+    { true, "builders", _wlm_util_files_test_builders },
+    { true, "config_find", _wlm_util_files_test_config_find },
+    { true, "data_find", _wlm_util_files_test_data_find },
     BS_TEST_CASE_SENTINEL()
 };
 
-const bs_test_set_t wlmaker_files_test_set = BS_TEST_SET(
-    true, "files", wlmaker_files_test_cases);
+const bs_test_set_t wlm_util_files_test_set = BS_TEST_SET(
+    true, "files", wlm_util_files_test_cases);
 
 /* ------------------------------------------------------------------------- */
 /** Tests building filenames relative to XDG base directories. */
-void _wlmaker_files_test_builders(bs_test_t *test_ptr)
+void _wlm_util_files_test_builders(bs_test_t *test_ptr)
 {
-    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
-    char *f = wlmaker_files_xdg_config_fname(files_ptr, "state.plist");
+    char *f = wlm_util_files_xdg_config_fname(files_ptr, "state.plist");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, f);
     BS_TEST_VERIFY_STRMATCH(test_ptr, f, "/wlmaker/state.plist$");
     free(f);
 
-    wlmaker_files_destroy(files_ptr);
+    wlm_util_files_destroy(files_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests finding a config. */
-void _wlmaker_files_test_config_find(bs_test_t *test_ptr)
+void _wlm_util_files_test_config_find(bs_test_t *test_ptr)
 {
     const char *p = bs_test_data_path(test_ptr, "subdir");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
     bs_test_setenv(test_ptr, "XDG_CONFIG_DIRS", "%s", p);
-    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
 
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
-    char *f = wlmaker_files_xdg_config_find(files_ptr, "a.txt", S_IFREG);
+    char *f = wlm_util_files_xdg_config_find(files_ptr, "a.txt", S_IFREG);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, f);
     BS_TEST_VERIFY_STRMATCH(test_ptr, f, "/wlmaker/a.txt$");
     free(f);
 
-    wlmaker_files_destroy(files_ptr);
+    wlm_util_files_destroy(files_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Tests finding a data file. */
-void _wlmaker_files_test_data_find(bs_test_t *test_ptr)
+void _wlm_util_files_test_data_find(bs_test_t *test_ptr)
 {
     const char *p = bs_test_data_path(test_ptr, "subdir");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, p);
     bs_test_setenv(test_ptr, "XDG_DATA_DIRS", "%s", p);
-    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
 
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
-    char *f = wlmaker_files_xdg_data_find(files_ptr, "a.txt", S_IFREG);
+    char *f = wlm_util_files_xdg_data_find(files_ptr, "a.txt", S_IFREG);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, f);
     BS_TEST_VERIFY_STRMATCH(test_ptr, f, "/wlmaker/a.txt$");
     free(f);
 
-    wlmaker_files_destroy(files_ptr);
+    wlm_util_files_destroy(files_ptr);
 }
 
 /* == End of files.c ======================================================= */

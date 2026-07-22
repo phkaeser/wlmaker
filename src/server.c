@@ -71,7 +71,7 @@ static void handle_request_set_primary_selection(
 /* ------------------------------------------------------------------------- */
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr)
 {
@@ -151,7 +151,7 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    char *f = wlmaker_files_xdg_config_fname(
+    char *f = wlm_util_files_xdg_config_fname(
         server_ptr->files_ptr, "OutputState.plist");
     if (NULL == f) {
         wlmaker_server_destroy(server_ptr);
@@ -460,7 +460,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->files_ptr) {
-        wlmaker_files_destroy(server_ptr->files_ptr);
+        wlm_util_files_destroy(server_ptr->files_ptr);
         server_ptr->files_ptr = NULL;
     }
 

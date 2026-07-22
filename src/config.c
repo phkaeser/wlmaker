@@ -100,7 +100,7 @@ const bspl_desc_t wlmaker_config_style_desc[] = {
 
 /* ------------------------------------------------------------------------- */
 bspl_object_t *wlmaker_config_object_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *name_ptr,
     const char *arg_fname_ptr,
     const char *xdg_config_fname_ptr,
@@ -109,7 +109,7 @@ bspl_object_t *wlmaker_config_object_load(
 {
     char *fname_ptr = NULL;
     if (NULL == arg_fname_ptr && NULL != files_ptr) {
-        fname_ptr = wlmaker_files_xdg_config_find(
+        fname_ptr = wlm_util_files_xdg_config_find(
             files_ptr, xdg_config_fname_ptr, S_IFREG);
     }
 
@@ -124,7 +124,7 @@ bspl_object_t *wlmaker_config_object_load(
 
 /* ------------------------------------------------------------------------- */
 bspl_dict_t *wlmaker_config_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr)
 {
     return BS_ASSERT_NOTNULL(
@@ -140,7 +140,7 @@ bspl_dict_t *wlmaker_config_load(
 
 /* ------------------------------------------------------------------------- */
 bspl_dict_t *wlmaker_state_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr)
 {
     return BS_ASSERT_NOTNULL(
@@ -156,13 +156,13 @@ bspl_dict_t *wlmaker_state_load(
 
 /* ------------------------------------------------------------------------- */
 bool wlmaker_theme_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *arg_fname_ptr,
     wlmaker_config_style_t *style_ptr)
 {
     char *fname_ptr = NULL;
     if (NULL != files_ptr) {
-        fname_ptr = wlmaker_files_xdg_data_find(
+        fname_ptr = wlm_util_files_xdg_data_find(
             files_ptr, "Themes/Default.plist", S_IFREG);
     }
 
