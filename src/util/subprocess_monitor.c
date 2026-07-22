@@ -185,7 +185,7 @@ error:
 
 /* ------------------------------------------------------------------------- */
 /**
- * Creates a @ref struct wlm_util_subprocess and connects to subprocess_ptr.
+ * Creates a @ref wlm_util_subprocess and connects to subprocess_ptr.
  *
  * @param subprocess_ptr
  * @param wl_event_loop_ptr
@@ -289,7 +289,7 @@ void wlm_util_subprocess_handle_destroy(
  * @param fd
  * @param mask                A bitmask of WL_EVENT_READABLE, WL_EVENT_HANGUP
  *                            or WL_EVENT_ERROR.
- * @param data_ptr            Points ot a @ref struct wlm_util_subprocess.
+ * @param data_ptr            Points ot a @ref wlm_util_subprocess.
  *
  * @return 0.
  */
@@ -343,7 +343,7 @@ int _wlm_util_subprocess_monitor_handle_read_stdout(
  * @param fd
  * @param mask                A bitmask of WL_EVENT_READABLE, WL_EVENT_HANGUP
  *                            or WL_EVENT_ERROR.
- * @param data_ptr            Points to a @ref struct wlm_util_subprocess.
+ * @param data_ptr            Points to a @ref wlm_util_subprocess.
  *
  * @return 0.
  */

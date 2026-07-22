@@ -42,15 +42,15 @@
 #include "action.h"
 #include "backend/backend.h"
 #include "background.h"
-#include "wlmbacktrace.h"
 #include "clip.h"
 #include "config.h"
 #include "dock.h"
-#include "files.h"
 #include "root_menu.h"
 #include "server.h"
 #include "task_list.h"
 #include "toolkit/toolkit.h"
+#include "util/backtrace.h"
+#include "util/files.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
@@ -320,7 +320,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_task_list_t       *task_list_ptr = NULL;
     int                       rv = EXIT_SUCCESS;
 
-    if (!wlmaker_backtrace_setup(argv[0])) return EXIT_FAILURE;
+    if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
 
     rv = regcomp(
         &wlmaker_wlr_log_regex,
@@ -360,9 +360,9 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
            wlmaker_version_string,
            wlmaker_version_full);
 
-    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     if (NULL == files_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_files_create(\"wlmaker\")");
+        bs_log(BS_ERROR, "Failed wlm_util_files_create(\"wlmaker\")");
         return EXIT_FAILURE;
     }
 

@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "files.h"
+#include "util/files.h"
 #include "input/cursor.h"
 #include "task_list.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
@@ -91,7 +91,7 @@ typedef struct {
  * @param arg_fname_ptr       Explicit filename to use for loading the file,
  *                            eg. from the commandline. Or NULL.
  * @param xdg_config_fname_ptr File name relative to XDG config home. See
- *                            @ref wlmaker_files_xdg_config_find.
+ *                            @ref wlm_util_files_xdg_config_find.
  * @param default_data_ptr    Points to in-memory plist data, or NULL. Will be
  *                            used if fname_ptr was NULL.
  * @param default_data_size   The size of the in-memory plist data.
@@ -100,7 +100,7 @@ typedef struct {
  *     data, or if there was a file or parsing error.
  */
 bspl_object_t *wlmaker_config_object_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *name_ptr,
     const char *arg_fname_ptr,
     const char *xdg_config_fname_ptr,
@@ -119,7 +119,7 @@ bspl_object_t *wlmaker_config_object_load(
  *      bspl_object_unref().
  */
 bspl_dict_t *wlmaker_config_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr);
 
 /**
@@ -133,7 +133,7 @@ bspl_dict_t *wlmaker_config_load(
  * @return A dict object or NULL on error.
  */
 bspl_dict_t *wlmaker_state_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr);
 
 /**
@@ -150,7 +150,7 @@ bspl_dict_t *wlmaker_state_load(
  * @return true on success.
  */
 bool wlmaker_theme_load(
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr,
     wlmaker_config_style_t *style_ptr);
 

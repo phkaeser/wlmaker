@@ -39,8 +39,8 @@
 
 #include "backend/backend.h"
 #include "backend/output_config.h"
-#include "files.h"
 #include "toolkit/toolkit.h"
+#include "util/files.h"
 
 /* == Declarations ========================================================= */
 
@@ -263,7 +263,7 @@ wlmaker_clip_t *wlmaker_clip_create(
     }
 
     // Resolves to a full path, and verifies the icon file exists.
-    clip_ptr->image_path_ptr = wlmaker_files_xdg_data_find(
+    clip_ptr->image_path_ptr = wlm_util_files_xdg_data_find(
         server_ptr->files_ptr, "icons/clip-56x56.png", S_IFREG);
     if (NULL == clip_ptr->image_path_ptr) {
         bs_log(

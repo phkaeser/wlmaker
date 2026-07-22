@@ -18,13 +18,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_FILES_H__
-#define __WLMAKER_FILES_H__
+#ifndef __WLMAKER_UTIL_FILES_H__
+#define __WLMAKER_UTIL_FILES_H__
 
 #include <libbase/libbase.h>
 
 /** Handle for files module. */
-typedef struct _wlmaker_files_t wlmaker_files_t;
+typedef struct _wlm_util_files_t wlm_util_files_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,16 +37,16 @@ extern "C" {
  *                            component for each of the XDG paths.
  *
  * @return Pointer to the module handle. Must be freed by calling
- *     @ref wlmaker_files_destroy.
+ *     @ref wlm_util_files_destroy.
  */
-wlmaker_files_t *wlmaker_files_create(const char *dirname_ptr);
+wlm_util_files_t *wlm_util_files_create(const char *dirname_ptr);
 
 /**
  * Destroys the file module.
  *
  * @param files_ptr
  */
-void wlmaker_files_destroy(wlmaker_files_t *files_ptr);
+void wlm_util_files_destroy(wlm_util_files_t *files_ptr);
 
 /**
  * Returns a full path name for a config file.
@@ -58,46 +58,46 @@ void wlmaker_files_destroy(wlmaker_files_t *files_ptr);
  *
  * @return Full path name, or NULL on error.
  */
-char *wlmaker_files_xdg_config_fname(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_config_fname(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr);
 
 /**
  * Finds a file (or directory, ...) from XDG configuration directories.
  *
- * Joins @ref wlmaker_files_t::dirname_ptr with `fname_ptr`, and then looks for
- * that entity in `${XDG_CONFIG_HOME}` and `${XDG_CONFIG_DIRS}`. Returns true
- * if the file has `mode_type`, eg. `S_IFREG` or `S_ISDIR`.
+ * Joins @ref wlm_util_files_t::dirname_ptr with `fname_ptr`, and then looks
+ * for that entity in `${XDG_CONFIG_HOME}` and `${XDG_CONFIG_DIRS}`. Returns
+ * true if the file has `mode_type`, eg. `S_IFREG` or `S_ISDIR`.
  *
  * @return Full path name, or NULL on error. The caller must call free() to
  *     release the associated memory.
  */
-char *wlmaker_files_xdg_config_find(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_config_find(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr,
     int mode_type);
 
 /**
  * Finds a file (or directory, ...) from XDG data directories.
  *
- * Joins @ref wlmaker_files_t::dirname_ptr with `fname_ptr`, and then looks for
- * that entity in `${XDG_DATA_HOME}` and `${XDG_DATA_DIRS}`. Returns true
+ * Joins @ref wlm_util_files_t::dirname_ptr with `fname_ptr`, and then looks
+ * for that entity in `${XDG_DATA_HOME}` and `${XDG_DATA_DIRS}`. Returns true
  * if the file has `mode_type`, eg. `S_IFREG` or `S_ISDIR`.
  *
  * @return Full path name, or NULL on error. The caller must call free() to
  *     release the associated memory.
  */
-char *wlmaker_files_xdg_data_find(
-    wlmaker_files_t *files_ptr,
+char *wlm_util_files_xdg_data_find(
+    wlm_util_files_t *files_ptr,
     const char *fname_ptr,
     int mode_type);
 
-/** Unit test set for @ref wlmaker_files_t. */
-extern const bs_test_set_t wlmaker_files_test_set;
+/** Unit test set for @ref wlm_util_files_t. */
+extern const bs_test_set_t wlm_util_files_test_set;
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif /* __WLMAKER_FILES_H__ */
+#endif /* __WLMAKER_UTIL_FILES_H__ */
 /* == End of files.h ======================================================= */

@@ -43,15 +43,15 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "config.h"
 #include "corner.h"  // IWYU pragma: keep
 #include "cursor.h"  // IWYU pragma: keep
-#include "files.h"
 #include "icon_manager.h"  // IWYU pragma: keep
-#include "input_observation.h"
 #include "idle.h"  // IWYU pragma: keep
+#include "input_observation.h"
 #include "layer_shell.h"  // IWYU pragma: keep
 #include "lock_mgr.h"  // IWYU pragma: keep
 #include "root_menu.h"  // IWYU pragma: keep
-#include "util/subprocess_monitor.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
+#include "util/files.h"
+#include "util/subprocess_monitor.h"  // IWYU pragma: keep
 #include "xdg_decoration.h"  // IWYU pragma: keep
 #include "xdg_shell.h"  // IWYU pragma: keep
 #include "xwl.h"  // IWYU pragma: keep
@@ -75,7 +75,7 @@ typedef struct {
 /** State of the Wayland server. */
 struct _wlmaker_server_t {
     /** Files module handle. */
-    wlmaker_files_t           *files_ptr;
+    wlm_util_files_t           *files_ptr;
     /** Configuration dictionnary. */
     bspl_dict_t               *config_dict_ptr;
     /** Copy of the options. */
@@ -202,7 +202,7 @@ struct _wlmaker_server_t {
  */
 wlmaker_server_t *wlmaker_server_create(
     bspl_dict_t *config_dict_ptr,
-    wlmaker_files_t *files_ptr,
+    wlm_util_files_t *files_ptr,
     wlmaker_config_style_t *style_ptr,
     const wlmaker_server_options_t *options_ptr);
 

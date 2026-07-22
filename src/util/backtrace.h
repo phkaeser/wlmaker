@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file wlmbacktrace.h
+ * @file backtrace.h
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
@@ -37,7 +37,7 @@ extern "C" {
  *
  * @return true on success.
  */
-bool wlmaker_backtrace_setup(const char *filename_ptr);
+bool wlm_util_backtrace_setup(const char *filename_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

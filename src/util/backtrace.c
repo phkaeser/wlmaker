@@ -1,6 +1,6 @@
 /* ========================================================================= */
 /**
- * @file wlmbacktrace.c
+ * @file backtrace.c
  *
  * @copyright
  * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
@@ -20,11 +20,12 @@
  * Copyright (c) 2025 by Philipp Kaeser <kaeser@gubbe.ch>
  */
 
-#include "wlmbacktrace.h"
+#include "backtrace.h"
 
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #if defined(WLMAKER_HAVE_LIBBACKTRACE)
@@ -55,7 +56,7 @@ static void _signal_backtrace(int signum);
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmaker_backtrace_setup(const char *filename_ptr)
+bool wlm_util_backtrace_setup(const char *filename_ptr)
 {
 #if defined(WLMAKER_HAVE_LIBBACKTRACE)
 
@@ -128,4 +129,4 @@ void _signal_backtrace(int signum)
 
 #endif // defined(WLMAKER_HAVE_LIBBACKTRACE)
 
-/* == End of wlmbacktrace.c ================================================ */
+/* == End of backtrace.c =================================================== */

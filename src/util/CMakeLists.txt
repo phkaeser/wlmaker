@@ -18,20 +18,30 @@ add_library(wlm_util_lib STATIC)
 target_sources(
   wlm_util_lib
   PRIVATE
-  subprocess_monitor.c)
+  backtrace.c
+  files.c
+  subprocess_monitor.c
+)
 
 target_include_directories(
   wlm_util_lib
   PRIVATE
+  "${LIBXDGBASEDIR_INCLUDE_DIRS}"
   # TODO(kaeser@gubbe.ch): Move that to client-side compatible implementation.
   "${WAYLAND_SERVER_INCLUDE_DIRS}"
 )
 target_link_libraries(
   wlm_util_lib
   PRIVATE
-  libbase
+  $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
+  PkgConfig::LIBXDGBASEDIR
   PkgConfig::WAYLAND_SERVER
+  libbase
 )
+
+if(LIBBACKTRACE)
+  target_compile_definitions(wlm_util_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
+endif()
 
 if(iwyu_path_and_options)
   set_target_properties(

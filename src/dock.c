@@ -38,9 +38,9 @@
 #include "backend/output_config.h"
 #include "config.h"
 #include "default_state.h"
-#include "files.h"
 #include "launcher.h"
 #include "toolkit/toolkit.h"
+#include "util/files.h"
 
 /* == Declarations ========================================================= */
 
@@ -362,7 +362,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmaker_server_t server = {
         .wlr_scene_ptr = wlr_scene_ptr,
         .wl_display_ptr = wl_display_create(),
-        .files_ptr = wlmaker_files_create("wlmaker"),
+        .files_ptr = wlm_util_files_create("wlmaker"),
     };
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.files_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
@@ -403,7 +403,7 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
-    wlmaker_files_destroy(server.files_ptr);
+    wlm_util_files_destroy(server.files_ptr);
 }
 
 /* == End of dock.c ======================================================== */

@@ -24,9 +24,9 @@
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 
-#include "files.h"
-#include "util/subprocess_monitor.h"
 #include "toolkit/toolkit.h"
+#include "util/files.h"
+#include "util/subprocess_monitor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +49,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
     wlm_util_subprocess_monitor_t *monitor_ptr,
-    wlmaker_files_t *files_ptr);
+    wlm_util_files_t *files_ptr);
 
 /**
  * Destroys the application launcher.

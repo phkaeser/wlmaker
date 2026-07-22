@@ -40,12 +40,10 @@ set(public_header_files
   action.h
   action_item.h
   background.h
-  wlmbacktrace.h
   clip.h
   config.h
   corner.h
   dock.h
-  files.h
   icon_manager.h
   idle.h
   input_observation.h
@@ -68,12 +66,10 @@ target_sources(wlmaker_lib PRIVATE
   action.c
   action_item.c
   background.c
-  wlmbacktrace.c
   clip.c
   config.c
   corner.c
   dock.c
-  files.c
   icon_manager.c
   idle.c
   input_observation.c
@@ -129,9 +125,7 @@ target_link_libraries(
   toolkit
   wlmaker_protocols
   wlm_util_lib
-  $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
   PkgConfig::CAIRO
-  PkgConfig::LIBXDGBASEDIR
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
   PkgConfig::XCB)
@@ -143,7 +137,6 @@ target_include_directories(
   "${PROJECT_BINARY_DIR}/third_party/protocols"
   "${PROJECT_BINARY_DIR}/protocols"
   "${CAIRO_INCLUDE_DIRS}"
-  "${LIBXDGBASEDIR_INCLUDE_DIRS}"
   "${WAYLAND_SERVER_INCLUDE_DIRS}"
   "${XCB_INCLUDE_DIRS}"
 )
@@ -157,9 +150,6 @@ if(wmmenugen_executable)
 endif()
 if(XWAYLAND_FOUND)
   target_compile_definitions(wlmaker_lib PUBLIC WLMAKER_HAVE_XWAYLAND)
-endif()
-if(LIBBACKTRACE)
-  target_compile_definitions(wlmaker_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
 endif()
 add_executable(
   wlmaker

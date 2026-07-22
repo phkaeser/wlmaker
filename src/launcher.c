@@ -118,7 +118,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
     wlm_util_subprocess_monitor_t *monitor_ptr,
-    wlmaker_files_t *files_ptr)
+    wlm_util_files_t *files_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = logged_calloc(
         1, sizeof(wlmaker_launcher_t));
@@ -177,7 +177,7 @@ wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
         wlmaker_launcher_destroy(launcher_ptr);
         return NULL;
     }
-    launcher_ptr->resolved_icon_path_ptr = wlmaker_files_xdg_data_find(
+    launcher_ptr->resolved_icon_path_ptr = wlm_util_files_xdg_data_find(
         files_ptr, p, S_IFREG);
     free(p);
     if (NULL == launcher_ptr->resolved_icon_path_ptr) {
@@ -502,7 +502,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
         bspl_create_object_from_plist_string(plist_ptr));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
 
-    wlmaker_files_t *files_ptr = wlmaker_files_create("wlmaker");
+    wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
     wlmaker_launcher_t *launcher_ptr = wlmaker_launcher_create_from_plist(
@@ -515,7 +515,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
         test_ptr, "chrome-56x56.png", launcher_ptr->icon_path_ptr);
 
     wlmaker_launcher_destroy(launcher_ptr);
-    wlmaker_files_destroy(files_ptr);
+    wlm_util_files_destroy(files_ptr);
 }
 
 /* == End of launcher.c ==================================================== */
