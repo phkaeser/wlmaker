@@ -37,7 +37,6 @@
 #if defined(WLMAKER_HAVE_XWAYLAND)
 #include "xwl_surface.h"
 #endif  // defined(WLMAKER_HAVE_XWAYLAND)
-#include "util/backtrace.h"
 
 #if !defined(TEST_DATA_DIR)
 /** Directory root for looking up test data. See `bs_test_resolve_path`. */

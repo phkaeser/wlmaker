@@ -52,7 +52,6 @@
 #undef WLR_USE_UNSTABLE
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
-#include "input/cursor.h"
 #include "input/manager.h"
 #include "toolkit/toolkit.h"
 #include "wlclient/layer_surface.h"
