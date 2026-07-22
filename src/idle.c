@@ -32,7 +32,7 @@
 #include <wlr/types/wlr_idle_inhibit_v1.h>
 #undef WLR_USE_UNSTABLE
 
-#include "subprocess_monitor.h"
+#include "util/subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 #include "server.h"
 
@@ -225,19 +225,15 @@ bool wlmaker_idle_monitor_lock(wlmaker_idle_monitor_t *idle_monitor_ptr)
         return false;
     }
 
-    wlmaker_subprocess_handle_t *handle_ptr =
-        wlmaker_subprocess_monitor_entrust(
+    struct wlm_util_subprocess *handle_ptr =
+        wlm_util_subprocess_monitor_entrust(
             idle_monitor_ptr->server_ptr->monitor_ptr,
             subprocess_ptr,
             NULL,
             NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
             NULL);
     if (NULL != handle_ptr) {
-        wlmaker_subprocess_monitor_cede(
+        wlm_util_subprocess_monitor_cede(
             idle_monitor_ptr->server_ptr->monitor_ptr, handle_ptr);
     }
     return true;

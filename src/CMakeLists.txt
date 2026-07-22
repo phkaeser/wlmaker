@@ -34,6 +34,7 @@ pkg_check_modules(XWAYLAND xwayland>=22.1.9)
 add_subdirectory(backend)
 add_subdirectory(input)
 add_subdirectory(toolkit)
+add_subdirectory(util)
 add_subdirectory(wlclient)
 set(public_header_files
   action.h
@@ -54,7 +55,6 @@ set(public_header_files
   lock_mgr.h
   root_menu.h
   server.h
-  subprocess_monitor.h
   task_list.h
   tl_menu.h
   xdg_decoration.h
@@ -83,7 +83,6 @@ target_sources(wlmaker_lib PRIVATE
   lock_mgr.c
   root_menu.c
   server.c
-  subprocess_monitor.c
   task_list.c
   tl_menu.c
   x11_cursor.xpm
@@ -115,6 +114,7 @@ add_dependencies(
   libbase_plist
   protocol_headers
   toolkit
+  wlm_util_lib
   wlmaker_lib)
 target_link_libraries(
   wlmaker_lib
@@ -128,6 +128,7 @@ target_link_libraries(
   input
   toolkit
   wlmaker_protocols
+  wlm_util_lib
   $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
   PkgConfig::CAIRO
   PkgConfig::LIBXDGBASEDIR

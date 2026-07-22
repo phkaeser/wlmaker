@@ -50,7 +50,7 @@ typedef struct _wlmaker_server_t wlmaker_server_t;
 #include "layer_shell.h"  // IWYU pragma: keep
 #include "lock_mgr.h"  // IWYU pragma: keep
 #include "root_menu.h"  // IWYU pragma: keep
-#include "subprocess_monitor.h"  // IWYU pragma: keep
+#include "util/subprocess_monitor.h"  // IWYU pragma: keep
 #include "toolkit/toolkit.h"
 #include "xdg_decoration.h"  // IWYU pragma: keep
 #include "xdg_shell.h"  // IWYU pragma: keep
@@ -158,7 +158,7 @@ struct _wlmaker_server_t {
     bs_dllist_t               clients;
 
     /** Subprocess monitoring. */
-    wlmaker_subprocess_monitor_t *monitor_ptr;
+    wlm_util_subprocess_monitor_t *monitor_ptr;
 
     /** Montor & handler of 'hot corners'. */
     wlmaker_corner_t          *corner_ptr;

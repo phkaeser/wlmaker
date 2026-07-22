@@ -44,7 +44,7 @@
 #include "input/manager.h"
 #include "root_menu.h"
 #include "server.h"
-#include "subprocess_monitor.h"
+#include "util/subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 
 /* == Declarations ========================================================= */
@@ -235,20 +235,20 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
 
     case WLMAKER_ACTION_LAUNCH_TERMINAL:
         argv = (const char*[]){ "/bin/sh", "-c", "/usr/bin/foot", NULL };
-        wlmaker_subprocess_monitor_run(
+        wlm_util_subprocess_monitor_run(
             server_ptr->monitor_ptr,
             bs_subprocess_create(argv[0], argv, NULL));
         break;
 
     case WLMAKER_ACTION_SHELL_EXECUTE:
         argv = (const char*[]){ "/bin/sh", "-c", arg_ptr, NULL };
-        wlmaker_subprocess_monitor_run(
+        wlm_util_subprocess_monitor_run(
             server_ptr->monitor_ptr,
             bs_subprocess_create(argv[0], argv, NULL));
         break;
 
     case WLMAKER_ACTION_EXECUTE:
-        wlmaker_subprocess_monitor_run(
+        wlm_util_subprocess_monitor_run(
             server_ptr->monitor_ptr,
             bs_subprocess_create_cmdline(arg_ptr));
         break;
