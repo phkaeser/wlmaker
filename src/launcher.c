@@ -32,6 +32,8 @@
 
 #include "toolkit/toolkit.h"
 
+struct wlm_util_subprocess;
+
 /* == Declarations ========================================================= */
 
 /** State of a launcher. */
@@ -47,7 +49,7 @@ struct _wlmaker_launcher_t {
     wlmtk_buffer_t            overlay_buffer;
 
     /** Subprocess monitor to register launched processes to. */
-    wlmaker_subprocess_monitor_t *monitor_ptr;
+    wlm_util_subprocess_monitor_t *monitor_ptr;
 
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
@@ -88,25 +90,9 @@ static void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr);
 
 static void _wlmaker_launcher_handle_terminated(
     void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
     int code);
-static void _wlmaker_launcher_handle_window_created(
-    void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
-static void _wlmaker_launcher_handle_window_mapped(
-    void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
-static void _wlmaker_launcher_handle_window_unmapped(
-    void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
-static void _wlmaker_launcher_handle_window_destroyed(
-    void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr);
 
 static bool _wlmaker_launcher_set_content_size(
     wlmtk_tile_t *tile_ptr,
@@ -131,7 +117,7 @@ static const wlmtk_tile_vmt_t _wlmaker_launcher_tile_vmt = {
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlmaker_subprocess_monitor_t *monitor_ptr,
+    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlmaker_files_t *files_ptr)
 {
     wlmaker_launcher_t *launcher_ptr = logged_calloc(
@@ -241,10 +227,10 @@ void wlmaker_launcher_destroy(wlmaker_launcher_t *launcher_ptr)
     wlmtk_buffer_fini(&launcher_ptr->overlay_buffer);
 
     if (NULL != launcher_ptr->subprocesses_ptr) {
-        wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+        struct wlm_util_subprocess *subprocess_handle_ptr;
         while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
                             launcher_ptr->subprocesses_ptr))) {
-            wlmaker_subprocess_monitor_cede(
+            wlm_util_subprocess_monitor_cede(
                 launcher_ptr->monitor_ptr,
                 subprocess_handle_ptr);
             bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
@@ -409,16 +395,12 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
         return;
     }
 
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr;
-    subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
+    struct wlm_util_subprocess *subprocess_handle_ptr;
+    subprocess_handle_ptr = wlm_util_subprocess_monitor_entrust(
         launcher_ptr->monitor_ptr,
         subprocess_ptr,
         _wlmaker_launcher_handle_terminated,
         launcher_ptr,
-        _wlmaker_launcher_handle_window_created,
-        _wlmaker_launcher_handle_window_mapped,
-        _wlmaker_launcher_handle_window_unmapped,
-        _wlmaker_launcher_handle_window_destroyed,
         NULL);
 
     if (!bs_ptr_set_insert(launcher_ptr->subprocesses_ptr,
@@ -427,7 +409,7 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
                "Will not show status of subprocess in App.",
                launcher_ptr, launcher_ptr->subprocesses_ptr,
                subprocess_handle_ptr);
-        wlmaker_subprocess_monitor_cede(
+        wlm_util_subprocess_monitor_cede(
             launcher_ptr->monitor_ptr,
             subprocess_handle_ptr);
     }
@@ -444,7 +426,7 @@ void _wlmaker_launcher_start(wlmaker_launcher_t *launcher_ptr)
  */
 void _wlmaker_launcher_handle_terminated(
     void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    struct wlm_util_subprocess *subprocess_handle_ptr,
     int exit_status,
     int signal_number)
 {
@@ -466,109 +448,11 @@ void _wlmaker_launcher_handle_terminated(
            code);
     // TODO(kaeser@gubbe.ch): Keep exit status and latest output available
     // for visualization.
-    wlmaker_subprocess_monitor_cede(
+    wlm_util_subprocess_monitor_cede(
         launcher_ptr->monitor_ptr,
         subprocess_handle_ptr);
     bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
                      subprocess_handle_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for then a window from the launched subprocess is created.
- *
- * Registers the windows as "created", and will then redraw the launcher tile
- * to reflect potential status changes.
- *
- * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
- * @param subprocess_handle_ptr
- * @param window_ptr
- */
-void _wlmaker_launcher_handle_window_created(
-    void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
-{
-    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
-
-    bool rv = bs_ptr_set_insert(launcher_ptr->created_windows_ptr, window_ptr);
-    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
-
-    _wlmaker_launcher_update_overlay(launcher_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for then a window from the launched subprocess is mapped.
- *
- * Registers the window as "mapped", and will then redraw the launcher tile
- * to reflect potential status changes.
- *
- * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
- * @param subprocess_handle_ptr
- * @param window_ptr
- */
-void _wlmaker_launcher_handle_window_mapped(
-    void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
-{
-    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
-
-    // TODO(kaeser@gubbe.ch): Appears we do encounter this scenario. File this
-    // as a bug and fix it.
-    // BS_ASSERT(bs_ptr_set_contains(launcher_ptr->created_windows_ptr, window_ptr));
-
-    bool rv = bs_ptr_set_insert(launcher_ptr->mapped_windows_ptr, window_ptr);
-    if (!rv) bs_log(BS_ERROR, "Failed bs_ptr_set_insert(%p)", window_ptr);
-
-    _wlmaker_launcher_update_overlay(launcher_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for then a window from the launched subprocess is unmapped.
- *
- * Removes the window from the set of "mapped" windows, and will then redraw
- * the launcher tile to reflect potential status changes.
- *
- * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
- * @param subprocess_handle_ptr
- * @param window_ptr
- */
-void _wlmaker_launcher_handle_window_unmapped(
-    void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
-{
-    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
-
-    bs_ptr_set_erase(launcher_ptr->mapped_windows_ptr, window_ptr);
-
-    _wlmaker_launcher_update_overlay(launcher_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-/**
- * Callback for then a window from the launched subprocess is destroyed.
- *
- * Removes the window from the set of "created" windows, and will then redraw
- * the launcher tile to reflect potential status changes.
- *
- * @param userdata_ptr        Points to the @ref wlmaker_launcher_t.
- * @param subprocess_handle_ptr
- * @param window_ptr
- */
-void _wlmaker_launcher_handle_window_destroyed(
-    void *userdata_ptr,
-    __UNUSED__ wlmaker_subprocess_handle_t *subprocess_handle_ptr,
-    wlmtk_window_t *window_ptr)
-{
-    wlmaker_launcher_t *launcher_ptr = userdata_ptr;
-
-    bs_ptr_set_erase(launcher_ptr->created_windows_ptr, window_ptr);
-
-    _wlmaker_launcher_update_overlay(launcher_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

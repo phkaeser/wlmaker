@@ -43,8 +43,10 @@
 #include "action.h"
 #include "action_item.h"
 #include "config.h"
-#include "subprocess_monitor.h"
+#include "util/subprocess_monitor.h"
 #include "server.h"
+
+struct wlm_util_subprocess;
 
 /* == Declarations ========================================================= */
 
@@ -72,7 +74,7 @@ struct _wlmaker_root_menu_t {
 /** State of a menu generator, while waiting for subprocess to complete. */
 typedef struct {
     /** Subprocess handle. */
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr;
+    struct wlm_util_subprocess *subprocess_handle_ptr;
     /** Back-link to the server. */
     wlmaker_server_t          *server_ptr;
     /** The menu this generator is going to populate. */
@@ -127,7 +129,7 @@ static void _wlmaker_root_menu_generator_handle_menu_destroy(
     void *data_ptr);
 static void _wlmaker_root_menu_generator_handle_terminated(
     void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
     int code);
 
@@ -612,15 +614,11 @@ bool _wlmaker_root_menu_populate_menu_items_from_generator(
            command_ptr);
 
     _wlmaker_root_menu_generators++;
-    generator_ptr->subprocess_handle_ptr = wlmaker_subprocess_monitor_entrust(
+    generator_ptr->subprocess_handle_ptr = wlm_util_subprocess_monitor_entrust(
         server_ptr->monitor_ptr,
         subprocess_ptr,
         _wlmaker_root_menu_generator_handle_terminated,
         generator_ptr,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
         generator_ptr->stdout_dynbuf_ptr);
     if (NULL == generator_ptr->subprocess_handle_ptr) goto error;
 
@@ -640,7 +638,7 @@ void _wlmaker_root_menu_generator_destroy(
     wlmaker_root_menu_generator_t *generator_ptr)
 {
     if (NULL != generator_ptr->subprocess_handle_ptr) {
-        wlmaker_subprocess_monitor_cede(
+        wlm_util_subprocess_monitor_cede(
             generator_ptr->server_ptr->monitor_ptr,
             generator_ptr->subprocess_handle_ptr);
         generator_ptr->subprocess_handle_ptr = NULL;
@@ -672,7 +670,7 @@ void _wlmaker_root_menu_generator_handle_menu_destroy(
 /** Handler for when the subprocess is terminated. */
 void _wlmaker_root_menu_generator_handle_terminated(
     void *userdata_ptr,
-    wlmaker_subprocess_handle_t *subprocess_handle_ptr,
+    struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
     int code)
 {
@@ -904,8 +902,8 @@ void test_generated_menu(bs_test_t *test_ptr)
         server.wlr_scene_ptr,
         server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
-    server.monitor_ptr = wlmaker_subprocess_monitor_create(
-        &server);
+    server.monitor_ptr = wlm_util_subprocess_monitor_create(
+        wl_display_get_event_loop(server.wl_display_ptr));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.monitor_ptr);
 
 #ifndef WLMAKER_SOURCE_DIR
@@ -969,7 +967,7 @@ void test_generated_menu(bs_test_t *test_ptr)
 
     wlmaker_root_menu_destroy(root_menu_ptr);
 
-    wlmaker_subprocess_monitor_destroy(server.monitor_ptr);
+    wlm_util_subprocess_monitor_destroy(server.monitor_ptr);
     wlmtk_desktop_destroy(server.desktop_ptr);
     wl_display_destroy(server.wl_display_ptr);
     wlr_scene_node_destroy(&server.wlr_scene_ptr->tree.node);

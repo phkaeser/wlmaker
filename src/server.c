@@ -317,9 +317,10 @@ wlmaker_server_t *wlmaker_server_create(
         }
     }
 
-    server_ptr->monitor_ptr = wlmaker_subprocess_monitor_create(server_ptr);
+    server_ptr->monitor_ptr = wlm_util_subprocess_monitor_create(
+        wl_display_get_event_loop(server_ptr->wl_display_ptr));
     if (NULL == server_ptr->monitor_ptr) {
-        bs_log(BS_ERROR, "Failed wlmaker_subprocess_monitor_create()");
+        bs_log(BS_ERROR, "Failed wlm_util_subprocess_monitor_create()");
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -371,7 +372,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->monitor_ptr) {
-        wlmaker_subprocess_monitor_destroy(server_ptr->monitor_ptr);
+        wlm_util_subprocess_monitor_destroy(server_ptr->monitor_ptr);
         server_ptr->monitor_ptr =NULL;
     }
 

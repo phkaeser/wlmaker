@@ -25,7 +25,7 @@
 #include <libbase/plist.h>
 
 #include "files.h"
-#include "subprocess_monitor.h"
+#include "util/subprocess_monitor.h"
 #include "toolkit/toolkit.h"
 
 #ifdef __cplusplus
@@ -48,7 +48,7 @@ typedef struct _wlmaker_launcher_t wlmaker_launcher_t;
 wlmaker_launcher_t *wlmaker_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-    wlmaker_subprocess_monitor_t *monitor_ptr,
+    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlmaker_files_t *files_ptr);
 
 /**
