@@ -26,7 +26,7 @@
 
 #include "toolkit/toolkit.h"
 #include "util/files.h"
-// FIXME #include "util/subprocess_monitor.h"
+#include "util/subprocess_monitor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +40,7 @@ typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
  *
  * @param style_ptr
  * @param dict_ptr
+ * @param monitor_ptr
  * @param files_ptr
  *
  * @return Pointer to the launcher handle or NULL on error.
@@ -47,7 +48,7 @@ typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
 wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-// FIXME    wlm_util_subprocess_monitor_t *monitor_ptr,
+    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr);
 
 /**

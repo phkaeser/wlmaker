@@ -49,7 +49,7 @@ struct _wlmdock_launcher_t {
     wlmtk_buffer_t            overlay_buffer;
 
     /** Subprocess monitor to register launched processes to. */
-// FIXME    wlm_util_subprocess_monitor_t *monitor_ptr;
+    wlm_util_subprocess_monitor_t *monitor_ptr;
 
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
@@ -59,10 +59,6 @@ struct _wlmdock_launcher_t {
     /** Resolved icon path. */
     char                      *resolved_icon_path_ptr;
 
-    /** Windows that are running from subprocesses of this App (launcher). */
-    bs_ptr_set_t              *created_windows_ptr;
-    /** Windows that are mapped from subprocesses of this App (launcher). */
-    bs_ptr_set_t              *mapped_windows_ptr;
     /** Subprocesses that were created by this launcher. */
     bs_ptr_set_t              *subprocesses_ptr;
 };
@@ -88,8 +84,7 @@ static bool _wlmdock_launcher_pointer_button(
 
 static void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr);
 
-// FIXME
-void _wlmdock_launcher_handle_terminated(
+static void _wlmdock_launcher_handle_terminated(
     void *userdata_ptr,
     struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
@@ -118,12 +113,13 @@ static const wlmtk_tile_vmt_t _wlmdock_launcher_tile_vmt = {
 wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
-//    wlm_util_subprocess_monitor_t *monitor_ptr,
+    wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr)
 {
     wlmdock_launcher_t *launcher_ptr = logged_calloc(
         1, sizeof(wlmdock_launcher_t));
     if (NULL == launcher_ptr) return NULL;
+    launcher_ptr->monitor_ptr = monitor_ptr;
 
      if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr)) {
          return NULL;
@@ -135,16 +131,6 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
-    launcher_ptr->created_windows_ptr = bs_ptr_set_create();
-    if (NULL == launcher_ptr->created_windows_ptr) {
-        wlmdock_launcher_destroy(launcher_ptr);
-        return NULL;
-    }
-    launcher_ptr->mapped_windows_ptr = bs_ptr_set_create();
-    if (NULL == launcher_ptr->mapped_windows_ptr) {
-        wlmdock_launcher_destroy(launcher_ptr);
-        return NULL;
-    }
     launcher_ptr->subprocesses_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->subprocesses_ptr) {
         wlmdock_launcher_destroy(launcher_ptr);
@@ -230,8 +216,6 @@ void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr)
     wlmtk_tile_set_overlay(&launcher_ptr->super_tile, NULL);
     wlmtk_buffer_fini(&launcher_ptr->overlay_buffer);
 
-#if 0
-    // FIXME
     if (NULL != launcher_ptr->subprocesses_ptr) {
         struct wlm_util_subprocess *subprocess_handle_ptr;
         while (NULL != (subprocess_handle_ptr = bs_ptr_set_any(
@@ -244,16 +228,6 @@ void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr)
         }
         bs_ptr_set_destroy(launcher_ptr->subprocesses_ptr);
         launcher_ptr->subprocesses_ptr = NULL;
-    }
-#endif
-
-    if (NULL != launcher_ptr->mapped_windows_ptr) {
-        bs_ptr_set_destroy(launcher_ptr->mapped_windows_ptr);
-        launcher_ptr->mapped_windows_ptr = NULL;
-    }
-    if (NULL != launcher_ptr->created_windows_ptr) {
-        bs_ptr_set_destroy(launcher_ptr->created_windows_ptr);
-        launcher_ptr->created_windows_ptr = NULL;
     }
 
     if (NULL != launcher_ptr->resolved_icon_path_ptr) {
@@ -303,13 +277,9 @@ struct wlr_buffer *_wlmdock_launcher_create_overlay_buffer(
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(s, s);
     if (NULL == wlr_buffer_ptr) return NULL;
 
-    const char *status_ptr = NULL;
-    if (!bs_ptr_set_empty(launcher_ptr->mapped_windows_ptr)) {
-        status_ptr = "Running";
-    } else if (!bs_ptr_set_empty(launcher_ptr->created_windows_ptr)) {
-        status_ptr = "Started";
+    if (bs_ptr_set_empty(launcher_ptr->subprocesses_ptr)) {
+        return wlr_buffer_ptr;
     }
-    if (NULL == status_ptr) return wlr_buffer_ptr;
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
@@ -333,7 +303,7 @@ struct wlr_buffer *_wlmdock_launcher_create_overlay_buffer(
     cairo_set_font_size(cairo_ptr, 10.0 * s / 64.0);
     cairo_set_source_argb8888(cairo_ptr, 0xffffffff);
     cairo_move_to(cairo_ptr, 4 * s / 64, s - 2 * s / 64);
-    cairo_show_text(cairo_ptr, status_ptr);
+    cairo_show_text(cairo_ptr, "Running");
 
     cairo_destroy(cairo_ptr);
     return wlr_buffer_ptr;
@@ -402,8 +372,6 @@ void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr)
         return;
     }
 
-#if 0
-    // FIXME
     struct wlm_util_subprocess *subprocess_handle_ptr;
     subprocess_handle_ptr = wlm_util_subprocess_monitor_entrust(
         launcher_ptr->monitor_ptr,
@@ -411,6 +379,8 @@ void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr)
         _wlmdock_launcher_handle_terminated,
         launcher_ptr,
         NULL);
+
+    bs_log(BS_ERROR, "FIXME: launched.");
 
     if (!bs_ptr_set_insert(launcher_ptr->subprocesses_ptr,
                            subprocess_handle_ptr)) {
@@ -422,7 +392,6 @@ void _wlmdock_launcher_start(wlmdock_launcher_t *launcher_ptr)
             launcher_ptr->monitor_ptr,
             subprocess_handle_ptr);
     }
-#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -458,15 +427,11 @@ void _wlmdock_launcher_handle_terminated(
            code);
     // TODO(kaeser@gubbe.ch): Keep exit status and latest output available
     // for visualization.
-#if 0
-    // FIXME
     wlm_util_subprocess_monitor_cede(
         launcher_ptr->monitor_ptr,
         subprocess_handle_ptr);
     bs_ptr_set_erase(launcher_ptr->subprocesses_ptr,
                      subprocess_handle_ptr);
-
-#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -520,7 +485,7 @@ void test_create_from_plist(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
     wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-        &style, dict_ptr, files_ptr);
+        &style, dict_ptr, NULL, files_ptr);
     bspl_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, launcher_ptr);
 

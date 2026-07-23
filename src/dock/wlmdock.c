@@ -54,10 +54,11 @@
 
 #include "input/manager.h"
 #include "toolkit/toolkit.h"
-#include "wlclient/layer_surface.h"
-#include "wlclient/wlclient.h"
 #include "util/backtrace.h"
 #include "util/files.h"
+#include "util/subprocess_monitor.h"
+#include "wlclient/layer_surface.h"
+#include "wlclient/wlclient.h"
 
 #include "launcher.h"
 #include "tilebox.h"
@@ -99,6 +100,8 @@ typedef struct {
 
     /** Local input manager. */
     wlmim_t                   *input_manager_ptr;
+    /** Monitoring for subprocesses. */
+    wlm_util_subprocess_monitor_t *subprocess_monitor_ptr;
 
     /** Listener for @ref wlmcl_client_events::keymap. */
     struct wl_listener        wlclient_keymap_listener;
@@ -422,16 +425,6 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    static const char *plist_ptr =
-        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(
-        bspl_create_object_from_plist_string(plist_ptr));
-    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-            &style_ptr->tile, dict_ptr, files_ptr);
-    wlmdock_tilebox_add_tile(
-        dock_ptr->tilebox_ptr,
-        wlmdock_launcher_tile(launcher_ptr));
-
     // 5. Initialize wlroots backend, renderer, allocator and nested output.
     dock_ptr->wlr_backend_ptr = wlr_wl_backend_create(
         wl_display_get_event_loop(dock_ptr->local_display_ptr),
@@ -467,6 +460,44 @@ wlmdock_t *_wlmdock_create(
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
+
+    // 9. Monitor the client's signal_fd for signals (like SIGINT).
+    struct wl_event_loop *event_loop_ptr = wl_display_get_event_loop(
+        dock_ptr->local_display_ptr);
+    dock_ptr->client_signal_event_source_ptr = wl_event_loop_add_fd(
+        event_loop_ptr,
+        wlmcl_client_signal_fd(dock_ptr->client_ptr),
+        WL_EVENT_READABLE,
+        handle_client_signal,
+        dock_ptr);
+    if (NULL == dock_ptr->client_signal_event_source_ptr) {
+        bs_log(BS_ERROR, "Failed to register client signal fd to event loop.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
+    dock_ptr->subprocess_monitor_ptr = wlm_util_subprocess_monitor_create(
+        event_loop_ptr);
+    if (NULL == dock_ptr->subprocess_monitor_ptr) {
+        bs_log(BS_ERROR, "Failed wlm_util_subprocess_monitor_create(%p)",
+               event_loop_ptr);
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
+    static const char *plist_ptr =
+        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(plist_ptr));
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+            &style_ptr->tile,
+            dict_ptr,
+            dock_ptr->subprocess_monitor_ptr,
+            files_ptr);
+    wlmdock_tilebox_add_tile(
+        dock_ptr->tilebox_ptr,
+        wlmdock_launcher_tile(launcher_ptr));
+
 
     dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(dock_ptr->wlr_backend_ptr);
     if (NULL == dock_ptr->wlr_renderer_ptr) {
@@ -506,16 +537,22 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    if (!wlr_output_init_render(dock_ptr->wlr_output_ptr, dock_ptr->wlr_allocator_ptr, dock_ptr->wlr_renderer_ptr)) {
+    if (!wlr_output_init_render(
+            dock_ptr->wlr_output_ptr,
+            dock_ptr->wlr_allocator_ptr,
+            dock_ptr->wlr_renderer_ptr)) {
         bs_log(BS_ERROR, "Failed to initialize output render.");
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
-
-    wlr_output_layout_add_auto(dock_ptr->wlr_output_layout_ptr, dock_ptr->wlr_output_ptr);
+    wlr_output_layout_add_auto(
+        dock_ptr->wlr_output_layout_ptr,
+        dock_ptr->wlr_output_ptr);
 
     struct wlr_scene_output_layout *wlr_scene_output_layout_ptr =
-        wlr_scene_attach_output_layout(dock_ptr->wlr_scene_ptr, dock_ptr->wlr_output_layout_ptr);
+        wlr_scene_attach_output_layout(
+            dock_ptr->wlr_scene_ptr,
+            dock_ptr->wlr_output_layout_ptr);
     if (NULL == wlr_scene_output_layout_ptr) {
         bs_log(BS_ERROR, "Failed to attach output layout to scene.");
         _wlmdock_destroy(dock_ptr);
@@ -528,20 +565,6 @@ wlmdock_t *_wlmdock_create(
         handle_configure,
         dock_ptr);
 
-    // 9. Monitor the client's signal_fd for signals (like SIGINT).
-    struct wl_event_loop *event_loop_ptr = wl_display_get_event_loop(dock_ptr->local_display_ptr);
-    dock_ptr->client_signal_event_source_ptr = wl_event_loop_add_fd(
-        event_loop_ptr,
-        wlmcl_client_signal_fd(dock_ptr->client_ptr),
-        WL_EVENT_READABLE,
-        handle_client_signal,
-        dock_ptr);
-    if (NULL == dock_ptr->client_signal_event_source_ptr) {
-        bs_log(BS_ERROR, "Failed to register client signal fd to event loop.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
     // Commit empty client surface to trigger the parent compositor configure request.
     wl_surface_commit(wl_surface_ptr);
 
@@ -553,6 +576,11 @@ wlmdock_t *_wlmdock_create(
 void _wlmdock_destroy(wlmdock_t *dock_ptr)
 {
     if (NULL == dock_ptr) return;
+
+    if (NULL != dock_ptr->subprocess_monitor_ptr) {
+        wlm_util_subprocess_monitor_destroy(dock_ptr->subprocess_monitor_ptr);
+        dock_ptr->subprocess_monitor_ptr = NULL;
+    }
 
     if (NULL != dock_ptr->client_signal_event_source_ptr) {
         wl_event_source_remove(dock_ptr->client_signal_event_source_ptr);
