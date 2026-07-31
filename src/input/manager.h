@@ -112,7 +112,9 @@ typedef bool (*wlmim_keybinding_callback_t)(
  * will be set up as desired.
  *
  * @param wl_display_ptr
- * @param wlr_backend_ptr
+ * @param wlr_backend_ptr     Note: In order to not miss any input devices, the
+ *                            backend should be started *after* creating the
+ *                            input manager.
  * @param wlr_output_layout_ptr
  * @param wlr_seat_ptr
  * @param config_dict_ptr     May be NULL, would indicate an empty dict.
