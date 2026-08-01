@@ -72,6 +72,12 @@ wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+wlmtk_container_t *wlmdock_tilebox_container(wlmdock_tilebox_t *tilebox_ptr)
+{
+    return &tilebox_ptr->tile_box.super_container;
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmdock_tilebox_add_tile(wlmdock_tilebox_t *tilebox_ptr,
                               wlmtk_tile_t *tile_ptr)
 {

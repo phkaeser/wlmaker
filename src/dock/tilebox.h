@@ -58,6 +58,15 @@ void wlmdock_tilebox_destroy(wlmdock_tilebox_t *tilebox_ptr);
 wlmtk_element_t *wlmdock_tilebox_element(wlmdock_tilebox_t *tilebox_ptr);
 
 /**
+ * Returns the tilebox' root @ref wlmtk_container_t.
+ *
+ * @param tilebox_ptr
+ *
+ * @return Pointer to the super container of @ref wlmdock_tilebox_t::tile_box.
+ */
+wlmtk_container_t *wlmdock_tilebox_container(wlmdock_tilebox_t *tilebox_ptr);
+
+/**
  * Adds the tile to the tile box.
  *
  * @param tilebox_ptr
