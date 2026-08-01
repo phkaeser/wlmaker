@@ -90,9 +90,6 @@ typedef struct {
     /** Monitoring for subprocesses. */
     wlm_util_subprocess_monitor_t *subprocess_monitor_ptr;
 
-    /** Listener for output frame callback. */
-    struct wl_listener         frame_listener;
-
     /** Event source for monitoring signals via client's signal_fd. */
     struct wl_event_source    *client_signal_event_source_ptr;
 } wlmdock_t;
@@ -366,18 +363,6 @@ wlmdock_t *_wlmdock_create(
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
-    static const char *plist_ptr =
-        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(
-        bspl_create_object_from_plist_string(plist_ptr));
-    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-            &style_ptr->tile,
-            dict_ptr,
-            dock_ptr->subprocess_monitor_ptr,
-            files_ptr);
-    wlmdock_tilebox_add_tile(
-        dock_ptr->tilebox_ptr,
-        wlmdock_launcher_tile(launcher_ptr));
 
     // 6. Prepare renderer and allocator.
     dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(dock_ptr->wlr_backend_ptr);
@@ -407,7 +392,7 @@ wlmdock_t *_wlmdock_create(
         // TODO(kaeser@gubbe.ch): Find a way to not provide a cursor style,
         // when using the cursor shape extension.
         &style_ptr->cursor,
-        wlmdock_tilebox_element(dock_ptr->tilebox_ptr));
+        wlmdock_tilebox_container(dock_ptr->tilebox_ptr));
     if (NULL == dock_ptr->subcompositor_ptr) {
         _wlmdock_destroy(dock_ptr);
         return NULL;
@@ -456,6 +441,19 @@ wlmdock_t *_wlmdock_create(
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
+
+    static const char *plist_ptr =
+        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
+    bspl_dict_t *dict_ptr = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(plist_ptr));
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+            &style_ptr->tile,
+            dict_ptr,
+            dock_ptr->subprocess_monitor_ptr,
+            files_ptr);
+    wlmdock_tilebox_add_tile(
+        dock_ptr->tilebox_ptr,
+        wlmdock_launcher_tile(launcher_ptr));
 
     launcher_ptr = wlmdock_launcher_create_from_plist(
             &style_ptr->tile,

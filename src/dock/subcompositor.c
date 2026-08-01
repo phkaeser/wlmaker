@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <toolkit/toolkit.h>
-#include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -54,8 +53,8 @@ struct _wlmdock_subcompositor_t {
     wlmcl_client_t            *client_ptr;
     /** Layer shell surface on parent compositor. */
     wlmcl_layer_surface_t     *layer_surface_ptr;
-    /** The toolkit element this surface will display. */
-    wlmtk_element_t *element_ptr;
+    /** The toolkit container this surface will display. */
+    wlmtk_container_t         *container_ptr;
 
     /** Output layout for this surface's compositor. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
@@ -80,14 +79,21 @@ struct _wlmdock_subcompositor_t {
 
     /** For `events.frame` of @ref wlmdock_subcompositor_t::wlr_output_ptr. */
     struct wl_listener        output_frame_listener;
+    /** For @ref wlmtk_container_t::events for layout_invalidated. */
+    struct wl_listener        container_layout_invalidated_listener;
 
     /** Requested width of the layout's surface, in pixels. */
     int                       requested_width;
     /** Requested height of the layout's surface, in pixels. */
     int                       requested_height;
+
+    /** The configured width of the layou't surface, in pixels. */
+    int                       configured_width;
+    /** The configured height of the layou't surface, in pixels. */
+    int                       configured_height;
 };
 
-static bool _wlmdock_subcompositor_request_size(
+static void _wlmdock_subcompositor_request_size(
     wlmdock_subcompositor_t *subcompositor_ptr);
 static void _wlmdock_subcompositor_element_layout(
     wlmtk_element_t *element_ptr);
@@ -102,11 +108,16 @@ static void _wlmdock_subcompositor_handle_wlclient_keyboard_repeat_info(
 static void _wlmdock_subcompositor_handle_output_frame(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmdock_subcompositor_handle_container_layout_invalidated(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmdock_subcompositor_handle_layer_surface_configure(
     void *userdata_ptr,
     uint32_t width,
     uint32_t height);
+static void _wlmdock_subcompositor_commit(
+    wlmdock_subcompositor_t *subcompositor_ptr);
 
 /* == Data ================================================================= */
 
@@ -124,7 +135,7 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     wlmcl_client_t *client_ptr,
     wlmcl_layer_surface_t *layer_surface_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    wlmtk_element_t *element_ptr)
+    wlmtk_container_t *container_ptr)
 {
     wlmdock_subcompositor_t *subcompositor_ptr = logged_calloc(
         1, sizeof(*subcompositor_ptr));
@@ -180,8 +191,15 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     wlmtk_element_set_visible(
         &subcompositor_ptr->container.super_element,
         true);
-    wlmtk_container_add_element(&subcompositor_ptr->container, element_ptr);
-    subcompositor_ptr->element_ptr = element_ptr;
+    wlmtk_container_add_element(&subcompositor_ptr->container,
+                                &container_ptr->super_element);
+    wlmtk_util_connect_listener_signal(
+        &container_ptr->events.layout_invalidated,
+        &subcompositor_ptr->container_layout_invalidated_listener,
+        _wlmdock_subcompositor_handle_container_layout_invalidated);
+
+    subcompositor_ptr->container_ptr = container_ptr;
+
 
     subcompositor_ptr->root_ptr = wlmtk_root_create(
         wlmdock_subcompositor_element(subcompositor_ptr),
@@ -263,9 +281,8 @@ bool wlmdock_subcompositor_start(
         return false;
     }
 
-    wl_surface_commit(
-        wlmcl_layer_surface_wl_surface(subcompositor_ptr->layer_surface_ptr));
-
+    _wlmdock_subcompositor_request_size(subcompositor_ptr);
+    _wlmdock_subcompositor_commit(subcompositor_ptr);
     return true;
 }
 
@@ -282,10 +299,11 @@ void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
         subcompositor_ptr->wlr_seat_ptr = NULL;
     }
 
-    if (NULL != subcompositor_ptr->element_ptr) {
-        wlmtk_container_remove_element(&subcompositor_ptr->container,
-                                       subcompositor_ptr->element_ptr);
-        subcompositor_ptr->element_ptr = NULL;
+    if (NULL != subcompositor_ptr->container_ptr) {
+        wlmtk_container_remove_element(
+            &subcompositor_ptr->container,
+            &subcompositor_ptr->container_ptr->super_element);
+        subcompositor_ptr->container_ptr = NULL;
     }
     wlmtk_container_fini(&subcompositor_ptr->container);
 
@@ -335,24 +353,39 @@ wlmtk_element_t *wlmdock_subcompositor_element(
 
 /* ------------------------------------------------------------------------- */
 /** Checks the element's size and requests updated size, if needed. */
-bool _wlmdock_subcompositor_request_size(
+void _wlmdock_subcompositor_request_size(
     wlmdock_subcompositor_t *subcompositor_ptr)
 {
     // Retrieve needed size. Only request an update, if it changed.
     struct wlr_box box = wlmtk_element_get_dimensions_box(
-        subcompositor_ptr->element_ptr);
-    if (0 >= box.width || 0 >= box.height ||
-        (box.width == subcompositor_ptr->requested_width &&
-         box.height == subcompositor_ptr->requested_height)) {
-        return false;
-    }
+        &subcompositor_ptr->container_ptr->super_element);
+    if (subcompositor_ptr->requested_width == box.width &&
+        subcompositor_ptr->requested_height == box.height) return;
 
     subcompositor_ptr->requested_width = box.width;
     subcompositor_ptr->requested_height = box.height;
+    if (0 >= box.width || 0 >= box.height) {
+        // Disable the output, if no more size available.
+        if (NULL != subcompositor_ptr->wlr_output_ptr) {
+            struct wlr_output_state state;
+            wlr_output_state_init(&state);
+            wlr_output_state_set_enabled(&state, false);
+            if (!wlr_output_commit_state(subcompositor_ptr->wlr_output_ptr,
+                                         &state)) {
+                bs_log(BS_WARNING, "Failed wlr_output_commit_state(%p, %p)",
+                       subcompositor_ptr->wlr_output_ptr,
+                       &state);
+            }
+            wlr_output_state_finish(&state);
+            // Unclear: Do we need to also attach a NULL buffer to the surface
+            // and commit?
+        }
+        return;
+    }
+
     wlmcl_layer_surface_request_size(
         subcompositor_ptr->layer_surface_ptr,
         box.width, box.height);
-    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -393,11 +426,11 @@ static void _wlmdock_subcompositor_handle_wlclient_keyboard_repeat_info(
         wlclient_keyboard_repeat_info_listener);
 
     if (NULL == subcompositor_ptr->input_manager_ptr) return;
-    int32_t r, d;
+    int32_t repeat, delay;
     if (wlmcl_client_get_repeat_info(
-            subcompositor_ptr->client_ptr, &r, &d)) {
+            subcompositor_ptr->client_ptr, &repeat, &delay)) {
         wlmim_input_manager_set_repeat_info(
-            subcompositor_ptr->input_manager_ptr, r, d);
+            subcompositor_ptr->input_manager_ptr, repeat, delay);
     }
 }
 
@@ -411,13 +444,27 @@ void _wlmdock_subcompositor_handle_output_frame(
         listener_ptr, wlmdock_subcompositor_t, output_frame_listener);
 
     if (!wlr_scene_output_commit(subcompositor_ptr->wlr_scene_output_ptr, NULL)) {
-        bs_log(BS_WARNING, "wlr_scene_output_commit() failed.");
+        bs_log(BS_WARNING, "wlr_scene_output_commit(%p, NULL) failed.",
+               subcompositor_ptr->wlr_scene_output_ptr);
     }
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     wlr_scene_output_send_frame_done(
         subcompositor_ptr->wlr_scene_output_ptr, &now);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles when the tilebox' layout is invalidated. Reconfigure the output. */
+void _wlmdock_subcompositor_handle_container_layout_invalidated(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmdock_subcompositor_t *subcompositor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmdock_subcompositor_t,
+        container_layout_invalidated_listener);
+
+    _wlmdock_subcompositor_request_size(subcompositor_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -429,25 +476,41 @@ void _wlmdock_subcompositor_handle_layer_surface_configure(
 {
     wlmdock_subcompositor_t *subcompositor_ptr = userdata_ptr;
 
-    _wlmdock_subcompositor_request_size(subcompositor_ptr);
+    subcompositor_ptr->configured_width = width;
+    subcompositor_ptr->configured_height = height;
+    _wlmdock_subcompositor_commit(subcompositor_ptr);
+}
 
-    if (NULL != subcompositor_ptr->wlr_output_ptr) {
-        struct wlr_output_state state;
-        wlr_output_state_init(&state);
-        wlr_output_state_set_enabled(&state, true);
-        wlr_output_state_set_custom_mode(&state, width, height, 0);
-        if (!wlr_output_commit_state(subcompositor_ptr->wlr_output_ptr, &state)) {
-            bs_log(BS_WARNING, "Failed wlr_output_commit_state(%p, %p) for %d x %d",
-                   subcompositor_ptr->wlr_output_ptr, &state, width, height);
-        }
-        wlr_output_state_finish(&state);
+/* ------------------------------------------------------------------------- */
+/** Commits output dimensions and scene graph. */
+void _wlmdock_subcompositor_commit(wlmdock_subcompositor_t *subcompositor_ptr)
+{
+    if (NULL == subcompositor_ptr->wlr_output_ptr ||
+        NULL == subcompositor_ptr->wlr_scene_output_ptr) return;
+
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+    wlr_output_state_set_enabled(
+        &state,
+        subcompositor_ptr->configured_width != 0 &&
+        subcompositor_ptr->configured_height != 0);
+    wlr_output_state_set_custom_mode(
+        &state,
+        subcompositor_ptr->configured_width,
+        subcompositor_ptr->configured_height,
+        0);
+    if (!wlr_output_commit_state(subcompositor_ptr->wlr_output_ptr, &state)) {
+        bs_log(BS_WARNING, "Failed wlr_output_commit_state(%p, %p) for %d x %d",
+               subcompositor_ptr->wlr_output_ptr,
+               &state,
+               subcompositor_ptr->configured_width,
+               subcompositor_ptr->configured_height);
     }
+    wlr_output_state_finish(&state);
 
-    if (NULL != subcompositor_ptr->wlr_scene_output_ptr) {
-        if (!wlr_scene_output_commit(subcompositor_ptr->wlr_scene_output_ptr, NULL)) {
-            bs_log(BS_WARNING, "Failed wlr_scene_output_commit(%p, NULL)",
-                   subcompositor_ptr->wlr_scene_output_ptr);
-        }
+    if (!wlr_scene_output_commit(subcompositor_ptr->wlr_scene_output_ptr, NULL)) {
+        bs_log(BS_WARNING, "Failed wlr_scene_output_commit(%p, NULL)",
+               subcompositor_ptr->wlr_scene_output_ptr);
     }
 }
 

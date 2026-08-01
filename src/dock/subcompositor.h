@@ -50,7 +50,7 @@ typedef struct _wlmdock_subcompositor_t wlmdock_subcompositor_t;
  * @param client_ptr
  * @param layer_surface_ptr
  * @param cursor_style_ptr
- * @param element_ptr
+ * @param container_ptr
  *
  * @return Handle of the compositor, or NULL on error.
  */
@@ -60,7 +60,7 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     wlmcl_client_t *client_ptr,
     wlmcl_layer_surface_t *layer_surface_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    wlmtk_element_t *element_ptr);
+    wlmtk_container_t *container_ptr);
 
 /**
  * Starts the subcompositor.
