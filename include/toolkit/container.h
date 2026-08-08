@@ -71,7 +71,13 @@ struct _wlmtk_container_t {
     wlmtk_element_t           *keyboard_focus_element_ptr;
 
     /** @private Stores whether the layout had been invalidated. */
-    bool                      invalidated_layout;
+    bool                      layout_invalidated;
+
+    /** Events of the container. */
+    struct {
+        /** Raised when the layout is invalidated. Listener can redraw. */
+        struct wl_signal      layout_invalidated;
+    } events;
 };
 
 /**

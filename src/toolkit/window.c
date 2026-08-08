@@ -1463,7 +1463,7 @@ void test_decoration(bs_test_t *test_ptr)
     wlmtk_element_layout(wlmtk_window_element(w));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        w->bordered.super_container.invalidated_layout);
+        w->bordered.super_container.layout_invalidated);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 32, 10,
         wlmtk_element_get_dimensions_box(te));
