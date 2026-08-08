@@ -100,6 +100,7 @@ bool wlmtk_container_init(wlmtk_container_t *container_ptr)
 {
     BS_ASSERT(NULL != container_ptr);
     *container_ptr = (wlmtk_container_t){};
+    wl_signal_init(&container_ptr->events.layout_invalidated);
 
     if (!wlmtk_element_init(&container_ptr->super_element)) {
         return false;
@@ -395,9 +396,11 @@ void wlmtk_container_set_keyboard_focus_element(
 void wlmtk_container_invalidate_layout(
     wlmtk_container_t *container_ptr)
 {
-    container_ptr->invalidated_layout = true;
+    container_ptr->layout_invalidated = true;
 
     wlmtk_element_invalidate_parent_layout(&container_ptr->super_element);
+
+    wl_signal_emit(&container_ptr->events.layout_invalidated, container_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -768,8 +771,8 @@ void _wlmtk_container_element_layout(wlmtk_element_t *element_ptr)
     wlmtk_container_t *container_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_container_t, super_element);
 
-    if (!container_ptr->invalidated_layout) return;
-    container_ptr->invalidated_layout = false;
+    if (!container_ptr->layout_invalidated) return;
+    container_ptr->layout_invalidated = false;
 
     bs_dllist_for_each(
         &container_ptr->elements,
