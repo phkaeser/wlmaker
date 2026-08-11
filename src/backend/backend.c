@@ -75,7 +75,7 @@ struct _wlmbe_backend_t {
     /** The output manager(s). */
     wlmbe_output_manager_t    *output_manager_ptr;
 
-    /** Listener for wlr_backend::events::new_input. */
+    /** Listener for wlr_backend::events::new_output. */
     struct wl_listener        new_output_listener;
 
     /** Desired output width, for windowed mode. 0 for no preference. */
