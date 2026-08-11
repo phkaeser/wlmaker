@@ -227,6 +227,9 @@ wlmim_t *wlmim_input_manager_create(
 /* ------------------------------------------------------------------------- */
 void wlmim_input_manager_destroy(wlmim_t *input_manager_ptr)
 {
+    wlmtk_util_disconnect_listener(
+        &input_manager_ptr->backend_new_input_device_listener);
+
     bs_dllist_for_each(
         &input_manager_ptr->keybindings,
         _wlmim_unbind_node,

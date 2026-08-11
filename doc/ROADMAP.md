@@ -33,8 +33,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Use exclusive zone + width to not overlap with other layer elements.
   * `wlmaker` respects exclusive zone from dock(s) when determining maximizing extents.
   * Fixes
-    * Resolve leaks, as reported by valgrind.
-    * Fix crash on shutdown observed on `wlroots-0.20`.
+    * [done] Resolve leaks, as reported by valgrind.
+    * [done] Fix crash on shutdown observed on `wlroots-0.20`.
 
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.
