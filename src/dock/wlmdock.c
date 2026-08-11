@@ -366,7 +366,8 @@ wlmdock_t *_wlmdock_create(
     }
 
     // 6. Prepare renderer and allocator.
-    dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(dock_ptr->wlr_backend_ptr);
+    dock_ptr->wlr_renderer_ptr = wlr_renderer_autocreate(
+        dock_ptr->wlr_backend_ptr);
     if (NULL == dock_ptr->wlr_renderer_ptr) {
         bs_log(BS_ERROR, "Failed to create renderer.");
         _wlmdock_destroy(dock_ptr);
@@ -486,31 +487,35 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
         dock_ptr->client_signal_event_source_ptr = NULL;
     }
 
-    if (NULL != dock_ptr->wlr_allocator_ptr) {
-        wlr_allocator_destroy(dock_ptr->wlr_allocator_ptr);
-    }
-    if (NULL != dock_ptr->wlr_renderer_ptr) {
-        wlr_renderer_destroy(dock_ptr->wlr_renderer_ptr);
-    }
-
     if (NULL != dock_ptr->subcompositor_ptr) {
         wlmdock_subcompositor_destroy(dock_ptr->subcompositor_ptr);
         dock_ptr->subcompositor_ptr = NULL;
+    }
+    if (NULL != dock_ptr->wlr_renderer_ptr) {
+        wlr_renderer_destroy(dock_ptr->wlr_renderer_ptr);
+        dock_ptr->wlr_renderer_ptr = NULL;
+    }
+    if (NULL != dock_ptr->wlr_allocator_ptr) {
+        wlr_allocator_destroy(dock_ptr->wlr_allocator_ptr);
+        dock_ptr->wlr_allocator_ptr = NULL;
     }
     if (NULL != dock_ptr->tilebox_ptr) {
         wlmdock_tilebox_destroy(dock_ptr->tilebox_ptr);
         dock_ptr->tilebox_ptr = NULL;
     }
 
-
     if (NULL != dock_ptr->local_display_ptr) {
         wl_display_destroy(dock_ptr->local_display_ptr);
+        dock_ptr->local_display_ptr = NULL;
     }
+
     if (NULL != dock_ptr->layer_surface_ptr) {
         wlmcl_layer_surface_destroy(dock_ptr->layer_surface_ptr);
+        dock_ptr->layer_surface_ptr = NULL;
     }
     if (NULL != dock_ptr->client_ptr) {
         wlmcl_client_destroy(dock_ptr->client_ptr);
+        dock_ptr->client_ptr = NULL;
     }
 
     free(dock_ptr);
