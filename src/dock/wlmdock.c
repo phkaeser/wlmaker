@@ -296,6 +296,7 @@ int main(int argc, const char **argv)
     bs_log(BS_INFO, "wlmdock: event loop exited.");
 
     _wlmdock_destroy(dock_ptr);
+    bspl_decoded_destroy(wlmaker_config_style_desc, &style);
 
     if (NULL != files_ptr) wlm_util_files_destroy(files_ptr);
 
@@ -463,6 +464,8 @@ wlmdock_t *_wlmdock_create(
     wlmdock_tilebox_add_tile(
         dock_ptr->tilebox_ptr,
         wlmdock_launcher_tile(launcher_ptr));
+
+    bspl_dict_unref(dict_ptr);
 
     return dock_ptr;
 }

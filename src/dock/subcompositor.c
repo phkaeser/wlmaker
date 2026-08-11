@@ -197,9 +197,7 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
         &container_ptr->events.layout_invalidated,
         &subcompositor_ptr->container_layout_invalidated_listener,
         _wlmdock_subcompositor_handle_container_layout_invalidated);
-
     subcompositor_ptr->container_ptr = container_ptr;
-
 
     subcompositor_ptr->root_ptr = wlmtk_root_create(
         wlmdock_subcompositor_element(subcompositor_ptr),
@@ -300,6 +298,8 @@ void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
     }
 
     if (NULL != subcompositor_ptr->container_ptr) {
+        wlmtk_util_disconnect_listener(
+            &subcompositor_ptr->container_layout_invalidated_listener);
         wlmtk_container_remove_element(
             &subcompositor_ptr->container,
             &subcompositor_ptr->container_ptr->super_element);
@@ -356,6 +356,8 @@ wlmtk_element_t *wlmdock_subcompositor_element(
 void _wlmdock_subcompositor_request_size(
     wlmdock_subcompositor_t *subcompositor_ptr)
 {
+    if (NULL == subcompositor_ptr->container_ptr) return;
+
     // Retrieve needed size. Only request an update, if it changed.
     struct wlr_box box = wlmtk_element_get_dimensions_box(
         &subcompositor_ptr->container_ptr->super_element);
