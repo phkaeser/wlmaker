@@ -83,15 +83,6 @@ static wlmaker_server_options_t wlmaker_server_options = {
     .bind_with_logo = false,
 };
 
-/** Log levels. */
-static const bs_arg_enum_table_t wlmaker_log_levels[] = {
-    { .name_ptr = "DEBUG", BS_DEBUG },
-    { .name_ptr = "INFO", BS_INFO },
-    { .name_ptr = "WARNING", BS_WARNING },
-    { .name_ptr = "ERROR", BS_ERROR },
-    { .name_ptr = NULL },
-};
-
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmaker_args[] = {
 #if defined(WLMAKER_HAVE_XWAYLAND)
@@ -127,12 +118,7 @@ static const bs_arg_t wlmaker_args[] = {
         "wlmaker will use a built-in definition for the root menu.",
         NULL,
         &wlmaker_arg_root_menu_file_ptr),
-    BS_ARG_ENUM(
-        "log_level",
-        "Log level to apply. One of DEBUG, INFO, WARNING, ERROR.",
-        "INFO",
-        &wlmaker_log_levels[0],
-        (int*)&bs_log_severity),
+    bs_arg_log_level,
     BS_ARG_BOOL(
         "bind_with_logo",
         "Optional: Whether to add 'Logo' as modifier to each key binding. "
