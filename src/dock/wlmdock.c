@@ -121,15 +121,6 @@ static char *wlmdock_arg_config_file_ptr = NULL;
 /** Will hold the value of --theme_file. */
 static char *wlmdock_arg_theme_file_ptr = NULL;
 
-/** Log levels. */
-static const bs_arg_enum_table_t wlmdock_log_levels[] = {
-    { .name_ptr = "DEBUG", BS_DEBUG },
-    { .name_ptr = "INFO", BS_INFO },
-    { .name_ptr = "WARNING", BS_WARNING },
-    { .name_ptr = "ERROR", BS_ERROR },
-    { .name_ptr = NULL },
-};
-
 /** Definition of commandline arguments. */
 static const bs_arg_t wlmdock_args[] = {
     BS_ARG_STRING(
@@ -145,12 +136,7 @@ static const bs_arg_t wlmdock_args[] = {
         "elements. If not provided, wlmaker will use a built-in default theme.",
         NULL,
         &wlmdock_arg_theme_file_ptr),
-    BS_ARG_ENUM(
-        "log_level",
-        "Log level to apply. One of DEBUG, INFO, WARNING, ERROR.",
-        "INFO",
-        &wlmdock_log_levels[0],
-        (int*)&bs_log_severity),
+    bs_arg_log_level,
     BS_ARG_SENTINEL()
 };
 
