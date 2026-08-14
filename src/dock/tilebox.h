@@ -20,6 +20,7 @@
 #ifndef __WLMAKER_DOCK_TILEBOX_H__
 #define __WLMAKER_DOCK_TILEBOX_H__
 
+#include <stdbool.h>
 #include <toolkit/toolkit.h>
 
 #ifdef __cplusplus
@@ -33,12 +34,14 @@ typedef struct _wlmdock_tilebox wlmdock_tilebox_t;
  * Creates a tile box.
  *
  * @param orientation
+ * @param reverse
  * @param style_ptr
  *
  * @return Handle to the tile box' state, or NULL on error.
  */
 wlmdock_tilebox_t *wlmdock_tilebox_create(
     wlmtk_box_orientation_t orientation,
+    bool reverse,
     const struct wlmtk_dock_style *style_ptr);
 
 /**

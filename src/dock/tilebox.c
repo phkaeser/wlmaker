@@ -31,7 +31,8 @@
 struct _wlmdock_tilebox {
     /** Box holding the tiles. */
     wlmtk_box_t               tile_box;
-
+    /** Whether to add tiles in 'reverse'. */
+    bool                      reverse;
     /** List of tiles, via @ref wlmtk_dlnode_from_tile. */
     bs_dllist_t               tiles;
 };
@@ -41,10 +42,12 @@ struct _wlmdock_tilebox {
 /* ------------------------------------------------------------------------- */
 wlmdock_tilebox_t *wlmdock_tilebox_create(
     wlmtk_box_orientation_t orientation,
+    bool reverse,
     const struct wlmtk_dock_style *style_ptr)
 {
     wlmdock_tilebox_t *tilebox_ptr = logged_calloc(1, sizeof(*tilebox_ptr));
     if (NULL == tilebox_ptr) return NULL;
+    tilebox_ptr->reverse = reverse;
 
     if (!wlmtk_box_init(
             &tilebox_ptr->tile_box,
@@ -82,12 +85,21 @@ void wlmdock_tilebox_add_tile(wlmdock_tilebox_t *tilebox_ptr,
                               wlmtk_tile_t *tile_ptr)
 {
     BS_ASSERT(NULL == wlmtk_tile_element(tile_ptr)->parent_container_ptr);
-    wlmtk_box_add_element_back(
-        &tilebox_ptr->tile_box,
-        wlmtk_tile_element(tile_ptr));
-    bs_dllist_push_back(
-        &tilebox_ptr->tiles,
-        wlmtk_dlnode_from_tile(tile_ptr));
+    if (tilebox_ptr->reverse) {
+        wlmtk_box_add_element_front(
+            &tilebox_ptr->tile_box,
+            wlmtk_tile_element(tile_ptr));
+        bs_dllist_push_front(
+            &tilebox_ptr->tiles,
+            wlmtk_dlnode_from_tile(tile_ptr));
+    } else {
+        wlmtk_box_add_element_back(
+            &tilebox_ptr->tile_box,
+            wlmtk_tile_element(tile_ptr));
+        bs_dllist_push_back(
+            &tilebox_ptr->tiles,
+            wlmtk_dlnode_from_tile(tile_ptr));
+    }
 }
 
 /* ------------------------------------------------------------------------- */
