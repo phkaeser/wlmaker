@@ -213,28 +213,56 @@ struct wlr_box wlmtk_panel_compute_dimensions(
         dims.y = max_dims.y + max_dims.height / 2 - dims.height / 2;
     }
 
-    // Update the usable area, if there is an exclusive zone.
+    // Do not update the usable area, if there is no exclusive zone.
     int exclusive_zone = panel_ptr->positioning.exclusive_zone;
-    if (0 < exclusive_zone) {
+    if (0 >= exclusive_zone) return dims;
+
+    uint32_t exclusive_edge = panel_ptr->positioning.exclusive_edge;
+    if (0 == exclusive_edge) {
         if (anchor == WLR_EDGE_LEFT ||
             anchor == (WLR_EDGE_LEFT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
-            usable_area_ptr->x += exclusive_zone + margin_left;
-            usable_area_ptr->width -= exclusive_zone + margin_left;
+            exclusive_edge = WLR_EDGE_LEFT;
         }
         if (anchor == WLR_EDGE_RIGHT ||
             anchor == (WLR_EDGE_RIGHT | WLR_EDGE_TOP | WLR_EDGE_BOTTOM)) {
-            usable_area_ptr->width -= exclusive_zone + margin_right;
+            exclusive_edge = WLR_EDGE_RIGHT;
         }
         if (anchor == WLR_EDGE_TOP ||
             anchor == (WLR_EDGE_TOP | WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-            usable_area_ptr->y += exclusive_zone + margin_top;
-            usable_area_ptr->height -= exclusive_zone + margin_top;
+            exclusive_edge = WLR_EDGE_TOP;
         }
         if (anchor == WLR_EDGE_BOTTOM ||
             anchor == (WLR_EDGE_BOTTOM | WLR_EDGE_LEFT | WLR_EDGE_RIGHT)) {
-            usable_area_ptr->height -= exclusive_zone + margin_bottom;
+            exclusive_edge = WLR_EDGE_BOTTOM;
         }
+    } else if (0 == (exclusive_edge & anchor)) {
+        bs_log(BS_WARNING, "panel %p: Exclusive edge and anchor do "
+               "not overlap. Ignoring exclusize zone.", panel_ptr);
+        return dims;
     }
+
+    switch (exclusive_edge) {
+    case WLR_EDGE_LEFT:
+        usable_area_ptr->x += exclusive_zone + margin_left;
+        usable_area_ptr->width -= exclusive_zone + margin_left;
+        break;
+    case WLR_EDGE_RIGHT:
+        usable_area_ptr->width -= exclusive_zone + margin_right;
+        break;
+    case WLR_EDGE_TOP:
+        usable_area_ptr->y += exclusive_zone + margin_top;
+        usable_area_ptr->height -= exclusive_zone + margin_top;
+        break;
+    case WLR_EDGE_BOTTOM:
+        usable_area_ptr->height -= exclusive_zone + margin_bottom;
+        break;
+    default:
+        break;
+    }
+
+    // TODO(kaeser@gubbe.ch): Handle the protocol-specified case of zero and
+    // negative exclusive_zone settings: Desires to be moved, or not moved at
+    // all.
 
     return dims;
 }
@@ -310,13 +338,17 @@ uint32_t _wlmtk_fake_panel_request_size(
 
 static void test_init_fini(bs_test_t *test_ptr);
 static void test_compute_dimensions(bs_test_t *test_ptr);
-static void test_compute_dimensions_exclusive(bs_test_t *test_ptr);
+static void test_compute_dimensions_exclusive_anchor(bs_test_t *test_ptr);
+static void test_compute_dimensions_exclusive_edge(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_panel_test_cases[] = {
     { 1, "init_fini", test_init_fini },
     { 1, "compute_dimensions", test_compute_dimensions },
-    { 1, "compute_dimensions_exclusive", test_compute_dimensions_exclusive },
+    { 1, "compute_dimensions_exclusive_anchor",
+      test_compute_dimensions_exclusive_anchor },
+    { 1, "compute_dimensions_exclusive_edge",
+      test_compute_dimensions_exclusive_edge },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -406,8 +438,8 @@ void test_compute_dimensions(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-/** Verifies dimension computation with an exclusive_zone. */
-void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
+/** Verifies dimension computation with an exclusive_zone set by anchors. */
+void test_compute_dimensions_exclusive_anchor(bs_test_t *test_ptr)
 {
     wlmtk_panel_positioning_t pos = {
         .exclusive_zone = 16,
@@ -465,6 +497,47 @@ void test_compute_dimensions_exclusive(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 73, usable);
 
     wlmtk_fake_panel_destroy(fake_panel_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Verifies dimension computation when exclusive edge is given. */
+void test_compute_dimensions_exclusive_edge(bs_test_t *test_ptr)
+{
+    wlmtk_panel_positioning_t pos = {
+        .exclusive_zone = 16,
+        .anchor = (WLR_EDGE_LEFT | WLR_EDGE_TOP),
+        .margin_left = 40,
+        .margin_right = 30,
+        .margin_top = 20,
+        .margin_bottom = 10,
+        .desired_width = 26,
+        .desired_height = 28,
+    };
+
+    wlmtk_fake_panel_t *fake_panel_ptr = BS_ASSERT_NOTNULL(
+        wlmtk_fake_panel_create(&pos));
+    wlmtk_panel_t *p_ptr = &fake_panel_ptr->panel;
+
+    struct wlr_box extents = { .x = 0, .y = 0, .width = 200, .height = 100 };
+    struct wlr_box usable = { .x = 1, .y = 2, .width = 195, .height = 90 };
+    struct wlr_box dims;
+
+    // Anchored at two corners, but no exclusive edge: No exclusive zone.
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 26, 28, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 90, usable);
+
+    // Exclusive edge off the two anchors: No exclusive zone.
+    p_ptr->positioning.exclusive_edge = WLR_EDGE_RIGHT;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 26, 28, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 1, 2, 195, 90, usable);
+
+    // Exclusive edge overlaps with the two anchors: Exclusive zone applied.
+    p_ptr->positioning.exclusive_edge = WLR_EDGE_LEFT;
+    dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 26, 28, dims);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 57, 2, 139, 90, usable);
 }
 
 /* == End of panel.c ======================================================= */

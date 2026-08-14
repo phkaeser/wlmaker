@@ -70,6 +70,11 @@ struct _wlmtk_panel_positioning_t {
     int                       desired_height;
     /** Edges the panel is anchored to. See `enum wlr_edges`. */
     uint32_t                  anchor;
+    /**
+     * Optional: Edge the exclusive zone binds to. If set, it must overlap
+     * with edges given in @ref anchor.
+     */
+    uint32_t                  exclusive_edge;
 
     /** Margin on the left of the panel. */
     int                       margin_left;

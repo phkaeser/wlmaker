@@ -66,7 +66,7 @@ wlmaker_layer_shell_t *wlmaker_layer_shell_create(wlmaker_server_t *server_ptr)
     layer_shell_ptr->server_ptr = server_ptr;
 
     layer_shell_ptr->wlr_layer_shell_v1_ptr = wlr_layer_shell_v1_create(
-        server_ptr->wl_display_ptr, 4  /* version */);
+        server_ptr->wl_display_ptr, 5  /* version */);
     if (NULL == layer_shell_ptr->wlr_layer_shell_v1_ptr) {
         bs_log(BS_ERROR, "Failed wlr_layer_shell_v1_create()");
         return NULL;
