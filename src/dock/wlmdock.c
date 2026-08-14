@@ -41,6 +41,7 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/util/box.h>
+#include <wlr/util/edges.h>
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
@@ -92,11 +93,21 @@ typedef struct {
     struct wl_event_source    *client_signal_event_source_ptr;
 } wlmdock_t;
 
-static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
-static wlmdock_t *_wlmdock_create(
-    wlm_util_files_t *files_ptr,
-    wlmaker_config_style_t *style_ptr);
+/** TODO: Replace this. */
+struct wlmdock_state {
+    /** Positioning data. */
+    wlmtk_dock_positioning_t  positioning;
+    /** Launchers. */
+    bspl_array_t            *launchers_array_ptr;
+};
+
+static wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr);
 static void _wlmdock_destroy(wlmdock_t *dock_ptr);
+static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
+static bool _wlmdock_decode_launchers(
+    bspl_object_t *object_ptr,
+    const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr);
 
 /* == Data ================================================================= */
 
@@ -116,6 +127,8 @@ static const char *wlmdock_version_full = WLMAKER_VERSION_FULL;
 
 /** Will hold the value of --config_file. */
 static char *wlmdock_arg_config_file_ptr = NULL;
+/** Will hold the value of --state_file. */
+static char *wlmdock_arg_state_file_ptr = NULL;
 /** Will hold the value of --theme_file. */
 static char *wlmdock_arg_theme_file_ptr = NULL;
 
@@ -129,6 +142,13 @@ static const bs_arg_t wlmdock_args[] = {
         NULL,
         &wlmdock_arg_config_file_ptr),
     BS_ARG_STRING(
+        "state_file",
+        "Optional: Path to a state file, with state of workspaces, dock and "
+        "clips configured. If not provided, wlmaker will scan default paths "
+        "for a state file, or fall back to a built-in default.",
+        NULL,
+        &wlmdock_arg_state_file_ptr),
+    BS_ARG_STRING(
         "theme_file",
         "Optional: Path to a \"theme\" file, configuring the visual style for "
         "elements. If not provided, wlmaker will use a built-in default theme.",
@@ -136,6 +156,33 @@ static const bs_arg_t wlmdock_args[] = {
         &wlmdock_arg_theme_file_ptr),
     bs_arg_log_level,
     BS_ARG_SENTINEL()
+};
+
+/** Enum descriptor for `enum wlr_edges`. */
+static const bspl_enum_desc_t _wlmdock_edges[] = {
+    BSPL_ENUM("TOP", WLR_EDGE_TOP),
+    BSPL_ENUM("BOTTOM", WLR_EDGE_BOTTOM),
+    BSPL_ENUM("LEFT", WLR_EDGE_LEFT),
+    BSPL_ENUM("RIGHT", WLR_EDGE_RIGHT),
+    BSPL_ENUM_SENTINEL(),
+};
+
+
+/** Descriptor for the dock's plist. */
+const bspl_desc_t _wlmdock_plist_desc[] = {
+    BSPL_DESC_ENUM("Edge", true, struct wlmdock_state,
+                   positioning.edge, positioning.edge,
+                   WLR_EDGE_NONE, _wlmdock_edges),
+    BSPL_DESC_ENUM("Anchor", true, struct wlmdock_state,
+                   positioning.anchor, positioning.anchor,
+                   WLR_EDGE_NONE, _wlmdock_edges),
+    BSPL_DESC_CUSTOM("Launchers", true, struct wlmdock_state,
+                     launchers_array_ptr, launchers_array_ptr,
+                     _wlmdock_decode_launchers,
+                     NULL,
+                     NULL,
+                     NULL),
+    BSPL_DESC_SENTINEL(),
 };
 
 /* == Main program ========================================================= */
@@ -197,11 +244,46 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    wlmdock_t *dock_ptr = _wlmdock_create(files_ptr, &style);
+    bspl_dict_t *state_dict_ptr = wlmaker_state_load(
+        files_ptr, wlmdock_arg_state_file_ptr);
+    if (NULL != wlmdock_arg_state_file_ptr) free(wlmdock_arg_state_file_ptr);
+    if (NULL == state_dict_ptr) {
+        fprintf(stderr, "Failed to load & initialize state.\n");
+        return EXIT_FAILURE;
+    }
+
+    wlmdock_t *dock_ptr = _wlmdock_create(&style);
     if (NULL == dock_ptr) {
         bs_log(BS_ERROR, "Failed to create wlmdock.");
         return EXIT_FAILURE;
     }
+
+    bspl_dict_t *dock_dict_ptr = bspl_dict_get_dict(state_dict_ptr, "Dock");
+    struct wlmdock_state state = {};
+    if (!bspl_decode_dict(dock_dict_ptr, _wlmdock_plist_desc, &state)) {
+        bs_log(BS_ERROR, "Failed to parse the State.");
+        return EXIT_FAILURE;
+    }
+
+    for (size_t i = 0; i < bspl_array_size(state.launchers_array_ptr); ++i) {
+        bspl_dict_t *dict_ptr = bspl_dict_from_object(
+            bspl_array_at(state.launchers_array_ptr, i));
+        if (NULL == dict_ptr) {
+            bs_log(BS_ERROR, "Elements of 'Launchers' must be dicts.");
+            return EXIT_FAILURE;
+        }
+
+        wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+            &style.tile,
+            dict_ptr,
+            dock_ptr->subprocess_monitor_ptr,
+            files_ptr);
+        if (NULL == launcher_ptr) return EXIT_FAILURE;
+        wlmdock_tilebox_add_tile(
+            dock_ptr->tilebox_ptr,
+            wlmdock_launcher_tile(launcher_ptr));
+    }
+    if (state.launchers_array_ptr) bspl_array_unref(state.launchers_array_ptr);
 
     if (0 > wl_display_roundtrip(dock_ptr->remote_display_ptr)) {
         bs_log(BS_ERROR, "Failed parent wl_display_roundtrip.");
@@ -218,14 +300,13 @@ int main(int argc, const char **argv)
 
     if (NULL != files_ptr) wlm_util_files_destroy(files_ptr);
 
+    bspl_dict_unref(state_dict_ptr);
     return EXIT_SUCCESS;
 }
 
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
-wlmdock_t *_wlmdock_create(
-    wlm_util_files_t *files_ptr,
-    wlmaker_config_style_t *style_ptr)
+wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
     if (NULL == dock_ptr) return NULL;
@@ -362,30 +443,6 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    static const char *plist_ptr =
-        "{CommandLine = \"/usr/bin/foot\"; Icon = \"chrome-56x56.png\";}";
-    bspl_dict_t *dict_ptr = bspl_dict_from_object(
-        bspl_create_object_from_plist_string(plist_ptr));
-    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-            &style_ptr->tile,
-            dict_ptr,
-            dock_ptr->subprocess_monitor_ptr,
-            files_ptr);
-    wlmdock_tilebox_add_tile(
-        dock_ptr->tilebox_ptr,
-        wlmdock_launcher_tile(launcher_ptr));
-
-    launcher_ptr = wlmdock_launcher_create_from_plist(
-            &style_ptr->tile,
-            dict_ptr,
-            dock_ptr->subprocess_monitor_ptr,
-            files_ptr);
-    wlmdock_tilebox_add_tile(
-        dock_ptr->tilebox_ptr,
-        wlmdock_launcher_tile(launcher_ptr));
-
-    bspl_dict_unref(dict_ptr);
-
     return dock_ptr;
 }
 
@@ -440,6 +497,22 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Decoder for the "Launchers" array. Currently just stores a reference. */
+bool _wlmdock_decode_launchers(
+    bspl_object_t *object_ptr,
+    __UNUSED__ const union bspl_desc_value *desc_value_ptr,
+    void *value_ptr)
+{
+    bspl_array_t **array_ptr_ptr = value_ptr;
+
+    *array_ptr_ptr = bspl_array_from_object(object_ptr);
+    if (NULL == *array_ptr_ptr) return false;
+
+    bspl_object_ref(bspl_object_from_array(*array_ptr_ptr));
+    return true;
+}
 
 /* ------------------------------------------------------------------------- */
 /** Handles client's signal fd events. */
