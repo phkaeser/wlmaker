@@ -24,9 +24,6 @@
 
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
-#include <limits.h>
-#include <regex.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -51,6 +48,7 @@
 #include "toolkit/toolkit.h"
 #include "util/backtrace.h"
 #include "util/files.h"
+#include "util/wlr_log.h"
 
 /** Will hold the value of --config_file. */
 static char *wlmaker_arg_config_file_ptr = NULL;
@@ -146,12 +144,6 @@ static const bs_arg_t wlmaker_args[] = {
 /** References auto-started subprocesses. */
 static bs_ptr_stack_t         wlmaker_subprocess_stack;
 
-/** Compiled regular expression for extracting file & line no. from wlr_log. */
-static regex_t                wlmaker_wlr_log_regex;
-/** Regular expression string for extracting file & line no. from wlr_log. */
-static const char             *wlmaker_wlr_log_regex_string =
-    "^\\[([^\\:]+)\\:([0-9]+)\\]\\ ";
-
 /** Contents of the workspace style. */
 typedef struct {
     /** Workspace name. */
@@ -168,56 +160,6 @@ static const bspl_desc_t wlmaker_workspace_style_desc[] = {
         "Color", false, wlmaker_workspace_style_t, color, color, 0),
     BSPL_DESC_SENTINEL()
 };
-
-/* ------------------------------------------------------------------------- */
-/**
- * Wraps the wlr_log calls on bs_log.
- *
- * @param importance
- * @param fmt
- * @param args
- */
-static void wlr_to_bs_log(
-    enum wlr_log_importance importance,
-    const char *fmt,
-    va_list args)
-{
-    bs_log_severity_t severity = BS_DEBUG;
-
-    switch (importance) {
-    case WLR_SILENT:  // Fall-through to DEBUG severity.
-    case WLR_DEBUG: severity = BS_DEBUG; break;
-    case WLR_INFO: severity = BS_INFO; break;
-    case WLR_ERROR: severity = BS_ERROR; break;
-    default: severity = BS_INFO; break;
-    }
-
-    if (!bs_will_log(severity)) return;
-
-    // Log to buffer. Ignores overflows.
-    char buf[BS_LOG_MAX_BUF_SIZE];
-    vsnprintf(buf, sizeof(buf), fmt, args);
-
-    regmatch_t matches[4];
-    if (0 != regexec(&wlmaker_wlr_log_regex, buf, 4, &matches[0], 0) ||
-        matches[0].rm_so != 0 ||
-        !(matches[0].rm_eo >= 6) ||  // Minimum "[x:1] ".
-        matches[1].rm_so != 1 ||
-        !(matches[2].rm_so > 2) ||
-        matches[3].rm_so != -1) {
-        bs_log(severity, "%s (wlr_log unexpected format!)", buf);
-        return;
-    }
-
-    buf[matches[1].rm_eo] = '\0';
-    buf[matches[2].rm_eo] = '\0';
-    uint64_t line_no = 0;
-    bs_strconvert_uint64(&buf[matches[2].rm_so], &line_no, 10);
-    line_no = BS_MIN((uint64_t)INT_MAX, line_no);
-
-    bs_log_write(severity, &buf[matches[1].rm_so], (int)line_no, "%s",
-        &buf[matches[0].rm_eo]);
-}
 
 /* ------------------------------------------------------------------------- */
 /** Launches a sub-process, and keeps it on the subprocess stack. */
@@ -307,19 +249,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     int                       rv = EXIT_SUCCESS;
 
     if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
+    if (!wlm_util_wlr_log_init(WLR_DEBUG)) return EXIT_FAILURE;
 
-    rv = regcomp(
-        &wlmaker_wlr_log_regex,
-        wlmaker_wlr_log_regex_string,
-        REG_EXTENDED);
-    if (0 != rv) {
-        char err_buf[512];
-        regerror(rv, &wlmaker_wlr_log_regex, err_buf, sizeof(err_buf));
-        bs_log(BS_ERROR, "Failed compiling regular expression: %s", err_buf);
-        return EXIT_FAILURE;
-    }
-
-    wlr_log_init(WLR_DEBUG, wlr_to_bs_log);
     bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
 
@@ -465,7 +396,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     bspl_decoded_destroy(wlmaker_config_style_desc, &style);
     bspl_dict_unref(config_dict_ptr);
     bspl_dict_unref(state_dict_ptr);
-    regfree(&wlmaker_wlr_log_regex);
     return rv;
 }
 

@@ -21,12 +21,14 @@ target_sources(
   backtrace.c
   files.c
   subprocess_monitor.c
+  wlr_log.c
 )
 target_include_directories(
   wlm_util_lib
   PRIVATE
   "${LIBXDGBASEDIR_INCLUDE_DIRS}"
   # TODO(kaeser@gubbe.ch): Move that to client-side compatible implementation.
+  "${WLROOTS_INCLUDE_DIRS}"
   "${WAYLAND_SERVER_INCLUDE_DIRS}"
 )
 target_link_libraries(
@@ -35,6 +37,7 @@ target_link_libraries(
   $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
   PkgConfig::LIBXDGBASEDIR
   PkgConfig::WAYLAND_SERVER
+  PkgConfig::WLROOTS
   libbase
 )
 
