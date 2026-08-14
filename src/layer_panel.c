@@ -432,6 +432,10 @@ void _wlmaker_layer_panel_handle_surface_commit(
     struct wlr_layer_surface_v1_state *state_ptr =
         &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending;
 
+    // FIXME: add exclusive_edge, and committed with EXCLUSIVE_EDGE
+    bs_log(BS_ERROR, "FIXME: committed %"PRIx32", exclusive edge %"PRIx32,
+           state_ptr->committed, state_ptr->exclusive_edge);
+
     wlmtk_panel_positioning_t pos = {
         .anchor = state_ptr->anchor,
         .desired_width = state_ptr->desired_width,
@@ -444,6 +448,19 @@ void _wlmaker_layer_panel_handle_surface_commit(
 
         .exclusive_zone = state_ptr->exclusive_zone
     };
+
+    // Sanity check 'exclusive edge' setting. If it's set.
+    if (state_ptr->committed & WLR_LAYER_SURFACE_V1_STATE_EXCLUSIVE_EDGE &&
+        state_ptr->exclusive_edge != (state_ptr->exclusive_edge &
+                                      state_ptr->anchor)) {
+        wl_resource_post_error(
+            layer_panel_ptr->wlr_layer_surface_v1_ptr->resource,
+            ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_EXCLUSIVE_EDGE,
+            "Invalid exclusive edge 0x%"PRIx32" for anchor 0x%"PRIx32,
+            state_ptr->exclusive_edge, pos.anchor);
+        return;
+    }
+
     // Sanity check position and anchor values.
     if ((0 == pos.desired_width &&
          0 == (pos.anchor & (WLR_EDGE_LEFT | WLR_EDGE_RIGHT))) ||
@@ -454,6 +471,7 @@ void _wlmaker_layer_panel_handle_surface_commit(
             ZWLR_LAYER_SURFACE_V1_ERROR_INVALID_SIZE,
             "Invalid size %d x %d for anchor 0x%"PRIx32,
             pos.desired_width, pos.desired_height, pos.anchor);
+        return;
     }
 
     wlmtk_panel_commit(
