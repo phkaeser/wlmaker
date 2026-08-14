@@ -33,7 +33,6 @@
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/edges.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "container.h"
@@ -1039,27 +1038,6 @@ void _wlmtk_window_reposition_window(
         workspace_ptr, window_ptr, output_box.x, output_box.y);
     wlmtk_window_request_size(window_ptr, &wbox);
 }
-
-// wlr_box_contains_box only available from wlroots >= 0.19.0.
-#if WLR_VERSION_NUM < (19 << 8)
-/** Whether `smaller` is fully contained in `bigger`. */
-static bool wlr_box_contains_box(
-    const struct wlr_box *parent_box_ptr,
-    const struct wlr_box *child_box_ptr)
-{
-    if (wlr_box_empty(parent_box_ptr) || wlr_box_empty(child_box_ptr)) {
-        return false;
-    }
-
-    return (
-        child_box_ptr->x >= parent_box_ptr->x &&
-        child_box_ptr->x + child_box_ptr->width <=
-        parent_box_ptr->x + parent_box_ptr->width &&
-        child_box_ptr->y >= parent_box_ptr->y &&
-        child_box_ptr->y + child_box_ptr->height <=
-        parent_box_ptr->y + parent_box_ptr->height);
-}
-#endif  // WLR_VERSION_NUM < (19 << 8)
 
 /* ------------------------------------------------------------------------- */
 /** Iterator for `bs_dllist_any`: Does window at `dlnode_ptr` overlap? */

@@ -14,20 +14,9 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
 
-# Further dependency versions, as submodules:
-# * drm at libdrm-2.4.117
-# * hwdata at v0.371
-# * libdisplay-info at 0.2.0
-# * pixman at pixman-0.43.0
 pkg_check_modules(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
-# We build for wlroots 0.18, 0.19 and (preparing for) 0.20.
-pkg_check_modules(WLROOTS IMPORTED_TARGET wlroots-0.20>=0.20)
-if(NOT WLROOTS_FOUND)
-  pkg_check_modules(WLROOTS IMPORTED_TARGET wlroots-0.19>=0.19)
-  if(NOT WLROOTS_FOUND)
-    pkg_check_modules(WLROOTS REQUIRED IMPORTED_TARGET wlroots-0.18>=0.18)
-  endif()
-endif()
+# We build for wlroots 0.20.
+pkg_check_modules(WLROOTS REQUIRED IMPORTED_TARGET wlroots-0.20>=0.20)
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 # XWayland considered optional.
 pkg_check_modules(XWAYLAND xwayland>=22.1.9)

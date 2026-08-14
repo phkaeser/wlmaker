@@ -25,6 +25,11 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  INSTALL_PATH: "${HOME}/wlmaker"
+  INSTALL_LIBRARY_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  INSTALL_PKGCONFIG_PATH: "${HOME}/wlmaker/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/pkgconfig/:${HOME}/wlmaker/share/pkgconfig/"
+
 jobs:
   # Generate documentation, in a container.
   generate_doc:
@@ -39,30 +44,70 @@ jobs:
           apt-get update
           apt-get install -y \
             bison \
+            clang \
             cmake \
             doxygen \
             flex \
             gcc \
             git \
+            hwdata \
+            libbacktrace-dev \
             libcairo2-dev \
-            libncurses-dev \
-            libwlroots-0.18-dev \
+            libdisplay-info-dev \
+            libdrm-dev \
+            libinput-dev \
+            libpixman-1-dev \
+            libseat-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxcb-composite0-dev \
+            libxcb-dri3-dev \
+            libxcb-ewmh-dev \
+            libxcb-icccm4-dev \
+            libxcb-present-dev \
+            libxcb-render-util0-dev \
+            libxcb-res0-dev \
+            libxcb-shm0-dev \
+            libxcb-xinput-dev \
+            libxcb-xkb-dev \
+            libxcb1-dev \
             libxdg-basedir-dev \
-            pkg-config \
+            libxkbcommon-dev \
+            meson \
+            pkgconf \
             plantuml \
-            wmaker
+            seatd \
+            wayland-protocols \
+            xmlto \
+            xsltproc
 
       - name: Checkout code, including git submodules.
         uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: recursive
+
+      - name: Configure and build dependencies/.
+        run: |
+          export CC="${{ matrix.compiler }}"
+          export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
+          export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+          export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+          cmake -DCMAKE_INSTALL_PREFIX:PATH=${{ env.INSTALL_PATH }} dependencies/ -B dependencies/build/
+          cmake --build dependencies/build
 
       - name: Configure wlmaker through CMake, with doxygen.
         run: |
+          export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
+          export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+          export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
           cmake -Dconfig_DOXYGEN_CRITICAL=ON -B build/
 
       - name: Build documentation.
-        run: cmake --build build/ --target doc
+        run: |
+          export PKG_CONFIG_PATH="${{ env.INSTALL_PKGCONFIG_PATH }}"
+          export LD_LIBRARY_PATH="${{ env.INSTALL_LIBRARY_PATH }}"
+          export PATH="${PATH}:${{ env.INSTALL_PATH }}/bin"
+          cmake --build build/ --target doc
 
       - name: Configure GitHub Pages.
         uses: actions/configure-pages@v5
