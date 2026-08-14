@@ -1,4 +1,4 @@
-name: Build for Debian Trixie, with libwlroots-0.18-dev package
+name: Build for Fedora Linux 44
 
 on:
   push:
@@ -13,29 +13,27 @@ jobs:
         compiler: [ "gcc", "clang" ]
     runs-on: ubuntu-latest
     container:
-      image: debian:trixie
+      image: fedora:44
 
     steps:
     - name: Install package dependencies.
       run: |
-        apt-get update
-        apt-get install -y \
+        dnf -y upgrade
+        dnf -y install \
           bison \
+          cairo-devel \
           clang \
           cmake \
-          desktop-file-utils \
           flex \
           gcc \
           git \
-          iwyu \
-          libbacktrace-dev \
-          libcairo2-dev \
-          libncurses-dev \
-          libwlroots-0.18-dev \
-          libxdg-basedir-dev \
+          libxdg-basedir-devel \
+          ncurses-devel \
           pkg-config \
           plantuml \
-          xwayland
+          wayland-protocols-devel \
+          wlroots-devel \
+          xwayland-run
 
     - name: Checkout code, including git submodules.
       uses: actions/checkout@v3
@@ -47,7 +45,7 @@ jobs:
     - name: Configure wlmaker through CMake.
       run: |
         export CC="${{ matrix.compiler }}"
-        cmake -B build/ -Dconfig_WERROR=ON -DIWYU_MODE=FAIL
+        cmake -B build/ -Dconfig_WERROR=ON
 
     - name: Build wlmaker.
       run: |

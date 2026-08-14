@@ -6,7 +6,7 @@
  * Copyright (c) 2026 Philipp Kaeser (kaeser@gubbe.ch)
  * Copyright 2023 Google LLC
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -30,7 +30,6 @@
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
-#include <wlr/version.h>
 #include <wlr/xwayland/xwayland.h>
 #undef WLR_USE_UNSTABLE
 
@@ -770,17 +769,10 @@ void _wlmaker_xwl_surface_handle_window_request_maximized(
         window_request_maximized_listener);
     bool *maximized_ptr = data_ptr;
 
-#if WLR_VERSION_NUM >= (19 << 8)
-    // wlroots-0.19 has a madimized_horz, maximized_vert argument.
     wlr_xwayland_surface_set_maximized(
         xwl_surface_ptr->wlr_xwayland_surface_ptr,
         *maximized_ptr,
         *maximized_ptr);
-#else
-    wlr_xwayland_surface_set_maximized(
-        xwl_surface_ptr->wlr_xwayland_surface_ptr,
-         *maximized_ptr);
-#endif
     wlmtk_window_commit_maximized(
         xwl_surface_ptr->window_ptr, *maximized_ptr);
 }

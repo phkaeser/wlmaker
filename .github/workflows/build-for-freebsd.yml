@@ -33,7 +33,7 @@ jobs:
             graphics/wayland \
             graphics/wayland-protocols \
             lang/gcc \
-            x11-toolkits/wlroots018 \
+            x11-toolkits/wlroots020 \
             x11/libxcb \
             x11/libxdg-basedir \
             x11/libxkbcommon

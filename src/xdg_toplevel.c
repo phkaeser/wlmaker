@@ -34,7 +34,6 @@
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
-#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "config.h"
@@ -241,11 +240,7 @@ struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_create(
         wlr_xdg_toplevel_set_fullscreen,
         wlr_xdg_toplevel_set_size,
         wlr_xdg_toplevel_set_activated,
-#if WLR_VERSION_NUM >= (19 << 8)
         wlr_surface_get_extents
-#else
-        wlr_surface_get_extends
-#endif
         );
 }
 
