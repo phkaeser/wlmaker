@@ -101,7 +101,9 @@ struct wlmdock_state {
     bspl_array_t            *launchers_array_ptr;
 };
 
-static wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr);
+static wlmdock_t *_wlmdock_create(
+    const wlmtk_dock_positioning_t positioning,
+    wlmaker_config_style_t *style_ptr);
 static void _wlmdock_destroy(wlmdock_t *dock_ptr);
 static int handle_client_signal(int fd, uint32_t mask, void *data_ptr);
 static bool _wlmdock_decode_launchers(
@@ -251,17 +253,16 @@ int main(int argc, const char **argv)
         fprintf(stderr, "Failed to load & initialize state.\n");
         return EXIT_FAILURE;
     }
-
-    wlmdock_t *dock_ptr = _wlmdock_create(&style);
-    if (NULL == dock_ptr) {
-        bs_log(BS_ERROR, "Failed to create wlmdock.");
-        return EXIT_FAILURE;
-    }
-
     bspl_dict_t *dock_dict_ptr = bspl_dict_get_dict(state_dict_ptr, "Dock");
     struct wlmdock_state state = {};
     if (!bspl_decode_dict(dock_dict_ptr, _wlmdock_plist_desc, &state)) {
         bs_log(BS_ERROR, "Failed to parse the State.");
+        return EXIT_FAILURE;
+    }
+
+    wlmdock_t *dock_ptr = _wlmdock_create(state.positioning, &style);
+    if (NULL == dock_ptr) {
+        bs_log(BS_ERROR, "Failed to create wlmdock.");
         return EXIT_FAILURE;
     }
 
@@ -306,7 +307,9 @@ int main(int argc, const char **argv)
 
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
-wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr)
+wlmdock_t *_wlmdock_create(
+    const wlmtk_dock_positioning_t positioning,
+    wlmaker_config_style_t *style_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
     if (NULL == dock_ptr) return NULL;
@@ -327,7 +330,7 @@ wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr)
         dock_ptr->client_ptr,
         ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         "wlmdock",
-        ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT, // | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+        positioning.anchor | positioning.edge,
         64,
         64);
     if (NULL == dock_ptr->layer_surface_ptr) {
@@ -356,8 +359,15 @@ wlmdock_t *_wlmdock_create(wlmaker_config_style_t *style_ptr)
     }
 
     // 5. Setup dock contents.
+    wlmtk_box_orientation_t orientation = WLMTK_BOX_VERTICAL;
+    if (positioning.edge == WLR_EDGE_TOP ||
+        positioning.edge == WLR_EDGE_BOTTOM) {
+        orientation = WLMTK_BOX_HORIZONTAL;
+    }
     dock_ptr->tilebox_ptr = wlmdock_tilebox_create(
-        WLMTK_BOX_VERTICAL,
+        orientation,
+        (positioning.anchor == WLR_EDGE_BOTTOM ||
+         positioning.anchor == WLR_EDGE_RIGHT),
         &style_ptr->dock);
     if (NULL == dock_ptr->tilebox_ptr) {
         _wlmdock_destroy(dock_ptr);
