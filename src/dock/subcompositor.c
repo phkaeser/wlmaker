@@ -20,6 +20,7 @@
 
 #include "subcompositor.h"
 
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include <libbase/libbase.h>
 #include <stdint.h>
 #include <stdlib.h>

@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wayland-client-protocol.h>
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
 #include "wlclient/dblbuf.h"

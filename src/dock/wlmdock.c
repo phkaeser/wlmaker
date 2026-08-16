@@ -19,6 +19,7 @@
  * limitations under the License.
  */
 
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>
@@ -30,6 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
+#include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -44,7 +46,6 @@
 #include <wlr/util/edges.h>
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 #include "toolkit/toolkit.h"
 #include "util/backtrace.h"
