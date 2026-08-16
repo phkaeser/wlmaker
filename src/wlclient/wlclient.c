@@ -284,7 +284,7 @@ static const object_t objects[] = {
       offsetof(struct wlmcl_client_attributes, icon_manager_ptr), NULL },
     { &ext_input_observation_manager_v1_interface, 1,
       offsetof(struct wlmcl_client_attributes, input_observation_manager_ptr), NULL },
-    { &zwlr_layer_shell_v1_interface, 4,
+    { &zwlr_layer_shell_v1_interface, 5,
       offsetof(struct wlmcl_client_attributes, layer_shell_ptr), NULL },
     { &wl_compositor_interface, 4,
       offsetof(struct wlmcl_client_attributes, wl_compositor_ptr), NULL },

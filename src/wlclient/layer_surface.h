@@ -47,21 +47,13 @@ bool wlmcl_layer_shell_supported(wlmcl_client_t *wlclient_ptr);
  * @param wlclient_ptr
  * @param layer               One of zwlr_layer_shell_v1_layer.
  * @param namespace_ptr       Namespace string.
- * @param anchor              Bitwise OR of zwlr_layer_surface_v1_anchor.
- * @param width               Initial requested width in pixels. 0 to let the
- *                            compositor decide (requires opposite anchors).
- * @param height              Initial requested height in pixels. 0 to let the
- *                            compositor decide (requires opposite anchors).
  *
  * @return State of the layer surface or NULL on error.
  */
 wlmcl_layer_surface_t *wlmcl_layer_surface_create(
     wlmcl_client_t *wlclient_ptr,
     uint32_t layer,
-    const char *namespace_ptr,
-    uint32_t anchor,
-    uint32_t width,
-    uint32_t height);
+    const char *namespace_ptr);
 
 /**
  * Destroys the layer surface.
@@ -70,61 +62,17 @@ wlmcl_layer_surface_t *wlmcl_layer_surface_create(
  */
 void wlmcl_layer_surface_destroy(wlmcl_layer_surface_t *layer_surface_ptr);
 
-/**
- * Requests the specified size for the layer surface.
- *
- * @param layer_surface_ptr
- * @param width               Requested width in pixels. 0 to let the
- *                            compositor decide.
- * @param height              Requested height in pixels. 0 to let the
- *                            compositor decide.
- */
-void wlmcl_layer_surface_request_size(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    uint32_t width,
-    uint32_t height);
-
-/**
- * Sets the margins of the layer surface from its anchor points.
- *
- * @param layer_surface_ptr
- * @param top
- * @param right
- * @param bottom
- * @param left
- */
-void wlmcl_layer_surface_set_margin(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    int32_t top,
-    int32_t right,
-    int32_t bottom,
-    int32_t left);
-
-/**
- * Sets the exclusive zone of the layer surface.
- *
- * @param layer_surface_ptr
- * @param pixels              The exclusive zone in pixels. Positive value
- *                            reserves space to avoid occlusion by other (e.g.
- *                            maximized) windows. 0 disables exclusive zone.
- *                            -1 requests other windows be allowed to overlap.
- */
-void wlmcl_layer_surface_set_exclusive_zone(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    int32_t pixels);
-
-/**
- * Returns the underlying Wayland surface of the layer surface.
- *
- * @param layer_surface_ptr
- *
- * @return The wl_surface pointer.
- */
+/** @return @ref wlmcl_layer_surface_t::wl_surface_ptr. */
 struct wl_surface *wlmcl_layer_surface_wl_surface(
     wlmcl_layer_surface_t *layer_surface_ptr);
 
+/** @return @ref wlmcl_layer_surface_t::layer_surface_ptr. */
+struct zwlr_layer_surface_v1 *wlmcl_layer_surface_wlr_layer_surface(
+    wlmcl_layer_surface_t *layer_surface_ptr);
+
 /**
- * Registers the callback to notify when the layer surface size/layout is determined or updated.
+ * Registers the callback to notify when the layer surface size/layout is
+ * determined or updated.
  *
  * @param layer_surface_ptr
  * @param callback

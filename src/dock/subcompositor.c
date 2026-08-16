@@ -385,8 +385,9 @@ void _wlmdock_subcompositor_request_size(
         return;
     }
 
-    wlmcl_layer_surface_request_size(
-        subcompositor_ptr->layer_surface_ptr,
+    zwlr_layer_surface_v1_set_size(
+        wlmcl_layer_surface_wlr_layer_surface(
+            subcompositor_ptr->layer_surface_ptr),
         box.width, box.height);
 }
 

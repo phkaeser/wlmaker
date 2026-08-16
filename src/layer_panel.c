@@ -432,10 +432,6 @@ void _wlmaker_layer_panel_handle_surface_commit(
     struct wlr_layer_surface_v1_state *state_ptr =
         &layer_panel_ptr->wlr_layer_surface_v1_ptr->pending;
 
-    // FIXME: add exclusive_edge, and committed with EXCLUSIVE_EDGE
-    bs_log(BS_ERROR, "FIXME: committed %"PRIx32", exclusive edge %"PRIx32,
-           state_ptr->committed, state_ptr->exclusive_edge);
-
     wlmtk_panel_positioning_t pos = {
         .anchor = state_ptr->anchor,
         .desired_width = state_ptr->desired_width,
@@ -446,7 +442,8 @@ void _wlmaker_layer_panel_handle_surface_commit(
         .margin_right = state_ptr->margin.right,
         .margin_bottom = state_ptr->margin.bottom,
 
-        .exclusive_zone = state_ptr->exclusive_zone
+        .exclusive_zone = state_ptr->exclusive_zone,
+        .exclusive_edge = state_ptr->exclusive_edge,
     };
 
     // Sanity check 'exclusive edge' setting. If it's set.
