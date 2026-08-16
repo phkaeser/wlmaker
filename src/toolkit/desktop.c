@@ -52,7 +52,7 @@ struct _wlmtk_desktop_t {
     struct wlr_box            extents;
 
     /** Events availabe of the desktop. */
-    wlmtk_desktop_events_t       events;
+    wlmtk_desktop_events_t    events;
 
     /** Whether the desktop is currently locked. */
     bool                      locked;
