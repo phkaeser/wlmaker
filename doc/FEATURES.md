@@ -204,6 +204,10 @@ TBD: Raise/Lower.
 
 * [x] :white_check_mark: Implemented, verified.
 
+### `ext-foreign-toplevel-list-v1`
+
+* [x] :white_check_mark: Implemented.
+
 ### `ext-idle-notify-v1`
 
 * [ ] Implement.

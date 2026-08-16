@@ -31,6 +31,7 @@
 #include "layer_panel.h"
 #include "lock_mgr.h"
 #include "root_menu.h"
+#include "toplevel_tracker.h"
 #include "util/backtrace.h"
 #include "xdg_decoration.h"
 #include "xdg_toplevel.h"
@@ -59,6 +60,7 @@ int main(int argc, const char **argv)
         &wlmaker_layer_panel_test_set,
         &wlmaker_lock_mgr_test_set,
         &wlmaker_root_menu_test_set,
+        &wlmaker_toplevel_tracker_test_set,
         &wlmaker_xdg_decoration_test_set,
         &wlmaker_xdg_toplevel_test_set,
 #if defined(WLMAKER_HAVE_XWAYLAND)

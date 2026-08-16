@@ -41,6 +41,7 @@
 #include "input/manager.h"
 #include "server.h"
 #include "tl_menu.h"
+#include "toplevel_tracker.h"
 #include "toolkit/toolkit.h"
 #include "xdg_popup.h"
 
@@ -62,6 +63,8 @@ struct wlmaker_xdg_toplevel {
     wlmtk_window_t           *window_ptr;
     /** The toplevel's window menu. */
     wlmaker_tl_menu_t         *tl_menu_ptr;
+    /** Tracker handle for this toplevel. */
+    struct wlmaker_toplevel_tracker_handle *tracker_handle_ptr;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_toplevel::events`. */
     struct wl_listener        destroy_listener;
@@ -276,6 +279,12 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
         wxt_ptr->tl_menu_ptr = NULL;
     }
 
+    if (NULL != wxt_ptr->tracker_handle_ptr) {
+        wlmaker_toplevel_tracker_handle_destroy(
+            wxt_ptr->tracker_handle_ptr);
+        wxt_ptr->tracker_handle_ptr = NULL;
+    }
+
     if (NULL != wxt_ptr->window_ptr) {
         wl_signal_emit(
             &wxt_ptr->server_ptr->window_destroyed_event,
@@ -367,6 +376,12 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
             &client.pid, &client.uid, &client.gid);
     }
     wlmtk_window_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
+
+    wlmaker_xdg_toplevel_ptr->tracker_handle_ptr =
+        wlmaker_toplevel_tracker_handle_create(
+            server_ptr->toplevel_tracker_ptr,
+            wlmaker_xdg_toplevel_ptr->window_ptr);
+    if (NULL == wlmaker_xdg_toplevel_ptr->tracker_handle_ptr) goto error;
 
     wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmaker_xdg_toplevel_ptr->window_ptr, server_ptr);
@@ -667,6 +682,9 @@ void _wlmaker_xdg_toplevel_handle_set_title(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_title_listener);
 
+    wlmaker_toplevel_tracker_handle_set_title(
+        wlmaker_xdg_toplevel_ptr->tracker_handle_ptr,
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->app_id);
     wlmtk_window_set_title(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->title);
@@ -681,7 +699,9 @@ void _wlmaker_xdg_toplevel_handle_set_app_id(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_app_id_listener);
 
-    bs_log(BS_ERROR, "TODO: set_app_id %p", wlmaker_xdg_toplevel_ptr);
+    wlmaker_toplevel_tracker_handle_set_app_id(
+        wlmaker_xdg_toplevel_ptr->tracker_handle_ptr,
+        wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->app_id);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1065,6 +1085,8 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
         td_ptr->test_layout.wlr_output_layout_ptr,
         &td_ptr->test_layout.wlr_output);
 
+    td_ptr->server.toplevel_tracker_ptr = wlmaker_toplevel_tracker_create(
+        td_ptr->test_layout.wl_display_ptr);
     td_ptr->server.wlr_output_layout_ptr =
         td_ptr->test_layout.wlr_output_layout_ptr;
     td_ptr->server.style_ptr = &td_ptr->style;
