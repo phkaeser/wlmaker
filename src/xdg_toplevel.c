@@ -682,6 +682,7 @@ void _wlmaker_xdg_toplevel_handle_set_title(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_title_listener);
 
+    // FIXME: set title for handle.
     wlmtk_window_set_title(
         wlmaker_xdg_toplevel_ptr->window_ptr,
         wlmaker_xdg_toplevel_ptr->wlr_xdg_toplevel_ptr->title);
@@ -696,6 +697,7 @@ void _wlmaker_xdg_toplevel_handle_set_app_id(
     struct wlmaker_xdg_toplevel *wlmaker_xdg_toplevel_ptr = BS_CONTAINER_OF(
         listener_ptr, struct wlmaker_xdg_toplevel, set_app_id_listener);
 
+    // FIXME: set app ID for handle.
     bs_log(BS_ERROR, "TODO: set_app_id %p", wlmaker_xdg_toplevel_ptr);
 }
 
