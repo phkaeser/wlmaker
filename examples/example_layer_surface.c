@@ -21,10 +21,6 @@
  * limitations under the License.
  */
 
-#include "wlclient/dblbuf.h"
-#include "wlclient/layer_surface.h"
-#include "wlclient/wlclient.h"
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <math.h>
@@ -32,6 +28,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <wayland-client-protocol.h>
+
+#include "wlclient/dblbuf.h"
+#include "wlclient/layer_surface.h"
+#include "wlclient/wlclient.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 /** State of the client. */
 static wlmcl_client_t                *wlclient_ptr;

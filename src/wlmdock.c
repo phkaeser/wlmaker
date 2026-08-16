@@ -19,6 +19,7 @@
  * limitations under the License.
  */
 
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>
@@ -45,7 +46,6 @@
 #include <wlr/util/edges.h>
 #include <wlr/util/log.h>
 #undef WLR_USE_UNSTABLE
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 #include "toolkit/toolkit.h"
 #include "util/backtrace.h"

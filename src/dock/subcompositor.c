@@ -37,8 +37,8 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
 #undef WLR_USE_UNSTABLE
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "input/manager.h"
 
 /* == Declarations ========================================================= */
