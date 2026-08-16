@@ -41,6 +41,7 @@
 #include "input/manager.h"
 #include "server.h"
 #include "tl_menu.h"
+#include "toplevel_tracker.h"
 #include "toolkit/toolkit.h"
 #include "xdg_popup.h"
 
@@ -62,6 +63,8 @@ struct wlmaker_xdg_toplevel {
     wlmtk_window_t           *window_ptr;
     /** The toplevel's window menu. */
     wlmaker_tl_menu_t         *tl_menu_ptr;
+    /** Tracker handle for this toplevel. */
+    struct wlmaker_toplevel_handle *tracker_handle_ptr;
 
     /** Listener for the `destroy` signal of the `wlr_xdg_toplevel::events`. */
     struct wl_listener        destroy_listener;
@@ -276,6 +279,12 @@ void wlmaker_xdg_toplevel_destroy(struct wlmaker_xdg_toplevel *wxt_ptr)
         wxt_ptr->tl_menu_ptr = NULL;
     }
 
+    if (NULL != wxt_ptr->tracker_handle_ptr) {
+        wlmaker_toplevel_tracker_destroy_toplevel_handle(
+            wxt_ptr->tracker_handle_ptr);
+        wxt_ptr->tracker_handle_ptr = NULL;
+    }
+
     if (NULL != wxt_ptr->window_ptr) {
         wl_signal_emit(
             &wxt_ptr->server_ptr->window_destroyed_event,
@@ -367,6 +376,12 @@ struct wlmaker_xdg_toplevel *_wlmaker_xdg_toplevel_create_injected(
             &client.pid, &client.uid, &client.gid);
     }
     wlmtk_window_set_client(wlmaker_xdg_toplevel_ptr->window_ptr, &client);
+
+    wlmaker_xdg_toplevel_ptr->tracker_handle_ptr =
+        wlmaker_toplevel_tracker_create_toplevel_handle(
+            server_ptr->toplevel_tracker_ptr,
+            wlmaker_xdg_toplevel_ptr->window_ptr);
+    if (NULL == wlmaker_xdg_toplevel_ptr->tracker_handle_ptr) goto error;
 
     wlmaker_xdg_toplevel_ptr->tl_menu_ptr = wlmaker_tl_menu_create(
         wlmaker_xdg_toplevel_ptr->window_ptr, server_ptr);

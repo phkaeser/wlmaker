@@ -31,7 +31,7 @@ extern "C" {
 
 struct wl_display;
 
-struct wlmaker_toplevel;
+struct wlmaker_toplevel_handle;
 struct wlmaker_toplevel_tracker;
 
 /**
@@ -53,16 +53,17 @@ struct wlmaker_toplevel_tracker *wlmaker_toplevel_tracker_create(
  *
  * @return The toplevel handle, or NULL on error.
  */
-struct wlmaker_toplevel *wlmaker_toplevel_create(
+struct wlmaker_toplevel_handle*wlmaker_toplevel_tracker_create_toplevel_handle(
     struct wlmaker_toplevel_tracker *toplevel_tracker_ptr,
     wlmtk_window_t *window_ptr);
 
 /**
  * Destroys the toplevel handle.
  *
- * @param toplevel_ptr
+ * @param handle_ptr
  */
-void wlmaker_toplevel_destroy(struct wlmaker_toplevel *toplevel_ptr);
+void wlmaker_toplevel_tracker_destroy_toplevel_handle(
+    struct wlmaker_toplevel_handle *handle_ptr);
 
 #ifdef __cplusplus
 }  // extern "C"

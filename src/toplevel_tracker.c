@@ -23,6 +23,9 @@
 #include <libbase/libbase.h>
 #include <stdlib.h>
 #include <wayland-server-core.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
+#undef WLR_USE_UNSTABLE
 
 /* == Declarations ========================================================= */
 
@@ -30,16 +33,26 @@
 struct wlmaker_toplevel_tracker {
     /** The tracked toplevels. */
     bs_dllist_t               toplevels;
+
+    /** Handle for the `ext-foreign-toplevel-list-v1` protocol. */
+    struct wlr_ext_foreign_toplevel_list_v1 *ext_foreign_toplevel_list_ptr;
+
     /** Connects to a `struct wl_display` destroy notification. */
     struct wl_listener        display_destroy_listener;
 };
 
-/** State of one toplevel tracked in the tracker. */
-struct wlmaker_toplevel {
+/** Handle of one tracked toplevel. */
+struct wlmaker_toplevel_handle {
     /** Back-link to the toplevel tracker. */
     struct wlmaker_toplevel_tracker *toplevel_tracker_ptr;
     /** List node, to @ref wlmaker_toplevel_tracker::toplevels. */
     bs_dllist_node_t          dlnode;
+
+    /** Handle for this toplevel for the ext-foreign-toplevel list. */
+    struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel_handle_ptr;
+    /** State of the toplevel. */
+    struct wlr_ext_foreign_toplevel_handle_v1_state state;
+
     /** The window for this toplevel. */
     wlmtk_window_t            *window_ptr;
 };
@@ -62,6 +75,10 @@ struct wlmaker_toplevel_tracker *wlmaker_toplevel_tracker_create(
         1, sizeof(*toplevel_tracker_ptr));
     if (NULL == toplevel_tracker_ptr) return NULL;
 
+    // Note: Will automatically be destroyed when wl_display_ptr destroys.
+    toplevel_tracker_ptr->ext_foreign_toplevel_list_ptr =
+        wlr_ext_foreign_toplevel_list_v1_create(wl_display_ptr, 1);
+
     toplevel_tracker_ptr->display_destroy_listener.notify =
         _wlmaker_toplevel_tracker_handle_display_destroy;
     wl_display_add_destroy_listener(
@@ -70,14 +87,19 @@ struct wlmaker_toplevel_tracker *wlmaker_toplevel_tracker_create(
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlmaker_toplevel *wlmaker_toplevel_create(
+struct wlmaker_toplevel_handle *wlmaker_toplevel_tracker_create_toplevel_handle(
     struct wlmaker_toplevel_tracker *toplevel_tracker_ptr,
     wlmtk_window_t *window_ptr)
 {
-    struct wlmaker_toplevel *toplevel_ptr = logged_calloc(
+    struct wlmaker_toplevel_handle *toplevel_ptr = logged_calloc(
         1, sizeof(*toplevel_ptr));
     if (NULL == toplevel_ptr) return NULL;
     toplevel_ptr->window_ptr = window_ptr;
+
+    toplevel_ptr->ext_foreign_toplevel_handle_ptr =
+        wlr_ext_foreign_toplevel_handle_v1_create(
+            toplevel_tracker_ptr->ext_foreign_toplevel_list_ptr,
+            &toplevel_ptr->state);
 
     bs_dllist_push_back(
         &toplevel_tracker_ptr->toplevels,
@@ -87,8 +109,15 @@ struct wlmaker_toplevel *wlmaker_toplevel_create(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmaker_toplevel_destroy(struct wlmaker_toplevel *toplevel_ptr)
+void wlmaker_toplevel_tracker_destroy_toplevel_handle(
+    struct wlmaker_toplevel_handle *toplevel_ptr)
 {
+    if (NULL != toplevel_ptr->ext_foreign_toplevel_handle_ptr) {
+        wlr_ext_foreign_toplevel_handle_v1_destroy(
+            toplevel_ptr->ext_foreign_toplevel_handle_ptr);
+        toplevel_ptr->ext_foreign_toplevel_handle_ptr = NULL;
+    }
+
     if (NULL != toplevel_ptr->toplevel_tracker_ptr) {
         bs_dllist_remove(
             &toplevel_ptr->toplevel_tracker_ptr->toplevels,
