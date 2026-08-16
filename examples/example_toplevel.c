@@ -70,6 +70,8 @@ static void _handle_key(__UNUSED__ struct wl_listener *listener_ptr,
 /** Draws something into the buffer. */
 static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 {
+    if (NULL == gfxbuf_ptr) return false;
+
     static uint64_t ns_base = 0;
     wlmcl_xdg_toplevel_t *toplevel_ptr = ud_ptr;
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
@@ -104,18 +106,17 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
 {
     wlmcl_xdg_toplevel_t *toplevel_ptr = ud_ptr;
-    if (NULL != dblbuf_ptr) {
-        wlmcl_dblbuf_destroy(dblbuf_ptr);
-    }
-    dblbuf_ptr = wlmcl_dblbuf_create(
-        wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
-        wlmcl_xdg_toplevel_wl_surface(toplevel_ptr),
-        wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
-        width,
-        height);
     if (NULL == dblbuf_ptr) {
-        bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
-        return;
+        dblbuf_ptr = wlmcl_dblbuf_create(
+            wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
+            wlmcl_xdg_toplevel_wl_surface(toplevel_ptr),
+            wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
+            width,
+            height);
+        if (NULL == dblbuf_ptr) {
+            bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
+            return;
+        }
     }
     wlmcl_dblbuf_register_ready_callback(
         dblbuf_ptr, _callback, toplevel_ptr);

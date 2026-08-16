@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "menu.h"
+#include "toplevel_list.h"
 
 /* == Declarations ========================================================= */
 
@@ -74,6 +75,12 @@ static const bs_arg_t wlmtool_args[] = {
 
 /** List of available commands. */
 static const struct command_desc commands[] = {
+    {
+        .command_ptr = "ext-foreign-toplevel-list-v1",
+        .description_ptr = "Monitor status of compositor's toplevel's via "
+        "the `ext-foreign-toplevel-list-v1` protocol.",
+        .op = wlmtool_ext_foreign_toplevel_list
+    },
     {
         .command_ptr = "genmenu",
         .description_ptr =

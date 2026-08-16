@@ -56,7 +56,7 @@ function(waylandprotocol_add target_var)
     COMMAND "${WaylandScanner_EXECUTABLE}" private-code "${_protocol_file}" "${_glue_code}"
     DEPENDS "${WaylandScanner_EXECUTABLE}" "${_protocol_file}"
     VERBATIM)
-  set(lib_name "lib-${args_BASE_NAME}-${args_SIDE}")
+  set(lib_name "lib-${target_var}-${args_BASE_NAME}-${args_SIDE}")
   add_library("${lib_name}" STATIC)
   add_dependencies("${target_var}" "${lib_name}")
   target_sources("${lib_name}" PRIVATE "${_glue_code}" "${_header}")
