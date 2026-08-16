@@ -363,9 +363,9 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             }
         }
 
-        dock_ptr = wlmaker_dock_create(
-            server_ptr, state_dict_ptr, &style);
         clip_ptr = wlmaker_clip_create(
+            server_ptr, state_dict_ptr, &style);
+        dock_ptr = wlmaker_dock_create(
             server_ptr, state_dict_ptr, &style);
         task_list_ptr = wlmaker_task_list_create(
             server_ptr, &style.task_list);

@@ -30,7 +30,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Settings to specify output, layer and anchor for dock, clip and icon area.
   * Behaviour
     * [done] Fix issue of `wlmdock` not updating contents initially and automatically.
-    * Use exclusive zone + width to not overlap with other layer elements.
+    * [done] Use exclusive zone + width to not overlap with other layer elements.
   * `wlmaker` respects exclusive zone from dock(s) when determining maximizing extents.
   * Fixes
     * [done] Resolve leaks, as reported by valgrind.

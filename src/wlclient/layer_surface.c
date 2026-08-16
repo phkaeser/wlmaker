@@ -43,16 +43,15 @@ struct _wlmcl_layer_surface_t {
     /** Layer-shell surface wrapping `wl_surface_ptr`. */
     struct zwlr_layer_surface_v1  *layer_surface_ptr;
 
-    /** Width of the layer surface. */
-    uint32_t                      width;
-    /** Height of the layer surface. */
-    uint32_t                      height;
-
+    /** The configured width of the layer surface. */
+    uint32_t                      configured_width;
+    /** The configured height of the layer surface. */
+    uint32_t                      configured_height;
     /** Whether the surface has been configured. */
     bool                          configured;
 
     /** Callback for input configure. */
-    void                          (*configure_callback)(void *ud_ptr, uint32_t width, uint32_t height);
+    void (*configure_callback)(void *ud_ptr, uint32_t width, uint32_t height);
     /** Client-provided argument to configure_callback. */
     void                          *configure_callback_ud_ptr;
 };
@@ -89,10 +88,7 @@ bool wlmcl_layer_shell_supported(wlmcl_client_t *wlclient_ptr)
 wlmcl_layer_surface_t *wlmcl_layer_surface_create(
     wlmcl_client_t *wlclient_ptr,
     uint32_t layer,
-    const char *namespace_ptr,
-    uint32_t anchor,
-    uint32_t width,
-    uint32_t height)
+    const char *namespace_ptr)
 {
     if (!wlmcl_layer_shell_supported(wlclient_ptr)) {
         bs_log(BS_ERROR, "Layer shell is not supported.");
@@ -103,8 +99,6 @@ wlmcl_layer_surface_t *wlmcl_layer_surface_create(
         1, sizeof(wlmcl_layer_surface_t));
     if (NULL == layer_surface_ptr) return NULL;
     layer_surface_ptr->wlclient_ptr = wlclient_ptr;
-    layer_surface_ptr->width = width;
-    layer_surface_ptr->height = height;
 
     layer_surface_ptr->wl_surface_ptr = wl_compositor_create_surface(
         wlmcl_client_attributes(wlclient_ptr)->wl_compositor_ptr);
@@ -127,11 +121,6 @@ wlmcl_layer_surface_t *wlmcl_layer_surface_create(
         return NULL;
     }
 
-    zwlr_layer_surface_v1_set_size(
-        layer_surface_ptr->layer_surface_ptr, width, height);
-    zwlr_layer_surface_v1_set_anchor(
-        layer_surface_ptr->layer_surface_ptr, anchor);
-
     if (0 != zwlr_layer_surface_v1_add_listener(
             layer_surface_ptr->layer_surface_ptr,
             &_wlmcl_layer_surface_listener,
@@ -140,8 +129,6 @@ wlmcl_layer_surface_t *wlmcl_layer_surface_create(
         wlmcl_layer_surface_destroy(layer_surface_ptr);
         return NULL;
     }
-
-    wl_surface_commit(layer_surface_ptr->wl_surface_ptr);
 
     return layer_surface_ptr;
 }
@@ -156,8 +143,6 @@ void wlmcl_layer_surface_destroy(wlmcl_layer_surface_t *layer_surface_ptr)
         layer_surface_ptr->layer_surface_ptr = NULL;
     }
 
-
-
     if (NULL != layer_surface_ptr->wl_surface_ptr) {
         wl_surface_destroy(layer_surface_ptr->wl_surface_ptr);
         layer_surface_ptr->wl_surface_ptr = NULL;
@@ -167,44 +152,17 @@ void wlmcl_layer_surface_destroy(wlmcl_layer_surface_t *layer_surface_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmcl_layer_surface_request_size(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    uint32_t width,
-    uint32_t height)
-{
-    zwlr_layer_surface_v1_set_size(
-        layer_surface_ptr->layer_surface_ptr, width, height);
-    wl_surface_commit(layer_surface_ptr->wl_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmcl_layer_surface_set_margin(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    int32_t top,
-    int32_t right,
-    int32_t bottom,
-    int32_t left)
-{
-    zwlr_layer_surface_v1_set_margin(
-        layer_surface_ptr->layer_surface_ptr, top, right, bottom, left);
-    wl_surface_commit(layer_surface_ptr->wl_surface_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmcl_layer_surface_set_exclusive_zone(
-    wlmcl_layer_surface_t *layer_surface_ptr,
-    int32_t pixels)
-{
-    zwlr_layer_surface_v1_set_exclusive_zone(
-        layer_surface_ptr->layer_surface_ptr, pixels);
-    wl_surface_commit(layer_surface_ptr->wl_surface_ptr);
-}
-
-
-/* ------------------------------------------------------------------------- */
-struct wl_surface *wlmcl_layer_surface_wl_surface(wlmcl_layer_surface_t *layer_surface_ptr)
+struct wl_surface *wlmcl_layer_surface_wl_surface(
+    wlmcl_layer_surface_t *layer_surface_ptr)
 {
     return layer_surface_ptr->wl_surface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+struct zwlr_layer_surface_v1 *wlmcl_layer_surface_wlr_layer_surface(
+    wlmcl_layer_surface_t *layer_surface_ptr)
+{
+    return layer_surface_ptr->layer_surface_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -216,7 +174,10 @@ void wlmcl_layer_surface_register_configure_callback(
     layer_surface_ptr->configure_callback = callback;
     layer_surface_ptr->configure_callback_ud_ptr = ud_ptr;
     if (layer_surface_ptr->configured && NULL != callback) {
-        callback(ud_ptr, layer_surface_ptr->width, layer_surface_ptr->height);
+        callback(
+            ud_ptr,
+            layer_surface_ptr->configured_width,
+            layer_surface_ptr->configured_height);
     }
 }
 
@@ -245,16 +206,9 @@ void _wlmcl_layer_surface_handle_configure(
 
     zwlr_layer_surface_v1_ack_configure(layer_surface_ptr, serial);
 
-    if (width == 0 || height == 0) {
-        // Client should decide. We keep our current width/height.
-        width = layer_surface_ptr_->width;
-        height = layer_surface_ptr_->height;
-    }
-
-    layer_surface_ptr_->width = width;
-    layer_surface_ptr_->height = height;
+    layer_surface_ptr_->configured_width = width;
+    layer_surface_ptr_->configured_height = height;
     layer_surface_ptr_->configured = true;
-
     if (NULL != layer_surface_ptr_->configure_callback) {
         layer_surface_ptr_->configure_callback(
             layer_surface_ptr_->configure_callback_ud_ptr,

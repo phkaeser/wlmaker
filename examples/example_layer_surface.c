@@ -102,7 +102,10 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Handles configure events. */
-static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
+static void _handle_configure(
+    void *ud_ptr,
+    __UNUSED__ uint32_t width,
+    __UNUSED__ uint32_t height)
 {
     wlmcl_layer_surface_t *layer_surface_ptr = ud_ptr;
     if (NULL != dblbuf_ptr) {
@@ -112,8 +115,8 @@ static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
         wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
         wlmcl_layer_surface_wl_surface(layer_surface_ptr),
         wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
-        width,
-        height);
+        100,
+        300);
     if (NULL == dblbuf_ptr) {
         bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
         return;
@@ -136,12 +139,17 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
             wlclient_ptr,
             ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-            "wlmdock-panel",
+            "example_layer_surface");
+
+        zwlr_layer_surface_v1_set_size(
+            wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
+            100, 300);
+        zwlr_layer_surface_v1_set_anchor(
+            wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
             ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
             ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-            ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
-            100,
-            300);
+            ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
+        wl_surface_commit(wlmcl_layer_surface_wl_surface(layer_surface_ptr));
 
         if (NULL != layer_surface_ptr) {
             // Register configure callback

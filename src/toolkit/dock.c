@@ -314,6 +314,7 @@ bool _wlmtk_dock_positioning(
         // the entire height. Go with a one-tile dimension, as long as there's
         // no tiles yet.
         panel_positioning_ptr->desired_height = BS_MAX(box.height, 1);
+        panel_positioning_ptr->exclusive_zone = BS_MAX(box.width, 1);
         break;
 
     case WLR_EDGE_TOP:
@@ -334,6 +335,7 @@ bool _wlmtk_dock_positioning(
         // the entire width. Go with a one-tile dimension, as long as there's
         // no tiles yet.
         panel_positioning_ptr->desired_width = BS_MAX(box.width, 1);
+        panel_positioning_ptr->exclusive_zone = BS_MAX(box.height, 1);
         break;
 
     default:
@@ -342,6 +344,7 @@ bool _wlmtk_dock_positioning(
         return false;
     }
 
+    panel_positioning_ptr->exclusive_edge = dock_ptr->dock_positioning.edge;
     return true;
 }
 

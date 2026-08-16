@@ -329,16 +329,28 @@ wlmdock_t *_wlmdock_create(
     dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
         dock_ptr->client_ptr,
         ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-        "wlmdock",
-        positioning.anchor | positioning.edge,
-        64,
-        64);
+        "wlmdock");
     if (NULL == dock_ptr->layer_surface_ptr) {
         bs_log(BS_ERROR, "Failed to create client layer surface.");
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
-    wlmcl_layer_surface_set_exclusive_zone(dock_ptr->layer_surface_ptr, 64);
+
+    // Configure.
+    zwlr_layer_surface_v1_set_size(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        64, 64);
+    zwlr_layer_surface_v1_set_anchor(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        positioning.anchor | positioning.edge);
+    zwlr_layer_surface_v1_set_exclusive_zone(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        64);
+    zwlr_layer_surface_v1_set_exclusive_edge(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        positioning.edge);
+    wl_surface_commit(
+        wlmcl_layer_surface_wl_surface(dock_ptr->layer_surface_ptr));
 
     // 3. Setup local Wayland server display and event loops.
     dock_ptr->local_display_ptr = wl_display_create();
