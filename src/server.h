@@ -140,6 +140,9 @@ struct _wlmaker_server_t {
      */
     wlmaker_xwl_t             *xwl_ptr;
 
+    /** The toplevel tracker. */
+    struct wlmaker_toplevel_tracker *toplevel_tracker_ptr;
+
     /** The desktop element. */
     wlmtk_desktop_t           *desktop_ptr;
     /** The root element wrapper. */

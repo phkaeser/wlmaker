@@ -44,6 +44,7 @@
 #include "input/manager.h"
 #include "task_list.h"
 #include "toolkit/toolkit.h"
+#include "toplevel_tracker.h"
 
 /* == Declarations ========================================================= */
 
@@ -315,6 +316,13 @@ wlmaker_server_t *wlmaker_server_create(
             wlmaker_server_destroy(server_ptr);
             return NULL;
         }
+    }
+
+    server_ptr->toplevel_tracker_ptr = wlmaker_toplevel_tracker_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->toplevel_tracker_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
     }
 
     server_ptr->monitor_ptr = wlm_util_subprocess_monitor_create(
