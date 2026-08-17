@@ -13,20 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 cmake_minimum_required(VERSION 3.13)
-add_library(libwlmtool STATIC item.c menu.c)
+
+include(WaylandProtocol)
+
+pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
+pkg_get_variable(wayland_protocol_dir wayland-protocols pkgdatadir)
+
+add_library(libwlmtool STATIC item.c menu.c toplevel_list.c)
+waylandprotocol_add(
+  libwlmtool
+  BASE_NAME ext-foreign-toplevel-list-v1
+  PROTOCOL_FILE "${wayland_protocol_dir}/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml"
+  SIDE client)
+
 target_include_directories(
   libwlmtool
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
   PRIVATE
-  "${LIBXDGBASEDIR_INCLUDE_DIRS}")
+  "${CMAKE_CURRENT_BINARY_DIR}"
+  "${LIBXDGBASEDIR_INCLUDE_DIRS}"
+  "${WAYLAND_CLIENT_INCLUDE_DIRS}"
+)
 target_link_libraries(
   libwlmtool
-  PRIVATE
   libbase
   libbase_plist
   desktop-parser
-  PkgConfig::LIBXDGBASEDIR)
+  PkgConfig::LIBXDGBASEDIR
+  PkgConfig::WAYLAND_CLIENT
+)
 add_executable(
   wlmtool
   wlmtool.c)

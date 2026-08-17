@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "menu.h"
+#include "toplevel_list.h"
 
 /* == Declarations ========================================================= */
 
@@ -94,6 +95,11 @@ static const struct command_desc commands[] = {
         "Generates the \"Themes\" menu for Wayland Maker, in .plist text "
         "format.",
         .op = generate_themes_menu
+    },
+    {
+        .command_ptr = "ToplevelList",
+        .description_ptr = "Connect to compositor using ext-toplevel-list.",
+        .op = wlmtool_toplevel_list
     },
     {
         .command_ptr = "--help",
