@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# tasklist
+# -> tree by task ID
+# -> identifier must be unique (if given?) per toplevel and list-handle
+
 cmake_minimum_required(VERSION 3.13)
 
 add_library(wlmdock_lib STATIC)
@@ -23,7 +28,8 @@ target_sources(
   PRIVATE
   launcher.c
   subcompositor.c
-  tilebox.c)
+  tilebox.c
+  toplevel.c)
 target_include_directories(
   wlmdock_lib
   PUBLIC
