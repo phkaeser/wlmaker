@@ -57,8 +57,9 @@
 #include "wlclient/wlclient.h"
 
 #include "dock/launcher.h"
-#include "dock/tilebox.h"
 #include "dock/subcompositor.h"
+#include "dock/tilebox.h"
+#include "dock/toplevel.h"
 
 // TODO(kaeser@gubbe.ch): Move into a shared directory.
 #include "../config.h"
@@ -67,6 +68,9 @@
 
 /** State of the nested client-backed dock. */
 typedef struct {
+    /** For tracking toplevels. */
+    struct wlmdock_toplevel_tracker *tracker_ptr;
+
     /** Client wrapper connecting to parent compositor. */
     wlmcl_client_t            *client_ptr;
 
@@ -299,7 +303,7 @@ int main(int argc, const char **argv)
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
 wlmdock_t *_wlmdock_create(
-    const wlmtk_dock_positioning_t positioning,
+   const wlmtk_dock_positioning_t positioning,
     wlmaker_config_style_t *style_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
@@ -316,10 +320,21 @@ wlmdock_t *_wlmdock_create(
         wlmcl_client_attributes(dock_ptr->client_ptr);
     dock_ptr->remote_display_ptr = attrs->wl_display_ptr;
 
-    // Register layer shell interface.
+    // Register extra Wayland interfaces.
     if (!wlmcl_layer_shell_register(
             dock_ptr->client_ptr,
             &dock_ptr->layer_shell_ptr)) {
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+    dock_ptr->tracker_ptr = wlmdock_toplevel_tracker_create();
+    if (NULL == dock_ptr->tracker_ptr) {
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+    if (!wlmdock_toplevel_register_ext_foreign_toplevel_list(
+            dock_ptr->client_ptr,
+            dock_ptr->tracker_ptr)) {
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
@@ -511,10 +526,16 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
         dock_ptr->local_display_ptr = NULL;
     }
 
+    if (NULL != dock_ptr->tracker_ptr) {
+        wlmdock_toplevel_tracker_destroy(dock_ptr->tracker_ptr);
+        dock_ptr->tracker_ptr = NULL;
+    }
+
     if (NULL != dock_ptr->layer_surface_ptr) {
         wlmcl_layer_surface_destroy(dock_ptr->layer_surface_ptr);
         dock_ptr->layer_surface_ptr = NULL;
     }
+
     if (NULL != dock_ptr->client_ptr) {
         wlmcl_client_destroy(dock_ptr->client_ptr);
         dock_ptr->client_ptr = NULL;
