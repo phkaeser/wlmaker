@@ -18,13 +18,13 @@ set(public_header_files
   output.h
   output_config.h
   output_manager.h)
-add_library(backend STATIC
+add_library(wlmbackend_lib STATIC
   backend.c
   output.c
   output_config.c
   output_manager.c)
 target_include_directories(
-  backend
+  wlmbackend_lib
   PUBLIC
   "${PROJECT_SOURCE_DIR}/include"
   PRIVATE
@@ -33,31 +33,31 @@ target_include_directories(
   "${PROJECT_SOURCE_DIR}/include"
 )
 target_include_directories(
-  backend
+  wlmbackend_lib
   PRIVATE
   "${PROJECT_SOURCE_DIR}/include/backend"
 )
 set_target_properties(
-  backend PROPERTIES
+  wlmbackend_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}"
 )
 target_compile_options(
-  backend PRIVATE
+  wlmbackend_lib PRIVATE
   "${WAYLAND_SERVER_CFLAGS}"
   "${WAYLAND_SERVER_CFLAGS_OTHER}"
 )
 target_link_libraries(
-  backend
+  wlmbackend_lib
   PUBLIC
   libbase
   libbase_plist
   PkgConfig::WAYLAND_SERVER
   PRIVATE
-  toolkit
+  wlmtoolkit_lib
   PkgConfig::WLROOTS)
 if(iwyu_path_and_options)
   set_target_properties(
-    backend PROPERTIES
+    wlmbackend_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()

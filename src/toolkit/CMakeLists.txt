@@ -50,8 +50,8 @@ set(public_header_files
   window.h
   workspace.h
 )
-add_library(toolkit STATIC)
-target_sources(toolkit PRIVATE
+add_library(wlmtoolkit_lib STATIC)
+target_sources(wlmtoolkit_lib PRIVATE
   base.c
   bordered.c
   box.c
@@ -88,36 +88,36 @@ target_sources(toolkit PRIVATE
   workspace.c
 )
 target_include_directories(
-  toolkit PUBLIC
+  wlmtoolkit_lib PUBLIC
   "${WLROOTS_INCLUDE_DIRS}"
   "${CAIRO_INCLUDE_DIRS}"
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_BINARY_DIR}/third_party/protocols"
 )
 target_include_directories(
-  toolkit PRIVATE
+  wlmtoolkit_lib PRIVATE
   "${PROJECT_SOURCE_DIR}/include/toolkit"
 )
 set_target_properties(
-  toolkit PROPERTIES
+  wlmtoolkit_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}"
 )
 add_dependencies(
-  toolkit
+  wlmtoolkit_lib
   protocol_headers)
 target_compile_options(
-  toolkit PRIVATE
+  wlmtoolkit_lib PRIVATE
   "${WAYLAND_SERVER_CFLAGS}"
   "${WAYLAND_SERVER_CFLAGS_OTHER}"
 )
 target_link_libraries(
-  toolkit
+  wlmtoolkit_lib
   PUBLIC libbase PkgConfig::CAIRO PkgConfig::WLROOTS
   PRIVATE PkgConfig::WAYLAND_SERVER libbase_plist
 )
 if(iwyu_path_and_options)
   set_target_properties(
-    toolkit PROPERTIES
+    wlmtoolkit_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()
