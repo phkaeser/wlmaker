@@ -18,6 +18,13 @@ add_dependencies(backend_test wlmbackend_lib)
 target_link_libraries(backend_test wlmbackend_lib)
 add_test(NAME backend_test COMMAND backend_test)
 
+add_executable(dock_test dock_test.c)
+add_dependencies(dock_test libbase wlmdock_lib)
+target_link_libraries(dock_test libbase wlmdock_lib)
+target_compile_definitions(
+  dock_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
+add_test(NAME dock_test COMMAND dock_test)
+
 add_executable(input_test input_test.c)
 add_dependencies(input_test libbase wlminput_lib)
 target_link_libraries(input_test libbase wlminput_lib)
