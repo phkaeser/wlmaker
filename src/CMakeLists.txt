@@ -92,30 +92,30 @@ if(iwyu_path_and_options)
 endif()
 add_dependencies(
   wlmaker_lib
-  backend
+  wlmbackend_lib
   embedded_configuration
   embedded_root_menu
   embedded_state
   embedded_theme
-  input
+  wlminput_lib
   libbase
   libbase_plist
   protocol_headers
-  toolkit
-  wlm_util_lib
+  wlmtoolkit_lib
+  wlmutil_lib
   wlmaker_lib)
 target_link_libraries(
   wlmaker_lib
-  backend
+  wlmbackend_lib
   embedded_configuration
   embedded_root_menu
   embedded_state
   embedded_theme
   libbase
   libbase_plist
-  input
-  toolkit
-  wlm_util_lib
+  wlminput_lib
+  wlmtoolkit_lib
+  wlmutil_lib
   wlmaker_protocols
   PkgConfig::CAIRO
   PkgConfig::WAYLAND_SERVER
@@ -143,6 +143,8 @@ endif()
 if(XWAYLAND_FOUND)
   target_compile_definitions(wlmaker_lib PUBLIC WLMAKER_HAVE_XWAYLAND)
 endif()
+
+
 add_executable(
   wlmaker
   wlmaker.c)
@@ -173,3 +175,27 @@ if(iwyu_path_and_options)
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()
 install(TARGETS wlmaker DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+add_executable(wlmdock wlmdock.c)
+target_link_libraries(
+  wlmdock
+  PRIVATE
+  libbase
+  wlmclient_lib
+  wlmdock_lib
+  wlmutil_lib
+  wlmaker_lib)
+target_compile_definitions(
+  wlmdock PRIVATE
+  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
+  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
+  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
+if(iwyu_path_and_options)
+  set_target_properties(
+    wlmdock_lib PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  set_target_properties(
+    wlmdock PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+endif()
+install(TARGETS wlmdock DESTINATION "${CMAKE_INSTALL_BINDIR}")
