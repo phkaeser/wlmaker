@@ -153,16 +153,6 @@ target_compile_options(
   wlmaker PRIVATE
   "${WAYLAND_SERVER_CFLAGS}"
   "${WAYLAND_SERVER_CFLAGS_OTHER}")
-target_compile_definitions(
-  wlmaker PRIVATE
-  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
-  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
-  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
-if("${WLMAKER_VERSION_PATCH}")
-  target_compile_definitions(
-    wlmaker PRIVATE
-    "WLMAKER_VERSION_PATCH=\"${WLMAKER_VERSION_PATCH}\"")
-endif()
 target_link_libraries(
   wlmaker
   PRIVATE
@@ -185,11 +175,6 @@ target_link_libraries(
   wlmdock_lib
   wlmutil_lib
   wlmaker_lib)
-target_compile_definitions(
-  wlmdock PRIVATE
-  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
-  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
-  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
 if(iwyu_path_and_options)
   set_target_properties(
     wlmdock_lib PROPERTIES

@@ -51,6 +51,7 @@
 #include "util/backtrace.h"
 #include "util/files.h"
 #include "util/subprocess_monitor.h"
+#include "util/version.h"
 #include "util/wlr_log.h"
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
@@ -113,20 +114,6 @@ static bool _wlmdock_decode_launchers(
     void *value_ptr);
 
 /* == Data ================================================================= */
-
-#if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
-#error "WLMAKER_VERSION_... not defined!"
-#else
-// Patch level is optional.
-#if defined(WLMAKER_VERSION_PATCH)
-static const char *wlmdock_version_string =
-    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR "." WLMAKER_VERSION_PATCH;
-#else
-static const char *wlmdock_version_string =
-    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR;
-#endif
-static const char *wlmdock_version_full = WLMAKER_VERSION_FULL;
-#endif
 
 /** Will hold the value of --config_file. */
 static char *wlmdock_arg_config_file_ptr = NULL;
@@ -200,7 +187,7 @@ int main(int argc, const char **argv)
             return EXIT_SUCCESS;
         } else if (0 == strcmp(argv[i], "--version")) {
             fprintf(stdout, "wlmdock version %s (%s)\n",
-                    wlmdock_version_string, wlmdock_version_full);
+                    wlm_util_version, wlm_util_version_full);
             return EXIT_SUCCESS;
         } else {
             bs_log(BS_ERROR, "Unhandled extra argument \"%s\"", argv[i]);
@@ -218,7 +205,7 @@ int main(int argc, const char **argv)
     }
 
     bs_log(BS_INFO, "Starting wlmdock %s (%s)",
-           wlmdock_version_string, wlmdock_version_full);
+           wlm_util_version, wlm_util_version_full);
 
     wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     if (NULL == files_ptr) {

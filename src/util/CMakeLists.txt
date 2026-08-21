@@ -22,7 +22,19 @@ target_sources(
   files.c
   subprocess_monitor.c
   wlr_log.c
+  version.c
 )
+target_compile_definitions(
+  wlmutil_lib PRIVATE
+  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
+  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
+  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
+if("${WLMAKER_VERSION_PATCH}")
+  target_compile_definitions(
+    wlmutil_lib PRIVATE
+    "WLMAKER_VERSION_PATCH=\"${WLMAKER_VERSION_PATCH}\"")
+endif()
+
 target_include_directories(
   wlmutil_lib
   PRIVATE
