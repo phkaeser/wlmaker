@@ -17,26 +17,26 @@ set(public_header_files
   cursor.h
   keyboard.h
   manager.h)
-add_library(input STATIC
+add_library(wlminput_lib STATIC
   cursor.c
   keyboard.c
   pointer.c
   manager.c)
 set_target_properties(
-  input PROPERTIES
+  wlminput_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}"
 )
 add_dependencies(
-  input
-  toolkit)
+  wlminput_lib
+  wlmtoolkit_lib)
 target_compile_options(
-  input PRIVATE
+  wlminput_lib PRIVATE
   "${WAYLAND_SERVER_CFLAGS}"
   "${WAYLAND_SERVER_CFLAGS_OTHER}"
 )
 target_include_directories(
-  input
+  wlminput_lib
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${Libinput_INCLUDE_DIRS}"
@@ -44,14 +44,14 @@ target_include_directories(
   "${XKBCOMMON_INCLUDE_DIRS}"
 )
 target_include_directories(
-  input
+  wlminput_lib
   PRIVATE
   "${WLROOTS_INCLUDE_DIRS}"
 )
 target_link_libraries(
-  input
+  wlminput_lib
   PUBLIC
-  toolkit
+  wlmtoolkit_lib
   PRIVATE
   Libinput::Libinput
   PkgConfig::WAYLAND_SERVER
@@ -62,6 +62,6 @@ target_link_libraries(
   libbase_plist)
 if(iwyu_path_and_options)
   set_target_properties(
-    input PROPERTIES
+    wlminput_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()

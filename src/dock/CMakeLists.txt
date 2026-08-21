@@ -26,6 +26,8 @@ target_sources(
   tilebox.c)
 target_include_directories(
   wlmdock_lib
+  PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/.."
   PRIVATE
   "${PROJECT_SOURCE_DIR}/src"
   "${PROJECT_SOURCE_DIR}/include"
@@ -34,36 +36,10 @@ target_link_libraries(
   wlmdock_lib
   PRIVATE
   libbase
-  libwlclient
+  wlmclient_lib
   wlmaker_lib
 )
 target_link_libraries(
   wlmdock_lib
   PUBLIC
-  toolkit)
-
-add_executable(wlmdock wlmdock.c)
-target_link_libraries(
-  wlmdock
-  PRIVATE
-  libbase
-  libwlclient
-  wlmdock_lib
-  wlm_util_lib
-  wlmaker_lib)
-target_compile_definitions(
-  wlmdock PRIVATE
-  "WLMAKER_VERSION_MAJOR=\"${WLMAKER_VERSION_MAJOR}\""
-  "WLMAKER_VERSION_MINOR=\"${WLMAKER_VERSION_MINOR}\""
-  "WLMAKER_VERSION_FULL=\"${WLMAKER_VERSION_FULL}\"")
-
-if(iwyu_path_and_options)
-  set_target_properties(
-    wlmdock_lib PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-  set_target_properties(
-    wlmdock PROPERTIES
-    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
-endif()
-
-install(TARGETS wlmdock DESTINATION "${CMAKE_INSTALL_BINDIR}")
+  wlmtoolkit_lib)

@@ -14,9 +14,9 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-add_library(wlm_util_lib STATIC)
+add_library(wlmutil_lib STATIC)
 target_sources(
-  wlm_util_lib
+  wlmutil_lib
   PRIVATE
   backtrace.c
   files.c
@@ -24,7 +24,7 @@ target_sources(
   wlr_log.c
 )
 target_include_directories(
-  wlm_util_lib
+  wlmutil_lib
   PRIVATE
   "${LIBXDGBASEDIR_INCLUDE_DIRS}"
   # TODO(kaeser@gubbe.ch): Move that to client-side compatible implementation.
@@ -32,7 +32,7 @@ target_include_directories(
   "${WAYLAND_SERVER_INCLUDE_DIRS}"
 )
 target_link_libraries(
-  wlm_util_lib
+  wlmutil_lib
   PRIVATE
   $<$<BOOL:${LIBBACKTRACE}>:${LIBBACKTRACE}>
   PkgConfig::LIBXDGBASEDIR
@@ -42,11 +42,11 @@ target_link_libraries(
 )
 
 if(LIBBACKTRACE)
-  target_compile_definitions(wlm_util_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
+  target_compile_definitions(wlmutil_lib PRIVATE WLMAKER_HAVE_LIBBACKTRACE)
 endif()
 
 if(iwyu_path_and_options)
   set_target_properties(
-    wlm_util_lib PROPERTIES
+    wlmutil_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()

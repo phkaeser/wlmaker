@@ -22,7 +22,7 @@ pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED IMPORTED_TARGET wayland-protocols>=
 
 pkg_get_variable(wayland_protocol_dir wayland-protocols pkgdatadir)
 
-add_library(libwlclient STATIC)
+add_library(wlmclient_lib STATIC)
 
 set(public_header_files
   dblbuf.h
@@ -33,12 +33,12 @@ set(public_header_files
 )
 
 set_target_properties(
-  libwlclient PROPERTIES
+  wlmclient_lib PROPERTIES
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}")
 
 target_sources(
-  libwlclient PRIVATE
+  wlmclient_lib PRIVATE
   dblbuf.c
   icon.c
   layer_surface.c
@@ -47,49 +47,49 @@ target_sources(
 )
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME cursor-shape-v1
   PROTOCOL_FILE "${wayland_protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME ext-input-observation-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME tablet-v2
   PROTOCOL_FILE "${wayland_protocol_dir}/stable/tablet/tablet-v2.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME wlmaker-icon-unstable-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME wlr-layer-shell-unstable-v1
   PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/third_party/protocols/wlr-layer-shell-unstable-v1.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME xdg-decoration
   PROTOCOL_FILE "${wayland_protocol_dir}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
   SIDE client)
 
 waylandprotocol_add(
-  libwlclient
+  wlmclient_lib
   BASE_NAME xdg-shell
   PROTOCOL_FILE "${wayland_protocol_dir}/stable/xdg-shell/xdg-shell.xml"
   SIDE client)
 
 target_include_directories(
-  libwlclient
+  wlmclient_lib
   PUBLIC
   "${PROJECT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_BINARY_DIR}"
@@ -98,7 +98,7 @@ target_include_directories(
   "${XKBCOMMON_INCLUDE_DIRS}")
 
 target_link_libraries(
-  libwlclient
+  wlmclient_lib
   libbase
   PkgConfig::WAYLAND_CLIENT
   PkgConfig::XKBCOMMON)
@@ -108,12 +108,12 @@ check_symbol_exists(signalfd "sys/signalfd.h" HAVE_SIGNALFD)
 if(NOT HAVE_SIGNALFD)
   pkg_check_modules(EPOLL REQUIRED IMPORTED_TARGET epoll-shim)
   target_link_libraries(
-    libwlclient
+    wlmclient_lib
     PkgConfig::EPOLL)
 endif()
 
 if(iwyu_path_and_options)
   set_target_properties(
-    libwlclient PROPERTIES
+    wlmclient_lib PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()

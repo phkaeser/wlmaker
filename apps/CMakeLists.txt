@@ -40,7 +40,7 @@ add_library(wlm_graph_shared STATIC wlm_graph_shared.c)
 target_include_directories(wlm_graph_shared PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   wlm_graph_shared
-  libwlclient
+  wlmclient_lib
   primitives)
 if(iwyu_path_and_options)
   set_target_properties(
@@ -48,12 +48,12 @@ if(iwyu_path_and_options)
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
 endif()
 
-add_wlm_app(wlmclock libwlclient primitives m)
-add_wlm_app(wlmeyes m libwlclient)
-add_wlm_app(wlmcpugraph wlm_graph_shared libwlclient primitives)
-add_wlm_app(wlmmemgraph wlm_graph_shared libwlclient primitives)
-add_wlm_app(wlmnetgraph wlm_graph_shared libwlclient primitives)
-add_wlm_app(wlmbattery libbase libwlclient primitives)
+add_wlm_app(wlmclock wlmclient_lib primitives m)
+add_wlm_app(wlmeyes m wlmclient_lib)
+add_wlm_app(wlmcpugraph wlm_graph_shared wlmclient_lib primitives)
+add_wlm_app(wlmmemgraph wlm_graph_shared wlmclient_lib primitives)
+add_wlm_app(wlmnetgraph wlm_graph_shared wlmclient_lib primitives)
+add_wlm_app(wlmbattery libbase wlmclient_lib primitives)
 
 install(
   TARGETS wlmclock wlmeyes wlmcpugraph wlmmemgraph wlmnetgraph wlmbattery

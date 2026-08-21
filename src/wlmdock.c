@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
+#include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -54,9 +55,9 @@
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
 
-#include "launcher.h"
-#include "tilebox.h"
-#include "subcompositor.h"
+#include "dock/launcher.h"
+#include "dock/tilebox.h"
+#include "dock/subcompositor.h"
 
 // TODO(kaeser@gubbe.ch): Move into a shared directory.
 #include "../config.h"

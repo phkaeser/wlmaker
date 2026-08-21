@@ -14,19 +14,19 @@
 # limitations under the License.
 
 add_executable(backend_test backend_test.c)
-add_dependencies(backend_test backend)
-target_link_libraries(backend_test backend)
+add_dependencies(backend_test wlmbackend_lib)
+target_link_libraries(backend_test wlmbackend_lib)
 add_test(NAME backend_test COMMAND backend_test)
 
 add_executable(input_test input_test.c)
-add_dependencies(input_test libbase input)
-target_link_libraries(input_test libbase input)
+add_dependencies(input_test libbase wlminput_lib)
+target_link_libraries(input_test libbase wlminput_lib)
 target_compile_definitions(
   input_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
 add_test(NAME input_test COMMAND input_test)
 
 add_executable(toolkit_test toolkit_test.c)
-target_link_libraries(toolkit_test toolkit)
+target_link_libraries(toolkit_test wlmtoolkit_lib)
 target_include_directories(
   toolkit_test PRIVATE "${PROJECT_SOURCE_DIR}/include/toolkit")
 target_compile_definitions(
@@ -52,10 +52,10 @@ target_compile_definitions(
 add_test(NAME wlmdock_test COMMAND wlmdock_test)
 
 add_executable(util_test util_test.c)
-add_dependencies(util_test wlm_util_lib)
+add_dependencies(util_test wlmutil_lib)
 target_include_directories(
   util_test PRIVATE "${PROJECT_SOURCE_DIR}/src")
-target_link_libraries(util_test PRIVATE libbase wlm_util_lib)
+target_link_libraries(util_test PRIVATE libbase wlmutil_lib)
 target_compile_definitions(
   util_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
 add_test(NAME util_test COMMAND util_test)

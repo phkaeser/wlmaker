@@ -52,7 +52,7 @@ target_include_directories(example_toplevel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}
 target_link_libraries(
   example_toplevel
   m
-  libwlclient)
+  wlmclient_lib)
 
 add_executable(
   example_layer_surface
@@ -61,7 +61,7 @@ target_include_directories(example_layer_surface PRIVATE "${CMAKE_CURRENT_SOURCE
 target_link_libraries(
   example_layer_surface
   m
-  libwlclient)
+  wlmclient_lib)
 
 if(iwyu_path_and_options)
   set_target_properties(
