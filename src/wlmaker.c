@@ -48,6 +48,7 @@
 #include "toolkit/toolkit.h"
 #include "util/backtrace.h"
 #include "util/files.h"
+#include "util/version.h"
 #include "util/wlr_log.h"
 
 /** Will hold the value of --config_file. */
@@ -58,20 +59,6 @@ static char *wlmaker_arg_state_file_ptr = NULL;
 static char *wlmaker_arg_theme_file_ptr = NULL;
 /** Will hold the value of --root_menu_file. */
 static char *wlmaker_arg_root_menu_file_ptr = NULL;
-
-#if !defined(WLMAKER_VERSION_MAJOR) || !defined(WLMAKER_VERSION_MINOR) || !defined(WLMAKER_VERSION_FULL)
-#ertor "WLMAKER_VERSION_... not defined!"
-#else
-// Patch level is optional.
-#if defined(WLMAKER_VERSION_PATCH)
-static const char *wlmaker_version_string =
-    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR "." WLMAKER_VERSION_PATCH;
-#else
-static const char *wlmaker_version_string =
-    WLMAKER_VERSION_MAJOR "." WLMAKER_VERSION_MINOR;
-#endif
-static const char *wlmaker_version_full = WLMAKER_VERSION_FULL;
-#endif
 
 /** Startup options for the server. */
 static wlmaker_server_options_t wlmaker_server_options = {
@@ -266,7 +253,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
             return EXIT_SUCCESS;
         } else if (0 == strcmp(argv[i], "--version")) {
             fprintf(stdout, "wlmaker version %s (%s)\n",
-                    wlmaker_version_string, wlmaker_version_full);
+                    wlm_util_version, wlm_util_version_full);
             return EXIT_SUCCESS;
         } else {
             bs_log(BS_ERROR, "Unhandled extra argument \"%s\"", argv[i]);
@@ -274,8 +261,8 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         }
     }
     bs_log(BS_INFO, "Starting wlmaker %s (%s)",
-           wlmaker_version_string,
-           wlmaker_version_full);
+           wlm_util_version,
+           wlm_util_version_full);
 
     wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     if (NULL == files_ptr) {
