@@ -26,15 +26,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <wayland-client-core.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "wlclient/xdg_toplevel.h"
-#include "wlclient/wlclient.h"
-#include "wlclient/icon.h"
 #include "wlclient/dblbuf.h"
+#include "wlclient/icon.h"
+#include "wlclient/wlclient.h"
+#include "wlclient/xdg_toplevel.h"
 
 /* == Data ================================================================= */
 
@@ -314,7 +315,14 @@ int main(int argc, const char **argv)
     _key_listener.notify = _handle_key;
     wl_signal_add(&wlmcl_client_events(wlclient_ptr)->key, &_key_listener);
 
-    if (wlmcl_xdg_supported(wlclient_ptr)) {
+   // TODO(kaeser@gubbe.ch): Move xdg and icon protocol to use
+   // @ref wlmcl_client_register, and permit clients to be registerd as
+   // 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+     if (wlmcl_xdg_supported(wlclient_ptr)) {
         wlmcl_xdg_toplevel_t *toplevel_ptr = wlmcl_xdg_toplevel_create(
             wlclient_ptr,
             "wlmaker Toplevel Example",
