@@ -313,6 +313,13 @@ wlmdock_t *_wlmdock_create(
         wlmcl_client_attributes(dock_ptr->client_ptr);
     dock_ptr->remote_display_ptr = attrs->wl_display_ptr;
 
+    // TODO(kaeser@gubbe.ch): Move xdg_toplevel to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(dock_ptr->client_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(dock_ptr->client_ptr)->wl_display_ptr);
+
     // 2. Create the client-side layer shell surface.
     dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
         dock_ptr->client_ptr,

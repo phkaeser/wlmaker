@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wayland-client-core.h>
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -166,6 +167,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     _key_listener.notify = _handle_key;
     wl_signal_add(&wlmcl_client_events(wlclient_ptr)->key, &_key_listener);
 
+    // TODO(kaeser@gubbe.ch): Move xdg_toplevel to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
     if (wlmcl_xdg_supported(wlclient_ptr)) {
         wlmcl_xdg_toplevel_t *toplevel_ptr = wlmcl_xdg_toplevel_create(
             wlclient_ptr, "wlmaker Toplevel Example", 640, 400);

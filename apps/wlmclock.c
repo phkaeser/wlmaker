@@ -23,7 +23,6 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
-#include <wlclient/wlclient.h>
 #include <math.h>
 #include <primitives/primitives.h>
 #include <primitives/segment_display.h>
@@ -34,9 +33,11 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <wayland-client-core.h>
+#include <wlclient/wlclient.h>
 
-#include "wlclient/icon.h"
 #include "wlclient/dblbuf.h"
+#include "wlclient/icon.h"
 
 /** State of the client. */
 static wlmcl_client_t *wlclient_ptr;
@@ -233,6 +234,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_ptr = wlmcl_client_create("wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
+    // TODO(kaeser@gubbe.ch): Move icon_protocol to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
     if (wlmcl_icon_supported(wlclient_ptr)) {
         wlmcl_icon_t *icon_ptr = wlmcl_icon_create(wlclient_ptr);
         if (NULL == icon_ptr) {

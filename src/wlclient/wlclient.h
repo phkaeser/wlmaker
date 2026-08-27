@@ -26,6 +26,8 @@
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
 
+struct wl_interface;
+
 /** Forward declaration: Wayland client handle. */
 typedef struct _wlmcl_client_t wlmcl_client_t;
 
@@ -99,6 +101,24 @@ struct wlmcl_client_key_event {
  *     via @ref wlmcl_client_destroy.
  */
 wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr);
+
+/**
+ * Registers an interface to be set up by the client.
+ *
+ * @param client_ptr
+ * @param wl_interface_ptr
+ * @param desired_version
+ * @param setup
+ * @param userdata_ptr
+ *
+ * @return The bound interface, or NULL on errror.
+ */
+struct wlmcl_client_interface *wlmcl_client_register(
+    wlmcl_client_t *client_ptr,
+    const struct wl_interface *wl_interface_ptr,
+    uint32_t desired_version,
+    void (*setup)(void *userdata_ptr, void *bound_interface_ptr),
+    void *userdata_ptr);
 
 /**
  * Destroys the wayland client, as created by @ref wlmcl_client_create.

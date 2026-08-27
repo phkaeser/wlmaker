@@ -26,12 +26,13 @@
 #include <cairo.h>
 #include <errno.h>
 #include <libbase/libbase.h>
-#include <wlclient/wlclient.h>
 #include <primitives/primitives.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wayland-client-core.h>
+#include <wlclient/wlclient.h>
 
 #include "wlclient/icon.h"
 #include "wlclient/dblbuf.h"
@@ -1477,7 +1478,13 @@ int wlm_graph_app_run(
         return EXIT_FAILURE;
     }
 
-    if (!wlmcl_icon_supported(wlclient_ptr)) {
+   // TODO(kaeser@gubbe.ch): Move icon_protocol to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+     if (!wlmcl_icon_supported(wlclient_ptr)) {
         bs_log(BS_ERROR, "Icon protocol is not supported.");
         _wlm_graph_state_free(graph_state);
         config->state_free_fn(config->app_state);

@@ -30,15 +30,16 @@
 #include <cairo.h>
 #include <dirent.h>
 #include <inttypes.h>
+#include <primitives/primitives.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <primitives/primitives.h>
-#include <wlclient/wlclient.h>
-#include <wlclient/icon.h>
+#include <wayland-client-core.h>
 #include <wlclient/dblbuf.h>
+#include <wlclient/icon.h>
+#include <wlclient/wlclient.h>
 
 #include <libbase/libbase.h>
 
@@ -707,7 +708,13 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    if (wlmcl_icon_supported(wlclient_ptr)) {
+   // TODO(kaeser@gubbe.ch): Move icon_protocol to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+     if (wlmcl_icon_supported(wlclient_ptr)) {
         wlmcl_icon_t *icon_ptr = wlmcl_icon_create(wlclient_ptr);
         struct callback_arg arg = { .ps = ps, .icon_ptr = icon_ptr };
         if (NULL == icon_ptr) {

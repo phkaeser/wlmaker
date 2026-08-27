@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 
 #include "wlclient/dblbuf.h"
@@ -136,6 +137,12 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_ptr = wlmcl_client_create("example_layer_surface");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
+    // TODO(kaeser@gubbe.ch): Move layer_surface to @ref wlmcl_client_register,
+    // and permit clients to be registerd as 'required'.
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
+    wl_display_roundtrip(
+        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
     if (wlmcl_layer_shell_supported(wlclient_ptr)) {
         // Create as TOP layer, anchored to the right edge, spanning top to bottom
         wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
