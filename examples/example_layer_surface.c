@@ -27,7 +27,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 
 #include "wlclient/dblbuf.h"
@@ -138,53 +137,44 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
     struct zwlr_layer_shell_v1 *layer_shell_ptr = NULL;
-    if (!wlmcl_layer_shell_register(wlclient_ptr, &layer_shell_ptr)) {
+    if (!wlmcl_layer_shell_register(wlclient_ptr, &layer_shell_ptr) ||
+        !wlmcl_client_initialize(wlclient_ptr)) {
         return EXIT_FAILURE;
     }
 
-    // TODO(kaeser@gubbe.ch): Move layer_surface to @ref wlmcl_client_register,
-    // and permit clients to be registerd as 'required'.
-    wl_display_roundtrip(
-        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
-    wl_display_roundtrip(
-        wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
-    if (NULL != layer_shell_ptr) {
-        // Create as TOP layer, anchored to the right edge, spanning top to bottom
-        wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
-            layer_shell_ptr,
-            wlclient_ptr,
-            ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-            "example_layer_surface");
+    // Create as TOP layer, anchored to the right edge, spanning top to bottom
+    wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
+        BS_ASSERT_NOTNULL(layer_shell_ptr),
+        wlclient_ptr,
+        ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+        "example_layer_surface");
 
-        zwlr_layer_surface_v1_set_size(
-            wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
-            100, 300);
-        zwlr_layer_surface_v1_set_anchor(
-            wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
-            ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
-            ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
-            ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
-        wl_surface_commit(wlmcl_layer_surface_wl_surface(layer_surface_ptr));
+    zwlr_layer_surface_v1_set_size(
+        wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
+        100, 300);
+    zwlr_layer_surface_v1_set_anchor(
+        wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
+        ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+        ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+        ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
+    wl_surface_commit(wlmcl_layer_surface_wl_surface(layer_surface_ptr));
 
-        if (NULL != layer_surface_ptr) {
-            // Register configure callback
-            wlmcl_layer_surface_register_configure_callback(
-                layer_surface_ptr, _handle_configure, layer_surface_ptr);
+    if (NULL != layer_surface_ptr) {
+        // Register configure callback
+        wlmcl_layer_surface_register_configure_callback(
+            layer_surface_ptr, _handle_configure, layer_surface_ptr);
 
-            // Run main loop
-            wlmcl_client_run(wlclient_ptr);
+        // Run main loop
+        wlmcl_client_run(wlclient_ptr);
 
-            wlmcl_layer_surface_destroy(layer_surface_ptr);
-            if (NULL != dblbuf_ptr) {
-                wlmcl_dblbuf_destroy(dblbuf_ptr);
-                dblbuf_ptr = NULL;
-            }
-        } else {
-            bs_log(BS_ERROR, "Failed wlmcl_layer_surface_create(%p)",
-                   wlclient_ptr);
+        wlmcl_layer_surface_destroy(layer_surface_ptr);
+        if (NULL != dblbuf_ptr) {
+            wlmcl_dblbuf_destroy(dblbuf_ptr);
+            dblbuf_ptr = NULL;
         }
     } else {
-        bs_log(BS_ERROR, "Layer shell is not supported.");
+        bs_log(BS_ERROR, "Failed wlmcl_layer_surface_create(%p)",
+               wlclient_ptr);
     }
 
     if (background_colors != NULL) {
