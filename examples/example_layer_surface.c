@@ -137,15 +137,21 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
     wlclient_ptr = wlmcl_client_create("example_layer_surface");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
 
+    struct zwlr_layer_shell_v1 *layer_shell_ptr = NULL;
+    if (!wlmcl_layer_shell_register(wlclient_ptr, &layer_shell_ptr)) {
+        return EXIT_FAILURE;
+    }
+
     // TODO(kaeser@gubbe.ch): Move layer_surface to @ref wlmcl_client_register,
     // and permit clients to be registerd as 'required'.
     wl_display_roundtrip(
         wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
     wl_display_roundtrip(
         wlmcl_client_attributes(wlclient_ptr)->wl_display_ptr);
-    if (wlmcl_layer_shell_supported(wlclient_ptr)) {
+    if (NULL != layer_shell_ptr) {
         // Create as TOP layer, anchored to the right edge, spanning top to bottom
         wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
+            layer_shell_ptr,
             wlclient_ptr,
             ZWLR_LAYER_SHELL_V1_LAYER_TOP,
             "example_layer_surface");

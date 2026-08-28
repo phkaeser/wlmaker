@@ -69,6 +69,9 @@
 typedef struct {
     /** Client wrapper connecting to parent compositor. */
     wlmcl_client_t            *client_ptr;
+
+    /** Layer shell interface. */
+    struct zwlr_layer_shell_v1 *layer_shell_ptr;
     /** Layer shell surface on parent compositor. */
     wlmcl_layer_surface_t     *layer_surface_ptr;
     /** Parent's display connection. */
@@ -313,6 +316,14 @@ wlmdock_t *_wlmdock_create(
         wlmcl_client_attributes(dock_ptr->client_ptr);
     dock_ptr->remote_display_ptr = attrs->wl_display_ptr;
 
+    // Register layer shell interface.
+    if (!wlmcl_layer_shell_register(
+            dock_ptr->client_ptr,
+            &dock_ptr->layer_shell_ptr)) {
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
     // TODO(kaeser@gubbe.ch): Move xdg_toplevel to @ref wlmcl_client_register,
     // and permit clients to be registerd as 'required'.
     wl_display_roundtrip(
@@ -322,6 +333,7 @@ wlmdock_t *_wlmdock_create(
 
     // 2. Create the client-side layer shell surface.
     dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
+        dock_ptr->layer_shell_ptr,
         dock_ptr->client_ptr,
         ZWLR_LAYER_SHELL_V1_LAYER_TOP,
         "wlmdock");

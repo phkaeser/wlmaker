@@ -45,7 +45,6 @@
 #include "ext-input-observation-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-client-protocol.h"
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "cursor-shape-v1-client-protocol.h"
 
 struct wl_keyboard;
@@ -303,8 +302,6 @@ static const object_t objects[] = {
       offsetof(struct wlmcl_client_attributes, icon_manager_ptr), NULL },
     { &ext_input_observation_manager_v1_interface, 1,
       offsetof(struct wlmcl_client_attributes, input_observation_manager_ptr), NULL },
-    { &zwlr_layer_shell_v1_interface, 5,
-      offsetof(struct wlmcl_client_attributes, layer_shell_ptr), NULL },
     { &wl_compositor_interface, 4,
       offsetof(struct wlmcl_client_attributes, wl_compositor_ptr), NULL },
     { &wl_seat_interface, 5,
@@ -408,7 +405,7 @@ struct wlmcl_client_interface *wlmcl_client_register(
     wlmcl_client_t *client_ptr,
     const struct wl_interface *wl_interface_ptr,
     uint32_t desired_version,
-    void (*setup)(void *userdata_ptr, void *bound_interface_ptr),
+    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
     void *userdata_ptr)
 {
     struct wlmcl_client_interface *interface_ptr = logged_calloc(

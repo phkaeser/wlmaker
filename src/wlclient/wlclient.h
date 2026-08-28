@@ -65,8 +65,6 @@ struct wlmcl_client_attributes {
     struct xdg_wm_base        *xdg_wm_base_ptr;
     /** The bound Toplevel Icon Manager. Will be NULL if not supported. */
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
-    /** The bound layer shell interface. Will be NULL if not supported. */
-    struct zwlr_layer_shell_v1 *layer_shell_ptr;
     /** The bound XDG decoration manager. NULL if not supported. */
     struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
 
@@ -117,7 +115,7 @@ struct wlmcl_client_interface *wlmcl_client_register(
     wlmcl_client_t *client_ptr,
     const struct wl_interface *wl_interface_ptr,
     uint32_t desired_version,
-    void (*setup)(void *userdata_ptr, void *bound_interface_ptr),
+    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
     void *userdata_ptr);
 
 /**

@@ -56,6 +56,9 @@ struct _wlmcl_layer_surface_t {
     void                          *configure_callback_ud_ptr;
 };
 
+static void _wlmcl_layer_shell_setup(
+    void *bound_interface_ptr,
+    void *userdata_ptr);
 static void _wlmcl_layer_surface_handle_configure(
     void *data_ptr,
     struct zwlr_layer_surface_v1 *layer_surface_ptr,
@@ -79,21 +82,26 @@ _wlmcl_layer_surface_listener = {
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
-bool wlmcl_layer_shell_supported(wlmcl_client_t *wlclient_ptr)
+bool wlmcl_layer_shell_register(
+    wlmcl_client_t *wlclient_ptr,
+    struct zwlr_layer_shell_v1 **layer_shell_ptr_ptr)
 {
-    return (NULL != wlmcl_client_attributes(wlclient_ptr)->layer_shell_ptr);
+    return NULL != wlmcl_client_register(
+        wlclient_ptr,
+        &zwlr_layer_shell_v1_interface,
+        5,
+        _wlmcl_layer_shell_setup,
+        layer_shell_ptr_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 wlmcl_layer_surface_t *wlmcl_layer_surface_create(
+    struct zwlr_layer_shell_v1 *layer_shell_ptr,
     wlmcl_client_t *wlclient_ptr,
     uint32_t layer,
     const char *namespace_ptr)
 {
-    if (!wlmcl_layer_shell_supported(wlclient_ptr)) {
-        bs_log(BS_ERROR, "Layer shell is not supported.");
-        return NULL;
-    }
+    BS_ASSERT(NULL != layer_shell_ptr);
 
     wlmcl_layer_surface_t *layer_surface_ptr = logged_calloc(
         1, sizeof(wlmcl_layer_surface_t));
@@ -110,7 +118,7 @@ wlmcl_layer_surface_t *wlmcl_layer_surface_create(
     }
 
     layer_surface_ptr->layer_surface_ptr = zwlr_layer_shell_v1_get_layer_surface(
-        wlmcl_client_attributes(wlclient_ptr)->layer_shell_ptr,
+        layer_shell_ptr,
         layer_surface_ptr->wl_surface_ptr,
         NULL,  // Let compositor choose output.
         layer,
@@ -182,6 +190,16 @@ void wlmcl_layer_surface_register_configure_callback(
 }
 
 /* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Callback for @ref wlmcl_client_register. Stores the layer shell handle. */
+void _wlmcl_layer_shell_setup(
+    void *bound_interface_ptr,
+    void *userdata_ptr)
+{
+    struct zwlr_layer_shell_v1 **layer_shell_ptr_ptr = userdata_ptr;
+    *layer_shell_ptr_ptr = bound_interface_ptr;
+}
 
 /* ------------------------------------------------------------------------- */
 /**
