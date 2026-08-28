@@ -27,6 +27,8 @@
 #include "wlclient.h"  // IWYU pragma: keep
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"  // IWYU pragma: keep
 
+struct zwlr_layer_shell_v1;
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -35,15 +37,21 @@ extern "C" {
 typedef struct _wlmcl_layer_surface_t wlmcl_layer_surface_t;
 
 /**
- * Returns whether the layer shell protocol is supported on the client.
+ * Registers the layer shell interface with the client.
  *
  * @param wlclient_ptr
+ * @param layer_shell_ptr_ptr
+ *
+ * @return true on success.
  */
-bool wlmcl_layer_shell_supported(wlmcl_client_t *wlclient_ptr);
+bool wlmcl_layer_shell_register(
+    wlmcl_client_t *wlclient_ptr,
+    struct zwlr_layer_shell_v1 **layer_shell_ptr_ptr);
 
 /**
  * Creates a layer surface.
  *
+ * @param layer_shell_ptr
  * @param wlclient_ptr
  * @param layer               One of zwlr_layer_shell_v1_layer.
  * @param namespace_ptr       Namespace string.
@@ -51,6 +59,7 @@ bool wlmcl_layer_shell_supported(wlmcl_client_t *wlclient_ptr);
  * @return State of the layer surface or NULL on error.
  */
 wlmcl_layer_surface_t *wlmcl_layer_surface_create(
+    struct zwlr_layer_shell_v1 *layer_shell_ptr,
     wlmcl_client_t *wlclient_ptr,
     uint32_t layer,
     const char *namespace_ptr);
