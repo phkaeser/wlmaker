@@ -92,6 +92,8 @@ struct _wlmcl_client_t {
 
     /** File descriptor to monitor SIGINT. */
     int                       signal_fd;
+    /** Whether @ref wlmcl_client_initialize was executed. */
+    bool                      initialized;
 
     /** Whether to keep the client running. */
     volatile bool             keep_running;
@@ -130,7 +132,11 @@ struct wlmcl_client_interface {
     const struct wl_interface *wl_interface_ptr;
     /** Version desired to bind to. */
     uint32_t                  desired_version;
+    /** Whether this interface is required. */
+    bool                      required;
 
+    /** The bound interface, indicates that this interface is available. */
+    void                      *bound_interface_ptr;
     /** Additional setup for this wayland object. */
     void (*setup)(void *userdata_ptr, void *bound_interface_ptr);
     /** Argument to @ref wlmcl_client_interface::setup. */
@@ -140,6 +146,9 @@ struct wlmcl_client_interface {
 static void wl_to_bs_log(
     const char *fmt,
     va_list args);
+static void _wlmcl_client_register_node_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
 
 static void handle_global_announce(
     void *data_ptr,
@@ -401,29 +410,6 @@ wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-struct wlmcl_client_interface *wlmcl_client_register(
-    wlmcl_client_t *client_ptr,
-    const struct wl_interface *wl_interface_ptr,
-    uint32_t desired_version,
-    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
-    void *userdata_ptr)
-{
-    struct wlmcl_client_interface *interface_ptr = logged_calloc(
-        1, sizeof(*interface_ptr));
-    if (NULL == interface_ptr) return NULL;
-
-    interface_ptr->wl_interface_ptr = wl_interface_ptr;
-    interface_ptr->desired_version = desired_version;
-    interface_ptr->setup = setup;
-    interface_ptr->userdata_ptr = userdata_ptr;
-
-    bs_dllist_push_back(
-        &client_ptr->registered_interfaces,
-        &interface_ptr->dlnode);
-    return interface_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
 void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
 {
     bs_dllist_node_t *dlnode_ptr;
@@ -465,6 +451,11 @@ void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
         wlclient_ptr->attributes.app_id_ptr = NULL;
     }
 
+    bs_dllist_for_each(
+        &wlclient_ptr->registered_interfaces,
+        _wlmcl_client_register_node_destroy,
+        NULL);
+
     free(wlclient_ptr);
 }
 
@@ -472,6 +463,57 @@ void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
 struct xkb_keymap *wlmcl_client_get_keymap(wlmcl_client_t *wlmcl_client_ptr)
 {
     return wlmcl_client_ptr->xkb_keymap_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+struct wlmcl_client_interface *wlmcl_client_register_interface(
+    wlmcl_client_t *client_ptr,
+    const struct wl_interface *wl_interface_ptr,
+    uint32_t desired_version,
+    bool required,
+    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
+    void *userdata_ptr)
+{
+    struct wlmcl_client_interface *interface_ptr = logged_calloc(
+        1, sizeof(*interface_ptr));
+    if (NULL == interface_ptr) return NULL;
+
+    interface_ptr->wl_interface_ptr = wl_interface_ptr;
+    interface_ptr->desired_version = desired_version;
+    interface_ptr->required = required;
+    interface_ptr->setup = setup;
+    interface_ptr->userdata_ptr = userdata_ptr;
+
+    bs_dllist_push_back(
+        &client_ptr->registered_interfaces,
+        &interface_ptr->dlnode);
+    return interface_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmcl_client_initialize(wlmcl_client_t *client_ptr)
+{
+    if (!client_ptr->initialized) {
+        // Ensure there's 2 roundtrips for registering the main protocols and
+        // 1st level derivatives (seats, outputs, shm formats).
+        wl_display_roundtrip(client_ptr->attributes.wl_display_ptr);
+        wl_display_roundtrip(client_ptr->attributes.wl_display_ptr);
+        client_ptr->initialized = true;
+    }
+
+    for (bs_dllist_node_t *n = client_ptr->registered_interfaces.head_ptr;
+         NULL != n;
+         n = bs_dllist_node_iterator_forward(n)) {
+        struct wlmcl_client_interface *interface_ptr = BS_CONTAINER_OF(
+            n, struct wlmcl_client_interface, dlnode);
+        if (interface_ptr->required &&
+            NULL == interface_ptr->bound_interface_ptr) {
+            bs_log(BS_ERROR, "Required interface %s not bound.",
+                   interface_ptr->wl_interface_ptr->name);
+            return false;
+        }
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -509,10 +551,7 @@ int wlmcl_client_signal_fd(wlmcl_client_t *wlclient_ptr)
 // TODO(kaeser@gubbe.ch): Clean up.
 void wlmcl_client_run(wlmcl_client_t *wlclient_ptr)
 {
-    // Ensure there's 2 roundtrips for registering the main protocols and
-    // 1st level derivatives (seats, outputs, shm formats).
-    wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
-    wl_display_roundtrip(wlclient_ptr->attributes.wl_display_ptr);
+    wlmcl_client_initialize(wlclient_ptr);
 
     if (NULL == wlclient_ptr->attributes.wl_compositor_ptr) {
         bs_log(BS_ERROR, "'wl_compositor' interface not found on Wayland.");
@@ -664,6 +703,17 @@ void wl_to_bs_log(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Destroys a registered client interface. For `bs_dllist_for_each`. */
+void _wlmcl_client_register_node_destroy(
+    bs_dllist_node_t *dlnode_ptr,
+    __UNUSED__ void *ud_ptr)
+{
+    struct wlmcl_client_interface *interface_ptr = BS_CONTAINER_OF(
+        dlnode_ptr, struct wlmcl_client_interface, dlnode);
+    free(interface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Handles the announcement of a global object.
  *
@@ -725,12 +775,19 @@ void handle_global_announce(
             n, struct wlmcl_client_interface, dlnode);
         if (0 != strcmp(interface_name_ptr,
                         interface_ptr->wl_interface_ptr->name)) continue;
-        void *bound_ptr = wl_registry_bind(
+        if (NULL != interface_ptr->bound_interface_ptr) {
+            bs_log(BS_WARNING, "Already bound interface %s to %p, ignoring",
+                   interface_ptr->wl_interface_ptr->name,
+                   interface_ptr->bound_interface_ptr);
+            continue;
+        }
+
+        interface_ptr->bound_interface_ptr = wl_registry_bind(
             wl_registry_ptr,
             name,
             interface_ptr->wl_interface_ptr,
             interface_ptr->desired_version);
-        if (NULL == bound_ptr) {
+        if (NULL == interface_ptr->bound_interface_ptr) {
             bs_log(BS_ERROR,
                    "Failed wl_registry_bind(%p, %"PRIu32", %p, %"PRIu32") "
                    "for interface %s, version %"PRIu32".",
@@ -744,8 +801,10 @@ void handle_global_announce(
         }
 
         bs_log(BS_INFO, "Bound interface %s to %p",
-               interface_name_ptr, bound_ptr);
-        interface_ptr->setup(bound_ptr, interface_ptr->userdata_ptr);
+               interface_name_ptr, interface_ptr->bound_interface_ptr);
+        interface_ptr->setup(
+            interface_ptr->bound_interface_ptr,
+            interface_ptr->userdata_ptr);
         return;
     }
 }

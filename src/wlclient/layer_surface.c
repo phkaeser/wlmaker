@@ -86,10 +86,11 @@ bool wlmcl_layer_shell_register(
     wlmcl_client_t *wlclient_ptr,
     struct zwlr_layer_shell_v1 **layer_shell_ptr_ptr)
 {
-    return NULL != wlmcl_client_register(
+    return NULL != wlmcl_client_register_interface(
         wlclient_ptr,
         &zwlr_layer_shell_v1_interface,
-        5,
+        /* desired_version */ 5,
+        /* required */ true,
         _wlmcl_layer_shell_setup,
         layer_shell_ptr_ptr);
 }
@@ -192,7 +193,7 @@ void wlmcl_layer_surface_register_configure_callback(
 /* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
-/** Callback for @ref wlmcl_client_register. Stores the layer shell handle. */
+/** Callback for @ref wlmcl_client_register_interface. Stores layer shell. */
 void _wlmcl_layer_shell_setup(
     void *bound_interface_ptr,
     void *userdata_ptr)

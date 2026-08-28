@@ -101,29 +101,40 @@ struct wlmcl_client_key_event {
 wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr);
 
 /**
- * Registers an interface to be set up by the client.
- *
- * @param client_ptr
- * @param wl_interface_ptr
- * @param desired_version
- * @param setup
- * @param userdata_ptr
- *
- * @return The bound interface, or NULL on errror.
- */
-struct wlmcl_client_interface *wlmcl_client_register(
-    wlmcl_client_t *client_ptr,
-    const struct wl_interface *wl_interface_ptr,
-    uint32_t desired_version,
-    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
-    void *userdata_ptr);
-
-/**
  * Destroys the wayland client, as created by @ref wlmcl_client_create.
  *
  * @param wlmcl_client_ptr
  */
 void wlmcl_client_destroy(wlmcl_client_t *wlmcl_client_ptr);
+
+/**
+ * Registers an interface to be set up by the client.
+ *
+ * @param client_ptr
+ * @param wl_interface_ptr
+ * @param desired_version
+ * @param required
+ * @param setup
+ * @param userdata_ptr
+ *
+ * @return The bound interface, or NULL on errror.
+ */
+struct wlmcl_client_interface *wlmcl_client_register_interface(
+    wlmcl_client_t *client_ptr,
+    const struct wl_interface *wl_interface_ptr,
+    uint32_t desired_version,
+    bool required,
+    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
+    void *userdata_ptr);
+
+/**
+ * Performs wl_display_roundtrip for initializing the interfaces.
+ *
+ * @param client_ptr
+ *
+ * @return whether all registered required interfaces were initialized.
+ */
+bool wlmcl_client_initialize(wlmcl_client_t *client_ptr);
 
 /**
  * Gets the active keymap of the client.
