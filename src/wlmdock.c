@@ -188,6 +188,13 @@ int main(int argc, const char **argv)
 {
     if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
 
+    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
+    if (!bs_arg_parse(wlmdock_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
+        fprintf(stderr, "Failed to parse commandline arguments.\n");
+        bs_arg_print_usage(stderr, wlmdock_args);
+        return EXIT_FAILURE;
+    }
+
     for (int i = 1; i < argc; ++i) {
         if (0 == strcmp(argv[i], "--help")) {
             bs_arg_print_usage(stdout, wlmdock_args);
@@ -203,13 +210,6 @@ int main(int argc, const char **argv)
     }
 
     if (!wlm_util_wlr_log_init(WLR_DEBUG)) return EXIT_FAILURE;
-
-    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
-    if (!bs_arg_parse(wlmdock_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
-        fprintf(stderr, "Failed to parse commandline arguments.\n");
-        bs_arg_print_usage(stderr, wlmdock_args);
-        return EXIT_FAILURE;
-    }
 
     bs_log(BS_INFO, "Starting wlmdock %s (%s)",
            wlm_util_version, wlm_util_version_full);
@@ -272,6 +272,7 @@ int main(int argc, const char **argv)
         wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
             &style.tile,
             dict_ptr,
+            dock_ptr->tracker_ptr,
             dock_ptr->subprocess_monitor_ptr,
             files_ptr);
         if (NULL == launcher_ptr) return EXIT_FAILURE;

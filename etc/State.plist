@@ -7,14 +7,17 @@
     Anchor = TOP;
     Launchers = (
       {
+        AppID = "foot";
         CommandLine = "/usr/bin/foot";
         Icon = "terminal-56x56.png";
       },
       {
+        AppID = "chromium";
         CommandLine = "/usr/bin/chromium --enable-features=UseOzonePlatform --ozone-platform=wayland";
         Icon = "chromium-56x56.png";
       },
       {
+        AppID = "firefox-esr";
         CommandLine = "MOZ_ENABLE_WAYLAND=1 /usr/bin/firefox";
         Icon = "firefox-56x56.png";
       }

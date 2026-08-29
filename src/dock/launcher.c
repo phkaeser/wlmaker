@@ -24,12 +24,15 @@
 #include <cairo.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <libbase/signal.h>
 #include <linux/input-event-codes.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
+#include "toplevel.h"
 #include "toolkit/toolkit.h"
 
 struct wlm_util_subprocess;
@@ -47,10 +50,16 @@ struct _wlmdock_launcher_t {
     wlmtk_image_t             *image_ptr;
     /** Overlay element. Atop on the tile. */
     wlmtk_buffer_t            overlay_buffer;
+    /** Whether the app is considered running. */
+    bool                      running;
 
+    /** Tracker for toplevels. */
+    struct wlmdock_toplevel_tracker *tracker_ptr;
     /** Subprocess monitor to register launched processes to. */
     wlm_util_subprocess_monitor_t *monitor_ptr;
 
+    /** Application ID associated with the launched process. */
+    char                      *app_id_ptr;
     /** Commandline to launch the associated application. */
     char                      *cmdline_ptr;
     /** Path to the icon. */
@@ -61,10 +70,15 @@ struct _wlmdock_launcher_t {
 
     /** Subprocesses that were created by this launcher. */
     bs_ptr_set_t              *subprocesses_ptr;
+
+    /** Listener for @ref wlmdock_toplevel_tracker_events::app_id_changed. */
+    struct bs_listener        app_id_changed_listener;
 };
 
 /** Plist descroptor for a launcher. */
 static const bspl_desc_t _wlmdock_launcher_plist_desc[] = {
+    BSPL_DESC_STRING(
+        "AppID", true, wlmdock_launcher_t, app_id_ptr, app_id_ptr, ""),
     BSPL_DESC_STRING(
         "CommandLine", true, wlmdock_launcher_t, cmdline_ptr, cmdline_ptr, ""),
     BSPL_DESC_STRING(
@@ -89,6 +103,9 @@ static void _wlmdock_launcher_handle_terminated(
     struct wlm_util_subprocess *subprocess_handle_ptr,
     int state,
     int code);
+static void _wlmdock_launcher_handle_app_id_changed(
+    struct bs_listener *listener_ptr,
+    void *userdata_ptr);
 
 static bool _wlmdock_launcher_set_content_size(
     wlmtk_tile_t *tile_ptr,
@@ -113,6 +130,7 @@ static const wlmtk_tile_vmt_t _wlmdock_launcher_tile_vmt = {
 wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
+    __UNUSED__ struct wlmdock_toplevel_tracker *tracker_ptr,
     wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr)
 {
@@ -120,6 +138,13 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
         1, sizeof(wlmdock_launcher_t));
     if (NULL == launcher_ptr) return NULL;
     launcher_ptr->monitor_ptr = monitor_ptr;
+
+    if (!bspl_decode_dict(
+            dict_ptr, _wlmdock_launcher_plist_desc, launcher_ptr)) {
+        bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
+        wlmdock_launcher_destroy(launcher_ptr);
+        return NULL;
+    }
 
      if (!wlmtk_tile_init(&launcher_ptr->super_tile, style_ptr)) {
          return NULL;
@@ -130,6 +155,12 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     wlmtk_tile_extend(&launcher_ptr->super_tile, &_wlmdock_launcher_tile_vmt);
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
+
+    launcher_ptr->tracker_ptr = tracker_ptr;
+    bs_listener_connect(
+        &launcher_ptr->app_id_changed_listener,
+        _wlmdock_launcher_handle_app_id_changed,
+        &wlmdock_toplevel_tracker_events(tracker_ptr)->app_id_changed);
 
     launcher_ptr->subprocesses_ptr = bs_ptr_set_create();
     if (NULL == launcher_ptr->subprocesses_ptr) {
@@ -147,13 +178,6 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     wlmtk_tile_set_overlay(
         &launcher_ptr->super_tile,
         wlmtk_buffer_element(&launcher_ptr->overlay_buffer));
-
-    if (!bspl_decode_dict(
-            dict_ptr, _wlmdock_launcher_plist_desc, launcher_ptr)) {
-        bs_log(BS_ERROR, "Failed to create launcher from plist dict.");
-        wlmdock_launcher_destroy(launcher_ptr);
-        return NULL;
-    }
 
     // Resolves to a full path, and verifies the icon file exists.
     char *p = bs_strdupf("icons/%s", launcher_ptr->icon_path_ptr);
@@ -200,7 +224,6 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     wlmtk_element_set_visible(
         wlmtk_tile_element(&launcher_ptr->super_tile), true);
 
-
     return launcher_ptr;
 }
 
@@ -230,6 +253,11 @@ void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr)
         launcher_ptr->subprocesses_ptr = NULL;
     }
 
+    if (NULL != launcher_ptr->app_id_ptr) {
+        free(launcher_ptr->app_id_ptr);
+        launcher_ptr->app_id_ptr = NULL;
+    }
+
     if (NULL != launcher_ptr->resolved_icon_path_ptr) {
         free(launcher_ptr->resolved_icon_path_ptr);
         launcher_ptr->resolved_icon_path_ptr = NULL;
@@ -243,6 +271,14 @@ void wlmdock_launcher_destroy(wlmdock_launcher_t *launcher_ptr)
     if (NULL != launcher_ptr->icon_path_ptr) {
         free(launcher_ptr->icon_path_ptr);
         launcher_ptr->icon_path_ptr = NULL;
+    }
+
+    if (NULL != launcher_ptr->tracker_ptr) {
+        bs_listener_disconnect(
+            &launcher_ptr->app_id_changed_listener,
+            &wlmdock_toplevel_tracker_events(
+                launcher_ptr->tracker_ptr)->app_id_changed);
+        launcher_ptr->tracker_ptr = NULL;
     }
 
     wlmtk_tile_fini(&launcher_ptr->super_tile);
@@ -277,9 +313,15 @@ struct wlr_buffer *_wlmdock_launcher_create_overlay_buffer(
     struct wlr_buffer *wlr_buffer_ptr = bs_gfxbuf_create_wlr_buffer(s, s);
     if (NULL == wlr_buffer_ptr) return NULL;
 
-    if (bs_ptr_set_empty(launcher_ptr->subprocesses_ptr)) {
+    bs_dllist_t *toplevel_handles = wlmdock_toplevel_tracker_app_id_handles(
+        launcher_ptr->tracker_ptr, launcher_ptr->app_id_ptr);
+    if ((NULL == toplevel_handles || bs_dllist_empty(toplevel_handles)) &&
+        bs_ptr_set_empty(launcher_ptr->subprocesses_ptr)) {
+        launcher_ptr->running = false;
         return wlr_buffer_ptr;
     }
+    launcher_ptr->running = true;
+
 
     cairo_t *cairo_ptr = cairo_create_from_wlr_buffer(wlr_buffer_ptr);
     if (NULL == cairo_ptr) {
@@ -436,6 +478,23 @@ void _wlmdock_launcher_handle_terminated(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles @ref wlmdock_toplevel_tracker_events::app_id_changed. */
+void _wlmdock_launcher_handle_app_id_changed(
+    struct bs_listener *listener_ptr,
+    void *userdata_ptr)
+{
+    wlmdock_launcher_t *launcher_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmdock_launcher_t, app_id_changed_listener);
+    const char *app_id_ptr = userdata_ptr;
+
+    if (NULL == app_id_ptr ||
+        NULL == launcher_ptr->app_id_ptr ||
+        0 != strcmp(app_id_ptr, launcher_ptr->app_id_ptr)) return;
+
+    _wlmdock_launcher_update_overlay(launcher_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Implements @ref wlmtk_tile_vmt_t::set_content_size. Set the image size. */
 bool _wlmdock_launcher_set_content_size(
     wlmtk_tile_t *tile_ptr,
@@ -474,27 +533,42 @@ void test_create_from_plist(bs_test_t *test_ptr)
 {
     static const struct wlmtk_tile_style style = { .size = 96 };
     static const char *plist_ptr =
-        "{CommandLine = \"a\"; Icon = \"chrome-56x56.png\";}";
+        "{AppID=\"id\"; CommandLine=\"a\"; Icon=\"chrome-56x56.png\";}";
 
     bs_test_setenv(test_ptr, "XDG_DATA_DIRS", WLMAKER_SOURCE_DIR "/share");
 
     bspl_dict_t *dict_ptr = bspl_dict_from_object(
         bspl_create_object_from_plist_string(plist_ptr));
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, dict_ptr);
-
+    struct wlmdock_toplevel_tracker *trk = wlmdock_toplevel_tracker_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, trk);
     wlm_util_files_t *files_ptr = wlm_util_files_create("wlmaker");
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, files_ptr);
 
     wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
-        &style, dict_ptr, NULL, files_ptr);
+        &style, dict_ptr, trk, NULL, files_ptr);
     bspl_dict_unref(dict_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, launcher_ptr);
 
+    BS_TEST_VERIFY_STREQ(test_ptr, "id", launcher_ptr->app_id_ptr);
     BS_TEST_VERIFY_STREQ(test_ptr, "a", launcher_ptr->cmdline_ptr);
     BS_TEST_VERIFY_STREQ(
         test_ptr, "chrome-56x56.png", launcher_ptr->icon_path_ptr);
 
+    BS_TEST_VERIFY_FALSE(test_ptr, launcher_ptr->running);
+
+    // Toplevel with the configured app ID. Must now show running.
+    struct wlmdock_toplevel_handle *h = wlmdock_toplevel_handle_create(trk);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, h);
+    wlmdock_toplevel_handle_set_app_id(h, "id");
+    BS_TEST_VERIFY_TRUE(test_ptr, launcher_ptr->running);
+
+    // Toplevel changes app ID. No longer running.
+    wlmdock_toplevel_handle_set_app_id(h, "other-id");
+    BS_TEST_VERIFY_FALSE(test_ptr, launcher_ptr->running);
+
     wlmdock_launcher_destroy(launcher_ptr);
+    wlmdock_toplevel_tracker_destroy(trk);
     wlm_util_files_destroy(files_ptr);
 }
 
