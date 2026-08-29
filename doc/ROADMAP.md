@@ -19,6 +19,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Dock: Move into separate process.
     * [done] New binary added, with tile-box and launchers.
     * [done] Use keymap from compositor, and use cursor shape extension.
+    * [done] Use `ext-foreign-toplevel-list-v1` to indicate whether app is running.
     * Move config and theme loading into shared library.
     * Loads icons according to the `.desktop` specification for apps.
   * Clip: Move functionality into separate process.
@@ -42,6 +43,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Infrastructure
   * [done] Adds support for `cursor-shape-v1` protocol.
+  * [done] Adds support for `ext-foreign-toplevel-list-v1` protocol.
   * Write log to logfile (vs. stderr).
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)

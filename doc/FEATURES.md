@@ -206,7 +206,7 @@ TBD: Raise/Lower.
 
 ### `ext-foreign-toplevel-list-v1`
 
-* [x] :white_check_mark: Implemented.
+* [x] :white_check_mark: Implemented, verified.
 
 ### `ext-idle-notify-v1`
 
@@ -278,9 +278,9 @@ TBD: Raise/Lower.
 ## Dock, Clip, Icon Area
 
 * [x] :white_check_mark: Launcher item display when the app is "launching", and "running".
+* [ ] :construction: Investigate if & how to use icons specified in XDG desktop entry.
+* [ ] :construction: Aspirational: Aim to have *Dock* and *Clip* running as separate process(es).
 * [ ] Drag-and-drop icons between icon area, dock app and clip.
-* [ ] Investigate if & how to use icons specified in XDG desktop entry.
-* [ ] Aspirational: Aim to have *Dock* and *Clip* running as separate process(es).
 * [ ] Entries in Dock/Clip have a settings menu to define path & icon.
 
 ### Dock

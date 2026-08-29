@@ -32,6 +32,8 @@
 extern "C" {
 #endif  // __cplusplus
 
+struct wlmdock_toplevel_tracker;
+
 /** Forward declaration: Launcher handle. */
 typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
 
@@ -40,6 +42,7 @@ typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
  *
  * @param style_ptr
  * @param dict_ptr
+ * @param tracker_ptr
  * @param monitor_ptr
  * @param files_ptr
  *
@@ -48,6 +51,7 @@ typedef struct _wlmdock_launcher_t wlmdock_launcher_t;
 wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
     const struct wlmtk_tile_style *style_ptr,
     bspl_dict_t *dict_ptr,
+    struct wlmdock_toplevel_tracker *tracker_ptr,
     wlm_util_subprocess_monitor_t *monitor_ptr,
     wlm_util_files_t *files_ptr);
 
