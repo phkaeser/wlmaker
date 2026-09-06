@@ -22,8 +22,8 @@ find_package_handle_standard_args(
   REQUIRED_VARS WaylandScanner_EXECUTABLE)
 
 # -----------------------------------------------------------------------------
-# Builds a library for the protocol, and adds as dependency to target_var.
-function(waylandprotocol_add target_var)
+# Adds a C library for the client- or server-side interface of the protocol.
+function(waylandprotocol_add_library target_name)
   if(NOT WaylandScanner_EXECUTABLE)
     message(FATAL_ERROR "'wayland-scanner' executable required, not found.")
   endif()
@@ -31,49 +31,100 @@ function(waylandprotocol_add target_var)
   # Parse and verify arguments.
   set(one_value_args PROTOCOL_FILE BASE_NAME SIDE)
   cmake_parse_arguments(args "" "${one_value_args}" "" ${ARGN})
+  if(args_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unknown args passed to waylandprotocol_add_library: \"${args_UNPARSED_ARGUMENTS}\"")
+  endif()
   if(NOT "${args_SIDE}" STREQUAL "client" AND NOT "${args_SIDE}" STREQUAL "server")
     message(FATAL_ERROR "SIDE arg must be \"client\" or \"server\".")
   endif()
-  if(args_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unknown args passed to _wayland_protocol_add: \"${args_UNPARSED_ARGUMENTS}\"")
+  if(NOT args_PROTOCOL_FILE)
+    message(FATAL_ERROR "PROTOCOL_FILE argument is required.")
   endif()
   get_filename_component(_protocol_file "${args_PROTOCOL_FILE}" ABSOLUTE)
+  if(NOT EXISTS "${_protocol_file}")
+    message(FATAL_ERROR "Protocol file \"${args_PROTOCOL_FILE}\" not found.")
+  endif()
 
-  # Generate the client header.
-  set(_header "${CMAKE_CURRENT_BINARY_DIR}/${args_BASE_NAME}-${args_SIDE}-protocol.h")
-  set_source_files_properties("${_header}" GENERATED)
+  if(args_BASE_NAME)
+    set(_base_name "${args_BASE_NAME}")
+  else()
+    get_filename_component(_base_name "${args_PROTOCOL_FILE}" NAME_WLE)
+  endif()
+
+  # Generate the interface header.
+  set(_header "${CMAKE_CURRENT_BINARY_DIR}/${_base_name}-${args_SIDE}-protocol.h")
+  set_source_files_properties("${_header}" PROPERTIES GENERATED TRUE)
   add_custom_command(
     OUTPUT "${_header}"
     COMMAND "${WaylandScanner_EXECUTABLE}" "${args_SIDE}-header" "${_protocol_file}" "${_header}"
     DEPENDS "${WaylandScanner_EXECUTABLE}" "${_protocol_file}"
     VERBATIM)
 
-  # Generate the glue code.
-  set(_glue_code "${CMAKE_CURRENT_BINARY_DIR}/${args_BASE_NAME}-protocol.c")
-  set_source_files_properties("${_glue_code}" GENERATED)
+  # Generate the interface glue code.
+  set(_glue_code "${CMAKE_CURRENT_BINARY_DIR}/${_base_name}-protocol.c")
+  set_source_files_properties("${_glue_code}" PROPERTIES GENERATED TRUE)
   add_custom_command(
     OUTPUT "${_glue_code}"
     COMMAND "${WaylandScanner_EXECUTABLE}" private-code "${_protocol_file}" "${_glue_code}"
     DEPENDS "${WaylandScanner_EXECUTABLE}" "${_protocol_file}"
     VERBATIM)
-  set(lib_name "lib-${target_var}-${args_BASE_NAME}-${args_SIDE}")
-  add_library("${lib_name}" STATIC)
-  add_dependencies("${target_var}" "${lib_name}")
-  target_sources("${lib_name}" PRIVATE "${_glue_code}" "${_header}")
-  set_target_properties("${lib_name}" PROPERTIES VERSION 1.0 PUBLIC_HEADER "${_header}")
+
+  # Setup the library.
+  add_library("${target_name}" STATIC "${_glue_code}" "${_header}")
+  set_target_properties(
+    "${target_name}"
+    PROPERTIES
+    VERSION 1.0
+    PUBLIC_HEADER "${_header}")
+  target_include_directories(
+    "${target_name}"
+    PUBLIC
+    "${CMAKE_CURRENT_BINARY_DIR}")
 
   # Add dependencies.
   if("${args_SIDE}" STREQUAL "client")
     pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
-    target_include_directories(
-      "${lib_name}" PRIVATE
-      "${WAYLAND_CLIENT_INCLUDE_DIRS}")
+    target_link_libraries(
+      "${target_name}"
+      PUBLIC
+      PkgConfig::WAYLAND_CLIENT)
   else()
     pkg_check_modules(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
-    target_include_directories(
-      "${lib_name}" PRIVATE
-      "${WAYLAND_SERVER_INCLUDE_DIRS}")
+    target_link_libraries(
+      "${target_name}"
+      PUBLIC
+      PkgConfig::WAYLAND_SERVER)
   endif()
+endfunction()
+
+# -----------------------------------------------------------------------------
+# Builds a library for the protocol, and adds as dependency to target_var.
+function(waylandprotocol_add target_var)
+  # Parse and verify arguments.
+  set(one_value_args PROTOCOL_FILE BASE_NAME SIDE)
+  cmake_parse_arguments(args "" "${one_value_args}" "" ${ARGN})
+  if(NOT "${args_SIDE}" STREQUAL "client" AND NOT "${args_SIDE}" STREQUAL "server")
+    message(FATAL_ERROR "SIDE arg must be \"client\" or \"server\".")
+  endif()
+  if(args_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unknown args passed to waylandprotocol_add: \"${args_UNPARSED_ARGUMENTS}\"")
+  endif()
+  if(NOT args_PROTOCOL_FILE)
+    message(FATAL_ERROR "PROTOCOL_FILE argument is required.")
+  endif()
+
+  set(lib_name "lib-${target_var}-${args_BASE_NAME}-${args_SIDE}")
+
+  set(extra_args "")
+  if(args_BASE_NAME)
+    list(APPEND extra_args BASE_NAME "${args_BASE_NAME}")
+  endif()
+
+  waylandprotocol_add_library(
+    "${lib_name}"
+    PROTOCOL_FILE "${args_PROTOCOL_FILE}"
+    SIDE "${args_SIDE}"
+    ${extra_args})
 
   # The target may be an INTERFACE library. That needs INTERFACE linking.
   get_property(target_type TARGET "${target_var}" PROPERTY TYPE)
