@@ -15,40 +15,43 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-find_program(
-  WAYLAND_SCANNER_EXECUTABLE
-  NAMES wayland-scanner
-  REQUIRED)
-if(NOT WAYLAND_SCANNER_EXECUTABLE)
-  message(FATAL_ERROR "'wayland-scanner' executable not found.")
-endif()
+include(WaylandProtocol)
 
 pkg_get_variable(protocol_dir wayland-protocols pkgdatadir)
 
-add_custom_command(
-  OUTPUT cursor-shape-v1-protocol.h
-  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml" "cursor-shape-v1-protocol.h"
-  DEPENDS "${protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
-  VERBATIM)
+waylandprotocol_add_library(
+  wlr_layer_shell_unstable_v1_client_protocol_lib
+  PROTOCOL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/wlr-layer-shell-unstable-v1.xml"
+  SIDE client
+  WLROOTS)
 
-add_custom_command(
-  OUTPUT wlr-layer-shell-unstable-v1-protocol.h
-  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml" "wlr-layer-shell-unstable-v1-protocol.h"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../protocols/wlr-layer-shell-unstable-v1.xml"
-  VERBATIM)
+waylandprotocol_add_library(
+  cursor_shape_v1_client_protocol_lib
+  PROTOCOL_FILE "${protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
+  SIDE client)
 
-add_custom_command(
-  OUTPUT xdg-shell-protocol.h
-  COMMAND "${WAYLAND_SCANNER_EXECUTABLE}" client-header "${protocol_dir}/stable/xdg-shell/xdg-shell.xml" "xdg-shell-protocol.h"
-  DEPENDS "${protocol_dir}/stable/xdg-shell/xdg-shell.xml"
-  VERBATIM)
+waylandprotocol_add_library(
+  tablet_v2_client_protocol_lib
+  PROTOCOL_FILE "${protocol_dir}/stable/tablet/tablet-v2.xml"
+  SIDE client)
 
-add_library(
-  protocol_headers
-  OBJECT
-  cursor-shape-v1-protocol.h
-  wlr-layer-shell-unstable-v1-protocol.h
-  xdg-shell-protocol.h)
-set_target_properties(
-  protocol_headers PROPERTIES
-  LINKER_LANGUAGE C)
+waylandprotocol_add_library(
+  xdg_decoration_client_protocol_lib
+  BASE_NAME xdg-decoration
+  PROTOCOL_FILE "${protocol_dir}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
+  SIDE client)
+
+waylandprotocol_add_library(
+  xdg_shell_client_protocol_lib
+  PROTOCOL_FILE "${protocol_dir}/stable/xdg-shell/xdg-shell.xml"
+  SIDE client)
+
+waylandprotocol_add_library(
+  xdg_shell_server_protocol_lib
+  PROTOCOL_FILE "${protocol_dir}/stable/xdg-shell/xdg-shell.xml"
+  SIDE server)
+
+waylandprotocol_add_library(
+  ext_foreign_toplevel_list_v1_client_protocol_lib
+  PROTOCOL_FILE "${protocol_dir}/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml"
+  SIDE client)

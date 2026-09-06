@@ -92,7 +92,6 @@ target_include_directories(
   "${WLROOTS_INCLUDE_DIRS}"
   "${CAIRO_INCLUDE_DIRS}"
   "${PROJECT_SOURCE_DIR}/include"
-  "${PROJECT_BINARY_DIR}/third_party/protocols"
 )
 target_include_directories(
   wlmtoolkit_lib PRIVATE
@@ -103,9 +102,6 @@ set_target_properties(
   VERSION 1.0
   PUBLIC_HEADER "${public_header_files}"
 )
-add_dependencies(
-  wlmtoolkit_lib
-  protocol_headers)
 target_compile_options(
   wlmtoolkit_lib PRIVATE
   "${WAYLAND_SERVER_CFLAGS}"

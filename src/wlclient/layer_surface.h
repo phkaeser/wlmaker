@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 #include "wlclient.h"  // IWYU pragma: keep
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"  // IWYU pragma: keep
+#include "wlr-layer-shell-unstable-v1-protocol.h"  // IWYU pragma: keep
 
 struct zwlr_layer_shell_v1;
 

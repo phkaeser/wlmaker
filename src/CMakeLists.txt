@@ -100,7 +100,6 @@ add_dependencies(
   wlminput_lib
   libbase
   libbase_plist
-  protocol_headers
   wlmtoolkit_lib
   wlmutil_lib
   wlmaker_lib)
@@ -117,6 +116,7 @@ target_link_libraries(
   wlmtoolkit_lib
   wlmutil_lib
   wlmaker_protocols
+  wlr_layer_shell_unstable_v1_client_protocol_lib
   PkgConfig::CAIRO
   PkgConfig::WAYLAND_SERVER
   PkgConfig::WLROOTS
@@ -126,8 +126,6 @@ target_include_directories(
   # Keep wlroots first -- multiple versions may interfere (#117).
   "${WLROOTS_INCLUDE_DIRS}"
   "${PROJECT_SOURCE_DIR}/include"
-  "${PROJECT_BINARY_DIR}/third_party/protocols"
-  "${PROJECT_BINARY_DIR}/protocols"
   "${CAIRO_INCLUDE_DIRS}"
   "${WAYLAND_SERVER_INCLUDE_DIRS}"
   "${XCB_INCLUDE_DIRS}"

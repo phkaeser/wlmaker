@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>

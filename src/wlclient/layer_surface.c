@@ -27,7 +27,7 @@
 #include <wayland-client-protocol.h>
 
 #include "wlclient.h"
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 /* == Declarations ========================================================= */
 

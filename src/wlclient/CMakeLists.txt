@@ -15,12 +15,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-include(WaylandProtocol)
-
 pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
-pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED IMPORTED_TARGET wayland-protocols>=1.32)
-
-pkg_get_variable(wayland_protocol_dir wayland-protocols pkgdatadir)
 
 add_library(wlmclient_lib STATIC)
 
@@ -46,48 +41,6 @@ target_sources(
   xdg_toplevel.c
 )
 
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME cursor-shape-v1
-  PROTOCOL_FILE "${wayland_protocol_dir}/staging/cursor-shape/cursor-shape-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME ext-input-observation-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/ext-input-observation-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME tablet-v2
-  PROTOCOL_FILE "${wayland_protocol_dir}/stable/tablet/tablet-v2.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME wlmaker-icon-unstable-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/protocols/wlmaker-icon-unstable-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME wlr-layer-shell-unstable-v1
-  PROTOCOL_FILE "${PROJECT_SOURCE_DIR}/third_party/protocols/wlr-layer-shell-unstable-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME xdg-decoration
-  PROTOCOL_FILE "${wayland_protocol_dir}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml"
-  SIDE client)
-
-waylandprotocol_add(
-  wlmclient_lib
-  BASE_NAME xdg-shell
-  PROTOCOL_FILE "${wayland_protocol_dir}/stable/xdg-shell/xdg-shell.xml"
-  SIDE client)
-
 target_include_directories(
   wlmclient_lib
   PUBLIC
@@ -100,6 +53,13 @@ target_include_directories(
 target_link_libraries(
   wlmclient_lib
   libbase
+  cursor_shape_v1_client_protocol_lib
+  ext_input_observation_v1_client_protocol_lib
+  tablet_v2_client_protocol_lib
+  wlmaker_icon_unstable_v1_client_protocol_lib
+  wlr_layer_shell_unstable_v1_client_protocol_lib
+  xdg_decoration_client_protocol_lib
+  xdg_shell_client_protocol_lib
   PkgConfig::WAYLAND_CLIENT
   PkgConfig::XKBCOMMON)
 

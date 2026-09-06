@@ -15,17 +15,9 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-include(WaylandProtocol)
-
 pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
-pkg_get_variable(wayland_protocol_dir wayland-protocols pkgdatadir)
 
 add_library(wlmdock_lib STATIC)
-waylandprotocol_add(
-  wlmdock_lib
-  BASE_NAME ext-foreign-toplevel-list-v1
-  PROTOCOL_FILE "${wayland_protocol_dir}/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml"
-  SIDE client)
 
 target_compile_definitions(
   wlmdock_lib PRIVATE "WLMAKER_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\"")
@@ -47,6 +39,7 @@ target_include_directories(
 )
 target_link_libraries(
   wlmdock_lib
+  ext_foreign_toplevel_list_v1_client_protocol_lib
   libbase
   wlmclient_lib
   wlmaker_lib

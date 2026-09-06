@@ -29,8 +29,9 @@ function(waylandprotocol_add_library target_name)
   endif()
 
   # Parse and verify arguments.
+  set(options WLROOTS)
   set(one_value_args PROTOCOL_FILE BASE_NAME SIDE)
-  cmake_parse_arguments(args "" "${one_value_args}" "" ${ARGN})
+  cmake_parse_arguments(args "${options}" "${one_value_args}" "" ${ARGN})
   if(args_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "Unknown args passed to waylandprotocol_add_library: \"${args_UNPARSED_ARGUMENTS}\"")
   endif()
@@ -52,7 +53,11 @@ function(waylandprotocol_add_library target_name)
   endif()
 
   # Generate the interface header.
-  set(_header "${CMAKE_CURRENT_BINARY_DIR}/${_base_name}-${args_SIDE}-protocol.h")
+  if(args_WLROOTS)
+    set(_header "${CMAKE_CURRENT_BINARY_DIR}/${_base_name}-protocol.h")
+  else()
+    set(_header "${CMAKE_CURRENT_BINARY_DIR}/${_base_name}-${args_SIDE}-protocol.h")
+  endif()
   set_source_files_properties("${_header}" PROPERTIES GENERATED TRUE)
   add_custom_command(
     OUTPUT "${_header}"
@@ -97,45 +102,3 @@ function(waylandprotocol_add_library target_name)
   endif()
 endfunction()
 
-# -----------------------------------------------------------------------------
-# Builds a library for the protocol, and adds as dependency to target_var.
-function(waylandprotocol_add target_var)
-  # Parse and verify arguments.
-  set(one_value_args PROTOCOL_FILE BASE_NAME SIDE)
-  cmake_parse_arguments(args "" "${one_value_args}" "" ${ARGN})
-  if(NOT "${args_SIDE}" STREQUAL "client" AND NOT "${args_SIDE}" STREQUAL "server")
-    message(FATAL_ERROR "SIDE arg must be \"client\" or \"server\".")
-  endif()
-  if(args_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unknown args passed to waylandprotocol_add: \"${args_UNPARSED_ARGUMENTS}\"")
-  endif()
-  if(NOT args_PROTOCOL_FILE)
-    message(FATAL_ERROR "PROTOCOL_FILE argument is required.")
-  endif()
-
-  set(lib_name "lib-${target_var}-${args_BASE_NAME}-${args_SIDE}")
-
-  set(extra_args "")
-  if(args_BASE_NAME)
-    list(APPEND extra_args BASE_NAME "${args_BASE_NAME}")
-  endif()
-
-  waylandprotocol_add_library(
-    "${lib_name}"
-    PROTOCOL_FILE "${args_PROTOCOL_FILE}"
-    SIDE "${args_SIDE}"
-    ${extra_args})
-
-  # The target may be an INTERFACE library. That needs INTERFACE linking.
-  get_property(target_type TARGET "${target_var}" PROPERTY TYPE)
-  if(target_type STREQUAL "INTERFACE_LIBRARY")
-    target_link_libraries(
-      "${target_var}"
-      INTERFACE
-      "${lib_name}")
-  else()
-    target_link_libraries(
-      "${target_var}"
-      "${lib_name}")
-  endif()
-endfunction()

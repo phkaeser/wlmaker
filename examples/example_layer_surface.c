@@ -32,7 +32,7 @@
 #include "wlclient/dblbuf.h"
 #include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 /** State of the client. */
 static wlmcl_client_t                *wlclient_ptr;
