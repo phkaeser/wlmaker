@@ -212,6 +212,14 @@ TBD: Raise/Lower.
 
 * [ ] Implement.
 
+### `ext-image-capture-source-v1`
+
+* [x] :white_check_mark: Implemented, works for `grim`.
+
+### `ext-image-copy-capture-v1`
+
+* [x] :white_check_mark: Implemented, works for `grim`.
+
 ### `ext-session-lock-v1`
 
 * [x] :white_check_mark: Implement, verified on single output.
@@ -241,7 +249,7 @@ TBD: Raise/Lower.
 * [x] :white_check_mark: Scale, transformation and mode of output is configurable
   in *config* file, by matching output attributes.
 
-### ``wlr-screencopy-unstable-v1`
+### `wlr-screencopy-unstable-v1`
 
 * [x] :white_check_mark: Implemented, works for `wdisplays`.
 

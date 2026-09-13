@@ -33,11 +33,13 @@
 #include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
-#include <wlr/backend/wayland.h>
 #include <wlr/backend/session.h>
+#include <wlr/backend/wayland.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_ext_image_capture_source_v1.h>
+#include <wlr/types/wlr_ext_image_copy_capture_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
@@ -72,6 +74,10 @@ struct _wlmbe_backend_t {
     struct wlr_subcompositor  *wlr_subcompositor_ptr;
     /** The screencopy manager. */
     struct wlr_screencopy_manager_v1 *wlr_screencopy_manager_v1_ptr;
+    /** Capture manager for output. wl_display will take ownership. */
+    struct wlr_ext_output_image_capture_source_manager_v1 *wlr_ext_output_source_manager_ptr;
+    /** Capture manager for sessions and frames. wl_display owns it */
+    struct wlr_ext_image_copy_capture_manager_v1 *wlr_ext_image_copy_capture_manager_ptr;
     /** The output manager(s). */
     wlmbe_output_manager_t    *output_manager_ptr;
 
@@ -281,10 +287,29 @@ wlmbe_backend_t *wlmbe_backend_create(
         return NULL;
     }
 
+    // TODO(kaeser@gubbe.ch): Remove support for wlr-screencopy-unstable-v1
+    // protocol. It is deprecated, and use is discouraged.
     backend_ptr->wlr_screencopy_manager_v1_ptr =
         wlr_screencopy_manager_v1_create(wl_display_ptr);
     if (NULL == backend_ptr->wlr_screencopy_manager_v1_ptr) {
         bs_log(BS_ERROR, "Failed wlr_screencopy_manager_v1_create()");
+        wlmbe_backend_destroy(backend_ptr);
+        return NULL;
+    }
+    backend_ptr->wlr_ext_output_source_manager_ptr =
+        wlr_ext_output_image_capture_source_manager_v1_create(
+            wl_display_ptr, 1);
+    if (NULL == backend_ptr->wlr_ext_output_source_manager_ptr) {
+        bs_log(BS_ERROR, "Failed "
+               "wlr_ext_output_image_capture_source_manager_v1_create()");
+        wlmbe_backend_destroy(backend_ptr);
+        return NULL;
+    }
+    backend_ptr->wlr_ext_image_copy_capture_manager_ptr =
+        wlr_ext_image_copy_capture_manager_v1_create(wl_display_ptr, 1);
+    if (NULL == backend_ptr->wlr_ext_image_copy_capture_manager_ptr) {
+        bs_log(BS_ERROR,
+               "Failed wlr_ext_image_copy_capture_manager_v1_create()");
         wlmbe_backend_destroy(backend_ptr);
         return NULL;
     }
