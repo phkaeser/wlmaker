@@ -33,11 +33,9 @@ set(public_header_files
   clip.h
   config.h
   corner.h
-  dock.h
   icon_manager.h
   idle.h
   input_observation.h
-  launcher.h
   layer_panel.h
   layer_shell.h
   lock_mgr.h
@@ -60,11 +58,9 @@ target_sources(wlmaker_lib PRIVATE
   clip.c
   config.c
   corner.c
-  dock.c
   icon_manager.c
   idle.c
   input_observation.c
-  launcher.c
   layer_panel.c
   layer_shell.c
   lock_mgr.c

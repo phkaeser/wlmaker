@@ -41,7 +41,6 @@
 #include "background.h"
 #include "clip.h"
 #include "config.h"
-#include "dock.h"
 #include "root_menu.h"
 #include "server.h"
 #include "task_list.h"
@@ -230,7 +229,6 @@ bool create_workspaces(
 /** The main program. */
 int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 {
-    wlmaker_dock_t            *dock_ptr = NULL;
     wlmaker_clip_t            *clip_ptr = NULL;
     wlmaker_task_list_t       *task_list_ptr = NULL;
     int                       rv = EXIT_SUCCESS;
@@ -352,12 +350,10 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
         clip_ptr = wlmaker_clip_create(
             server_ptr, state_dict_ptr, &style);
-        dock_ptr = wlmaker_dock_create(
-            server_ptr, state_dict_ptr, &style);
         task_list_ptr = wlmaker_task_list_create(
             server_ptr, &style.task_list);
-        if (NULL == dock_ptr || NULL == clip_ptr || NULL == task_list_ptr) {
-            bs_log(BS_ERROR, "Failed to create dock, clip or task list.");
+        if (NULL == clip_ptr || NULL == task_list_ptr) {
+            bs_log(BS_ERROR, "Failed to create clip or task list.");
         } else {
             wl_display_run(server_ptr->wl_display_ptr);
         }
@@ -369,7 +365,6 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
 
     if (NULL != task_list_ptr) wlmaker_task_list_destroy(task_list_ptr);
     if (NULL != clip_ptr) wlmaker_clip_destroy(clip_ptr);
-    if (NULL != dock_ptr) wlmaker_dock_destroy(dock_ptr);
     wlmaker_action_unbind_keys(action_handle_ptr);
     bspl_array_unref(server_ptr->root_menu_array_ptr);
     wlmaker_server_destroy(server_ptr);
