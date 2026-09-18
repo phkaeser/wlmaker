@@ -20,6 +20,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] New binary added, with tile-box and launchers.
     * [done] Use keymap from compositor, and use cursor shape extension.
     * [done] Use `ext-foreign-toplevel-list-v1` to indicate whether app is running.
+    * [done] Removes earlier compiled-in dock implementation.
     * Move config and theme loading into shared library.
     * Loads icons according to the `.desktop` specification for apps.
   * Clip: Move functionality into separate process.
