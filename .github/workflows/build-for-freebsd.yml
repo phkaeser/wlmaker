@@ -30,6 +30,7 @@ jobs:
             devel/libepoll-shim \
             devel/pkgconf \
             graphics/cairo \
+            graphics/librsvg2-rust \
             graphics/wayland \
             graphics/wayland-protocols \
             lang/gcc \

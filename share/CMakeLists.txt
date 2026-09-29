@@ -22,6 +22,11 @@ configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
   @ONLY)
+embedbinary_add_library(
+  embedded_wlmaker_svg
+  "wlmaker_svg"
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.svg")
+
 # Install to both wayland-sessions/ and applications/ -- it can run in windowed
 # mode.
 install(

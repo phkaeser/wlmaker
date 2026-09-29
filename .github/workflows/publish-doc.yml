@@ -57,6 +57,7 @@ jobs:
             libdrm-dev \
             libinput-dev \
             libpixman-1-dev \
+            librsvg2-dev \
             libseat-dev \
             libudev-dev \
             libwayland-dev \

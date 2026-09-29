@@ -27,6 +27,7 @@ jobs:
           flex \
           gcc \
           git \
+          librsvg2-devel \
           libxdg-basedir-devel \
           ncurses-devel \
           pkg-config \
