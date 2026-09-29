@@ -27,56 +27,47 @@ embedbinary_add_library(
   "wlmaker_svg"
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.svg")
 
-# Install to both wayland-sessions/ and applications/ -- it can run in windowed
-# mode.
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmbattery.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop"
   @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmclock.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop"
   @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmcpugraph.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop"
   @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmnetgraph.desktop.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
-  @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmmemgraph.desktop.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop"
-  @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmeyes.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop"
   @ONLY)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop"
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmmemgraph.desktop.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop"
+  @ONLY)
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmnetgraph.desktop.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
+  @ONLY)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmbattery.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmclock.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmcpugraph.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+
+# Install `wlmaker.desktop` both to wayland-sessions/ and applications/ -- it
+# can run both as main compositor, and in windowed mode.
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/wayland-sessions")
+
 find_program(DESKTOP_FILE_VALIDATOR NAMES desktop-file-validate OPTIONAL)
 if(DESKTOP_FILE_VALIDATOR)
   add_test(
@@ -177,6 +168,7 @@ install(FILES
   "wlmaker-48x48.png"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/48x48/apps"
   RENAME "wlmaker.png")
+
 install(FILES
   "wlmaker-64x64.png"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
