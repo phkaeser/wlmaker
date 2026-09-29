@@ -29,6 +29,7 @@ jobs:
           libbacktrace-dev \
           libcairo2-dev \
           libncurses-dev \
+          librsvg2-dev \
           libwlroots-0.20-dev \
           libxdg-basedir-dev \
           pkg-config \

@@ -48,9 +48,11 @@ endif()
 add_executable(
   example_toplevel
   example_toplevel.c)
-target_include_directories(example_toplevel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   example_toplevel
+  PRIVATE
+  embedded_wlmaker_svg
+  libbase_rsvg
   m
   wlmclient_lib)
 

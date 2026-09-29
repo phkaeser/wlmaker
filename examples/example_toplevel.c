@@ -23,6 +23,7 @@
 
 #include <cairo.h>
 #include <libbase/libbase.h>
+#include <libbase/gfxbuf_rsvg.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -33,6 +34,7 @@
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "wlmaker_svg.h"
 #include "wlclient/xdg_toplevel.h"
 #include "wlclient/wlclient.h"
 #include "wlclient/dblbuf.h"
@@ -43,6 +45,8 @@ wlmcl_client_t                    *wlclient_ptr;
 static struct wl_listener     _key_listener;
 /** A colorful background. */
 static bs_gfxbuf_t            *background_colors;
+/** The wlmaker logo, from SVG. */
+static bs_gfxbuf_t            *svg_buf_ptr;
 /** Double buffer. */
 static wlmcl_dblbuf_t         *dblbuf_ptr;
 
@@ -77,6 +81,11 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
 
     bs_gfxbuf_copy(gfxbuf_ptr, background_colors);
+
+    bs_gfxbuf_copy_area(
+        gfxbuf_ptr, 220, 100,
+        svg_buf_ptr, 0, 0, svg_buf_ptr->width, svg_buf_ptr->height);
+
 
     cairo_t *cairo_ptr = cairo_create_from_bs_gfxbuf(gfxbuf_ptr);
     if (NULL == cairo_ptr) return false;
@@ -164,6 +173,15 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 
     wlclient_ptr = wlmcl_client_create("example_toplevel");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;
+
+    svg_buf_ptr = bs_gfxbuf_create(200, 200);
+    if (NULL == svg_buf_ptr) return EXIT_FAILURE;
+    if (!bs_gfxbuf_render_rsvg_data(
+            svg_buf_ptr,
+            embedded_binary_wlmaker_svg_data,
+            embedded_binary_wlmaker_svg_size)) {
+        return EXIT_FAILURE;
+    }
 
     _key_listener.notify = _handle_key;
     wl_signal_add(&wlmcl_client_events(wlclient_ptr)->key, &_key_listener);

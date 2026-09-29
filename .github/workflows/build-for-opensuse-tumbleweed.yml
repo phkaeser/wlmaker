@@ -22,6 +22,7 @@ jobs:
           flex \
           gcc \
           git \
+          librsvg2-devel \
           libxcb-devel \
           libxdg-basedir-devel \
           libxkbcommon-devel \
