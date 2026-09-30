@@ -46,7 +46,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Adds support for `cursor-shape-v1` protocol.
   * [done] Adds support for `ext-foreign-toplevel-list-v1` protocol.
   * [done] Adds support for `ext-image-capture-sourve-v1` and `ext-image-copy-capture-v1` protocols.
-  * Write log to logfile (vs. stderr).
+  * [done] Write log to logfile (vs. stderr).
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
 

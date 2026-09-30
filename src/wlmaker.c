@@ -22,6 +22,7 @@
 /// setenv() is a POSIX extension.
 #define _POSIX_C_SOURCE 200112L
 
+#include <basedir.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>
@@ -233,10 +234,13 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
     wlmaker_task_list_t       *task_list_ptr = NULL;
     int                       rv = EXIT_SUCCESS;
 
-    if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
-    if (!wlm_util_wlr_log_init(WLR_DEBUG)) return EXIT_FAILURE;
-
-    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
+    if (!wlm_util_backtrace_setup(argv[0]) ||
+        !wlm_util_wlr_log_init(WLR_DEBUG) ||
+        // Ideally: xdgStateHome. But: libxdg-basedir is using FreeDesktop
+        // specification v0.7, and XDG_STATE_HOME was added with v0.8 only.
+        !bs_log_init_file(xdgCacheHome(NULL), "wlmaker", BS_INFO)) {
+        return EXIT_FAILURE;
+    }
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
 
     if (!bs_arg_parse(wlmaker_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
