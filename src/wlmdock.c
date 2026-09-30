@@ -20,6 +20,7 @@
  */
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include <basedir.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
 #include <stdbool.h>
@@ -186,9 +187,13 @@ const bspl_desc_t _wlmdock_plist_desc[] = {
 /** The dock's main program. */
 int main(int argc, const char **argv)
 {
-    if (!wlm_util_backtrace_setup(argv[0])) return EXIT_FAILURE;
+    if (!wlm_util_backtrace_setup(argv[0]) ||
+        // Ideally: xdgStateHome. But: libxdg-basedir is using FreeDesktop
+        // specification v0.7, and XDG_STATE_HOME was added with v0.8 only.
+        !bs_log_init_file(xdgCacheHome(NULL), "wlmdock", BS_INFO)) {
+        return EXIT_FAILURE;
+    }
 
-    bs_log_severity = BS_INFO;  // Will be overwritten in bs_arg_parse().
     if (!bs_arg_parse(wlmdock_args, BS_ARG_MODE_EXTRA_ARGS, &argc, argv)) {
         fprintf(stderr, "Failed to parse commandline arguments.\n");
         bs_arg_print_usage(stderr, wlmdock_args);
