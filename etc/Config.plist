@@ -31,7 +31,7 @@
         // How the touchpad determines which button is meant on tap.
         // None, ButtonAreas or ClickFinger.
         ClickMethod = ClickFinger;
-        TapToClick = Enabled;
+        TapToClick = Disabled;
         // How scrolling is initiated by the touchpad:
         // NoScroll, TwoFingers, Edge or OnButtonDown.
         ScrollMethod = TwoFingers;
