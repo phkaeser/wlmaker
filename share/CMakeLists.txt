@@ -51,6 +51,10 @@ configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/wlmaker.wlmnetgraph.desktop.in"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
   @ONLY)
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/wlmdock.desktop.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmdock.desktop"
+  @ONLY)
 
 install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.desktop"
@@ -60,6 +64,7 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmeyes.desktop"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmmemgraph.desktop"
   "${CMAKE_CURRENT_BINARY_DIR}/wlmaker.wlmnetgraph.desktop"
+  "${CMAKE_CURRENT_BINARY_DIR}/wlmdock.desktop"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
 
 # Install `wlmaker.desktop` both to wayland-sessions/ and applications/ -- it
@@ -90,6 +95,13 @@ if(DESKTOP_FILE_VALIDATOR)
   # We also want to report errors that are not "fatal" yet.
   set_property(
     TEST wlmclock_desktop_test
+    PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
+  add_test(
+    NAME wlmdock_desktop_test
+    COMMAND "${DESKTOP_FILE_VALIDATOR}" "${CMAKE_CURRENT_BINARY_DIR}/wlmdock.desktop")
+  # We also want to report errors that are not "fatal" yet.
+  set_property(
+    TEST wlmdock_desktop_test
     PROPERTY FAIL_REGULAR_EXPRESSION " error: ")
   add_test(
     NAME wlmcpugraph_desktop_test
@@ -186,6 +198,14 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME "wlmcpugraph.png")
 install(FILES
+  "wlmdock-64x64.png"
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
+  RENAME "wlmdock.png")
+install(FILES
+  "wlmeyes-64x64.png"
+  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
+  RENAME "wlmeyes.png")
+install(FILES
   "wlmmemgraph-64x64.png"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME "wlmmemgraph.png")
@@ -193,10 +213,7 @@ install(FILES
   "wlmnetgraph-64x64.png"
   DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
   RENAME "wlmnetgraph.png")
-install(FILES
-  "wlmeyes-64x64.png"
-  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps"
-  RENAME "wlmeyes.png")
+
 install(FILES
   "wlmaker/icons/chrome-56x56.png"
   "wlmaker/icons/chromium-56x56.png"

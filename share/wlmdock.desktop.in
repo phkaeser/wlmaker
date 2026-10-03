@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=WaylandMaker Dock
+Comment=Application dock, best used with WaylandMaker compositor
+Exec=@CMAKE_INSTALL_PREFIX@/bin/wlmdock
+Type=Application
+Categories=Utility;
+Keywords=dock;dockapp;wlmaker
+Icon=wlmdock
