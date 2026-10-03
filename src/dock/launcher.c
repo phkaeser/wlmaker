@@ -180,32 +180,44 @@ wlmdock_launcher_t *wlmdock_launcher_create_from_plist(
         wlmtk_buffer_element(&launcher_ptr->overlay_buffer));
 
     // Resolves to a full path, and verifies the icon file exists.
-    char *p = bs_strdupf("icons/%s", launcher_ptr->icon_path_ptr);
-    if (NULL == p) {
-        bs_log(BS_ERROR | BS_ERRNO, "Failed bs_strdupf(\"icons/%s\")",
-               launcher_ptr->icon_path_ptr);
-        wlmdock_launcher_destroy(launcher_ptr);
-        return NULL;
-    }
-    launcher_ptr->resolved_icon_path_ptr = wlm_util_files_xdg_data_find(
-        files_ptr, p, S_IFREG);
-    free(p);
-    if (NULL == launcher_ptr->resolved_icon_path_ptr) {
-        bs_log(BS_ERROR,
-               "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
-               launcher_ptr->icon_path_ptr);
-#ifndef WLMAKER_SOURCE_DIR
-        wlmdock_launcher_destroy(launcher_ptr);
-        return NULL;
-#else
-        launcher_ptr->resolved_icon_path_ptr = bs_strdupf(
-            WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
-            launcher_ptr->icon_path_ptr);
+    if ('/' == launcher_ptr->icon_path_ptr[0] ||
+        '~' == launcher_ptr->icon_path_ptr[0]) {
+        launcher_ptr->resolved_icon_path_ptr = bs_file_resolve_path(
+            launcher_ptr->icon_path_ptr, NULL);
         if (NULL == launcher_ptr->resolved_icon_path_ptr) {
+            bs_log(BS_ERROR, "Failed bs_file_resolve_path(\"%s\", NULL)",
+                   launcher_ptr->icon_path_ptr);
             wlmdock_launcher_destroy(launcher_ptr);
             return NULL;
         }
+    } else {
+        char *p = bs_strdupf("icons/%s", launcher_ptr->icon_path_ptr);
+        if (NULL == p) {
+            bs_log(BS_ERROR | BS_ERRNO, "Failed bs_strdupf(\"icons/%s\")",
+                   launcher_ptr->icon_path_ptr);
+            wlmdock_launcher_destroy(launcher_ptr);
+            return NULL;
+        }
+        launcher_ptr->resolved_icon_path_ptr = wlm_util_files_xdg_data_find(
+            files_ptr, p, S_IFREG);
+        free(p);
+        if (NULL == launcher_ptr->resolved_icon_path_ptr) {
+            bs_log(BS_ERROR,
+                   "Failed to locate \"icons/%s\" in ${XDG_DATA_DIRS}/wlmaker",
+                   launcher_ptr->icon_path_ptr);
+#ifndef WLMAKER_SOURCE_DIR
+            wlmdock_launcher_destroy(launcher_ptr);
+            return NULL;
+#else
+            launcher_ptr->resolved_icon_path_ptr = bs_strdupf(
+                WLMAKER_SOURCE_DIR "/share/wlmaker/icons/%s",
+                launcher_ptr->icon_path_ptr);
+            if (NULL == launcher_ptr->resolved_icon_path_ptr) {
+                wlmdock_launcher_destroy(launcher_ptr);
+                return NULL;
+            }
 #endif
+        }
     }
     launcher_ptr->image_ptr = wlmtk_image_create_scaled(
         launcher_ptr->resolved_icon_path_ptr,
