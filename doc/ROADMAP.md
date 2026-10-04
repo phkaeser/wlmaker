@@ -48,6 +48,11 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * [done] Adds support for `ext-image-capture-sourve-v1` and `ext-image-copy-capture-v1` protocols.
   * [done] Write log to logfile (vs. stderr).
 
+* Bug fixes
+  * [#552](https://github.com/phkaeser/wlmaker/issues/552) Fix crash when moving off- and back to VT running wlmaker.
+  * Fix screensaver not working correctly after switching back from VT to wlmaker.
+  * Fix wlmdock disappearing when switching to VT and back (ie. when losing it's output).
+
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
 
 * Bug fixes

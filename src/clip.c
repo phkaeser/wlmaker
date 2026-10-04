@@ -302,6 +302,9 @@ wlmaker_clip_t *wlmaker_clip_create(
     // TODO(kaeser@gubbe.ch): This is a very hacky way of updating the output
     // before the layer's handler removes all associated panels. Should be
     // a native method of wlmtk_dock_t or wlmtk_panel_t.
+    //
+    // Unfortunately, this also *ADDS* it back *BEFORE* the layer's handler
+    // adds the associated output.
     clip_ptr->output_layout_change_listener.notify =
         _wlmaker_clip_handle_output_layout_change;
     wl_list_insert(
@@ -837,19 +840,30 @@ void _wlmaker_clip_handle_output_layout_change(
         listener_ptr, wlmaker_clip_t, output_layout_change_listener);
 
     struct wlr_output *wlr_output_ptr = wlmbe_output_description_first_fnmatch(
-        &clip_ptr->output_description, clip_ptr->server_ptr->wlr_output_layout_ptr);
+        &clip_ptr->output_description,
+        clip_ptr->server_ptr->wlr_output_layout_ptr);
     if (NULL == wlr_output_ptr) {
         wlr_output_ptr = wlmbe_primary_output(
             clip_ptr->server_ptr->wlr_output_layout_ptr);
     }
     wlmtk_layer_t *layer_ptr = wlmtk_panel_get_layer(
         wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
-    wlmtk_layer_remove_panel(layer_ptr, wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+    if (NULL != layer_ptr) {
+        wlmtk_layer_remove_panel(
+            layer_ptr,
+            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
+    } else {
+        wlmtk_workspace_t *workspace_ptr =
+            wlmtk_desktop_get_current_workspace(
+                clip_ptr->server_ptr->desktop_ptr);
+        layer_ptr = wlmtk_workspace_get_layer(
+            workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+    }
     if (NULL != wlr_output_ptr) {
-        BS_ASSERT(wlmtk_layer_add_panel(
-                      layer_ptr,
-                      wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
-                      wlr_output_ptr));
+        wlmtk_layer_add_panel(
+            layer_ptr,
+            wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
+            wlr_output_ptr);
     }
 }
 
