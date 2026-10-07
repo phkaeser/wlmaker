@@ -53,6 +53,21 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fix screensaver not working correctly after switching back from VT to wlmaker.
   * Fix wlmdock disappearing when switching to VT and back (ie. when losing it's output).
 
+    Want:
+    * Dock elements to be created, then call a ctor or listener
+    * ctor/listener: Check for updates to wl_outputs. Match them with config. If finds a better match than current output: destroy earlier surface, (re)create.
+      * This may be part of "subcompositor" => surface configure (the parts in "start" are
+        more or less like it)
+      * Main difference: Move layer_surface creation into "subcompositor", and
+        listen for outputs there.
+
+    * TODO:
+      * split "surface_compositor" (taking a wl_surface) off subcompositor, keep in same file.
+      * handle "closed" in subcompositor, closing the surface_compositor; and
+        being ready to (re)open the compositor
+
+
+
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
 
 * Bug fixes
