@@ -448,7 +448,7 @@ void _wlmim_handle_new_input_device(
                 wlr_input_device_ptr,
                 handle_ptr)) {
             bs_log(BS_ERROR, "Failed _wlim_device_register()");
-            wlmim_keyboard_destroy(handle_ptr);
+            wlmim_pointer_destroy(handle_ptr);
         } else if (wlmim_pointer_enabled(handle_ptr) &&
                    NULL != input_manager_ptr->cursor_ptr) {
             wlmim_cursor_attach_input_device(
