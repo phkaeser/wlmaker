@@ -21,6 +21,7 @@
 #include "toplevel_list.h"
 
 #include <libbase/libbase.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -53,8 +54,9 @@ struct wlmtool_toplevel_info {
 };
 
 static void _wlmtool_toplevel_setup(
+    void *userdata_ptr,
     void *bound_interface_ptr,
-    void *userdata_ptr);
+    uint32_t name);
 
 static void _wlmtool_handle_toplevel(
     void *data,
@@ -130,7 +132,10 @@ bool wlmtool_ext_foreign_toplevel_list(
 
 /* ------------------------------------------------------------------------- */
 /** Setup callback for binding the ext-foreign-toplevel-list-v1 interface. */
-void _wlmtool_toplevel_setup(void *bound_interface_ptr, void *userdata_ptr)
+void _wlmtool_toplevel_setup(
+    void *userdata_ptr,
+    void *bound_interface_ptr,
+    __UNUSED__ uint32_t name)
 {
     struct wlmtool_toplevel_list_state *tl_state_ptr = userdata_ptr;
     tl_state_ptr->list_ptr = bound_interface_ptr;

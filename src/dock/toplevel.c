@@ -22,6 +22,7 @@
 
 #include <libbase/libbase.h>
 #include <libbase/signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -75,8 +76,9 @@ struct wlmdock_toplevel_app_ids {
 };
 
 static void _wlmdock_toplevel_setup_foreign_toplevel_list(
+    void *userdata_ptr,
     void *bound_interface_ptr,
-    void *userdata_ptr);
+    uint32_t name);
 static void _wlmdock_toplevel_handle_destroy_dlnode(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
@@ -374,8 +376,9 @@ bool wlmdock_toplevel_handle_set_identifier(
 /* ------------------------------------------------------------------------- */
 /** Registration callback for @ref wlmcl_client_register_interface. */
 void _wlmdock_toplevel_setup_foreign_toplevel_list(
+    void *userdata_ptr,
     void *bound_interface_ptr,
-    void *userdata_ptr)
+    __UNUSED__ uint32_t name)
 {
     struct wlmdock_toplevel_tracker *tracker_ptr = userdata_ptr;
 

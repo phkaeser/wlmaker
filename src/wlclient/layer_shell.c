@@ -21,6 +21,8 @@
 
 #include "layer_shell.h"
 
+#include <libbase/libbase.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "wlclient.h"
@@ -29,8 +31,9 @@
 /* == Declarations ========================================================= */
 
 static void _wlmcl_layer_shell_setup(
+    void *userdata_ptr,
     void *bound_interface_ptr,
-    void *userdata_ptr);
+    uint32_t name);
 
 /* == Exported methods ===================================================== */
 
@@ -53,8 +56,9 @@ bool wlmcl_layer_shell_register(
 /* ------------------------------------------------------------------------- */
 /** Callback for @ref wlmcl_client_register_interface. Stores layer shell. */
 void _wlmcl_layer_shell_setup(
+    void *userdata_ptr,
     void *bound_interface_ptr,
-    void *userdata_ptr)
+    __UNUSED__ uint32_t name)
 {
     struct zwlr_layer_shell_v1 **layer_shell_ptr_ptr = userdata_ptr;
     *layer_shell_ptr_ptr = bound_interface_ptr;

@@ -47,6 +47,8 @@
 #include "xdg-decoration-client-protocol.h"
 #include "cursor-shape-v1-client-protocol.h"
 
+#include "output.h"
+
 struct wl_keyboard;
 struct wl_pointer;
 struct wl_registry;
@@ -90,6 +92,9 @@ struct _wlmcl_client_t {
     /** List of registered timers. TODO(kaeser@gubbe.ch): Replace with HEAP. */
     bs_dllist_t               timers;
 
+    /** Output interface data. */
+    struct wlmcl_output_interface *output_interface_ptr;
+
     /** File descriptor to monitor SIGINT. */
     int                       signal_fd;
     /** Whether @ref wlmcl_client_initialize was executed. */
@@ -120,7 +125,7 @@ typedef struct {
     /** Offset of the bound interface, relative to `wlmcl_client_t`. */
     size_t                    bound_ptr_offset;
     /** Additional setup for this wayland object. */
-    void (*setup)(wlmcl_client_t *client_ptr);
+    void (*setup)(wlmcl_client_t *client_ptr, void *bound_ptr, uint32_t name);
 } object_t;
 
 /** A client interface. */
@@ -134,11 +139,10 @@ struct wlmcl_client_interface {
     uint32_t                  desired_version;
     /** Whether this interface is required. */
     bool                      required;
-
-    /** The bound interface, indicates that this interface is available. */
-    void                      *bound_interface_ptr;
+    /** Bindings for this interface. */
+    size_t                    bindings;
     /** Additional setup for this wayland object. */
-    void (*setup)(void *userdata_ptr, void *bound_interface_ptr);
+    void (*setup)(void *userdata_ptr, void *bound_interface_ptr, uint32_t name);
     /** Argument to @ref wlmcl_client_interface::setup. */
     void *userdata_ptr;
 };
@@ -169,7 +173,10 @@ static wlmcl_client_timer_t *wlmcl_client_timer_create(
 static void wlmcl_client_timer_destroy(
     wlmcl_client_timer_t *timer_ptr);
 
-static void wlmcl_client_seat_setup(wlmcl_client_t *client_ptr);
+static void wlmcl_client_seat_setup(
+    wlmcl_client_t *client_ptr,
+    void *bound_interface_ptr,
+    uint32_t name);
 static void wlmcl_client_seat_handle_capabilities(
     void *data_ptr,
     struct wl_seat *wl_seat_ptr,
@@ -321,6 +328,7 @@ static const object_t objects[] = {
       offsetof(struct wlmcl_client_attributes, xdg_decoration_manager_ptr), NULL },
     { &xdg_wm_base_interface, 1,
       offsetof(struct wlmcl_client_attributes, xdg_wm_base_ptr), NULL },
+
     { NULL, 0, 0, NULL }  // sentinel.
 };
 
@@ -406,12 +414,24 @@ wlmcl_client_t *wlmcl_client_create(const char *app_id_ptr)
         return NULL;
     }
 
+    wlclient_ptr->output_interface_ptr = wlmcl_output_interface_register(
+        wlclient_ptr);
+    if (NULL == wlclient_ptr->output_interface_ptr) {
+        wlmcl_client_destroy(wlclient_ptr);
+        return NULL;
+    }
+
     return wlclient_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmcl_client_destroy(wlmcl_client_t *wlclient_ptr)
 {
+    if (NULL != wlclient_ptr->output_interface_ptr) {
+        wlmcl_output_interface_unregister(wlclient_ptr->output_interface_ptr);
+        wlclient_ptr->output_interface_ptr = NULL;
+    }
+
     bs_dllist_node_t *dlnode_ptr;
     while (NULL != (dlnode_ptr = bs_dllist_pop_front(&wlclient_ptr->timers))) {
         wlmcl_client_timer_destroy((wlmcl_client_timer_t*)dlnode_ptr);
@@ -471,7 +491,7 @@ struct wlmcl_client_interface *wlmcl_client_register_interface(
     const struct wl_interface *wl_interface_ptr,
     uint32_t desired_version,
     bool required,
-    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
+    void (*setup)(void *userdata_ptr, void *bound_interface_ptr, uint32_t name),
     void *userdata_ptr)
 {
     struct wlmcl_client_interface *interface_ptr = logged_calloc(
@@ -506,8 +526,7 @@ bool wlmcl_client_initialize(wlmcl_client_t *client_ptr)
          n = bs_dllist_node_iterator_forward(n)) {
         struct wlmcl_client_interface *interface_ptr = BS_CONTAINER_OF(
             n, struct wlmcl_client_interface, dlnode);
-        if (interface_ptr->required &&
-            NULL == interface_ptr->bound_interface_ptr) {
+        if (interface_ptr->required && 0 >= interface_ptr->bindings) {
             bs_log(BS_ERROR, "Required interface %s not bound.",
                    interface_ptr->wl_interface_ptr->name);
             return false;
@@ -762,7 +781,8 @@ void handle_global_announce(
         bs_log(BS_INFO, "Bound interface %s to %p",
                interface_name_ptr, bound_ptr);
 
-        if (NULL != object_ptr->setup) object_ptr->setup(data_ptr);
+        if (NULL != object_ptr->setup) object_ptr->setup(
+            data_ptr, bound_ptr, name);
         return;
     }
 
@@ -775,19 +795,13 @@ void handle_global_announce(
             n, struct wlmcl_client_interface, dlnode);
         if (0 != strcmp(interface_name_ptr,
                         interface_ptr->wl_interface_ptr->name)) continue;
-        if (NULL != interface_ptr->bound_interface_ptr) {
-            bs_log(BS_WARNING, "Already bound interface %s to %p, ignoring",
-                   interface_ptr->wl_interface_ptr->name,
-                   interface_ptr->bound_interface_ptr);
-            continue;
-        }
 
-        interface_ptr->bound_interface_ptr = wl_registry_bind(
+        void *bound_interface_ptr = wl_registry_bind(
             wl_registry_ptr,
             name,
             interface_ptr->wl_interface_ptr,
             interface_ptr->desired_version);
-        if (NULL == interface_ptr->bound_interface_ptr) {
+        if (NULL == bound_interface_ptr) {
             bs_log(BS_ERROR,
                    "Failed wl_registry_bind(%p, %"PRIu32", %p, %"PRIu32") "
                    "for interface %s, version %"PRIu32".",
@@ -799,12 +813,14 @@ void handle_global_announce(
                    version);
             continue;
         }
+        interface_ptr->bindings++;
 
         bs_log(BS_INFO, "Bound interface %s to %p",
-               interface_name_ptr, interface_ptr->bound_interface_ptr);
+               interface_name_ptr, bound_interface_ptr);
         interface_ptr->setup(
-            interface_ptr->bound_interface_ptr,
-            interface_ptr->userdata_ptr);
+            interface_ptr->userdata_ptr,
+            bound_interface_ptr,
+            name);
         return;
     }
 }
@@ -828,6 +844,10 @@ void handle_global_remove(
     // TODO(kaeser@gubbe.ch): Add implementation.
     bs_log(BS_INFO, "handle_global_remove(%p, %p, %"PRIu32").",
            data_ptr, wl_registry_ptr, name);
+
+    // This should be a more targeted removal.
+    wlmcl_client_t *client_ptr = data_ptr;
+    wlmcl_output_teardown(client_ptr, name);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -883,7 +903,10 @@ void wlmcl_client_timer_destroy(wlmcl_client_timer_t *timer_ptr)
 
 /* ------------------------------------------------------------------------- */
 /** Set up the seat: Registers the client's seat listeners. */
-void wlmcl_client_seat_setup(wlmcl_client_t *client_ptr)
+void wlmcl_client_seat_setup(
+    wlmcl_client_t *client_ptr,
+    __UNUSED__ void *bound_interface_ptr,
+    __UNUSED__ uint32_t name)
 {
     wl_seat_add_listener(
         client_ptr->attributes.wl_seat_ptr,

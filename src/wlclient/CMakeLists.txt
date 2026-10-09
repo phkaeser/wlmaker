@@ -28,6 +28,7 @@ set(public_header_files
   dblbuf.h
   icon.h
   layer_shell.h
+  output.h
   wlclient.h
   xdg_toplevel.h
 )
@@ -42,6 +43,7 @@ target_sources(
   dblbuf.c
   icon.c
   layer_shell.c
+  output.c
   wlclient.c
   xdg_toplevel.c
 )
