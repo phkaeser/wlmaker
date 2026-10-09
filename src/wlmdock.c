@@ -187,6 +187,9 @@ const bspl_desc_t _wlmdock_plist_desc[] = {
 /** The dock's main program. */
 int main(int argc, const char **argv)
 {
+    // FIXME
+    bs_log_options.log_to_stderr = true;
+
     if (!wlm_util_backtrace_setup(argv[0]) ||
         // Ideally: xdgStateHome. But: libxdg-basedir is using FreeDesktop
         // specification v0.7, and XDG_STATE_HOME was added with v0.8 only.
@@ -350,34 +353,6 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    // 2. Create the client-side layer shell surface.
-    dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
-        BS_ASSERT_NOTNULL(dock_ptr->layer_shell_ptr),
-        dock_ptr->client_ptr,
-        ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-        "wlmdock");
-    if (NULL == dock_ptr->layer_surface_ptr) {
-        bs_log(BS_ERROR, "Failed to create client layer surface.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    // Configure.
-    zwlr_layer_surface_v1_set_size(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        64, 64);
-    zwlr_layer_surface_v1_set_anchor(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        positioning.anchor | positioning.edge);
-    zwlr_layer_surface_v1_set_exclusive_zone(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        64);
-    zwlr_layer_surface_v1_set_exclusive_edge(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        positioning.edge);
-    wl_surface_commit(
-        wlmcl_layer_surface_wl_surface(dock_ptr->layer_surface_ptr));
-
     // 3. Setup local Wayland server display and event loops.
     dock_ptr->local_display_ptr = wl_display_create();
     if (NULL == dock_ptr->local_display_ptr) {
@@ -431,6 +406,32 @@ wlmdock_t *_wlmdock_create(
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
+
+    // 2. Create the client-side layer shell surface.
+    dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
+        BS_ASSERT_NOTNULL(dock_ptr->layer_shell_ptr),
+        dock_ptr->client_ptr,
+        ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+        "wlmdock");
+    if (NULL == dock_ptr->layer_surface_ptr) {
+        bs_log(BS_ERROR, "Failed to create client layer surface.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+    zwlr_layer_surface_v1_set_size(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        64, 64);
+    zwlr_layer_surface_v1_set_anchor(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        positioning.anchor | positioning.edge);
+    zwlr_layer_surface_v1_set_exclusive_zone(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        64);
+    zwlr_layer_surface_v1_set_exclusive_edge(
+        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
+        positioning.edge);
+    wl_surface_commit(
+        wlmcl_layer_surface_wl_surface(dock_ptr->layer_surface_ptr));
 
     // 7. Create subcompositor.
     dock_ptr->subcompositor_ptr = wlmdock_subcompositor_create(
