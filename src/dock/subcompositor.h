@@ -26,7 +26,6 @@
 #include <stdbool.h>
 #include <toolkit/toolkit.h>
 
-#include "wlclient/layer_surface.h"
 #include "wlclient/wlclient.h"
 
 struct wl_display;
@@ -34,6 +33,7 @@ struct wlmim_cursor_style;
 struct wlr_allocator;
 struct wlr_backend;
 struct wlr_renderer;
+struct zwlr_layer_shell_v1;
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,9 +48,10 @@ typedef struct _wlmdock_subcompositor_t wlmdock_subcompositor_t;
  * @param wl_display_ptr
  * @param wlr_backend_ptr     Must be a `wayland` backend, not started (yet).
  * @param client_ptr
- * @param layer_surface_ptr
+ * @param zwlr_layer_shell_ptr
  * @param cursor_style_ptr
  * @param container_ptr
+ * @param positioning_ptr
  *
  * @return Handle of the compositor, or NULL on error.
  */
@@ -58,9 +59,10 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     struct wl_display *wl_display_ptr,
     struct wlr_backend *wlr_backend_ptr,
     wlmcl_client_t *client_ptr,
-    wlmcl_layer_surface_t *layer_surface_ptr,
+    struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    wlmtk_container_t *container_ptr);
+    wlmtk_container_t *container_ptr,
+    const wlmtk_dock_positioning_t *positioning_ptr);
 
 /**
  * Starts the subcompositor.

@@ -27,7 +27,7 @@ add_library(wlmclient_lib STATIC)
 set(public_header_files
   dblbuf.h
   icon.h
-  layer_surface.h
+  layer_shell.h
   wlclient.h
   xdg_toplevel.h
 )
@@ -41,7 +41,7 @@ target_sources(
   wlmclient_lib PRIVATE
   dblbuf.c
   icon.c
-  layer_surface.c
+  layer_shell.c
   wlclient.c
   xdg_toplevel.c
 )

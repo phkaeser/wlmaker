@@ -20,11 +20,12 @@
 
 #include "subcompositor.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <toolkit/toolkit.h>
+#include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -41,6 +42,8 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "input/manager.h"
 
+struct zwlr_layer_surface_v1;
+
 /* == Declarations ========================================================= */
 
 /** Subcompositor state. */
@@ -52,8 +55,13 @@ struct _wlmdock_subcompositor_t {
 
     /** The client providing the layer shell surface. */
     wlmcl_client_t            *client_ptr;
-    /** Layer shell surface on parent compositor. */
-    wlmcl_layer_surface_t     *layer_surface_ptr;
+    /** Layer shell interface, from parent. */
+    struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr;
+
+    /** Wayland surface backing the layer surface. */
+    struct wl_surface         *wl_surface_ptr;
+    /** Layer shell surface on the parent compositor. */
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr;
     /** The toolkit container this surface will display. */
     wlmtk_container_t         *container_ptr;
 
@@ -113,10 +121,16 @@ static void _wlmdock_subcompositor_handle_container_layout_invalidated(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
-static void _wlmdock_subcompositor_handle_layer_surface_configure(
-    void *userdata_ptr,
+static void _wlmdock_subcompositor_layer_surface_handle_configure(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr,
+    uint32_t serial,
     uint32_t width,
     uint32_t height);
+static void _wlmdock_subcompositor_layer_surface_handle_closed(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr);
+
 static void _wlmdock_subcompositor_commit(
     wlmdock_subcompositor_t *subcompositor_ptr);
 
@@ -127,6 +141,14 @@ static const wlmtk_element_vmt_t _wlmdock_subcompositor_element_vmt = {
     .layout = _wlmdock_subcompositor_element_layout
 };
 
+/** Listeners for the layer surface. */
+static const struct zwlr_layer_surface_v1_listener
+_wlmdock_subcompositor_layer_surface_listener = {
+    .configure = _wlmdock_subcompositor_layer_surface_handle_configure,
+    .closed = _wlmdock_subcompositor_layer_surface_handle_closed,
+};
+
+
 /* == Exported methods ===================================================== */
 
 /* ------------------------------------------------------------------------- */
@@ -134,14 +156,47 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     struct wl_display *wl_display_ptr,
     struct wlr_backend *wlr_backend_ptr,
     wlmcl_client_t *client_ptr,
-    wlmcl_layer_surface_t *layer_surface_ptr,
+    struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    wlmtk_container_t *container_ptr)
+    wlmtk_container_t *container_ptr,
+    const wlmtk_dock_positioning_t *positioning_ptr)
 {
     wlmdock_subcompositor_t *subcompositor_ptr = logged_calloc(
         1, sizeof(*subcompositor_ptr));
     if (NULL == subcompositor_ptr) return NULL;
-    subcompositor_ptr->layer_surface_ptr = BS_ASSERT_NOTNULL(layer_surface_ptr);
+
+    subcompositor_ptr->wl_surface_ptr = wl_compositor_create_surface(
+        wlmcl_client_attributes(client_ptr)->wl_compositor_ptr);
+    if (NULL == subcompositor_ptr->wl_surface_ptr) {
+        bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p)",
+               wlmcl_client_attributes(client_ptr)->wl_compositor_ptr);
+        wlmdock_subcompositor_destroy(subcompositor_ptr);
+        return NULL;
+    }
+    subcompositor_ptr->zwlr_layer_surface_ptr =
+        zwlr_layer_shell_v1_get_layer_surface(
+            zwlr_layer_shell_ptr,
+            subcompositor_ptr->wl_surface_ptr,
+            NULL,  // Let compositor choose output.
+            ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+            "wlmdock");
+    if (NULL == subcompositor_ptr->zwlr_layer_surface_ptr) {
+        bs_log(BS_ERROR, "Failed zwlr_layer_shell_v1_get_layer_surface(...)");
+        wlmdock_subcompositor_destroy(subcompositor_ptr);
+        return NULL;
+    }
+
+    // Configure.
+    zwlr_layer_surface_v1_set_size(
+        subcompositor_ptr->zwlr_layer_surface_ptr, 64, 64);
+    zwlr_layer_surface_v1_set_anchor(
+        subcompositor_ptr->zwlr_layer_surface_ptr,
+        positioning_ptr->anchor | positioning_ptr->edge);
+    zwlr_layer_surface_v1_set_exclusive_zone(
+        subcompositor_ptr->zwlr_layer_surface_ptr, 64);
+    zwlr_layer_surface_v1_set_exclusive_edge(
+        subcompositor_ptr->zwlr_layer_surface_ptr, positioning_ptr->edge);
+    wl_surface_commit(subcompositor_ptr->wl_surface_ptr);
 
     subcompositor_ptr->client_ptr = BS_ASSERT_NOTNULL(client_ptr);
     wlmtk_util_connect_listener_signal(
@@ -233,10 +288,15 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
         return NULL;
     }
 
-    wlmcl_layer_surface_register_configure_callback(
-        subcompositor_ptr->layer_surface_ptr,
-        _wlmdock_subcompositor_handle_layer_surface_configure,
-        subcompositor_ptr);
+    if (0 != zwlr_layer_surface_v1_add_listener(
+            subcompositor_ptr->zwlr_layer_surface_ptr,
+            &_wlmdock_subcompositor_layer_surface_listener,
+            subcompositor_ptr)) {
+        bs_log(BS_ERROR, "Failed zwlr_layer_surface_v1_add_listener.");
+        wlmdock_subcompositor_destroy(subcompositor_ptr);
+        return NULL;
+    }
+
     return subcompositor_ptr;
 }
 
@@ -248,8 +308,7 @@ bool wlmdock_subcompositor_start(
     struct wlr_renderer *wlr_renderer_ptr)
 {
     subcompositor_ptr->wlr_output_ptr = wlr_wl_output_create_from_surface(
-        wlr_backend_ptr,
-        wlmcl_layer_surface_wl_surface(subcompositor_ptr->layer_surface_ptr));
+        wlr_backend_ptr, subcompositor_ptr->wl_surface_ptr);
     if (NULL == subcompositor_ptr->wlr_output_ptr) return false;
     wlmtk_util_connect_listener_signal(
         &subcompositor_ptr->wlr_output_ptr->events.frame,
@@ -339,6 +398,16 @@ void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
     wlmtk_util_disconnect_listener(
         &subcompositor_ptr->wlclient_keyboard_repeat_info_listener);
 
+    if (NULL != subcompositor_ptr->zwlr_layer_surface_ptr) {
+        zwlr_layer_surface_v1_destroy(
+            subcompositor_ptr->zwlr_layer_surface_ptr);
+        subcompositor_ptr->zwlr_layer_surface_ptr = NULL;
+    }
+    if (NULL != subcompositor_ptr->wl_surface_ptr) {
+        wl_surface_destroy(subcompositor_ptr->wl_surface_ptr);
+        subcompositor_ptr->wl_surface_ptr = NULL;
+    }
+
     free(subcompositor_ptr);
 }
 
@@ -387,8 +456,7 @@ void _wlmdock_subcompositor_request_size(
     }
 
     zwlr_layer_surface_v1_set_size(
-        wlmcl_layer_surface_wlr_layer_surface(
-            subcompositor_ptr->layer_surface_ptr),
+        subcompositor_ptr->zwlr_layer_surface_ptr,
         box.width, box.height);
 }
 
@@ -472,13 +540,22 @@ void _wlmdock_subcompositor_handle_container_layout_invalidated(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles server-side `configure` request. */
-void _wlmdock_subcompositor_handle_layer_surface_configure(
-    void *userdata_ptr,
+/** Handles the wlr_layer_surface's configure event: ACK and trigger commit. */
+void _wlmdock_subcompositor_layer_surface_handle_configure(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr,
+    uint32_t serial,
     uint32_t width,
     uint32_t height)
 {
-    wlmdock_subcompositor_t *subcompositor_ptr = userdata_ptr;
+    wlmdock_subcompositor_t *subcompositor_ptr = data_ptr;
+    bs_log(BS_DEBUG, "Subcompositor %p: layer surface %p configure: %" PRIu32
+           "x%" PRIu32 ", serial %" PRIu32,
+           subcompositor_ptr,
+           zwlr_layer_surface_ptr,
+           width, height, serial);
+
+    zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_ptr, serial);
 
     subcompositor_ptr->configured_width = width;
     subcompositor_ptr->configured_height = height;
@@ -486,11 +563,27 @@ void _wlmdock_subcompositor_handle_layer_surface_configure(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handles the wlr_layer_surface's closed event: Destroy the surface. */
+void _wlmdock_subcompositor_layer_surface_handle_closed(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr)
+{
+    __UNUSED__ wlmdock_subcompositor_t *subcompositor_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Subcompositor %p: layer surface %p closed",
+           subcompositor_ptr, zwlr_layer_surface_ptr);
+
+    zwlr_layer_surface_v1_destroy(zwlr_layer_surface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Commits output dimensions and scene graph. */
 void _wlmdock_subcompositor_commit(wlmdock_subcompositor_t *subcompositor_ptr)
 {
     if (NULL == subcompositor_ptr->wlr_output_ptr ||
-        NULL == subcompositor_ptr->wlr_scene_output_ptr) return;
+        NULL == subcompositor_ptr->wlr_scene_output_ptr ||
+        0 >= subcompositor_ptr->configured_width ||
+        0 >= subcompositor_ptr->configured_height) return;
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
