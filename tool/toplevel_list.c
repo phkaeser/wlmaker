@@ -20,12 +20,14 @@
 
 #include "toplevel_list.h"
 
+#include <inttypes.h>
 #include <libbase/libbase.h>
-#include <stdint.h>
+#include <libbase/signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "ext-foreign-toplevel-list-v1-client-protocol.h"
+#include "wlclient/output.h"
 #include "wlclient/wlclient.h"
 
 struct ext_foreign_toplevel_handle_v1;
@@ -41,6 +43,9 @@ struct wlmtool_toplevel_list_state {
     struct wl_registry        *wl_registry_ptr;
     /** The bound ext-foreign-toplevel-list-v1 interface. */
     struct ext_foreign_toplevel_list_v1 *list_ptr;
+
+    /** Whether the outputs have changed. */
+    struct bs_listener        output_changed_listener;
 };
 
 /** Information about one toplevel. */
@@ -85,6 +90,13 @@ static void _wlmtool_toplevel_handle_identifier(
     struct ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel_handle_v1,
     const char *identifier);
 
+static void _wlmtool_handle_output_changed(
+    struct bs_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtool_output_dlnode_print(
+    bs_dllist_node_t *dlnode_ptr,
+    void *ud_ptr);
+
 /* == Data ================================================================= */
 
 /** Implementation of the ext_foreign_toplevel_list callbacks. */
@@ -122,8 +134,16 @@ bool wlmtool_ext_foreign_toplevel_list(
         _wlmtool_toplevel_setup,
         &tl_state);
 
+    bs_listener_connect(
+        &tl_state.output_changed_listener,
+        _wlmtool_handle_output_changed,
+        &wlmcl_client_events(client_ptr)->outputs_changed);
+
     wlmcl_client_run(client_ptr);
 
+    bs_listener_disconnect(
+        &tl_state.output_changed_listener,
+        &wlmcl_client_events(client_ptr)->outputs_changed);
     wlmcl_client_destroy(client_ptr);
     return true;
 }
@@ -254,6 +274,33 @@ void _wlmtool_toplevel_handle_identifier(
         return;
     }
     tl_info_ptr->identifier_ptr = logged_strdup(identifier);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Report status of outputs. */
+void _wlmtool_handle_output_changed(
+    __UNUSED__ struct bs_listener *listener_ptr,
+    void *data_ptr)
+{
+    bs_dllist_t *o_ptr = data_ptr;
+    printf("Outputs have changed (total %zu outputs)\n",
+           bs_dllist_size(o_ptr));
+
+    size_t index = 0;
+    bs_dllist_for_each(o_ptr, _wlmtool_output_dlnode_print, &index);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Prints information about one output. */
+void _wlmtool_output_dlnode_print(bs_dllist_node_t *dlnode_ptr, void *ud_ptr)
+{
+    struct wlmcl_output *output_ptr = wlmcl_output_from_dlnode(dlnode_ptr);
+    size_t *index_ptr = ud_ptr;
+
+    const struct wlmcl_output_metadata *m = wlmcl_output_metadata(output_ptr);
+    printf("  wl_output[%zu]: %s (%"PRId32"x%"PRId32", %s)\n",
+           *index_ptr, m->name_ptr, m->width, m->height, m->description_ptr);
+    *index_ptr += 1;
 }
 
 /* == End of toplevel_list.c =============================================== */
