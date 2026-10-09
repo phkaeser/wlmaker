@@ -58,6 +58,15 @@ target_compile_definitions(
   util_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
 add_test(NAME util_test COMMAND util_test)
 
+add_executable(wlmclient_test wlmclient_test.c)
+add_dependencies(wlmclient_test wlmclient_lib)
+target_include_directories(
+  wlmclient_test PRIVATE "${PROJECT_SOURCE_DIR}/src")
+target_link_libraries(wlmclient_test PRIVATE libbase wlmclient_lib wlmutil_lib)
+target_compile_definitions(
+  wlmclient_test PUBLIC "TEST_DATA_DIR=\"${PROJECT_SOURCE_DIR}/tests/data\"")
+add_test(NAME wlmclient_test COMMAND wlmclient_test)
+
 add_executable(desktop_parser_test desktop_parser_test.c)
 add_dependencies(desktop_parser_test libbase desktop-parser)
 target_link_libraries(
@@ -91,6 +100,9 @@ if(iwyu_path_and_options)
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   set_target_properties(
     util_test PROPERTIES
+    C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
+  set_target_properties(
+    wlmclient_test PROPERTIES
     C_INCLUDE_WHAT_YOU_USE "${iwyu_path_and_options}")
   set_target_properties(
     desktop_parser_test PROPERTIES

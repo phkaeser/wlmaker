@@ -22,6 +22,7 @@
 #define __WLMAKER_WLCLIENT_H__
 
 #include <inttypes.h>
+#include <libbase/signal.h>
 #include <stdbool.h>
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon.h>
@@ -67,7 +68,6 @@ struct wlmcl_client_attributes {
     struct zwlmaker_icon_manager_v1 *icon_manager_ptr;
     /** The bound XDG decoration manager. NULL if not supported. */
     struct zxdg_decoration_manager_v1 *xdg_decoration_manager_ptr;
-
     /** Application ID, as a string. Or NULL, if not set. */
     const char                *app_id_ptr;
 };
@@ -80,6 +80,8 @@ struct wlmcl_client_events {
     struct wl_signal          keymap;
     /** Keyboard repeat information was updated. No argument. */
     struct wl_signal          keyboard_repeat_info;
+    /** Indicates the outputs have changed. A bs_dllist_t of outputs. */
+    struct bs_signal          outputs_changed;
 };
 
 /** Key event. */
@@ -124,7 +126,7 @@ struct wlmcl_client_interface *wlmcl_client_register_interface(
     const struct wl_interface *wl_interface_ptr,
     uint32_t desired_version,
     bool required,
-    void (*setup)(void *bound_interface_ptr, void *userdata_ptr),
+    void (*setup)(void *userdata_ptr, void *bound_interface_ptr, uint32_t name),
     void *userdata_ptr);
 
 /**
