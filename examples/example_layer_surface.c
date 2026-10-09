@@ -30,9 +30,21 @@
 #include <wayland-client-protocol.h>
 
 #include "wlclient/dblbuf.h"
-#include "wlclient/layer_surface.h"
+#include "wlclient/layer_shell.h"
 #include "wlclient/wlclient.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+
+struct zwlr_layer_surface_v1;
+
+static void _layer_surface_handle_configure(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *layer_surface_ptr,
+    uint32_t serial,
+    uint32_t width,
+    uint32_t height);
+static void _layer_surface_handle_closed(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *layer_surface_ptr);
 
 /** State of the client. */
 static wlmcl_client_t                *wlclient_ptr;
@@ -40,13 +52,20 @@ static wlmcl_client_t                *wlclient_ptr;
 static bs_gfxbuf_t                   *background_colors;
 /** Double buffer. */
 static wlmcl_dblbuf_t                *dblbuf_ptr;
+/** Wayland surface. */
+struct wl_surface                    *wl_surface_ptr;
+
+/** Listeners for the layer surface. */
+static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
+    .configure = _layer_surface_handle_configure,
+    .closed = _layer_surface_handle_closed,
+};
 
 /* ------------------------------------------------------------------------- */
 /** Draws something into the buffer. */
-static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
+static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, __UNUSED__ void *ud_ptr)
 {
     static uint64_t ns_base = 0;
-    wlmcl_layer_surface_t *layer_surface_ptr = ud_ptr;
     bs_log(BS_DEBUG, "Callback gfxbuf %p", gfxbuf_ptr);
 
     // If background dimensions differ (e.g. after resize), recreate background
@@ -97,25 +116,30 @@ static bool _callback(bs_gfxbuf_t *gfxbuf_ptr, void *ud_ptr)
 
     cairo_destroy(cairo_ptr);
 
-    wlmcl_dblbuf_register_ready_callback(
-        dblbuf_ptr, _callback, layer_surface_ptr);
+    wlmcl_dblbuf_register_ready_callback(dblbuf_ptr, _callback, NULL);
     return true;
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles configure events. */
-static void _handle_configure(
-    void *ud_ptr,
+/** Handles the `configure` callback from the wlr-layer-surface listener. */
+void _layer_surface_handle_configure(
+    void *data_ptr,
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr,
+    uint32_t serial,
     __UNUSED__ uint32_t width,
     __UNUSED__ uint32_t height)
 {
-    wlmcl_layer_surface_t *layer_surface_ptr = ud_ptr;
+    wlmcl_client_t *wlclient_ptr = data_ptr;
+
+    zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_ptr, serial);
+
     if (NULL != dblbuf_ptr) {
         wlmcl_dblbuf_destroy(dblbuf_ptr);
     }
+
     dblbuf_ptr = wlmcl_dblbuf_create(
         wlmcl_client_attributes(wlclient_ptr)->app_id_ptr,
-        wlmcl_layer_surface_wl_surface(layer_surface_ptr),
+        wl_surface_ptr,
         wlmcl_client_attributes(wlclient_ptr)->wl_shm_ptr,
         100,
         300);
@@ -123,8 +147,17 @@ static void _handle_configure(
         bs_log(BS_FATAL, "Failed wlmcl_dblbuf_create.");
         return;
     }
-    wlmcl_dblbuf_register_ready_callback(
-        dblbuf_ptr, _callback, layer_surface_ptr);
+    wlmcl_dblbuf_register_ready_callback(dblbuf_ptr, _callback, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the `closed` callback from the wlr-layer-surface listener. */
+void _layer_surface_handle_closed(
+    void *data_ptr,
+    __UNUSED__ struct zwlr_layer_surface_v1 *layer_surface_ptr)
+{
+    wlmcl_client_t *wlclient_ptr = data_ptr;
+    wlmcl_client_request_terminate(wlclient_ptr);
 }
 
 /* == Main program ========================================================= */
@@ -142,39 +175,50 @@ int main(__UNUSED__ int argc, __UNUSED__ char **argv)
         return EXIT_FAILURE;
     }
 
-    // Create as TOP layer, anchored to the right edge, spanning top to bottom
-    wlmcl_layer_surface_t *layer_surface_ptr = wlmcl_layer_surface_create(
-        BS_ASSERT_NOTNULL(layer_shell_ptr),
-        wlclient_ptr,
-        ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-        "example_layer_surface");
+    // Create as TOP layer, anchored to the right edge, spanning top to bottom.
+    wl_surface_ptr = wl_compositor_create_surface(
+        wlmcl_client_attributes(wlclient_ptr)->wl_compositor_ptr);
+    if (NULL == wl_surface_ptr) {
+        bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p).",
+               (void*)wlmcl_client_attributes(wlclient_ptr)->wl_compositor_ptr);
+        return EXIT_FAILURE;
+    }
+    struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr =
+        zwlr_layer_shell_v1_get_layer_surface(
+            layer_shell_ptr,
+            wl_surface_ptr,
+            NULL,  // Let compositor choose output.
+            ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+            "example_layer_surface");
+    if (NULL == zwlr_layer_surface_ptr) {
+        bs_log(BS_ERROR, "Failed zwlr_layer_shell_v1_get_layer_surface(...)");
+        return EXIT_FAILURE;
+    }
 
-    zwlr_layer_surface_v1_set_size(
-        wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
-        100, 300);
+    zwlr_layer_surface_v1_set_size(zwlr_layer_surface_ptr, 100, 300);
     zwlr_layer_surface_v1_set_anchor(
-        wlmcl_layer_surface_wlr_layer_surface(layer_surface_ptr),
+        zwlr_layer_surface_ptr,
         ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
         ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
         ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM);
-    wl_surface_commit(wlmcl_layer_surface_wl_surface(layer_surface_ptr));
+    wl_surface_commit(wl_surface_ptr);
 
-    if (NULL != layer_surface_ptr) {
-        // Register configure callback
-        wlmcl_layer_surface_register_configure_callback(
-            layer_surface_ptr, _handle_configure, layer_surface_ptr);
+    if (0 != zwlr_layer_surface_v1_add_listener(
+            zwlr_layer_surface_ptr,
+            &layer_surface_listener,
+            wlclient_ptr)) {
+        bs_log(BS_ERROR, "Failed zwlr_layer_surface_v1_add_listener.");
+        return EXIT_FAILURE;
+    }
 
-        // Run main loop
-        wlmcl_client_run(wlclient_ptr);
+    // Run main loop
+    wlmcl_client_run(wlclient_ptr);
 
-        wlmcl_layer_surface_destroy(layer_surface_ptr);
-        if (NULL != dblbuf_ptr) {
-            wlmcl_dblbuf_destroy(dblbuf_ptr);
-            dblbuf_ptr = NULL;
-        }
-    } else {
-        bs_log(BS_ERROR, "Failed wlmcl_layer_surface_create(%p)",
-               wlclient_ptr);
+    zwlr_layer_surface_v1_destroy(zwlr_layer_surface_ptr);
+    wl_surface_destroy(wl_surface_ptr);
+    if (NULL != dblbuf_ptr) {
+        wlmcl_dblbuf_destroy(dblbuf_ptr);
+        dblbuf_ptr = NULL;
     }
 
     if (background_colors != NULL) {

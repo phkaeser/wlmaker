@@ -19,7 +19,6 @@
  * limitations under the License.
  */
 
-#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include <basedir.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
@@ -32,7 +31,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <wayland-client-core.h>
-#include <wayland-client-protocol.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -54,7 +52,7 @@
 #include "util/subprocess_monitor.h"
 #include "util/version.h"
 #include "util/wlr_log.h"
-#include "wlclient/layer_surface.h"
+#include "wlclient/layer_shell.h"
 #include "wlclient/wlclient.h"
 
 #include "dock/launcher.h"
@@ -77,8 +75,6 @@ typedef struct {
 
     /** Layer shell interface. */
     struct zwlr_layer_shell_v1 *layer_shell_ptr;
-    /** Layer shell surface on parent compositor. */
-    wlmcl_layer_surface_t     *layer_surface_ptr;
     /** Parent's display connection. */
     struct wl_display         *remote_display_ptr;
 
@@ -310,7 +306,7 @@ int main(int argc, const char **argv)
 /* ------------------------------------------------------------------------- */
 /** Creates and initializes wlmdock_t. */
 wlmdock_t *_wlmdock_create(
-   const wlmtk_dock_positioning_t positioning,
+    const wlmtk_dock_positioning_t positioning,
     wlmaker_config_style_t *style_ptr)
 {
     wlmdock_t *dock_ptr = logged_calloc(1, sizeof(wlmdock_t));
@@ -438,11 +434,12 @@ wlmdock_t *_wlmdock_create(
         dock_ptr->local_display_ptr,
         dock_ptr->wlr_backend_ptr,
         dock_ptr->client_ptr,
-        dock_ptr->layer_surface_ptr,
+        dock_ptr->layer_shell_ptr,
         // TODO(kaeser@gubbe.ch): Find a way to not provide a cursor style,
         // when using the cursor shape extension.
         &style_ptr->cursor,
-        wlmdock_tilebox_container(dock_ptr->tilebox_ptr));
+        wlmdock_tilebox_container(dock_ptr->tilebox_ptr),
+        &positioning);
     if (NULL == dock_ptr->subcompositor_ptr) {
         _wlmdock_destroy(dock_ptr);
         return NULL;
@@ -536,11 +533,6 @@ void _wlmdock_destroy(wlmdock_t *dock_ptr)
     if (NULL != dock_ptr->tracker_ptr) {
         wlmdock_toplevel_tracker_destroy(dock_ptr->tracker_ptr);
         dock_ptr->tracker_ptr = NULL;
-    }
-
-    if (NULL != dock_ptr->layer_surface_ptr) {
-        wlmcl_layer_surface_destroy(dock_ptr->layer_surface_ptr);
-        dock_ptr->layer_surface_ptr = NULL;
     }
 
     if (NULL != dock_ptr->client_ptr) {
