@@ -81,6 +81,13 @@ bool wlmdock_subcompositor_start(
     struct wlr_renderer *wlr_renderer_ptr);
 
 /**
+ * Stops the sucompositor.
+ *
+ * @param subcompositor_ptr
+ */
+void wlmdock_subcompositor_stop(wlmdock_subcompositor_t *subcompositor_ptr);
+
+/**
  * Destroys the subcompositor.
  *
  * @param subcompositor_ptr
