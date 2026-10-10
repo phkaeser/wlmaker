@@ -192,6 +192,9 @@ void wlmcl_client_run(wlmcl_client_t *wlmcl_client_ptr);
  */
 void wlmcl_client_request_terminate(wlmcl_client_t *wlmcl_client_ptr);
 
+/** Returns the list of outputs. */
+bs_dllist_t *wlmcl_client_outputs(wlmcl_client_t *wlmcl_client_ptr);
+
 /**
  * Registers a timer with the client.
  *

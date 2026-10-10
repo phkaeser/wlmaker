@@ -178,6 +178,13 @@ void wlmcl_output_teardown(
 }
 
 /* ------------------------------------------------------------------------- */
+bs_dllist_t *wlmcl_outputs(struct wlmcl_output_interface *if_ptr)
+{
+    if (NULL == if_ptr) return NULL;
+    return &if_ptr->outputs;
+}
+
+/* ------------------------------------------------------------------------- */
 const struct wlmcl_output_metadata *wlmcl_output_metadata(
     struct wlmcl_output *output_ptr)
 {

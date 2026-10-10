@@ -161,7 +161,6 @@ static const bspl_enum_desc_t _wlmdock_edges[] = {
     BSPL_ENUM_SENTINEL(),
 };
 
-
 /** Descriptor for the dock's plist. */
 const bspl_desc_t _wlmdock_plist_desc[] = {
     BSPL_DESC_ENUM("Edge", true, struct wlmdock_state,
@@ -425,7 +424,7 @@ wlmdock_t *_wlmdock_create(
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
-    wlmdock_subcompositor_start(
+    wlmdock_subcompositor_prepare(
         dock_ptr->subcompositor_ptr,
         dock_ptr->wlr_backend_ptr,
         dock_ptr->wlr_allocator_ptr,
