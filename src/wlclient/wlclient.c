@@ -853,7 +853,7 @@ void handle_global_remove(
 
     // This should be a more targeted removal.
     wlmcl_client_t *client_ptr = data_ptr;
-    wlmcl_output_teardown(client_ptr, name);
+    wlmcl_output_teardown(client_ptr->output_interface_ptr, name);
 }
 
 /* ------------------------------------------------------------------------- */
