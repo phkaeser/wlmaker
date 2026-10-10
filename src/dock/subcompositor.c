@@ -57,6 +57,12 @@ struct _wlmdock_subcompositor_t {
     wlmcl_client_t            *client_ptr;
     /** Layer shell interface, from parent. */
     struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr;
+    /** The positioning data. */
+    wlmtk_dock_positioning_t  positioning;
+
+    struct wlr_backend *wlr_backend_ptr;
+    struct wlr_allocator *wlr_allocator_ptr;
+    struct wlr_renderer *wlr_renderer_ptr;
 
     /** Wayland surface backing the layer surface. */
     struct wl_surface         *wl_surface_ptr;
@@ -64,6 +70,9 @@ struct _wlmdock_subcompositor_t {
     struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr;
     /** The toolkit container this surface will display. */
     wlmtk_container_t         *container_ptr;
+
+    /** Listens to @ref wlmcl_client_events::outputs_changed. */
+    struct bs_listener        outputs_changed_listener;
 
     /** Output layout for this surface's compositor. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
@@ -102,6 +111,11 @@ struct _wlmdock_subcompositor_t {
     int                       configured_height;
 };
 
+static bool _wlmdock_subcompositor_start(
+    wlmdock_subcompositor_t *subcompositor_ptr);
+static void _wlmdock_subcompositor_stop(
+    wlmdock_subcompositor_t *subcompositor_ptr);
+
 static void _wlmdock_subcompositor_request_size(
     wlmdock_subcompositor_t *subcompositor_ptr);
 static void _wlmdock_subcompositor_element_layout(
@@ -130,6 +144,10 @@ static void _wlmdock_subcompositor_layer_surface_handle_configure(
 static void _wlmdock_subcompositor_layer_surface_handle_closed(
     void *data_ptr,
     struct zwlr_layer_surface_v1 *zwlr_layer_surface_ptr);
+
+static void _wlmdock_subcompositor_handle_outputs_changed(
+    struct bs_listener *listener_ptr,
+    void *data_ptr);
 
 static void _wlmdock_subcompositor_commit(
     wlmdock_subcompositor_t *subcompositor_ptr);
@@ -164,39 +182,8 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     wlmdock_subcompositor_t *subcompositor_ptr = logged_calloc(
         1, sizeof(*subcompositor_ptr));
     if (NULL == subcompositor_ptr) return NULL;
-
-    subcompositor_ptr->wl_surface_ptr = wl_compositor_create_surface(
-        wlmcl_client_attributes(client_ptr)->wl_compositor_ptr);
-    if (NULL == subcompositor_ptr->wl_surface_ptr) {
-        bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p)",
-               wlmcl_client_attributes(client_ptr)->wl_compositor_ptr);
-        wlmdock_subcompositor_destroy(subcompositor_ptr);
-        return NULL;
-    }
-    subcompositor_ptr->zwlr_layer_surface_ptr =
-        zwlr_layer_shell_v1_get_layer_surface(
-            zwlr_layer_shell_ptr,
-            subcompositor_ptr->wl_surface_ptr,
-            NULL,  // Let compositor choose output.
-            ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-            "wlmdock");
-    if (NULL == subcompositor_ptr->zwlr_layer_surface_ptr) {
-        bs_log(BS_ERROR, "Failed zwlr_layer_shell_v1_get_layer_surface(...)");
-        wlmdock_subcompositor_destroy(subcompositor_ptr);
-        return NULL;
-    }
-
-    // Configure.
-    zwlr_layer_surface_v1_set_size(
-        subcompositor_ptr->zwlr_layer_surface_ptr, 64, 64);
-    zwlr_layer_surface_v1_set_anchor(
-        subcompositor_ptr->zwlr_layer_surface_ptr,
-        positioning_ptr->anchor | positioning_ptr->edge);
-    zwlr_layer_surface_v1_set_exclusive_zone(
-        subcompositor_ptr->zwlr_layer_surface_ptr, 64);
-    zwlr_layer_surface_v1_set_exclusive_edge(
-        subcompositor_ptr->zwlr_layer_surface_ptr, positioning_ptr->edge);
-    wl_surface_commit(subcompositor_ptr->wl_surface_ptr);
+    subcompositor_ptr->zwlr_layer_shell_ptr = zwlr_layer_shell_ptr;
+    subcompositor_ptr->positioning = *positioning_ptr;
 
     subcompositor_ptr->client_ptr = BS_ASSERT_NOTNULL(client_ptr);
     wlmtk_util_connect_listener_signal(
@@ -288,6 +275,135 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
         return NULL;
     }
 
+    bs_listener_connect(
+        &subcompositor_ptr->outputs_changed_listener,
+        _wlmdock_subcompositor_handle_outputs_changed,
+        &wlmcl_client_events(subcompositor_ptr->client_ptr)->outputs_changed);
+    _wlmdock_subcompositor_handle_outputs_changed(
+        &subcompositor_ptr->outputs_changed_listener,
+        wlmcl_client_outputs(subcompositor_ptr->client_ptr));
+
+    return subcompositor_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmdock_subcompositor_prepare(
+    wlmdock_subcompositor_t *subcompositor_ptr,
+    struct wlr_backend *wlr_backend_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
+    struct wlr_renderer *wlr_renderer_ptr)
+{
+    subcompositor_ptr->wlr_backend_ptr = wlr_backend_ptr;
+    subcompositor_ptr->wlr_allocator_ptr = wlr_allocator_ptr;
+    subcompositor_ptr->wlr_renderer_ptr = wlr_renderer_ptr;
+
+    _wlmdock_subcompositor_handle_outputs_changed(
+        &subcompositor_ptr->outputs_changed_listener,
+        wlmcl_client_outputs(subcompositor_ptr->client_ptr));
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
+{
+    _wlmdock_subcompositor_stop(subcompositor_ptr);
+
+    bs_listener_disconnect(
+        &subcompositor_ptr->outputs_changed_listener,
+        &wlmcl_client_events(subcompositor_ptr->client_ptr)->outputs_changed);
+
+    if (NULL != subcompositor_ptr->input_manager_ptr) {
+        wlmim_input_manager_destroy(subcompositor_ptr->input_manager_ptr);
+        subcompositor_ptr->input_manager_ptr = NULL;
+    }
+
+    if (NULL == subcompositor_ptr->wlr_seat_ptr) {
+        wlr_seat_destroy(subcompositor_ptr->wlr_seat_ptr);
+        subcompositor_ptr->wlr_seat_ptr = NULL;
+    }
+
+    if (NULL != subcompositor_ptr->container_ptr) {
+        wlmtk_util_disconnect_listener(
+            &subcompositor_ptr->container_layout_invalidated_listener);
+        wlmtk_container_remove_element(
+            &subcompositor_ptr->container,
+            &subcompositor_ptr->container_ptr->super_element);
+        subcompositor_ptr->container_ptr = NULL;
+    }
+    wlmtk_container_fini(&subcompositor_ptr->container);
+
+    if (NULL != subcompositor_ptr->root_ptr) {
+        wlmtk_root_destroy(subcompositor_ptr->root_ptr);
+        subcompositor_ptr->root_ptr = NULL;
+    }
+
+    if (NULL != subcompositor_ptr->wlr_scene_ptr) {
+        wlr_scene_node_destroy(&subcompositor_ptr->wlr_scene_ptr->tree.node);
+        subcompositor_ptr->wlr_scene_ptr = NULL;
+    }
+
+    if (NULL != subcompositor_ptr->wlr_output_layout_ptr) {
+        wlr_output_layout_destroy(subcompositor_ptr->wlr_output_layout_ptr);
+        subcompositor_ptr->wlr_output_layout_ptr = NULL;
+    }
+
+    wlmtk_util_disconnect_listener(
+        &subcompositor_ptr->wlclient_keymap_listener);
+    wlmtk_util_disconnect_listener(
+        &subcompositor_ptr->wlclient_keyboard_repeat_info_listener);
+
+    free(subcompositor_ptr);
+}
+
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmdock_subcompositor_element(
+    wlmdock_subcompositor_t *subcompositor_ptr)
+{
+    return &subcompositor_ptr->container.super_element;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+bool _wlmdock_subcompositor_start(wlmdock_subcompositor_t *subcompositor_ptr)
+{
+    subcompositor_ptr->wl_surface_ptr = wl_compositor_create_surface(
+        wlmcl_client_attributes(subcompositor_ptr->client_ptr
+            )->wl_compositor_ptr);
+    if (NULL == subcompositor_ptr->wl_surface_ptr) {
+        bs_log(BS_ERROR, "Failed wl_compositor_create_surface(%p)",
+               wlmcl_client_attributes(subcompositor_ptr->client_ptr
+                   )->wl_compositor_ptr);
+        wlmdock_subcompositor_destroy(subcompositor_ptr);
+        return NULL;
+    }
+    subcompositor_ptr->zwlr_layer_surface_ptr =
+        zwlr_layer_shell_v1_get_layer_surface(
+            subcompositor_ptr->zwlr_layer_shell_ptr,
+            subcompositor_ptr->wl_surface_ptr,
+            NULL,  // Let compositor choose output.
+            ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+            "wlmdock");
+    if (NULL == subcompositor_ptr->zwlr_layer_surface_ptr) {
+        bs_log(BS_ERROR, "Failed zwlr_layer_shell_v1_get_layer_surface(...)");
+        wlmdock_subcompositor_destroy(subcompositor_ptr);
+        return NULL;
+    }
+
+    // Configure.
+    zwlr_layer_surface_v1_set_size(
+        subcompositor_ptr->zwlr_layer_surface_ptr, 64, 64);
+    zwlr_layer_surface_v1_set_anchor(
+        subcompositor_ptr->zwlr_layer_surface_ptr,
+        subcompositor_ptr->positioning.anchor |
+        subcompositor_ptr->positioning.edge);
+    zwlr_layer_surface_v1_set_exclusive_zone(
+        subcompositor_ptr->zwlr_layer_surface_ptr, 64);
+    zwlr_layer_surface_v1_set_exclusive_edge(
+        subcompositor_ptr->zwlr_layer_surface_ptr,
+        subcompositor_ptr->positioning.edge);
+    wl_surface_commit(subcompositor_ptr->wl_surface_ptr);
+
     if (0 != zwlr_layer_surface_v1_add_listener(
             subcompositor_ptr->zwlr_layer_surface_ptr,
             &_wlmdock_subcompositor_layer_surface_listener,
@@ -297,18 +413,9 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
         return NULL;
     }
 
-    return subcompositor_ptr;
-}
-
-/* ------------------------------------------------------------------------- */
-bool wlmdock_subcompositor_start(
-    wlmdock_subcompositor_t *subcompositor_ptr,
-    struct wlr_backend *wlr_backend_ptr,
-    struct wlr_allocator *wlr_allocator_ptr,
-    struct wlr_renderer *wlr_renderer_ptr)
-{
     subcompositor_ptr->wlr_output_ptr = wlr_wl_output_create_from_surface(
-        wlr_backend_ptr, subcompositor_ptr->wl_surface_ptr);
+        subcompositor_ptr->wlr_backend_ptr,
+        subcompositor_ptr->wl_surface_ptr);
     if (NULL == subcompositor_ptr->wlr_output_ptr) return false;
     wlmtk_util_connect_listener_signal(
         &subcompositor_ptr->wlr_output_ptr->events.frame,
@@ -317,12 +424,12 @@ bool wlmdock_subcompositor_start(
 
     if (!wlr_output_init_render(
             subcompositor_ptr->wlr_output_ptr,
-            wlr_allocator_ptr,
-            wlr_renderer_ptr)) {
+            subcompositor_ptr->wlr_allocator_ptr,
+            subcompositor_ptr->wlr_renderer_ptr)) {
         bs_log(BS_ERROR, "Failed wlr_output_init_renderer(%p, %p, %p)",
                subcompositor_ptr->wlr_output_ptr,
-               wlr_allocator_ptr,
-               wlr_renderer_ptr);
+               subcompositor_ptr->wlr_allocator_ptr,
+               subcompositor_ptr->wlr_renderer_ptr);
         return false;
     }
     wlr_output_layout_add_auto(
@@ -345,58 +452,21 @@ bool wlmdock_subcompositor_start(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
+void _wlmdock_subcompositor_stop(wlmdock_subcompositor_t *subcompositor_ptr)
 {
-    if (NULL != subcompositor_ptr->input_manager_ptr) {
-        wlmim_input_manager_destroy(subcompositor_ptr->input_manager_ptr);
-        subcompositor_ptr->input_manager_ptr = NULL;
-    }
-
-    if (NULL == subcompositor_ptr->wlr_seat_ptr) {
-        wlr_seat_destroy(subcompositor_ptr->wlr_seat_ptr);
-        subcompositor_ptr->wlr_seat_ptr = NULL;
-    }
-
-    if (NULL != subcompositor_ptr->container_ptr) {
-        wlmtk_util_disconnect_listener(
-            &subcompositor_ptr->container_layout_invalidated_listener);
-        wlmtk_container_remove_element(
-            &subcompositor_ptr->container,
-            &subcompositor_ptr->container_ptr->super_element);
-        subcompositor_ptr->container_ptr = NULL;
-    }
-    wlmtk_container_fini(&subcompositor_ptr->container);
-
     wlmtk_util_disconnect_listener(&subcompositor_ptr->output_frame_listener);
     if (NULL != subcompositor_ptr->wlr_scene_output_ptr) {
         wlr_scene_output_destroy(subcompositor_ptr->wlr_scene_output_ptr);
         subcompositor_ptr->wlr_scene_output_ptr = NULL;
     }
 
-    if (NULL != subcompositor_ptr->root_ptr) {
-        wlmtk_root_destroy(subcompositor_ptr->root_ptr);
-        subcompositor_ptr->root_ptr = NULL;
+   if (NULL != subcompositor_ptr->wlr_output_ptr) {
+       wlr_output_layout_remove(
+           subcompositor_ptr->wlr_output_layout_ptr,
+           subcompositor_ptr->wlr_output_ptr);
+       wlr_output_destroy(subcompositor_ptr->wlr_output_ptr);
+       subcompositor_ptr->wlr_output_ptr = NULL;
     }
-
-    if (NULL != subcompositor_ptr->wlr_scene_ptr) {
-        wlr_scene_node_destroy(&subcompositor_ptr->wlr_scene_ptr->tree.node);
-        subcompositor_ptr->wlr_scene_ptr = NULL;
-    }
-
-    if (NULL != subcompositor_ptr->wlr_output_ptr) {
-        wlr_output_destroy(subcompositor_ptr->wlr_output_ptr);
-        subcompositor_ptr->wlr_output_ptr = NULL;
-    }
-
-    if (NULL != subcompositor_ptr->wlr_output_layout_ptr) {
-        wlr_output_layout_destroy(subcompositor_ptr->wlr_output_layout_ptr);
-        subcompositor_ptr->wlr_output_layout_ptr = NULL;
-    }
-
-    wlmtk_util_disconnect_listener(
-        &subcompositor_ptr->wlclient_keymap_listener);
-    wlmtk_util_disconnect_listener(
-        &subcompositor_ptr->wlclient_keyboard_repeat_info_listener);
 
     if (NULL != subcompositor_ptr->zwlr_layer_surface_ptr) {
         zwlr_layer_surface_v1_destroy(
@@ -408,18 +478,11 @@ void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
         subcompositor_ptr->wl_surface_ptr = NULL;
     }
 
-    free(subcompositor_ptr);
+    subcompositor_ptr->configured_width = 0;
+    subcompositor_ptr->configured_height = 0;
+    subcompositor_ptr->requested_width = 0;
+    subcompositor_ptr->requested_height = 0;
 }
-
-
-/* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmdock_subcompositor_element(
-    wlmdock_subcompositor_t *subcompositor_ptr)
-{
-    return &subcompositor_ptr->container.super_element;
-}
-
-/* == Local (static) methods =============================================== */
 
 /* ------------------------------------------------------------------------- */
 /** Checks the element's size and requests updated size, if needed. */
@@ -573,7 +636,29 @@ void _wlmdock_subcompositor_layer_surface_handle_closed(
     bs_log(BS_INFO, "Subcompositor %p: layer surface %p closed",
            subcompositor_ptr, zwlr_layer_surface_ptr);
 
-    zwlr_layer_surface_v1_destroy(zwlr_layer_surface_ptr);
+    _wlmdock_subcompositor_stop(subcompositor_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmdock_subcompositor_handle_outputs_changed(
+    struct bs_listener *listener_ptr,
+    void *data_ptr)
+{
+    wlmdock_subcompositor_t *subcompositor_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmdock_subcompositor_t, outputs_changed_listener);
+    bs_dllist_t *outputs_ptr = data_ptr;
+
+    if (NULL == subcompositor_ptr->wlr_backend_ptr) return;
+
+    if (bs_dllist_empty(outputs_ptr)) {
+        if (NULL != subcompositor_ptr->wl_surface_ptr) {
+            _wlmdock_subcompositor_stop(subcompositor_ptr);
+        }
+        return;
+    }
+
+    if (NULL != subcompositor_ptr->wl_surface_ptr) return;
+    _wlmdock_subcompositor_start(subcompositor_ptr);
 }
 
 /* ------------------------------------------------------------------------- */

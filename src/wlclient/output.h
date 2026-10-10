@@ -61,6 +61,9 @@ void wlmcl_output_teardown(
     void *userdata_ptr,
     uint32_t name);
 
+/** Returns a pointer to @ref @wlmcl_output_interface::outputs. */
+bs_dllist_t *wlmcl_outputs(struct wlmcl_output_interface *if_ptr);
+
 /** Retrieve output's metadata, pointer to @ref wlmcl_output::metadata. */
 const struct wlmcl_output_metadata *wlmcl_output_metadata(
     struct wlmcl_output *output_ptr);
