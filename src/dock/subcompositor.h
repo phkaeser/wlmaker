@@ -65,7 +65,7 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
     const wlmtk_dock_positioning_t *positioning_ptr);
 
 /**
- * Starts the subcompositor.
+ * Prepares the subcompositor.
  *
  * @param subcompositor_ptr
  * @param wlr_backend_ptr     Must be a `wayland` backend, must be started.
@@ -74,7 +74,7 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
  *
  * @return true on success.
  */
-bool wlmdock_subcompositor_start(
+void wlmdock_subcompositor_prepare(
     wlmdock_subcompositor_t *subcompositor_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_allocator *wlr_allocator_ptr,

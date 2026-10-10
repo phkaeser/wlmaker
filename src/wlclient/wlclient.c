@@ -694,6 +694,12 @@ void wlmcl_client_request_terminate(wlmcl_client_t *wlclient_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
+bs_dllist_t *wlmcl_client_outputs(wlmcl_client_t *wlmcl_client_ptr)
+{
+    return wlmcl_outputs(wlmcl_client_ptr->output_interface_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 bool wlmcl_client_register_timer(
     wlmcl_client_t *wlclient_ptr,
     uint64_t target_usec,
@@ -847,7 +853,7 @@ void handle_global_remove(
 
     // This should be a more targeted removal.
     wlmcl_client_t *client_ptr = data_ptr;
-    wlmcl_output_teardown(client_ptr, name);
+    wlmcl_output_teardown(client_ptr->output_interface_ptr, name);
 }
 
 /* ------------------------------------------------------------------------- */
