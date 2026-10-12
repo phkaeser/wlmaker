@@ -229,7 +229,7 @@ static void _handle_configure(void *ud_ptr, uint32_t width, uint32_t height)
 /** Main program. */
 int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
-    bs_log_severity = BS_DEBUG;
+    bs_log_settings.severity = BS_DEBUG;
 
     wlclient_ptr = wlmcl_client_create("wlmaker.wlmeyes");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;

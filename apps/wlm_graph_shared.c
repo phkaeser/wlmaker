@@ -1429,7 +1429,7 @@ int wlm_graph_app_run(
     const char **argv,
     const wlm_graph_app_config_t *config)
 {
-    bs_log_severity = BS_INFO;
+    bs_log_settings.severity = BS_INFO;
 
     // Parse command line arguments and initialize preferences.
     wlm_graph_prefs_t prefs;
