@@ -166,7 +166,7 @@ bs_gfxbuf_t *_create_background(unsigned w, unsigned h)
 /** Main program. */
 int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
-    bs_log_severity = BS_INFO;
+    bs_log_settings.severity = BS_INFO;
 
     background_colors = _create_background(640, 400);
     if (NULL == background_colors) return EXIT_FAILURE;

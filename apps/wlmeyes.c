@@ -302,7 +302,7 @@ static void _handle_icon_configure(void *ud_ptr, uint32_t width, uint32_t height
 /** Main program. */
 int main(int argc, const char **argv)
 {
-    bs_log_severity = BS_INFO;
+    bs_log_settings.severity = BS_INFO;
 
     if (!bs_arg_parse(_wlmeyes_args, BS_ARG_MODE_NO_EXTRA, &argc, argv)) {
         bs_arg_print_usage(stderr, _wlmeyes_args);

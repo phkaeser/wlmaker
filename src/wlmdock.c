@@ -153,6 +153,7 @@ static const bs_arg_t wlmdock_args[] = {
         NULL,
         &wlmdock_arg_theme_file_ptr),
     bs_arg_log_level,
+    bs_arg_log_to_stderr,
     BS_ARG_SENTINEL()
 };
 
@@ -190,7 +191,7 @@ int main(int argc, const char **argv)
     if (!wlm_util_backtrace_setup(argv[0]) ||
         // Ideally: xdgStateHome. But: libxdg-basedir is using FreeDesktop
         // specification v0.7, and XDG_STATE_HOME was added with v0.8 only.
-        !bs_log_init_file(xdgCacheHome(NULL), "wlmdock", BS_INFO)) {
+        !bs_log_init(xdgCacheHome(NULL), "wlmdock")) {
         return EXIT_FAILURE;
     }
 

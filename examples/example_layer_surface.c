@@ -131,7 +131,7 @@ static void _handle_configure(
 /** Main program. */
 int main(__UNUSED__ int argc, __UNUSED__ char **argv)
 {
-    bs_log_severity = BS_INFO;
+    bs_log_settings.severity = BS_INFO;
 
     wlclient_ptr = wlmcl_client_create("example_layer_surface");
     if (NULL == wlclient_ptr) return EXIT_FAILURE;

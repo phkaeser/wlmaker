@@ -104,6 +104,7 @@ static const bs_arg_t wlmaker_args[] = {
         NULL,
         &wlmaker_arg_root_menu_file_ptr),
     bs_arg_log_level,
+    bs_arg_log_to_stderr,
     BS_ARG_BOOL(
         "bind_with_logo",
         "Optional: Whether to add 'Logo' as modifier to each key binding. "
@@ -238,7 +239,7 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         !wlm_util_wlr_log_init(WLR_DEBUG) ||
         // Ideally: xdgStateHome. But: libxdg-basedir is using FreeDesktop
         // specification v0.7, and XDG_STATE_HOME was added with v0.8 only.
-        !bs_log_init_file(xdgCacheHome(NULL), "wlmaker", BS_INFO)) {
+        !bs_log_init(xdgCacheHome(NULL), "wlmaker")) {
         return EXIT_FAILURE;
     }
     BS_ASSERT(bs_ptr_stack_init(&wlmaker_subprocess_stack));
