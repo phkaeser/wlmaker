@@ -23,7 +23,6 @@
 #ifndef __WLMAKER_DOCK_SUBCOMPOSITOR_H__
 #define __WLMAKER_DOCK_SUBCOMPOSITOR_H__
 
-#include <stdbool.h>
 #include <toolkit/toolkit.h>
 
 #include "wlclient/wlclient.h"
@@ -71,8 +70,6 @@ wlmdock_subcompositor_t *wlmdock_subcompositor_create(
  * @param wlr_backend_ptr     Must be a `wayland` backend, must be started.
  * @param wlr_allocator_ptr
  * @param wlr_renderer_ptr
- *
- * @return true on success.
  */
 void wlmdock_subcompositor_prepare(
     wlmdock_subcompositor_t *subcompositor_ptr,

@@ -346,34 +346,6 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    // 2. Create the client-side layer shell surface.
-    dock_ptr->layer_surface_ptr = wlmcl_layer_surface_create(
-        BS_ASSERT_NOTNULL(dock_ptr->layer_shell_ptr),
-        dock_ptr->client_ptr,
-        ZWLR_LAYER_SHELL_V1_LAYER_TOP,
-        "wlmdock");
-    if (NULL == dock_ptr->layer_surface_ptr) {
-        bs_log(BS_ERROR, "Failed to create client layer surface.");
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    // Configure.
-    zwlr_layer_surface_v1_set_size(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        64, 64);
-    zwlr_layer_surface_v1_set_anchor(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        positioning.anchor | positioning.edge);
-    zwlr_layer_surface_v1_set_exclusive_zone(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        64);
-    zwlr_layer_surface_v1_set_exclusive_edge(
-        wlmcl_layer_surface_wlr_layer_surface(dock_ptr->layer_surface_ptr),
-        positioning.edge);
-    wl_surface_commit(
-        wlmcl_layer_surface_wl_surface(dock_ptr->layer_surface_ptr));
-
     // 3. Setup local Wayland server display and event loops.
     dock_ptr->local_display_ptr = wl_display_create();
     if (NULL == dock_ptr->local_display_ptr) {
@@ -428,7 +400,13 @@ wlmdock_t *_wlmdock_create(
         return NULL;
     }
 
-    // 7. Create subcompositor.
+    // 8. Start it all.
+    if (!wlr_backend_start(dock_ptr->wlr_backend_ptr)) {
+        bs_log(BS_ERROR, "Failed to start wlroots backend.");
+        _wlmdock_destroy(dock_ptr);
+        return NULL;
+    }
+
     dock_ptr->subcompositor_ptr = wlmdock_subcompositor_create(
         dock_ptr->local_display_ptr,
         dock_ptr->wlr_backend_ptr,
@@ -440,13 +418,6 @@ wlmdock_t *_wlmdock_create(
         wlmdock_tilebox_container(dock_ptr->tilebox_ptr),
         &positioning);
     if (NULL == dock_ptr->subcompositor_ptr) {
-        _wlmdock_destroy(dock_ptr);
-        return NULL;
-    }
-
-    // 8. Start it all.
-    if (!wlr_backend_start(dock_ptr->wlr_backend_ptr)) {
-        bs_log(BS_ERROR, "Failed to start wlroots backend.");
         _wlmdock_destroy(dock_ptr);
         return NULL;
     }
