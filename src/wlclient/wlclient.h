@@ -22,6 +22,7 @@
 #define __WLMAKER_WLCLIENT_H__
 
 #include <inttypes.h>
+#include <libbase/libbase.h>
 #include <libbase/signal.h>
 #include <stdbool.h>
 #include <wayland-server-core.h>
