@@ -84,16 +84,6 @@ void wlmdock_subcompositor_prepare(
  */
 void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr);
 
-/**
- * Returns the topmost element of the subcompositor's element tree.
- *
- * @param subcompositor_ptr
- *
- * @return Pointer to @ref wlmdock_subcompositor_t::container super element.
- */
-wlmtk_element_t *wlmdock_subcompositor_element(
-    wlmdock_subcompositor_t *subcompositor_ptr);
-
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

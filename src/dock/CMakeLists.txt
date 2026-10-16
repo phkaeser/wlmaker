@@ -33,7 +33,7 @@ target_sources(
   wlmdock_lib
   PRIVATE
   launcher.c
-  scene_surface.c
+  container_surface.c
   subcompositor.c
   tilebox.c
   toplevel.c)

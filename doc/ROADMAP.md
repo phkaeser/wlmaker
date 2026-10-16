@@ -37,6 +37,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Fixes
     * [done] Resolve leaks, as reported by valgrind.
     * [done] Fix crash on shutdown observed on `wlroots-0.20`.
+    * [done] Fix wlmdock disappearing when switching to VT and back (ie. when losing it's output).
 
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.
@@ -51,7 +52,6 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Bug fixes
   * [#552](https://github.com/phkaeser/wlmaker/issues/552) Fix crash when moving off- and back to VT running wlmaker.
   * Fix screensaver not working correctly after switching back from VT to wlmaker.
-  * Fix wlmdock disappearing when switching to VT and back (ie. when losing it's output).
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
 

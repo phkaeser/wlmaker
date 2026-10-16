@@ -1,8 +1,8 @@
 /* ========================================================================= */
 /**
- * @file scene_surface.h
+ * @file container_surface.h
  *
- * Functionality to bind a `struct wlr_scene` onto a `wl_surface`, for
+ * Functionality to bind a @ref wlmtk_container_t onto a `wl_surface`, for
  * compositor rendering.
  *
  * @copyright
@@ -20,8 +20,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WLMAKER_DOCK_SCENE_SURFACE_H__
-#define __WLMAKER_DOCK_SCENE_SURFACE_H__
+#ifndef __WLMAKER_DOCK_CONTAINER_SURFACE_H__
+#define __WLMAKER_DOCK_CONTAINER_SURFACE_H__
+
+#include <toolkit/toolkit.h>
 
 #define WLR_USE_UNSTABLE
 #include <wlr/backend.h>
@@ -39,53 +41,50 @@ struct wlr_allocator;
 struct wlr_backend;
 struct wlr_output_layout;
 struct wlr_renderer;
-struct wlr_scene;
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
 
-struct wlmdock_scene_surface;
+struct wlmdock_container_surface;
 
 /**
- * Creates a scene surface.
+ * Creates a container surface.
  *
  * @param wlr_output_layout_ptr
  * @param wlr_backend_ptr
  * @param wlr_allocator_ptr
  * @param wlr_renderer_ptr
- * @param wlr_scene_ptr
+ * @param container_ptr
  * @param wl_surface_ptr
  *
- * @return The scene surface, or NULL on error.
+ * @return The container surface, or NULL on error.
  */
-struct wlmdock_scene_surface *wlmdock_scene_surface_create(
+struct wlmdock_container_surface *wlmdock_container_surface_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_backend *wlr_backend_ptr,
     struct wlr_allocator *wlr_allocator_ptr,
     struct wlr_renderer *wlr_renderer_ptr,
-    struct wlr_scene *wlr_scene_ptr,
+    wlmtk_container_t *container_ptr,
     struct wl_surface *wl_surface_ptr);
 
 /**
- * Destroys the scene surface.
+ * Destroys the container surface.
  *
- * @param scene_surface_ptr
+ * @param container_surface_ptr
  */
-void wlmdock_scene_surface_destroy(
-    struct wlmdock_scene_surface *scene_surface_ptr);
+void wlmdock_container_surface_destroy(
+    struct wlmdock_container_surface *container_surface_ptr);
 
-/** Configures the scene surface's size. */
-void wlmdock_scene_surface_configure(
-    struct wlmdock_scene_surface *scene_surface_ptr,
-    int width,
-    int height);
-/** Commits the scene surface. */
-void wlmdock_scene_surface_commit(
-    struct wlmdock_scene_surface *scene_surface_ptr);
-/** Sets the requested size. */
-void wlmdock_scene_surface_request_size(
-    struct wlmdock_scene_surface *scene_surface_ptr,
+/**
+ * Commits and renders  the container onto the surface, using the given size.
+ *
+ * @param container_surface_ptr
+ * @param width
+ * @param height
+ */
+void wlmdock_container_surface_commit_size(
+    struct wlmdock_container_surface *container_surface_ptr,
     int width,
     int height);
 
@@ -93,5 +92,5 @@ void wlmdock_scene_surface_request_size(
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // __WLMAKER_DOCK_SCENE_SURFACE_H__
-/* == End of scene_surface.h ================= */
+#endif  // __WLMAKER_DOCK_CONTAINER_SURFACE_H__
+/* == End of container_surface.h =========================================== */
