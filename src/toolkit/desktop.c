@@ -65,6 +65,8 @@ struct _wlmtk_desktop_t {
     /** Curtain element: Permit dimming or hiding everything. */
     wlmtk_rectangle_t         *curtain_rectangle_ptr;
 
+    /** Workspaces. */
+    wlmtk_container_t         workspace_container;
     /** List of workspaces attached to desktop. @see wlmtk_workspace_t::dlnode. */
     bs_dllist_t               workspaces;
     /** Currently-active workspace. */
@@ -73,9 +75,13 @@ struct _wlmtk_desktop_t {
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
+    /** The wlr layers available in this desktop. */
+    wlmtk_layer_t            *layer_ptrs[WLMTK_DESKTOP_LAYER_OVERLAY + 1];
+
     // Elements below not owned by wlmtk_desktop_t.
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
+
 };
 
 static void _wlmtk_desktop_switch_to_workspace(
@@ -153,6 +159,31 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         &desktop_ptr->container.super_element,
         &_wlmtk_desktop_element_vmt);
 
+    for (int i = 0; i <= WLMTK_DESKTOP_LAYER_OVERLAY; ++i) {
+        wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr);
+        if (NULL == layer_ptr) {
+            wlmtk_desktop_destroy(desktop_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(wlmtk_layer_element(layer_ptr), true);
+        wlmtk_container_add_element(
+            &desktop_ptr->container, wlmtk_layer_element(layer_ptr));
+        desktop_ptr->layer_ptrs[i] = layer_ptr;
+    }
+
+    if (!wlmtk_container_init(&desktop_ptr->workspace_container)) {
+        wlmtk_desktop_destroy(desktop_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        &desktop_ptr->workspace_container.super_element,
+        true);
+    wlmtk_layer_t *bg_layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_BACKGROUND);
+    wlmtk_container_add_element_atop(
+        &desktop_ptr->container,
+        wlmtk_layer_element(bg_layer_ptr),
+        &desktop_ptr->workspace_container.super_element);
     desktop_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
         desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff000020);
     if (NULL == desktop_ptr->curtain_rectangle_ptr) {
@@ -188,6 +219,21 @@ void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
         &desktop_ptr->workspaces,
         _wlmtk_desktop_destroy_workspace,
         desktop_ptr);
+    if (desktop_ptr->workspace_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &desktop_ptr->container,
+            &desktop_ptr->workspace_container.super_element);
+    }
+    wlmtk_container_fini(&desktop_ptr->workspace_container);
+
+    for (int i = 0; i <= WLMTK_DESKTOP_LAYER_OVERLAY; ++i) {
+        if (NULL == desktop_ptr->layer_ptrs[i]) continue;
+        wlmtk_container_remove_element(
+            &desktop_ptr->container,
+            wlmtk_layer_element(desktop_ptr->layer_ptrs[i]));
+        wlmtk_layer_destroy(desktop_ptr->layer_ptrs[i]);
+        desktop_ptr->layer_ptrs[i] = NULL;
+    }
 
     if (NULL != desktop_ptr->curtain_rectangle_ptr) {
         wlmtk_container_remove_element(
@@ -210,7 +256,6 @@ wlmtk_desktop_events_t *wlmtk_desktop_events(wlmtk_desktop_t *desktop_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-
 void wlmtk_desktop_add_workspace(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_workspace_t *workspace_ptr)
@@ -218,14 +263,8 @@ void wlmtk_desktop_add_workspace(
     BS_ASSERT(NULL == wlmtk_workspace_get_desktop(workspace_ptr));
 
     wlmtk_container_add_element(
-        &desktop_ptr->container,
+        &desktop_ptr->workspace_container,
         wlmtk_workspace_element(workspace_ptr));
-
-    // Keep the curtain on top.
-    wlmtk_container_raise_element_to_top(
-        &desktop_ptr->container,
-        wlmtk_rectangle_element(desktop_ptr->curtain_rectangle_ptr));
-
     bs_dllist_push_back(
         &desktop_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
@@ -251,7 +290,7 @@ void wlmtk_desktop_remove_workspace(
         &desktop_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
     wlmtk_container_remove_element(
-        &desktop_ptr->container,
+        &desktop_ptr->workspace_container,
         wlmtk_workspace_element(workspace_ptr));
     wlmtk_element_set_visible(
         wlmtk_workspace_element(workspace_ptr), false);
@@ -430,6 +469,15 @@ bool wlmtk_desktop_set_style(
         &desktop_ptr->workspaces,
         _wlmtk_desktop_workspace_set_style,
         &arg);
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_layer_t *wlmtk_desktop_get_layer(
+    wlmtk_desktop_t *desktop_ptr,
+    wlmtk_desktop_layer_t layer)
+{
+    BS_ASSERT(0 <= layer && layer <= WLMTK_DESKTOP_LAYER_OVERLAY);
+    return desktop_ptr->layer_ptrs[layer];
 }
 
 /* == Local (static) methods =============================================== */
