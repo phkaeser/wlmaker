@@ -197,7 +197,7 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         &desktop_ptr->container,
         wlmtk_rectangle_element(desktop_ptr->curtain_rectangle_ptr));
 
-    // FIXME: Configurable color.
+    // FIXME: Configurable color -- here.
     desktop_ptr->background_rectangle_ptr = wlmtk_rectangle_create(
         desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff204080);
     if (NULL == desktop_ptr->background_rectangle_ptr) {

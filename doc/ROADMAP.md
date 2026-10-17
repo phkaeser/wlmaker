@@ -13,7 +13,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Root/Workspace/Layer separation
   * [done] Move lock elements into `wlmtk_desktop_t`, off `wlmtk_root_t`.
-  * Update layers so they remain fixed when workspace changes.
+  * [done] Update layers so they remain fixed when workspace changes.
 
 * Clip & Dock handling
   * Dock: Move into separate process.
@@ -51,6 +51,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
 
 * Bug fixes
   * [#552](https://github.com/phkaeser/wlmaker/issues/552) Fix crash when moving off- and back to VT running wlmaker.
+  * [#454](https://github.com/phkaeser/wlmaker/issues/454) Lets swaybg background settings apply to the background in all workspaces.
   * Fix screensaver not working correctly after switching back from VT to wlmaker.
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
