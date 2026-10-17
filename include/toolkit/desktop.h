@@ -67,10 +67,14 @@ typedef struct {
  * https://wayland.app/protocols/wlr-layer-shell-unstable-v1.
  */
 typedef enum {
+    /** Background. */
     WLMTK_DESKTOP_LAYER_BACKGROUND = 0,
+    /** Bottom layer. Typically below shell surfaces. */
     WLMTK_DESKTOP_LAYER_BOTTOM = 1,
-    WLMTK_DESKTOP_LAYER_TOP = 3,
-    WLMTK_DESKTOP_LAYER_OVERLAY = 4,
+    /** Top layer. Right below fullscreen surfaces. */
+    WLMTK_DESKTOP_LAYER_TOP = 2,
+    /** Overlay. */
+    WLMTK_DESKTOP_LAYER_OVERLAY = 3,
 } wlmtk_desktop_layer_t;
 
 /**
