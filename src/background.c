@@ -96,14 +96,14 @@ static const wlmtk_panel_positioning_t _wlmaker_background_panel_position = {
 
 /* ------------------------------------------------------------------------- */
 bs_dllist_node_t *wlmaker_background_create(
-    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_desktop_t *desktop_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     uint32_t color)
 {
     struct wlmaker_background *bg_ptr = logged_calloc(1, sizeof(*bg_ptr));
     if (NULL == bg_ptr) return NULL;
-    bg_ptr->layer_ptr = wlmtk_workspace_get_layer(
-        workspace_ptr, WLMTK_WORKSPACE_LAYER_BACKGROUND),
+    bg_ptr->layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_BACKGROUND),
     bg_ptr->color = color;
 
     bg_ptr->output_tracker_ptr = wlmtk_output_tracker_create(

@@ -35,14 +35,14 @@ extern "C" {
 /**
  * Creates a background, derived from a @ref wlmtk_panel_t.
  *
- * @param workspace_ptr
+ * @param desktop_ptr
  * @param wlr_output_layout_ptr
  * @param color
  *
  * @return A list node acting as handle for the background, or NULL on error.
  */
 bs_dllist_node_t *wlmaker_background_create(
-    wlmtk_workspace_t *workspace_ptr,
+    wlmtk_desktop_t *desktop_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr,
     uint32_t color);
 
@@ -57,7 +57,7 @@ void wlmaker_background_dlnode_destroy(
     void *ud_ptr);
 
 /**
- * Sets the color for this workspace's background on each output.
+ * Sets the color for this desktop's background on each output.
  *
  * @param dlnode_ptr
  * @param ud_ptr

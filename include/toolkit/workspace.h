@@ -33,7 +33,6 @@ struct wlmtk_tile_style;
 
 #include "desktop.h"  // IWYU pragma: keep
 #include "element.h"
-#include "layer.h"  // IWYU pragma: keep
 #include "window.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
@@ -43,19 +42,6 @@ struct wlr_output_layout;
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
-
-/**
- * Indicates which layer the view shall be rendered in.
- *
- * See `enum layer` at:
- * https://wayland.app/protocols/wlr-layer-shell-unstable-v1.
- */
-typedef enum {
-    WLMTK_WORKSPACE_LAYER_BACKGROUND = 0,
-    WLMTK_WORKSPACE_LAYER_BOTTOM = 1,
-    WLMTK_WORKSPACE_LAYER_TOP = 3,
-    WLMTK_WORKSPACE_LAYER_OVERLAY = 4,
-} wlmtk_workspace_layer_t;
 
 /**
  * Creates a workspace.
@@ -189,19 +175,6 @@ void wlmtk_workspace_set_window_position(
     wlmtk_window_t *window_ptr,
     int x,
     int y);
-
-/**
- * Returns pointer to the @ref wlmtk_layer_t handle serving `layer`.
- *
- * @param workspace_ptr
- * @param layer
- *
- * @return Pointer to the layer state.
- */
-wlmtk_layer_t *wlmtk_workspace_get_layer(
-    wlmtk_workspace_t *workspace_ptr,
-    wlmtk_workspace_layer_t layer);
-
 
 /**
  * Returns the `bs_dllist_t` of currently mapped windows.
