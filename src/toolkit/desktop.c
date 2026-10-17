@@ -75,14 +75,8 @@ struct _wlmtk_desktop_t {
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
-    /** Background layer. */
-    wlmtk_layer_t             *background_layer_ptr;
-    /** Bottom layer. */
-    wlmtk_layer_t             *bottom_layer_ptr;
-    /** Top layer. */
-    wlmtk_layer_t             *top_layer_ptr;
-    /** Overlay layer. */
-    wlmtk_layer_t             *overlay_layer_ptr;
+    /** The wlr layers available in this desktop. */
+    wlmtk_layer_t            *layer_ptrs[WLMTK_DESKTOP_LAYER_OVERLAY + 1];
 
     // Elements below not owned by wlmtk_desktop_t.
     /** wlroots output layout. */
@@ -165,33 +159,17 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         &desktop_ptr->container.super_element,
         &_wlmtk_desktop_element_vmt);
 
-    desktop_ptr->background_layer_ptr = wlmtk_layer_create(
-        wlr_output_layout_ptr);
-    if (NULL == desktop_ptr->background_layer_ptr) {
-        wlmtk_desktop_destroy(desktop_ptr);
-        return NULL;
+    for (int i = 0; i <= WLMTK_DESKTOP_LAYER_OVERLAY; ++i) {
+        wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr);
+        if (NULL == layer_ptr) {
+            wlmtk_desktop_destroy(desktop_ptr);
+            return NULL;
+        }
+        wlmtk_element_set_visible(wlmtk_layer_element(layer_ptr), true);
+        wlmtk_container_add_element(
+            &desktop_ptr->container, wlmtk_layer_element(layer_ptr));
+        desktop_ptr->layer_ptrs[i] = layer_ptr;
     }
-    wlmtk_element_set_visible(
-        wlmtk_layer_element(desktop_ptr->background_layer_ptr),
-        true);
-    wlmtk_container_add_element_atop(
-        &desktop_ptr->container,
-        NULL,
-        wlmtk_layer_element(desktop_ptr->background_layer_ptr));
-
-    desktop_ptr->bottom_layer_ptr = wlmtk_layer_create(
-        wlr_output_layout_ptr);
-    if (NULL == desktop_ptr->bottom_layer_ptr) {
-        wlmtk_desktop_destroy(desktop_ptr);
-        return NULL;
-    }
-    wlmtk_element_set_visible(
-        wlmtk_layer_element(desktop_ptr->bottom_layer_ptr),
-        true);
-    wlmtk_container_add_element_atop(
-        &desktop_ptr->container,
-        wlmtk_layer_element(desktop_ptr->background_layer_ptr),
-        wlmtk_layer_element(desktop_ptr->bottom_layer_ptr));
 
     if (!wlmtk_container_init(&desktop_ptr->workspace_container)) {
         wlmtk_desktop_destroy(desktop_ptr);
@@ -200,39 +178,12 @@ wlmtk_desktop_t *wlmtk_desktop_create(
     wlmtk_element_set_visible(
         &desktop_ptr->workspace_container.super_element,
         true);
+    wlmtk_layer_t *bg_layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_BACKGROUND);
     wlmtk_container_add_element_atop(
         &desktop_ptr->container,
-        wlmtk_layer_element(desktop_ptr->background_layer_ptr),
+        wlmtk_layer_element(bg_layer_ptr),
         &desktop_ptr->workspace_container.super_element);
-
-    desktop_ptr->top_layer_ptr = wlmtk_layer_create(
-        wlr_output_layout_ptr);
-    if (NULL == desktop_ptr->top_layer_ptr) {
-        wlmtk_desktop_destroy(desktop_ptr);
-        return NULL;
-    }
-    wlmtk_element_set_visible(
-        wlmtk_layer_element(desktop_ptr->top_layer_ptr),
-        true);
-    wlmtk_container_add_element_atop(
-        &desktop_ptr->container,
-        &desktop_ptr->workspace_container.super_element,
-        wlmtk_layer_element(desktop_ptr->top_layer_ptr));
-
-    desktop_ptr->overlay_layer_ptr = wlmtk_layer_create(
-        wlr_output_layout_ptr);
-    if (NULL == desktop_ptr->overlay_layer_ptr) {
-        wlmtk_desktop_destroy(desktop_ptr);
-        return NULL;
-    }
-    wlmtk_element_set_visible(
-        wlmtk_layer_element(desktop_ptr->overlay_layer_ptr),
-        true);
-    wlmtk_container_add_element_atop(
-        &desktop_ptr->container,
-        wlmtk_layer_element(desktop_ptr->top_layer_ptr),
-        wlmtk_layer_element(desktop_ptr->overlay_layer_ptr));
-
     desktop_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
         desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff000020);
     if (NULL == desktop_ptr->curtain_rectangle_ptr) {
@@ -275,33 +226,13 @@ void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
     }
     wlmtk_container_fini(&desktop_ptr->workspace_container);
 
-    if (NULL != desktop_ptr->overlay_layer_ptr) {
+    for (int i = 0; i <= WLMTK_DESKTOP_LAYER_OVERLAY; ++i) {
+        if (NULL == desktop_ptr->layer_ptrs[i]) continue;
         wlmtk_container_remove_element(
             &desktop_ptr->container,
-            wlmtk_layer_element(desktop_ptr->overlay_layer_ptr));
-        wlmtk_layer_destroy(desktop_ptr->overlay_layer_ptr);
-        desktop_ptr->overlay_layer_ptr = NULL;
-    }
-    if (NULL != desktop_ptr->top_layer_ptr) {
-        wlmtk_container_remove_element(
-            &desktop_ptr->container,
-            wlmtk_layer_element(desktop_ptr->top_layer_ptr));
-        wlmtk_layer_destroy(desktop_ptr->top_layer_ptr);
-        desktop_ptr->top_layer_ptr = NULL;
-    }
-    if (NULL != desktop_ptr->bottom_layer_ptr) {
-        wlmtk_container_remove_element(
-            &desktop_ptr->container,
-            wlmtk_layer_element(desktop_ptr->bottom_layer_ptr));
-        wlmtk_layer_destroy(desktop_ptr->bottom_layer_ptr);
-        desktop_ptr->bottom_layer_ptr = NULL;
-    }
-    if (NULL != desktop_ptr->background_layer_ptr) {
-        wlmtk_container_remove_element(
-            &desktop_ptr->container,
-            wlmtk_layer_element(desktop_ptr->background_layer_ptr));
-        wlmtk_layer_destroy(desktop_ptr->background_layer_ptr);
-        desktop_ptr->background_layer_ptr = NULL;
+            wlmtk_layer_element(desktop_ptr->layer_ptrs[i]));
+        wlmtk_layer_destroy(desktop_ptr->layer_ptrs[i]);
+        desktop_ptr->layer_ptrs[i] = NULL;
     }
 
     if (NULL != desktop_ptr->curtain_rectangle_ptr) {
@@ -545,25 +476,8 @@ wlmtk_layer_t *wlmtk_desktop_get_layer(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_desktop_layer_t layer)
 {
-    wlmtk_layer_t *layer_ptr = NULL;
-    switch (layer) {
-    case WLMTK_DESKTOP_LAYER_BACKGROUND:
-        layer_ptr = desktop_ptr->background_layer_ptr;
-        break;
-    case WLMTK_DESKTOP_LAYER_BOTTOM:
-        layer_ptr = desktop_ptr->bottom_layer_ptr;
-        break;
-    case WLMTK_DESKTOP_LAYER_TOP:
-        layer_ptr = desktop_ptr->top_layer_ptr;
-        break;
-    case WLMTK_DESKTOP_LAYER_OVERLAY:
-        layer_ptr = desktop_ptr->overlay_layer_ptr;
-        break;
-    default:
-        break;
-    }
-
-    return layer_ptr;
+    BS_ASSERT(0 <= layer && layer <= WLMTK_DESKTOP_LAYER_OVERLAY);
+    return desktop_ptr->layer_ptrs[layer];
 }
 
 /* == Local (static) methods =============================================== */
