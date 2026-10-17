@@ -36,7 +36,6 @@
 #undef WLR_USE_UNSTABLE
 
 #include "backend/backend.h"
-#include "background.h"
 #include "config.h"
 #include "default_configuration.h"
 #include "idle.h"
@@ -267,16 +266,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             "New",
             &server_ptr->style_ptr->tile);
         if (NULL != workspace_ptr) {
-            bs_dllist_node_t *bg_ptr = wlmaker_background_create(
-                server_ptr->desktop_ptr,
-                server_ptr->wlr_output_layout_ptr,
-                server_ptr->style_ptr->background_color);
-            if (NULL != bg_ptr) {
-                bs_dllist_push_back(&server_ptr->backgrounds, bg_ptr);
-                wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
-            } else {
-                wlmtk_workspace_destroy(workspace_ptr);
-            }
+            wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
         }
         break;
 
@@ -687,10 +677,7 @@ bool _wlmaker_action_theme_load_from_file(
             wlmtk_menu_style_to_ref(server_ptr->style_ptr->menu_style_ptr));
     }
 
-    bs_dllist_for_each(
-        &server_ptr->backgrounds,
-        wlmaker_background_dlnode_set_color,
-        &server_ptr->style_ptr->background_color);
+    // FIXME - set background color for workspace.
 
     rv &= wlmim_set_style(
         server_ptr->input_manager_ptr,

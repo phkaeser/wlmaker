@@ -64,6 +64,8 @@ struct _wlmtk_desktop_t {
 
     /** Curtain element: Permit dimming or hiding everything. */
     wlmtk_rectangle_t         *curtain_rectangle_ptr;
+    /** Background element: Behind @ref WLMTK_DESKTOP_LAYER_BACKGROUND. */
+    wlmtk_rectangle_t         *background_rectangle_ptr;
 
     /** Workspaces. */
     wlmtk_container_t         workspace_container;
@@ -184,6 +186,7 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         &desktop_ptr->container,
         wlmtk_layer_element(bg_layer_ptr),
         &desktop_ptr->workspace_container.super_element);
+
     desktop_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
         desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff000020);
     if (NULL == desktop_ptr->curtain_rectangle_ptr) {
@@ -193,6 +196,21 @@ wlmtk_desktop_t *wlmtk_desktop_create(
     wlmtk_container_add_element(
         &desktop_ptr->container,
         wlmtk_rectangle_element(desktop_ptr->curtain_rectangle_ptr));
+
+    // FIXME: Configurable color.
+    desktop_ptr->background_rectangle_ptr = wlmtk_rectangle_create(
+        desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff204080);
+    if (NULL == desktop_ptr->background_rectangle_ptr) {
+        wlmtk_desktop_destroy(desktop_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        wlmtk_rectangle_element(desktop_ptr->background_rectangle_ptr),
+        true);
+    wlmtk_container_add_element_atop(
+        &desktop_ptr->container,
+        NULL,
+        wlmtk_rectangle_element(desktop_ptr->background_rectangle_ptr));
 
     wlmtk_util_connect_listener_signal(
         &wlr_output_layout_ptr->events.change,
@@ -233,6 +251,15 @@ void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
             wlmtk_layer_element(desktop_ptr->layer_ptrs[i]));
         wlmtk_layer_destroy(desktop_ptr->layer_ptrs[i]);
         desktop_ptr->layer_ptrs[i] = NULL;
+    }
+
+    if (NULL != desktop_ptr->background_rectangle_ptr) {
+        wlmtk_container_remove_element(
+            &desktop_ptr->container,
+            wlmtk_rectangle_element(desktop_ptr->background_rectangle_ptr));
+
+        wlmtk_rectangle_destroy(desktop_ptr->background_rectangle_ptr);
+        desktop_ptr->background_rectangle_ptr = NULL;
     }
 
     if (NULL != desktop_ptr->curtain_rectangle_ptr) {
@@ -661,14 +688,18 @@ void _wlmtk_desktop_handle_output_layout_change(
     struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
 
     wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &desktop_ptr->extents);
-    wlmtk_rectangle_set_size(
+
+    wlmtk_rectangle_t *rs[] = {
         desktop_ptr->curtain_rectangle_ptr,
-        desktop_ptr->extents.width,
-        desktop_ptr->extents.height);
-    wlmtk_element_set_position(
-        wlmtk_rectangle_element(desktop_ptr->curtain_rectangle_ptr),
-        desktop_ptr->extents.x,
-        desktop_ptr->extents.y);
+        desktop_ptr->background_rectangle_ptr };
+    for (size_t i = 0; i < sizeof(rs) / sizeof(wlmtk_rectangle_t*); ++i) {
+        wlmtk_rectangle_set_size(
+            rs[i], desktop_ptr->extents.width, desktop_ptr->extents.height);
+        wlmtk_element_set_position(
+            wlmtk_rectangle_element(rs[i]),
+            desktop_ptr->extents.x,
+            desktop_ptr->extents.y);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
