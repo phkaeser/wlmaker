@@ -250,10 +250,8 @@ wlmaker_clip_t *wlmaker_clip_create(
             server_ptr->wlr_output_layout_ptr);
     }
 
-    wlmtk_workspace_t *workspace_ptr =
-        wlmtk_desktop_get_current_workspace(server_ptr->desktop_ptr);
-    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(
-        workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+    wlmtk_layer_t *layer_ptr = wlmtk_desktop_get_layer(
+        server_ptr->desktop_ptr, WLMTK_DESKTOP_LAYER_TOP);
     if (!wlmtk_layer_add_panel(
             layer_ptr,
             wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr),
@@ -795,8 +793,7 @@ struct wlr_buffer *_wlmaker_clip_create_tile(
 /**
  * Handler for the `workspace_changed` signal of `wlmaker_server_t`.
  *
- * Will redraw the clip contents with the current workspace, and re-map the
- * clip to the new workspace.
+ * Will redraw the clip contents with the current workspace.
  *
  * @param listener_ptr
  * @param data_ptr            Points to the new `wlmtk_workspace_t`.
@@ -807,24 +804,6 @@ void _wlmaker_clip_handle_workspace_changed(
 {
     wlmaker_clip_t *clip_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_clip_t, workspace_changed_listener);
-    wlmtk_panel_t *panel_ptr = wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr);
-
-    wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(panel_ptr);
-    wlmtk_workspace_t *workspace_ptr =
-        wlmtk_desktop_get_current_workspace(clip_ptr->server_ptr->desktop_ptr);
-    wlmtk_layer_t *new_layer_ptr = wlmtk_workspace_get_layer(
-        workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
-
-    if (current_layer_ptr == new_layer_ptr) return;
-
-    if (NULL != current_layer_ptr) {
-        wlmtk_layer_remove_panel(current_layer_ptr, panel_ptr);
-    }
-    BS_ASSERT(wlmtk_layer_add_panel(
-                  new_layer_ptr,
-                  panel_ptr,
-                  wlmbe_primary_output(
-                      clip_ptr->server_ptr->wlr_output_layout_ptr)));
 
     _wlmaker_clip_update_overlay(
         clip_ptr, &clip_ptr->super_tile.style, &clip_ptr->style);
@@ -853,11 +832,8 @@ void _wlmaker_clip_handle_output_layout_change(
             layer_ptr,
             wlmtk_dock_panel(clip_ptr->wlmtk_dock_ptr));
     } else {
-        wlmtk_workspace_t *workspace_ptr =
-            wlmtk_desktop_get_current_workspace(
-                clip_ptr->server_ptr->desktop_ptr);
-        layer_ptr = wlmtk_workspace_get_layer(
-            workspace_ptr, WLMTK_WORKSPACE_LAYER_TOP);
+        layer_ptr = wlmtk_desktop_get_layer(
+            clip_ptr->server_ptr->desktop_ptr, WLMTK_DESKTOP_LAYER_TOP);
     }
     if (NULL != wlr_output_ptr) {
         wlmtk_layer_add_panel(

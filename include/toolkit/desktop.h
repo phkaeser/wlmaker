@@ -30,6 +30,7 @@ typedef struct _wlmtk_desktop_t wlmtk_desktop_t;
 #include <wayland-server-core.h>
 
 #include "element.h"
+#include "layer.h"  // IWYU pragma: keep
 #include "menu.h"
 #include "surface.h"  // IWYU pragma: keep
 #include "window.h"  // IWYU pragma: keep
@@ -58,6 +59,19 @@ typedef struct {
     /** Triggers when a window is unmapped from a workspace. */
     struct wl_signal          window_unmapped;
 } wlmtk_desktop_events_t;
+
+/**
+ * Indicates which layer the view shall be rendered in.
+ *
+ * See `enum layer` at:
+ * https://wayland.app/protocols/wlr-layer-shell-unstable-v1.
+ */
+typedef enum {
+    WLMTK_DESKTOP_LAYER_BACKGROUND = 0,
+    WLMTK_DESKTOP_LAYER_BOTTOM = 1,
+    WLMTK_DESKTOP_LAYER_TOP = 3,
+    WLMTK_DESKTOP_LAYER_OVERLAY = 4,
+} wlmtk_desktop_layer_t;
 
 /**
  * Creates the desktop element.
@@ -207,6 +221,18 @@ bool wlmtk_desktop_set_style(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_window_style_ref_t *window_style_ref_ptr,
     wlmtk_menu_style_ref_t *menu_style_ref_ptr);
+
+/**
+ * Returns the @ref wlmtk_layer_t for the specified `layer`.
+ *
+ * @param desktop_ptr
+ * @param layer
+ *
+ * @return The toolkit layer.
+ */
+wlmtk_layer_t *wlmtk_desktop_get_layer(
+    wlmtk_desktop_t *desktop_ptr,
+    wlmtk_desktop_layer_t layer);
 
 /** Unit test cases. */
 extern const bs_test_set_t wlmtk_desktop_test_set;

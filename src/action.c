@@ -268,7 +268,7 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
             &server_ptr->style_ptr->tile);
         if (NULL != workspace_ptr) {
             bs_dllist_node_t *bg_ptr = wlmaker_background_create(
-                workspace_ptr,
+                server_ptr->desktop_ptr,
                 server_ptr->wlr_output_layout_ptr,
                 server_ptr->style_ptr->background_color);
             if (NULL != bg_ptr) {

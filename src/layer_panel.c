@@ -271,22 +271,22 @@ void _wlmaker_layer_panel_element_destroy(
 
 /* ------------------------------------------------------------------------- */
 /** @return Layer number, translated from protocol value. -1 on error. */
-wlmtk_workspace_layer_t _wlmaker_layer_from_zwlr_layer(
+wlmtk_desktop_layer_t _wlmaker_layer_from_zwlr_layer(
     enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
-    wlmtk_workspace_layer_t layer;
+    wlmtk_desktop_layer_t layer;
     switch (zwlr_layer) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-        layer = WLMTK_WORKSPACE_LAYER_BACKGROUND;
+        layer = WLMTK_DESKTOP_LAYER_BACKGROUND;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-        layer = WLMTK_WORKSPACE_LAYER_BOTTOM;
+        layer = WLMTK_DESKTOP_LAYER_BOTTOM;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-        layer = WLMTK_WORKSPACE_LAYER_TOP;
+        layer = WLMTK_DESKTOP_LAYER_TOP;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-        layer = WLMTK_WORKSPACE_LAYER_OVERLAY;
+        layer = WLMTK_DESKTOP_LAYER_OVERLAY;
         break;
     default:
         layer = -1;
@@ -353,19 +353,19 @@ bool _wlmaker_layer_panel_apply_layer(
     wlmaker_layer_panel_t *layer_panel_ptr,
     enum zwlr_layer_shell_v1_layer zwlr_layer)
 {
-    wlmtk_workspace_layer_t layer;
+    wlmtk_desktop_layer_t layer;
     switch (zwlr_layer) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-        layer = WLMTK_WORKSPACE_LAYER_BACKGROUND;
+        layer = WLMTK_DESKTOP_LAYER_BACKGROUND;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-        layer = WLMTK_WORKSPACE_LAYER_BOTTOM;
+        layer = WLMTK_DESKTOP_LAYER_BOTTOM;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-        layer = WLMTK_WORKSPACE_LAYER_TOP;
+        layer = WLMTK_DESKTOP_LAYER_TOP;
         break;
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-        layer = WLMTK_WORKSPACE_LAYER_OVERLAY;
+        layer = WLMTK_DESKTOP_LAYER_OVERLAY;
         break;
     default:
         wl_resource_post_error(
@@ -376,9 +376,8 @@ bool _wlmaker_layer_panel_apply_layer(
         return false;
     }
 
-    wlmtk_workspace_t *workspace_ptr =
-        wlmtk_desktop_get_current_workspace(layer_panel_ptr->server_ptr->desktop_ptr);
-    wlmtk_layer_t *layer_ptr = wlmtk_workspace_get_layer(workspace_ptr, layer);
+    wlmtk_layer_t *layer_ptr = wlmtk_desktop_get_layer(
+        layer_panel_ptr->server_ptr->desktop_ptr, layer);
 
     wlmtk_layer_t *current_layer_ptr = wlmtk_panel_get_layer(
         &layer_panel_ptr->super_panel);
