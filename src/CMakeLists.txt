@@ -29,7 +29,6 @@ add_subdirectory(wlclient)
 set(public_header_files
   action.h
   action_item.h
-  background.h
   clip.h
   config.h
   corner.h
@@ -54,7 +53,6 @@ add_library(wlmaker_lib STATIC)
 target_sources(wlmaker_lib PRIVATE
   action.c
   action_item.c
-  background.c
   clip.c
   config.c
   corner.c

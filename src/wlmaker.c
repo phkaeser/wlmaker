@@ -39,7 +39,6 @@
 #include "../share/theme.h"  // IWYU pragma: keep
 #include "action.h"
 #include "backend/backend.h"
-#include "background.h"
 #include "clip.h"
 #include "config.h"
 #include "root_menu.h"
@@ -211,16 +210,6 @@ bool create_workspaces(
         if (s.color == 0) {
             s.color = server_ptr->style_ptr->background_color;
         }
-        bs_dllist_node_t *bg_dlnode_ptr = wlmaker_background_create(
-            server_ptr->desktop_ptr,
-            server_ptr->wlr_output_layout_ptr,
-            s.color);
-        if (NULL == bg_dlnode_ptr) {
-            bs_log(BS_ERROR, "Failed wlmaker_background()");
-            rv = false;
-            break;
-        }
-        bs_dllist_push_back(&server_ptr->backgrounds, bg_dlnode_ptr);
         wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
     }
 
