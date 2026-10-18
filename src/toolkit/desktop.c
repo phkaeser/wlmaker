@@ -69,12 +69,14 @@ struct _wlmtk_desktop_t {
     /** Background element: Behind @ref WLMTK_DESKTOP_LAYER_BACKGROUND. */
     wlmtk_rectangle_t         *background_rectangle_ptr;
 
-    /** Workspaces. */
-    wlmtk_container_t         workspace_container;
     /** List of workspaces attached to desktop. @see wlmtk_workspace_t::dlnode. */
     bs_dllist_t               workspaces;
     /** Currently-active workspace. */
     wlmtk_workspace_t         *current_workspace_ptr;
+    /** The window containers of all workspaces. */
+    wlmtk_container_t         workspace_window_container;
+    /** Holds the fullscreen elements of each workspace. */
+    wlmtk_container_t         workspace_fullscreen_container;
 
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
@@ -177,19 +179,33 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         desktop_ptr->layer_ptrs[i] = layer_ptr;
     }
 
-    if (!wlmtk_container_init(&desktop_ptr->workspace_container)) {
+    if (!wlmtk_container_init(&desktop_ptr->workspace_window_container)) {
         wlmtk_desktop_destroy(desktop_ptr);
         return NULL;
     }
     wlmtk_element_set_visible(
-        &desktop_ptr->workspace_container.super_element,
+        &desktop_ptr->workspace_window_container.super_element,
         true);
     wlmtk_layer_t *bg_layer_ptr = wlmtk_desktop_get_layer(
         desktop_ptr, WLMTK_DESKTOP_LAYER_BACKGROUND);
     wlmtk_container_add_element_atop(
         &desktop_ptr->container,
         wlmtk_layer_element(bg_layer_ptr),
-        &desktop_ptr->workspace_container.super_element);
+        &desktop_ptr->workspace_window_container.super_element);
+
+    if (!wlmtk_container_init(&desktop_ptr->workspace_fullscreen_container)) {
+        wlmtk_desktop_destroy(desktop_ptr);
+        return NULL;
+    }
+    wlmtk_element_set_visible(
+        &desktop_ptr->workspace_fullscreen_container.super_element,
+        true);
+    wlmtk_layer_t *overlay_layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_OVERLAY);
+    wlmtk_container_add_element_atop(
+        &desktop_ptr->container,
+        wlmtk_layer_element(overlay_layer_ptr),
+        &desktop_ptr->workspace_fullscreen_container.super_element);
 
     desktop_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
         desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff000020);
@@ -242,12 +258,18 @@ void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
         &desktop_ptr->workspaces,
         _wlmtk_desktop_destroy_workspace,
         desktop_ptr);
-    if (desktop_ptr->workspace_container.super_element.parent_container_ptr) {
+    if (desktop_ptr->workspace_window_container.super_element.parent_container_ptr) {
         wlmtk_container_remove_element(
             &desktop_ptr->container,
-            &desktop_ptr->workspace_container.super_element);
+            &desktop_ptr->workspace_window_container.super_element);
     }
-    wlmtk_container_fini(&desktop_ptr->workspace_container);
+    wlmtk_container_fini(&desktop_ptr->workspace_window_container);
+    if (desktop_ptr->workspace_fullscreen_container.super_element.parent_container_ptr) {
+        wlmtk_container_remove_element(
+            &desktop_ptr->container,
+            &desktop_ptr->workspace_fullscreen_container.super_element);
+    }
+    wlmtk_container_fini(&desktop_ptr->workspace_fullscreen_container);
 
     for (int i = 0; i <= WLMTK_DESKTOP_LAYER_OVERLAY; ++i) {
         if (NULL == desktop_ptr->layer_ptrs[i]) continue;
@@ -294,12 +316,21 @@ void wlmtk_desktop_add_workspace(
 {
     BS_ASSERT(NULL == wlmtk_workspace_get_desktop(workspace_ptr));
 
-    wlmtk_container_add_element(
-        &desktop_ptr->workspace_container,
-        wlmtk_workspace_element(workspace_ptr));
     bs_dllist_push_back(
         &desktop_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
+    wlmtk_container_add_element(
+        &desktop_ptr->workspace_window_container,
+        wlmtk_workspace_window_element(workspace_ptr));
+    wlmtk_container_add_element(
+        &desktop_ptr->workspace_fullscreen_container,
+        wlmtk_workspace_fullscreen_element(workspace_ptr));
+
+    wlmtk_element_set_visible(
+        wlmtk_workspace_window_element(workspace_ptr), false);
+    wlmtk_element_set_visible(
+        wlmtk_workspace_fullscreen_element(workspace_ptr), false);
+
     wlmtk_workspace_set_details(
         workspace_ptr, bs_dllist_size(&desktop_ptr->workspaces));
     wlmtk_workspace_set_desktop(workspace_ptr, desktop_ptr);
@@ -322,10 +353,15 @@ void wlmtk_desktop_remove_workspace(
         &desktop_ptr->workspaces,
         wlmtk_dlnode_from_workspace(workspace_ptr));
     wlmtk_container_remove_element(
-        &desktop_ptr->workspace_container,
-        wlmtk_workspace_element(workspace_ptr));
+        &desktop_ptr->workspace_fullscreen_container,
+        wlmtk_workspace_fullscreen_element(workspace_ptr));
+    wlmtk_container_remove_element(
+        &desktop_ptr->workspace_window_container,
+        wlmtk_workspace_window_element(workspace_ptr));
     wlmtk_element_set_visible(
-        wlmtk_workspace_element(workspace_ptr), false);
+        wlmtk_workspace_window_element(workspace_ptr), false);
+    wlmtk_element_set_visible(
+        wlmtk_workspace_fullscreen_element(workspace_ptr), false);
 
     int index = 1;
     bs_dllist_for_each(
@@ -539,11 +575,16 @@ void _wlmtk_desktop_switch_to_workspace(
         BS_ASSERT(desktop_ptr = wlmtk_workspace_get_desktop(workspace_ptr));
 
         wlmtk_element_set_visible(
-            wlmtk_workspace_element(workspace_ptr), true);
+            wlmtk_workspace_window_element(workspace_ptr), true);
+        wlmtk_element_set_visible(
+            wlmtk_workspace_fullscreen_element(workspace_ptr), true);
         if (NULL != desktop_ptr->current_workspace_ptr) {
             wlmtk_element_set_visible(
-                wlmtk_workspace_element(desktop_ptr->current_workspace_ptr),
+                wlmtk_workspace_window_element(desktop_ptr->current_workspace_ptr),
                 false);
+            wlmtk_element_set_visible(
+                wlmtk_workspace_fullscreen_element(
+                    desktop_ptr->current_workspace_ptr), false);
             wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
         }
         desktop_ptr->current_workspace_ptr = workspace_ptr;
@@ -814,7 +855,10 @@ void test_workspaces(bs_test_t *test_ptr)
         test_ptr, ws1_ptr, wlmtk_desktop_get_current_workspace(desktop_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_workspace_element(ws1_ptr)->visible);
+        wlmtk_workspace_window_element(ws1_ptr)->visible);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_fullscreen_element(ws1_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, ws1_ptr, l.last_data_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     wlmtk_util_clear_test_listener(&l);
@@ -831,7 +875,10 @@ void test_workspaces(bs_test_t *test_ptr)
         test_ptr, ws1_ptr, wlmtk_desktop_get_current_workspace(desktop_ptr));
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_workspace_element(ws2_ptr)->visible);
+        wlmtk_workspace_window_element(ws2_ptr)->visible);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_workspace_fullscreen_element(ws2_ptr)->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     BS_TEST_VERIFY_EQ(test_ptr, ws2_ptr, l.last_data_ptr);
     wlmtk_util_clear_test_listener(&l);
@@ -841,12 +888,18 @@ void test_workspaces(bs_test_t *test_ptr)
     wlmtk_util_clear_test_listener(&l);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
-        wlmtk_workspace_element(ws1_ptr)->visible);
+        wlmtk_workspace_window_element(ws1_ptr)->visible);
+    BS_TEST_VERIFY_FALSE(
+        test_ptr,
+        wlmtk_workspace_fullscreen_element(ws1_ptr)->visible);
     BS_TEST_VERIFY_EQ(
         test_ptr, ws2_ptr, wlmtk_desktop_get_current_workspace(desktop_ptr));
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_workspace_element(ws2_ptr)->visible);
+        wlmtk_workspace_window_element(ws2_ptr)->visible);
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_workspace_fullscreen_element(ws2_ptr)->visible);
     // Again: not destroying the workspace.
     wlmtk_desktop_destroy_last_workspace(desktop_ptr);
     BS_TEST_VERIFY_EQ(test_ptr, 1, bs_dllist_size(&desktop_ptr->workspaces));

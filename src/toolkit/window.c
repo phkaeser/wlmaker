@@ -2138,7 +2138,8 @@ void test_modifier_move(bs_test_t *test_ptr)
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_element_t *ws_elem_ptr = wlmtk_workspace_window_element(ws_ptr);
+    wlmtk_element_set_visible(ws_elem_ptr, true);
     wlmtk_workspace_enable(ws_ptr, true);
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
@@ -2154,8 +2155,7 @@ void test_modifier_move(bs_test_t *test_ptr)
     wlmtk_pointer_motion_event_t mev = { .x = 20, .y = 10 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(ws_elem_ptr, &mev));
 
     // Drag: Button down, and have both modifiers pressed, then move.
     wlmtk_button_event_t bev = {
@@ -2165,12 +2165,11 @@ void test_modifier_move(bs_test_t *test_ptr)
     };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev));
+        wlmtk_element_pointer_button(ws_elem_ptr, &bev));
     mev = (wlmtk_pointer_motion_event_t){ .x = 24, .y = 13 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(ws_elem_ptr, &mev));
 
     // Now must be at a new position.
     BS_TEST_VERIFY_EQ(test_ptr, 4, wlmtk_window_element(w)->x);
@@ -2178,34 +2177,32 @@ void test_modifier_move(bs_test_t *test_ptr)
 
     // Change modifier. Move again, with ALT -- must not move the window.
     bev.type = WLMTK_BUTTON_UP;
-    wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev);
+    wlmtk_element_pointer_button(ws_elem_ptr, &bev);
     bev.type = WLMTK_BUTTON_DOWN;
     wlmtk_window_set_options(w, WLR_MODIFIER_LOGO);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev));
+        wlmtk_element_pointer_button(ws_elem_ptr, &bev));
     mev = (wlmtk_pointer_motion_event_t){ .x = 22, .y = 13 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(ws_elem_ptr, &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 4, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 3, wlmtk_window_element(w)->y);
 
     // Now, move with the correct modifier. Moves by another bit to the right.
     bev.type = WLMTK_BUTTON_UP;
-    wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev);
+    wlmtk_element_pointer_button(ws_elem_ptr, &bev);
     bev.keyboard_modifiers = WLR_MODIFIER_LOGO;
     bev.type = WLMTK_BUTTON_DOWN;
     wlmtk_window_set_options(w, WLR_MODIFIER_LOGO);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev));
+        wlmtk_element_pointer_button(ws_elem_ptr, &bev));
     mev = (wlmtk_pointer_motion_event_t){ .x = 24, .y = 13 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(ws_elem_ptr, &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 6, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 3, wlmtk_window_element(w)->y);
 
