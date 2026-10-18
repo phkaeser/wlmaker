@@ -46,10 +46,12 @@
 
 /** State of the workspace. */
 struct _wlmtk_workspace_t {
-    /** Superclass: Container. */
-    wlmtk_container_t         super_container;
+    /** Container that holds the windows, ie. the window layer. */
+    wlmtk_container_t         window_container;
     /** Original virtual method table. We're overwriting parts. */
-    wlmtk_element_vmt_t       orig_super_element_vmt;
+    wlmtk_element_vmt_t       orig_window_super_element_vmt;
+    /** Container that holds the fullscreen elements. Should have only one. */
+    wlmtk_container_t         fullscreen_container;
 
     /** Link to the @ref wlmtk_desktop_t this workspace is attached to. */
     wlmtk_desktop_t           *desktop_ptr;
@@ -66,12 +68,6 @@ struct _wlmtk_workspace_t {
 
     /** Whether this workspace is enabled, ie. can have activated windows. */
     bool                      enabled;
-    /** Container that holds the windows, ie. the window layer. */
-    wlmtk_container_t         window_container;
-
-    // FIXME - Must be above the layers. Though, want to manage here. How?
-    /** Container that holds the fullscreen elements. Should have only one. */
-    wlmtk_container_t         fullscreen_container;
 
     /** List of toplevel windows. Via @ref wlmtk_window_t::dlnode. */
     bs_dllist_t               windows;
@@ -125,14 +121,14 @@ struct _wlmtk_workspace_t {
     struct wlr_output_layout *wlr_output_layout_ptr;
 };
 
-static void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr);
-static void _wlmtk_workspace_element_get_dimensions(
+static void _wlmtk_workspace_window_element_destroy(wlmtk_element_t *element_ptr);
+static void _wlmtk_workspace_window_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
-static bool _wlmtk_workspace_element_pointer_button(
+static bool _wlmtk_workspace_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
@@ -180,10 +176,10 @@ typedef enum {
 } pointer_state_event_t;
 
 /** Extensions to the workspace's super element's virtual methods. */
-const wlmtk_element_vmt_t     workspace_element_vmt = {
-    .destroy = _wlmtk_workspace_element_destroy,
-    .get_dimensions = _wlmtk_workspace_element_get_dimensions,
-    .pointer_button = _wlmtk_workspace_element_pointer_button,
+const wlmtk_element_vmt_t     workspace_window_element_vmt = {
+    .destroy = _wlmtk_workspace_window_element_destroy,
+    .get_dimensions = _wlmtk_workspace_window_element_get_dimensions,
+    .pointer_button = _wlmtk_workspace_window_element_pointer_button,
 };
 
 /** Finite state machine definition for pointer events. */
@@ -221,43 +217,26 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         return NULL;
     }
 
-    if (!wlmtk_container_init(&workspace_ptr->super_container)) {
-        wlmtk_workspace_destroy(workspace_ptr);
-        return NULL;
-    }
-    workspace_ptr->orig_super_element_vmt = wlmtk_element_extend(
-        &workspace_ptr->super_container.super_element,
-        &workspace_element_vmt);
-    wlmtk_util_connect_listener_signal(
-        &workspace_ptr->super_container.super_element.events.pointer_leave,
-        &workspace_ptr->element_pointer_leave_listener,
-        _wlmtk_workspace_handle_element_pointer_leave);
-    wlmtk_util_connect_listener_signal(
-        &workspace_ptr->super_container.super_element.events.pointer_motion,
-        &workspace_ptr->element_pointer_motion_listener,
-        _wlmtk_workspace_handle_element_pointer_motion);
-
     if (!wlmtk_container_init(&workspace_ptr->window_container)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(
+    workspace_ptr->orig_window_super_element_vmt = wlmtk_element_extend(
         &workspace_ptr->window_container.super_element,
-        true);
-    wlmtk_container_add_element(
-        &workspace_ptr->super_container,
-        &workspace_ptr->window_container.super_element);
+        &workspace_window_element_vmt);
+    wlmtk_util_connect_listener_signal(
+        &workspace_ptr->window_container.super_element.events.pointer_leave,
+        &workspace_ptr->element_pointer_leave_listener,
+        _wlmtk_workspace_handle_element_pointer_leave);
+    wlmtk_util_connect_listener_signal(
+        &workspace_ptr->window_container.super_element.events.pointer_motion,
+        &workspace_ptr->element_pointer_motion_listener,
+        _wlmtk_workspace_handle_element_pointer_motion);
 
     if (!wlmtk_container_init(&workspace_ptr->fullscreen_container)) {
         wlmtk_workspace_destroy(workspace_ptr);
         return NULL;
     }
-    wlmtk_element_set_visible(
-        &workspace_ptr->fullscreen_container.super_element,
-        true);
-    wlmtk_container_add_element(
-        &workspace_ptr->super_container,
-        &workspace_ptr->fullscreen_container.super_element);
 
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
 
@@ -273,36 +252,28 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_workspace_destroy(wlmtk_workspace_t *workspace_ptr)
+void wlmtk_workspace_destroy(wlmtk_workspace_t *ws_ptr)
 {
     wlmtk_util_disconnect_listener(
-        &workspace_ptr->output_layout_change_listener);
+        &ws_ptr->output_layout_change_listener);
 
-    if (NULL != workspace_ptr->fullscreen_container.super_element.parent_container_ptr) {
-        wlmtk_container_remove_element(
-            &workspace_ptr->super_container,
-            &workspace_ptr->fullscreen_container.super_element);
-    }
     wlmtk_util_disconnect_listener(
-        &workspace_ptr->element_pointer_leave_listener);
+        &ws_ptr->element_pointer_leave_listener);
     wlmtk_util_disconnect_listener(
-        &workspace_ptr->element_pointer_motion_listener);
-    wlmtk_container_fini(&workspace_ptr->fullscreen_container);
+        &ws_ptr->element_pointer_motion_listener);
 
-    if (NULL != workspace_ptr->window_container.super_element.parent_container_ptr) {
-        wlmtk_container_remove_element(
-            &workspace_ptr->super_container,
-            &workspace_ptr->window_container.super_element);
+    BS_ASSERT(NULL ==
+              ws_ptr->fullscreen_container.super_element.parent_container_ptr);
+    wlmtk_container_fini(&ws_ptr->fullscreen_container);
+    BS_ASSERT(NULL ==
+              ws_ptr->window_container.super_element.parent_container_ptr);
+    wlmtk_container_fini(&ws_ptr->window_container);
+
+    if (NULL != ws_ptr->name_ptr) {
+        free(ws_ptr->name_ptr);
+        ws_ptr->name_ptr = NULL;
     }
-    wlmtk_container_fini(&workspace_ptr->window_container);
-
-    wlmtk_container_fini(&workspace_ptr->super_container);
-
-    if (NULL != workspace_ptr->name_ptr) {
-        free(workspace_ptr->name_ptr);
-        workspace_ptr->name_ptr = NULL;
-    }
-    free(workspace_ptr);
+    free(ws_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -694,6 +665,12 @@ void wlmtk_workspace_raise_window(
     wlmtk_window_t *window_ptr)
 {
     BS_ASSERT(workspace_ptr == wlmtk_window_get_workspace(window_ptr));
+
+    // No raising if this window isn't int the window container, eg. when
+    // being full-screen.
+    if (wlmtk_window_element(window_ptr)->parent_container_ptr !=
+        &workspace_ptr->window_container) return;
+
     bs_dllist_remove(&workspace_ptr->windows,
                      wlmtk_dlnode_from_window(window_ptr));
     bs_dllist_push_front(&workspace_ptr->windows,
@@ -703,9 +680,16 @@ void wlmtk_workspace_raise_window(
 }
 
 /* ------------------------------------------------------------------------- */
-wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr)
+wlmtk_element_t *wlmtk_workspace_window_element(wlmtk_workspace_t *workspace_ptr)
 {
-    return &workspace_ptr->super_container.super_element;
+    return &workspace_ptr->window_container.super_element;
+}
+
+/* ------------------------------------------------------------------------- */
+wlmtk_element_t *wlmtk_workspace_fullscreen_element(
+    wlmtk_workspace_t *workspace_ptr)
+{
+    return &workspace_ptr->fullscreen_container.super_element;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -741,16 +725,16 @@ wlmtk_workspace_t *wlmtk_workspace_from_dlnode(
 
 /* ------------------------------------------------------------------------- */
 /** Virtual destructor, wraps to our dtor. */
-void _wlmtk_workspace_element_destroy(wlmtk_element_t *element_ptr)
+void _wlmtk_workspace_window_element_destroy(wlmtk_element_t *element_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_workspace_t, super_container.super_element);
+        element_ptr, wlmtk_workspace_t, window_container.super_element);
     wlmtk_workspace_destroy(workspace_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
 /** Returns the workspace area. */
-void _wlmtk_workspace_element_get_dimensions(
+void _wlmtk_workspace_window_element_get_dimensions(
     wlmtk_element_t *element_ptr,
     int *left_ptr,
     int *top_ptr,
@@ -758,7 +742,7 @@ void _wlmtk_workspace_element_get_dimensions(
     int *bottom_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_workspace_t, super_container.super_element);
+        element_ptr, wlmtk_workspace_t, window_container.super_element);
 
     if (NULL != left_ptr) *left_ptr = workspace_ptr->x1;
     if (NULL != top_ptr) *top_ptr = workspace_ptr->y1;
@@ -775,12 +759,12 @@ void _wlmtk_workspace_element_get_dimensions(
  *
  * @return Whether the button event was consumed.
  */
-bool _wlmtk_workspace_element_pointer_button(
+bool _wlmtk_workspace_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr)
 {
     wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        element_ptr, wlmtk_workspace_t, super_container.super_element);
+        element_ptr, wlmtk_workspace_t, window_container.super_element);
 
     // TODO(kaeser@gubbe.ch): We should retract as to which event had triggered
     // the move, and then figure out the exit condition (button up? key? ...)
@@ -791,7 +775,7 @@ bool _wlmtk_workspace_element_pointer_button(
         wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RELEASED, NULL);
     }
 
-    return workspace_ptr->orig_super_element_vmt.pointer_button(
+    return workspace_ptr->orig_window_super_element_vmt.pointer_button(
         element_ptr, button_event_ptr);
 }
 
@@ -979,9 +963,9 @@ bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 
     workspace_ptr->grabbed_window_ptr = ud_ptr;
     workspace_ptr->motion_x =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.x;
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.x;
     workspace_ptr->motion_y =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.y;
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.y;
 
     wlmtk_element_get_position(
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
@@ -1001,10 +985,10 @@ bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         fsm_ptr, wlmtk_workspace_t, fsm);
 
     double rel_x =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.x -
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.x -
         workspace_ptr->motion_x;
     double rel_y =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.y -
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.y -
         workspace_ptr->motion_y;
 
     wlmtk_workspace_set_window_position(
@@ -1025,9 +1009,9 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 
     workspace_ptr->grabbed_window_ptr = ud_ptr;
     workspace_ptr->motion_x =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.x;
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.x;
     workspace_ptr->motion_y =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.y;
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.y;
 
     wlmtk_element_get_position(
         wlmtk_window_element(workspace_ptr->grabbed_window_ptr),
@@ -1054,10 +1038,10 @@ bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
         fsm_ptr, wlmtk_workspace_t, fsm);
 
     double rel_x =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.x -
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.x -
         workspace_ptr->motion_x;
     double rel_y =
-        workspace_ptr->super_container.super_element.last_pointer_motion_event.y -
+        workspace_ptr->window_container.super_element.last_pointer_motion_event.y -
         workspace_ptr->motion_y;
 
     // Update new boundaries by the relative movement.
@@ -1351,7 +1335,7 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_element_set_visible(wlmtk_workspace_window_element(ws_ptr), true);
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
@@ -1365,12 +1349,12 @@ void test_move(bs_test_t *test_ptr)
     wlmtk_pointer_motion_event_t mev = { .x = 0, .y = 0 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(wlmtk_workspace_window_element(ws_ptr), &mev));
 
     // Starts a move for the window. Will move it...
     wlmtk_workspace_begin_window_move(ws_ptr, w);
     mev = (wlmtk_pointer_motion_event_t){ .x = 1, .y = 2 };
-    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
+    wlmtk_element_pointer_motion(wlmtk_workspace_window_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
@@ -1381,13 +1365,13 @@ void test_move(bs_test_t *test_ptr)
         .time_msec = 44,
     };
     wlmtk_element_pointer_button(
-        wlmtk_workspace_element(ws_ptr),
+        wlmtk_workspace_window_element(ws_ptr),
         &button_event);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, ws_ptr->grabbed_window_ptr);
 
     // More motion, no longer updates the position.
     mev = (wlmtk_pointer_motion_event_t){ .x = 3, .y = 4 };
-    wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev);
+    wlmtk_element_pointer_motion(wlmtk_workspace_window_element(ws_ptr), &mev);
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
@@ -1415,7 +1399,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_element_set_visible(wlmtk_workspace_window_element(ws_ptr), true);
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
@@ -1430,7 +1414,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+            wlmtk_workspace_window_element(ws_ptr), &mev));
 
     // Starts a move for the window. Will move it...
     wlmtk_workspace_begin_window_move(ws_ptr, w);
@@ -1438,7 +1422,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+            wlmtk_workspace_window_element(ws_ptr), &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
@@ -1450,7 +1434,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+            wlmtk_workspace_window_element(ws_ptr), &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
@@ -1458,7 +1442,7 @@ void test_unmap_during_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+            wlmtk_workspace_window_element(ws_ptr), &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
@@ -1484,7 +1468,7 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_element_set_visible(wlmtk_workspace_window_element(ws_ptr), true);
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
@@ -1502,7 +1486,7 @@ void test_resize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr),  &mev));
+            wlmtk_workspace_window_element(ws_ptr),  &mev));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 40, 20,
         wlmtk_element_get_dimensions_box(wlmtk_window_element(w)));
@@ -1513,7 +1497,7 @@ void test_resize(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_element_pointer_motion(
-            wlmtk_workspace_element(ws_ptr), &mev));
+            wlmtk_workspace_window_element(ws_ptr), &mev));
     BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 40, 20,
@@ -1523,8 +1507,8 @@ void test_resize(bs_test_t *test_ptr)
     wlmtk_fake_element_set_dimensions(fe_ptr, 39, 18);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        ws_ptr->super_container.layout_invalidated);
-    wlmtk_element_layout(wlmtk_workspace_element(ws_ptr));
+        ws_ptr->window_container.layout_invalidated);
+    wlmtk_element_layout(wlmtk_workspace_window_element(ws_ptr));
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 39, 18,
         wlmtk_element_get_dimensions_box(wlmtk_window_element(w)));
@@ -1540,7 +1524,7 @@ void test_resize(bs_test_t *test_ptr)
         .time_msec = 44,
     };
     wlmtk_element_pointer_button(
-        wlmtk_workspace_element(ws_ptr),
+        wlmtk_workspace_window_element(ws_ptr),
         &button_event);
     BS_TEST_VERIFY_EQ(test_ptr, NULL, ws_ptr->grabbed_window_ptr);
 
@@ -1623,7 +1607,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-    wlmtk_element_set_visible(wlmtk_workspace_element(ws_ptr), true);
+    wlmtk_element_set_visible(wlmtk_workspace_window_element(ws_ptr), true);
     wlmtk_workspace_enable(ws_ptr, true);
 
     // Window 1: from (0, 0) to (100, 100)
@@ -1656,7 +1640,7 @@ void test_activate(bs_test_t *test_ptr)
     wlmtk_pointer_motion_event_t mev = { .x = 50, .y = 50 };
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_motion(wlmtk_workspace_element(ws_ptr), &mev));
+        wlmtk_element_pointer_motion(wlmtk_workspace_window_element(ws_ptr), &mev));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_activated(w1));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w2));
 
@@ -1668,7 +1652,7 @@ void test_activate(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_TRUE(
         test_ptr,
-        wlmtk_element_pointer_button(wlmtk_workspace_element(ws_ptr), &bev));
+        wlmtk_element_pointer_button(wlmtk_workspace_window_element(ws_ptr), &bev));
     BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_window_is_activated(w1));
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_window_is_activated(w2));
 
@@ -1881,11 +1865,19 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     wlmtk_window_t *w1 = wlmtk_test_window_create(&fe1_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w1);
     wlmtk_workspace_map_window(ws_ptr, w1);
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &ws_ptr->window_container,
+        wlmtk_window_element(w1)->parent_container_ptr);
     wlmtk_window_commit_fullscreen(w1, true);
     wlmtk_fake_element_set_dimensions(fe1_ptr, 100, 200);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, -10, -20, 100, 200,
         wlmtk_window_get_bounding_box(w1));
+    BS_TEST_VERIFY_EQ(
+        test_ptr,
+        &ws_ptr->fullscreen_container,
+        wlmtk_window_element(w1)->parent_container_ptr);
 
     wlmtk_util_test_wlr_box_listener_t l1 = {};
     wlmtk_util_connect_test_wlr_box_listener(

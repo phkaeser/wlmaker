@@ -260,8 +260,13 @@ void wlmtk_workspace_raise_window(
     wlmtk_workspace_t *workspace_ptr,
     wlmtk_window_t *window_ptr);
 
-/** @return Pointer to wlmtk_workspace_t::super_container::super_element. */
-wlmtk_element_t *wlmtk_workspace_element(wlmtk_workspace_t *workspace_ptr);
+/** @return Pointer to @ref wlmtk_workspace_t::window_container's element. */
+wlmtk_element_t *wlmtk_workspace_window_element(
+    wlmtk_workspace_t *workspace_ptr);
+
+/** @return Pointer to @ref wlmtk_workspace_t::fullscreen_container's elem. */
+wlmtk_element_t *wlmtk_workspace_fullscreen_element(
+    wlmtk_workspace_t *workspace_ptr);
 
 /** @return pointer to the anchor @ref wlmtk_desktop_t of `workspace_ptr`. */
 wlmtk_desktop_t *wlmtk_workspace_get_desktop(wlmtk_workspace_t *workspace_ptr);
