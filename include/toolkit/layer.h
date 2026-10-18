@@ -31,7 +31,6 @@ typedef struct _wlmtk_layer_output_t wlmtk_layer_output_t;
 
 #include "element.h"
 #include "panel.h"  // IWYU pragma: keep
-#include "workspace.h"  // IWYU pragma: keep
 
 /** Forward declaration: wlr output layout. */
 struct wlr_output_layout;

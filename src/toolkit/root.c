@@ -334,8 +334,9 @@ void test_pointer_move(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(wlr_output_layout_ptr, &output);
+    struct wlmtk_desktop_style ds = {};
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
+        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
 
     wlmtk_root_t *root_ptr = wlmtk_root_create(

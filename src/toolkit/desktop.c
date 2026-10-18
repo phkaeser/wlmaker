@@ -53,6 +53,8 @@ struct _wlmtk_desktop_t {
 
     /** Events availabe of the desktop. */
     wlmtk_desktop_events_t    events;
+    /** Desktop's style. */
+    struct wlmtk_desktop_style style;
 
     /** Whether the desktop is currently locked. */
     bool                      locked;
@@ -137,10 +139,12 @@ struct _wlmtk_desktop_set_style_arg {
 /* ------------------------------------------------------------------------- */
 wlmtk_desktop_t *wlmtk_desktop_create(
     struct wlr_scene *wlr_scene_ptr,
+    const struct wlmtk_desktop_style *style_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr)
 {
     wlmtk_desktop_t *desktop_ptr = logged_calloc(1, sizeof(wlmtk_desktop_t));
     if (NULL == desktop_ptr) return NULL;
+    desktop_ptr->style = *style_ptr;
     desktop_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (NULL != wlr_scene_ptr) {
@@ -197,9 +201,10 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         &desktop_ptr->container,
         wlmtk_rectangle_element(desktop_ptr->curtain_rectangle_ptr));
 
-    // FIXME: Configurable color.
     desktop_ptr->background_rectangle_ptr = wlmtk_rectangle_create(
-        desktop_ptr->extents.width, desktop_ptr->extents.height, 0xff204080);
+        desktop_ptr->extents.width,
+        desktop_ptr->extents.height,
+        desktop_ptr->style.background_color);
     if (NULL == desktop_ptr->background_rectangle_ptr) {
         wlmtk_desktop_destroy(desktop_ptr);
         return NULL;
@@ -484,9 +489,15 @@ wlmtk_element_t *wlmtk_desktop_element(wlmtk_desktop_t *desktop_ptr)
 /* ------------------------------------------------------------------------- */
 bool wlmtk_desktop_set_style(
     wlmtk_desktop_t *desktop_ptr,
+    const struct wlmtk_desktop_style *style_ptr,
     wlmtk_window_style_ref_t *window_style_ref_ptr,
     wlmtk_menu_style_ref_t *menu_style_ref_ptr)
 {
+    desktop_ptr->style = *style_ptr;
+    wlmtk_rectangle_set_color(
+        desktop_ptr->background_rectangle_ptr,
+        desktop_ptr->style.background_color);
+
     struct _wlmtk_desktop_set_style_arg arg = {
         .window_style_ref_ptr = window_style_ref_ptr,
         .menu_style_ref_ptr = menu_style_ref_ptr
@@ -758,8 +769,9 @@ void test_create_destroy(bs_test_t *test_ptr)
     struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
         wl_display_ptr);
 
+    struct wlmtk_desktop_style ds = {};
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
+        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
 
     BS_TEST_VERIFY_EQ(
@@ -781,8 +793,9 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(wl_display_ptr);
+    struct wlmtk_desktop_style ds = {};
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
+        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_desktop_get_current_workspace(desktop_ptr));

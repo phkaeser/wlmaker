@@ -64,8 +64,8 @@ static const bspl_desc_t _wlmaker_clip_style_desc[] = {
 /** Desciptor for decoding the style information from a plist. */
 const bspl_desc_t wlmaker_config_style_desc[] = {
     BSPL_DESC_ARGB32(
-        "BackgroundColor", true, wlmaker_config_style_t, background_color,
-        background_color, 0),
+        "BackgroundColor", true, wlmaker_config_style_t,
+        desktop.background_color, desktop.background_color, 0),
     BSPL_DESC_DICT(
         "Tile", true, wlmaker_config_style_t, tile, tile,
         wlmtk_tile_style_desc),

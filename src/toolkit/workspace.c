@@ -1279,8 +1279,9 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(wl_display_ptr);
+    struct wlmtk_desktop_style ds = {};
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, wlr_output_layout_ptr);
+        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style);

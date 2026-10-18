@@ -35,8 +35,6 @@
 #include "output_tracker.h"
 #include "panel.h"
 #include "test.h"  // IWYU pragma: keep
-#include "tile.h"
-#include "workspace.h"
 
 /* == Declarations ========================================================= */
 

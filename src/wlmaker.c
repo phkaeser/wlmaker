@@ -135,16 +135,12 @@ static bs_ptr_stack_t         wlmaker_subprocess_stack;
 typedef struct {
     /** Workspace name. */
     char            name[32];
-    /** Background color. */
-    uint32_t        color;
 } wlmaker_workspace_config_t;
 
 /** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
 static const bspl_desc_t wlmaker_workspace_config_desc[] = {
     BSPL_DESC_CHARBUF(
         "Name", true, wlmaker_workspace_config_t, name, name, 32, NULL),
-    BSPL_DESC_ARGB32(
-        "Color", false, wlmaker_workspace_config_t, color, color, 0),
     BSPL_DESC_SENTINEL()
 };
 
@@ -206,9 +202,6 @@ bool create_workspaces(
             break;
         }
 
-        if (s.color == 0) {
-            s.color = server_ptr->style_ptr->background_color;
-        }
         wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
     }
 

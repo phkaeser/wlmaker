@@ -175,6 +175,7 @@ wlmaker_server_t *wlmaker_server_create(
     // desktop element.
     server_ptr->desktop_ptr = wlmtk_desktop_create(
         server_ptr->wlr_scene_ptr,
+        &server_ptr->style_ptr->desktop,
         server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->desktop_ptr) {
         wlmaker_server_destroy(server_ptr);
