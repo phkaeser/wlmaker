@@ -824,7 +824,8 @@ void test_lock_unlock(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
-    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    struct wlmtk_desktop_style ds = {};
+    server.desktop_ptr = wlmtk_desktop_create(NULL, &ds, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};
@@ -903,7 +904,8 @@ void test_lock_crash(bs_test_t *test_ptr)
     struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
-    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    struct wlmtk_desktop_style ds = {};
+    server.desktop_ptr = wlmtk_desktop_create(NULL, &ds, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};
@@ -980,7 +982,8 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o1);
     // But not: o2.
     wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &o3);
-    server.desktop_ptr = wlmtk_desktop_create(NULL, server.wlr_output_layout_ptr);
+    struct wlmtk_desktop_style ds = {};
+    server.desktop_ptr = wlmtk_desktop_create(NULL, &ds, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
 
     struct wlmtk_tile_style tile_style = {};

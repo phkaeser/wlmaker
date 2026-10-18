@@ -1095,6 +1095,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
 
     td_ptr->server.desktop_ptr = wlmtk_desktop_create(
         td_ptr->server.wlr_scene_ptr,
+        &td_ptr->style.desktop,
         td_ptr->test_layout.wlr_output_layout_ptr);
     if (NULL == td_ptr->server.desktop_ptr) goto error;
 

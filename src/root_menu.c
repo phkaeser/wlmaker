@@ -898,9 +898,9 @@ void test_generated_menu(bs_test_t *test_ptr)
     server.wlr_output_layout_ptr = wlr_output_layout_create(
         server.wl_display_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wlr_output_layout_ptr);
+    struct wlmtk_desktop_style ds = {};
     server.desktop_ptr = wlmtk_desktop_create(
-        server.wlr_scene_ptr,
-        server.wlr_output_layout_ptr);
+        server.wlr_scene_ptr, &ds, server.wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
     server.monitor_ptr = wlm_util_subprocess_monitor_create(
         wl_display_get_event_loop(server.wl_display_ptr));

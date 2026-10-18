@@ -658,12 +658,12 @@ bool _wlmaker_action_theme_load_from_file(
     // - Dock
     // - Clip
     // - Cursor
-    // - BackgroundColor
     // - Tasklist
 
     bool rv = true;
     rv &= wlmtk_desktop_set_style(
         server_ptr->desktop_ptr,
+        &server_ptr->style_ptr->desktop,
         wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr),
         wlmtk_menu_style_to_ref(server_ptr->style_ptr->menu_style_ptr));
 
@@ -676,8 +676,6 @@ bool _wlmaker_action_theme_load_from_file(
             wlmtk_window_style_to_ref(server_ptr->style_ptr->window_style_ptr),
             wlmtk_menu_style_to_ref(server_ptr->style_ptr->menu_style_ptr));
     }
-
-    // FIXME - set background color for workspace.
 
     rv &= wlmim_set_style(
         server_ptr->input_manager_ptr,

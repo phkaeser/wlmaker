@@ -39,8 +39,6 @@
     },
     {
         Name = Third;
-        // Color is optional here, overrides the style's BackgroundColor.
-        Color = "argb32:ff508050";
     },
   );
 }

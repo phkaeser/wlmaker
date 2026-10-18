@@ -27,6 +27,7 @@ typedef struct _wlmtk_desktop_t wlmtk_desktop_t;
 
 #include <libbase/libbase.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <wayland-server-core.h>
 
 #include "element.h"
@@ -43,6 +44,12 @@ struct wlr_scene;
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+/** The desktop's style. */
+struct wlmtk_desktop_style {
+    /** Background color, as ARGB32 value. */
+    uint32_t                  background_color;
+};
 
 /** Signals available for the @ref wlmtk_desktop_t class. */
 typedef struct {
@@ -81,12 +88,14 @@ typedef enum {
  * Creates the desktop element.
  *
  * @param wlr_scene_ptr
+ * @param style_ptr
  * @param wlr_output_layout_ptr
  *
  * @return Handle of the desktop element or NULL on error.
  */
 wlmtk_desktop_t *wlmtk_desktop_create(
     struct wlr_scene *wlr_scene_ptr,
+    const struct wlmtk_desktop_style *style_ptr,
     struct wlr_output_layout *wlr_output_layout_ptr);
 
 /**
@@ -223,6 +232,7 @@ wlmtk_element_t *wlmtk_desktop_element(wlmtk_desktop_t *desktop_ptr);
 /** Updates the style for all windows contained in desktop. */
 bool wlmtk_desktop_set_style(
     wlmtk_desktop_t *desktop_ptr,
+    const struct wlmtk_desktop_style *style_ptr,
     wlmtk_window_style_ref_t *window_style_ref_ptr,
     wlmtk_menu_style_ref_t *menu_style_ref_ptr);
 
