@@ -44,8 +44,6 @@
 struct _wlmtk_layer_t {
     /** Super class of the layer. */
     wlmtk_container_t         super_container;
-    /** Workspace that the layer belongs to. */
-    wlmtk_workspace_t         *workspace_ptr;
     /** Tracks the outputs. */
     wlmtk_output_tracker_t    *output_tracker_ptr;
 };
@@ -194,13 +192,6 @@ void wlmtk_layer_output_reconfigure(
             panel_dimensions.x,
             panel_dimensions.y);
     }
-}
-
-/* ------------------------------------------------------------------------- */
-void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
-                               wlmtk_workspace_t *workspace_ptr)
-{
-    layer_ptr->workspace_ptr = workspace_ptr;
 }
 
 /* == Local (static) methods =============================================== */
@@ -407,14 +398,8 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&output);
     wlr_output_layout_add(wlr_output_layout_ptr, &output, 0, 0);
 
-    static const struct wlmtk_tile_style ts = { .size = 64 };
-    wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "test", &ts);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
-
     wlmtk_layer_t *layer_ptr = wlmtk_layer_create(wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, layer_ptr);
-    wlmtk_layer_set_workspace(layer_ptr, ws_ptr);
 
     // Adds a left-bounded panel with an exclusive zone.
     wlmtk_panel_positioning_t pos = {
@@ -465,9 +450,7 @@ void test_layout(bs_test_t *test_ptr)
     wlmtk_layer_remove_panel(layer_ptr, &fp1_ptr->panel);
     wlmtk_fake_panel_destroy(fp1_ptr);
 
-    wlmtk_layer_set_workspace(layer_ptr, NULL);
     wlmtk_layer_destroy(layer_ptr);
-    wlmtk_workspace_destroy(ws_ptr);
 
     wlr_output_layout_remove(wlr_output_layout_ptr, &output);
     wlr_output_layout_destroy(wlr_output_layout_ptr);

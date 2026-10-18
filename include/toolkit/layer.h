@@ -110,18 +110,6 @@ void wlmtk_layer_reconfigure(wlmtk_layer_t *layer_ptr);
  */
 void wlmtk_layer_output_reconfigure(wlmtk_layer_output_t *layer_output_ptr);
 
-/**
- * Sets the parent workspace for the layer.
- *
- * Should only be called from @ref wlmtk_workspace_t methods.
- *
- * @param layer_ptr
- * @param workspace_ptr       NULL to clear the workspace reference.
- */
-void wlmtk_layer_set_workspace(wlmtk_layer_t *layer_ptr,
-                               wlmtk_workspace_t *workspace_ptr);
-
-
 /** Layer unit test. */
 extern const bs_test_set_t wlmtk_layer_test_set;
 
