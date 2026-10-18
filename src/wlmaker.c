@@ -137,14 +137,14 @@ typedef struct {
     char            name[32];
     /** Background color. */
     uint32_t        color;
-} wlmaker_workspace_style_t;
+} wlmaker_workspace_config_t;
 
 /** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
-static const bspl_desc_t wlmaker_workspace_style_desc[] = {
+static const bspl_desc_t wlmaker_workspace_config_desc[] = {
     BSPL_DESC_CHARBUF(
-        "Name", true, wlmaker_workspace_style_t, name, name, 32, NULL),
+        "Name", true, wlmaker_workspace_config_t, name, name, 32, NULL),
     BSPL_DESC_ARGB32(
-        "Color", false, wlmaker_workspace_style_t, color, color, 0),
+        "Color", false, wlmaker_workspace_config_t, color, color, 0),
     BSPL_DESC_SENTINEL()
 };
 
@@ -188,8 +188,8 @@ bool create_workspaces(
             break;
         }
 
-        wlmaker_workspace_style_t s;
-        if (!bspl_decode_dict(dict_ptr, wlmaker_workspace_style_desc, &s)) {
+        wlmaker_workspace_config_t s;
+        if (!bspl_decode_dict(dict_ptr, wlmaker_workspace_config_desc, &s)) {
             bs_log(BS_ERROR,
                    "Failed to decode dict element %zu in \"Workspace\"",
                    i);
@@ -199,8 +199,7 @@ bool create_workspaces(
 
         wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
             server_ptr->wlr_output_layout_ptr,
-            s.name,
-            &server_ptr->style_ptr->tile);
+            s.name, &server_ptr->style_ptr->tile);
         if (NULL == workspace_ptr) {
             bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\")", s.name);
             rv = false;
