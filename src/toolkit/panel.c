@@ -538,6 +538,7 @@ void test_compute_dimensions_exclusive_edge(bs_test_t *test_ptr)
     dims = wlmtk_panel_compute_dimensions(p_ptr, &extents, &usable);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 41, 22, 26, 28, dims);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 57, 2, 139, 90, usable);
+    wlmtk_fake_panel_destroy(fake_panel_ptr);
 }
 
 /* == End of panel.c ======================================================= */
