@@ -137,7 +137,7 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
     decoration_manager_ptr->set_mode = wlr_xdg_toplevel_decoration_v1_set_mode;
 
     decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr =
-        wlr_xdg_decoration_manager_v1_create(wl_display_ptr);
+        wlr_xdg_decoration_manager_v1_create(wl_display_ptr, 2);
     if (NULL == decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr) {
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
         return NULL;
