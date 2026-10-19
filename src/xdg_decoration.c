@@ -31,6 +31,7 @@
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/version.h>
 #undef WLR_USE_UNSTABLE
 
 #include "config.h"
@@ -136,8 +137,15 @@ wlmaker_xdg_decoration_manager_t *wlmaker_xdg_decoration_manager_create(
     if (NULL == decoration_manager_ptr) return NULL;
     decoration_manager_ptr->set_mode = wlr_xdg_toplevel_decoration_v1_set_mode;
 
+#if WLR_VERSION_NUM >= (21 << 8)
+    // xdg-decoration-v1 protocol 2 is supported from wlroots-0.21. It permits
+    // enabling or disabling decoration at runtime.
+    decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr =
+        wlr_xdg_decoration_manager_v1_create(wl_display_ptr, 2);
+#else  // WLR_VERSION_NUM >= (21 << 8)
     decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr =
         wlr_xdg_decoration_manager_v1_create(wl_display_ptr);
+#endif  // WLR_VERSION_NUM >= (21 << 8)
     if (NULL == decoration_manager_ptr->wlr_xdg_decoration_manager_v1_ptr) {
         wlmaker_xdg_decoration_manager_destroy(decoration_manager_ptr);
         return NULL;
