@@ -40,6 +40,20 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * [done] Fix crash on shutdown observed on `wlroots-0.20`.
     * [done] Fix wlmdock disappearing when switching to VT and back (ie. when losing it's output).
 
+// FIXME - on output changed, or when a layer panel is added or needs update :
+//
+// - for each output, run through each layer and reconfigure. store the
+//   reusable area, and use across layers. Build from bottom up.
+//   like wlmtk_layer_reconfigure_output(layer, output, usable)
+//
+// - set the maximize_extents for each output into workspace
+//   ( wlmtk_workspace_set_maximize_extents(workspace, output, extents )
+//   ( or, a list of outputs with extents each? )
+//
+// - the workspace: check each maximized window and it's output; and resize
+//   where due  (can iterate through all windows and verify the outputs)
+//
+
 * From libxdg-basedir:
   * Fix leak with libxdg-basedir.
   * Look whether to expand to use XDG_STATE_HOME
