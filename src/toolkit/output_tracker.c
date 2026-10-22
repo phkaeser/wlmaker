@@ -269,17 +269,25 @@ bool _wlmtk_output_tracker_output_handle_change(
     if (NULL != avlnode_ptr) {
         output_ptr = BS_CONTAINER_OF(
             avlnode_ptr, wlmtk_output_tracker_output_t, avlnode);
+        if (!bs_avltree_insert(
+                arg_ptr->tracker_ptr->output_tree_ptr,
+                wlr_output_ptr,
+                &output_ptr->avlnode,
+                false)) return false;
+
         if (NULL != arg_ptr->tracker_ptr->update_fn) {
             arg_ptr->tracker_ptr->update_fn(
                 wlr_output_ptr,
                 arg_ptr->tracker_ptr->userdata_ptr,
                 output_ptr->create_fn_retval_ptr);
         }
-    } else {
-        output_ptr = wlmtk_output_tracker_output_create(
-            arg_ptr->tracker_ptr, wlr_output_ptr);
-        if (NULL == output_ptr) return false;
+        return true;
+
     }
+
+    output_ptr = wlmtk_output_tracker_output_create(
+        arg_ptr->tracker_ptr, wlr_output_ptr);
+    if (NULL == output_ptr) return false;
 
     return bs_avltree_insert(
         arg_ptr->tracker_ptr->output_tree_ptr,
