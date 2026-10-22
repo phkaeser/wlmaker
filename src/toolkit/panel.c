@@ -151,6 +151,7 @@ void wlmtk_panel_commit(
     panel_ptr->positioning = *positioning_ptr;
 
     if (NULL != panel_ptr->layer_output_ptr) {
+        // TODO(kaeser@gubbe.ch): Handle this via regular re-layout. */
         wlmtk_layer_output_reconfigure(panel_ptr->layer_output_ptr);
     }
 }

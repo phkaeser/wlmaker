@@ -44,14 +44,20 @@ struct _wlmtk_layer_t {
     wlmtk_container_t         super_container;
     /** Tracks the outputs. */
     wlmtk_output_tracker_t    *output_tracker_ptr;
+
+    /** The output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
 /** State of the layer on the given output. */
 struct _wlmtk_layer_output_t {
-    /** Extents and position of the output in the layout. */
-    struct wlr_box            extents;
     /** Panels. Holds nodes at @ref wlmtk_panel_t::dlnode. */
     bs_dllist_t               panels;
+
+    /** Back-link to the layer. */
+    wlmtk_layer_t             *layer_ptr;
+    /** The output. TODO(kaeser@gubbe.ch): Remove after refactor. */
+    struct wlr_output         *wlr_output_ptr;
 };
 
 static void _wlmtk_layer_output_remove_dlnode_panel(
@@ -84,6 +90,7 @@ wlmtk_layer_t *wlmtk_layer_create(
 {
     wlmtk_layer_t *layer_ptr = logged_calloc(1, sizeof(wlmtk_layer_t));
     if (NULL == layer_ptr) return NULL;
+    layer_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (!wlmtk_container_init(&layer_ptr->super_container)) {
         wlmtk_layer_destroy(layer_ptr);
@@ -92,7 +99,7 @@ wlmtk_layer_t *wlmtk_layer_create(
 
     layer_ptr->output_tracker_ptr = wlmtk_output_tracker_create(
         wlr_output_layout_ptr,
-        wlr_output_layout_ptr,
+        layer_ptr,
         _wlmtk_layer_output_create,
         _wlmtk_layer_output_update,
         _wlmtk_layer_output_destroy);
@@ -141,7 +148,16 @@ bool wlmtk_layer_add_panel(
         wlmtk_panel_element(panel_ptr));
     wlmtk_panel_set_layer(panel_ptr, layer_ptr);
     _wlmtk_layer_output_add_panel(layer_output_ptr, panel_ptr);
-    wlmtk_layer_output_reconfigure(layer_output_ptr);
+
+    struct wlr_box extents;
+    wlr_output_layout_get_box(
+        layer_ptr->wlr_output_layout_ptr,
+        wlr_output_ptr,
+        &extents);
+    wlmtk_layer_reconfigure_output(
+        layer_output_ptr->layer_ptr,
+        layer_output_ptr->wlr_output_ptr,
+        &extents);
     return true;
 }
 
@@ -159,26 +175,49 @@ void wlmtk_layer_remove_panel(wlmtk_layer_t *layer_ptr,
     wlmtk_container_remove_element(
         &layer_ptr->super_container,
         wlmtk_panel_element(panel_ptr));
-    wlmtk_layer_output_reconfigure(layer_output_ptr);
+
+    struct wlr_box extents;
+    wlr_output_layout_get_box(
+        layer_ptr->wlr_output_layout_ptr,
+        layer_output_ptr->wlr_output_ptr,
+        &extents);
+    wlmtk_layer_reconfigure_output(
+        layer_output_ptr->layer_ptr,
+        layer_output_ptr->wlr_output_ptr,
+        &extents);
 }
 
 /* ------------------------------------------------------------------------- */
-void wlmtk_layer_output_reconfigure(
-    wlmtk_layer_output_t *layer_output_ptr)
+void wlmtk_layer_reconfigure_output(
+    wlmtk_layer_t *layer_ptr,
+    struct wlr_output *wlr_output_ptr,
+    struct wlr_box *usable_area_ptr)
 {
-    struct wlr_box usable_area = layer_output_ptr->extents;
+    wlmtk_layer_output_t *layer_output_ptr = wlmtk_output_tracker_get_output(
+        layer_ptr->output_tracker_ptr,
+        wlr_output_ptr);
+    if (NULL == layer_output_ptr) {
+        bs_log(BS_WARNING, "Layer %p does not contain output %p",
+               layer_ptr, wlr_output_ptr);
+        return;
+    }
+
+    struct wlr_box full_extents;
+    wlr_output_layout_get_box(
+        layer_ptr->wlr_output_layout_ptr,
+        wlr_output_ptr,
+        &full_extents);
 
     for (bs_dllist_node_t *dlnode_ptr = layer_output_ptr->panels.head_ptr;
          dlnode_ptr != NULL;
          dlnode_ptr = dlnode_ptr->next_ptr) {
         wlmtk_panel_t *panel_ptr = wlmtk_panel_from_dlnode(dlnode_ptr);
 
-        struct wlr_box new_usable_area = usable_area;
+        struct wlr_box new_usable_area = *usable_area_ptr;
         struct wlr_box panel_dimensions = wlmtk_panel_compute_dimensions(
-            panel_ptr, &layer_output_ptr->extents, &new_usable_area);
-
+            panel_ptr, &full_extents, &new_usable_area);
         if (wlmtk_panel_element(panel_ptr)->visible) {
-            usable_area = new_usable_area;
+            *usable_area_ptr = new_usable_area;
         }
 
         wlmtk_panel_request_size(
@@ -190,6 +229,24 @@ void wlmtk_layer_output_reconfigure(
             panel_dimensions.x,
             panel_dimensions.y);
     }
+}
+
+/* ------------------------------------------------------------------------- */
+// TODO(kaeser@gubbe.ch): Remove.
+void wlmtk_layer_output_reconfigure(
+    wlmtk_layer_output_t *layer_output_ptr)
+{
+    struct wlr_box usable_area;
+    wlr_output_layout_get_box(
+        layer_output_ptr->layer_ptr->wlr_output_layout_ptr,
+        layer_output_ptr->wlr_output_ptr,
+        &usable_area);
+
+
+    wlmtk_layer_reconfigure_output(
+        layer_output_ptr->layer_ptr,
+        layer_output_ptr->wlr_output_ptr,
+        &usable_area);
 }
 
 /* == Local (static) methods =============================================== */
@@ -240,15 +297,12 @@ void *_wlmtk_layer_output_create(
     struct wlr_output *wlr_output_ptr,
     void *ud_ptr)
 {
-    struct wlr_output_layout *wlr_output_layout_ptr = ud_ptr;
+    wlmtk_layer_t *layer_ptr = ud_ptr;
     wlmtk_layer_output_t *layer_output_ptr = logged_calloc(
         1, sizeof(wlmtk_layer_output_t));
     if (NULL == layer_output_ptr) return NULL;
-
-    wlr_output_layout_get_box(
-        wlr_output_layout_ptr,
-        wlr_output_ptr,
-        &layer_output_ptr->extents);
+    layer_output_ptr->layer_ptr = layer_ptr;
+    layer_output_ptr->wlr_output_ptr = wlr_output_ptr;
 
     return layer_output_ptr;
 }
@@ -258,20 +312,17 @@ void *_wlmtk_layer_output_create(
 void _wlmtk_layer_output_update(
     struct wlr_output *wlr_output_ptr,
     void *ud_ptr,
-    void *output_ptr)
+    __UNUSED__ void *output_ptr)
 {
-    struct wlr_output_layout *wlr_output_layout_ptr = ud_ptr;
-    wlmtk_layer_output_t *layer_output_ptr = output_ptr;
+    wlmtk_layer_t *layer_ptr = ud_ptr;
 
     struct wlr_box new_extents;
     wlr_output_layout_get_box(
-        wlr_output_layout_ptr,
+        layer_ptr->wlr_output_layout_ptr,
         wlr_output_ptr,
         &new_extents);
-    if (!wlr_box_equal(&new_extents, &layer_output_ptr->extents)) {
-        layer_output_ptr->extents = new_extents;
-        wlmtk_layer_output_reconfigure(layer_output_ptr);
-    }
+    wlmtk_layer_reconfigure_output(
+        layer_ptr, wlr_output_ptr, &new_extents);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -328,6 +379,7 @@ void test_multi_output(bs_test_t *test_ptr)
         .desired_width = 100, .desired_height = 50 };
     wlmtk_fake_panel_t *fp1_ptr = wlmtk_fake_panel_create(&p1);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp1_ptr);
+    wlmtk_element_set_visible(wlmtk_panel_element(&fp1_ptr->panel), true);
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_layer_add_panel(layer_ptr, &fp1_ptr->panel, &o1));
@@ -347,31 +399,50 @@ void test_multi_output(bs_test_t *test_ptr)
 
     // Attempt to add panel to the second output. Must fail.
     wlmtk_panel_positioning_t p2 = {
-        .desired_width = 80, .desired_height = 36 };
+        .desired_width = 72,
+        .desired_height = 36,
+        .anchor = WLR_EDGE_RIGHT,
+        .exclusive_zone = 42
+    };
     wlmtk_fake_panel_t *fp2_ptr = wlmtk_fake_panel_create(&p2);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fp2_ptr);
+    wlmtk_element_set_visible(wlmtk_panel_element(&fp1_ptr->panel), true);
     BS_TEST_VERIFY_FALSE(
         test_ptr,
         wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel, &o2));
 
-    // Now: Add second output. Adding the panel must now work.
+    // Now: Add second output.
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 200);
+    struct wlr_box area;
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &o2, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &o2, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 200, 320, 240, area);
+
+    // Adding the panel must now work.
     BS_TEST_VERIFY_TRUE(
         test_ptr,
         wlmtk_layer_add_panel(layer_ptr, &fp2_ptr->panel, &o2));
-
-    // Position: 400 (output) + 640/4 (half scaled output) - 40 (half panel).
-    BS_TEST_VERIFY_EQ(test_ptr, 520, wlmtk_panel_element(&fp2_ptr->panel)->x );
+    // Position: 400 (output) + 640/2 (half panel) - 72 - 40 (half panel).
+    BS_TEST_VERIFY_EQ(test_ptr, 648, wlmtk_panel_element(&fp2_ptr->panel)->x);
     // Position: 200 (output) + 480/4 (half scaled output) - 18 (half panel).
     BS_TEST_VERIFY_EQ(test_ptr, 302, wlmtk_panel_element(&fp2_ptr->panel)->y);
+    // Output's remaining area must subtract that panel.
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &o2, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &o2, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 200, 278, 240, area);
 
     // Reposition the second output. Must reconfigure that panel's position.
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 500, 300);
-
-    // Position: 500 (output) + 640/4 (half scaled output) - 40 (half panel).
-    BS_TEST_VERIFY_EQ(test_ptr, 620, wlmtk_panel_element(&fp2_ptr->panel)->x );
+    // Position: 500 (output) + 640/2 (half panel) - 72 (half panel).
+    BS_TEST_VERIFY_EQ(test_ptr, 748, wlmtk_panel_element(&fp2_ptr->panel)->x );
     // Position: 300 (output) + 480/4 (half scaled output) - 18 (half panel).
     BS_TEST_VERIFY_EQ(test_ptr, 402, wlmtk_panel_element(&fp2_ptr->panel)->y);
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &o2, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &o2, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 500, 300, 278, 240, area);
 
     wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
 
@@ -415,6 +486,11 @@ void test_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 359, wlmtk_panel_element(&fp1_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp1_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 50, fp1_ptr->requested_height);
+    struct wlr_box area;
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &output, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &output, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 40, 0, 984, 768, area);
 
     // Next panel is to respect the exclusive zone. It is invisible => later
     // panels won't shift, but it still will be positioned.
@@ -428,6 +504,10 @@ void test_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp2_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp2_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, fp2_ptr->requested_height);
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &output, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &output, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 40, 0, 984, 768, area);
 
     // Next panel: Same size and position, since the former is invisible.
     wlmtk_fake_panel_t *fp3_ptr = wlmtk_fake_panel_create(&pos);
@@ -438,6 +518,10 @@ void test_layout(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, wlmtk_panel_element(&fp3_ptr->panel)->y);
     BS_TEST_VERIFY_EQ(test_ptr, 100, fp3_ptr->requested_width);
     BS_TEST_VERIFY_EQ(test_ptr, 768, fp3_ptr->requested_height);
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr, &output, &area);
+    wlmtk_layer_reconfigure_output(layer_ptr, &output, &area);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 80, 0, 944, 768, area);
 
     wlmtk_layer_remove_panel(layer_ptr, &fp3_ptr->panel);
     wlmtk_fake_panel_destroy(fp3_ptr);

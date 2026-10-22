@@ -87,7 +87,6 @@ struct _wlmtk_desktop_t {
     // Elements below not owned by wlmtk_desktop_t.
     /** wlroots output layout. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
-
 };
 
 static void _wlmtk_desktop_switch_to_workspace(
