@@ -44,7 +44,7 @@ struct wlr_keyboard_key_event;
 
 /** State of the desktop element. */
 struct _wlmtk_desktop_t {
-    /** The desktop's container: Holds workspaces and the curtain. */
+    /** The desktop's container: Holds workspaces, layers and the curtain. */
     wlmtk_container_t         container;
     /** Overwritten virtual method table before extending ig. */
     wlmtk_element_vmt_t       orig_super_element_vmt;
@@ -89,6 +89,8 @@ struct _wlmtk_desktop_t {
     struct wlr_output_layout  *wlr_output_layout_ptr;
 };
 
+static void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr);
+
 static void _wlmtk_desktop_switch_to_workspace(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_workspace_t *workspace_ptr);
@@ -122,6 +124,7 @@ static bool _wlmtk_desktop_workspace_set_style(
 
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_desktop_element_vmt = {
+    .layout = _wlmtk_desktop_element_layout,
     .pointer_button = _wlmtk_desktop_element_pointer_button,
     .pointer_axis = _wlmtk_desktop_element_pointer_axis,
     .keyboard_event = _wlmtk_desktop_element_keyboard_event,
@@ -557,6 +560,42 @@ wlmtk_layer_t *wlmtk_desktop_get_layer(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Lays out the desktop elements: (re)configures layers, and update extents.
+ *
+ * @param element_ptr
+ */
+void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_desktop_t, container.super_element);
+
+    // Process each output.
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr;
+    wl_list_for_each(
+        wlr_output_layout_output_ptr,
+        &desktop_ptr->wlr_output_layout_ptr->outputs,
+        link) {
+
+        // Process each layer: An updated panel may affect positioning within
+        // other layers, and the workspace maximization area.
+        struct wlr_box usable_area;
+        wlr_output_layout_get_box(
+            desktop_ptr->wlr_output_layout_ptr,
+            wlr_output_layout_output_ptr->output, &usable_area);
+        for (int i = 0; i < WLMTK_DESKTOP_LAYER_OVERLAY + 1; ++i) {
+            wlmtk_layer_reconfigure_output(
+                desktop_ptr->layer_ptrs[i],
+                wlr_output_layout_output_ptr->output,
+                &usable_area);
+        }
+
+        // TODO(kaeser@gubbe.ch): Set workspace maximize extents for output.
+    }
+    desktop_ptr->orig_super_element_vmt.layout(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Switches to `workspace_ptr` as the current workspace.
  *
  * @param desktop_ptr
@@ -787,11 +826,13 @@ bool _wlmtk_desktop_workspace_set_style(
 
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
+static void test_layout(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
+    { 1, "layout", test_layout },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -930,4 +971,29 @@ void test_workspaces(bs_test_t *test_ptr)
     wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
-/* == End of desktop.c ======================================================== */
+/* ------------------------------------------------------------------------- */
+void test_layout(bs_test_t *test_ptr)
+{
+    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
+    struct wl_display *wl_display_ptr = wl_display_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
+    struct wlr_output_layout *wlr_output_layout_ptr =
+        wlr_output_layout_create(wl_display_ptr);
+    struct wlmtk_desktop_style ds = {};
+    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
+        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
+
+    // FIXME:
+    // (1) add panel to background with some zone, output 2
+    // (2) add panel to foreground with some zone, output 2
+    // run element layout
+    // verify maximize extents for workspace.
+
+    wlmtk_desktop_destroy(desktop_ptr);
+    wlr_output_layout_destroy(wlr_output_layout_ptr);
+    wl_display_destroy(wl_display_ptr);
+    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
+}
+
+/* == End of desktop.c ====================================================== */
