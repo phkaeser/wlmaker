@@ -34,7 +34,7 @@ See the [Detailed Feature List](FEATURES.md) for details.
   * Behaviour
     * [done] Fix issue of `wlmdock` not updating contents initially and automatically.
     * [done] Use exclusive zone + width to not overlap with other layer elements.
-  * `wlmaker` respects exclusive zone from dock(s) when determining maximizing extents.
+  * [done] `wlmaker` respects exclusive zone from dock(s) when determining maximizing extents.
   * Fixes
     * [done] Resolve leaks, as reported by valgrind.
     * [done] Fix crash on shutdown observed on `wlroots-0.20`.
