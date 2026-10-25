@@ -2028,7 +2028,7 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     wlmtk_test_wlr_output_init(&o2);
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 0);
     wlmtk_workspace_refresh_output_layout(ws_ptr);
-    struct wlr_box box1 = { .x = -10, .y = -20, .width = 100, .height = 200 };
+    struct wlr_box box1 = { .x = -10, .y = -20, .width = 100, .height = 190 };
     struct wlr_box box2 = { .x = 400, .y = 0, .width = 236, .height = 186 };
     wlmtk_workspace_set_maximize_extents(ws_ptr, &o1, &box1);
     wlmtk_workspace_set_maximize_extents(ws_ptr, &o2, &box2);
@@ -2072,18 +2072,21 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
 
     // A maximized window w3, on o1.
     wlmtk_fake_element_t *fe3_ptr = wlmtk_fake_element_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe3_ptr);
     wlmtk_window_t *w3 = wlmtk_test_window_create(&fe3_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w3);
-    wlmtk_workspace_map_window(ws_ptr, w3);
-    wlmtk_window_commit_maximized(w3, true);
-    wlmtk_fake_element_set_dimensions(fe3_ptr, 100, 200);
-    WLMTK_TEST_VERIFY_WLRBOX_EQ(  // FIXME: but.. why?
-        test_ptr, -10, -20, 100, 200,
-        wlmtk_window_get_bounding_box(w3));
     wlmtk_util_test_wlr_box_listener_t l3 = {};
     wlmtk_util_connect_test_wlr_box_listener(
         &wlmtk_window_events(w3)->request_size, &l3);
+    wlmtk_workspace_map_window(ws_ptr, w3);
+    wlmtk_window_commit_maximized(w3, true);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l3.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 190, l3.box);
+    wlmtk_fake_element_set_dimensions(fe3_ptr, l3.box.width, l3.box.height);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(
+        test_ptr, -10, -20, 100, 190,
+        wlmtk_window_get_bounding_box(w3));
+    wlmtk_util_clear_test_wlr_box_listener(&l3);
 
     // Remove o1.
     wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
@@ -2220,6 +2223,9 @@ void test_reposition(bs_test_t *test_ptr)
     wlmtk_workspace_set_maximize_extents(c_ptr->workspace_ptr, &o, &box);
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
+    wlmtk_workspace_unmap_window(c_ptr->workspace_ptr, w);
+    wlmtk_window_destroy(w);
+    wlmtk_element_destroy(&fe_ptr->element);
     wlr_output_layout_remove(c_ptr->wlr_output_layout_ptr, &o);
 }
 
