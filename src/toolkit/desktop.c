@@ -592,7 +592,15 @@ void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr)
                 &usable_area);
         }
 
-        // TODO(kaeser@gubbe.ch): Set workspace maximize extents for output.
+        for (bs_dllist_node_t *node_ptr = desktop_ptr->workspaces.head_ptr;
+             node_ptr != NULL;
+             node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
+            wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(node_ptr);
+            wlmtk_workspace_set_maximize_extents(
+                ws_ptr,
+                wlr_output_layout_output_ptr->output,
+                &usable_area);
+        }
     }
     desktop_ptr->orig_super_element_vmt.layout(element_ptr);
 }
@@ -792,6 +800,13 @@ void _wlmtk_desktop_handle_output_layout_change(
             wlmtk_rectangle_element(rs[i]),
             desktop_ptr->extents.x,
             desktop_ptr->extents.y);
+    }
+
+    for (bs_dllist_node_t *dlnode_ptr = desktop_ptr->workspaces.head_ptr;
+         dlnode_ptr != NULL;
+         dlnode_ptr = bs_dllist_node_iterator_forward(dlnode_ptr)) {
+        wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(dlnode_ptr);
+        wlmtk_workspace_refresh_output_layout(ws_ptr);
     }
 }
 

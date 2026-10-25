@@ -109,16 +109,32 @@ struct _wlmtk_workspace_t {
     /** Copy of the tile's style, for dimensions; */
     struct wlmtk_tile_style   tile_style;
 
-    /** Listener for wlr_output_layout::events.change. */
-    struct wl_listener        output_layout_change_listener;
     /** Listener for @ref wlmtk_element_events_t::pointer_leave. */
     struct wl_listener        element_pointer_leave_listener;
     /** Listener for @ref wlmtk_element_events_t::pointer_motion. */
     struct wl_listener        element_pointer_motion_listener;
 
+    /** Output extents, holds @ref wlmtk_workspace_output_extents::avlnode. */
+    bs_avltree_t              *output_tree_ptr;
+
     // Elements below not owned by wlmtk_workspace_t.
     /** Output layout. */
     struct wlr_output_layout *wlr_output_layout_ptr;
+};
+
+/** Stores output extents, for sizing fullscreen and maximized surfaces. */
+struct wlmtk_workspace_output_extents {
+    /** Tree node, see @ref wlmtk_workspace_t::output_tree_ptr. */
+    bs_avltree_node_t         avlnode;
+    /** The output the extents are stored for. */
+    struct wlr_output         *wlr_output_ptr;
+    /** The output's extents. Use for fullscreen windows. */
+    struct wlr_box            extents;
+    /**
+     * Usable area, after computing exclusive layer panels. Use this for
+     * maximized windows.
+     */
+    struct wlr_box            usable_area;
 };
 
 static void _wlmtk_workspace_window_element_destroy(wlmtk_element_t *element_ptr);
@@ -137,9 +153,6 @@ static bool _wlmtk_workspace_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
 
-static void _wlmtk_workspace_handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr);
 static void _wlmtk_workspace_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -161,6 +174,14 @@ static bool pfsm_move_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
+
+struct wlmtk_workspace_output_extents *wlmtk_workspace_output_extents_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
+    struct wlr_output *wlr_output_ptr);
+static int _wlmtk_workspace_output_extents_cmp(
+    const bs_avltree_node_t *node_ptr,
+    const void *key_ptr);
+static void _wlmtk_workspace_output_extents_destroy(bs_avltree_node_t *node_ptr);
 
 /* == Data ================================================================= */
 
@@ -245,29 +266,30 @@ wlmtk_workspace_t *wlmtk_workspace_create(
         return NULL;
     }
 
+    workspace_ptr->output_tree_ptr = bs_avltree_create(
+        _wlmtk_workspace_output_extents_cmp,
+        _wlmtk_workspace_output_extents_destroy);
+    if (NULL == workspace_ptr->output_tree_ptr) {
+        wlmtk_workspace_destroy(workspace_ptr);
+        return NULL;
+    }
+
     wlmtk_fsm_init(&workspace_ptr->fsm, pfsm_transitions, PFSMS_PASSTHROUGH);
 
-    wlmtk_util_connect_listener_signal(
-        &workspace_ptr->wlr_output_layout_ptr->events.change,
-        &workspace_ptr->output_layout_change_listener,
-        _wlmtk_workspace_handle_output_layout_change);
-    _wlmtk_workspace_handle_output_layout_change(
-        &workspace_ptr->output_layout_change_listener,
-        workspace_ptr->wlr_output_layout_ptr);
-
+    wlmtk_workspace_refresh_output_layout(workspace_ptr);
     return workspace_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *ws_ptr)
 {
-    wlmtk_util_disconnect_listener(
-        &ws_ptr->output_layout_change_listener);
+    wlmtk_util_disconnect_listener(&ws_ptr->element_pointer_leave_listener);
+    wlmtk_util_disconnect_listener(&ws_ptr->element_pointer_motion_listener);
 
-    wlmtk_util_disconnect_listener(
-        &ws_ptr->element_pointer_leave_listener);
-    wlmtk_util_disconnect_listener(
-        &ws_ptr->element_pointer_motion_listener);
+    if (NULL != ws_ptr->output_tree_ptr) {
+        bs_avltree_destroy(ws_ptr->output_tree_ptr);
+        ws_ptr->output_tree_ptr = NULL;
+    }
 
     BS_ASSERT(NULL ==
               ws_ptr->fullscreen_container.super_element.parent_container_ptr);
@@ -302,37 +324,93 @@ void wlmtk_workspace_get_details(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_workspace_refresh_output_layout(wlmtk_workspace_t *workspace_ptr)
+{
+    struct wlr_box extents;
+    wlr_output_layout_get_box(
+        workspace_ptr->wlr_output_layout_ptr, NULL, &extents);
+    workspace_ptr->x1 = extents.x;
+    workspace_ptr->y1 = extents.y;
+    workspace_ptr->x2 = extents.x + extents.width;
+    workspace_ptr->y2 = extents.y + extents.height;
+
+    // Reset the extents entry for each output.
+    bs_avltree_flush(workspace_ptr->output_tree_ptr);
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr;
+    wl_list_for_each(
+        wlr_output_layout_output_ptr,
+        &workspace_ptr->wlr_output_layout_ptr->outputs,
+        link) {
+
+        struct wlmtk_workspace_output_extents *extents_ptr =
+            wlmtk_workspace_output_extents_create(
+                workspace_ptr->wlr_output_layout_ptr,
+                wlr_output_layout_output_ptr->output);
+        if (NULL != extents_ptr) {
+            bs_avltree_insert(
+                workspace_ptr->output_tree_ptr,
+                extents_ptr->wlr_output_ptr,
+                &extents_ptr->avlnode,
+                true);
+        }
+    }
+
+    bs_dllist_for_each(
+        &workspace_ptr->windows,
+        _wlmtk_window_reposition_window,
+        workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_workspace_set_maximize_extents(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr,
+    const struct wlr_box *extents_ptr)
+{
+    struct wlmtk_workspace_output_extents *e = BS_CONTAINER_OF(
+        bs_avltree_lookup(workspace_ptr->output_tree_ptr, wlr_output_ptr),
+        struct wlmtk_workspace_output_extents,
+        avlnode);
+    if (NULL == e) {
+        bs_log(BS_WARNING, "Workspace %p: wlr_output %p not found",
+               workspace_ptr, wlr_output_ptr);
+        return;
+    }
+
+    if (wlr_box_equal(&e->usable_area, extents_ptr)) return;
+
+    e->usable_area = *extents_ptr;
+
+    bs_dllist_for_each(
+        &workspace_ptr->windows,
+        _wlmtk_window_reposition_window,
+        workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
 struct wlr_box wlmtk_workspace_get_maximize_extents(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output *wlr_output_ptr)
 {
-    struct wlr_box extents = {};
-
-    // No output provided. Pick the primary (first one in layout).
+    struct wlmtk_workspace_output_extents *output_extents_ptr;
     if (NULL == wlr_output_ptr) {
+        // Pick first output that was added to the layout.
         if (wl_list_empty(&workspace_ptr->wlr_output_layout_ptr->outputs)) {
-            return extents;
+            return (struct wlr_box){};
         }
-
-        struct wlr_output_layout_output *wol_output_ptr = BS_CONTAINER_OF(
+        wlr_output_ptr = BS_CONTAINER_OF(
             workspace_ptr->wlr_output_layout_ptr->outputs.next,
             struct wlr_output_layout_output,
-            link);
-        wlr_output_ptr = wol_output_ptr->output;
+            link)->output;
     }
 
-    wlr_output_layout_get_box(
-        workspace_ptr->wlr_output_layout_ptr,
-        wlr_output_ptr,
-        &extents);
+    output_extents_ptr = BS_CONTAINER_OF(
+        bs_avltree_lookup(workspace_ptr->output_tree_ptr, wlr_output_ptr),
+        struct wlmtk_workspace_output_extents,
+        avlnode);
+    if (NULL == output_extents_ptr) return (struct wlr_box){};
 
-    if (!wlr_box_empty(&extents)) {
-        // TODO(kaeser@gubbe.ch): Well, actually compute something sensible.
-        extents.width -= workspace_ptr->tile_style.size;
-        extents.height -= workspace_ptr->tile_style.size;
-
-    }
-    return extents;
+    return output_extents_ptr->usable_area;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -378,26 +456,25 @@ struct wlr_box wlmtk_workspace_get_fullscreen_extents(
     wlmtk_workspace_t *workspace_ptr,
     struct wlr_output *wlr_output_ptr)
 {
-    struct wlr_box extents = {};
-
-    // No output provided. Pick the primary (first one in layout).
+    struct wlmtk_workspace_output_extents *output_extents_ptr;
     if (NULL == wlr_output_ptr) {
+        // Pick first output that was added to the layout.
         if (wl_list_empty(&workspace_ptr->wlr_output_layout_ptr->outputs)) {
-            return extents;
+            return (struct wlr_box){};
         }
-
-        struct wlr_output_layout_output *wol_output_ptr = BS_CONTAINER_OF(
+        wlr_output_ptr = BS_CONTAINER_OF(
             workspace_ptr->wlr_output_layout_ptr->outputs.next,
             struct wlr_output_layout_output,
-            link);
-        wlr_output_ptr = wol_output_ptr->output;
+            link)->output;
     }
 
-    wlr_output_layout_get_box(
-        workspace_ptr->wlr_output_layout_ptr,
-        wlr_output_ptr,
-        &extents);
-    return extents;
+    output_extents_ptr = BS_CONTAINER_OF(
+        bs_avltree_lookup(workspace_ptr->output_tree_ptr, wlr_output_ptr),
+        struct wlmtk_workspace_output_extents,
+        avlnode);
+    if (NULL == output_extents_ptr) return (struct wlr_box){};
+
+    return output_extents_ptr->extents;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -826,29 +903,6 @@ bool _wlmtk_workspace_window_element_pointer_button(
 }
 
 /* ------------------------------------------------------------------------- */
-/** Handles output changes: Updates own extents, updates layers. */
-void _wlmtk_workspace_handle_output_layout_change(
-    struct wl_listener *listener_ptr,
-    void *data_ptr)
-{
-    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
-        listener_ptr, wlmtk_workspace_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
-
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
-    workspace_ptr->x1 = extents.x;
-    workspace_ptr->y1 = extents.y;
-    workspace_ptr->x2 = extents.x + extents.width;
-    workspace_ptr->y2 = extents.y + extents.height;
-
-    bs_dllist_for_each(
-        &workspace_ptr->windows,
-        _wlmtk_window_reposition_window,
-        workspace_ptr);
-}
-
-/* ------------------------------------------------------------------------- */
 /** Handles @ref wlmtk_element_events_t::pointer_leave. Reset state machine. */
 void _wlmtk_workspace_handle_element_pointer_leave(
     struct wl_listener *listener_ptr,
@@ -1145,6 +1199,50 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     return true;
 }
 
+
+/* ------------------------------------------------------------------------- */
+/** Creates output extents information. */
+struct wlmtk_workspace_output_extents *wlmtk_workspace_output_extents_create(
+    struct wlr_output_layout *wlr_output_layout_ptr,
+    struct wlr_output *wlr_output_ptr)
+{
+    struct wlmtk_workspace_output_extents *e = logged_calloc(1, sizeof(*e));
+    if (NULL == e) return NULL;
+    e->wlr_output_ptr = wlr_output_ptr;
+
+    // Get extents for fullscreen. Also store this as usable; this will be
+    // overridden by @ref wlmtk_workspace_set_maximize_extents.
+    wlr_output_layout_get_box(
+        wlr_output_layout_ptr,
+        wlr_output_ptr,
+        &e->extents);
+    e->usable_area = e->extents;
+    return e;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Comparator, using @ref wlmtk_workspace_output_extents::wlr_output_ptr. */
+int _wlmtk_workspace_output_extents_cmp(
+    const bs_avltree_node_t *node_ptr,
+    const void *key_ptr)
+{
+    struct wlmtk_workspace_output_extents *e = BS_CONTAINER_OF(
+        node_ptr, struct wlmtk_workspace_output_extents, avlnode);
+    return bs_avltree_cmp_ptr(e->wlr_output_ptr, key_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Destroys the output extents structure. */
+void _wlmtk_workspace_output_extents_destroy(bs_avltree_node_t *node_ptr)
+{
+    struct wlmtk_workspace_output_extents *e = BS_CONTAINER_OF(
+        node_ptr, struct wlmtk_workspace_output_extents, avlnode);
+    e->wlr_output_ptr = NULL;
+    e->extents = (struct wlr_box){};
+    e->usable_area = (struct wlr_box){};
+    free(e);
+}
+
 /* == Unit tests =========================================================== */
 
 static void test_create_destroy(bs_test_t *test_ptr);
@@ -1158,6 +1256,7 @@ static void test_activate_cycling(bs_test_t *test_ptr);
 static void test_multi_output_extents(bs_test_t *test_ptr);
 static void test_multi_output_reposition(bs_test_t *test_ptr);
 static void test_window_position(bs_test_t *test_ptr);
+static void test_reposition(bs_test_t *test_ptr);
 
 static void *_wlmtk_workspace_test_setup(void);
 static void _wlmtk_workspace_test_teardown(void *setup_context_ptr);
@@ -1177,6 +1276,7 @@ static const bs_test_case_t _wlmtk_workspace_test_cases[] = {
     { 1, "multi_output_extents", test_multi_output_extents },
     { 1, "multi_output_reposition", test_multi_output_reposition },
     { 1, "window_position", test_window_position },
+    { 1, "reposition", test_reposition },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1277,13 +1377,15 @@ void test_create_destroy(bs_test_t *test_ptr)
     wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
         wlr_output_layout_ptr, "t", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
+    struct wlr_box box = { .x = -10, .y = -20, .width = 36, .height = 136 };
+    wlmtk_workspace_set_maximize_extents(workspace_ptr, &output, &box);
 
     BS_TEST_VERIFY_EQ(
         test_ptr,
         wlr_output_layout_ptr,
         wlmtk_workspace_get_wlr_output_layout(workspace_ptr));
 
-    struct wlr_box box = { .x = -10, .y = -20, .width = 100, .height = 200 };
+    box = (struct wlr_box){ .x = -10, .y = -20, .width = 100, .height = 200 };
     workspace_ptr->x1 = -10;
     workspace_ptr->y1 = -20;
     workspace_ptr->x2 = 90;
@@ -1322,6 +1424,9 @@ void test_map_unmap(bs_test_t *test_ptr)
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
     struct wlr_output_layout *wlr_output_layout_ptr =
         wlr_output_layout_create(wl_display_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add(wlr_output_layout_ptr, &output, 20, 10);
     struct wlmtk_desktop_style ds = {};
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
         wlr_scene_ptr, &ds, wlr_output_layout_ptr);
@@ -1330,9 +1435,6 @@ void test_map_unmap(bs_test_t *test_ptr)
         wlr_output_layout_ptr, "test", &_wlmtk_workspace_test_tile_style);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
     wlmtk_desktop_add_workspace(desktop_ptr, workspace_ptr);
-    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
-    wlmtk_test_wlr_output_init(&output);
-    wlr_output_layout_add(wlr_output_layout_ptr, &output, 20, 10);
 
     wlmtk_util_test_listener_t mapped, unmapped;
     wlmtk_util_connect_test_listener(
@@ -1847,6 +1949,9 @@ void test_multi_output_extents(bs_test_t *test_ptr)
 
     // (2): Add one output. Return extents on NULL or for &o1.
     wlr_output_layout_add(wlr_output_layout_ptr, &o1, -10, -20);
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
+    struct wlr_box o1e = { .x = -10, .y = -20, .width = 36, .height = 136 };
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o1, &o1e);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, NULL);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 36, 136, result);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, &o1);
@@ -1858,17 +1963,20 @@ void test_multi_output_extents(bs_test_t *test_ptr)
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 200, result);
     result = wlmtk_workspace_get_fullscreen_extents(ws_ptr, &o1);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 200, result);
+
     result = wlmtk_workspace_get_fullscreen_extents(ws_ptr, &o2);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 0, 0, result);
 
     // (3): Add second output. Must return extents on all.
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 0);
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o1, &o1e);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, NULL);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 36, 136, result);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, &o1);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 36, 136, result);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, &o2);
-    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 236, 186, result);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, result);
 
     result = wlmtk_workspace_get_fullscreen_extents(ws_ptr, NULL);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 200, result);
@@ -1879,12 +1987,14 @@ void test_multi_output_extents(bs_test_t *test_ptr)
 
     // (4): Remove first output. Must now default to 2nd output.
     wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o1, &o1e);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, NULL);
-    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 236, 186, result);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, result);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, &o1);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 0, 0, result);
     result = wlmtk_workspace_get_maximize_extents(ws_ptr, &o2);
-    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 236, 186, result);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, result);
 
     result = wlmtk_workspace_get_fullscreen_extents(ws_ptr, NULL);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, result);
@@ -1917,19 +2027,28 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
     struct wlr_output o2 = { .width = 300, .height = 250, .scale = 1 };
     wlmtk_test_wlr_output_init(&o2);
     wlr_output_layout_add(wlr_output_layout_ptr, &o2, 400, 0);
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
+    struct wlr_box box1 = { .x = -10, .y = -20, .width = 100, .height = 200 };
+    struct wlr_box box2 = { .x = 400, .y = 0, .width = 236, .height = 186 };
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o1, &box1);
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o2, &box2);
 
     // A fullscreen window w1, on o1.
     wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
     wlmtk_window_t *w1 = wlmtk_test_window_create(&fe1_ptr->element);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w1);
+    wlmtk_util_test_wlr_box_listener_t l1 = {};
+    wlmtk_util_connect_test_wlr_box_listener(
+        &wlmtk_window_events(w1)->request_size, &l1);
     wlmtk_workspace_map_window(ws_ptr, w1);
     BS_TEST_VERIFY_EQ(
         test_ptr,
         &ws_ptr->window_container,
         wlmtk_window_element(w1)->parent_container_ptr);
     wlmtk_window_commit_fullscreen(w1, true);
-    wlmtk_fake_element_set_dimensions(fe1_ptr, 100, 200);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, -10, -20, 100, 200, l1.box);
+    wlmtk_fake_element_set_dimensions(fe1_ptr, l1.box.width, l1.box.height);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, -10, -20, 100, 200,
         wlmtk_window_get_bounding_box(w1));
@@ -1937,10 +2056,7 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
         test_ptr,
         &ws_ptr->fullscreen_container,
         wlmtk_window_element(w1)->parent_container_ptr);
-
-    wlmtk_util_test_wlr_box_listener_t l1 = {};
-    wlmtk_util_connect_test_wlr_box_listener(
-        &wlmtk_window_events(w1)->request_size, &l1);
+    wlmtk_util_clear_test_wlr_box_listener(&l1);
 
     // A normal window w2, on o1.
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
@@ -1971,16 +2087,18 @@ void test_multi_output_reposition(bs_test_t *test_ptr)
 
     // Remove o1.
     wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
+    wlmtk_workspace_set_maximize_extents(ws_ptr, &o2, &box2);
 
     // The fullscreen window must have received a `request_size` call. Verify,
     // then let element take that dimension
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l1.calls);
+    BS_TEST_VERIFY_TRUE(test_ptr, 0 < l1.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 300, 250, l1.box);
     wlmtk_fake_element_set_dimensions(fe1_ptr, l1.box.width, l1.box.height);
 
-    // Also, the maximimzed window must have receied a request_size call; now
+    // Also, the maximimzed window must have received a request_size call; now
     // suitable for o2. And be placed there.
-    BS_TEST_VERIFY_EQ(test_ptr, 1, l3.calls);
+    BS_TEST_VERIFY_TRUE(test_ptr, 0 < l3.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 400, 0, 236, 186, l3.box);
     wlmtk_fake_element_set_dimensions(fe3_ptr, l3.box.width, l3.box.height);
 
@@ -2028,6 +2146,7 @@ void test_window_position(bs_test_t *test_ptr)
         test_ptr,
         NULL,
         wlr_output_layout_add(c_ptr->wlr_output_layout_ptr, &o1, 0, 0));
+    wlmtk_workspace_refresh_output_layout(c_ptr->workspace_ptr);
 
     wlmtk_fake_element_t *fe[5] = {};
     wlmtk_window_t *w[5] = {};
@@ -2063,6 +2182,45 @@ void test_window_position(bs_test_t *test_ptr)
     }
 
     wlr_output_layout_remove(c_ptr->wlr_output_layout_ptr, &o1);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests size adjustment when maximized area changes. */
+void test_reposition(bs_test_t *test_ptr)
+{
+    struct _wlmtk_workspace_test_context *c_ptr = bs_test_context(test_ptr);
+    struct wlr_output o = { .width = 800, .height = 600, .scale = 1 };
+    wlmtk_test_wlr_output_init(&o);
+    wlr_output_layout_add_auto(c_ptr->wlr_output_layout_ptr, &o);
+    wlmtk_workspace_refresh_output_layout(c_ptr->workspace_ptr);
+
+    // Initial setup: Window at the given maximization size.
+    wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_fake_element_set_dimensions(fe_ptr, 10, 2);
+    wlmtk_window_t *w = wlmtk_test_window_create(&fe_ptr->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_util_test_wlr_box_listener_t l = {};
+    wlmtk_util_connect_test_wlr_box_listener(
+        &wlmtk_window_events(w)->request_size, &l);
+    wlmtk_workspace_map_window(c_ptr->workspace_ptr, w);
+    wlmtk_window_commit_maximized(w, true);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 0, 0, 800, 600, l.box);
+    wlmtk_util_clear_test_wlr_box_listener(&l);
+
+    // Update maximize extents. The maximized size must adjust.
+    struct wlr_box box = { .x = 10, .y = 20, .width = 700, .height = 500 };
+    wlmtk_workspace_set_maximize_extents(c_ptr->workspace_ptr, &o, &box);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, l.calls);
+    WLMTK_TEST_VERIFY_WLRBOX_EQ(test_ptr, 10, 20, 700, 500, l.box);
+    wlmtk_util_clear_test_wlr_box_listener(&l);
+
+    // Update once more, size unchanged. Must not trigger a resize.
+    wlmtk_workspace_set_maximize_extents(c_ptr->workspace_ptr, &o, &box);
+    BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
+
+    wlr_output_layout_remove(c_ptr->wlr_output_layout_ptr, &o);
 }
 
 /* == End of workspace.c =================================================== */
