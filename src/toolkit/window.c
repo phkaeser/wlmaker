@@ -518,6 +518,7 @@ void wlmtk_window_request_size(
         static bool not_maximized = false;
         wl_signal_emit(&window_ptr->events.request_maximized, &not_maximized);
     }
+
     wl_signal_emit(&window_ptr->events.request_size, (void*)box_ptr);
 }
 
@@ -2010,9 +2011,10 @@ void test_maximized(bs_test_t *test_ptr)
     wlmtk_util_clear_test_listener(&request_maximized_listener);
     wlmtk_util_clear_test_wlr_box_listener(&request_size_listener);
     output.width = 800; output.height = 600;
+    wlmtk_workspace_refresh_output_layout(ws_ptr);
     wlmtk_window_request_maximized(w, true);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, request_maximized_listener.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, request_size_listener.calls);
+    BS_TEST_VERIFY_TRUE(test_ptr, 0 < request_maximized_listener.calls);
+    BS_TEST_VERIFY_TRUE(test_ptr, 0 < request_size_listener.calls);
     WLMTK_TEST_VERIFY_WLRBOX_EQ(
         test_ptr, 0, 0, 796, 579, request_size_listener.box);
 

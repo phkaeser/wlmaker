@@ -88,7 +88,32 @@ void wlmtk_workspace_get_details(
     int *index_ptr);
 
 /**
- * Returns the workspace'soutput extents available for maximized windows.
+ * Refresh the output layout.
+ *
+ * Should be called whenever @ref wlmtk_workspace_t::wlr_output_layout_ptr is
+ * upated. @ref wlmtk_workspace_t does not bind to the layout's `changed`
+ * listener, in order for callers to enforce desired sequencing. *
+ * Afterwards, callers should also update the maximization area by calling
+ * @ref wlmtk_workspace_set_maximize_extents for each output.
+ *
+ * @param workspace_ptr
+ */
+void wlmtk_workspace_refresh_output_layout(wlmtk_workspace_t *workspace_ptr);
+
+/**
+ * Sets the area available for maximized windows on the given output.
+ *
+ * @param workspace_ptr
+ * @param wlr_output_ptr
+ * @param extents_ptr
+ */
+void wlmtk_workspace_set_maximize_extents(
+    wlmtk_workspace_t *workspace_ptr,
+    struct wlr_output *wlr_output_ptr,
+    const struct wlr_box *extents_ptr);
+
+/**
+ * Returns the workspace's output extents available for maximized windows.
  *
  * @param workspace_ptr
  * @param wlr_output_ptr      Output to lookup the extents for. May be NULL,
