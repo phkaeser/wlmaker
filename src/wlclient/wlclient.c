@@ -888,6 +888,7 @@ wlmcl_client_timer_t *wlmcl_client_timer_create(
         if (timer_ptr->target_usec > ref_timer_ptr->target_usec) continue;
         bs_dllist_insert_node_before(
             &client_ptr->timers, dlnode_ptr, &timer_ptr->dlnode);
+        break;
     }
     if (NULL == dlnode_ptr) {
         bs_dllist_push_back(&client_ptr->timers, &timer_ptr->dlnode);
