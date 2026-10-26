@@ -128,6 +128,11 @@ static void _wlmtk_workspace_window_element_get_dimensions(
     int *top_ptr,
     int *right_ptr,
     int *bottom_ptr);
+static bool _wlmtk_workspace_window_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
+static void _wlmtk_workspace_window_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr);
 static bool _wlmtk_workspace_window_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -179,6 +184,8 @@ typedef enum {
 const wlmtk_element_vmt_t     workspace_window_element_vmt = {
     .destroy = _wlmtk_workspace_window_element_destroy,
     .get_dimensions = _wlmtk_workspace_window_element_get_dimensions,
+    .pointer_accepts_motion = _wlmtk_workspace_window_element_pointer_accepts_motion,
+    .pointer_grab_cancel = _wlmtk_workspace_window_element_pointer_grab_cancel,
     .pointer_button = _wlmtk_workspace_window_element_pointer_button,
 };
 
@@ -752,6 +759,45 @@ void _wlmtk_workspace_window_element_get_dimensions(
 
 /* ------------------------------------------------------------------------- */
 /**
+ * Whether pointer motion is accepted to the workspace.
+ *
+ * If there is an ongoing move or resize operation, the workspace will grab
+ * the pointer, and respond `true` to all calls, until the move or resize
+ * resets.
+ *
+ * @param element_ptr
+ * @param motion_event_ptr
+ *
+ * @return Whether a pointer motion is accepted.
+ */
+bool _wlmtk_workspace_window_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, window_container.super_element);
+
+    if (NULL != workspace_ptr->grabbed_window_ptr) return true;
+    return workspace_ptr->orig_window_super_element_vmt.pointer_accepts_motion(
+        element_ptr, motion_event_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Grab cancelled: Reset motion or resize operation.
+ *
+ * @param element_ptr
+ */
+void _wlmtk_workspace_window_element_pointer_grab_cancel(
+    wlmtk_element_t *element_ptr)
+{
+    wlmtk_workspace_t *workspace_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_workspace_t, window_container.super_element);
+    wlmtk_fsm_event(&workspace_ptr->fsm, PFSME_RESET, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+/**
  * Extends wlmtk_container_t::pointer_button.
  *
  * @param element_ptr
@@ -974,6 +1020,11 @@ bool pfsm_move_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
 
     // TODO(kaeser@gubbe.ch): When in move mode, set (and keep) a corresponding
     // cursor image.
+
+    wlmtk_element_t *e = wlmtk_workspace_window_element(workspace_ptr);
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_pointer_grab(e->parent_container_ptr, e);
+    }
     return true;
 }
 
@@ -1027,6 +1078,10 @@ bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr)
         workspace_ptr->grabbed_window_ptr,
         workspace_ptr->resize_edges);
 
+    wlmtk_element_t *e = wlmtk_workspace_window_element(workspace_ptr);
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_pointer_grab(e->parent_container_ptr, e);
+    }
     return true;
 }
 
@@ -1083,6 +1138,10 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     wlmtk_window_set_resize_edges(workspace_ptr->grabbed_window_ptr, 0);
 
     workspace_ptr->grabbed_window_ptr = NULL;
+    wlmtk_element_t *e = wlmtk_workspace_window_element(workspace_ptr);
+    if (NULL != e->parent_container_ptr) {
+        wlmtk_container_pointer_grab_release(e->parent_container_ptr, e);
+    }
     return true;
 }
 
