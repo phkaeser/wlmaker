@@ -19,7 +19,9 @@ Allows privileged Wayland clients to lock the session and display arbitrary
 graphics while the session is locked. An example of such a client is
 [swaylock](https://github.com/swaywm/swaylock).
 
-* Status: Supported.
+* Status: Supported. If the lock client dies without unlocking, the session
+  remains locked, and a new lock client can take over. A new lock is refused
+  (`finished`) while a lock is held.
 * Reference: https://wayland.app/protocols/ext-session-lock-v1
 
 # wlr layer shell {#protocols_wlr_layer_shell}

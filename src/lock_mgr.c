@@ -61,6 +61,9 @@ struct _wlmaker_lock_mgr_t {
     struct wl_listener        new_lock_listener;
     /** Listener for the `destroy` signal of `wlr_session_lock_manager_v1`. */
     struct wl_listener        destroy_listener;
+
+    /** Injected method: wlr_session_lock_v1_destroy(). */
+    void (*injected_lock_destroy)(struct wlr_session_lock_v1 *lock);
 };
 
 /** Forward declaration: Lock. */
@@ -87,6 +90,8 @@ struct _wlmaker_lock_t {
 
     /** Container holding the lock surfaces. */
     wlmtk_container_t         container;
+    /** Whether this lock has locked the desktop. */
+    bool                      locked;
 
     /** Listener for the `new_surface` signal of `wlr_session_lock_v1`. */
     struct wl_listener        new_surface_listener;
@@ -189,6 +194,7 @@ wlmaker_lock_mgr_t *wlmaker_lock_mgr_create(
         1, sizeof(wlmaker_lock_mgr_t));
     if (NULL == lock_mgr_ptr) return NULL;
     lock_mgr_ptr->server_ptr = server_ptr;
+    lock_mgr_ptr->injected_lock_destroy = wlr_session_lock_v1_destroy;
 
     lock_mgr_ptr->wlr_session_lock_manager_v1_ptr =
         wlr_session_lock_manager_v1_create(server_ptr->wl_display_ptr);
@@ -239,6 +245,16 @@ void _wlmaker_lock_mgr_handle_new_lock(
     wlmaker_lock_mgr_t *lock_mgr_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_lock_mgr_t, new_lock_listener);
     struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr = data_ptr;
+
+    // Only one lock at a time: If a (live) lock holds the desktop, the new
+    // lock is refused, which sends `finished`. An abandoned lock (eg. the
+    // client died without unlocking) may be taken over.
+    if (wlmtk_desktop_lock_held(lock_mgr_ptr->server_ptr->desktop_ptr)) {
+        bs_log(BS_WARNING, "Lock manager %p: Already locked, refusing new "
+               "lock %p", lock_mgr_ptr, wlr_session_lock_v1_ptr);
+        lock_mgr_ptr->injected_lock_destroy(wlr_session_lock_v1_ptr);
+        return;
+    }
 
     wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
         wlr_session_lock_v1_ptr,
@@ -381,7 +397,7 @@ void _wlmaker_lock_if_ready(wlmaker_lock_t *lock_ptr)
     if (!bs_dllist_all(&lock_ptr->outputs,
                        _wlmaker_lock_output_surface_is_committed,
                        NULL)) return;
-    if (wlmtk_desktop_locked(lock_ptr->desktop_ptr)) return;
+    if (lock_ptr->locked) return;
 
     if (!wlmtk_desktop_lock(lock_ptr->desktop_ptr, _wlmaker_lock_element(lock_ptr))) {
         if (NULL != lock_ptr->wlr_session_lock_v1_ptr->resource) {
@@ -393,6 +409,7 @@ void _wlmaker_lock_if_ready(wlmaker_lock_t *lock_ptr)
         }
         return;
     }
+    lock_ptr->locked = true;
     wlmtk_element_set_visible(&lock_ptr->container.super_element, true);
 
     // Grant keyboard focus to the first-found surface that's committed.
@@ -491,6 +508,7 @@ void _wlmaker_lock_handle_unlock(
 
     wlmtk_element_set_visible(&lock_ptr->container.super_element, false);
     wlmtk_desktop_unlock(lock_ptr->desktop_ptr, _wlmaker_lock_element(lock_ptr));
+    lock_ptr->locked = false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -743,6 +761,8 @@ bool _wlmaker_lock_output_surface_is_committed(
 static void test_lock_unlock(bs_test_t *test_ptr);
 static void test_lock_crash(bs_test_t *test_ptr);
 static void test_lock_multi_output(bs_test_t *test_ptr);
+static void test_lock_takeover(bs_test_t *test_ptr);
+static void test_lock_refuse(bs_test_t *test_ptr);
 
 static uint32_t _mock_wlr_session_lock_surface_v1_configure(
     struct wlr_session_lock_surface_v1 *lock_surface,
@@ -758,6 +778,8 @@ const bs_test_case_t wlmaker_lock_mgr_test_cases[] = {
     { true, "lock_unlock", test_lock_unlock },
     { true, "lock_crash", test_lock_crash },
     { true, "lock_multi_output", test_lock_multi_output },
+    { true, "lock_takeover", test_lock_takeover },
+    { true, "lock_refuse", test_lock_refuse },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1142,6 +1164,169 @@ void test_lock_multi_output(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
 
     _wlmaker_lock_destroy(lock_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
+    wl_display_destroy(server.wl_display_ptr);
+}
+
+
+/* ------------------------------------------------------------------------- */
+/** Locks with a lock, single output. Returns the lock. For tests. */
+static wlmaker_lock_t *_test_lock_and_commit(
+    bs_test_t *test_ptr,
+    wlmaker_server_t *server_ptr,
+    struct wlr_output *wlr_output_ptr,
+    struct wlr_session_lock_v1 *wlr_session_lock_v1_ptr,
+    struct wlr_surface *wlr_surface_ptr,
+    struct wlr_session_lock_surface_v1 *lock_surface_ptr)
+{
+    _init_test_session_lock(wlr_session_lock_v1_ptr);
+    wlmaker_lock_t *lock_ptr = _wlmaker_lock_create(
+        wlr_session_lock_v1_ptr,
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->wlr_seat_ptr,
+        server_ptr->desktop_ptr,
+        _mock_wlr_session_lock_surface_v1_configure,
+        _mock_wlr_session_lock_v1_send_locked);
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, lock_ptr);
+    if (NULL == lock_ptr) return NULL;
+
+    _init_test_surface(wlr_surface_ptr);
+    *lock_surface_ptr = (struct wlr_session_lock_surface_v1){
+        .surface = wlr_surface_ptr, .output = wlr_output_ptr };
+    wl_signal_init(&lock_surface_ptr->events.destroy);
+
+    _mock_configure_serial = 42;
+    _mock_send_locked_lock = NULL;
+    wl_signal_emit(&wlr_session_lock_v1_ptr->events.new_surface,
+                   lock_surface_ptr);
+    wlr_surface_ptr->current.width = 1024;
+    wlr_surface_ptr->current.height = 768;
+    lock_surface_ptr->current.configure_serial = 42;
+    wl_signal_emit(&wlr_surface_ptr->events.commit, NULL);
+    return lock_ptr;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests that a new lock takes over, after the earlier lock was abandoned
+ * (its client died without unlocking): It must get the `locked` event, and
+ * can unlock the session.
+ */
+void test_lock_takeover(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server = { .wl_display_ptr = wl_display_create() };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
+    server.wlr_output_layout_ptr = wlr_output_layout_create(
+        server.wl_display_ptr);
+    struct wlr_output output = { .width = 1024, .height = 768, .scale = 1 };
+    wlmtk_test_wlr_output_init(&output);
+    wlr_output_layout_add_auto(server.wlr_output_layout_ptr, &output);
+    struct wlmtk_desktop_style ds = {};
+    server.desktop_ptr = wlmtk_desktop_create(
+        NULL, &ds, server.wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
+    struct wlmtk_tile_style tile_style = {};
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        server.wlr_output_layout_ptr, "name", &tile_style);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, workspace_ptr);
+
+    // First lock: Locks, then gets destroyed without unlocking.
+    struct wlr_session_lock_v1 lock1 = {};
+    struct wlr_surface surface1 = {};
+    struct wlr_session_lock_surface_v1 lock_surface1;
+    wlmaker_lock_t *lock1_ptr = _test_lock_and_commit(
+        test_ptr, &server, &output, &lock1, &surface1, &lock_surface1);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock1, _mock_send_locked_lock);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_lock_held(server.desktop_ptr));
+    wl_signal_emit(&lock_surface1.events.destroy, NULL);
+    _wlmaker_lock_destroy(lock1_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_lock_held(server.desktop_ptr));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+
+    // Second lock: Takes over, gets `locked`, holds the lock.
+    struct wlr_session_lock_v1 lock2 = {};
+    struct wlr_surface surface2 = {};
+    struct wlr_session_lock_surface_v1 lock_surface2;
+    wlmaker_lock_t *lock2_ptr = _test_lock_and_commit(
+        test_ptr, &server, &output, &lock2, &surface2, &lock_surface2);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock2, _mock_send_locked_lock);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_lock_held(server.desktop_ptr));
+    wlmtk_surface_t *surface_ptr = surface2.data;
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, surface_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_surface_is_activated(surface_ptr));
+
+    // And it unlocks.
+    wl_signal_emit(&lock2.events.unlock, NULL);
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_desktop_locked(server.desktop_ptr));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(workspace_ptr));
+
+    _wlmaker_lock_destroy(lock2_ptr);
+    wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
+    wlmtk_workspace_destroy(workspace_ptr);
+    wlmtk_desktop_destroy(server.desktop_ptr);
+    wl_display_destroy(server.wl_display_ptr);
+}
+
+/** Arg of last call to @ref _mock_wlr_session_lock_v1_destroy. */
+static struct wlr_session_lock_v1 *_mock_lock_destroy_lock;
+/** Mock for wlr_session_lock_v1_destroy(). */
+static void _mock_wlr_session_lock_v1_destroy(struct wlr_session_lock_v1 *l)
+{
+    _mock_lock_destroy_lock = l;
+}
+
+/* ------------------------------------------------------------------------- */
+/**
+ * Tests that a new lock is refused (`finished`) while a lock is held, but
+ * accepted once that lock was abandoned.
+ */
+void test_lock_refuse(bs_test_t *test_ptr)
+{
+    wlmaker_server_t server = { .wl_display_ptr = wl_display_create() };
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.wl_display_ptr);
+    server.wlr_output_layout_ptr = wlr_output_layout_create(
+        server.wl_display_ptr);
+    struct wlmtk_desktop_style ds = {};
+    server.desktop_ptr = wlmtk_desktop_create(
+        NULL, &ds, server.wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, server.desktop_ptr);
+    struct wlmtk_tile_style tile_style = {};
+    wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
+        server.wlr_output_layout_ptr, "name", &tile_style);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, workspace_ptr);
+    wlmtk_desktop_add_workspace(server.desktop_ptr, workspace_ptr);
+    wlmaker_lock_mgr_t lock_mgr = {
+        .server_ptr = &server,
+        .injected_lock_destroy = _mock_wlr_session_lock_v1_destroy };
+
+    wlmtk_container_t c;
+    BS_TEST_VERIFY_TRUE_OR_RETURN(test_ptr, wlmtk_container_init(&c));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_lock(
+                            server.desktop_ptr, &c.super_element));
+
+    // Locked and held: A new lock is refused.
+    struct wlr_session_lock_v1 lock = {};
+    _init_test_session_lock(&lock);
+    _mock_lock_destroy_lock = NULL;
+    _wlmaker_lock_mgr_handle_new_lock(&lock_mgr.new_lock_listener, &lock);
+    BS_TEST_VERIFY_EQ(test_ptr, &lock, _mock_lock_destroy_lock);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 0, wl_list_length(&lock.events.destroy.listener_list));
+
+    // Abandoned: A new lock is accepted (a handle is created).
+    wlmtk_desktop_lock_unreference(server.desktop_ptr, &c.super_element);
+    _mock_lock_destroy_lock = NULL;
+    _wlmaker_lock_mgr_handle_new_lock(&lock_mgr.new_lock_listener, &lock);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, _mock_lock_destroy_lock);
+    BS_TEST_VERIFY_EQ(
+        test_ptr, 1, wl_list_length(&lock.events.destroy.listener_list));
+    wl_signal_emit(&lock.events.destroy, NULL);
+
+    wlmtk_container_fini(&c);
     wlmtk_desktop_remove_workspace(server.desktop_ptr, workspace_ptr);
     wlmtk_workspace_destroy(workspace_ptr);
     wlmtk_desktop_destroy(server.desktop_ptr);

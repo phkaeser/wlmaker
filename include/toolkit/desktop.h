@@ -178,7 +178,9 @@ void wlmtk_desktop_for_each_workspace(
 /**
  * Locks the desktop, using the provided element.
  *
- * The desktop must not be locked already. If locked successfully, the desktop will
+ * The desktop must not be locked already, unless the earlier lock was
+ * abandoned (see @ref wlmtk_desktop_lock_unreference): Then `element_ptr`
+ * takes over the lock. If locked successfully, the desktop will
  * keep a reference to `element_ptr`. The lock must call @ref wlmtk_desktop_unlock
  * to unlock desktop, and for releasing the reference.
  *
@@ -208,6 +210,12 @@ bool wlmtk_desktop_unlock(
 
 /** @return Whether desktop is locked. */
 bool wlmtk_desktop_locked(wlmtk_desktop_t *desktop_ptr);
+
+/**
+ * @return Whether desktop is locked, and the lock is held by an element. That
+ *     is false if the desktop is unlocked, or if the lock was abandoned.
+ */
+bool wlmtk_desktop_lock_held(wlmtk_desktop_t *desktop_ptr);
 
 /**
  * Releases the lock reference, but keeps the desktop locked.
