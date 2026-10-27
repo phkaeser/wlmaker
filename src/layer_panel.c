@@ -501,6 +501,13 @@ void _wlmaker_layer_panel_handle_surface_map(
 
     wlmtk_element_set_visible(
         wlmtk_panel_element(&layer_panel_ptr->super_panel), true);
+    // The exclusive zone only counts for visible panels: recompute the
+    // usable area now (it was computed at configure time, before the map).
+    wlmtk_layer_output_t *layer_output_ptr = wlmtk_panel_get_layer_output(
+        &layer_panel_ptr->super_panel);
+    if (NULL != layer_output_ptr) {
+        wlmtk_layer_output_reconfigure(layer_output_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -519,6 +526,13 @@ void _wlmaker_layer_panel_handle_surface_unmap(
 
     wlmtk_element_set_visible(
         wlmtk_panel_element(&layer_panel_ptr->super_panel), false);
+    // The exclusive zone only counts for visible panels: recompute the
+    // usable area now (it was computed at configure time, before the map).
+    wlmtk_layer_output_t *layer_output_ptr = wlmtk_panel_get_layer_output(
+        &layer_panel_ptr->super_panel);
+    if (NULL != layer_output_ptr) {
+        wlmtk_layer_output_reconfigure(layer_output_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
