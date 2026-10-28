@@ -228,11 +228,10 @@ int _wlmtk_output_tracker_tree_node_cmp(
 /** Output layout changed: Iterate over all outputs. */
 void _wlmtk_output_tracker_handle_output_layout_change(
     struct wl_listener *listener_ptr,
-    void *data_ptr)
+    __UNUSED__ void *data_ptr)
 {
     wlmtk_output_tracker_t *tracker_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_output_tracker_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
 
     struct wlmtk_output_tracker_update_arg arg = {
         .tracker_ptr = tracker_ptr,
@@ -244,7 +243,7 @@ void _wlmtk_output_tracker_handle_output_layout_change(
             _wlmtk_output_tracker_tree_node_cmp,
             _wlmtk_output_tracker_tree_node_destroy));
     BS_ASSERT(wlmtk_util_wl_list_for_each(
-                  &wlr_output_layout_ptr->outputs,
+                  &tracker_ptr->wlr_output_layout_ptr->outputs,
                   _wlmtk_output_tracker_output_handle_change,
                   &arg));
 

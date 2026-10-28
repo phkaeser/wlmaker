@@ -782,13 +782,15 @@ bool _wlmtk_desktop_element_keyboard_event(
  */
 void _wlmtk_desktop_handle_output_layout_change(
     struct wl_listener *listener_ptr,
-    void *data_ptr)
+    __UNUSED__ void *data_ptr)
 {
     wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_desktop_t, output_layout_change_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
 
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &desktop_ptr->extents);
+    wlr_output_layout_get_box(
+        desktop_ptr->wlr_output_layout_ptr,
+        NULL,
+        &desktop_ptr->extents);
 
     wlmtk_rectangle_t *rs[] = {
         desktop_ptr->curtain_rectangle_ptr,
