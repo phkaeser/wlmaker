@@ -32,6 +32,7 @@
 #include "root_menu.h"
 #include "toplevel_tracker.h"
 #include "util/backtrace.h"
+#include "workspace_manager.h"
 #include "xdg_decoration.h"
 #include "xdg_toplevel.h"
 #if defined(WLMAKER_HAVE_XWAYLAND)
@@ -59,6 +60,7 @@ int main(int argc, const char **argv)
         &wlmaker_lock_mgr_test_set,
         &wlmaker_root_menu_test_set,
         &wlmaker_toplevel_tracker_test_set,
+        &wlm_workspace_manager_test_set,
         &wlmaker_xdg_decoration_test_set,
         &wlmaker_xdg_toplevel_test_set,
 #if defined(WLMAKER_HAVE_XWAYLAND)
