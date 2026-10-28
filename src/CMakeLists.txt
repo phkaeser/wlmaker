@@ -15,8 +15,21 @@
 cmake_minimum_required(VERSION 3.13)
 
 pkg_check_modules(WAYLAND_SERVER REQUIRED IMPORTED_TARGET wayland-server>=1.22.0)
-# We build for wlroots 0.20.
-pkg_check_modules(WLROOTS REQUIRED IMPORTED_TARGET wlroots-0.20>=0.20)
+
+# We build for wlroots 0.20 and up.
+set(WLROOTS_SUPPORTED_VERSIONS "0.21" "0.20")
+foreach(version IN LISTS WLROOTS_SUPPORTED_VERSIONS)
+  pkg_check_modules(WLROOTS IMPORTED_TARGET wlroots-${version})
+  if(WLROOTS_FOUND)
+    message(STATUS "Found wlroots-${version}, version: ${WLROOTS_VERSION}")
+    break()
+  endif()
+endforeach()
+if(NOT WLROOTS_FOUND)
+  list(JOIN WLROOTS_SUPPORTED_VERSIONS ", " FORMATTED_VERSIONS)
+  message(FATAL_ERROR "Could not find an suitable wlroots version from ${FORMATTED_VERSIONS}")
+endif()
+
 pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb>=1.15)
 # XWayland considered optional.
 pkg_check_modules(XWAYLAND xwayland>=22.1.9)
