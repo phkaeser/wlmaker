@@ -55,6 +55,8 @@
 struct _wlmaker_corner_t {
     /** Back-link to server. Required to execute actions. */
     wlmaker_server_t          *server_ptr;
+    /** The output layout. */
+    struct wlr_output_layout  *wlr_output_layout_ptr;
 
     /** Listener for wlr_output_layout::events::change. */
     struct wl_listener        output_layout_changed_listener;
@@ -177,6 +179,7 @@ wlmaker_corner_t *wlmaker_corner_create(
     wlmaker_corner_t *corner_ptr = logged_calloc(1, sizeof(wlmaker_corner_t));
     if (NULL == corner_ptr) return NULL;
     corner_ptr->server_ptr = server_ptr;
+    corner_ptr->wlr_output_layout_ptr = wlr_output_layout_ptr;
 
     if (!bspl_decode_dict(
             hot_corner_config_dict_ptr,
@@ -378,19 +381,18 @@ int _wlmaker_corner_handle_timer(void *data_ptr)
  * cursor position.
  *
  * @param listener_ptr
- * @param data_ptr            Points to a struct wlr_output_layout.
+ * @param data_ptr
  */
 void _wlmaker_corner_handle_output_layout_changed(
     struct wl_listener *listener_ptr,
-    void *data_ptr)
+    __UNUSED__ void *data_ptr)
 {
     wlmaker_corner_t *corner_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmaker_corner_t, output_layout_changed_listener);
-    struct wlr_output_layout *wlr_output_layout_ptr = data_ptr;
 
-    struct wlr_box extents;
-    wlr_output_layout_get_box(wlr_output_layout_ptr, NULL, &extents);
-    _wlmaker_corner_update_layout(corner_ptr, &extents);
+    struct wlr_box box;
+    wlr_output_layout_get_box(corner_ptr->wlr_output_layout_ptr, NULL, &box);
+    _wlmaker_corner_update_layout(corner_ptr, &box);
 }
 
 /* ------------------------------------------------------------------------- */
