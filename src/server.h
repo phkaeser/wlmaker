@@ -143,7 +143,7 @@ struct _wlmaker_server_t {
     /** The toplevel tracker. */
     struct wlmaker_toplevel_tracker *toplevel_tracker_ptr;
     /** Workspace manager. */
-    struct wlmaker_workspace_manager *workspace_manager_ptr;
+    struct wlm_workspace_manager *workspace_manager_ptr;
 
     /** The desktop element. */
     wlmtk_desktop_t           *desktop_ptr;
