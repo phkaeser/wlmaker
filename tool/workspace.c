@@ -1,0 +1,406 @@
+/* ========================================================================= */
+/**
+ * @file workspace.c
+ *
+ * @copyright
+ * Copyright (c) 2026 Philipp Kaeser <kaeser@gubbe.ch>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "workspace.h"
+
+#include <inttypes.h>
+#include <libbase/libbase.h>
+#include <stddef.h>
+#include <wayland-util.h>
+
+#include "ext-workspace-v1-client-protocol.h"
+#include "wlclient/wlclient.h"
+
+struct ext_workspace_group_handle_v1;
+struct ext_workspace_handle_v1;
+struct ext_workspace_manager_v1;
+struct wl_output;
+
+/* == Declarations ========================================================= */
+
+/** State of the ext-workspace-v1 client. */
+struct wlmtool_workspace_state {
+    /** The bound workspace manager. */
+    struct ext_workspace_manager_v1 *workspace_manager_ptr;
+};
+
+void _wlmtool_workspace_setup(
+    void *userdata_ptr,
+    void *bound_interface_ptr,
+    uint32_t name);
+
+static void _wlmtool_workspace_manager_handle_workspace_group(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1,
+    struct ext_workspace_group_handle_v1 *workspace_group);
+static void _wlmtool_workspace_manager_handle_workspace(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1,
+    struct ext_workspace_handle_v1 *workspace);
+static void _wlmtool_workspace_manager_handle_done(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1);
+static void _wlmtool_workspace_manager_handle_finished(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1);
+
+static void _wlmtool_workspace_group_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    uint32_t capabilities);
+static void _wlmtool_workspace_group_handle_output_enter(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct wl_output *wl_output_ptr);
+static void _wlmtool_workspace_group_handle_output_leave(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct wl_output *wl_output_ptr);
+static void _wlmtool_workspace_group_handle_workspace_enter(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct ext_workspace_handle_v1 *workspace);
+static void _wlmtool_workspace_group_handle_workspace_leave(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct ext_workspace_handle_v1 *workspace);
+static void _wlmtool_workspace_group_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr);
+
+static void _wlmtool_workspace_handle_id(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *id_ptr);
+static void _wlmtool_workspace_handle_name(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *name_ptr);
+static void _wlmtool_workspace_handle_coordinates(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    struct wl_array *coordinates_ptr);
+static void _wlmtool_workspace_handle_state(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t state);
+static void _wlmtool_workspace_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t capabilities);
+static void _wlmtool_workspace_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr);
+
+/* == Data ================================================================= */
+
+/** Implementation of the workspace manager's interface. */
+static const struct ext_workspace_manager_v1_listener
+_wlmtool_workspace_manager_listener = {
+    .workspace_group = _wlmtool_workspace_manager_handle_workspace_group,
+    .workspace = _wlmtool_workspace_manager_handle_workspace,
+    .done = _wlmtool_workspace_manager_handle_done,
+    .finished = _wlmtool_workspace_manager_handle_finished
+};
+
+/** Implementation of the workspace group interface. */
+static const struct ext_workspace_group_handle_v1_listener
+_wlmtool_workspace_group_listener = {
+    .capabilities = _wlmtool_workspace_group_handle_capabilities,
+    .output_enter = _wlmtool_workspace_group_handle_output_enter,
+    .output_leave = _wlmtool_workspace_group_handle_output_leave,
+    .workspace_enter = _wlmtool_workspace_group_handle_workspace_enter,
+    .workspace_leave = _wlmtool_workspace_group_handle_workspace_leave,
+    .removed = _wlmtool_workspace_group_handle_removed
+};
+
+/** Implementation of the workspace interface. */
+static const struct ext_workspace_handle_v1_listener
+_wlmtool_workspace_listener = {
+    .id = _wlmtool_workspace_handle_id,
+    .name = _wlmtool_workspace_handle_name,
+    .coordinates = _wlmtool_workspace_handle_coordinates,
+    .state = _wlmtool_workspace_handle_state,
+    .capabilities = _wlmtool_workspace_handle_capabilities,
+    .removed = _wlmtool_workspace_handle_removed
+};
+
+/* == Exported methods ===================================================== */
+
+/* ------------------------------------------------------------------------- */
+bool wlmtool_ext_workspace(
+    __UNUSED__ int argc,
+    __UNUSED__ const char **argv)
+{
+    wlmcl_client_t *client_ptr = wlmcl_client_create("wlmaker.wlmtool");
+    if (NULL == client_ptr) return false;
+    struct wlmtool_workspace_state ws_state = {};
+
+    wlmcl_client_register_interface(
+        client_ptr,
+        &ext_workspace_manager_v1_interface,
+        /* desired_version */ 1,
+        /* required */ true,
+        _wlmtool_workspace_setup,
+        &ws_state);
+
+    wlmcl_client_run(client_ptr);
+
+    wlmcl_client_destroy(client_ptr);
+    return true;
+}
+
+/* == Local (static) methods =============================================== */
+
+/* ------------------------------------------------------------------------- */
+/** Setup callback for binding the ext-workspace-v1 interface. */
+void _wlmtool_workspace_setup(
+    void *userdata_ptr,
+    void *bound_interface_ptr,
+    __UNUSED__ uint32_t name)
+{
+    struct wlmtool_workspace_state *ws_state_ptr = userdata_ptr;
+    ws_state_ptr->workspace_manager_ptr = bound_interface_ptr;
+
+    ext_workspace_manager_v1_add_listener(
+        ws_state_ptr->workspace_manager_ptr,
+        &_wlmtool_workspace_manager_listener,
+        ws_state_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the announcmement of a workspace group. */
+void _wlmtool_workspace_manager_handle_workspace_group(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr)
+{
+    struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace manager %p, announced group %p",
+           ext_workspace_manager_v1_ptr,
+           ext_workspace_group_handle_v1_ptr);
+
+    ext_workspace_group_handle_v1_add_listener(
+        ext_workspace_group_handle_v1_ptr,
+        &_wlmtool_workspace_group_listener,
+        ws_state_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles the announcement of a workspace. */
+void _wlmtool_workspace_manager_handle_workspace(
+    void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr,
+    struct ext_workspace_handle_v1 *workspace_ptr)
+{
+    struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace manager %p, announced workspace %p",
+           ext_workspace_manager_v1_ptr, workspace_ptr);
+
+    ext_workspace_handle_v1_add_listener(
+        workspace_ptr,
+        &_wlmtool_workspace_listener,
+        ws_state_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace manager done: All information received. */
+void _wlmtool_workspace_manager_handle_done(
+    __UNUSED__ void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr)
+{
+    bs_log(BS_INFO, "Workspace maanger %p: done.",
+           ext_workspace_manager_v1_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace manager finished: No further information will be sent. */
+void _wlmtool_workspace_manager_handle_finished(
+    __UNUSED__ void *data_ptr,
+    struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr)
+{
+    bs_log(BS_INFO, "Workspace maanger %p: finished.",
+           ext_workspace_manager_v1_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Capabilities of the workspace group announced. */
+void _wlmtool_workspace_group_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    uint32_t capabilities)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p, capabilities %"PRIx32,
+           ext_workspace_group_handle_v1_ptr, capabilities);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace group is visible on the output. */
+void _wlmtool_workspace_group_handle_output_enter(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct wl_output *wl_output_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p, output enter %p",
+           ext_workspace_group_handle_v1_ptr, wl_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace group is no longer visible on the output. */
+void _wlmtool_workspace_group_handle_output_leave(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct wl_output *wl_output_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p, output leave %p",
+           ext_workspace_group_handle_v1_ptr, wl_output_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace is now part of this workspace group. */
+void _wlmtool_workspace_group_handle_workspace_enter(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct ext_workspace_handle_v1 *workspace_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p, workspace enter %p",
+           ext_workspace_group_handle_v1_ptr, workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace is no longer part of this workspace group. */
+void _wlmtool_workspace_group_handle_workspace_leave(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr,
+    struct ext_workspace_handle_v1 *workspace_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p, workspace leave %p",
+           ext_workspace_group_handle_v1_ptr, workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** The group is removed, no further updates. */
+void _wlmtool_workspace_group_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace group %p removed.",
+           ext_workspace_group_handle_v1_ptr);
+    ext_workspace_group_handle_v1_destroy(ext_workspace_group_handle_v1_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** The workspace identifier. */
+void _wlmtool_workspace_handle_id(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *id_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p id %s", ext_workspace_handle_v1_ptr, id_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** The workspace name. */
+void _wlmtool_workspace_handle_name(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *name_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p name %s",
+           ext_workspace_handle_v1_ptr, name_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace coordinates. */
+void _wlmtool_workspace_handle_coordinates(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    struct wl_array *coordinates_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    size_t n =  coordinates_ptr->size / sizeof(uint32_t);
+    uint32_t *coordinates_values_ptr = (uint32_t *)coordinates_ptr->data;
+    for (size_t i = 0; i < n; ++i) {
+        bs_log(BS_INFO, "  Workspace %p coordinates, dimension %zu: %"PRIu32,
+               ext_workspace_handle_v1_ptr, i, coordinates_values_ptr[i]);
+
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace state. */
+void _wlmtool_workspace_handle_state(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t state)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p state %"PRIx32,
+           ext_workspace_handle_v1_ptr, state);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Capabilities announced for the workspace. */
+void _wlmtool_workspace_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t capabilities)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p capabilities %"PRIx32,
+           ext_workspace_handle_v1_ptr, capabilities);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Workspace removed. */
+void _wlmtool_workspace_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p removed", ext_workspace_handle_v1_ptr);
+    ext_workspace_handle_v1_destroy(ext_workspace_handle_v1_ptr);
+}
+
+/* == Unit Tests =========================================================== */
+
+/* == End of workspace.c =================================================== */
