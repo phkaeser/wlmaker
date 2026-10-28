@@ -43,6 +43,12 @@ waylandprotocol_add(
   PROTOCOL_FILE "${wayland_protocol_dir}/stable/xdg-shell/xdg-shell.xml"
   SIDE server)
 
+waylandprotocol_add(
+  wlmaker_protocols
+  BASE_NAME ext-workspace
+  PROTOCOL_FILE "${wayland_protocol_dir}/staging/ext-workspace/ext-workspace-v1.xml"
+  SIDE server)
+
 target_compile_options(
   wlmaker_protocols INTERFACE
   "${WAYLAND_SERVER_CFLAGS}"

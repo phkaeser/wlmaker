@@ -54,8 +54,9 @@ set(public_header_files
   root_menu.h
   server.h
   task_list.h
-  toplevel_tracker.h
   tl_menu.h
+  toplevel_tracker.h
+  workspace_manager.h
   xdg_decoration.h
   xdg_popup.h
   xdg_shell.h
@@ -78,8 +79,9 @@ target_sources(wlmaker_lib PRIVATE
   root_menu.c
   server.c
   task_list.c
-  toplevel_tracker.c
   tl_menu.c
+  toplevel_tracker.c
+  workspace_manager.c
   x11_cursor.xpm
   xdg_decoration.c
   xdg_popup.c

@@ -43,6 +43,7 @@
 #include "input/manager.h"
 #include "task_list.h"
 #include "toolkit/toolkit.h"
+#include "workspace_manager.h"
 #include "toplevel_tracker.h"
 
 /* == Declarations ========================================================= */
@@ -178,6 +179,13 @@ wlmaker_server_t *wlmaker_server_create(
         &server_ptr->style_ptr->desktop,
         server_ptr->wlr_output_layout_ptr);
     if (NULL == server_ptr->desktop_ptr) {
+        wlmaker_server_destroy(server_ptr);
+        return NULL;
+    }
+
+    server_ptr->workspace_manager_ptr = wlmaker_workspace_manager_create(
+        server_ptr->wl_display_ptr);
+    if (NULL == server_ptr->workspace_manager_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
     }
@@ -440,6 +448,11 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
             &server_ptr->unclaimed_button_event_listener);
         wlmtk_root_destroy(server_ptr->root_ptr);
         server_ptr->root_ptr = NULL;
+    }
+
+    if (NULL != server_ptr->workspace_manager_ptr) {
+        wlmaker_workspace_manager_destroy(server_ptr->workspace_manager_ptr);
+        server_ptr->workspace_manager_ptr = NULL;
     }
 
     if (NULL != server_ptr->desktop_ptr) {
