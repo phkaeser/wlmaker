@@ -19,11 +19,16 @@ include(WaylandProtocol)
 pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client>=1.22.0)
 pkg_get_variable(wayland_protocol_dir wayland-protocols pkgdatadir)
 
-add_library(libwlmtool STATIC item.c menu.c toplevel_list.c)
+add_library(libwlmtool STATIC item.c menu.c toplevel_list.c workspace.c)
 waylandprotocol_add(
   libwlmtool
   BASE_NAME ext-foreign-toplevel-list-v1
   PROTOCOL_FILE "${wayland_protocol_dir}/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml"
+  SIDE client)
+waylandprotocol_add(
+  libwlmtool
+  BASE_NAME ext-workspace-v1
+  PROTOCOL_FILE "${wayland_protocol_dir}/staging/ext-workspace/ext-workspace-v1.xml"
   SIDE client)
 
 target_include_directories(

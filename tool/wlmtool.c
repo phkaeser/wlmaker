@@ -31,6 +31,7 @@
 
 #include "menu.h"
 #include "toplevel_list.h"
+#include "workspace.h"
 
 /* == Declarations ========================================================= */
 
@@ -82,6 +83,12 @@ static const struct command_desc commands[] = {
         .description_ptr = "Monitor status of compositor's toplevel's via "
         "the `ext-foreign-toplevel-list-v1` protocol.",
         .op = wlmtool_ext_foreign_toplevel_list
+    },
+    {
+        .command_ptr = "ext-workspace-v1",
+        .description_ptr = "Monitor status of compositor's workspaces's via "
+        "the `ext-workspace-v1` protocol.",
+        .op = wlmtool_ext_workspace
     },
     {
         .command_ptr = "genmenu",
