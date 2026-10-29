@@ -70,6 +70,8 @@ static const bs_arg_t wlmtool_args[] = {
         "environment's setting for LC_MESSAGES, if not set.",
         NULL,
         &wlmtool_locale_ptr),
+    bs_arg_log_level,
+    bs_arg_log_to_stderr,
     BS_ARG_SENTINEL()
 };
 
