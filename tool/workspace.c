@@ -23,6 +23,7 @@
 #include <inttypes.h>
 #include <libbase/libbase.h>
 #include <stddef.h>
+#include <wayland-util.h>
 
 #include "ext-workspace-v1-client-protocol.h"
 #include "wlclient/wlclient.h"
@@ -44,18 +45,18 @@ void _wlmtool_workspace_setup(
     void *bound_interface_ptr,
     uint32_t name);
 
-static void _wlmtool_workspace_handle_workspace_group(
+static void _wlmtool_workspace_manager_handle_workspace_group(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1,
     struct ext_workspace_group_handle_v1 *workspace_group);
-static void _wlmtool_workspace_handle_workspace(
+static void _wlmtool_workspace_manager_handle_workspace(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1,
     struct ext_workspace_handle_v1 *workspace);
-static void _wlmtool_workspace_handle_done(
+static void _wlmtool_workspace_manager_handle_done(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1);
-static void _wlmtool_workspace_handle_finished(
+static void _wlmtool_workspace_manager_handle_finished(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1);
 
@@ -83,14 +84,38 @@ static void _wlmtool_workspace_group_handle_removed(
     void *data_ptr,
     struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr);
 
+static void _wlmtool_workspace_handle_id(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *id_ptr);
+static void _wlmtool_workspace_handle_name(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *name_ptr);
+static void _wlmtool_workspace_handle_coordinates(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    struct wl_array *coordinates_ptr);
+static void _wlmtool_workspace_handle_state(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t state);
+static void _wlmtool_workspace_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t capabilities);
+static void _wlmtool_workspace_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr);
+
 /* == Data ================================================================= */
 
 static const struct ext_workspace_manager_v1_listener
-_wlmtool_workspace_listener = {
-    .workspace_group = _wlmtool_workspace_handle_workspace_group,
-    .workspace = _wlmtool_workspace_handle_workspace,
-    .done = _wlmtool_workspace_handle_done,
-    .finished = _wlmtool_workspace_handle_finished
+_wlmtool_workspace_manager_listener = {
+    .workspace_group = _wlmtool_workspace_manager_handle_workspace_group,
+    .workspace = _wlmtool_workspace_manager_handle_workspace,
+    .done = _wlmtool_workspace_manager_handle_done,
+    .finished = _wlmtool_workspace_manager_handle_finished
 };
 
 static const struct ext_workspace_group_handle_v1_listener
@@ -101,6 +126,16 @@ _wlmtool_workspace_group_listener = {
     .workspace_enter = _wlmtool_workspace_group_handle_workspace_enter,
     .workspace_leave = _wlmtool_workspace_group_handle_workspace_leave,
     .removed = _wlmtool_workspace_group_handle_removed
+};
+
+static const struct ext_workspace_handle_v1_listener
+_wlmtool_workspace_listener = {
+    .id = _wlmtool_workspace_handle_id,
+    .name = _wlmtool_workspace_handle_name,
+    .coordinates = _wlmtool_workspace_handle_coordinates,
+    .state = _wlmtool_workspace_handle_state,
+    .capabilities = _wlmtool_workspace_handle_capabilities,
+    .removed = _wlmtool_workspace_handle_removed
 };
 
 /* == Exported methods ===================================================== */
@@ -142,12 +177,12 @@ void _wlmtool_workspace_setup(
 
     ext_workspace_manager_v1_add_listener(
         ws_state_ptr->workspace_manager_ptr,
-        &_wlmtool_workspace_listener,
+        &_wlmtool_workspace_manager_listener,
         ws_state_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void _wlmtool_workspace_handle_workspace_group(
+void _wlmtool_workspace_manager_handle_workspace_group(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr,
     struct ext_workspace_group_handle_v1 *ext_workspace_group_handle_v1_ptr)
@@ -165,19 +200,24 @@ void _wlmtool_workspace_handle_workspace_group(
 }
 
 /* ------------------------------------------------------------------------- */
-void _wlmtool_workspace_handle_workspace(
+void _wlmtool_workspace_manager_handle_workspace(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr,
     struct ext_workspace_handle_v1 *workspace_ptr)
 {
     struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
 
-    bs_log(BS_ERROR, "FIXME: %p - %p, workspace %p",
-           ext_workspace_manager_v1_ptr, ws_state_ptr, workspace_ptr);
+    bs_log(BS_INFO, "Workspace manager %p, announced workspace %p",
+           ext_workspace_manager_v1_ptr, workspace_ptr);
+
+    ext_workspace_handle_v1_add_listener(
+        workspace_ptr,
+        &_wlmtool_workspace_listener,
+        ws_state_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
-void _wlmtool_workspace_handle_done(
+void _wlmtool_workspace_manager_handle_done(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr)
 {
@@ -188,7 +228,7 @@ void _wlmtool_workspace_handle_done(
 }
 
 /* ------------------------------------------------------------------------- */
-void _wlmtool_workspace_handle_finished(
+void _wlmtool_workspace_manager_handle_finished(
     void *data_ptr,
     struct ext_workspace_manager_v1 *ext_workspace_manager_v1_ptr)
 {
@@ -268,6 +308,81 @@ void _wlmtool_workspace_group_handle_removed(
     bs_log(BS_INFO, "Workspace group %p removed.",
            ext_workspace_group_handle_v1_ptr);
     ext_workspace_group_handle_v1_destroy(ext_workspace_group_handle_v1_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_id(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *id_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p id %s", ext_workspace_handle_v1_ptr, id_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_name(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    const char *name_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p name %s",
+           ext_workspace_handle_v1_ptr, name_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_coordinates(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    struct wl_array *coordinates_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    size_t n =  coordinates_ptr->size / sizeof(uint32_t);
+    uint32_t *coordinates_values_ptr = (uint32_t *)coordinates_ptr->data;
+    for (size_t i = 0; i < n; ++i) {
+        bs_log(BS_INFO, "  Workspace %p coordinates, dimension %zu: %"PRIu32,
+               ext_workspace_handle_v1_ptr, i, coordinates_values_ptr[i]);
+
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_state(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t state)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p state %"PRIx32,
+           ext_workspace_handle_v1_ptr, state);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_capabilities(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr,
+    uint32_t capabilities)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p capabilities %"PRIx32,
+           ext_workspace_handle_v1_ptr, capabilities);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlmtool_workspace_handle_removed(
+    void *data_ptr,
+    struct ext_workspace_handle_v1 *ext_workspace_handle_v1_ptr)
+{
+    __UNUSED__ struct wlmtool_workspace_state *ws_state_ptr = data_ptr;
+
+    bs_log(BS_INFO, "Workspace %p removed", ext_workspace_handle_v1_ptr);
+    ext_workspace_handle_v1_destroy(ext_workspace_handle_v1_ptr);
 }
 
 /* == Unit Tests =========================================================== */
