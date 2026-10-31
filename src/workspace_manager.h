@@ -21,6 +21,7 @@
 #define __WLMAKER_WORKSPACE_MANAGER_H__
 
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <stdbool.h>
 
 #include "toolkit/toolkit.h"
@@ -55,6 +56,14 @@ struct wlm_workspace_manager *wlm_workspace_manager_create(
 void wlm_workspace_manager_destroy(
     struct wlm_workspace_manager *workspace_manager_ptr);
 
+/**
+ * Applies the configured state, ie. creates the workspaces.
+ *
+ * @param workspace_manager
+ * @param state_dict_ptr
+ *
+ * @return true on success.
+ */
 bool wlm_workspace_manager_apply_state(
     struct wlm_workspace_manager *workspace_manager_ptr,
     bspl_dict_t *state_dict_ptr);

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <libbase/libbase.h>
+#include <libbase/plist.h>
 #include <wayland-server-core.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
