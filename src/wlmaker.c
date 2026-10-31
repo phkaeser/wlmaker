@@ -43,6 +43,7 @@
 #include "config.h"
 #include "root_menu.h"
 #include "server.h"
+#include "workspace_manager.h"
 #include "task_list.h"
 #include "toolkit/toolkit.h"
 #include "util/backtrace.h"
@@ -131,19 +132,6 @@ static const bs_arg_t wlmaker_args[] = {
 /** References auto-started subprocesses. */
 static bs_ptr_stack_t         wlmaker_subprocess_stack;
 
-/** Contents of the workspace style. */
-typedef struct {
-    /** Workspace name. */
-    char            name[32];
-} wlmaker_workspace_config_t;
-
-/** Style descriptor for the "Workspace" dict of wlmaker-state.plist. */
-static const bspl_desc_t wlmaker_workspace_config_desc[] = {
-    BSPL_DESC_CHARBUF(
-        "Name", true, wlmaker_workspace_config_t, name, name, 32, NULL),
-    BSPL_DESC_SENTINEL()
-};
-
 /* ------------------------------------------------------------------------- */
 /** Launches a sub-process, and keeps it on the subprocess stack. */
 bool start_subprocess(const char *cmdline_ptr)
@@ -162,50 +150,6 @@ bool start_subprocess(const char *cmdline_ptr)
     // Push to stack. Ignore errors: We'll keep it running untracked.
     bs_ptr_stack_push(&wlmaker_subprocess_stack, sp_ptr);
     return true;
-}
-
-/* ------------------------------------------------------------------------- */
-/** Creates workspaces as configured in the state dict. */
-bool create_workspaces(
-    bspl_dict_t *state_dict_ptr,
-    wlmaker_server_t *server_ptr)
-{
-    bspl_array_t *array_ptr = bspl_dict_get_array(
-        state_dict_ptr, "Workspaces");
-    if (NULL == array_ptr) return false;
-
-    bool rv = true;
-    for (size_t i = 0; i < bspl_array_size(array_ptr); ++i) {
-        bspl_dict_t *dict_ptr = bspl_dict_from_object(
-            bspl_array_at(array_ptr, i));
-        if (NULL == dict_ptr) {
-            bs_log(BS_ERROR, "Array element in \"Workspaces\" is not a dict");
-            rv = false;
-            break;
-        }
-
-        wlmaker_workspace_config_t s;
-        if (!bspl_decode_dict(dict_ptr, wlmaker_workspace_config_desc, &s)) {
-            bs_log(BS_ERROR,
-                   "Failed to decode dict element %zu in \"Workspace\"",
-                   i);
-            rv = false;
-            break;
-        }
-
-        wlmtk_workspace_t *workspace_ptr = wlmtk_workspace_create(
-            server_ptr->wlr_output_layout_ptr,
-            s.name, &server_ptr->style_ptr->tile);
-        if (NULL == workspace_ptr) {
-            bs_log(BS_ERROR, "Failed wlmtk_workspace_create(\"%s\")", s.name);
-            rv = false;
-            break;
-        }
-
-        wlmtk_desktop_add_workspace(server_ptr->desktop_ptr, workspace_ptr);
-    }
-
-    return rv;
 }
 
 /* == Main program ========================================================= */
@@ -307,7 +251,9 @@ int main(__UNUSED__ int argc, __UNUSED__ const char **argv)
         return EXIT_FAILURE;
     }
 
-    if (!create_workspaces(state_dict_ptr, server_ptr)) {
+    if (!wlm_workspace_manager_apply_state(
+            server_ptr->workspace_manager_ptr,
+            state_dict_ptr)) {
         return EXIT_FAILURE;
     }
 
