@@ -20,12 +20,13 @@
 
 #include "workspace_manager.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <libbase/libbase.h>
 #include <libbase/plist.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <wayland-server-core.h>
+#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
@@ -62,12 +63,14 @@ struct wlm_workspace_manager {
     struct wlmtk_tile_style   tile_style;  // FIXME - remove.
 };
 
-/** Workspaces manager by the workspace manager. */
+/** Workspace managed by the workspace manager. */
 struct wlm_workspace_manager_workspace {
     /** Element of @ref wlm_workspace_manager::workspaces. */
     bs_dllist_node_t          dlnode;
     /** The actual @ref wlmtk_workspace_t connected here. */
     wlmtk_workspace_t         *wlmtk_workspace_ptr;
+    /** ID of the workspace. We use 'workspaceNN' for NN in [1, 99]. */
+    char                      *id_ptr;
     /**
      * List of workspace handles across the connected clients. Linked through
      * @ref wlm_workspace_manager_client_workspace::workspace_dlnode.
@@ -91,8 +94,12 @@ struct wlm_workspace_manager_client {
      */
     bs_dllist_t               client_workspaces;
 
+    // FIXME -- not owned
+
     /** Back-link to the workspace manager. */
     struct wlm_workspace_manager *workspace_manager_ptr;
+    /** The actual client connected here. */
+    struct wl_client          *wl_client_ptr;
 };
 
 /** Workspace handle for a given client. */
@@ -105,6 +112,9 @@ struct wlm_workspace_manager_client_workspace {
 
     /** The wayland resource for this client and workspace's handle. */
     struct wl_resource        *workspace_wl_resource_ptr;
+
+    // FIXME -- not owned
+    struct wlm_workspace_manager_workspace *workspace_ptr;
 };
 
 struct wlm_workspace_state_config {
@@ -125,7 +135,7 @@ void _wlm_workspace_manager_destroy_workspace_dlnode(
     uint32_t version,
     uint32_t id);
 
-static void _wlm_workspace_handle_resource_destroy(
+static void _wlm_workspace_manager_handle_resource_destroy(
     struct wl_resource *wl_resource_ptr);
 static void _wlm_workspace_handle_commit(
     struct wl_client *wl_client_ptr,
@@ -141,6 +151,25 @@ static void _wlm_workspace_group_handle_create_workspace(
     struct wl_resource *wl_resource_ptr,
     const char *workspace_name_ptr);
 static void _wlm_workspace_group_handle_destroy(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr);
+
+static void _wlm_workspace_handle_resource_destroy(
+    struct wl_resource *wl_resource_ptr);
+static void _wlm_workspace_handle_destroy(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr);
+static void _wlm_workspace_handle_activate(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr);
+static void _wlm_workspace_handle_deactivate(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr);
+static void _wlm_workspace_handle_assign(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    struct wl_resource *workspace_group_ptro);
+static void _wlm_workspace_handle_remove(
     struct wl_client *wl_client_ptr,
     struct wl_resource *wl_resource_ptr);
 
@@ -163,6 +192,16 @@ static const struct ext_workspace_group_handle_v1_interface
 _wlm_workspace_group_interface = {
     .create_workspace = _wlm_workspace_group_handle_create_workspace,
     .destroy = _wlm_workspace_group_handle_destroy,
+};
+
+/** Handlers for `ext-workspace-v1` `ext_workspace_handle_v1` methods. */
+static const struct ext_workspace_handle_v1_interface
+_wlm_workspace_interface = {
+    .destroy = _wlm_workspace_handle_destroy,
+    .activate = _wlm_workspace_handle_activate,
+    .deactivate = _wlm_workspace_handle_deactivate,
+    .assign =  _wlm_workspace_handle_assign,
+    .remove = _wlm_workspace_handle_remove
 };
 
 /* == Exported methods ===================================================== */
@@ -253,15 +292,104 @@ bool wlm_workspace_manager_apply_state(
     return true;
 }
 
+void _wlm_workspace_manager_send_client_workspace(
+    struct wlm_workspace_manager_client_workspace *client_workspace_ptr)
+{
+    const char *name_ptr;
+    int index;
+    wlmtk_workspace_get_details(
+        client_workspace_ptr->workspace_ptr->wlmtk_workspace_ptr,
+        &name_ptr, &index);
+
+    ext_workspace_handle_v1_send_id(
+        client_workspace_ptr->workspace_wl_resource_ptr,
+        client_workspace_ptr->workspace_ptr->id_ptr);
+    ext_workspace_handle_v1_send_name(
+        client_workspace_ptr->workspace_wl_resource_ptr,
+        name_ptr != NULL ? name_ptr : "");
+
+    int32_t coordinate = index;
+    struct wl_array coordinates_array = {
+        .size = sizeof(coordinate),
+        .alloc = sizeof(coordinate),
+        .data = &coordinate
+    };
+    ext_workspace_handle_v1_send_coordinates(
+        client_workspace_ptr->workspace_wl_resource_ptr,
+        &coordinates_array);
+
+    uint32_t state = 0;
+    if (wlmtk_workspace_enabled(
+            client_workspace_ptr->workspace_ptr->wlmtk_workspace_ptr)) {
+        state = EXT_WORKSPACE_HANDLE_V1_STATE_ACTIVE;
+    }
+    ext_workspace_handle_v1_send_state(
+        client_workspace_ptr->workspace_wl_resource_ptr, state);
+}
+
+/* ------------------------------------------------------------------------- */
+// FIXME
+void _wlm_workspace_manager_create_client_workspace(
+    struct wlm_workspace_manager_client *client_ptr,
+    struct wlm_workspace_manager_workspace *workspace_ptr)
+{
+    struct wlm_workspace_manager_client_workspace *client_workspace_ptr =
+        logged_calloc(1, sizeof(*client_workspace_ptr));
+    if (NULL == client_workspace_ptr) return;
+    client_workspace_ptr->workspace_ptr = workspace_ptr;
+
+    client_workspace_ptr->workspace_wl_resource_ptr = wl_resource_create(
+        client_ptr->wl_client_ptr,
+        &ext_workspace_handle_v1_interface,
+        1 /* version */,
+        0 /* create new ID */ );
+    if (NULL == client_workspace_ptr->workspace_wl_resource_ptr) {
+        // FIXME: destroy.
+    }
+
+    wl_resource_set_implementation(
+        client_workspace_ptr->workspace_wl_resource_ptr,
+        &_wlm_workspace_interface,
+        client_workspace_ptr,
+        _wlm_workspace_handle_resource_destroy);
+    ext_workspace_manager_v1_send_workspace(
+        client_ptr->manager_wl_resource_ptr,
+        client_workspace_ptr->workspace_wl_resource_ptr);
+
+    bs_dllist_push_back(
+        &client_ptr->client_workspaces,
+        &client_workspace_ptr->client_dlnode);
+    bs_dllist_push_back(
+        &workspace_ptr->client_workspaces,
+        &client_workspace_ptr->workspace_dlnode);
+
+    /** Supported: 'activate' the workspace. */
+    ext_workspace_handle_v1_send_capabilities(
+        client_workspace_ptr->workspace_wl_resource_ptr,
+        EXT_WORKSPACE_HANDLE_V1_WORKSPACE_CAPABILITIES_ACTIVATE);
+
+    _wlm_workspace_manager_send_client_workspace(client_workspace_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 bool wlm_workspace_manager_add_workspace(
     struct wlm_workspace_manager *workspace_manager_ptr,
     const char *name_ptr)
 {
+    // FIXME: Fail if more than 99 workspaces.
+
     struct wlm_workspace_manager_workspace *workspace_ptr = logged_calloc(
         1, sizeof(*workspace_ptr));
     if (NULL == workspace_ptr) return false;
+
+    workspace_ptr->id_ptr = bs_strdupf(
+        "workspace%02zu",
+        bs_dllist_size(&workspace_manager_ptr->workspaces) + 1);
+    if (NULL == workspace_ptr->id_ptr) {
+        bs_log(BS_ERROR, "Failed bs_strdupf(\"workspace\%%02zu\", %zu)",
+               bs_dllist_size(&workspace_manager_ptr->workspaces) + 1);
+        return false;
+    }
 
     workspace_ptr->wlmtk_workspace_ptr = wlmtk_workspace_create(
         workspace_manager_ptr->wlr_output_layout_ptr,
@@ -272,15 +400,23 @@ bool wlm_workspace_manager_add_workspace(
         return false;
     }
 
-    // FIXME: Step through all clients and add the client workspace handle.
-    // and: commit for each client.
-
     wlmtk_desktop_add_workspace(
         workspace_manager_ptr->desktop_ptr,
         workspace_ptr->wlmtk_workspace_ptr);
     bs_dllist_push_back(
         &workspace_manager_ptr->workspaces,
         &workspace_ptr->dlnode);
+
+    // Add the workspace to each already-connected client.
+    for (bs_dllist_node_t *node_ptr = workspace_manager_ptr->clients.head_ptr;
+         node_ptr != NULL;
+         node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
+        struct wlm_workspace_manager_client *client_ptr =
+            _wlm_workspace_manager_client_from_dlnode(node_ptr);
+        _wlm_workspace_manager_create_client_workspace(
+            client_ptr, workspace_ptr);
+    }
+
     return true;
 }
 
@@ -337,6 +473,11 @@ void _wlm_workspace_manager_destroy_workspace_dlnode(
         workspace_ptr->wlmtk_workspace_ptr = NULL;
     }
 
+    if (NULL != workspace_ptr->id_ptr) {
+        free(workspace_ptr->id_ptr);
+        workspace_ptr->id_ptr = NULL;
+    }
+
     // FIXME: delete all associated client workspaces.
 
     free(workspace_ptr);
@@ -358,6 +499,7 @@ void _wlm_workspace_manager_bind(
         wl_client_post_no_memory(wl_client_ptr);
         return;
     }
+    client_ptr->wl_client_ptr = wl_client_ptr;
     client_ptr->workspace_manager_ptr = workspace_manager_ptr;
 
     client_ptr->manager_wl_resource_ptr = wl_resource_create(
@@ -374,7 +516,7 @@ void _wlm_workspace_manager_bind(
         client_ptr->manager_wl_resource_ptr,
         &_wlm_workspace_manager_interface,
         client_ptr,
-        _wlm_workspace_handle_resource_destroy);
+        _wlm_workspace_manager_handle_resource_destroy);
     bs_dllist_push_back(
         &workspace_manager_ptr->clients,
         &client_ptr->dlnode);
@@ -384,7 +526,7 @@ void _wlm_workspace_manager_bind(
         &ext_workspace_group_handle_v1_interface,
         version, 0 /* create new ID */ );
     if (NULL == client_ptr->workspace_group_wl_resource_ptr) {
-        _wlm_workspace_handle_resource_destroy(
+        _wlm_workspace_manager_handle_resource_destroy(
             client_ptr->manager_wl_resource_ptr);
         wl_client_post_no_memory(wl_client_ptr);
         return;
@@ -405,6 +547,17 @@ void _wlm_workspace_manager_bind(
     // FIXME: apply all outputs.
     // FIXME: apply all workspaces.
 
+    // Adds the client to each already-existing workspace.
+    for (bs_dllist_node_t *node_ptr = workspace_manager_ptr->workspaces.head_ptr;
+         node_ptr != NULL;
+         node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
+        struct wlm_workspace_manager_workspace *workspace_ptr = BS_CONTAINER_OF(
+            node_ptr, struct wlm_workspace_manager_workspace, dlnode);
+        _wlm_workspace_manager_create_client_workspace(
+            client_ptr, workspace_ptr);
+    }
+
+
     bs_log(BS_INFO, "Workspace manager %p bound client %p on resource %p",
            workspace_manager_ptr,
            client_ptr,
@@ -413,7 +566,7 @@ void _wlm_workspace_manager_bind(
 
 /* ------------------------------------------------------------------------- */
 /** Destroys the client's resources. */
-void _wlm_workspace_handle_resource_destroy(
+void _wlm_workspace_manager_handle_resource_destroy(
     struct wl_resource *wl_resource_ptr)
 {
     struct wlm_workspace_manager_client *client_ptr =
@@ -505,6 +658,65 @@ void _wlm_workspace_group_handle_destroy(
     struct wlm_workspace_manager_client *client_ptr =
         wl_resource_get_user_data(wl_resource_ptr);
     client_ptr->workspace_group_wl_resource_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_resource_destroy(
+    struct wl_resource *wl_resource_ptr)
+{
+    struct wlm_workspace_manager_client_workspace *client_workspace_ptr =
+        wl_resource_get_user_data(wl_resource_ptr);
+    client_workspace_ptr->workspace_wl_resource_ptr = NULL;
+
+    // FIXME: Remove clients, ..?
+
+    free(client_workspace_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_destroy(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: client %p destroy %p",
+           wl_client_ptr, wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_activate(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: client %p activate %p",
+           wl_client_ptr, wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_deactivate(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: client %p deactivate %p",
+           wl_client_ptr, wl_resource_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_assign(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr,
+    struct wl_resource *workspace_group_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: client %p assign %p to %p",
+           wl_client_ptr, wl_resource_ptr, workspace_group_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void _wlm_workspace_handle_remove(
+    struct wl_client *wl_client_ptr,
+    struct wl_resource *wl_resource_ptr)
+{
+    bs_log(BS_ERROR, "FIXME: client %p remove %p",
+           wl_client_ptr, wl_resource_ptr);
 }
 
 /* == Unit Tests =========================================================== */
