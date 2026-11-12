@@ -550,8 +550,11 @@ bool _wlmtk_surface_element_pointer_button(
     // Additionally, this appears to trigger when creating a new XWL popup and
     // the UP event goes to the new surface. Also needs test & fixing.
     if (WLMTK_BUTTON_UP != button_event_ptr->type) {
-        BS_ASSERT(surface_ptr->wlr_surface_ptr ==
-                  wlr_surface_get_root_surface(focused_wlr_surface_ptr));
+        if (surface_ptr->wlr_surface_ptr !=
+            wlr_surface_get_root_surface(focused_wlr_surface_ptr)) {
+            bs_log(BS_ERROR, "FIXME: focus mismatch! Ignoring pointer button");
+            return true;
+        }
     }
 
     // We're only forwarding PRESSED & RELEASED events.
