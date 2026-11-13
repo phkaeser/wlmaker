@@ -32,6 +32,7 @@ target_compile_definitions(
 target_sources(
   wlmdock_lib
   PRIVATE
+  jetty.c
   launcher.c
   container_surface.c
   subcompositor.c
