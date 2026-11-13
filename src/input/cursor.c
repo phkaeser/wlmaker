@@ -339,11 +339,18 @@ struct wlr_cursor *wlmim_cursor_wlr_cursor(wlmim_cursor_t *cursor_ptr)
 /* ------------------------------------------------------------------------- */
 void wlmim_cursor_attach_input_device(
     wlmim_cursor_t *cursor_ptr,
-    struct wlr_input_device *wlr_input_device_ptr)
+    struct wlr_input_device *wlr_input_device_ptr,
+    struct wlr_output *wlr_output_ptr)
 {
-     wlr_cursor_attach_input_device(
-         cursor_ptr->wlr_cursor_ptr,
-         wlr_input_device_ptr);
+    wlr_cursor_attach_input_device(
+        cursor_ptr->wlr_cursor_ptr,
+        wlr_input_device_ptr);
+    if (NULL != wlr_output_ptr) {
+        wlr_cursor_map_input_to_output(
+            cursor_ptr->wlr_cursor_ptr,
+            wlr_input_device_ptr,
+            wlr_output_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */

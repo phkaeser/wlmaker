@@ -34,6 +34,7 @@ typedef struct _wlmim_cursor_t wlmim_cursor_t;
 
 struct wl_display;
 struct wlr_input_device;
+struct wlr_output;
 struct wlr_output_layout;
 struct wlr_seat;
 
@@ -109,10 +110,13 @@ struct wlr_cursor *wlmim_cursor_wlr_cursor(wlmim_cursor_t *cursor_ptr);
  *
  * @param cursor_ptr
  * @param wlr_input_device_ptr
+ * @param wlr_output_ptr      Optional: Output to map the input device to, or
+ *                            NULL if not mapped to a specific output.
  */
 void wlmim_cursor_attach_input_device(
     wlmim_cursor_t *cursor_ptr,
-    struct wlr_input_device *wlr_input_device_ptr);
+    struct wlr_input_device *wlr_input_device_ptr,
+    struct wlr_output *wlr_output_ptr);
 
 /**
  * Detaches the input device. @see wlmim_cursor_attach_input_device.
