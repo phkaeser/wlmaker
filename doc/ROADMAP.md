@@ -24,7 +24,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
     * Move config and theme loading into shared library.
     * Loads icons according to the `.desktop` specification for apps.
   * Clip: Move functionality into separate process.
-    * Add support for a protocol to show and switch workspaces.
+    * [done] Add server-side support for a protocol to show and switch workspaces.
+    * Add dock-side support for the workspace protocol.
   * Icon Area: Add functionality to that separate process.
     * Show minimized windows in icon area, no matter their other state.
   * There is a means to attach an icon to Dock or Clip (eg. via menu action).
@@ -53,6 +54,8 @@ See the [Detailed Feature List](FEATURES.md) for details.
 * Bug fixes
   * [done] [#552](https://github.com/phkaeser/wlmaker/issues/552) Fix crash when moving off- and back to VT running wlmaker.
   * [done] [#454](https://github.com/phkaeser/wlmaker/issues/454) Lets swaybg background settings apply to the background in all workspaces.
+  * [#567](https://github.com/phkaeser/wlmaker/issues/567) Crashes due to surface root assertion failure(s).
+  * [#569](https://github.com/phkaeser/wlmaker/issues/569) Pointer clicks are lost after workspace switch and re-focus.
   * Fix screensaver not working correctly after switching back from VT to wlmaker.
 
 ## [0.8.1](https://github.com/phkaeser/wlmaker/releases/tag/v0.8.1)
