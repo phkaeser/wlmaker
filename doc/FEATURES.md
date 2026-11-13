@@ -225,6 +225,12 @@ TBD: Raise/Lower.
 * [x] :white_check_mark: Implement, verified on single output.
 * [x] :white_check_mark: Make it work on multiple outputs: Lock surface shown on each.
 
+### `ext-workspace-v1`
+
+* [x] :construction: Implemented. Missing: Activation and updating workspace state to clients.
+* [ ] Support `activate` for `ext_workspace_handle_v1`.
+* [ ] Update `state` for `ext_workspace_handle_v1` when workspaces are switched.
+
 ### `fractional-scale-v1`
 
 * [x] :white_check_mark: Support fractional surface scales.

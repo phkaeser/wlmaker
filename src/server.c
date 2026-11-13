@@ -183,8 +183,10 @@ wlmaker_server_t *wlmaker_server_create(
         return NULL;
     }
 
-    server_ptr->workspace_manager_ptr = wlmaker_workspace_manager_create(
-        server_ptr->wl_display_ptr);
+    server_ptr->workspace_manager_ptr = wlm_workspace_manager_create(
+        server_ptr->wl_display_ptr,
+        server_ptr->wlr_output_layout_ptr,
+        server_ptr->desktop_ptr);
     if (NULL == server_ptr->workspace_manager_ptr) {
         wlmaker_server_destroy(server_ptr);
         return NULL;
@@ -451,7 +453,7 @@ void wlmaker_server_destroy(wlmaker_server_t *server_ptr)
     }
 
     if (NULL != server_ptr->workspace_manager_ptr) {
-        wlmaker_workspace_manager_destroy(server_ptr->workspace_manager_ptr);
+        wlm_workspace_manager_destroy(server_ptr->workspace_manager_ptr);
         server_ptr->workspace_manager_ptr = NULL;
     }
 
