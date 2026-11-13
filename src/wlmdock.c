@@ -55,6 +55,7 @@
 #include "wlclient/layer_shell.h"
 #include "wlclient/wlclient.h"
 
+#include "dock/jetty.h"
 #include "dock/launcher.h"
 #include "dock/subcompositor.h"
 #include "dock/tilebox.h"
@@ -262,6 +263,31 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
+    // == FIXME - Hack ========================================
+    wlmtk_dock_positioning_t p = {
+        .edge = WLR_EDGE_LEFT,
+        .anchor = WLR_EDGE_BOTTOM
+    };
+    bspl_dict_t *d = bspl_dict_from_object(
+        bspl_create_object_from_plist_string(
+            "{AppID=x;CommandLine=false;Icon=\"clip-56x56.png\"}"));
+    wlmdock_launcher_t *launcher_ptr = wlmdock_launcher_create_from_plist(
+        &style.tile, d,
+        dock_ptr->tracker_ptr,
+        dock_ptr->subprocess_monitor_ptr,
+        files_ptr);
+    struct wlmdock_jetty *jetty_ptr = wlmdock_jetty_create(
+        dock_ptr->local_display_ptr,
+        dock_ptr->wlr_backend_ptr,
+        dock_ptr->client_ptr,
+        dock_ptr->layer_shell_ptr,
+        &style.dock,
+        &style.cursor,
+        &p,
+        launcher_ptr,
+        dock_ptr->wlr_allocator_ptr,
+        dock_ptr->wlr_renderer_ptr);
+
     for (size_t i = 0; i < bspl_array_size(state.launchers_array_ptr); ++i) {
         bspl_dict_t *dict_ptr = bspl_dict_from_object(
             bspl_array_at(state.launchers_array_ptr, i));
@@ -293,6 +319,7 @@ int main(int argc, const char **argv)
     wl_display_run(dock_ptr->local_display_ptr);
     bs_log(BS_INFO, "wlmdock: event loop exited.");
 
+    wlmdock_jetty_destroy(jetty_ptr);
     _wlmdock_destroy(dock_ptr);
     bspl_decoded_destroy(wlmaker_config_style_desc, &style);
 
