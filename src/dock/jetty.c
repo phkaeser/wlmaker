@@ -48,7 +48,10 @@ struct wlmdock_jetty *wlmdock_jetty_create(
     struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr,
     const struct wlmtk_dock_style *dock_style_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    const wlmtk_dock_positioning_t *positioning_ptr)
+    const wlmtk_dock_positioning_t *positioning_ptr,
+    wlmdock_launcher_t *launcher_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
+    struct wlr_renderer *wlr_renderer_ptr)
 {
     struct wlmdock_jetty *jetty_ptr = logged_calloc(1, sizeof(*jetty_ptr));
     if (NULL == jetty_ptr) return NULL;
@@ -70,13 +73,26 @@ struct wlmdock_jetty *wlmdock_jetty_create(
     }
 
     jetty_ptr->subcompositor_ptr = wlmdock_subcompositor_create(
-        wl_display_ptr, wlr_backend_ptr, client_ptr, zwlr_layer_shell_ptr,
-        cursor_style_ptr, wlmdock_tilebox_container(jetty_ptr->tilebox_ptr),
+        wl_display_ptr,
+        wlr_backend_ptr,
+        client_ptr,
+        zwlr_layer_shell_ptr,
+        cursor_style_ptr,
+        wlmdock_tilebox_container(jetty_ptr->tilebox_ptr),
         positioning_ptr);
     if (NULL == jetty_ptr->subcompositor_ptr) {
         wlmdock_jetty_destroy(jetty_ptr);
         return NULL;
     }
+    wlmdock_subcompositor_prepare(
+        jetty_ptr->subcompositor_ptr,
+        wlr_backend_ptr,
+        wlr_allocator_ptr,
+        wlr_renderer_ptr);
+
+    wlmdock_tilebox_add_tile(
+        jetty_ptr->tilebox_ptr,
+        wlmdock_launcher_tile(launcher_ptr));
 
     return jetty_ptr;
 }

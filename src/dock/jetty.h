@@ -33,6 +33,8 @@
 
 #include "wlclient/wlclient.h"
 
+#include "launcher.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -54,7 +56,10 @@ struct wlmdock_jetty *wlmdock_jetty_create(
     struct zwlr_layer_shell_v1 *zwlr_layer_shell_ptr,
     const struct wlmtk_dock_style *dock_style_ptr,
     struct wlmim_cursor_style *cursor_style_ptr,
-    const wlmtk_dock_positioning_t *positioning_ptr);
+    const wlmtk_dock_positioning_t *positioning_ptr,
+    wlmdock_launcher_t *launcher_ptr,
+    struct wlr_allocator *wlr_allocator_ptr,
+    struct wlr_renderer *wlr_renderer_ptr);
 
 void wlmdock_jetty_destroy(struct wlmdock_jetty *jetty_ptr);
 
