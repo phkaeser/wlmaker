@@ -262,7 +262,7 @@ void wlmdock_subcompositor_destroy(wlmdock_subcompositor_t *subcompositor_ptr)
         subcompositor_ptr->input_manager_ptr = NULL;
     }
 
-    if (NULL == subcompositor_ptr->wlr_seat_ptr) {
+    if (NULL != subcompositor_ptr->wlr_seat_ptr) {
         wlr_seat_destroy(subcompositor_ptr->wlr_seat_ptr);
         subcompositor_ptr->wlr_seat_ptr = NULL;
     }
