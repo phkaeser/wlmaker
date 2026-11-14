@@ -621,7 +621,7 @@ void _wlmtk_desktop_switch_to_workspace(
     if (NULL == workspace_ptr) {
         desktop_ptr->current_workspace_ptr = NULL;
     } else {
-        BS_ASSERT(desktop_ptr = wlmtk_workspace_get_desktop(workspace_ptr));
+        BS_ASSERT(desktop_ptr == wlmtk_workspace_get_desktop(workspace_ptr));
 
         wlmtk_element_set_visible(
             wlmtk_workspace_window_element(workspace_ptr), true);

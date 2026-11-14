@@ -172,7 +172,7 @@ wlmtk_element_t *wlmtk_rectangle_element(wlmtk_rectangle_t *rectangle_ptr)
 /* ------------------------------------------------------------------------- */
 wlmtk_rectangle_t *wlmtk_rectangle_from_element(wlmtk_element_t *element_ptr)
 {
-    BS_ASSERT(element_ptr->vmt.destroy = _wlmtk_rectangle_element_destroy);
+    BS_ASSERT(element_ptr->vmt.destroy == _wlmtk_rectangle_element_destroy);
     wlmtk_rectangle_t *rectangle_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_rectangle_t, super_element);
     return rectangle_ptr;
