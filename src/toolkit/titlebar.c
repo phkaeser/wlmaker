@@ -72,7 +72,7 @@ struct _wlmtk_titlebar_t {
     uint32_t                  properties;
 
     /** Title bar style. */
-    const struct wlmtk_titlebar_style *style_ptr;
+    struct wlmtk_titlebar_style style;
 };
 
 static void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr);
@@ -136,12 +136,12 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
-    titlebar_ptr->style_ptr = style_ptr;
+    titlebar_ptr->style = *style_ptr;
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
-                        &titlebar_ptr->style_ptr->margin)) {
+                        &titlebar_ptr->style.margin)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -235,9 +235,9 @@ bool wlmtk_titlebar_set_width(
     unsigned width)
 {
     if (tb->width == width) return true;
-    if (!_wlmtk_titlebar_redraw_buffers(tb, tb->style_ptr, width)) return false;
+    if (!_wlmtk_titlebar_redraw_buffers(tb, &tb->style, width)) return false;
     BS_ASSERT(width == tb->width);
-    return _wlmtk_titlebar_redraw(tb, tb->style_ptr);
+    return _wlmtk_titlebar_redraw(tb, &tb->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -252,7 +252,7 @@ bool wlmtk_titlebar_set_style(
         return false;
     }
 
-    tb->style_ptr = style_ptr;
+    tb->style = *style_ptr;
     return true;
 }
 
@@ -264,7 +264,7 @@ void wlmtk_titlebar_set_properties(
     if (titlebar_ptr->properties == properties) return;
     titlebar_ptr->properties = properties;
 
-    (void)_wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
+    (void)_wlmtk_titlebar_redraw(titlebar_ptr, &titlebar_ptr->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -296,7 +296,7 @@ void wlmtk_titlebar_set_title(
     if (titlebar_ptr->title_ptr == title_ptr) return;
 
     titlebar_ptr->title_ptr = title_ptr;
-    _wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
+    _wlmtk_titlebar_redraw(titlebar_ptr, &titlebar_ptr->style);
 }
 
 /* ------------------------------------------------------------------------- */
