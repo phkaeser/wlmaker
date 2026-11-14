@@ -45,7 +45,7 @@ struct _wlmtk_resizebar_t {
     /** Current width of the resize bar. */
     unsigned                  width;
     /** Style of the resize bar. */
-    const struct wlmtk_resizebar_style *style_ptr;
+    struct wlmtk_resizebar_style style;
 
     /** Background. */
     bs_gfxbuf_t               *gfxbuf_ptr;
@@ -102,7 +102,7 @@ wlmtk_resizebar_t *wlmtk_resizebar_create(
     wlmtk_resizebar_t *resizebar_ptr = logged_calloc(
         1, sizeof(wlmtk_resizebar_t));
     if (NULL == resizebar_ptr) return NULL;
-    resizebar_ptr->style_ptr = style_ptr;
+    resizebar_ptr->style = *style_ptr;
 
     if (!wlmtk_box_init(&resizebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
@@ -189,7 +189,7 @@ bool wlmtk_resizebar_set_width(
 {
     if (resizebar_ptr->width == width) return true;
     return _wlmtk_resizebar_redraw(
-        resizebar_ptr, resizebar_ptr->style_ptr, width);
+        resizebar_ptr, &resizebar_ptr->style, width);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -199,7 +199,7 @@ bool wlmtk_resizebar_set_style(
 {
     if (!_wlmtk_resizebar_redraw(
             resizebar_ptr, style_ptr, resizebar_ptr->width)) return false;
-    resizebar_ptr->style_ptr = style_ptr;
+    resizebar_ptr->style = *style_ptr;
     return true;
 }
 
