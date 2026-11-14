@@ -150,10 +150,11 @@ bool wlmtk_tile_set_background_buffer(
     if (tile_ptr->style.size != (uint64_t)wlr_buffer_ptr->width ||
         tile_ptr->style.size != (uint64_t)wlr_buffer_ptr->height) return false;
 
+    wlr_buffer_lock(wlr_buffer_ptr);
     if (NULL != tile_ptr->background_wlr_buffer_ptr) {
         wlr_buffer_unlock(tile_ptr->background_wlr_buffer_ptr);
     }
-    tile_ptr->background_wlr_buffer_ptr = wlr_buffer_lock(wlr_buffer_ptr);
+    tile_ptr->background_wlr_buffer_ptr = wlr_buffer_ptr;
     wlmtk_buffer_set(&tile_ptr->buffer, tile_ptr->background_wlr_buffer_ptr);
     return true;
 }
