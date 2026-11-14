@@ -139,18 +139,21 @@ void wlmtk_button_set(
                   pressed_wlr_buffer_ptr->height);
     }
 
+    if (NULL != released_wlr_buffer_ptr) {
+        wlr_buffer_lock(released_wlr_buffer_ptr);
+    }
     if (NULL != button_ptr->released_wlr_buffer_ptr) {
         wlr_buffer_unlock(button_ptr->released_wlr_buffer_ptr);
     }
-    button_ptr->released_wlr_buffer_ptr = wlr_buffer_lock(
-        released_wlr_buffer_ptr);
+    button_ptr->released_wlr_buffer_ptr = released_wlr_buffer_ptr;
 
+    if (NULL != pressed_wlr_buffer_ptr) {
+        wlr_buffer_lock(pressed_wlr_buffer_ptr);
+    }
     if (NULL != button_ptr->pressed_wlr_buffer_ptr) {
         wlr_buffer_unlock(button_ptr->pressed_wlr_buffer_ptr);
     }
-    button_ptr->pressed_wlr_buffer_ptr = wlr_buffer_lock(
-        pressed_wlr_buffer_ptr);
-
+    button_ptr->pressed_wlr_buffer_ptr = pressed_wlr_buffer_ptr;
     apply_state(button_ptr);
 }
 
