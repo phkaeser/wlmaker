@@ -23,6 +23,7 @@
 
 #include <libbase/libbase.h>
 #include <stdlib.h>
+#include <xkbcommon/xkbcommon.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -118,6 +119,11 @@ static bool _wlmtk_desktop_element_pointer_axis(
 static bool _wlmtk_desktop_element_keyboard_event(
     wlmtk_element_t *element_ptr,
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+static bool _wlmtk_desktop_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    uint32_t modifiers);
 
 static void _wlmtk_desktop_handle_output_layout_destroy(
     struct wl_listener *listener_ptr,
@@ -139,6 +145,7 @@ static const wlmtk_element_vmt_t _wlmtk_desktop_element_vmt = {
     .pointer_button = _wlmtk_desktop_element_pointer_button,
     .pointer_axis = _wlmtk_desktop_element_pointer_axis,
     .keyboard_event = _wlmtk_desktop_element_keyboard_event,
+    .keyboard_sym = _wlmtk_desktop_element_keyboard_sym,
 };
 
 /** Arg for iterators that are setting the style. */
@@ -476,6 +483,12 @@ bool wlmtk_desktop_lock(
     }
     desktop_ptr->lock_element_ptr = element_ptr;
 
+    if (NULL != desktop_ptr->container.pointer_grab_element_ptr) {
+        wlmtk_container_pointer_grab_release(
+            &desktop_ptr->container,
+            desktop_ptr->container.pointer_grab_element_ptr);
+    }
+
     if (NULL != desktop_ptr->current_workspace_ptr) {
         wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
     }
@@ -646,7 +659,8 @@ void _wlmtk_desktop_switch_to_workspace(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_workspace_t *workspace_ptr)
 {
-    if (desktop_ptr->current_workspace_ptr == workspace_ptr) return;
+    if (desktop_ptr->current_workspace_ptr == workspace_ptr ||
+        desktop_ptr->locked) return;
 
     if (NULL == workspace_ptr) {
         desktop_ptr->current_workspace_ptr = NULL;
@@ -798,6 +812,27 @@ bool _wlmtk_desktop_element_keyboard_event(
 
     // Fall-through: Too bad -- the screen is locked, but the lock element
     // disappeared (crashed?). No more handling of keys here...
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Forwards translated keys to the locked element, if locked. */
+bool _wlmtk_desktop_element_keyboard_sym(
+        wlmtk_element_t *element_ptr,
+        xkb_keysym_t keysym,
+        enum xkb_key_direction direction,
+        uint32_t modifiers)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_desktop_t, container.super_element);
+
+    if (!desktop_ptr->locked) {
+        return desktop_ptr->orig_super_element_vmt.keyboard_sym(
+            element_ptr, keysym, direction, modifiers);
+    } else if (NULL != desktop_ptr->lock_element_ptr) {
+        return wlmtk_element_keyboard_sym(
+            desktop_ptr->lock_element_ptr, keysym, direction, modifiers);
+    }
     return false;
 }
 
