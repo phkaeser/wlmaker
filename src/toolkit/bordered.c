@@ -94,8 +94,10 @@ void wlmtk_bordered_fini(wlmtk_bordered_t *bordered_ptr)
     _wlmtk_bordered_destroy_border_rectangle(
         bordered_ptr, &bordered_ptr->northern_border_rectangle_ptr);
 
-    wlmtk_container_remove_element(&bordered_ptr->super_container,
-                                   bordered_ptr->element_ptr);
+    if (NULL != bordered_ptr->element_ptr) {
+        wlmtk_container_remove_element(&bordered_ptr->super_container,
+                                       bordered_ptr->element_ptr);
+    }
     wlmtk_container_fini(&bordered_ptr->super_container);
     *bordered_ptr = (wlmtk_bordered_t){};
 }
