@@ -91,8 +91,6 @@ void wlmtk_buffer_fini(wlmtk_buffer_t *buffer_ptr)
     }
 
     if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
-        wlmtk_util_disconnect_listener(
-            &buffer_ptr->super_element.wlr_scene_node_destroy_listener);
         wlr_scene_node_destroy(&buffer_ptr->wlr_scene_buffer_ptr->node);
         buffer_ptr->wlr_scene_buffer_ptr = NULL;
     }

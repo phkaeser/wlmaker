@@ -121,14 +121,14 @@ bool wlmtk_container_init_attached(
 {
     if (!wlmtk_container_init(container_ptr)) return false;
 
-    container_ptr->super_element.wlr_scene_node_ptr =
-        _wlmtk_container_element_create_scene_node(
-            &container_ptr->super_element, root_wlr_scene_tree_ptr);
-    if (NULL == container_ptr->super_element.wlr_scene_node_ptr) {
+    struct wlr_scene_node *n = _wlmtk_container_element_create_scene_node(
+        &container_ptr->super_element, root_wlr_scene_tree_ptr);
+    if (NULL == n) {
         wlmtk_container_fini(container_ptr);
         return false;
     }
 
+    wlmtk_element_set_wlr_scene_node(&container_ptr->super_element, n);
     BS_ASSERT(NULL != container_ptr->super_element.wlr_scene_node_ptr);
     return true;
 }
@@ -807,7 +807,8 @@ void _wlmtk_container_handle_wlr_scene_tree_node_destroy(
 
     // Since this is a callback from the tree node dtor, the tree is going to
     // be destroyed. We are using this to reset the container's reference.
-    wlmtk_util_disconnect_listener(&container_ptr->wlr_scene_tree_node_destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &container_ptr->wlr_scene_tree_node_destroy_listener);
 }
 
 /* ------------------------------------------------------------------------- */
