@@ -23,7 +23,6 @@
 
 #include <libbase/libbase.h>
 #include <stdlib.h>
-#include <wayland-util.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -41,6 +40,7 @@
 #include "window.h"
 #include "workspace.h"
 
+struct wl_list;
 struct wlr_keyboard_key_event;
 
 /* == Declarations ========================================================= */
@@ -81,6 +81,8 @@ struct _wlmtk_desktop_t {
     /** Holds the fullscreen elements of each workspace. */
     wlmtk_container_t         workspace_fullscreen_container;
 
+    /** Listener for wlr_output_layout::events.destroy. */
+    struct wl_listener        output_layout_destroy_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
@@ -93,6 +95,9 @@ struct _wlmtk_desktop_t {
 };
 
 static void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr);
+static bool _wlmtk_desktop_layout_output(
+    struct wl_list *link_ptr,
+    void *ud_ptr);
 
 static void _wlmtk_desktop_switch_to_workspace(
     wlmtk_desktop_t *desktop_ptr,
@@ -114,6 +119,9 @@ static bool _wlmtk_desktop_element_keyboard_event(
     wlmtk_element_t *element_ptr,
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
 
+static void _wlmtk_desktop_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_desktop_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -239,6 +247,10 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         wlmtk_rectangle_element(desktop_ptr->background_rectangle_ptr));
 
     wlmtk_util_connect_listener_signal(
+        &wlr_output_layout_ptr->events.destroy,
+        &desktop_ptr->output_layout_destroy_listener,
+        _wlmtk_desktop_handle_output_layout_destroy);
+    wlmtk_util_connect_listener_signal(
         &wlr_output_layout_ptr->events.change,
         &desktop_ptr->output_layout_change_listener,
         _wlmtk_desktop_handle_output_layout_change);
@@ -256,8 +268,8 @@ wlmtk_desktop_t *wlmtk_desktop_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
 {
-    wlmtk_util_disconnect_listener(
-        &desktop_ptr->output_layout_change_listener);
+    _wlmtk_desktop_handle_output_layout_destroy(
+        &desktop_ptr->output_layout_destroy_listener, NULL);
 
     bs_dllist_for_each(
         &desktop_ptr->workspaces,
@@ -572,37 +584,46 @@ void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr)
     wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_desktop_t, container.super_element);
 
-    // Process each output.
-    struct wlr_output_layout_output *wlr_output_layout_output_ptr;
-    wl_list_for_each(
-        wlr_output_layout_output_ptr,
-        &desktop_ptr->wlr_output_layout_ptr->outputs,
-        link) {
-
-        // Process each layer: An updated panel may affect positioning within
-        // other layers, and the workspace maximization area.
-        struct wlr_box usable_area;
-        wlr_output_layout_get_box(
-            desktop_ptr->wlr_output_layout_ptr,
-            wlr_output_layout_output_ptr->output, &usable_area);
-        for (int i = 0; i < WLMTK_DESKTOP_LAYER_OVERLAY + 1; ++i) {
-            wlmtk_layer_reconfigure_output(
-                desktop_ptr->layer_ptrs[i],
-                wlr_output_layout_output_ptr->output,
-                &usable_area);
-        }
-
-        for (bs_dllist_node_t *node_ptr = desktop_ptr->workspaces.head_ptr;
-             node_ptr != NULL;
-             node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
-            wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(node_ptr);
-            wlmtk_workspace_set_maximize_extents(
-                ws_ptr,
-                wlr_output_layout_output_ptr->output,
-                &usable_area);
-        }
+    if (NULL != desktop_ptr->wlr_output_layout_ptr) {
+        wlmtk_util_wl_list_for_each(
+            &desktop_ptr->wlr_output_layout_ptr->outputs,
+            _wlmtk_desktop_layout_output,
+            desktop_ptr);
     }
     desktop_ptr->orig_super_element_vmt.layout(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Lays out the desktop elements for all layers on the particular output. */
+bool _wlmtk_desktop_layout_output(struct wl_list *link_ptr, void *ud_ptr)
+{
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        BS_CONTAINER_OF(link_ptr, struct wlr_output_layout_output, link);
+    wlmtk_desktop_t *desktop_ptr = ud_ptr;
+
+    // Process each layer: An updated panel may affect positioning within other
+    // layers, and the workspace maximization area.
+    struct wlr_box usable_area;
+    wlr_output_layout_get_box(
+        desktop_ptr->wlr_output_layout_ptr,
+        wlr_output_layout_output_ptr->output, &usable_area);
+    for (int i = 0; i < WLMTK_DESKTOP_LAYER_OVERLAY + 1; ++i) {
+        wlmtk_layer_reconfigure_output(
+            desktop_ptr->layer_ptrs[i],
+            wlr_output_layout_output_ptr->output,
+            &usable_area);
+    }
+
+    for (bs_dllist_node_t *node_ptr = desktop_ptr->workspaces.head_ptr;
+         node_ptr != NULL;
+         node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
+        wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(node_ptr);
+        wlmtk_workspace_set_maximize_extents(
+            ws_ptr,
+            wlr_output_layout_output_ptr->output,
+            &usable_area);
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -769,6 +790,23 @@ bool _wlmtk_desktop_element_keyboard_event(
     // Fall-through: Too bad -- the screen is locked, but the lock element
     // disappeared (crashed?). No more handling of keys here...
     return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles wlr_output_layout::events::destroy. */
+void _wlmtk_desktop_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_desktop_t, output_layout_destroy_listener);
+    if (NULL == desktop_ptr->wlr_output_layout_ptr) return;
+
+    wlmtk_util_disconnect_listener(
+        &desktop_ptr->output_layout_destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &desktop_ptr->output_layout_change_listener);
+    desktop_ptr->wlr_output_layout_ptr = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
