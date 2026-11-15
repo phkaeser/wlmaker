@@ -1441,6 +1441,8 @@ void test_keyboard_event(bs_test_t *test_ptr)
     wlmtk_element_t *parent_elptr = &parent.super_element;
 
     wlmtk_fake_element_t *fe_ptr = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe_ptr);
+    wlmtk_element_set_visible(&fe_ptr->element, true);
     wlmtk_container_add_element(&container, &fe_ptr->element);
 
     BS_TEST_VERIFY_FALSE(
@@ -1522,11 +1524,13 @@ void test_keyboard_focus(bs_test_t *test_ptr)
     // Two child elements to c.
     wlmtk_fake_element_t *fe1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe1_ptr);
+    wlmtk_element_set_visible(&fe1_ptr->element, true);
     wlmtk_container_add_element(&c, &fe1_ptr->element);
 
     // One extra child element to p.
     wlmtk_fake_element_t *fe2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fe2_ptr);
+    wlmtk_element_set_visible(&fe2_ptr->element, true);
     wlmtk_container_add_element(&p, &fe2_ptr->element);
 
     // fe1 of c grabs focus. Ensure it is propagated.
@@ -1808,6 +1812,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
 
     wlmtk_fake_element_t *e1_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, e1_ptr);
+    wlmtk_element_set_visible(&e1_ptr->element, true);
     wlmtk_element_set_position(&e1_ptr->element, 1, 1);
     wlmtk_util_connect_test_listener(
         &e1_ptr->element.events.pointer_enter, &e1_enter);
@@ -1828,6 +1833,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
     // 2. Add second element, atop: Receives focus, no 'leave' for container.
     wlmtk_fake_element_t *e2_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, e2_ptr);
+    wlmtk_element_set_visible(&e2_ptr->element, true);
     wlmtk_util_connect_test_listener(
         &e2_ptr->element.events.pointer_enter, &e2_enter);
     wlmtk_util_connect_test_listener(
@@ -1841,14 +1847,16 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, e2_enter.calls);
     BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
 
-    // 3. Make second element invisible. Blur, E1 focus, no container leave.
+    // 3. Make second element invisible. Blur, E1 focus, E2 leave.
     wlmtk_element_set_visible(&e2_ptr->element, false);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, e2_leave.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, c_leave.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
     wlmtk_element_pointer_motion(&c.super_element, &m);
     BS_TEST_VERIFY_TRUE(test_ptr, e1_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_enter.calls);
     BS_TEST_VERIFY_FALSE(test_ptr, e2_ptr->element.pointer_inside);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, e2_leave.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, c_enter.calls);
 
     // 4. Make it visible again. Receives focus.
     wlmtk_element_set_visible(&e2_ptr->element, true);
@@ -1857,7 +1865,7 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_leave.calls);
     BS_TEST_VERIFY_TRUE(test_ptr, e2_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e1_enter.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, c_enter.calls);
 
     // 5. Move pointer to where only e1 is. E2 blurs, E1 focus, no C leave.
     m = (wlmtk_pointer_motion_event_t ){ .x = 3.0, .y = 4.0 };
@@ -1868,14 +1876,14 @@ void test_pointer_focus_children(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 3, e1_enter.calls);
     BS_TEST_VERIFY_FALSE(test_ptr, e2_ptr->element.pointer_inside);
     BS_TEST_VERIFY_EQ(test_ptr, 2, e2_leave.calls);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, c_enter.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, c_enter.calls);
 
-    BS_TEST_VERIFY_EQ(test_ptr, 0, c_leave.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, c_leave.calls);
     wlmtk_container_remove_element(&c, &e2_ptr->element);
     wlmtk_element_destroy(&e2_ptr->element);
     wlmtk_container_remove_element(&c, &e1_ptr->element);
     wlmtk_element_destroy(&e1_ptr->element);
-    BS_TEST_VERIFY_EQ(test_ptr, 1, c_leave.calls);
+    BS_TEST_VERIFY_EQ(test_ptr, 2, c_leave.calls);
     wlmtk_container_fini(&c);
 }
 

@@ -234,6 +234,11 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
     }
 
+    if (!visible) {
+        wlmtk_element_pointer_blur(element_ptr);
+        wlmtk_element_keyboard_blur(element_ptr);
+    }
+
     wlmtk_element_invalidate_parent_layout(element_ptr);
 }
 
@@ -527,6 +532,7 @@ void wlmtk_fake_element_set_dimensions(
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
 {
+    if (!fake_element_ptr->element.visible) return;
     fake_element_ptr->has_keyboard_focus = true;
     if (NULL != fake_element_ptr->element.parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
@@ -914,6 +920,15 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, &e, motion.last_data_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->element.pointer_inside);
 
+    // Move inside agaion.
+    e = (wlmtk_pointer_motion_event_t){ .x = 1.0, .y = 2.0, .time_msec = 6 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&fake_element_ptr->element, &e));
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->element.pointer_inside);
+    wlmtk_element_set_visible(&fake_element_ptr->element, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->element.pointer_inside);
+
     wlmtk_util_disconnect_test_listener(&motion);
     wlmtk_util_disconnect_test_listener(&leave);
     wlmtk_util_disconnect_test_listener(&enter);
@@ -958,10 +973,16 @@ void test_keyboard_focus(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
+    wlmtk_element_set_visible(&fake_element_ptr->element, true);
 
     wlmtk_fake_element_grab_keyboard(fake_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->has_keyboard_focus);
     wlmtk_element_keyboard_blur(&fake_element_ptr->element);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->has_keyboard_focus);
+
+    wlmtk_fake_element_grab_keyboard(fake_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->has_keyboard_focus);
+    wlmtk_element_set_visible(&fake_element_ptr->element, false);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->has_keyboard_focus);
 
     wlmtk_element_destroy(&fake_element_ptr->element);
