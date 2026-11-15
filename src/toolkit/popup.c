@@ -48,9 +48,11 @@ bool wlmtk_popup_init(
     wlmtk_element_set_visible(&popup_ptr->popup_container.super_element, true);
 
     if (NULL != element_ptr) {
+        // Adds the element. This goes below further popups.
         popup_ptr->element_ptr = element_ptr;
-        wlmtk_container_add_element(
+        wlmtk_container_add_element_atop(
             &popup_ptr->super_container,
+            NULL,
             popup_ptr->element_ptr);
     }
 
