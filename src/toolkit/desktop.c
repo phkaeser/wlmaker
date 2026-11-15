@@ -659,8 +659,7 @@ void _wlmtk_desktop_switch_to_workspace(
     wlmtk_desktop_t *desktop_ptr,
     wlmtk_workspace_t *workspace_ptr)
 {
-    if (desktop_ptr->current_workspace_ptr == workspace_ptr ||
-        desktop_ptr->locked) return;
+    if (desktop_ptr->current_workspace_ptr == workspace_ptr) return;
 
     if (NULL == workspace_ptr) {
         desktop_ptr->current_workspace_ptr = NULL;
