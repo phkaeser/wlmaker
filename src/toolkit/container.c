@@ -567,8 +567,8 @@ bool _wlmtk_container_element_pointer_accepts_motion(
         }
     }
 
-    container_ptr->pointer_focus_element_ptr = NULL;
     wlmtk_element_pointer_blur(element_ptr);
+    container_ptr->pointer_focus_element_ptr = NULL;
     return false;
 }
 
