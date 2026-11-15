@@ -24,6 +24,9 @@
 #include <libbase/libbase.h>
 #include <stddef.h>
 #include <wayland-util.h>
+#define WLR_USE_UNSTABLE
+#include <wlr/types/wlr_buffer.h>
+#undef WLR_USE_UNSTABLE
 
 #include "test.h"  // IWYU pragma: keep
 
@@ -55,6 +58,18 @@ bool wlmtk_util_wl_list_for_each(
         }
     }
     return rv;
+}
+
+/* ------------------------------------------------------------------------- */
+void wlmtk_util_wlr_buffer_replace(
+    struct wlr_buffer **old_wlr_buffer_ptr_ptr,
+    struct wlr_buffer *wlr_buffer_ptr)
+{
+    if (NULL != wlr_buffer_ptr) wlr_buffer_lock(wlr_buffer_ptr);
+    if (NULL != *BS_ASSERT_NOTNULL(old_wlr_buffer_ptr_ptr)) {
+        wlr_buffer_unlock(*old_wlr_buffer_ptr_ptr);
+    }
+    *old_wlr_buffer_ptr_ptr = wlr_buffer_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
