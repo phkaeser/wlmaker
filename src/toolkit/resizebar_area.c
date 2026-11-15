@@ -203,6 +203,10 @@ bool _wlmtk_resizebar_area_element_pointer_button(
     wlmtk_resizebar_area_t *resizebar_area_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_resizebar_area_t, super_buffer.super_element);
 
+    if (NULL == wlmtk_window_get_workspace(resizebar_area_ptr->window_ptr)) {
+        return false;
+    }
+
     if (button_event_ptr->button != BTN_LEFT) return true;
 
     switch (button_event_ptr->type) {

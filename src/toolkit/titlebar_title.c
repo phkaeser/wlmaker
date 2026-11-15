@@ -196,6 +196,10 @@ bool _wlmtk_titlebar_title_element_pointer_button(
     wlmtk_titlebar_title_t *titlebar_title_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_titlebar_title_t, super_buffer.super_element);
 
+    if (NULL == wlmtk_window_get_workspace(titlebar_title_ptr->window_ptr)) {
+        return false;
+    }
+
     if (BTN_LEFT == button_event_ptr->button &&
         WLMTK_BUTTON_DOWN == button_event_ptr->type) {
         wlmtk_workspace_begin_window_move(

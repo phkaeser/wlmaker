@@ -96,6 +96,8 @@ void wlmtk_pointer_set_xcursor_manager(
     wlmtk_pointer_t *pointer_ptr,
     struct wlr_xcursor_manager *wxm_ptr)
 {
+    if (NULL == pointer_ptr ||
+        NULL == pointer_ptr->wlr_cursor_ptr) return;
     pointer_ptr->wlr_xcursor_manager_ptr = wxm_ptr;
     wlr_cursor_set_xcursor(
         pointer_ptr->wlr_cursor_ptr,
