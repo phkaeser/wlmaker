@@ -78,6 +78,7 @@ void wlmtk_popup_fini(wlmtk_popup_t *popup_ptr)
             &popup_ptr->super_container,
             &popup_ptr->popup_container.super_element);
     }
+    BS_ASSERT(bs_dllist_empty(&popup_ptr->popup_container.elements));
     wlmtk_container_fini(&popup_ptr->popup_container);
 
     wlmtk_container_fini(&popup_ptr->super_container);

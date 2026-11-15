@@ -268,6 +268,11 @@ wlmtk_desktop_t *wlmtk_desktop_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
 {
+    if (NULL != desktop_ptr->lock_element_ptr) {
+        wlmtk_desktop_lock_unreference(
+            desktop_ptr, desktop_ptr->lock_element_ptr);
+    }
+
     _wlmtk_desktop_handle_output_layout_destroy(
         &desktop_ptr->output_layout_destroy_listener, NULL);
 
