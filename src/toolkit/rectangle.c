@@ -121,6 +121,8 @@ wlmtk_rectangle_t *wlmtk_rectangle_create(
 void wlmtk_rectangle_destroy(wlmtk_rectangle_t *rectangle_ptr)
 {
     if (NULL != rectangle_ptr->wlr_scene_rect_ptr) {
+        wlmtk_util_disconnect_listener(
+            &rectangle_ptr->super_element.wlr_scene_node_destroy_listener);
         wlr_scene_node_destroy(&rectangle_ptr->wlr_scene_rect_ptr->node);
         rectangle_ptr->wlr_scene_rect_ptr = NULL;
     }

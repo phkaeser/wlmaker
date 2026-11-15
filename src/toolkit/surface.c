@@ -66,6 +66,8 @@ struct _wlmtk_surface_t {
     /** Committed height of the surface, in pixels. */
     int                       committed_height;
 
+    /** Listener for the `events.destroy` signal of `wlr_surface`. */
+    struct wl_listener        surface_destroy_listener;
     /** Listener for the `events.commit` signal of `wlr_surface`. */
     struct wl_listener        surface_commit_listener;
     /** Listener for the `map` signal of `wlr_surface`. */
@@ -116,6 +118,9 @@ static bool _wlmtk_surface_element_keyboard_event(
 static void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
     struct wl_listener *listener_ptr,
     void *data_ptr);
+static void _wlmtk_surface_handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -136,6 +141,11 @@ static void _wlmtk_surface_commit_size(
     wlmtk_surface_t *surface_ptr,
     int width,
     int height);
+static void _wlmtk_surface_connect_wlr_surface(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_surface *wlr_surface_ptr);
+static void _wlmtk_surface_disconnect_wlr_surface(
+    wlmtk_surface_t *surface_ptr);
 
 /* == Data ================================================================= */
 
@@ -216,7 +226,8 @@ void wlmtk_surface_set_activated(
 {
     if (surface_ptr->activated == activated) return;
 
-    if (NULL != surface_ptr->wlr_seat_ptr) {
+    if (NULL != surface_ptr->wlr_seat_ptr &&
+        NULL != surface_ptr->wlr_surface_ptr) {
         struct wlr_keyboard *wlr_keyboard_ptr = wlr_seat_get_keyboard(
             surface_ptr->wlr_seat_ptr);
         if (activated) {
@@ -308,24 +319,7 @@ bool _wlmtk_surface_init(
         &surface_ptr->element_pointer_motion_listener,
         _wlmtk_surface_handle_element_pointer_motion);
 
-    surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
-    if (NULL != surface_ptr->wlr_surface_ptr) {
-        surface_ptr->wlr_surface_ptr->data = surface_ptr;
-        wlmtk_util_connect_listener_signal(
-            &wlr_surface_ptr->events.commit,
-            &surface_ptr->surface_commit_listener,
-            _wlmtk_surface_handle_surface_commit);
-        wlmtk_util_connect_listener_signal(
-            &wlr_surface_ptr->events.map,
-            &surface_ptr->surface_map_listener,
-            _wlmtk_surface_handle_surface_map);
-        wlmtk_util_connect_listener_signal(
-            &wlr_surface_ptr->events.unmap,
-            &surface_ptr->surface_unmap_listener,
-            _wlmtk_surface_handle_surface_unmap);
-        surface_ptr->wlr_surface_ptr->data = surface_ptr;
-    }
-
+    _wlmtk_surface_connect_wlr_surface(surface_ptr, wlr_surface_ptr);
     return true;
 }
 
@@ -363,24 +357,8 @@ bool _wlmtk_xdg_surface_init(
         _wlmtk_surface_handle_element_pointer_motion);
 
     surface_ptr->wlr_xdg_surface_ptr = wlr_xdg_surface_ptr;
-    surface_ptr->wlr_surface_ptr = wlr_xdg_surface_ptr->surface;
-    if (NULL != surface_ptr->wlr_surface_ptr) {
-        surface_ptr->wlr_surface_ptr->data = surface_ptr;
-        wlmtk_util_connect_listener_signal(
-            &surface_ptr->wlr_surface_ptr->events.commit,
-            &surface_ptr->surface_commit_listener,
-            _wlmtk_surface_handle_surface_commit);
-        wlmtk_util_connect_listener_signal(
-            &surface_ptr->wlr_surface_ptr->events.map,
-            &surface_ptr->surface_map_listener,
-            _wlmtk_surface_handle_surface_map);
-        wlmtk_util_connect_listener_signal(
-            &surface_ptr->wlr_surface_ptr->events.unmap,
-            &surface_ptr->surface_unmap_listener,
-            _wlmtk_surface_handle_surface_unmap);
-        surface_ptr->wlr_surface_ptr->data = surface_ptr;
-    }
-
+    _wlmtk_surface_connect_wlr_surface(
+        surface_ptr, wlr_xdg_surface_ptr->surface);
     return true;
 }
 
@@ -392,18 +370,7 @@ bool _wlmtk_xdg_surface_init(
  */
 void _wlmtk_surface_fini(wlmtk_surface_t *surface_ptr)
 {
-    if (NULL != surface_ptr->wlr_scene_tree_ptr) {
-        wlmtk_util_disconnect_listener(
-            &surface_ptr->wlr_scene_tree_node_destroy_listener);
-    }
-
-    if (NULL != surface_ptr->wlr_surface_ptr) {
-        surface_ptr->wlr_surface_ptr->data = NULL;
-        surface_ptr->wlr_surface_ptr = NULL;
-        wlmtk_util_disconnect_listener(&surface_ptr->surface_commit_listener);
-        wlmtk_util_disconnect_listener(&surface_ptr->surface_map_listener);
-        wlmtk_util_disconnect_listener(&surface_ptr->surface_unmap_listener);
-    }
+    _wlmtk_surface_disconnect_wlr_surface(surface_ptr);
 
     wlmtk_util_disconnect_listener(
         &surface_ptr->element_pointer_motion_listener);
@@ -439,6 +406,7 @@ struct wlr_scene_node *_wlmtk_surface_element_create_scene_node(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
     BS_ASSERT(NULL == surface_ptr->wlr_scene_tree_ptr);
+    if (NULL == surface_ptr->wlr_surface_ptr) return NULL;
 
     if (NULL != surface_ptr->wlr_xdg_surface_ptr) {
         surface_ptr->wlr_scene_tree_ptr = wlr_scene_xdg_surface_create(
@@ -655,6 +623,20 @@ void _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Handler for the `destroy` signal of `wlr_surface`. De-connects. */
+static void _wlmtk_surface_handle_surface_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_surface_t, surface_destroy_listener);
+
+    _wlmtk_surface_disconnect_wlr_surface(surface_ptr);
+    _wlmtk_surface_handle_wlr_scene_tree_node_destroy(
+        &surface_ptr->wlr_scene_tree_node_destroy_listener, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
 /** Handler for the `commit` signal of `wlr_surface`. */
 void _wlmtk_surface_handle_surface_commit(
     struct wl_listener *listener_ptr,
@@ -816,6 +798,49 @@ void _wlmtk_surface_commit_size(
     }
 }
 
+/* ------------------------------------------------------------------------- */
+/** Connects `surface_ptr` to `wlr_surface_ptr`. */
+void _wlmtk_surface_connect_wlr_surface(
+    wlmtk_surface_t *surface_ptr,
+    struct wlr_surface *wlr_surface_ptr)
+{
+    _wlmtk_surface_disconnect_wlr_surface(surface_ptr);
+    if (NULL == wlr_surface_ptr) return;
+
+    surface_ptr->wlr_surface_ptr = wlr_surface_ptr;
+    surface_ptr->wlr_surface_ptr->data = surface_ptr;
+    wlmtk_util_connect_listener_signal(
+        &wlr_surface_ptr->events.destroy,
+        &surface_ptr->surface_destroy_listener,
+        _wlmtk_surface_handle_surface_destroy);
+    wlmtk_util_connect_listener_signal(
+        &wlr_surface_ptr->events.commit,
+        &surface_ptr->surface_commit_listener,
+        _wlmtk_surface_handle_surface_commit);
+    wlmtk_util_connect_listener_signal(
+        &wlr_surface_ptr->events.map,
+        &surface_ptr->surface_map_listener,
+        _wlmtk_surface_handle_surface_map);
+    wlmtk_util_connect_listener_signal(
+        &wlr_surface_ptr->events.unmap,
+        &surface_ptr->surface_unmap_listener,
+        _wlmtk_surface_handle_surface_unmap);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Disconnects `surface_ptr` from @ref wlmtk_surface_t::wlr_surface_ptr. */
+void _wlmtk_surface_disconnect_wlr_surface(wlmtk_surface_t *surface_ptr)
+{
+    if (NULL == surface_ptr->wlr_surface_ptr) return;
+    surface_ptr->wlr_surface_ptr->data = NULL;
+    surface_ptr->wlr_surface_ptr = NULL;
+    wlmtk_util_disconnect_listener(&surface_ptr->surface_destroy_listener);
+    wlmtk_util_disconnect_listener(&surface_ptr->surface_commit_listener);
+    wlmtk_util_disconnect_listener(&surface_ptr->surface_map_listener);
+    wlmtk_util_disconnect_listener(&surface_ptr->surface_unmap_listener);
+
+    surface_ptr->wlr_xdg_surface_ptr = NULL;
+}
 
 /* == Unit tests =========================================================== */
 
