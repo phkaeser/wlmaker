@@ -476,7 +476,9 @@ bool wlmtk_desktop_lock(
     }
     desktop_ptr->lock_element_ptr = element_ptr;
 
-    wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
+    if (NULL != desktop_ptr->current_workspace_ptr) {
+        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
+    }
 
     wlmtk_rectangle_set_size(
         desktop_ptr->curtain_rectangle_ptr,
@@ -515,7 +517,9 @@ bool wlmtk_desktop_unlock(
 
     wl_signal_emit(&desktop_ptr->events.unlock_event, NULL);
 
-    wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+    if (NULL != desktop_ptr->current_workspace_ptr) {
+        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+    }
     return true;
 }
 

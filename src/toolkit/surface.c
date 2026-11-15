@@ -340,6 +340,7 @@ bool _wlmtk_xdg_surface_init(
 {
     BS_ASSERT(NULL != surface_ptr);
     *surface_ptr = (wlmtk_surface_t){};
+    if (NULL == wlr_xdg_surface_ptr) return false;
 
     if (!wlmtk_element_init(&surface_ptr->super_element)) {
         _wlmtk_surface_fini(surface_ptr);
@@ -508,6 +509,8 @@ bool _wlmtk_surface_element_pointer_button(
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
 
+    if (NULL == surface_ptr->wlr_seat_ptr) return false;
+
     // Complain if the surface isn't part of our responsibility.
     struct wlr_surface *focused_wlr_surface_ptr =
         surface_ptr->wlr_seat_ptr->pointer_state.focused_surface;
@@ -555,6 +558,8 @@ bool _wlmtk_surface_element_pointer_axis(
 {
     wlmtk_surface_t *surface_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_surface_t, super_element);
+
+    if (NULL == surface_ptr->wlr_seat_ptr) return false;
 
     // Complain if the surface isn't part of our responsibility.
     struct wlr_surface *focused_wlr_surface_ptr =

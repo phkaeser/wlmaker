@@ -706,7 +706,8 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
 {
     if (window_ptr->fullscreen ||
         !window_ptr->server_side_decorated ||
-        window_ptr->shaded == shaded) return;
+        window_ptr->shaded == shaded ||
+        NULL == window_ptr->content_element_ptr) return;
 
     wlmtk_element_set_visible(window_ptr->content_element_ptr, !shaded);
     if (NULL != window_ptr->resizebar_ptr) {
@@ -1240,8 +1241,11 @@ void _wlmtk_window_request_maximized_size(
         // That will be zero for non-decorated windows.
         struct wlr_box wbox = wlmtk_element_get_dimensions_box(
             wlmtk_bordered_element(&window_ptr->bordered));
-        struct wlr_box cbox = wlmtk_element_get_dimensions_box(
-            window_ptr->content_element_ptr);
+        struct wlr_box cbox = {};
+        if (NULL != window_ptr->content_element_ptr) {
+            cbox = wlmtk_element_get_dimensions_box(
+                window_ptr->content_element_ptr);
+        }
 
         struct wlr_output *wo_ptr = wlmtk_window_get_wlr_output(window_ptr);
         if (NULL != window_ptr->workspace_ptr) {
