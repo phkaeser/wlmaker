@@ -856,31 +856,68 @@ static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     BS_TEST_CASE_SENTINEL()
 };
 
-const bs_test_set_t wlmtk_desktop_test_set = BS_TEST_SET(
-    true, "desktop", _wlmtk_desktop_test_cases);
+/** Context for desktop unit tests. */
+struct _wlmtk_desktop_test_context {
+    /** The wlr scene. */
+    struct wlr_scene *wlr_scene_ptr;
+    /** The display. */
+    struct wl_display *wl_display_ptr;
+    /** The output layout. */
+    struct wlr_output_layout *wlr_output_layout_ptr;
+    /** Desktop style. */
+    struct wlmtk_desktop_style style;
+};
+
+static void *_wlmtk_desktop_test_setup(void);
+static void _wlmtk_desktop_test_teardown(void *context_ptr);
+
+const bs_test_set_t wlmtk_desktop_test_set = BS_TEST_SET_CONTEXT(
+    true, "desktop", _wlmtk_desktop_test_cases,
+    _wlmtk_desktop_test_setup, _wlmtk_desktop_test_teardown);
+
+/* ------------------------------------------------------------------------- */
+/** Sets up test context for the unit tests. */
+void *_wlmtk_desktop_test_setup(void)
+{
+    struct _wlmtk_desktop_test_context *c = calloc(1, sizeof(*c));
+    c->wlr_scene_ptr = wlr_scene_create();
+    c->wl_display_ptr = wl_display_create();
+    if (NULL == c->wlr_scene_ptr || NULL == c->wl_display_ptr) goto error;
+    c->wlr_output_layout_ptr = wlr_output_layout_create(c->wl_display_ptr);
+    if (NULL == c->wlr_output_layout_ptr) goto error;
+    return c;
+
+error:
+    _wlmtk_desktop_test_teardown(c);
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tears down the test context. */
+void _wlmtk_desktop_test_teardown(void *context_ptr)
+{
+    struct _wlmtk_desktop_test_context *c = context_ptr;
+    if (NULL != c->wlr_output_layout_ptr) {
+        wlr_output_layout_destroy(c->wlr_output_layout_ptr);
+    }
+    if (NULL != c->wl_display_ptr) wl_display_destroy(c->wl_display_ptr);
+    if (NULL != c->wlr_scene_ptr) {
+        wlr_scene_node_destroy(&c->wlr_scene_ptr->tree.node);
+    }
+    free(c);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Exercises ctor and dtor. */
 void test_create_destroy(bs_test_t *test_ptr)
 {
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr = wlr_output_layout_create(
-        wl_display_ptr);
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *d = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
 
-    struct wlmtk_desktop_style ds = {};
-    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
-
-    BS_TEST_VERIFY_EQ(
-        test_ptr, &desktop_ptr->events, wlmtk_desktop_events(desktop_ptr));
-
-    wlmtk_desktop_destroy(desktop_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
+    BS_TEST_VERIFY_EQ(test_ptr, &d->events, wlmtk_desktop_events(d));
+    wlmtk_desktop_destroy(d);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -888,16 +925,11 @@ void test_create_destroy(bs_test_t *test_ptr)
 void test_workspaces(bs_test_t *test_ptr)
 {
     wlmtk_util_test_listener_t l;
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr =
-        wlr_output_layout_create(wl_display_ptr);
-    struct wlmtk_desktop_style ds = {};
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
     wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
+
     BS_TEST_VERIFY_EQ(
         test_ptr, NULL, wlmtk_desktop_get_current_workspace(desktop_ptr));
 
@@ -908,7 +940,7 @@ void test_workspaces(bs_test_t *test_ptr)
 
     static const struct wlmtk_tile_style tstyle = {};
     wlmtk_workspace_t *ws1_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "1", &tstyle);
+        c->wlr_output_layout_ptr, "1", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1_ptr);
     wlmtk_desktop_add_workspace(desktop_ptr, ws1_ptr);
     BS_TEST_VERIFY_EQ(
@@ -928,7 +960,7 @@ void test_workspaces(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 0, l.calls);
 
     wlmtk_workspace_t *ws2_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "2", &tstyle);
+        c->wlr_output_layout_ptr, "2", &tstyle);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws2_ptr);
     wlmtk_desktop_add_workspace(desktop_ptr, ws2_ptr);
     BS_TEST_VERIFY_EQ(
@@ -986,9 +1018,6 @@ void test_workspaces(bs_test_t *test_ptr)
 
     wlmtk_util_disconnect_test_listener(&l);
     wlmtk_desktop_destroy(desktop_ptr);
-    wlr_output_layout_destroy(wlr_output_layout_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -996,27 +1025,22 @@ void test_workspaces(bs_test_t *test_ptr)
 void test_layout(bs_test_t *test_ptr)
 {
     wlmtk_layer_t *l;
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, desktop_ptr);
 
     // Test setup: Two outputs.
-    struct wlr_scene *wlr_scene_ptr = wlr_scene_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wlr_scene_ptr);
-    struct wl_display *wl_display_ptr = wl_display_create();
-    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wl_display_ptr);
-    struct wlr_output_layout *wlr_output_layout_ptr =
-        wlr_output_layout_create(wl_display_ptr);
-    struct wlmtk_desktop_style ds = {};
-    wlmtk_desktop_t *desktop_ptr = wlmtk_desktop_create(
-        wlr_scene_ptr, &ds, wlr_output_layout_ptr);
     struct wlr_output o1 = { .width = 1024, .height = 768, .scale = 1 };
     wlmtk_test_wlr_output_init(&o1);
-    wlr_output_layout_add_auto(wlr_output_layout_ptr, &o1);
+    wlr_output_layout_add_auto(c->wlr_output_layout_ptr, &o1);
     struct wlr_output o2 = { .width = 640, .height = 480, .scale = 1 };
     wlmtk_test_wlr_output_init(&o2);
-    wlr_output_layout_add_auto(wlr_output_layout_ptr, &o2);
+    wlr_output_layout_add_auto(c->wlr_output_layout_ptr, &o2);
 
     struct wlmtk_tile_style ts = {};
     wlmtk_workspace_t *ws_ptr = wlmtk_workspace_create(
-        wlr_output_layout_ptr, "name", &ts);
+        c->wlr_output_layout_ptr, "name", &ts);
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws_ptr);
     wlmtk_desktop_add_workspace(desktop_ptr, ws_ptr);
 
@@ -1058,12 +1082,9 @@ void test_layout(bs_test_t *test_ptr)
         test_ptr, 1168, 0, 496, 480,
         wlmtk_workspace_get_maximize_extents(ws_ptr, &o2));
 
-    wlr_output_layout_remove(wlr_output_layout_ptr, &o2);
-    wlr_output_layout_remove(wlr_output_layout_ptr, &o1);
+    wlr_output_layout_remove(c->wlr_output_layout_ptr, &o2);
+    wlr_output_layout_remove(c->wlr_output_layout_ptr, &o1);
     wlmtk_desktop_destroy(desktop_ptr);
-    wlr_output_layout_destroy(wlr_output_layout_ptr);
-    wl_display_destroy(wl_display_ptr);
-    wlr_scene_node_destroy(&wlr_scene_ptr->tree.node);
 }
 
 /* == End of desktop.c ====================================================== */
