@@ -931,14 +931,14 @@ bool _wlmtk_desktop_workspace_set_style(
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
-static void test_lock_workspaces(bs_test_t *test_ptr);
+static void test_workspaces_when_locked(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "layout", test_layout },
-    { 1, "lock_workspaces", test_lock_worskpaces },
+    { 1, "workspaces_when_locked", test_workspaces_when_locked },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1174,12 +1174,75 @@ void test_layout(bs_test_t *test_ptr)
 }
 
 /* ------------------------------------------------------------------------- */
-void test_lock_workspaces(bs_test_t *test_ptr)
+/** Tests adding/removing workspaces when locked. */
+void test_workspaces_when_locked(bs_test_t *test_ptr)
 {
-    // when locked:
-    // - remove workspace OK to work must not enable another workspace
-    // - switch to workspace OK to work, but must not enable another workspace
-    // but, when unlocking: enable the current workspace.
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *d = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    static const struct wlmtk_tile_style tstyle = {};
+    wlmtk_workspace_t *ws1 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "1", &tstyle);
+    wlmtk_desktop_add_workspace(d, ws1);
+    wlmtk_workspace_t *ws2 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "2", &tstyle);
+    wlmtk_desktop_add_workspace(d, ws2);
+
+    // Switch back and forth, with cycling: Works when unlocked.
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+
+    wlmtk_fake_element_t *fe = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&fe->element, true);
+    wlmtk_desktop_lock(d, &fe->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, d->locked);
+
+    // Lock. Switching workspaces is OK, but must not enable workspaces.
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+
+    // When unlocking, the current workspace must become enabled.
+    wlmtk_desktop_unlock(d, &fe->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, d->locked);
+
+    // Lock again. Now, remove the current workspace (ws1). This must switch
+    // to ws2, but leave it disabled.
+    wlmtk_desktop_lock(d, &fe->element);
+    wlmtk_desktop_remove_workspace(d, ws1);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_remove_workspace(d, ws2);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_desktop_get_current_workspace(d));
+    wlmtk_desktop_unlock(d, &fe->element);
+
+    wlmtk_workspace_destroy(ws2);
+    wlmtk_workspace_destroy(ws1);
+
+    wlmtk_element_destroy(&fe->element);
+    wlmtk_desktop_destroy(d);
 }
 
 /* == End of desktop.c ====================================================== */
