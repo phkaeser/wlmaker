@@ -680,7 +680,10 @@ void _wlmtk_desktop_switch_to_workspace(
             wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
         }
         desktop_ptr->current_workspace_ptr = workspace_ptr;
-        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+
+        if (!desktop_ptr->locked) {
+            wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+        }
     }
 
     wl_signal_emit(
@@ -928,12 +931,14 @@ bool _wlmtk_desktop_workspace_set_style(
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
+static void test_lock_workspaces(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "layout", test_layout },
+    { 1, "lock_workspaces", test_lock_worskpaces },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1166,6 +1171,15 @@ void test_layout(bs_test_t *test_ptr)
     wlr_output_layout_remove(c->wlr_output_layout_ptr, &o2);
     wlr_output_layout_remove(c->wlr_output_layout_ptr, &o1);
     wlmtk_desktop_destroy(desktop_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+void test_lock_workspaces(bs_test_t *test_ptr)
+{
+    // when locked:
+    // - remove workspace OK to work must not enable another workspace
+    // - switch to workspace OK to work, but must not enable another workspace
+    // but, when unlocking: enable the current workspace.
 }
 
 /* == End of desktop.c ====================================================== */
