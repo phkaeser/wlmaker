@@ -932,6 +932,7 @@ static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
 static void test_workspaces_when_locked(bs_test_t *test_ptr);
+static void test_pointer_when_locked(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
@@ -1243,6 +1244,16 @@ void test_workspaces_when_locked(bs_test_t *test_ptr)
 
     wlmtk_element_destroy(&fe->element);
     wlmtk_desktop_destroy(d);
+}
+
+/* ------------------------------------------------------------------------- */
+void test_pointer_when_locked(bs_test_t *test_ptr)
+{
+    // FIXME - when locked:
+    // - pointer_accepts_motion, pointer_button, pointer_axis must not be called
+    // - instead, these must go to the ock element
+    //
+    // a pointer grab must be broken.
 }
 
 /* == End of desktop.c ====================================================== */
