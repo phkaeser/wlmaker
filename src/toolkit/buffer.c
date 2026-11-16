@@ -107,16 +107,7 @@ void wlmtk_buffer_set(
 {
     if (wlr_buffer_ptr == buffer_ptr->wlr_buffer_ptr) return;
 
-    if (NULL != buffer_ptr->wlr_buffer_ptr) {
-        wlr_buffer_unlock(buffer_ptr->wlr_buffer_ptr);
-    }
-
-    if (NULL != wlr_buffer_ptr) {
-        buffer_ptr->wlr_buffer_ptr = wlr_buffer_lock(wlr_buffer_ptr);
-    } else {
-        buffer_ptr->wlr_buffer_ptr = NULL;
-    }
-
+    wlmtk_util_wlr_buffer_replace(&buffer_ptr->wlr_buffer_ptr, wlr_buffer_ptr);
     if (NULL != buffer_ptr->wlr_scene_buffer_ptr) {
         wlr_scene_buffer_set_buffer(
             buffer_ptr->wlr_scene_buffer_ptr,

@@ -139,6 +139,9 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_menu_style_ref_t *style_ref_ptr)
     if (NULL == menu_ptr) return NULL;
     menu_ptr->style_ref_ptr = style_ref_ptr;
     menu_ptr->style_ptr = wlmtk_menu_style_ref_retain(style_ref_ptr);
+    wl_signal_init(&menu_ptr->events.open_changed);
+    wl_signal_init(&menu_ptr->events.request_close);
+    wl_signal_init(&menu_ptr->events.destroy);
 
     if (!wlmtk_box_init(
             &menu_ptr->box,
@@ -155,6 +158,7 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_menu_style_ref_t *style_ref_ptr)
     if (!wlmtk_base_init(
             &menu_ptr->base,
             wlmtk_box_element(&menu_ptr->box))) {
+        wlmtk_box_fini(&menu_ptr->box);
         wlmtk_menu_destroy(menu_ptr);
         return NULL;
     }
@@ -162,9 +166,6 @@ wlmtk_menu_t *wlmtk_menu_create(wlmtk_menu_style_ref_t *style_ref_ptr)
         wlmtk_base_element(&menu_ptr->base), &_wlmtk_menu_element_vmt);
     wlmtk_element_set_visible(wlmtk_base_element(&menu_ptr->base), false);
 
-    wl_signal_init(&menu_ptr->events.open_changed);
-    wl_signal_init(&menu_ptr->events.request_close);
-    wl_signal_init(&menu_ptr->events.destroy);
     return menu_ptr;
 }
 
@@ -184,6 +185,7 @@ void wlmtk_menu_destroy(wlmtk_menu_t *menu_ptr)
     if (NULL != menu_ptr->style_ref_ptr) {
         wlmtk_menu_style_ref_release(menu_ptr->style_ref_ptr);
     }
+
     free(menu_ptr);
 }
 

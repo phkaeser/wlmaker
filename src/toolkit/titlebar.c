@@ -72,7 +72,7 @@ struct _wlmtk_titlebar_t {
     uint32_t                  properties;
 
     /** Title bar style. */
-    const struct wlmtk_titlebar_style *style_ptr;
+    struct wlmtk_titlebar_style style;
 };
 
 static void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr);
@@ -136,12 +136,12 @@ wlmtk_titlebar_t *wlmtk_titlebar_create(
     wlmtk_titlebar_t *titlebar_ptr = logged_calloc(
         1, sizeof(wlmtk_titlebar_t));
     if (NULL == titlebar_ptr) return NULL;
-    titlebar_ptr->style_ptr = style_ptr;
+    titlebar_ptr->style = *style_ptr;
     titlebar_ptr->title_ptr = wlmtk_window_get_title(window_ptr);
 
     if (!wlmtk_box_init(&titlebar_ptr->super_box,
                         WLMTK_BOX_HORIZONTAL,
-                        &titlebar_ptr->style_ptr->margin)) {
+                        &titlebar_ptr->style.margin)) {
         wlmtk_titlebar_destroy(titlebar_ptr);
         return NULL;
     }
@@ -235,9 +235,9 @@ bool wlmtk_titlebar_set_width(
     unsigned width)
 {
     if (tb->width == width) return true;
-    if (!_wlmtk_titlebar_redraw_buffers(tb, tb->style_ptr, width)) return false;
+    if (!_wlmtk_titlebar_redraw_buffers(tb, &tb->style, width)) return false;
     BS_ASSERT(width == tb->width);
-    return _wlmtk_titlebar_redraw(tb, tb->style_ptr);
+    return _wlmtk_titlebar_redraw(tb, &tb->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -252,7 +252,7 @@ bool wlmtk_titlebar_set_style(
         return false;
     }
 
-    tb->style_ptr = style_ptr;
+    tb->style = *style_ptr;
     return true;
 }
 
@@ -264,7 +264,7 @@ void wlmtk_titlebar_set_properties(
     if (titlebar_ptr->properties == properties) return;
     titlebar_ptr->properties = properties;
 
-    (void)_wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
+    (void)_wlmtk_titlebar_redraw(titlebar_ptr, &titlebar_ptr->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -296,7 +296,7 @@ void wlmtk_titlebar_set_title(
     if (titlebar_ptr->title_ptr == title_ptr) return;
 
     titlebar_ptr->title_ptr = title_ptr;
-    _wlmtk_titlebar_redraw(titlebar_ptr, titlebar_ptr->style_ptr);
+    _wlmtk_titlebar_redraw(titlebar_ptr, &titlebar_ptr->style);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -325,32 +325,28 @@ void _wlmtk_titlebar_element_destroy(wlmtk_element_t *element_ptr)
  * wlmtk_titlebar_t::title_position and @ref wlmtk_titlebar_t::title_width.
  *
  * @param titlebar_ptr
- * @param style_ptr
+ * @param s
  */
 void _wlmtk_titlebar_compute_positions(
     wlmtk_titlebar_t *titlebar_ptr,
-    const struct wlmtk_titlebar_style *style_ptr)
+    const struct wlmtk_titlebar_style *s)
 {
     titlebar_ptr->title_width = titlebar_ptr->width;
 
     // Room for a close button?
     titlebar_ptr->close_position = titlebar_ptr->width;
-    if (3 * style_ptr->height < titlebar_ptr->width &&
+    if (3 * s->height + s->margin.width < titlebar_ptr->width &&
         (titlebar_ptr->properties & WLMTK_TITLEBAR_PROPERTY_CLOSE)) {
-        titlebar_ptr->close_position =
-            titlebar_ptr->width - style_ptr->height;
-        titlebar_ptr->title_width -=
-            style_ptr->height + style_ptr->margin.width;
+        titlebar_ptr->close_position = titlebar_ptr->width - s->height;
+        titlebar_ptr->title_width -= s->height + s->margin.width;
     }
 
     titlebar_ptr->title_position = 0;
     // Also having room for a minimize button?
-    if (4 * style_ptr->height < titlebar_ptr->width &&
+    if (4 * s->height + 2 * s->margin.width  < titlebar_ptr->width &&
         (titlebar_ptr->properties & WLMTK_TITLEBAR_PROPERTY_ICONIFY)) {
-        titlebar_ptr->title_position =
-            style_ptr->height + style_ptr->margin.width;
-        titlebar_ptr->title_width -=
-            style_ptr->height + style_ptr->margin.width;
+        titlebar_ptr->title_position = s->height + s->margin.width;
+        titlebar_ptr->title_width -= s->height + s->margin.width;
     }
 }
 
@@ -507,32 +503,32 @@ void test_variable_width(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
 
     // Width sufficient for all: All elements visible and placed.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 89));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 93));
     BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 24, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, width);
-    BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 71, close_elem_ptr->x);
 
     // Width sufficient only for 1 button.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 67));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 69));
     BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
     BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 43, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
 
     // Width doesn't permit any button.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 66));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 68));
     BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
     BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 66, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 68, width);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
     wlmtk_window_destroy(w);
@@ -558,14 +554,14 @@ void test_properties(bs_test_t *test_ptr)
     int width;
 
     // Width sufficient for all: All elements visible and placed.
-    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 89));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_titlebar_set_width(titlebar_ptr, 93));
     BS_TEST_VERIFY_TRUE(test_ptr, title_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 24, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, width);
-    BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 71, close_elem_ptr->x);
 
     // Properties disabling the close button.
     wlmtk_titlebar_set_properties(
@@ -575,7 +571,7 @@ void test_properties(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 24, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 65, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 69, width);
 
     // Properties disabling the iconify button.
     wlmtk_titlebar_set_properties(
@@ -585,8 +581,8 @@ void test_properties(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 0, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 65, width);
-    BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 69, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 71, close_elem_ptr->x);
 
     // Disable all of them.
     wlmtk_titlebar_set_properties(titlebar_ptr, 0);
@@ -594,7 +590,7 @@ void test_properties(bs_test_t *test_ptr)
     BS_TEST_VERIFY_FALSE(test_ptr, minimize_elem_ptr->visible);
     BS_TEST_VERIFY_FALSE(test_ptr, close_elem_ptr->visible);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 89, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 93, width);
 
     // Re-enable all of them.
     wlmtk_titlebar_set_properties(
@@ -604,8 +600,8 @@ void test_properties(bs_test_t *test_ptr)
     BS_TEST_VERIFY_TRUE(test_ptr, close_elem_ptr->visible);
     BS_TEST_VERIFY_EQ(test_ptr, 24, title_elem_ptr->x);
     wlmtk_element_get_dimensions(title_elem_ptr, NULL, NULL, &width, NULL);
-    BS_TEST_VERIFY_EQ(test_ptr, 41, width);
-    BS_TEST_VERIFY_EQ(test_ptr, 67, close_elem_ptr->x);
+    BS_TEST_VERIFY_EQ(test_ptr, 45, width);
+    BS_TEST_VERIFY_EQ(test_ptr, 71, close_elem_ptr->x);
 
     wlmtk_element_destroy(wlmtk_titlebar_element(titlebar_ptr));
     wlmtk_window_destroy(w);

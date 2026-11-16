@@ -179,25 +179,18 @@ void wlmtk_element_attach_to_scene_graph(
 
     if (NULL == parent_wlr_scene_tree_ptr) {
         if (NULL != element_ptr->wlr_scene_node_ptr) {
-            wlmtk_util_disconnect_listener(&element_ptr->wlr_scene_node_destroy_listener);
+            // Will call @ref handle_wlr_scene_node_destroy.
             wlr_scene_node_destroy(element_ptr->wlr_scene_node_ptr);
-            element_ptr->wlr_scene_node_ptr = NULL;
+            BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
         }
         return;
     }
 
     if (NULL == element_ptr->wlr_scene_node_ptr) {
-        element_ptr->wlr_scene_node_ptr = element_ptr->vmt.create_scene_node(
+        struct wlr_scene_node *n = element_ptr->vmt.create_scene_node(
             element_ptr, parent_wlr_scene_tree_ptr);
-        wlmtk_util_connect_listener_signal(
-            &element_ptr->wlr_scene_node_ptr->events.destroy,
-            &element_ptr->wlr_scene_node_destroy_listener,
-            handle_wlr_scene_node_destroy);
-        wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr,
-                                   element_ptr->visible);
-        wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr,
-                                    element_ptr->x,
-                                    element_ptr->y);
+        if (NULL == n) return;
+        wlmtk_element_set_wlr_scene_node(element_ptr, n);
         return;
     }
 
@@ -212,6 +205,25 @@ void wlmtk_element_attach_to_scene_graph(
 }
 
 /* ------------------------------------------------------------------------- */
+void wlmtk_element_set_wlr_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_node *wlr_scene_node_ptr)
+{
+    BS_ASSERT(NULL == element_ptr->wlr_scene_node_ptr);
+
+    element_ptr->wlr_scene_node_ptr = wlr_scene_node_ptr;
+    wlmtk_util_connect_listener_signal(
+        &element_ptr->wlr_scene_node_ptr->events.destroy,
+        &element_ptr->wlr_scene_node_destroy_listener,
+        handle_wlr_scene_node_destroy);
+    wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr,
+                               element_ptr->visible);
+    wlr_scene_node_set_position(element_ptr->wlr_scene_node_ptr,
+                                element_ptr->x,
+                                element_ptr->y);
+}
+
+/* ------------------------------------------------------------------------- */
 void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
 {
     // Nothing to do?
@@ -220,6 +232,11 @@ void wlmtk_element_set_visible(wlmtk_element_t *element_ptr, bool visible)
     element_ptr->visible = visible;
     if (NULL != element_ptr->wlr_scene_node_ptr) {
         wlr_scene_node_set_enabled(element_ptr->wlr_scene_node_ptr, visible);
+    }
+
+    if (!visible) {
+        wlmtk_element_pointer_blur(element_ptr);
+        wlmtk_element_keyboard_blur(element_ptr);
     }
 
     wlmtk_element_invalidate_parent_layout(element_ptr);
@@ -417,9 +434,7 @@ void _wlmtk_element_layout(__UNUSED__ wlmtk_element_t *element_ptr)
 
 /* ------------------------------------------------------------------------- */
 /**
- * Handles the 'destroy' callback of the wlr_scene_node.
- *
- * A call here indicates that teardown was not executed properly!
+ * Handles the 'destroy' callback of the wlr_scene_node. Removes the reference.
  *
  * @param listener_ptr
  * @param data_ptr
@@ -430,7 +445,9 @@ void handle_wlr_scene_node_destroy(
 {
     wlmtk_element_t *element_ptr = BS_CONTAINER_OF(
         listener_ptr, wlmtk_element_t, wlr_scene_node_destroy_listener);
-    bs_log(BS_FATAL, "Unexpected call into node's dtor on %p!", element_ptr);
+    wlmtk_util_disconnect_listener(
+        &element_ptr->wlr_scene_node_destroy_listener);
+    element_ptr->wlr_scene_node_ptr = NULL;
 }
 
 /* == Fake element, useful for unit tests. ================================= */
@@ -515,6 +532,7 @@ void wlmtk_fake_element_set_dimensions(
 /* ------------------------------------------------------------------------- */
 void wlmtk_fake_element_grab_keyboard(wlmtk_fake_element_t *fake_element_ptr)
 {
+    if (!fake_element_ptr->element.visible) return;
     fake_element_ptr->has_keyboard_focus = true;
     if (NULL != fake_element_ptr->element.parent_container_ptr) {
         wlmtk_container_set_keyboard_focus_element(
@@ -902,6 +920,15 @@ void test_pointer_motion(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, &e, motion.last_data_ptr);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->element.pointer_inside);
 
+    // Move inside agaion.
+    e = (wlmtk_pointer_motion_event_t){ .x = 1.0, .y = 2.0, .time_msec = 6 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(&fake_element_ptr->element, &e));
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->element.pointer_inside);
+    wlmtk_element_set_visible(&fake_element_ptr->element, false);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->element.pointer_inside);
+
     wlmtk_util_disconnect_test_listener(&motion);
     wlmtk_util_disconnect_test_listener(&leave);
     wlmtk_util_disconnect_test_listener(&enter);
@@ -946,10 +973,16 @@ void test_keyboard_focus(bs_test_t *test_ptr)
 {
     wlmtk_fake_element_t *fake_element_ptr = wlmtk_fake_element_create();
     BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, fake_element_ptr);
+    wlmtk_element_set_visible(&fake_element_ptr->element, true);
 
     wlmtk_fake_element_grab_keyboard(fake_element_ptr);
     BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->has_keyboard_focus);
     wlmtk_element_keyboard_blur(&fake_element_ptr->element);
+    BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->has_keyboard_focus);
+
+    wlmtk_fake_element_grab_keyboard(fake_element_ptr);
+    BS_TEST_VERIFY_TRUE(test_ptr, fake_element_ptr->has_keyboard_focus);
+    wlmtk_element_set_visible(&fake_element_ptr->element, false);
     BS_TEST_VERIFY_FALSE(test_ptr, fake_element_ptr->has_keyboard_focus);
 
     wlmtk_element_destroy(&fake_element_ptr->element);

@@ -304,6 +304,20 @@ void wlmtk_element_attach_to_scene_graph(
     wlmtk_element_t *element_ptr);
 
 /**
+ * Sets @ref wlmtk_element_t::wlr_scene_node_ptr, linking up destroy handlers.
+ *
+ * May be called only when @ref wlmtk_element_t::wlr_scene_node_ptr is unset.
+ *
+ * @param element_ptr
+ * @param wlr_scene_node_ptr
+ *
+ * Private: Should only be called by wlmtk_container_t or wlmtk_element_t.
+ */
+void wlmtk_element_set_wlr_scene_node(
+    wlmtk_element_t *element_ptr,
+    struct wlr_scene_node *wlr_scene_node_ptr);
+
+/**
  * Sets the element's visibility.
  *
  * @param element_ptr

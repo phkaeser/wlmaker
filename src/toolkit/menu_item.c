@@ -243,7 +243,7 @@ void wlmtk_menu_item_destroy(wlmtk_menu_item_t *menu_item_ptr)
         wlmtk_util_disconnect_listener(
             &menu_item_ptr->submenu_open_changed_listener);
         if (NULL != menu_item_ptr->menu_ptr) {
-            wlmtk_base_push_element(
+            wlmtk_base_pop_element(
                 wlmtk_menu_base(menu_item_ptr->menu_ptr),
                 wlmtk_menu_element(menu_item_ptr->submenu_ptr));
         }
@@ -340,7 +340,7 @@ void wlmtk_menu_item_set_submenu(
                 wlmtk_menu_base(menu_item_ptr->menu_ptr),
                 wlmtk_menu_element(menu_item_ptr->submenu_ptr));
         }
-        wlmtk_menu_set_parent_item(submenu_ptr, NULL);
+        wlmtk_menu_set_parent_item(menu_item_ptr->submenu_ptr, NULL);
     }
 
     menu_item_ptr->submenu_ptr = submenu_ptr;

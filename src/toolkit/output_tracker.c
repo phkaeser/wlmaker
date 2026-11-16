@@ -42,6 +42,8 @@ struct wl_list;
 struct _wlmtk_output_tracker_t {
     /** The output layout tracked here. */
     struct wlr_output_layout  *wlr_output_layout_ptr;
+    /** Listener for wlr_output_layout::events.destroy. */
+    struct wl_listener        output_layout_destroy_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
@@ -84,6 +86,9 @@ static void _wlmtk_output_tracker_tree_node_destroy(
 static int _wlmtk_output_tracker_tree_node_cmp(
     const bs_avltree_node_t *avlnode_ptr,
     const void *key_ptr);
+static void _wlmtk_output_tracker_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_output_tracker_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -119,21 +124,25 @@ wlmtk_output_tracker_t *wlmtk_output_tracker_create(
     }
 
     wlmtk_util_connect_listener_signal(
+        &tracker_ptr->wlr_output_layout_ptr->events.destroy,
+        &tracker_ptr->output_layout_destroy_listener,
+        _wlmtk_output_tracker_handle_output_layout_destroy);
+    wlmtk_util_connect_listener_signal(
         &tracker_ptr->wlr_output_layout_ptr->events.change,
         &tracker_ptr->output_layout_change_listener,
         _wlmtk_output_tracker_handle_output_layout_change);
+
     _wlmtk_output_tracker_handle_output_layout_change(
         &tracker_ptr->output_layout_change_listener,
         tracker_ptr->wlr_output_layout_ptr);
-
     return tracker_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
 void wlmtk_output_tracker_destroy(wlmtk_output_tracker_t *tracker_ptr)
 {
-    wlmtk_util_disconnect_listener(
-        &tracker_ptr->output_layout_change_listener);
+    _wlmtk_output_tracker_handle_output_layout_destroy(
+        &tracker_ptr->output_layout_destroy_listener, NULL);
 
     if (NULL != tracker_ptr->output_tree_ptr) {
         bs_avltree_destroy(tracker_ptr->output_tree_ptr);
@@ -222,6 +231,27 @@ int _wlmtk_output_tracker_tree_node_cmp(
     const wlmtk_output_tracker_output_t *output_ptr = BS_CONTAINER_OF(
         avlnode_ptr, const wlmtk_output_tracker_output_t, avlnode);
     return bs_avltree_cmp_ptr(output_ptr->wlr_output_ptr, key_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Output layout destroyed. Remove references. */
+void _wlmtk_output_tracker_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_output_tracker_t *tracker_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_output_tracker_t, output_layout_destroy_listener);
+    if (NULL == tracker_ptr->wlr_output_layout_ptr) return;
+
+    wlmtk_util_disconnect_listener(
+        &tracker_ptr->output_layout_destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &tracker_ptr->output_layout_change_listener);
+    tracker_ptr->wlr_output_layout_ptr = NULL;
+
+    if (NULL != tracker_ptr->output_tree_ptr) {
+        bs_avltree_flush(tracker_ptr->output_tree_ptr);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
