@@ -110,6 +110,9 @@ static void _wlmtk_desktop_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
+static bool _wlmtk_desktop_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_desktop_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -142,6 +145,7 @@ static bool _wlmtk_desktop_workspace_set_style(
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_desktop_element_vmt = {
     .layout = _wlmtk_desktop_element_layout,
+    .pointer_accepts_motion = _wlmtk_desktop_element_pointer_accepts_motion,
     .pointer_button = _wlmtk_desktop_element_pointer_button,
     .pointer_axis = _wlmtk_desktop_element_pointer_axis,
     .keyboard_event = _wlmtk_desktop_element_keyboard_event,
@@ -504,6 +508,11 @@ bool wlmtk_desktop_lock(
         &desktop_ptr->container,
         desktop_ptr->lock_element_ptr);
 
+    if (NULL != desktop_ptr->container.pointer_focus_element_ptr) {
+        wlmtk_element_pointer_blur(
+            desktop_ptr->container.pointer_focus_element_ptr);
+    }
+
     desktop_ptr->locked = true;
     return true;
 }
@@ -711,6 +720,27 @@ void _wlmtk_desktop_enumerate_workspaces(
         wlmtk_workspace_from_dlnode(dlnode_ptr),
         *index_ptr);
     *index_ptr += 1;
+}
+
+/* ------------------------------------------------------------------------- */
+bool _wlmtk_desktop_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_desktop_t, container.super_element);
+
+    if (!desktop_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
+        return desktop_ptr->orig_super_element_vmt.pointer_accepts_motion(
+            element_ptr, motion_event_ptr);
+    } else if (NULL != desktop_ptr->lock_element_ptr) {
+        return desktop_ptr->lock_element_ptr->vmt.pointer_accepts_motion(
+            desktop_ptr->lock_element_ptr, motion_event_ptr);
+    }
+
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -940,6 +970,7 @@ static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     { 1, "workspaces", test_workspaces },
     { 1, "layout", test_layout },
     { 1, "workspaces_when_locked", test_workspaces_when_locked },
+    { 1, "pointer_when_locked", test_pointer_when_locked },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1249,11 +1280,110 @@ void test_workspaces_when_locked(bs_test_t *test_ptr)
 /* ------------------------------------------------------------------------- */
 void test_pointer_when_locked(bs_test_t *test_ptr)
 {
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *d = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    static const struct wlmtk_tile_style tstyle = {};
+    wlmtk_workspace_t *ws1 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "1", &tstyle);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1);
+    wlmtk_desktop_add_workspace(d, ws1);
+
+    // Fake element for the window.
+    wlmtk_fake_element_t *wfe = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wfe);
+    wlmtk_fake_element_set_dimensions(wfe, 200, 100);
+    wlmtk_window_t *w = wlmtk_test_window_create(&wfe->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_workspace_map_window(ws1, w);
+
+    wlmtk_util_test_listener_t wfe_pl;
+    wlmtk_util_connect_test_listener(
+        &wfe->element.events.pointer_leave, &wfe_pl);
+
+    // Fake element for the lock.
+    wlmtk_fake_element_t *lfe = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lfe);
+    wlmtk_fake_element_set_dimensions(lfe, 200, 100);
+
+    // Unlocked: Motion event goes to the mapped window.
+    wlmtk_pointer_motion_event_t mev = { .x = 50, .y = 25 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(wlmtk_desktop_element(d), &mev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_accepts_motion_called);
+    wfe->pointer_accepts_motion_called = false;
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, d->container.pointer_focus_element_ptr);
+
+    // Button event goes to the mapped window.
+    wlmtk_button_event_t bev = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(wlmtk_desktop_element(d), &bev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_button_called);
+    wfe->pointer_button_called = false;
+
+    // Axis event goes to the mapped window.
+    struct wlr_pointer_axis_event aev = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(wlmtk_desktop_element(d), &aev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_axis_called);
+    wfe->pointer_axis_called = false;
+
+    // Lock the desktop
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_lock(d, &lfe->element));
+
+    // FIXME: Should (re)focus pointer.
+
+    // Expect that the pointer focus is cleared.
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, d->container.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wfe_pl.calls);
+    wlmtk_util_clear_test_listener(&wfe_pl);
+
+    // Motion events are now directed to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(wlmtk_desktop_element(d), &mev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_accepts_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_accepts_motion_called);
+
+    // Button events go to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(wlmtk_desktop_element(d), &bev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_button_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_button_called);
+    lfe->pointer_button_called = false;
+
+    // Axis event goes to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(wlmtk_desktop_element(d), &aev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_axis_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_axis_called);
+    lfe->pointer_axis_called = false;
+
     // FIXME - when locked:
     // - pointer_accepts_motion, pointer_button, pointer_axis must not be called
     // - instead, these must go to the ock element
     //
     // a pointer grab must be broken.
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_unlock(d, &lfe->element));
+
+    // FIXME: Post unlock: should re-focus on the cursor position!
+
+    wlmtk_util_disconnect_listener(&wfe_pl.listener);
+
+    wlmtk_workspace_unmap_window(ws1, w);
+    wlmtk_window_destroy(w);
+    wlmtk_element_destroy(&wfe->element);
+    wlmtk_element_destroy(&lfe->element);
+
+    wlmtk_desktop_destroy(d);
 }
 
 /* == End of desktop.c ====================================================== */
