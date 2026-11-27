@@ -48,6 +48,12 @@ struct _wlmtk_root_t {
     wlmtk_element_t           *element_ptr;
     /** Last pointer motion event context. */
     wlmtk_pointer_motion_event_t mev;
+    /**
+     * Whether @ref wlmtk_root_t::mev holds an actual pointer position. Until
+     * then, there is no pointer focus to recompute: Replaying the zeroed
+     * event would report a motion to (0, 0).
+     */
+    bool                      mev_valid;
     /** Events available from the root wrapper. */
     wlmtk_root_events_t       events;
 
@@ -139,6 +145,7 @@ bool wlmtk_root_pointer_motion(
     root_ptr->mev = (wlmtk_pointer_motion_event_t){
         .x = x, .y = y, .time_msec = time_msec, .pointer_ptr = pointer_ptr
     };
+    root_ptr->mev_valid = true;
 
     return wlmtk_element_pointer_motion(root_ptr->element_ptr, &root_ptr->mev);
 }
@@ -172,7 +179,9 @@ bool wlmtk_root_pointer_button(
         // the pointer focus.
         // TODO(kaeser@gubbe.ch): Have a test for this with a window + menu,
         // and ensure focus computation is done well there.
-        wlmtk_element_pointer_motion(root_ptr->element_ptr, &root_ptr->mev);
+        if (root_ptr->mev_valid) {
+            wlmtk_element_pointer_motion(root_ptr->element_ptr, &root_ptr->mev);
+        }
         break;
 
     default:
@@ -239,6 +248,7 @@ void _wlmtk_root_output_handle_frame(
         listener_ptr, wlmtk_root_output_t, frame_listener);
     wlmtk_element_layout(root_output_ptr->root_ptr->element_ptr);
     // Once redrawn, recompute pointer focus.
+    if (!root_output_ptr->root_ptr->mev_valid) return;
     wlmtk_element_pointer_motion(
         root_output_ptr->root_ptr->element_ptr,
         &root_output_ptr->root_ptr->mev);
