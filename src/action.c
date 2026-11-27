@@ -474,6 +474,10 @@ void wlmaker_action_execute(wlmaker_server_t *server_ptr,
  * - Array format: `"Key" = (Action, "command");` for actions with arguments.
  * - String format: `"Key" = Action;` for simple actions without arguments.
  *
+ * TODO(kaeser@gubbe.ch): Expand `wlmaker_action_t` into a struct that holds
+ * both the enum and possible (multiple) arguments, and update the code here,
+ * in wlmaker_action_item_create and in the parsers for corner.
+ *
  * @param key_ptr             The key binding string (eg. "Logo+Return").
  * @param object_ptr          Configuration value: a string with the action
  *                            name, or an array with action and argument.
