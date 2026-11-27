@@ -453,9 +453,19 @@ bool wlmtk_desktop_lock(
     wlmtk_element_t *element_ptr)
 {
     if (desktop_ptr->locked) {
-        bs_log(BS_WARNING, "Desktop already locked by element %p",
-               desktop_ptr->lock_element_ptr);
-        return false;
+        if (NULL != desktop_ptr->lock_element_ptr) {
+            bs_log(BS_WARNING, "Desktop already locked by element %p",
+                   desktop_ptr->lock_element_ptr);
+            return false;
+        }
+
+        // Locked, but the earlier lock was abandoned (eg. its client died).
+        // The session remains locked; the new lock element takes over.
+        desktop_ptr->lock_element_ptr = element_ptr;
+        wlmtk_container_add_element(
+            &desktop_ptr->container,
+            desktop_ptr->lock_element_ptr);
+        return true;
     }
     desktop_ptr->lock_element_ptr = element_ptr;
 
@@ -506,6 +516,12 @@ bool wlmtk_desktop_unlock(
 bool wlmtk_desktop_locked(wlmtk_desktop_t *desktop_ptr)
 {
     return desktop_ptr->locked;
+}
+
+/* ------------------------------------------------------------------------- */
+bool wlmtk_desktop_lock_held(wlmtk_desktop_t *desktop_ptr)
+{
+    return desktop_ptr->locked && NULL != desktop_ptr->lock_element_ptr;
 }
 
 /* ------------------------------------------------------------------------- */
