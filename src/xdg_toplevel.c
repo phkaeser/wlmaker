@@ -1102,6 +1102,7 @@ void *_wlmaker_xdg_toplevel_test_setup(void)
     wl_signal_init(&td_ptr->server.window_created_event);
     wl_signal_init(&td_ptr->server.window_destroyed_event);
 
+    wl_signal_init(&td_ptr->wlr_surface.events.destroy);
     wl_signal_init(&td_ptr->wlr_surface.events.commit);
     wl_signal_init(&td_ptr->wlr_surface.events.map);
     wl_signal_init(&td_ptr->wlr_surface.events.unmap);

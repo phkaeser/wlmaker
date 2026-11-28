@@ -23,7 +23,7 @@
 
 #include <libbase/libbase.h>
 #include <stdlib.h>
-#include <wayland-util.h>
+#include <xkbcommon/xkbcommon.h>
 #define WLR_USE_UNSTABLE
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
@@ -41,6 +41,7 @@
 #include "window.h"
 #include "workspace.h"
 
+struct wl_list;
 struct wlr_keyboard_key_event;
 
 /* == Declarations ========================================================= */
@@ -81,6 +82,8 @@ struct _wlmtk_desktop_t {
     /** Holds the fullscreen elements of each workspace. */
     wlmtk_container_t         workspace_fullscreen_container;
 
+    /** Listener for wlr_output_layout::events.destroy. */
+    struct wl_listener        output_layout_destroy_listener;
     /** Listener for wlr_output_layout::events.change. */
     struct wl_listener        output_layout_change_listener;
 
@@ -93,6 +96,9 @@ struct _wlmtk_desktop_t {
 };
 
 static void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr);
+static bool _wlmtk_desktop_layout_output(
+    struct wl_list *link_ptr,
+    void *ud_ptr);
 
 static void _wlmtk_desktop_switch_to_workspace(
     wlmtk_desktop_t *desktop_ptr,
@@ -104,6 +110,9 @@ static void _wlmtk_desktop_destroy_workspace(
     bs_dllist_node_t *dlnode_ptr,
     void *ud_ptr);
 
+static bool _wlmtk_desktop_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr);
 static bool _wlmtk_desktop_element_pointer_button(
     wlmtk_element_t *element_ptr,
     const wlmtk_button_event_t *button_event_ptr);
@@ -113,7 +122,15 @@ static bool _wlmtk_desktop_element_pointer_axis(
 static bool _wlmtk_desktop_element_keyboard_event(
     wlmtk_element_t *element_ptr,
     struct wlr_keyboard_key_event *wlr_keyboard_key_event_ptr);
+static bool _wlmtk_desktop_element_keyboard_sym(
+    wlmtk_element_t *element_ptr,
+    xkb_keysym_t keysym,
+    enum xkb_key_direction direction,
+    uint32_t modifiers);
 
+static void _wlmtk_desktop_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
 static void _wlmtk_desktop_handle_output_layout_change(
     struct wl_listener *listener_ptr,
     void *data_ptr);
@@ -128,9 +145,11 @@ static bool _wlmtk_desktop_workspace_set_style(
 /** Virtual method table for the container's super class: Element. */
 static const wlmtk_element_vmt_t _wlmtk_desktop_element_vmt = {
     .layout = _wlmtk_desktop_element_layout,
+    .pointer_accepts_motion = _wlmtk_desktop_element_pointer_accepts_motion,
     .pointer_button = _wlmtk_desktop_element_pointer_button,
     .pointer_axis = _wlmtk_desktop_element_pointer_axis,
     .keyboard_event = _wlmtk_desktop_element_keyboard_event,
+    .keyboard_sym = _wlmtk_desktop_element_keyboard_sym,
 };
 
 /** Arg for iterators that are setting the style. */
@@ -191,11 +210,11 @@ wlmtk_desktop_t *wlmtk_desktop_create(
     wlmtk_element_set_visible(
         &desktop_ptr->workspace_window_container.super_element,
         true);
-    wlmtk_layer_t *bg_layer_ptr = wlmtk_desktop_get_layer(
-        desktop_ptr, WLMTK_DESKTOP_LAYER_BACKGROUND);
+    wlmtk_layer_t *bottom_layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_BOTTOM);
     wlmtk_container_add_element_atop(
         &desktop_ptr->container,
-        wlmtk_layer_element(bg_layer_ptr),
+        wlmtk_layer_element(bottom_layer_ptr),
         &desktop_ptr->workspace_window_container.super_element);
 
     if (!wlmtk_container_init(&desktop_ptr->workspace_fullscreen_container)) {
@@ -205,11 +224,11 @@ wlmtk_desktop_t *wlmtk_desktop_create(
     wlmtk_element_set_visible(
         &desktop_ptr->workspace_fullscreen_container.super_element,
         true);
-    wlmtk_layer_t *overlay_layer_ptr = wlmtk_desktop_get_layer(
-        desktop_ptr, WLMTK_DESKTOP_LAYER_OVERLAY);
+    wlmtk_layer_t *top_layer_ptr = wlmtk_desktop_get_layer(
+        desktop_ptr, WLMTK_DESKTOP_LAYER_TOP);
     wlmtk_container_add_element_atop(
         &desktop_ptr->container,
-        wlmtk_layer_element(overlay_layer_ptr),
+        wlmtk_layer_element(top_layer_ptr),
         &desktop_ptr->workspace_fullscreen_container.super_element);
 
     desktop_ptr->curtain_rectangle_ptr = wlmtk_rectangle_create(
@@ -239,6 +258,10 @@ wlmtk_desktop_t *wlmtk_desktop_create(
         wlmtk_rectangle_element(desktop_ptr->background_rectangle_ptr));
 
     wlmtk_util_connect_listener_signal(
+        &wlr_output_layout_ptr->events.destroy,
+        &desktop_ptr->output_layout_destroy_listener,
+        _wlmtk_desktop_handle_output_layout_destroy);
+    wlmtk_util_connect_listener_signal(
         &wlr_output_layout_ptr->events.change,
         &desktop_ptr->output_layout_change_listener,
         _wlmtk_desktop_handle_output_layout_change);
@@ -256,8 +279,13 @@ wlmtk_desktop_t *wlmtk_desktop_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr)
 {
-    wlmtk_util_disconnect_listener(
-        &desktop_ptr->output_layout_change_listener);
+    if (NULL != desktop_ptr->lock_element_ptr) {
+        wlmtk_desktop_lock_unreference(
+            desktop_ptr, desktop_ptr->lock_element_ptr);
+    }
+
+    _wlmtk_desktop_handle_output_layout_destroy(
+        &desktop_ptr->output_layout_destroy_listener, NULL);
 
     bs_dllist_for_each(
         &desktop_ptr->workspaces,
@@ -459,7 +487,15 @@ bool wlmtk_desktop_lock(
     }
     desktop_ptr->lock_element_ptr = element_ptr;
 
-    wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
+    if (NULL != desktop_ptr->container.pointer_grab_element_ptr) {
+        wlmtk_container_pointer_grab_release(
+            &desktop_ptr->container,
+            desktop_ptr->container.pointer_grab_element_ptr);
+    }
+
+    if (NULL != desktop_ptr->current_workspace_ptr) {
+        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
+    }
 
     wlmtk_rectangle_set_size(
         desktop_ptr->curtain_rectangle_ptr,
@@ -471,6 +507,11 @@ bool wlmtk_desktop_lock(
     wlmtk_container_add_element(
         &desktop_ptr->container,
         desktop_ptr->lock_element_ptr);
+
+    if (NULL != desktop_ptr->container.pointer_focus_element_ptr) {
+        wlmtk_element_pointer_blur(
+            desktop_ptr->container.pointer_focus_element_ptr);
+    }
 
     desktop_ptr->locked = true;
     return true;
@@ -498,7 +539,9 @@ bool wlmtk_desktop_unlock(
 
     wl_signal_emit(&desktop_ptr->events.unlock_event, NULL);
 
-    wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+    if (NULL != desktop_ptr->current_workspace_ptr) {
+        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+    }
     return true;
 }
 
@@ -572,37 +615,46 @@ void _wlmtk_desktop_element_layout(wlmtk_element_t *element_ptr)
     wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
         element_ptr, wlmtk_desktop_t, container.super_element);
 
-    // Process each output.
-    struct wlr_output_layout_output *wlr_output_layout_output_ptr;
-    wl_list_for_each(
-        wlr_output_layout_output_ptr,
-        &desktop_ptr->wlr_output_layout_ptr->outputs,
-        link) {
-
-        // Process each layer: An updated panel may affect positioning within
-        // other layers, and the workspace maximization area.
-        struct wlr_box usable_area;
-        wlr_output_layout_get_box(
-            desktop_ptr->wlr_output_layout_ptr,
-            wlr_output_layout_output_ptr->output, &usable_area);
-        for (int i = 0; i < WLMTK_DESKTOP_LAYER_OVERLAY + 1; ++i) {
-            wlmtk_layer_reconfigure_output(
-                desktop_ptr->layer_ptrs[i],
-                wlr_output_layout_output_ptr->output,
-                &usable_area);
-        }
-
-        for (bs_dllist_node_t *node_ptr = desktop_ptr->workspaces.head_ptr;
-             node_ptr != NULL;
-             node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
-            wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(node_ptr);
-            wlmtk_workspace_set_maximize_extents(
-                ws_ptr,
-                wlr_output_layout_output_ptr->output,
-                &usable_area);
-        }
+    if (NULL != desktop_ptr->wlr_output_layout_ptr) {
+        wlmtk_util_wl_list_for_each(
+            &desktop_ptr->wlr_output_layout_ptr->outputs,
+            _wlmtk_desktop_layout_output,
+            desktop_ptr);
     }
     desktop_ptr->orig_super_element_vmt.layout(element_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Lays out the desktop elements for all layers on the particular output. */
+bool _wlmtk_desktop_layout_output(struct wl_list *link_ptr, void *ud_ptr)
+{
+    struct wlr_output_layout_output *wlr_output_layout_output_ptr =
+        BS_CONTAINER_OF(link_ptr, struct wlr_output_layout_output, link);
+    wlmtk_desktop_t *desktop_ptr = ud_ptr;
+
+    // Process each layer: An updated panel may affect positioning within other
+    // layers, and the workspace maximization area.
+    struct wlr_box usable_area;
+    wlr_output_layout_get_box(
+        desktop_ptr->wlr_output_layout_ptr,
+        wlr_output_layout_output_ptr->output, &usable_area);
+    for (int i = 0; i < WLMTK_DESKTOP_LAYER_OVERLAY + 1; ++i) {
+        wlmtk_layer_reconfigure_output(
+            desktop_ptr->layer_ptrs[i],
+            wlr_output_layout_output_ptr->output,
+            &usable_area);
+    }
+
+    for (bs_dllist_node_t *node_ptr = desktop_ptr->workspaces.head_ptr;
+         node_ptr != NULL;
+         node_ptr = bs_dllist_node_iterator_forward(node_ptr)) {
+        wlmtk_workspace_t *ws_ptr = wlmtk_workspace_from_dlnode(node_ptr);
+        wlmtk_workspace_set_maximize_extents(
+            ws_ptr,
+            wlr_output_layout_output_ptr->output,
+            &usable_area);
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -621,7 +673,7 @@ void _wlmtk_desktop_switch_to_workspace(
     if (NULL == workspace_ptr) {
         desktop_ptr->current_workspace_ptr = NULL;
     } else {
-        BS_ASSERT(desktop_ptr = wlmtk_workspace_get_desktop(workspace_ptr));
+        BS_ASSERT(desktop_ptr == wlmtk_workspace_get_desktop(workspace_ptr));
 
         wlmtk_element_set_visible(
             wlmtk_workspace_window_element(workspace_ptr), true);
@@ -637,7 +689,10 @@ void _wlmtk_desktop_switch_to_workspace(
             wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, false);
         }
         desktop_ptr->current_workspace_ptr = workspace_ptr;
-        wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+
+        if (!desktop_ptr->locked) {
+            wlmtk_workspace_enable(desktop_ptr->current_workspace_ptr, true);
+        }
     }
 
     wl_signal_emit(
@@ -665,6 +720,27 @@ void _wlmtk_desktop_enumerate_workspaces(
         wlmtk_workspace_from_dlnode(dlnode_ptr),
         *index_ptr);
     *index_ptr += 1;
+}
+
+/* ------------------------------------------------------------------------- */
+bool _wlmtk_desktop_element_pointer_accepts_motion(
+    wlmtk_element_t *element_ptr,
+    wlmtk_pointer_motion_event_t *motion_event_ptr)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_desktop_t, container.super_element);
+
+    if (!desktop_ptr->locked) {
+        // TODO(kaeser@gubbe.ch): We'll want to pass this on to the non-curtain
+        // elements only.
+        return desktop_ptr->orig_super_element_vmt.pointer_accepts_motion(
+            element_ptr, motion_event_ptr);
+    } else if (NULL != desktop_ptr->lock_element_ptr) {
+        return desktop_ptr->lock_element_ptr->vmt.pointer_accepts_motion(
+            desktop_ptr->lock_element_ptr, motion_event_ptr);
+    }
+
+    return false;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -772,6 +848,44 @@ bool _wlmtk_desktop_element_keyboard_event(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Forwards translated keys to the locked element, if locked. */
+bool _wlmtk_desktop_element_keyboard_sym(
+        wlmtk_element_t *element_ptr,
+        xkb_keysym_t keysym,
+        enum xkb_key_direction direction,
+        uint32_t modifiers)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        element_ptr, wlmtk_desktop_t, container.super_element);
+
+    if (!desktop_ptr->locked) {
+        return desktop_ptr->orig_super_element_vmt.keyboard_sym(
+            element_ptr, keysym, direction, modifiers);
+    } else if (NULL != desktop_ptr->lock_element_ptr) {
+        return wlmtk_element_keyboard_sym(
+            desktop_ptr->lock_element_ptr, keysym, direction, modifiers);
+    }
+    return false;
+}
+
+/* ------------------------------------------------------------------------- */
+/** Handles wlr_output_layout::events::destroy. */
+void _wlmtk_desktop_handle_output_layout_destroy(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_desktop_t *desktop_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_desktop_t, output_layout_destroy_listener);
+    if (NULL == desktop_ptr->wlr_output_layout_ptr) return;
+
+    wlmtk_util_disconnect_listener(
+        &desktop_ptr->output_layout_destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &desktop_ptr->output_layout_change_listener);
+    desktop_ptr->wlr_output_layout_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 /**
  * Handles wlr_output_layout::events::change. Triggers when the output layout
  * changes, and we use this for updating the curtain and the layout in each
@@ -847,12 +961,16 @@ bool _wlmtk_desktop_workspace_set_style(
 static void test_create_destroy(bs_test_t *test_ptr);
 static void test_workspaces(bs_test_t *test_ptr);
 static void test_layout(bs_test_t *test_ptr);
+static void test_workspaces_when_locked(bs_test_t *test_ptr);
+static void test_pointer_when_locked(bs_test_t *test_ptr);
 
 /** Test cases */
 static const bs_test_case_t _wlmtk_desktop_test_cases[] = {
     { 1, "create_destroy", test_create_destroy },
     { 1, "workspaces", test_workspaces },
     { 1, "layout", test_layout },
+    { 1, "workspaces_when_locked", test_workspaces_when_locked },
+    { 1, "pointer_when_locked", test_pointer_when_locked },
     BS_TEST_CASE_SENTINEL()
 };
 
@@ -1085,6 +1203,187 @@ void test_layout(bs_test_t *test_ptr)
     wlr_output_layout_remove(c->wlr_output_layout_ptr, &o2);
     wlr_output_layout_remove(c->wlr_output_layout_ptr, &o1);
     wlmtk_desktop_destroy(desktop_ptr);
+}
+
+/* ------------------------------------------------------------------------- */
+/** Tests adding/removing workspaces when locked. */
+void test_workspaces_when_locked(bs_test_t *test_ptr)
+{
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *d = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    static const struct wlmtk_tile_style tstyle = {};
+    wlmtk_workspace_t *ws1 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "1", &tstyle);
+    wlmtk_desktop_add_workspace(d, ws1);
+    wlmtk_workspace_t *ws2 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "2", &tstyle);
+    wlmtk_desktop_add_workspace(d, ws2);
+
+    // Switch back and forth, with cycling: Works when unlocked.
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+
+    wlmtk_fake_element_t *fe = wlmtk_fake_element_create();
+    wlmtk_element_set_visible(&fe->element, true);
+    wlmtk_desktop_lock(d, &fe->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, d->locked);
+
+    // Lock. Switching workspaces is OK, but must not enable workspaces.
+    wlmtk_desktop_switch_to_next_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+
+    wlmtk_desktop_switch_to_previous_workspace(d);
+    BS_TEST_VERIFY_EQ(test_ptr, ws1, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+
+    // When unlocking, the current workspace must become enabled.
+    wlmtk_desktop_unlock(d, &fe->element);
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_workspace_enabled(ws1));
+    BS_TEST_VERIFY_FALSE(test_ptr, d->locked);
+
+    // Lock again. Now, remove the current workspace (ws1). This must switch
+    // to ws2, but leave it disabled.
+    wlmtk_desktop_lock(d, &fe->element);
+    wlmtk_desktop_remove_workspace(d, ws1);
+    BS_TEST_VERIFY_EQ(test_ptr, ws2, wlmtk_desktop_get_current_workspace(d));
+    BS_TEST_VERIFY_FALSE(test_ptr, wlmtk_workspace_enabled(ws2));
+    wlmtk_desktop_remove_workspace(d, ws2);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_desktop_get_current_workspace(d));
+    wlmtk_desktop_unlock(d, &fe->element);
+
+    wlmtk_workspace_destroy(ws2);
+    wlmtk_workspace_destroy(ws1);
+
+    wlmtk_element_destroy(&fe->element);
+    wlmtk_desktop_destroy(d);
+}
+
+/* ------------------------------------------------------------------------- */
+void test_pointer_when_locked(bs_test_t *test_ptr)
+{
+    struct _wlmtk_desktop_test_context *c = bs_test_context(test_ptr);
+    wlmtk_desktop_t *d = wlmtk_desktop_create(
+        c->wlr_scene_ptr, &c->style, c->wlr_output_layout_ptr);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, d);
+
+    static const struct wlmtk_tile_style tstyle = {};
+    wlmtk_workspace_t *ws1 = wlmtk_workspace_create(
+        c->wlr_output_layout_ptr, "1", &tstyle);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, ws1);
+    wlmtk_desktop_add_workspace(d, ws1);
+
+    // Fake element for the window.
+    wlmtk_fake_element_t *wfe = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, wfe);
+    wlmtk_fake_element_set_dimensions(wfe, 200, 100);
+    wlmtk_window_t *w = wlmtk_test_window_create(&wfe->element);
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, w);
+    wlmtk_workspace_map_window(ws1, w);
+
+    wlmtk_util_test_listener_t wfe_pl;
+    wlmtk_util_connect_test_listener(
+        &wfe->element.events.pointer_leave, &wfe_pl);
+
+    // Fake element for the lock.
+    wlmtk_fake_element_t *lfe = wlmtk_fake_element_create();
+    BS_TEST_VERIFY_NEQ_OR_RETURN(test_ptr, NULL, lfe);
+    wlmtk_fake_element_set_dimensions(lfe, 200, 100);
+
+    // Unlocked: Motion event goes to the mapped window.
+    wlmtk_pointer_motion_event_t mev = { .x = 50, .y = 25 };
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(wlmtk_desktop_element(d), &mev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_accepts_motion_called);
+    wfe->pointer_accepts_motion_called = false;
+    BS_TEST_VERIFY_NEQ(test_ptr, NULL, d->container.pointer_focus_element_ptr);
+
+    // Button event goes to the mapped window.
+    wlmtk_button_event_t bev = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(wlmtk_desktop_element(d), &bev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_button_called);
+    wfe->pointer_button_called = false;
+
+    // Axis event goes to the mapped window.
+    struct wlr_pointer_axis_event aev = {};
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(wlmtk_desktop_element(d), &aev));
+    BS_TEST_VERIFY_TRUE(test_ptr, wfe->pointer_axis_called);
+    wfe->pointer_axis_called = false;
+
+    // Lock the desktop
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_lock(d, &lfe->element));
+
+    // FIXME: Should (re)focus pointer.
+
+    // Expect that the pointer focus is cleared.
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, d->container.pointer_focus_element_ptr);
+    BS_TEST_VERIFY_EQ(test_ptr, 1, wfe_pl.calls);
+    wlmtk_util_clear_test_listener(&wfe_pl);
+
+    // Motion events are now directed to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_motion(wlmtk_desktop_element(d), &mev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_accepts_motion_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_accepts_motion_called);
+
+    // Button events go to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_button(wlmtk_desktop_element(d), &bev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_button_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_button_called);
+    lfe->pointer_button_called = false;
+
+    // Axis event goes to the lock element.
+    BS_TEST_VERIFY_TRUE(
+        test_ptr,
+        wlmtk_element_pointer_axis(wlmtk_desktop_element(d), &aev));
+    BS_TEST_VERIFY_FALSE(test_ptr, wfe->pointer_axis_called);
+    BS_TEST_VERIFY_TRUE(test_ptr, lfe->pointer_axis_called);
+    lfe->pointer_axis_called = false;
+
+    // FIXME - when locked:
+    // - pointer_accepts_motion, pointer_button, pointer_axis must not be called
+    // - instead, these must go to the ock element
+    //
+    // a pointer grab must be broken.
+
+    BS_TEST_VERIFY_TRUE(test_ptr, wlmtk_desktop_unlock(d, &lfe->element));
+
+    // FIXME: Post unlock: should re-focus on the cursor position!
+
+    wlmtk_util_disconnect_listener(&wfe_pl.listener);
+
+    wlmtk_workspace_unmap_window(ws1, w);
+    wlmtk_window_destroy(w);
+    wlmtk_element_destroy(&wfe->element);
+    wlmtk_element_destroy(&lfe->element);
+
+    wlmtk_desktop_destroy(d);
 }
 
 /* == End of desktop.c ====================================================== */

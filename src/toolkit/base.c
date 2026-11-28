@@ -81,6 +81,8 @@ void wlmtk_base_set_content_element(
     wlmtk_base_t *base_ptr,
     wlmtk_element_t *content_element_ptr)
 {
+    if (base_ptr->content_element_ptr == content_element_ptr) return;
+
     if (NULL != base_ptr->content_element_ptr) {
         wlmtk_container_remove_element(
             &base_ptr->super_container,

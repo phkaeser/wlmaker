@@ -115,7 +115,7 @@ void wlmtk_desktop_destroy(wlmtk_desktop_t *desktop_ptr);
 wlmtk_desktop_events_t *wlmtk_desktop_events(wlmtk_desktop_t *desktop_ptr);
 
 /**
- * Adds a workspace.
+ * Adds a workspace. Takes ownership of `workspace_ptr`.
  *
  * @param desktop_ptr
  * @param workspace_ptr
@@ -125,7 +125,7 @@ void wlmtk_desktop_add_workspace(
     wlmtk_workspace_t *workspace_ptr);
 
 /**
- * Removes the workspace.
+ * Removes the workspace. Releases ownership of `workspace_ptr`.
  *
  * @param desktop_ptr
  * @param workspace_ptr
@@ -178,9 +178,14 @@ void wlmtk_desktop_for_each_workspace(
 /**
  * Locks the desktop, using the provided element.
  *
- * The desktop must not be locked already. If locked successfully, the desktop will
- * keep a reference to `element_ptr`. The lock must call @ref wlmtk_desktop_unlock
- * to unlock desktop, and for releasing the reference.
+ * The desktop must not be locked already. If locked successfully, the desktop
+ * will keep a reference to `element_ptr`. The lock must call
+ * @ref wlmtk_desktop_unlock to unlock desktop, and for releasing the
+ * reference.
+ *
+ * When locked, the desktop will disable the workspace(s) and route all input
+ * events to `element_ptr`. It is still possible to switch, add or remove
+ * workspaces, though.
  *
  * @param desktop_ptr
  * @param element_ptr

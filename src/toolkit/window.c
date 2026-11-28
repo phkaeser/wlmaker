@@ -77,6 +77,8 @@ struct _wlmtk_window_t {
 
     /** Preferred output. See @ref wlmtk_window_set_preferred_wlr_output. */
     struct wlr_output         *preferred_wlr_output_ptr;
+    /** Listener to monitor for `destroy` events of the preferred output. */
+    struct wl_listener        preferred_wlr_output_destroy_listener;
 
     /** Reference to the menu's style. */
     wlmtk_menu_style_ref_t    *menu_style_ref_ptr;
@@ -173,6 +175,9 @@ static void _wlmtk_window_destroy_resizebar(wlmtk_window_t *window_ptr);
 static void _wlmtk_window_set_decoration_width(wlmtk_window_t *window_ptr);
 
 static void _wlmtk_window_menu_request_close_handler(
+    struct wl_listener *listener_ptr,
+    void *data_ptr);
+static void _wlmtk_window_preferred_wlr_output_destroy_handler(
     struct wl_listener *listener_ptr,
     void *data_ptr);
 
@@ -297,6 +302,7 @@ error:
 void wlmtk_window_destroy(wlmtk_window_t *window_ptr)
 {
     wlmtk_window_set_server_side_decorated(window_ptr, false);
+    wlmtk_window_set_preferred_wlr_output(window_ptr, NULL);
 
     if (NULL != window_ptr->window_menu_ptr) {
         wlmtk_util_disconnect_listener(
@@ -413,7 +419,19 @@ void wlmtk_window_set_preferred_wlr_output(
     wlmtk_window_t *window_ptr,
     struct wlr_output *wlr_output_ptr)
 {
+    if (window_ptr->preferred_wlr_output_ptr == wlr_output_ptr) return;
+
+    if (window_ptr->preferred_wlr_output_ptr != NULL) {
+        wlmtk_util_disconnect_listener(
+            &window_ptr->preferred_wlr_output_destroy_listener);
+    }
     window_ptr->preferred_wlr_output_ptr = wlr_output_ptr;
+    if (NULL != wlr_output_ptr) {
+        wlmtk_util_connect_listener_signal(
+            &wlr_output_ptr->events.destroy,
+            &window_ptr->preferred_wlr_output_destroy_listener,
+            _wlmtk_window_preferred_wlr_output_destroy_handler);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -688,7 +706,8 @@ void wlmtk_window_request_shaded(wlmtk_window_t *window_ptr, bool shaded)
 {
     if (window_ptr->fullscreen ||
         !window_ptr->server_side_decorated ||
-        window_ptr->shaded == shaded) return;
+        window_ptr->shaded == shaded ||
+        NULL == window_ptr->content_element_ptr) return;
 
     wlmtk_element_set_visible(window_ptr->content_element_ptr, !shaded);
     if (NULL != window_ptr->resizebar_ptr) {
@@ -1183,6 +1202,19 @@ void _wlmtk_window_menu_request_close_handler(
 }
 
 /* ------------------------------------------------------------------------- */
+/** Preferred output got destroyed. Clear it. */
+void _wlmtk_window_preferred_wlr_output_destroy_handler(
+    struct wl_listener *listener_ptr,
+    __UNUSED__ void *data_ptr)
+{
+    wlmtk_window_t *window_ptr = BS_CONTAINER_OF(
+        listener_ptr, wlmtk_window_t, preferred_wlr_output_destroy_listener);
+    wlmtk_util_disconnect_listener(
+        &window_ptr->preferred_wlr_output_destroy_listener);
+    window_ptr->preferred_wlr_output_ptr = NULL;
+}
+
+/* ------------------------------------------------------------------------- */
 /** Destroys the window style. */
 void _wlmtk_window_style_destroy(bs_ref_t *ref_ptr)
 {
@@ -1209,8 +1241,11 @@ void _wlmtk_window_request_maximized_size(
         // That will be zero for non-decorated windows.
         struct wlr_box wbox = wlmtk_element_get_dimensions_box(
             wlmtk_bordered_element(&window_ptr->bordered));
-        struct wlr_box cbox = wlmtk_element_get_dimensions_box(
-            window_ptr->content_element_ptr);
+        struct wlr_box cbox = {};
+        if (NULL != window_ptr->content_element_ptr) {
+            cbox = wlmtk_element_get_dimensions_box(
+                window_ptr->content_element_ptr);
+        }
 
         struct wlr_output *wo_ptr = wlmtk_window_get_wlr_output(window_ptr);
         if (NULL != window_ptr->workspace_ptr) {
@@ -1388,8 +1423,13 @@ void test_create_destroy(bs_test_t *test_ptr)
 
     BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_wlr_output(w));
     struct wlr_output empty = {};
+    wl_signal_init(&empty.events.destroy);
     wlmtk_window_set_preferred_wlr_output(w, &empty);
     BS_TEST_VERIFY_EQ(test_ptr, &empty, wlmtk_window_get_wlr_output(w));
+
+    // FIXME: destroy empty.
+    wl_signal_emit(&empty.events.destroy, NULL);
+    BS_TEST_VERIFY_EQ(test_ptr, NULL, wlmtk_window_get_wlr_output(w));
 
     wlmtk_workspace_destroy(workspace_ptr);
     wl_display_destroy(display_ptr);

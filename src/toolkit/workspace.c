@@ -175,6 +175,8 @@ static bool pfsm_resize_begin(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_resize_motion(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 static bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, void *ud_ptr);
 
+static void _wlmtk_workspace_destroy_window_from_dlnode(
+    bs_dllist_node_t *node_ptr, void *ud_ptr);
 struct wlmtk_workspace_output_extents *wlmtk_workspace_output_extents_create(
     struct wlr_output_layout *wlr_output_layout_ptr,
     struct wlr_output *wlr_output_ptr);
@@ -283,6 +285,10 @@ wlmtk_workspace_t *wlmtk_workspace_create(
 /* ------------------------------------------------------------------------- */
 void wlmtk_workspace_destroy(wlmtk_workspace_t *ws_ptr)
 {
+    bs_dllist_for_each(
+        &ws_ptr->windows,
+        _wlmtk_workspace_destroy_window_from_dlnode,
+        ws_ptr);
     wlmtk_util_disconnect_listener(&ws_ptr->element_pointer_leave_listener);
     wlmtk_util_disconnect_listener(&ws_ptr->element_pointer_motion_listener);
 
@@ -1199,6 +1205,15 @@ bool pfsm_reset(wlmtk_fsm_t *fsm_ptr, __UNUSED__ void *ud_ptr)
     return true;
 }
 
+/* ------------------------------------------------------------------------- */
+/** Iterator for `bs_dllist_for_each`: Destroys window at `node_ptr`. */
+void _wlmtk_workspace_destroy_window_from_dlnode(
+    bs_dllist_node_t *node_ptr, void *ud_ptr)
+{
+    wlmtk_window_t *window_ptr = wlmtk_window_from_dlnode(node_ptr);
+    wlmtk_workspace_t *workspace_ptr = ud_ptr;
+    wlmtk_workspace_unmap_window(workspace_ptr, window_ptr);
+}
 
 /* ------------------------------------------------------------------------- */
 /** Creates output extents information. */
@@ -1536,12 +1551,11 @@ void test_move(bs_test_t *test_ptr)
     BS_TEST_VERIFY_EQ(test_ptr, 1, wlmtk_window_element(w)->x);
     BS_TEST_VERIFY_EQ(test_ptr, 2, wlmtk_window_element(w)->y);
 
-    wlmtk_workspace_unmap_window(ws_ptr, w);
+    wlmtk_workspace_destroy(ws_ptr);
+    wl_display_destroy(display_ptr);
 
     wlmtk_window_destroy(w);
     wlmtk_element_destroy(&fe_ptr->element);
-    wlmtk_workspace_destroy(ws_ptr);
-    wl_display_destroy(display_ptr);
 }
 
 /* ------------------------------------------------------------------------- */
